@@ -31,6 +31,12 @@ struct Buffer {
     u32 _padding1 : 6;
     u32 type : 2; // overlaps with T# type, so should be 0 for buffer
 
+    static constexpr Buffer Null() {
+        Buffer buffer{};
+        buffer.base_address = 1;
+        return buffer;
+    }
+
     bool Valid() const {
         return type == 0u;
     }

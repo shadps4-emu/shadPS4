@@ -31,8 +31,9 @@ struct ComputePipelineKey {
 class ComputePipeline : public Pipeline {
 public:
     ComputePipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
-                    vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key,
-                    const Shader::Info& info, vk::ShaderModule module);
+                    const Shader::Profile& profile, vk::PipelineCache pipeline_cache,
+                    ComputePipelineKey compute_key, const Shader::Info& info,
+                    vk::ShaderModule module);
     ~ComputePipeline();
 
 private:

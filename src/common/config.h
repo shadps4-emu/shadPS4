@@ -47,27 +47,36 @@ int getSpecialPadClass();
 bool getIsMotionControlsEnabled();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
+bool GetOverrideControllerColor();
+void SetOverrideControllerColor(bool enable);
+int* GetControllerCustomColor();
+void SetControllerCustomColor(int r, int b, int g);
 
 u32 getScreenWidth();
 u32 getScreenHeight();
 s32 getGpuId();
+bool allowHDR();
 
 bool debugDump();
 bool collectShadersForDebug();
 bool showSplash();
 bool autoUpdate();
+bool alwaysShowChangelog();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
 bool patchShaders();
 bool isRdocEnabled();
+bool fpsColor();
 u32 vblankDiv();
 
 void setDebugDump(bool enable);
 void setCollectShaderForDebug(bool enable);
 void setShowSplash(bool enable);
 void setAutoUpdate(bool enable);
+void setAlwaysShowChangelog(bool enable);
 void setNullGpu(bool enable);
+void setAllowHDR(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
 void setDumpShaders(bool enable);
 void setVblankDiv(u32 value);

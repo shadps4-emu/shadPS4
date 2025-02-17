@@ -83,7 +83,10 @@ public:
     }
 
     Module* GetModule(s32 index) const {
-        return m_modules.at(index).get();
+        if (index >= 0 || index < m_modules.size()) {
+            return m_modules.at(index).get();
+        }
+        return nullptr;
     }
 
     u32 FindByName(const std::filesystem::path& name) const {

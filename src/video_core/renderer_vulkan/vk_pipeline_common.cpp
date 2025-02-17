@@ -14,8 +14,10 @@
 namespace Vulkan {
 
 Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorHeap& desc_heap_,
-                   vk::PipelineCache pipeline_cache, bool is_compute_ /*= false*/)
-    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, is_compute{is_compute_} {}
+                   const Shader::Profile& profile_, vk::PipelineCache pipeline_cache,
+                   bool is_compute_ /*= false*/)
+    : instance{instance_}, scheduler{scheduler_}, desc_heap{desc_heap_}, profile{profile_},
+      is_compute{is_compute_} {}
 
 Pipeline::~Pipeline() = default;
 
@@ -35,7 +37,7 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers&
         cmdbuf.pipelineBarrier2(dependencies);
     }
 
-    const auto stage_flags = IsCompute() ? vk::ShaderStageFlagBits::eCompute : gp_stage_flags;
+    const auto stage_flags = IsCompute() ? vk::ShaderStageFlagBits::eCompute : AllGraphicsStageBits;
     cmdbuf.pushConstants(*pipeline_layout, stage_flags, 0u, sizeof(push_data), &push_data);
 
     // Bind descriptor set.

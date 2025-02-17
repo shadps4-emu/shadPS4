@@ -143,6 +143,9 @@ Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
 Open a PR and we'll check it :)
 
+# Translations
+
+If you want to translate shadPS4 to your language we use [**crowdin**](https://crowdin.com/project/shadps4-emulator).
 # Contributors
 
 <a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">

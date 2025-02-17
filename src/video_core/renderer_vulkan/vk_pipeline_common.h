@@ -5,6 +5,7 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/profile.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -14,7 +15,7 @@ class BufferCache;
 
 namespace Vulkan {
 
-static constexpr auto gp_stage_flags =
+static constexpr auto AllGraphicsStageBits =
     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eTessellationControl |
     vk::ShaderStageFlagBits::eTessellationEvaluation | vk::ShaderStageFlagBits::eGeometry |
     vk::ShaderStageFlagBits::eFragment;
@@ -26,7 +27,8 @@ class DescriptorHeap;
 class Pipeline {
 public:
     Pipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
-             vk::PipelineCache pipeline_cache, bool is_compute = false);
+             const Shader::Profile& profile, vk::PipelineCache pipeline_cache,
+             bool is_compute = false);
     virtual ~Pipeline();
 
     vk::Pipeline Handle() const noexcept {
@@ -66,6 +68,7 @@ protected:
     const Instance& instance;
     Scheduler& scheduler;
     DescriptorHeap& desc_heap;
+    const Shader::Profile& profile;
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;

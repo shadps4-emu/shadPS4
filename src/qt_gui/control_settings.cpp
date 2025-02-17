@@ -3,9 +3,9 @@
 
 #include <fstream>
 #include <QMessageBox>
+#include <QPushButton>
 #include "common/path_util.h"
 #include "control_settings.h"
-#include "kbm_config_dialog.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
@@ -16,7 +16,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
 
     AddBoxItems();
     SetUIValuestoMappings();
-    ui->KBMButton->setFocus();
+    UpdateLightbarColor();
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -29,11 +29,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     });
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
-    connect(ui->KBMButton, &QPushButton::clicked, this, [this] {
-        auto KBMWindow = new EditorDialog(this);
-        KBMWindow->exec();
-        SetUIValuestoMappings();
-    });
+
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
         GetGameTitle();
         SetUIValuestoMappings();
@@ -61,6 +57,27 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
             [this](int value) { ui->RStickLeftBox->setCurrentIndex(value); });
     connect(ui->RStickLeftBox, &QComboBox::currentIndexChanged, this,
             [this](int value) { ui->RStickRightBox->setCurrentIndex(value); });
+
+    connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString RValue = "R: " + RedValue;
+        ui->RLabel->setText(RValue);
+        UpdateLightbarColor();
+    });
+
+    connect(ui->GSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString GreenValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString GValue = "G: " + GreenValue;
+        ui->GLabel->setText(GValue);
+        UpdateLightbarColor();
+    });
+
+    connect(ui->BSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString BlueValue = QString("%1").arg(value, 3, 10, QChar('0'));
+        QString BValue = "B: " + BlueValue;
+        ui->BLabel->setText(BValue);
+        UpdateLightbarColor();
+    });
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
@@ -121,7 +138,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
         if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
                 ControllerInputs.end() ||
-            output_string == "analog_deadzone") {
+            output_string == "analog_deadzone" || output_string == "override_controller_color") {
             line.erase();
             continue;
         }
@@ -227,6 +244,14 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
     lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue + ", 127");
 
+    lines.push_back("");
+    std::string OverrideLB = ui->LightbarCheckBox->isChecked() ? "true" : "false";
+    std::string LightBarR = std::to_string(ui->RSlider->value());
+    std::string LightBarG = std::to_string(ui->GSlider->value());
+    std::string LightBarB = std::to_string(ui->BSlider->value());
+    lines.push_back("override_controller_color = " + OverrideLB + ", " + LightBarR + ", " +
+                    LightBarG + ", " + LightBarB);
+
     std::vector<std::string> save;
     bool CurrentLineEmpty = false, LastLineEmpty = false;
     for (auto const& line : lines) {
@@ -243,6 +268,9 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     output_file.close();
 
     Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
+    Config::SetOverrideControllerColor(ui->LightbarCheckBox->isChecked());
+    Config::SetControllerCustomColor(ui->RSlider->value(), ui->GSlider->value(),
+                                     ui->BSlider->value());
     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
 
     if (CloseOnSave)
@@ -351,7 +379,7 @@ void ControlSettings::SetUIValuestoMappings() {
 
         if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
                 ControllerInputs.end() ||
-            output_string == "analog_deadzone") {
+            output_string == "analog_deadzone" || output_string == "override_controller_color") {
             if (input_string == "cross") {
                 ui->ABox->setCurrentText(QString::fromStdString(output_string));
                 CrossExists = true;
@@ -436,9 +464,45 @@ void ControlSettings::SetUIValuestoMappings() {
                     ui->RightDeadzoneSlider->setValue(2);
                     ui->RightDeadzoneValue->setText("2");
                 }
+            } else if (output_string == "override_controller_color") {
+                std::size_t comma_pos = line.find(',');
+                if (comma_pos != std::string::npos) {
+                    std::string overridestring = line.substr(equal_pos + 1, comma_pos);
+                    bool override = overridestring.contains("true") ? true : false;
+                    ui->LightbarCheckBox->setChecked(override);
+
+                    std::string lightbarstring = line.substr(comma_pos + 1);
+                    std::size_t comma_pos2 = lightbarstring.find(',');
+                    if (comma_pos2 != std::string::npos) {
+                        std::string Rstring = lightbarstring.substr(0, comma_pos2);
+                        ui->RSlider->setValue(std::stoi(Rstring));
+                        QString RedValue = QString("%1").arg(std::stoi(Rstring), 3, 10, QChar('0'));
+                        QString RValue = "R: " + RedValue;
+                        ui->RLabel->setText(RValue);
+                    }
+
+                    std::string GBstring = lightbarstring.substr(comma_pos2 + 1);
+                    std::size_t comma_pos3 = GBstring.find(',');
+                    if (comma_pos3 != std::string::npos) {
+                        std::string Gstring = GBstring.substr(0, comma_pos3);
+                        ui->GSlider->setValue(std::stoi(Gstring));
+                        QString GreenValue =
+                            QString("%1").arg(std::stoi(Gstring), 3, 10, QChar('0'));
+                        QString GValue = "G: " + GreenValue;
+                        ui->GLabel->setText(GValue);
+
+                        std::string Bstring = GBstring.substr(comma_pos3 + 1);
+                        ui->BSlider->setValue(std::stoi(Bstring));
+                        QString BlueValue =
+                            QString("%1").arg(std::stoi(Bstring), 3, 10, QChar('0'));
+                        QString BValue = "B: " + BlueValue;
+                        ui->BLabel->setText(BValue);
+                    }
+                }
             }
         }
     }
+    file.close();
 
     // If an entry does not exist in the config file, we assume the user wants it unmapped
     if (!CrossExists)
@@ -490,8 +554,6 @@ void ControlSettings::SetUIValuestoMappings() {
         ui->RStickUpBox->setCurrentText("unmapped");
         ui->RStickDownBox->setCurrentText("unmapped");
     }
-
-    file.close();
 }
 
 void ControlSettings::GetGameTitle() {
@@ -505,6 +567,15 @@ void ControlSettings::GetGameTitle() {
             }
         }
     }
+}
+
+void ControlSettings::UpdateLightbarColor() {
+    ui->LightbarColorFrame->setStyleSheet("");
+    QString RValue = QString::number(ui->RSlider->value());
+    QString GValue = QString::number(ui->GSlider->value());
+    QString BValue = QString::number(ui->BSlider->value());
+    QString colorstring = "background-color: rgb(" + RValue + "," + GValue + "," + BValue + ")";
+    ui->LightbarColorFrame->setStyleSheet(colorstring);
 }
 
 ControlSettings::~ControlSettings() {}

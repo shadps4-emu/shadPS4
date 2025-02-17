@@ -80,6 +80,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Kernel, Sce)                                                                               \
     CLS(Lib)                                                                                       \
     SUB(Lib, LibC)                                                                                 \
+    SUB(Lib, LibcInternal)                                                                         \
     SUB(Lib, Kernel)                                                                               \
     SUB(Lib, Pad)                                                                                  \
     SUB(Lib, GnmDriver)                                                                            \

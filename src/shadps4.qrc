@@ -31,5 +31,6 @@
 		<file>images/youtube.png</file>
 		<file>images/website.png</file>
 		<file>images/ps4_controller.png</file>
+		<file>images/keyboard_icon.png</file>
 	</qresource>
 </RCC>

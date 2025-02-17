@@ -225,10 +225,8 @@ private:
         switch (use.user->GetOpcode()) {
         case IR::Opcode::LoadSharedU32:
         case IR::Opcode::LoadSharedU64:
-        case IR::Opcode::LoadSharedU128:
         case IR::Opcode::WriteSharedU32:
-        case IR::Opcode::WriteSharedU64:
-        case IR::Opcode::WriteSharedU128: {
+        case IR::Opcode::WriteSharedU64: {
             u32 counter = inst->Flags<u32>();
             inst->SetFlags<u32>(counter + inc);
             // Stop here
@@ -435,12 +433,9 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             }
 
             case IR::Opcode::WriteSharedU32:
-            case IR::Opcode::WriteSharedU64:
-            case IR::Opcode::WriteSharedU128: {
+            case IR::Opcode::WriteSharedU64: {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
-                const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::WriteSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
                 const IR::U32 addr{inst.Arg(0)};
                 const IR::U32 data{inst.Arg(1).Resolve()};
 
@@ -480,15 +475,12 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 break;
             }
 
-            case IR::Opcode::LoadSharedU32: {
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
+            case IR::Opcode::LoadSharedU32:
+            case IR::Opcode::LoadSharedU64: {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const IR::U32 addr{inst.Arg(0)};
                 const AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
-                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32 ? 1 : 2;
                 ASSERT_MSG(region == AttributeRegion::InputCP ||
                                region == AttributeRegion::OutputCP,
                            "Unhandled read of patchconst attribute in hull shader");
@@ -562,14 +554,11 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
             const auto opcode = inst.GetOpcode();
             switch (inst.GetOpcode()) {
-            case IR::Opcode::LoadSharedU32: {
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
+            case IR::Opcode::LoadSharedU32:
+            case IR::Opcode::LoadSharedU64: {
                 const IR::U32 addr{inst.Arg(0)};
                 AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
-                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32 ? 1 : 2;
                 const auto GetInput = [&](IR::U32 addr, u32 off_dw) -> IR::F32 {
                     if (region == AttributeRegion::OutputCP) {
                         return ReadTessControlPointAttribute(
@@ -611,10 +600,8 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                 switch (inst.GetOpcode()) {
                 case IR::Opcode::LoadSharedU32:
                 case IR::Opcode::LoadSharedU64:
-                case IR::Opcode::LoadSharedU128:
                 case IR::Opcode::WriteSharedU32:
-                case IR::Opcode::WriteSharedU64:
-                case IR::Opcode::WriteSharedU128: {
+                case IR::Opcode::WriteSharedU64: {
                     IR::Value addr = inst.Arg(0);
                     auto read_const_buffer = IR::BreadthFirstSearch(
                         addr, [](IR::Inst* maybe_tess_const) -> std::optional<IR::Inst*> {

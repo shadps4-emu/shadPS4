@@ -160,21 +160,25 @@ void EmitGetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+using BufferAlias = EmitContext::BufferAlias;
+
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
-    u32 flatbuf_off_dw = inst->Flags<u32>();
-    ASSERT(ctx.srt_flatbuf.binding >= 0);
-    ASSERT(flatbuf_off_dw > 0);
-    Id index = ctx.ConstU32(flatbuf_off_dw);
-    auto& buffer = ctx.srt_flatbuf;
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+    const u32 flatbuf_off_dw = inst->Flags<u32>();
+    const auto& srt_flatbuf = ctx.buffers.back();
+    ASSERT(srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0 &&
+           srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+    const Id ptr{
+        ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
     return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    auto& buffer = ctx.buffers[handle];
+    const auto& buffer = ctx.buffers[handle];
     index = ctx.OpIAdd(ctx.U32[1], index, buffer.offset_dwords);
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-    return ctx.OpLoad(buffer.data_types->Get(1), ptr);
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
@@ -184,7 +188,7 @@ Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
                                       rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
 }
 
-Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
@@ -285,6 +289,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return EmitReadStepRate(ctx, 0);
     case IR::Attribute::InstanceId1:
         return EmitReadStepRate(ctx, 1);
+    case IR::Attribute::WorkgroupIndex:
+        return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
     case IR::Attribute::LocalInvocationId:
@@ -396,140 +402,158 @@ void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
     ctx.OpStore(pointer, value);
 }
 
-template <u32 N>
-static Id EmitLoadBufferU32xN(EmitContext& ctx, u32 handle, Id address) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+template <u32 N, BufferAlias alias>
+static Id EmitLoadBufferB32xN(EmitContext& ctx, u32 handle, Id address) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const auto& data_types = alias == BufferAlias::U32 ? ctx.U32 : ctx.F32;
+    const auto [id, pointer_type] = spv_buffer[alias];
     if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-        return ctx.OpLoad(buffer.data_types->Get(1), ptr);
+        const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+        return ctx.OpLoad(data_types[1], ptr);
     } else {
         boost::container::static_vector<Id, N> ids;
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i)};
-            ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
+            const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i)};
+            ids.push_back(ctx.OpLoad(data_types[1], ptr));
         }
-        return ctx.OpCompositeConstruct(buffer.data_types->Get(N), ids);
+        return ctx.OpCompositeConstruct(data_types[N], ids);
     }
 }
 
 Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(3u))};
-    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
-    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
-    return ctx.OpBitFieldUExtract(ctx.U32[1], dword, bit_offset, ctx.ConstU32(8u));
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
+    return ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U8, ptr));
 }
 
 Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(2u))};
-    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
-    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
-    return ctx.OpBitFieldUExtract(ctx.U32[1], dword, bit_offset, ctx.ConstU32(16u));
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    return ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U16, ptr));
 }
 
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<1>(ctx, handle, address);
+    return EmitLoadBufferB32xN<1, BufferAlias::U32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferU32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<2>(ctx, handle, address);
+    return EmitLoadBufferB32xN<2, BufferAlias::U32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferU32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<3>(ctx, handle, address);
+    return EmitLoadBufferB32xN<3, BufferAlias::U32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<4>(ctx, handle, address);
+    return EmitLoadBufferB32xN<4, BufferAlias::U32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return ctx.OpBitcast(ctx.F32[1], EmitLoadBufferU32(ctx, inst, handle, address));
+    return EmitLoadBufferB32xN<1, BufferAlias::F32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return ctx.OpBitcast(ctx.F32[2], EmitLoadBufferU32x2(ctx, inst, handle, address));
+    return EmitLoadBufferB32xN<2, BufferAlias::F32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return ctx.OpBitcast(ctx.F32[3], EmitLoadBufferU32x3(ctx, inst, handle, address));
+    return EmitLoadBufferB32xN<3, BufferAlias::F32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    return ctx.OpBitcast(ctx.F32[4], EmitLoadBufferU32x4(ctx, inst, handle, address));
+    return EmitLoadBufferB32xN<4, BufferAlias::F32>(ctx, handle, address);
 }
 
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     UNREACHABLE_MSG("SPIR-V instruction");
 }
 
-template <u32 N>
-static void EmitStoreBufferU32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+template <u32 N, BufferAlias alias>
+static void EmitStoreBufferB32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const auto& data_types = alias == BufferAlias::U32 ? ctx.U32 : ctx.F32;
+    const auto [id, pointer_type] = spv_buffer[alias];
     if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+        const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
         ctx.OpStore(ptr, value);
     } else {
         for (u32 i = 0; i < N; i++) {
             const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr =
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(buffer.data_types->Get(1), value, i));
+            const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
+            ctx.OpStore(ptr, ctx.OpCompositeExtract(data_types[1], value, i));
         }
     }
 }
 
 void EmitStoreBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(3u))};
-    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
-    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
-    const Id new_val{ctx.OpBitFieldInsert(ctx.U32[1], dword, value, bit_offset, ctx.ConstU32(8u))};
-    EmitStoreBufferU32xN<1>(ctx, handle, address, new_val);
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
+    ctx.OpStore(ptr, ctx.OpUConvert(ctx.U8, value));
 }
 
 void EmitStoreBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    const Id byte_index{ctx.OpBitwiseAnd(ctx.U32[1], address, ctx.ConstU32(2u))};
-    const Id bit_offset{ctx.OpShiftLeftLogical(ctx.U32[1], byte_index, ctx.ConstU32(3u))};
-    const Id dword{EmitLoadBufferU32xN<1>(ctx, handle, address)};
-    const Id new_val{ctx.OpBitFieldInsert(ctx.U32[1], dword, value, bit_offset, ctx.ConstU32(16u))};
-    EmitStoreBufferU32xN<1>(ctx, handle, address, new_val);
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    ctx.OpStore(ptr, ctx.OpUConvert(ctx.U16, value));
 }
 
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<1>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<1, BufferAlias::U32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<2>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<2, BufferAlias::U32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<3>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<3, BufferAlias::U32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<4>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<4, BufferAlias::U32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[1], value));
+    EmitStoreBufferB32xN<1, BufferAlias::F32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32x2(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[2], value));
+    EmitStoreBufferB32xN<2, BufferAlias::F32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32x3(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[3], value));
+    EmitStoreBufferB32xN<3, BufferAlias::F32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32x4(ctx, inst, handle, address, ctx.OpBitcast(ctx.U32[4], value));
+    EmitStoreBufferB32xN<4, BufferAlias::F32>(ctx, handle, address, value);
 }
 
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {

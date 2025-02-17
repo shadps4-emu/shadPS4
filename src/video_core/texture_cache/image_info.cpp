@@ -22,6 +22,7 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
         return vk::Format::eR8G8B8A8Srgb;
     case VideoOutFormat::A2R10G10B10:
     case VideoOutFormat::A2R10G10B10Srgb:
+    case VideoOutFormat::A2R10G10B10Bt2020Pq:
         return vk::Format::eA2R10G10B10UnormPack32;
     default:
         break;

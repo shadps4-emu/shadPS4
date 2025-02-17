@@ -1041,10 +1041,10 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             if (length + index > 64) {
                 // Undefined behavior if length + index is bigger than 64 according to the spec,
                 // we'll warn and continue execution.
-                LOG_WARNING(Core,
-                            "extrq at {} with length {} and index {} is bigger than 64, "
-                            "undefined behavior",
-                            fmt::ptr(code_address), length, index);
+                LOG_TRACE(Core,
+                          "extrq at {} with length {} and index {} is bigger than 64, "
+                          "undefined behavior",
+                          fmt::ptr(code_address), length, index);
             }
 
             lowQWordDst >>= index;
@@ -1101,10 +1101,10 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             if (length + index > 64) {
                 // Undefined behavior if length + index is bigger than 64 according to the spec,
                 // we'll warn and continue execution.
-                LOG_WARNING(Core,
-                            "insertq at {} with length {} and index {} is bigger than 64, "
-                            "undefined behavior",
-                            fmt::ptr(code_address), length, index);
+                LOG_TRACE(Core,
+                          "insertq at {} with length {} and index {} is bigger than 64, "
+                          "undefined behavior",
+                          fmt::ptr(code_address), length, index);
             }
 
             lowQWordSrc &= mask;

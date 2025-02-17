@@ -7,7 +7,7 @@
 
 namespace Shader::Gcn {
 
-u32 SwizzleMrtComponent(const FragmentRuntimeInfo::PsColorBuffer& color_buffer, u32 comp) {
+u32 SwizzleMrtComponent(const PsColorBuffer& color_buffer, u32 comp) {
     const auto [r, g, b, a] = color_buffer.swizzle;
     const std::array swizzle_array = {r, g, b, a};
     const auto swizzled_comp_type = static_cast<u32>(swizzle_array[comp]);
@@ -16,7 +16,7 @@ u32 SwizzleMrtComponent(const FragmentRuntimeInfo::PsColorBuffer& color_buffer, 
 }
 
 void Translator::ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
-                                const FragmentRuntimeInfo::PsColorBuffer& color_buffer) {
+                                const PsColorBuffer& color_buffer) {
     auto converted = ApplyWriteNumberConversion(ir, value, color_buffer.num_conversion);
     if (color_buffer.needs_unorm_fixup) {
         // FIXME: Fix-up for GPUs where float-to-unorm rounding is off from expected.

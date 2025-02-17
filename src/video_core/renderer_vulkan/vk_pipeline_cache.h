@@ -68,6 +68,10 @@ public:
     static std::string GetShaderName(Shader::Stage stage, u64 hash,
                                      std::optional<size_t> perm = {});
 
+    auto& GetProfile() const {
+        return profile;
+    }
+
 private:
     bool RefreshGraphicsKey();
     bool RefreshComputeKey();

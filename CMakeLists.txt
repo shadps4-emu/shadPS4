@@ -399,6 +399,18 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
 
 set(LIBC_SOURCES src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
+                 src/core/libraries/libc_internal/libc_internal_mspace.cpp
+                 src/core/libraries/libc_internal/libc_internal_mspace.h
+                 src/core/libraries/libc_internal/libc_internal_io.cpp
+                 src/core/libraries/libc_internal/libc_internal_io.h
+                 src/core/libraries/libc_internal/libc_internal_memory.cpp
+                 src/core/libraries/libc_internal/libc_internal_memory.h
+                 src/core/libraries/libc_internal/libc_internal_str.cpp
+                 src/core/libraries/libc_internal/libc_internal_str.h
+                 src/core/libraries/libc_internal/libc_internal_stream.cpp
+                 src/core/libraries/libc_internal/libc_internal_stream.h
+                 src/core/libraries/libc_internal/libc_internal_math.cpp
+                 src/core/libraries/libc_internal/libc_internal_math.h
 )
 
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
@@ -754,11 +766,11 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
-                      src/shader_recompiler/ir/passes/lower_shared_mem_to_registers.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
+                      src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp
@@ -1016,7 +1028,7 @@ if (APPLE)
 
   if (ARCHITECTURE STREQUAL "x86_64")
       # Reserve system-managed memory space.
-      target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,GUEST_SYSTEM,0x400000,-image_base,0x20000000000)
+      target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
   endif()
 
   # Replacement for std::chrono::time_zone

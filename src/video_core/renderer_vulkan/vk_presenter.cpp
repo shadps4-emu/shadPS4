@@ -397,6 +397,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     frame->height = height;
 
     frame->imgui_texture = ImGui::Vulkan::AddTexture(view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    frame->is_hdr = swapchain.GetHDR();
 }
 
 Frame* Presenter::PrepareLastFrame() {
@@ -562,7 +563,8 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         const auto& image = texture_cache.GetImage(image_id);
         const auto extent = image.info.size;
-        if (frame->width != extent.width || frame->height != extent.height) {
+        if (frame->width != extent.width || frame->height != extent.height ||
+            frame->is_hdr != swapchain.GetHDR()) {
             RecreateFrame(frame, extent.width, extent.height);
         }
     }
@@ -913,8 +915,8 @@ Frame* Presenter::GetRenderFrame() {
     }
 
     // Initialize default frame image
-    if (frame->width == 0 || frame->height == 0) {
-        RecreateFrame(frame, 1920, 1080);
+    if (frame->width == 0 || frame->height == 0 || frame->is_hdr != swapchain.GetHDR()) {
+        RecreateFrame(frame, Config::getScreenWidth(), Config::getScreenHeight());
     }
 
     return frame;

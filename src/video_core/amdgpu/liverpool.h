@@ -143,6 +143,11 @@ struct Liverpool {
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
+
+        [[nodiscard]] u32 NumVgprs() const {
+            // Each increment allocates 4 registers, where 0 = 4 registers.
+            return (settings.num_vgprs + 1) * 4;
+        }
     };
 
     struct HsTessFactorClamp {
@@ -190,6 +195,10 @@ struct Liverpool {
         u32 SharedMemSize() const noexcept {
             // lds_dwords is in units of 128 dwords. We return bytes.
             return settings.lds_dwords.Value() * 128 * 4;
+        }
+
+        u32 NumWorkgroups() const noexcept {
+            return dim_x * dim_y * dim_z;
         }
 
         bool IsTgidEnabled(u32 i) const noexcept {

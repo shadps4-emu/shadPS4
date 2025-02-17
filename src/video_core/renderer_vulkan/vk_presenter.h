@@ -31,6 +31,7 @@ struct Frame {
     vk::Fence present_done;
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
+    bool is_hdr{false};
 
     ImTextureID imgui_texture;
 };
@@ -46,6 +47,7 @@ class Rasterizer;
 class Presenter {
     struct PostProcessSettings {
         float gamma = 1.0f;
+        u32 hdr = 0;
     };
 
 public:
@@ -100,6 +102,18 @@ public:
 
     Rasterizer& GetRasterizer() const {
         return *rasterizer.get();
+    }
+
+    bool IsHDRSupported() const {
+        return swapchain.HasHDR();
+    }
+
+    void SetHDR(bool enable) {
+        if (!IsHDRSupported()) {
+            return;
+        }
+        swapchain.SetHDR(enable);
+        pp_settings.hdr = enable ? 1 : 0;
     }
 
 private:

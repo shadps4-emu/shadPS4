@@ -84,7 +84,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     const auto BuildCommon = [&](const auto& program) {
         info.num_user_data = program.settings.num_user_regs;
         info.num_input_vgprs = program.settings.vgpr_comp_cnt;
-        info.num_allocated_vgprs = program.settings.num_vgprs * 4;
+        info.num_allocated_vgprs = program.NumVgprs();
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
     };
@@ -204,6 +204,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        // When binding a UBO, we calculate its size considering the offset in the larger buffer
+        // cache underlying resource. In some cases, it may produce sizes exceeding the system
+        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
+        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
         .max_viewport_width = instance.GetMaxViewportWidth(),
         .max_viewport_height = instance.GetMaxViewportHeight(),
         .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
@@ -222,7 +226,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap,
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, profile,
                                                         graphics_key, *pipeline_cache, infos,
                                                         runtime_infos, fetch_shader, modules);
         if (Config::collectShadersForDebug()) {
@@ -243,8 +247,9 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = std::make_unique<ComputePipeline>(
-            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
+        it.value() =
+            std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
+                                              *pipeline_cache, compute_key, *infos[0], modules[0]);
         if (Config::collectShadersForDebug()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
@@ -340,12 +345,12 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_buffers[remapped_cb] = {
+        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
-            .swizzle = col_buf.Swizzle(),
             .export_format = regs.color_export_format.GetFormat(cb),
             .needs_unorm_fixup = needs_unorm_fixup,
+            .swizzle = col_buf.Swizzle(),
         };
     }
 
@@ -412,8 +417,10 @@ bool PipelineCache::RefreshGraphicsKey() {
         break;
     }
     case Liverpool::ShaderStageEnable::VgtStages::LsHs: {
-        if (!instance.IsTessellationSupported()) {
-            break;
+        if (!instance.IsTessellationSupported() ||
+            (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
+             !instance.IsTessellationIsolinesSupported())) {
+            return false;
         }
         if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;

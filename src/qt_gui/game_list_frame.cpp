@@ -77,8 +77,10 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
-        if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
-            QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
+        if (column == 2 && m_game_info->m_games[row].compatibility.issue_number != "") {
+            auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+            QDesktopServices::openUrl(
+                QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         }
     });
 }
@@ -198,12 +200,26 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 void GameListFrame::RefreshListBackgroundImage() {
     QPalette palette;
     if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
-        palette.setBrush(QPalette::Base,
-                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
+        QSize widgetSize = size();
+        QPixmap scaledPixmap =
+            QPixmap::fromImage(backgroundImage)
+                .scaled(widgetSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (widgetSize.width() - scaledPixmap.width()) / 2;
+        int y = (widgetSize.height() - scaledPixmap.height()) / 2;
+        QPixmap finalPixmap(widgetSize);
+        finalPixmap.fill(Qt::transparent);
+        QPainter painter(&finalPixmap);
+        painter.drawPixmap(x, y, scaledPixmap);
+        palette.setBrush(QPalette::Base, QBrush(finalPixmap));
     }
     QColor transparentColor = QColor(135, 206, 235, 40);
     palette.setColor(QPalette::Highlight, transparentColor);
     this->setPalette(palette);
+}
+
+void GameListFrame::resizeEvent(QResizeEvent* event) {
+    QTableWidget::resizeEvent(event);
+    RefreshListBackgroundImage();
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {
@@ -278,7 +294,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         tooltip_string = status_explanation;
     } else {
         tooltip_string =
-            "<p> <i>" + tr("Click to go to issue") + "</i>" + "<br>" + tr("Last updated") +
+            "<p> <i>" + tr("Click to see details on github") + "</i>" + "<br>" +
+            tr("Last updated") +
             QString(": %1 (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
             "<br>" + status_explanation + "</p>";
     }
@@ -295,6 +312,7 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     dotLabel->setPixmap(circle_pixmap);
 
     QLabel* label = new QLabel(m_compat_info->GetCompatStatusString(entry.status), widget);
+    this->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
 
     label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 

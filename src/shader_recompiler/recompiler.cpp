@@ -82,18 +82,16 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
-    if (stage != Stage::Compute) {
-        Shader::Optimization::LowerSharedMemToRegisters(program);
-    }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::LowerBufferFormatToRaw(program);
+    Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
+    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
-    Shader::Optimization::SharedMemoryBarrierPass(program, profile);
 
     return program;
 }

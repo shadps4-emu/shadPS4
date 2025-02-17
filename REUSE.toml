@@ -3,9 +3,12 @@ version = 1
 [[annotations]]
 path = [
     "REUSE.toml",
+    "crowdin.yml",
     "CMakeSettings.json",
     ".github/FUNDING.yml",
     ".github/shadps4.png",
+	".github/workflows/scripts/update_translation.sh",
+	".github/workflows/update_translation.yml",
     ".gitmodules",
     "dist/MacOSBundleInfo.plist.in",
     "dist/net.shadps4.shadPS4.desktop",
@@ -32,6 +35,7 @@ path = [
     "src/images/folder_icon.png",
     "src/images/github.png",
     "src/images/grid_icon.png",
+    "src/images/keyboard_icon.png",
     "src/images/iconsize_icon.png",
     "src/images/ko-fi.png",
     "src/images/list_icon.png",
@@ -52,6 +56,7 @@ path = [
     "src/images/website.png",
     "src/shadps4.qrc",
     "src/shadps4.rc",
+	"src/qt_gui/translations/update_translation.sh",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "shadPS4 Emulator Project"

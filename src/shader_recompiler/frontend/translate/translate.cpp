@@ -4,7 +4,6 @@
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
@@ -21,9 +20,14 @@
 
 namespace Shader::Gcn {
 
+static u32 next_vgpr_num;
+static std::unordered_map<u32, IR::VectorReg> vgpr_map;
+
 Translator::Translator(IR::Block* block_, Info& info_, const RuntimeInfo& runtime_info_,
                        const Profile& profile_)
-    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {}
+    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {
+    next_vgpr_num = vgpr_map.empty() ? runtime_info.num_allocated_vgprs : next_vgpr_num;
+}
 
 void Translator::EmitPrologue() {
     ir.Prologue();
@@ -179,7 +183,20 @@ void Translator::EmitPrologue() {
     default:
         UNREACHABLE_MSG("Unknown shader stage");
     }
+
+    // Clear any scratch vgpr mappings for next shader.
+    vgpr_map.clear();
 }
+
+IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
+    const auto [it, is_new] = vgpr_map.try_emplace(offset);
+    if (is_new) {
+        ASSERT_MSG(next_vgpr_num < 256, "Out of VGPRs");
+        const auto new_vgpr = static_cast<IR::VectorReg>(next_vgpr_num++);
+        it->second = new_vgpr;
+    }
+    return it->second;
+};
 
 template <typename T>
 T Translator::GetSrc(const InstOperand& operand) {
@@ -490,7 +507,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
                 .used_types = IR::Type::F32,
-                .is_instance_data = true,
                 .instance_attrib = attrib.semantic,
             });
         }

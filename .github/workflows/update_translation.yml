@@ -1,0 +1,31 @@
+name: Update Translation
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Every day at 12am UTC.
+  workflow_dispatch: # As well as manually.
+
+jobs:
+  update:
+    if: github.repository == 'shadps4-emu/shadPS4'
+    name: "Update Translation"
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set execution permissions for the script
+        run: chmod +x ./.github/workflows/scripts/update_translation.sh
+
+      - name: Update Base Translation
+        run: ./.github/workflows/scripts/update_translation.sh
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "Qt GUI: Update Translation"
+          commit-message: "[ci skip] Qt GUI: Update  Translation."
+          committer: "shadPS4 Bot <Shadps4Boot@users.noreply.github.com>"
+          author: "shadPS4 Bot <Shadps4Boot@users.noreply.github.com>"
+          body: "Daily update of translation sources."
+          branch: update-translation
+          delete-branch: true

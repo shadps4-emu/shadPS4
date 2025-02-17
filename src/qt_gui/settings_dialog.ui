@@ -172,6 +172,13 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QCheckBox" name="enableHDRCheckBox">
+                   <property name="text">
+                    <string>Enable HDR</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QCheckBox" name="separateUpdatesCheckBox">
                    <property name="text">
                     <string>Enable Separate Update Folder</string>
@@ -339,7 +346,7 @@
               <property name="title">
                <string>Update</string>
               </property>
-              <layout class="QVBoxLayout" name="UpdateLayout" stretch="0,0,0">
+              <layout class="QVBoxLayout" name="UpdateLayout" stretch="0,0,0,0">
                <property name="spacing">
                 <number>6</number>
                </property>
@@ -417,7 +424,7 @@
                <item>
                 <widget class="QPushButton" name="checkUpdateButton">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -455,6 +462,13 @@
                  </property>
                  <property name="text">
                   <string>Check for Updates at Startup</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="changelogCheckBox">
+                 <property name="text">
+                  <string>Always Show Changelog</string>
                  </property>
                 </widget>
                </item>
@@ -585,14 +599,14 @@
                </item>
                <item>
                 <widget class="QGroupBox" name="GUIBackgroundImageGroupBox">
-                 <property name="title">
-                  <string>Background Image</string>
-                 </property>
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="title">
+                  <string>Background Image</string>
                  </property>
                  <layout class="QVBoxLayout" name="backgroundImageVLayout">
                   <item>
