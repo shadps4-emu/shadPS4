@@ -43,7 +43,7 @@ public:
 
     Id Def(const IR::Value& value);
 
-    void DefineBufferOffsets();
+    void DefineBufferProperties();
     void DefineInterpolatedAttribs();
     void DefineWorkgroupIndex();
 
@@ -248,6 +248,9 @@ public:
         BufferType buffer_type;
         Id offset;
         Id offset_dwords;
+        Id size;
+        Id size_shorts;
+        Id size_dwords;
         std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
 
         const BufferSpv& operator[](BufferAlias alias) const {
@@ -307,6 +310,8 @@ private:
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
+
+    Id GetBufferSize(u32 sharp_idx);
 };
 
 } // namespace Shader::Backend::SPIRV

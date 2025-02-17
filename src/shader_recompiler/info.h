@@ -23,6 +23,10 @@
 namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
+static constexpr size_t NumImages = 64;
+static constexpr size_t NumBuffers = 32;
+static constexpr size_t NumSamplers = 16;
+static constexpr size_t NumFMasks = 8;
 
 enum class TextureType : u32 {
     Color1D,
@@ -63,7 +67,7 @@ struct BufferResource {
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
 };
-using BufferResourceList = boost::container::small_vector<BufferResource, 16>;
+using BufferResourceList = boost::container::small_vector<BufferResource, NumBuffers>;
 
 struct ImageResource {
     u32 sharp_idx;
@@ -74,7 +78,7 @@ struct ImageResource {
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
-using ImageResourceList = boost::container::small_vector<ImageResource, 16>;
+using ImageResourceList = boost::container::small_vector<ImageResource, NumImages>;
 
 struct SamplerResource {
     u32 sharp_idx;
@@ -84,31 +88,33 @@ struct SamplerResource {
 
     constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
 };
-using SamplerResourceList = boost::container::small_vector<SamplerResource, 16>;
+using SamplerResourceList = boost::container::small_vector<SamplerResource, NumSamplers>;
 
 struct FMaskResource {
     u32 sharp_idx;
 
     constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
-using FMaskResourceList = boost::container::small_vector<FMaskResource, 16>;
+using FMaskResourceList = boost::container::small_vector<FMaskResource, NumFMasks>;
 
 struct PushData {
-    static constexpr u32 BufOffsetIndex = 2;
-    static constexpr u32 UdRegsIndex = 4;
-    static constexpr u32 XOffsetIndex = 8;
-    static constexpr u32 YOffsetIndex = 9;
-    static constexpr u32 XScaleIndex = 10;
-    static constexpr u32 YScaleIndex = 11;
+    static constexpr u32 Step0Index = 0;
+    static constexpr u32 Step1Index = 1;
+    static constexpr u32 XOffsetIndex = 2;
+    static constexpr u32 YOffsetIndex = 3;
+    static constexpr u32 XScaleIndex = 4;
+    static constexpr u32 YScaleIndex = 5;
+    static constexpr u32 UdRegsIndex = 6;
+    static constexpr u32 BufOffsetIndex = UdRegsIndex + NumUserDataRegs / 4;
 
     u32 step0;
     u32 step1;
-    std::array<u8, 32> buf_offsets;
-    std::array<u32, NumUserDataRegs> ud_regs;
     float xoffset;
     float yoffset;
     float xscale;
     float yscale;
+    std::array<u32, NumUserDataRegs> ud_regs;
+    std::array<u8, NumBuffers> buf_offsets;
 
     void AddOffset(u32 binding, u32 offset) {
         ASSERT(offset < 256 && binding < buf_offsets.size());

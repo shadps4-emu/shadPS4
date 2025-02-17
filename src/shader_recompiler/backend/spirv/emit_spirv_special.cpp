@@ -14,7 +14,7 @@ void EmitPrologue(EmitContext& ctx) {
     if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
         ctx.DefineWorkgroupIndex();
     }
-    ctx.DefineBufferOffsets();
+    ctx.DefineBufferProperties();
 }
 
 void ConvertDepthMode(EmitContext& ctx) {
