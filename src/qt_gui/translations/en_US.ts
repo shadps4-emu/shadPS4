@@ -10,10 +10,6 @@
         <translation>About shadPS4</translation>
     </message>
     <message>
-        <source>shadPS4</source>
-        <translation>shadPS4</translation>
-    </message>
-    <message>
         <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
         <translation>shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
     </message>
@@ -526,15 +522,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>R: 000</source>
+        <source>R:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>G: 000</source>
+        <source>G:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>B: 255</source>
+        <source>B:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
