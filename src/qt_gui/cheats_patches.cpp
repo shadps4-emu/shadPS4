@@ -71,7 +71,8 @@ void CheatsPatches::setupUI() {
 
     QLabel* gameImageLabel = new QLabel();
     if (!m_gameImage.isNull()) {
-        gameImageLabel->setPixmap(m_gameImage.scaled(275, 275, Qt::KeepAspectRatio));
+        gameImageLabel->setPixmap(
+            m_gameImage.scaled(275, 275, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     } else {
         gameImageLabel->setText(tr("No Image Available"));
     }
