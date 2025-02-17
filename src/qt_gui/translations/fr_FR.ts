@@ -414,10 +414,6 @@
       <translation>Configurer les Commandes</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Paramètres de Contrôle</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Croix directionnelle</translation>
     </message>
@@ -468,14 +464,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>Commandes KBM</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Éditeur KBM</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +520,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Joystick Droit</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation type="unfinished">Color Adjustment</translation>
+    </message>
+    <message>
+      <source>R: 000</source>
+      <translation type="unfinished">R: 000</translation>
+    </message>
+    <message>
+      <source>G: 000</source>
+      <translation type="unfinished">G: 000</translation>
+    </message>
+    <message>
+      <source>B: 255</source>
+      <translation type="unfinished">B: 255</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation type="unfinished">Override Lightbar Color</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation type="unfinished">Override Color</translation>
     </message>
   </context>
   <context>
@@ -854,6 +866,10 @@
     <message>
       <source>Save Data</source>
       <translation>Enregistrer les Données</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Visionneuse SFO pour </translation>
     </message>
   </context>
   <context>
@@ -1745,11 +1761,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Volume de la musique de fond.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Activer les Mouvements</translation>
     </message>
     <message>
       <source>Save Data Path</source>
