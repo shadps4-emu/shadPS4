@@ -414,10 +414,6 @@
       <translation>配置按键</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>按键配置</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>D-Pad</translation>
     </message>
@@ -468,14 +464,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>键鼠</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>键鼠配置</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +520,30 @@
     <message>
       <source>Right Stick</source>
       <translation>右摇杆</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation type="unfinished">Color Adjustment</translation>
+    </message>
+    <message>
+      <source>R: 000</source>
+      <translation type="unfinished">R: 000</translation>
+    </message>
+    <message>
+      <source>G: 000</source>
+      <translation type="unfinished">G: 000</translation>
+    </message>
+    <message>
+      <source>B: 255</source>
+      <translation type="unfinished">B: 255</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation type="unfinished">Override Lightbar Color</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation type="unfinished">Override Color</translation>
     </message>
   </context>
   <context>
@@ -854,6 +866,10 @@
     <message>
       <source>Save Data</source>
       <translation>存档数据</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation type="unfinished">SFO Viewer for </translation>
     </message>
   </context>
   <context>
