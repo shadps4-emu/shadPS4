@@ -523,15 +523,15 @@
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
