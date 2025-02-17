@@ -182,6 +182,12 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 }
 
 s32 PS4_SYSV_ABI posix_close(s32 fd) {
+    if (fd == 0) {
+        // Hack to bypass unimplemented posix_socket in LLE libSceDiscMap
+        // Without this, it closes stdin because socket returns fd 0
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
