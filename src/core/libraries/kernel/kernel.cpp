@@ -85,33 +85,13 @@ int ErrnoToSceKernelError(int error) {
 }
 
 void SetPosixErrno(int e) {
-    // Some error numbers are different between supported OSes or the PS4
+    // Some error numbers are different between supported OSes
     switch (e) {
-    case EPERM:
-        g_posix_errno = POSIX_EPERM;
-        break;
-    case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
-        break;
-    case ENOMEM:
-        g_posix_errno = POSIX_ENOMEM;
-        break;
-    case EINVAL:
-        g_posix_errno = POSIX_EINVAL;
-        break;
-    case ENOSPC:
-        g_posix_errno = POSIX_ENOSPC;
-        break;
-    case ERANGE:
-        g_posix_errno = POSIX_ERANGE;
-        break;
-    case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
-        break;
-    case ETIMEDOUT:
-        g_posix_errno = POSIX_ETIMEDOUT;
+    case ENOENT:
+        g_posix_errno = POSIX_ENOENT;
         break;
     default:
+        UNREACHABLE_MSG("errno = {}", e);
         g_posix_errno = e;
     }
 }

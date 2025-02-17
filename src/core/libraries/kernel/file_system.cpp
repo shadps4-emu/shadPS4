@@ -18,6 +18,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
 #include "core/memory.h"
 #include "kernel.h"
@@ -57,7 +58,7 @@ static std::map<std::string, FactoryDevice> available_device = {
 
 namespace Libraries::Kernel {
 
-s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
+s32 PS4_SYSV_ABI posix_open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -99,7 +100,8 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
         file->m_host_name = mnt->GetHostPath(file->m_guest_name);
         if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
             h->DeleteHandle(handle);
-            return ORBIS_KERNEL_ERROR_ENOENT;
+            *__Error() = POSIX_ENOENT;
+            return -1;
         } else {
             if (create) {
                 return handle; // dir already exists
@@ -121,15 +123,11 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
         if (create) {
             if (excl && std::filesystem::exists(file->m_host_name)) {
                 // Error if file exists
-                return ORBIS_KERNEL_ERROR_EEXIST;
+                *__Error() = POSIX_EEXIST;
+                return -1;
             }
             // Create file if it doesn't exist
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        }
-
-        if (truncate && std::filesystem::exists(file->m_host_name)) {
-            // If the file exists, it's size should be truncated to 0
-            file->f.SetSize(0);
         }
 
         if (read) {
@@ -152,32 +150,33 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* raw_path, s32 flags, u16 mode) {
         } else {
             UNREACHABLE_MSG("Invalid flags!");
         }
+
+        if (truncate && e == 0) {
+            // If the file was opened successfully and truncate was enabled, reduce size to 0
+            file->f.SetSize(0);
+        }
+
         if (e != 0) {
             h->DeleteHandle(handle);
-            return ErrnoToSceKernelError(e);
+            // IOFile code uses platform specific errnos, they must be converted to POSIX errnos.
+            SetPosixErrno(e);
+            return -1;
         }
     }
     file->is_opened = true;
     return handle;
 }
 
-s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
-    s32 result = sceKernelOpen(path, flags, mode);
-    // Posix calls different only for their return values
+s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
+    s32 result = posix_open(path, flags, mode);
     if (result < 0) {
-        ErrSceToPosix(result);
-        return -1;
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
 
 s32 PS4_SYSV_ABI open(const char* filename, s32 flags) {
-    s32 result = sceKernelOpen(filename, flags, 0);
-    if (result < 0) {
-        ErrSceToPosix(result);
-        return -1;
-    }
-    return result;
+    return posix_open(filename, flags, 0);
 }
 
 int PS4_SYSV_ABI sceKernelClose(int d) {
