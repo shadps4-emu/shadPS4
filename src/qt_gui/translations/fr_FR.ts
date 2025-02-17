@@ -869,7 +869,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation>Visionneuse SFO </translation>
+      <translation>Visionneuse SFO pour </translation>
     </message>
   </context>
   <context>
@@ -1761,11 +1761,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Volume de la musique de fond.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Activer les Mouvements</translation>
     </message>
     <message>
       <source>Save Data Path</source>
