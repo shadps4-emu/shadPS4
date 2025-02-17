@@ -180,14 +180,12 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelClose(int d) {
-    if (d < 3) { // d probably hold an error code
-        return ORBIS_KERNEL_ERROR_EPERM;
-    }
+s32 PS4_SYSV_ABI posix_close(s32 fd) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
@@ -195,16 +193,15 @@ int PS4_SYSV_ABI sceKernelClose(int d) {
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
     // FIXME: Lock file mutex before deleting it?
-    h->DeleteHandle(d);
+    h->DeleteHandle(fd);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_close(int d) {
-    int result = sceKernelClose(d);
+s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
+    s32 result = posix_close(fd);
     if (result < 0) {
         LOG_ERROR(Kernel_Pthread, "posix_close: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
