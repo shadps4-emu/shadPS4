@@ -22,10 +22,9 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.SHADPS4_TOKEN_REPO }}
           title: "Qt GUI: Update Translation"
-          commit-message: "[ci skip] Qt GUI: Update  Translation."
-          committer: "shadPS4 Bot <Shadps4Boot@users.noreply.github.com>"
-          author: "shadPS4 Bot <Shadps4Boot@users.noreply.github.com>"
+          commit-message: "[ci skip] Qt GUI: Update Translation."
           body: "Daily update of translation sources."
           branch: update-translation
           delete-branch: true
