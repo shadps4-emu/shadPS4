@@ -267,7 +267,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
-size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
+size_t PS4_SYSV_ABI readv(int d, const SceKernelIovec* iov, int iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
@@ -290,7 +290,7 @@ size_t PS4_SYSV_ABI _readv(int d, const SceKernelIovec* iov, int iovcnt) {
     return total_read;
 }
 
-size_t PS4_SYSV_ABI _writev(int fd, const SceKernelIovec* iov, int iovcn) {
+size_t PS4_SYSV_ABI writev(int fd, const SceKernelIovec* iov, int iovcn) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -761,47 +761,83 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
 }
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
+    LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
 
-    LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
-    LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("bY-PO6JhzhQ", "libScePosix", 1, "libkernel", 1, 1, posix_close);
+    LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, posix_close);
+    // LIB_FUNCTION("NNtFaKJbPt0", "libkernel", 1, "libkernel", 1, 1, close);
+    LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
+
+    // LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, posix_write);
+    // LIB_FUNCTION("FN4gaPmuFV8", "libkernel", 1, "libkernel", 1, 1, posix_write);
+    // LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, write);
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
-    LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, _readv);
-    LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, _writev);
-    LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, posix_lseek);
+    // LIB_FUNCTION("I7ImcLds-uU", "libScePosix", 1, "libkernel", 1, 1, posix_readv);
+    // LIB_FUNCTION("I7ImcLds-uU", "libkernel", 1, "libkernel", 1, 1, posix_readv);
+    LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, readv);
+    // LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", 1, 1, SceKernelReadv);
+
+    // LIB_FUNCTION("Z2aKdxzS4KE", "libScePosix", 1, "libkernel", 1, 1, posix_writev);
+    // LIB_FUNCTION("Z2aKdxzS4KE", "libkernel", 1, "libkernel", 1, 1, posix_writev);
+    LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, writev);
+    // LIB_FUNCTION("kAt6VDbHmro", "libkernel", 1, "libkernel", 1, 1, SceKernelWritev);
+
     LIB_FUNCTION("Oy6IpwgtYOk", "libScePosix", 1, "libkernel", 1, 1, posix_lseek);
+    LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, posix_lseek);
     LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
-    LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
+
     LIB_FUNCTION("AqBioC2vF3I", "libScePosix", 1, "libkernel", 1, 1, posix_read);
-    LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
+    LIB_FUNCTION("AqBioC2vF3I", "libkernel", 1, "libkernel", 1, 1, posix_read);
+    // LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, read);
+    LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
+
     LIB_FUNCTION("JGMio+21L4c", "libScePosix", 1, "libkernel", 1, 1, posix_mkdir);
     LIB_FUNCTION("JGMio+21L4c", "libkernel", 1, "libkernel", 1, 1, posix_mkdir);
-    LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", 1, 1, sceKernelRmdir);
+    LIB_FUNCTION("1-LFLmRFxxM", "libkernel", 1, "libkernel", 1, 1, sceKernelMkdir);
+
     LIB_FUNCTION("c7ZnT7V1B98", "libScePosix", 1, "libkernel", 1, 1, posix_rmdir);
     LIB_FUNCTION("c7ZnT7V1B98", "libkernel", 1, "libkernel", 1, 1, posix_rmdir);
-    LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
-    LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
-    LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
-    LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", 1, 1, posix_fstat);
-    LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
-    LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
+    LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", 1, 1, sceKernelRmdir);
 
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("E6ao34wPw+U", "libkernel", 1, "libkernel", 1, 1, posix_stat);
+    LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
+
+    LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
+    LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", 1, 1, posix_fstat);
+    // LIB_FUNCTION("A0O5kF5x4LQ", "libkernel", 1, "libkernel", 1, 1, fstat);
+    LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
+
+    // LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", 1, 1, posix_ftruncate);
+    // LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
+    LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
+
+    // LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", 1, 1, posix_rename);
+    // LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", 1, 1, posix_rename);
+    LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
+
+    // LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", 1, 1, posix_pread);
+    // LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", 1, 1, posix_pread);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
+
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
+
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
+
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", 1, 1, posix_fsync);
+
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
+
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
+
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
+
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
 }
 
