@@ -26,7 +26,7 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation type="unfinished">Cheats / Patches for </translation>
+      <translation>Hileler / Yamalar: </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
@@ -435,7 +435,7 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Sol Analog Ölü Bölgesi (şu an:2, en çok:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
@@ -511,7 +511,7 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Sağ Analog Ölü Bölgesi (şu an:2, en çok:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
@@ -523,19 +523,19 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Renk Ayarları</translation>
     </message>
     <message>
       <source>R: 000</source>
-      <translation type="unfinished">R: 000</translation>
+      <translation>K: 000</translation>
     </message>
     <message>
       <source>G: 000</source>
-      <translation type="unfinished">G: 000</translation>
+      <translation>Y: 000</translation>
     </message>
     <message>
       <source>B: 255</source>
-      <translation type="unfinished">B: 255</translation>
+      <translation>B: 255</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Rengi Geçersiz Kıl</translation>
     </message>
   </context>
   <context>
@@ -837,7 +837,7 @@
     </message>
     <message>
       <source>Delete %1</source>
-      <translation type="unfinished">Delete %1</translation>
+      <translation>Sil: %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Simge dönüştürülemedi.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
@@ -869,7 +869,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO Görüntüleyici: </translation>
     </message>
   </context>
   <context>
@@ -880,7 +880,7 @@
     </message>
     <message>
       <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
+      <translation>Hangi dizine yüklemek istediğinizi seçin.</translation>
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
@@ -1179,7 +1179,7 @@
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG bir yama ya da indirilebilir içerik, lütfen önce oyunu yükleyin!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1757,7 +1757,7 @@
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Günlük</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1765,7 +1765,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Hareket Kontrollerini Etkinleştir</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1785,7 +1785,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Otomatik Seç</translation>
     </message>
     <message>
       <source>Directory to install games</source>
