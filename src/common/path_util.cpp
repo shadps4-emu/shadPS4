@@ -132,6 +132,17 @@ static auto UserPaths = [] {
     return paths;
 }();
 
+void RenameLog() {
+    // Renaming shad_log.txt to shad_log.old.txt when booting.
+    const auto LogDir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
+    const auto CurrentLog = LogDir / LOG_FILE;
+    const auto NewLogName = LogDir / "shad_log.old.txt";
+    // Avoid crash due to shad_log.txt not existing.
+    if (std::filesystem::exists(CurrentLog)) {
+        rename(CurrentLog, NewLogName);
+    }
+}
+
 bool ValidatePath(const fs::path& path) {
     if (path.empty()) {
         LOG_ERROR(Common_Filesystem, "Input path is empty, path={}", PathToUTF8String(path));

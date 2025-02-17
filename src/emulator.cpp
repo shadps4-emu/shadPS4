@@ -50,14 +50,8 @@ Emulator::Emulator() {
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
 
-    // Renaming shad_log.txt to shad_log.old.txt when booting.
-    const auto LogDir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
-    const auto CurrentLog = LogDir / "shad_log.txt";
-    const auto NewLogName = LogDir / "shad_log.old.txt";
-    // Avoid crash due to shad_log.txt not existing.
-    if (std::filesystem::exists(CurrentLog)) {
-        rename(CurrentLog, NewLogName);
-    }
+    // Rename shad_log.txt to shad_log.old.txt
+    Common::FS::RenameLog();
 
     // Start logger.
     Common::Log::Initialize();

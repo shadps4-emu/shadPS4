@@ -48,6 +48,8 @@ constexpr auto METADATA_DIR = "game_data";
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
 
+void RenameLog();
+
 /**
  * Validates a given path.
  *
