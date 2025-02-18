@@ -10,10 +10,6 @@
       <translation>Riguardo shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 è un emulatore sperimentale open-source per PlayStation 4.</translation>
     </message>
@@ -523,27 +519,27 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Regolazione Colore</translation>
     </message>
     <message>
-      <source>R: 000</source>
-      <translation type="unfinished">R: 000</translation>
+      <source>R:</source>
+      <translation>R:</translation>
     </message>
     <message>
-      <source>G: 000</source>
-      <translation type="unfinished">G: 000</translation>
+      <source>G:</source>
+      <translation>V:</translation>
     </message>
     <message>
-      <source>B: 255</source>
-      <translation type="unfinished">B: 255</translation>
+      <source>B:</source>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Sostituisci Colore Lightbar</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Sostituisci Colore</translation>
     </message>
   </context>
   <context>
@@ -869,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>Visualizzatore SFO per </translation>
     </message>
   </context>
   <context>

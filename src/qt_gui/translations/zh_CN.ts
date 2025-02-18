@@ -10,10 +10,6 @@
       <translation>关于 shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 是一款实验性质的开源 PlayStation 4 模拟器软件。</translation>
     </message>
@@ -523,27 +519,27 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>颜色调整</translation>
     </message>
     <message>
-      <source>R: 000</source>
-      <translation type="unfinished">R: 000</translation>
+      <source>R:</source>
+      <translation>红：</translation>
     </message>
     <message>
-      <source>G: 000</source>
-      <translation type="unfinished">G: 000</translation>
+      <source>G:</source>
+      <translation>绿：</translation>
     </message>
     <message>
-      <source>B: 255</source>
-      <translation type="unfinished">B: 255</translation>
+      <source>B:</source>
+      <translation>蓝：</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>覆盖灯条颜色</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>覆盖颜色</translation>
     </message>
   </context>
   <context>
@@ -869,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO 查看器 - </translation>
     </message>
   </context>
   <context>

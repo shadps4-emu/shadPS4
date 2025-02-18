@@ -10,10 +10,6 @@
       <translation>Sobre o shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
     </message>
@@ -526,16 +522,16 @@
       <translation>Ajuste de Cores</translation>
     </message>
     <message>
-      <source>R: 000</source>
-      <translation>R: 000</translation>
+      <source>R:</source>
+      <translation>R:</translation>
     </message>
     <message>
-      <source>G: 000</source>
-      <translation>G: 000</translation>
+      <source>G:</source>
+      <translation>G:</translation>
     </message>
     <message>
-      <source>B: 255</source>
-      <translation>B: 255</translation>
+      <source>B:</source>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
