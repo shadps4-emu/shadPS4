@@ -519,27 +519,27 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Ajuste de Cores</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Substituir cor da Lightbar</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Substituir Cor</translation>
     </message>
   </context>
   <context>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>Visualizador SFO para </translation>
     </message>
   </context>
   <context>
@@ -1123,7 +1123,7 @@
     </message>
     <message>
       <source>Would you like to install Patch: </source>
-      <translation type="unfinished">Would you like to install Patch: </translation>
+      <translation>Gostaria de instalar o Patch: </translation>
     </message>
     <message>
       <source>DLC Installation</source>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>App Ver</translation>
     </message>
     <message>
       <source>FW</source>
@@ -1553,83 +1553,83 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
+      <translation>Idioma da consola:\nDefine o idioma usado pelo jogo PS4.\nRecomenda-se configurar isto para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
+      <translation>Idioma do Emulador:\nDefine o idioma da interface gráfica do emulador.</translation>
     </message>
     <message>
       <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation type="unfinished">Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</translation>
+      <translation>Ativar Ecrã Cheio:\nPõe automaticamente a janela do jogo no modo de ecrã cheio.\nIsto pode ser alterado pressionando a tecla F11.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
+      <translation>Ativar Pasta de Atualização Separada:\nPermite instalar as atualizações dos jogos numa pasta separada para uma fácil gestão.\nIsto pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
+      <translation>Mostrar Splash Inicial:\nExibe o ecrã inicial do jogo (uma imagem especial) enquanto o jogo inicia.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
+      <translation>Ativar Discord Rich Presence:\nExibe o ícone do emulador e informações relevantes no seu perfil do Discord.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
+      <translation>Nome de utilizador:\nDefine o nome de utilizador da conta PS4, que poderá ser exibido por alguns jogos.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Chave de Troféu:\nChave usada para decifrar os troféus. Deverá ser obtida a partir da sua consola desbloqueada.\nDeve conter apenas caracteres hexadecimais.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
+      <translation>Tipo de Registo:\nDetermina se a saída da janela de registo deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
+      <translation>Filtro de Registo:\nFiltra o registo de modo a exibir apenas informações específicas.\nExemplos: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNíveis: Trace, Debug, Info, Warning, Error, Critical - nesta ordem, um nível específico silencia todos os níveis anteriores na lista e regista todos os níveis após ele.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+      <translation>Atualização:\nLançamento: Versões oficiais lançadas todos os meses que podem estar desatualizadas, mas são mais estáveis e testadas.\nNightly: Versões de desenvolvimento que têm todos os últimos recursos e correções, mas podem conter bugs e são menos estáveis.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Imagem de Fundo:\nControla a transparência da imagem de fundo do jogo.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
+      <translation>Reproduzir Música de Título:\nSe o jogo suportar, ativa a reprodução de uma música especial ao selecionar o jogo na interface de utilizador.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>Desativar Pop-ups dos Troféus:\nDesativa notificações de troféus em jogo. O progresso do troféu ainda poderá ser rastreado ao usar o Visualizador de Troféus (clique com o botão direito do rato no jogo na janela principal).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
+      <translation>Ocultar Cursor:\nEscolha quando o cursor desaparecerá:\nNunca: Verá sempre o rato.\nParado: Defina um tempo para desaparecer após ficar inativo.\nSempre: Nunca verá o rato.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
+      <translation>Tempo de Espera para Ocultar o Cursor:\nDefine o tempo em segundos para o rato desaparecer após ficar inativo.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
+      <translation>Comportamento do Botão Voltar:\nConfigura o botão Voltar do comando para emular um toque na posição especificada no touchpad do PS4.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos em visualização de tabela.\nAtivar &quot;Atualizar Base de Dados de Compatibilidade no Arranque&quot; para obter informações atualizadas.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade no Arranque:\nAtualiza automaticamente a base de dados de compatibilidade quando o shadPS4 é iniciado.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade:\nAtualiza imediatamente a base de dados de compatibilidade.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1661,31 +1661,31 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
+      <translation>Placa Gráfica:\nEm sistemas com múltiplas GPUs, escolha qual GPU da lista o emulador utilizará,\nou escolha &quot;Seleção Automática&quot; para escolher automaticamente a mesma.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
+      <translation>Largura/Altura:\nDefine o tamanho da janela do emulador no arranque, que poderá ser redimensionada enquanto joga.\nIsto difere da resolução do jogo.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>Divisor Vblank:\nA taxa de quadros em que o emulador atualiza é multiplicada por este número. Mudar isto poderá ter efeitos negativos, como aumentar a velocidade ou causar problemas na funcionalidade vital de jogo que não esteja à espera que isto mude!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
+      <translation>Ativar Dumping de Shaders:\nArmazena as shaders do jogo numa pasta durante a renderização para fins de depuração técnica.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
+      <translation>Ativar GPU NULL:\nDesativa a renderização do jogo para fins de depuração técnica, como se não existisse uma placa gráfica.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Ativar HDR:\nAtiva o HDR em jogos que o suportem.\nO seu monitor deverá ter suporte para o espaço de cores BT2020 PQ e para o formato de swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
+      <translation>Pastas de Jogos:\nLista de pastas onde procurar jogos instalados.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
@@ -1697,47 +1697,47 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
+      <translation>Ativar Dumping da Depuração:\nArmazena os símbolos de importação, exportação e informações do cabeçalho de ficheiros do atual programa PS4 num diretório.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>Ativar Camadas de Validação do Vulkan:\nAtiva um sistema que valida o estado do renderizador Vulkan e regista informações sobre o seu estado interno.\nIsto irá diminuir o desempenho e provavelmente mudará o comportamento da emulação.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>Ativar Validação da Sincronização do Vulkan:\nAtiva um sistema que valida o agendamento de tarefas de renderização Vulkan.\nIsto irá diminuir o desempenho e provavelmente mudará o comportamento da emulação.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
+      <translation>Ativar Depuração por RenderDoc:\nSe ativado, o emulador fornecerá compatibilidade com o RenderDoc para permitir a captura e análise do quadro atualmente renderizado.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Recolher Shaders:\nIrá precisar desta opção ativada para editar shaders com o menu de depuração (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnóstico de Falhas:\nCria um ficheiro .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se isto estiver ativado, deverá ativar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nPrecisa também de ter as Camadas de Validação Vulkan ativadas e o Vulkan SDK instalado para funcionar.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Copiar Buffers da GPU:\nContorna condições de corrida envolvendo envios de GPU.\nPode ou não ajudar com bloqueios do PM4 tipo 0.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Host:\nInsere informações vindas do lado do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isto estiver ativado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Cliente:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isto estiver ativado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Caminho dos Dados Guardados:\nA pasta onde os dados de utilizador dos jogos serão guardados.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Procurar:\nProcure uma pasta para definir como o caminho para guardar os dados.</translation>
     </message>
     <message>
       <source>Borderless</source>
