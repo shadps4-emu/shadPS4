@@ -94,7 +94,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>No patch selected.</source>
@@ -253,7 +253,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Network error:</source>
@@ -317,7 +317,7 @@
     </message>
     <message>
       <source>No</source>
-      <translation type="unfinished">No</translation>
+      <translation>No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
@@ -368,7 +368,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
