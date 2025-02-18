@@ -175,7 +175,7 @@ s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
 s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
     s32 result = open(path, flags, mode);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "open: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "open: error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -211,7 +211,7 @@ s32 PS4_SYSV_ABI posix_close(s32 fd) {
 s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     s32 result = close(fd);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "close: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "close: error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -232,14 +232,14 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
-s64 posix_write(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
     return write(fd, buf, nbytes);
 }
 
-s64 sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
     s64 result = write(fd, buf, nbytes);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "write: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "write: error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
