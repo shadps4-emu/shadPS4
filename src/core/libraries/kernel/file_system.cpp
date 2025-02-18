@@ -331,16 +331,22 @@ size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const SceKernelIovec* iov, s32 iovcn
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
+s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->lseek(offset, whence);
+        s64 result = file->device->lseek(offset, whence);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
 
     Common::FS::SeekOrigin origin{};
@@ -350,21 +356,36 @@ s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
         origin = Common::FS::SeekOrigin::CurrentPosition;
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
+    } else {
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
 
     if (!file->f.Seek(offset, origin)) {
-        LOG_CRITICAL(Kernel_Fs, "sceKernelLseek: failed to seek");
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        if (errno != 0) {
+            // Seek failed in platform-specific code, errno needs to be converted.
+            SetPosixErrno(errno);
+        } else {
+            // Seek failed because offset is beyond the end of the file.
+            *__Error() = POSIX_ENXIO;
+        }
+        return -1;
     }
-    return file->f.Tell();
+
+    s64 result = file->f.Tell();
+    if (result < 0) {
+        // Tell failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(errno);
+        return -1;
+    }
+    return result;
 }
 
-s64 PS4_SYSV_ABI posix_lseek(int d, s64 offset, int whence) {
-    s64 result = sceKernelLseek(d, offset, whence);
+s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
+    s64 result = posix_lseek(fd, offset, whence);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_lseek: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "lseek: error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
