@@ -149,7 +149,9 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
             }
         } else {
-            UNREACHABLE_MSG("Invalid flags!");
+            // Invalid flags
+            *__Error() = POSIX_EINVAL;
+            return -1;
         }
 
         if (truncate && e == 0) {
@@ -175,7 +177,7 @@ s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
 s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
     s32 result = open(path, flags, mode);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "open: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -211,7 +213,7 @@ s32 PS4_SYSV_ABI posix_close(s32 fd) {
 s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     s32 result = close(fd);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "close: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -239,7 +241,7 @@ s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
     s64 result = write(fd, buf, nbytes);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "write: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -285,7 +287,7 @@ size_t PS4_SYSV_ABI posix_readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
 size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     size_t result = readv(fd, iov, iovcnt);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "readv: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
@@ -316,14 +318,14 @@ size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     return total_written;
 }
 
-size_t PS4_SYSV_ABI posix_writev(int fd, const SceKernelIovec* iov, int iovcnt) {
+size_t PS4_SYSV_ABI posix_writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     return writev(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelWritev(int fd, const SceKernelIovec* iov, int iovcnt) {
+size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     size_t result = writev(fd, iov, iovcnt);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "writev: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
