@@ -837,7 +837,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <translation>%1%2 adlı oyunun dizinini silmek istediğinize emin misiniz?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -1745,7 +1745,7 @@
     </message>
     <message>
       <source>True</source>
-      <translation type="unfinished">True</translation>
+      <translation>Gerçek Ekran</translation>
     </message>
     <message>
       <source>Release</source>
