@@ -609,6 +609,42 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (file->type == Core::FileSys::FileType::Device) {
+        s32 result = file->device->ftruncate(length);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    }
+
+    if (file->m_host_name.empty()) {
+        *__Error() = POSIX_EACCES;
+        return -1;
+    }
+
+    file->f.SetSize(length);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
+    s32 result = posix_ftruncate(fd, length);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
 s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 offset) {
     if (d < 3) {
         return ORBIS_KERNEL_ERROR_EPERM;
@@ -670,26 +706,6 @@ s32 PS4_SYSV_ABI posix_fsync(int fd) {
         return -1;
     }
     return result;
-}
-
-int PS4_SYSV_ABI sceKernelFtruncate(int fd, s64 length) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-
-    if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-
-    if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->ftruncate(length);
-    }
-
-    if (file->m_host_name.empty()) {
-        return ORBIS_KERNEL_ERROR_EACCES;
-    }
-
-    file->f.SetSize(length);
-    return ORBIS_OK;
 }
 
 static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
