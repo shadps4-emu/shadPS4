@@ -4,7 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/fontft/fontft.h"
+#include "core/libraries/font/fontft.h"
 
 namespace Libraries::FontFt {
 
