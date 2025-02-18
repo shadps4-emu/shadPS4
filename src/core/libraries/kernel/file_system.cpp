@@ -357,6 +357,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
     } else {
+        // whence parameter is invalid
         *__Error() = POSIX_EINVAL;
         return -1;
     }
