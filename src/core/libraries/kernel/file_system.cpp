@@ -824,20 +824,31 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     // LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", 1, 1, posix_pread);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
 
+    // LIB_FUNCTION("ZaRzaapAZwM", "libScePosix", 1, "libkernel", 1, 1, posix_preadv);
+    // LIB_FUNCTION("ZaRzaapAZwM", "libkernel", 1, "libkernel", 1, 1, posix_preadv);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
 
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
 
-    LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
-    LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", 1, 1, posix_fsync);
+    LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
+    LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
 
+    // LIB_FUNCTION("2G6i6hMIUUY", "libScePosix", 1, "libkernel", 1, 1, posix_getdents);
+    // LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", 1, 1, posix_getdents);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
 
+    // LIB_FUNCTION("f09KvIPy-QY", "libScePosix", 1, "libkernel", 1, 1, posix_getdirentries);
+    // LIB_FUNCTION("f09KvIPy-QY", "libkernel", 1, "libkernel", 1, 1, posix_getdirentries);
+    // LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", 1, 1, getdirentries);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
 
+    // LIB_FUNCTION("C2kJ-byS5rM", "libScePosix", 1, "libkernel", 1, 1, posix_pwrite);
+    // LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", 1, 1, posix_pwrite);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
 
+    // LIB_FUNCTION("VAzswvTOCzI", "libScePosix", 1, "libkernel", 1, 1, posix_unlink);
+    // LIB_FUNCTION("VAzswvTOCzI", "libkernel", 1, "libkernel", 1, 1, posix_unlink);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
 }
 
