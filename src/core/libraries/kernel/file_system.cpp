@@ -544,7 +544,7 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
+s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::string_view guest_path{path};
     for (const auto& prefix : available_device | std::views::keys) {
@@ -557,6 +557,56 @@ int PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    if (sb == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    std::memset(sb, 0, sizeof(OrbisKernelStat));
+
+    switch (file->type) {
+    case Core::FileSys::FileType::Device:
+        return file->device->fstat(sb);
+    case Core::FileSys::FileType::Regular:
+        sb->st_mode = 0000777u | 0100000u;
+        sb->st_size = file->f.GetSize();
+        sb->st_blksize = 512;
+        sb->st_blocks = (sb->st_size + 511) / 512;
+        // TODO incomplete
+        break;
+    case Core::FileSys::FileType::Directory:
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_size = 0;
+        sb->st_blksize = 512;
+        sb->st_blocks = 0;
+        // TODO incomplete
+        break;
+    default:
+        UNREACHABLE();
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_fstat(s32 fd, OrbisKernelStat* sb) {
+    return fstat(fd, sb);
+}
+
+s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
+    s32 result = fstat(fd, sb);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 offset) {
@@ -596,54 +646,6 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
 s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
     SceKernelIovec iovec{buf, nbytes};
     return sceKernelPreadv(d, &iovec, 1, offset);
-}
-
-int PS4_SYSV_ABI sceKernelFStat(int fd, OrbisKernelStat* sb) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
-    if (fd < 3) {
-        return ORBIS_KERNEL_ERROR_EPERM;
-    }
-    if (sb == nullptr) {
-        return ORBIS_KERNEL_ERROR_EFAULT;
-    }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-    std::memset(sb, 0, sizeof(OrbisKernelStat));
-
-    switch (file->type) {
-    case Core::FileSys::FileType::Device:
-        return file->device->fstat(sb);
-    case Core::FileSys::FileType::Regular:
-        sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = file->f.GetSize();
-        sb->st_blksize = 512;
-        sb->st_blocks = (sb->st_size + 511) / 512;
-        // TODO incomplete
-        break;
-    case Core::FileSys::FileType::Directory:
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
-        // TODO incomplete
-        break;
-    default:
-        UNREACHABLE();
-    }
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI posix_fstat(int fd, OrbisKernelStat* sb) {
-    int result = sceKernelFStat(fd, sb);
-    if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_fstat: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
-    }
-    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
@@ -878,10 +880,12 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("E6ao34wPw+U", "libkernel", 1, "libkernel", 1, 1, posix_stat);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", 1, 1, sceKernelStat);
 
-    // LIB_FUNCTION("A0O5kF5x4LQ", "libkernel", 1, "libkernel", 1, 1, fstat);
+    LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
+
+    LIB_FUNCTION("A0O5kF5x4LQ", "libkernel", 1, "libkernel", 1, 1, fstat);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
     LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", 1, 1, posix_fstat);
-    LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFStat);
+    LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFstat);
 
     // LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", 1, 1, posix_ftruncate);
     // LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
@@ -898,8 +902,6 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     // LIB_FUNCTION("ZaRzaapAZwM", "libScePosix", 1, "libkernel", 1, 1, posix_preadv);
     // LIB_FUNCTION("ZaRzaapAZwM", "libkernel", 1, "libkernel", 1, 1, posix_preadv);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
-
-    LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", 1, 1, sceKernelCheckReachability);
 
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
