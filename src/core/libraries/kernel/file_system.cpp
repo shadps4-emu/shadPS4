@@ -217,11 +217,12 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -229,6 +230,19 @@ s64 PS4_SYSV_ABI sceKernelWrite(int d, const void* buf, size_t nbytes) {
         return file->device->write(buf, nbytes);
     }
     return file->f.WriteRaw<u8>(buf, nbytes);
+}
+
+s64 posix_write(s32 fd, const void* buf, size_t nbytes) {
+    return write(fd, buf, nbytes);
+}
+
+s64 sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
+    s64 result = write(fd, buf, nbytes);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Pthread, "write: error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
@@ -775,9 +789,9 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
 
-    // LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, write);
-    // LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, posix_write);
-    // LIB_FUNCTION("FN4gaPmuFV8", "libkernel", 1, "libkernel", 1, 1, posix_write);
+    LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, write);
+    LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, posix_write);
+    LIB_FUNCTION("FN4gaPmuFV8", "libkernel", 1, "libkernel", 1, 1, posix_write);
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, readv);
