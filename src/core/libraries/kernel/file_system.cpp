@@ -764,26 +764,31 @@ s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset) {
     return sceKernelPreadv(fd, &iovec, 1, offset);
 }
 
-s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
+s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->fsync();
+        s32 result = file->device->fsync();
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     file->f.Flush();
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI posix_fsync(int fd) {
-    s32 result = sceKernelFsync(fd);
+s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
+    s32 result = posix_fsync(fd);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_fsync: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
