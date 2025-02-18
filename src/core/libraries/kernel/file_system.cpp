@@ -660,6 +660,50 @@ s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    bool ro = false;
+    const auto src_path = mnt->GetHostPath(from, &ro);
+    if (!std::filesystem::exists(src_path)) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    if (ro) {
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    const auto dst_path = mnt->GetHostPath(to, &ro);
+    if (ro) {
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    const bool src_is_dir = std::filesystem::is_directory(src_path);
+    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
+    if (src_is_dir && !dst_is_dir) {
+        *__Error() = POSIX_ENOTDIR;
+        return -1;
+    }
+    if (!src_is_dir && dst_is_dir) {
+        *__Error() = POSIX_EISDIR;
+        return -1;
+    }
+    if (dst_is_dir && !std::filesystem::is_empty(dst_path)) {
+        *__Error() = POSIX_ENOTEMPTY;
+        return -1;
+    }
+    std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
+    s32 result = posix_rename(from, to);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
 s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 offset) {
     if (d < 3) {
         return ORBIS_KERNEL_ERROR_EPERM;
@@ -804,35 +848,6 @@ s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
-s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
-    if (!std::filesystem::exists(src_path)) {
-        return ORBIS_KERNEL_ERROR_ENOENT;
-    }
-    if (ro) {
-        return ORBIS_KERNEL_ERROR_EROFS;
-    }
-    const auto dst_path = mnt->GetHostPath(to, &ro);
-    if (ro) {
-        return ORBIS_KERNEL_ERROR_EROFS;
-    }
-    const bool src_is_dir = std::filesystem::is_directory(src_path);
-    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
-    if (src_is_dir && !dst_is_dir) {
-        return ORBIS_KERNEL_ERROR_ENOTDIR;
-    }
-    if (!src_is_dir && dst_is_dir) {
-        return ORBIS_KERNEL_ERROR_EISDIR;
-    }
-    if (dst_is_dir && !std::filesystem::is_empty(dst_path)) {
-        return ORBIS_KERNEL_ERROR_ENOTEMPTY;
-    }
-    std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     if (path == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -918,12 +933,12 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", 1, 1, posix_fstat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFstat);
 
-    // LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", 1, 1, posix_ftruncate);
-    // LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
+    LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", 1, 1, posix_ftruncate);
+    LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
 
-    // LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", 1, 1, posix_rename);
-    // LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", 1, 1, posix_rename);
+    LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", 1, 1, posix_rename);
+    LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", 1, 1, posix_rename);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
 
     // LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", 1, 1, posix_pread);
