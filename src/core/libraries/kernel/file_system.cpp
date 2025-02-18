@@ -264,15 +264,15 @@ size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        int r = file->device->readv(iov, iovcnt);
-        if (r < 0) {
-            ErrSceToPosix(r);
+        size_t result = file->device->readv(iov, iovcnt);
+        if (result < 0) {
+            ErrSceToPosix(result);
             return -1;
         }
-        return r;
+        return result;
     }
     size_t total_read = 0;
-    for (int i = 0; i < iovcnt; i++) {
+    for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
@@ -811,12 +811,12 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, readv);
     LIB_FUNCTION("I7ImcLds-uU", "libScePosix", 1, "libkernel", 1, 1, posix_readv);
     LIB_FUNCTION("I7ImcLds-uU", "libkernel", 1, "libkernel", 1, 1, posix_readv);
-    LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", 1, 1, SceKernelReadv);
+    LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", 1, 1, sceKernelReadv);
 
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, writev);
-    // LIB_FUNCTION("Z2aKdxzS4KE", "libScePosix", 1, "libkernel", 1, 1, posix_writev);
-    // LIB_FUNCTION("Z2aKdxzS4KE", "libkernel", 1, "libkernel", 1, 1, posix_writev);
-    // LIB_FUNCTION("kAt6VDbHmro", "libkernel", 1, "libkernel", 1, 1, SceKernelWritev);
+    LIB_FUNCTION("Z2aKdxzS4KE", "libScePosix", 1, "libkernel", 1, 1, posix_writev);
+    LIB_FUNCTION("Z2aKdxzS4KE", "libkernel", 1, "libkernel", 1, 1, posix_writev);
+    LIB_FUNCTION("kAt6VDbHmro", "libkernel", 1, "libkernel", 1, 1, sceKernelWritev);
 
     LIB_FUNCTION("Oy6IpwgtYOk", "libScePosix", 1, "libkernel", 1, 1, posix_lseek);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, posix_lseek);
