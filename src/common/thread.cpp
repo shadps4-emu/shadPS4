@@ -41,7 +41,7 @@ void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
     const std::chrono::nanoseconds computation_ns = period_ns / 2;
 
     // Determine the timebase for converting time to ticks.
-    struct mach_timebase_info timebase {};
+    struct mach_timebase_info timebase{};
     mach_timebase_info(&timebase);
     const auto ticks_per_ns =
         static_cast<double>(timebase.denom) / static_cast<double>(timebase.numer);

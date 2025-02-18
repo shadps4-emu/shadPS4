@@ -111,7 +111,7 @@ SignalDispatch::SignalDispatch() {
     ASSERT_MSG(handle = AddVectoredExceptionHandler(0, SignalHandler),
                "Failed to register exception handler.");
 #else
-    struct sigaction action {};
+    struct sigaction action{};
     action.sa_sigaction = SignalHandler;
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
@@ -130,7 +130,7 @@ SignalDispatch::~SignalDispatch() {
 #if defined(_WIN32)
     ASSERT_MSG(RemoveVectoredExceptionHandler(handle), "Failed to remove exception handler.");
 #else
-    struct sigaction action {};
+    struct sigaction action{};
     action.sa_handler = SIG_DFL;
     action.sa_flags = 0;
     sigemptyset(&action.sa_mask);
