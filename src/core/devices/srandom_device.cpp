@@ -8,7 +8,7 @@
 namespace Core::Devices {
 
 std::shared_ptr<BaseDevice> SRandomDevice::Create(u32 handle, const char*, int, u16) {
-    std::srand(std::time(nullptr));
+    std::srand(time(nullptr));
     return std::shared_ptr<BaseDevice>(
         reinterpret_cast<Devices::BaseDevice*>(new SRandomDevice(handle)));
 }

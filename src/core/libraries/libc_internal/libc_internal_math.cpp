@@ -16,72 +16,72 @@ s32 PS4_SYSV_ABI internal_abs() {
 
 double PS4_SYSV_ABI internal_acos(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acos(x);
+    return acos(x);
 }
 
 float PS4_SYSV_ABI internal_acosf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosf(x);
+    return acosf(x);
 }
 
 float PS4_SYSV_ABI internal_acosh(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosh(x);
+    return acosh(x);
 }
 
 float PS4_SYSV_ABI internal_acoshf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acoshf(x);
+    return acoshf(x);
 }
 
 float PS4_SYSV_ABI internal_acoshl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acoshl(x);
+    return acoshl(x);
 }
 
 float PS4_SYSV_ABI internal_acosl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::acosl(x);
+    return acosl(x);
 }
 
 double PS4_SYSV_ABI internal_asin(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asin(x);
+    return asin(x);
 }
 
 float PS4_SYSV_ABI internal_asinf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinf(x);
+    return asinf(x);
 }
 
 float PS4_SYSV_ABI internal_asinh(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinh(x);
+    return asinh(x);
 }
 
 float PS4_SYSV_ABI internal_asinhf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinhf(x);
+    return asinhf(x);
 }
 
 float PS4_SYSV_ABI internal_asinhl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinhl(x);
+    return asinhl(x);
 }
 
 float PS4_SYSV_ABI internal_asinl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::asinl(x);
+    return asinl(x);
 }
 
 double PS4_SYSV_ABI internal_atan(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::atan(x);
+    return atan(x);
 }
 
 double PS4_SYSV_ABI internal_atan2(double y, double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::atan2(y, x);
+    return atan2(y, x);
 }
 
 s32 PS4_SYSV_ABI internal_atan2f() {
@@ -136,12 +136,12 @@ s32 PS4_SYSV_ABI internal_ceill() {
 
 double PS4_SYSV_ABI internal_cos(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::cos(x);
+    return cos(x);
 }
 
 float PS4_SYSV_ABI internal_cosf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::cosf(x);
+    return cosf(x);
 }
 
 s32 PS4_SYSV_ABI internal_cosh() {
@@ -166,27 +166,27 @@ s32 PS4_SYSV_ABI internal_cosl() {
 
 double PS4_SYSV_ABI internal_exp(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp(x);
+    return exp(x);
 }
 
 double PS4_SYSV_ABI internal_exp2(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2(x);
+    return exp2(x);
 }
 
 float PS4_SYSV_ABI internal_exp2f(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2f(x);
+    return exp2f(x);
 }
 
 float PS4_SYSV_ABI internal_exp2l(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::exp2l(x);
+    return exp2l(x);
 }
 
 float PS4_SYSV_ABI internal_expf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::expf(x);
+    return expf(x);
 }
 
 s32 PS4_SYSV_ABI internal_expl() {
@@ -361,7 +361,7 @@ s32 PS4_SYSV_ABI internal_log10() {
 
 float PS4_SYSV_ABI internal_log10f(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::log10f(x);
+    return log10f(x);
 }
 
 s32 PS4_SYSV_ABI internal_log10l() {
@@ -456,12 +456,12 @@ s32 PS4_SYSV_ABI internal_nanl() {
 
 double PS4_SYSV_ABI internal_pow(double x, double y) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::pow(x, y);
+    return pow(x, y);
 }
 
 float PS4_SYSV_ABI internal_powf(float x, float y) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::powf(x, y);
+    return powf(x, y);
 }
 
 s32 PS4_SYSV_ABI internal_powl() {
@@ -476,44 +476,44 @@ s32 PS4_SYSV_ABI internal_remainder() {
 
 double PS4_SYSV_ABI internal_sin(double x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sin(x);
+    return sin(x);
 }
 
 void PS4_SYSV_ABI internal_sincos(double x, double* sinp, double* cosp) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    *sinp = std::sin(x);
-    *cosp = std::cos(x);
+    *sinp = sin(x);
+    *cosp = cos(x);
 }
 
 void PS4_SYSV_ABI internal_sincosf(double x, double* sinp, double* cosp) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    *sinp = std::sinf(x);
-    *cosp = std::cosf(x);
+    *sinp = sinf(x);
+    *cosp = cosf(x);
 }
 
 float PS4_SYSV_ABI internal_sinf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinf(x);
+    return sinf(x);
 }
 
 float PS4_SYSV_ABI internal_sinh(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinh(x);
+    return sinh(x);
 }
 
 float PS4_SYSV_ABI internal_sinhf(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinhf(x);
+    return sinhf(x);
 }
 
 float PS4_SYSV_ABI internal_sinhl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinhl(x);
+    return sinhl(x);
 }
 
 float PS4_SYSV_ABI internal_sinl(float x) {
     LOG_DEBUG(Lib_LibcInternal, "called");
-    return std::sinl(x);
+    return sinl(x);
 }
 
 s32 PS4_SYSV_ABI internal_sqrt() {
