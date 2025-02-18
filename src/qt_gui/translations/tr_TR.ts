@@ -535,7 +535,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Işıklı Çubuk Rengini Geçersiz Kıl</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -884,7 +884,7 @@
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Yüklemede PKG Dosyasını Sil</translation>
     </message>
   </context>
   <context>
@@ -1206,7 +1206,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Yüklü</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1445,7 +1445,7 @@
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>Çökme Tanılamalarını Etkinleştir</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
@@ -1621,7 +1621,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>Uyumluluk Verilerini Göster:\nOyun uyumluluk bilgilerini tablo görünümünde görüntüler. Güncel bilgileri almak için &quot;Başlangıçta Uyumluluk Veritabanını Güncelle&quot;yi etkinleştirin.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1713,7 +1713,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Gölgelendiricileri Topla:\nHata ayıklama menüsüyle (Ctrl + F10) gölgelendiricileri düzenlemek için bunun etkinleştirilmesi gerekir.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -1721,7 +1721,7 @@
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>GPU Arabelleklerini Kopyala:\nGPU gönderimlerini içeren yarış koşullarının etrafından dolaşır.\nPM4 tip 0 çökmelerine yardımcı olabilir veya olmayabilir.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
@@ -1729,7 +1729,7 @@
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Konuk Hata Ayıklama İşaretleyicileri\nOyunun kendisinin komut arabelleğine eklediği tüm hata ayıklama işaretlerini ekler.\nBunu etkinleştirdiyseniz, Çökme Tanılamalarını etkinleştirmeniz gerekir.\nRenderDoc gibi programlar için kullanışlıdır.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -1737,7 +1737,7 @@
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Gözat:\nVerileri kaydetme yolu olarak ayarlamak için bir klasöre göz atın.</translation>
     </message>
     <message>
       <source>Borderless</source>
