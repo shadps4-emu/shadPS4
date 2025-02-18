@@ -704,23 +704,27 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 offset) {
-    if (d < 3) {
-        return ORBIS_KERNEL_ERROR_EPERM;
-    }
+s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->preadv(iov, iovcnt, offset);
+        s64 result = file->device->preadv(iov, iovcnt, offset);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
 
     const s64 pos = file->f.Tell();
@@ -728,8 +732,8 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
         file->f.Seek(pos);
     };
     if (!file->f.Seek(offset)) {
-        LOG_CRITICAL(Kernel_Fs, "failed to seek");
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EIO;
+        return -1;
     }
     size_t total_read = 0;
     for (int i = 0; i < iovcnt; i++) {
@@ -738,9 +742,23 @@ s64 PS4_SYSV_ABI sceKernelPreadv(int d, SceKernelIovec* iov, int iovcnt, s64 off
     return total_read;
 }
 
-s64 PS4_SYSV_ABI sceKernelPread(int d, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+    s64 result = posix_preadv(fd, iov, iovcnt, offset);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, size_t nbytes, s64 offset) {
     SceKernelIovec iovec{buf, nbytes};
-    return sceKernelPreadv(d, &iovec, 1, offset);
+    return posix_preadv(fd, &iovec, 1, offset);
+}
+
+s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset) {
+    SceKernelIovec iovec{buf, nbytes};
+    return sceKernelPreadv(fd, &iovec, 1, offset);
 }
 
 s32 PS4_SYSV_ABI sceKernelFsync(int fd) {
@@ -941,13 +959,13 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", 1, 1, posix_rename);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
 
-    // LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", 1, 1, posix_pread);
-    // LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", 1, 1, posix_pread);
-    LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
-
-    // LIB_FUNCTION("ZaRzaapAZwM", "libScePosix", 1, "libkernel", 1, 1, posix_preadv);
-    // LIB_FUNCTION("ZaRzaapAZwM", "libkernel", 1, "libkernel", 1, 1, posix_preadv);
+    LIB_FUNCTION("ZaRzaapAZwM", "libScePosix", 1, "libkernel", 1, 1, posix_preadv);
+    LIB_FUNCTION("ZaRzaapAZwM", "libkernel", 1, "libkernel", 1, 1, posix_preadv);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
+
+    LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", 1, 1, posix_pread);
+    LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", 1, 1, posix_pread);
+    LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPread);
 
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
