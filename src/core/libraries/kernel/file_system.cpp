@@ -503,7 +503,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
+s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     bool ro = false;
@@ -512,7 +512,8 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     const bool is_dir = std::filesystem::is_directory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
     if (!is_dir && !is_file) {
-        return ORBIS_KERNEL_ERROR_ENOENT;
+        *__Error() = POSIX_ENOENT;
+        return -1;
     }
     if (std::filesystem::is_directory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
@@ -522,7 +523,7 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = static_cast<int64_t>(std::filesystem::file_size(path_name));
+        sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
@@ -534,12 +535,11 @@ int PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
-    int result = sceKernelStat(path, sb);
+s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
+    s32 result = posix_stat(path, sb);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_stat: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
