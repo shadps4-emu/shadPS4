@@ -584,27 +584,30 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
     switch (file->type) {
-    case Core::FileSys::FileType::Device:
+    case Core::FileSys::FileType::Device: {
         s32 result = file->device->fstat(sb);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
         return result;
-    case Core::FileSys::FileType::Regular:
+    }
+    case Core::FileSys::FileType::Regular: {
         sb->st_mode = 0000777u | 0100000u;
         sb->st_size = file->f.GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
         break;
-    case Core::FileSys::FileType::Directory:
+    }
+    case Core::FileSys::FileType::Directory: {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 0;
         sb->st_blksize = 512;
         sb->st_blocks = 0;
         // TODO incomplete
         break;
+    }
     default:
         UNREACHABLE();
     }
