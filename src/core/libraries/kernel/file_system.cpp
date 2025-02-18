@@ -245,37 +245,6 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
-    if (path == nullptr) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
-    if (host_path.empty()) {
-        return ORBIS_KERNEL_ERROR_EACCES;
-    }
-
-    if (ro) {
-        return ORBIS_KERNEL_ERROR_EROFS;
-    }
-
-    if (std::filesystem::is_directory(host_path)) {
-        return ORBIS_KERNEL_ERROR_EPERM;
-    }
-
-    auto* file = h->GetFile(host_path);
-    if (file != nullptr) {
-        file->f.Unlink();
-    }
-
-    LOG_INFO(Kernel_Fs, "Unlinked {}", path);
-    return ORBIS_OK;
-}
-
 size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
@@ -789,6 +758,37 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
         return ORBIS_KERNEL_ERROR_ENOTEMPTY;
     }
     std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
+    if (path == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
+    bool ro = false;
+    const auto host_path = mnt->GetHostPath(path, &ro);
+    if (host_path.empty()) {
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    if (ro) {
+        return ORBIS_KERNEL_ERROR_EROFS;
+    }
+
+    if (std::filesystem::is_directory(host_path)) {
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
+
+    auto* file = h->GetFile(host_path);
+    if (file != nullptr) {
+        file->f.Unlink();
+    }
+
+    LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return ORBIS_OK;
 }
 
