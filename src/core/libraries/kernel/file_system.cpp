@@ -419,10 +419,11 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, size_t nbytes) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
+s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
     if (path == nullptr) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_ENOTDIR;
+        return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -430,31 +431,34 @@ int PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
     if (std::filesystem::exists(dir_name)) {
-        return ORBIS_KERNEL_ERROR_EEXIST;
+        *__Error() = POSIX_EEXIST;
+        return -1;
     }
 
     if (ro) {
-        return ORBIS_KERNEL_ERROR_EROFS;
+        *__Error() = POSIX_EROFS;
+        return -1;
     }
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
     std::error_code ec;
     if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
-        return ORBIS_KERNEL_ERROR_EIO;
+        *__Error() = POSIX_EIO;
+        return -1;
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        return ORBIS_KERNEL_ERROR_ENOENT;
+        *__Error() = POSIX_ENOENT;
+        return -1;
     }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    int result = sceKernelMkdir(path, mode);
+s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
+    s32 result = posix_mkdir(path, mode);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_mkdir: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
