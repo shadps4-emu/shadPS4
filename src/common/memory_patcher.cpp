@@ -388,11 +388,7 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
     }
 
     if (patchMask == PatchMask::Mask_Jump32) {
-        QString valuePart = QString::fromStdString(valueStr);
-        QString targetPart = QString::fromStdString(targetStr);
-        QString sizeStrQt = QString::fromStdString(sizeStr);
-
-        int jumpSize = sizeStrQt.toInt();
+        int jumpSize = std::stoi(sizeStr);
 
         constexpr int MAX_PATTERN_LENGTH = 256;
         if (jumpSize < 5) {
@@ -417,20 +413,22 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
         std::memcpy(reinterpret_cast<void*>(patchAddress), nopBytes.data(), nopBytes.size());
 
         // Use "Target" to locate the start of the code cave
-        uintptr_t jump_target = PatternScan(targetPart.toStdString());
+        uintptr_t jump_target = PatternScan(targetStr);
         if (jump_target == 0) {
-            LOG_ERROR(Loader, "PatternScan failed to Target with pattern: {}",
-                      targetPart.toStdString());
+            LOG_ERROR(Loader, "PatternScan failed to Target with pattern: {}", targetStr);
             return;
         }
 
         // Converts the Value attribute to a byte array (payload)
         std::vector<u8> payload;
-        for (int i = 0; i < valuePart.length(); i += 2) {
-            bool ok;
-            unsigned int byteVal = valuePart.mid(i, 2).toUInt(&ok, 16);
-            if (!ok) {
-                LOG_ERROR(Loader, "Invalid byte in Value: {}", valuePart.mid(i, 2).toStdString());
+        for (size_t i = 0; i < valueStr.length(); i += 2) {
+
+            const char* byteStr = valueStr.substr(i, 2).c_str();
+            char* endPtr;
+            unsigned int byteVal = std::strtoul(byteStr, &endPtr, 16);
+
+            if (endPtr != byteStr + 2) {
+                LOG_ERROR(Loader, "Invalid byte in Value: {}", valueStr.substr(i, 2));
                 return;
             }
             payload.push_back(static_cast<u8>(byteVal));
@@ -460,7 +458,7 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
         std::memcpy(reinterpret_cast<void*>(code_cave_end), jumpBack, sizeof(jumpBack));
 
         LOG_INFO(Loader,
-                 "Patch mask_jump32 aplicada: {}, PatchAddress: {:#x}, JumpTarget: {:#x}, "
+                 "Applied Patch mask_jump32: {}, PatchAddress: {:#x}, JumpTarget: {:#x}, "
                  "CodeCaveEnd: {:#x}, JumpSize: {}",
                  modNameStr, patchAddress, jump_target, code_cave_end, jumpSize);
         return;
