@@ -463,54 +463,42 @@ s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelRmdir(const char* path) {
+s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     bool ro = false;
 
     const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
 
-    if (dir_name.empty()) {
-        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, permission denied",
-                  fmt::UTF(dir_name.u8string()));
-        return ORBIS_KERNEL_ERROR_EACCES;
+    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
+        *__Error() = POSIX_ENOTDIR;
+        return -1;
     }
 
     if (ro) {
-        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, directory is read only",
-                  fmt::UTF(dir_name.u8string()));
-        return ORBIS_KERNEL_ERROR_EROFS;
-    }
-
-    if (!std::filesystem::is_directory(dir_name)) {
-        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, path is not a directory",
-                  fmt::UTF(dir_name.u8string()));
-        return ORBIS_KERNEL_ERROR_ENOTDIR;
+        *__Error() = POSIX_EROFS;
+        return -1;
     }
 
     if (!std::filesystem::exists(dir_name)) {
-        LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, no such file or directory",
-                  fmt::UTF(dir_name.u8string()));
-        return ORBIS_KERNEL_ERROR_ENOENT;
+        *__Error() = POSIX_ENOENT;
+        return -1;
     }
 
     std::error_code ec;
-    int result = std::filesystem::remove_all(dir_name, ec);
+    s32 result = std::filesystem::remove_all(dir_name, ec);
 
-    if (!ec) {
-        LOG_INFO(Kernel_Fs, "Removed directory: {}", fmt::UTF(dir_name.u8string()));
-        return ORBIS_OK;
+    if (ec) {
+        *__Error() = POSIX_EIO;
+        return -1;
     }
-    LOG_ERROR(Kernel_Fs, "Failed to remove directory: {}, error_code={}",
-              fmt::UTF(dir_name.u8string()), ec.message());
-    return ErrnoToSceKernelError(ec.value());
+    return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI posix_rmdir(const char* path) {
-    int result = sceKernelRmdir(path);
+s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) { 
+    s32 result = posix_rmdir(path);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_rmdir: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
