@@ -14,19 +14,19 @@ First and foremost, Clang 18 is the **recommended compiler** as it is used for o
 #### Debian & Ubuntu
 
 ```
-sudo apt install build-essential clang git cmake libasound2-dev libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev qt6-multimedia-dev libvulkan-dev vulkan-validationlayers
+sudo apt install build-essential clang git cmake libasound2-dev libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev qt6-multimedia-dev libvulkan-dev vulkan-validationlayers libpng-dev
 ```
 
 #### Fedora
 
 ```
-sudo dnf install clang git cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel libXext-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers
+sudo dnf install clang git cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel libXext-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers libpng-devel
 ```
 
 #### Arch Linux
 
 ```
-sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declarative qt6-multimedia sdl2 vulkan-validation-layers
+sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declarative qt6-multimedia sdl2 vulkan-validation-layers libpng
 ```
 
 **Note**: The `shadps4-git` AUR package is not maintained by any of the developers, and it uses the default compiler, which is often set to GCC. Use at your own discretion.
@@ -34,7 +34,7 @@ sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declar
 #### OpenSUSE
 
 ```
-sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel systemd-devel libevdev-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel vulkan-devel vulkan-validationlayers
+sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel systemd-devel libevdev-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel vulkan-devel vulkan-validationlayers libpng-devel
 ```
 
 #### NixOS
