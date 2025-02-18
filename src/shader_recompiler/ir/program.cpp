@@ -26,9 +26,8 @@ void DumpProgram(const Program& program, const Info& info) {
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}.irprogram.txt", info.stage, info.pgm_hash);
-    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write, FileType::TextFile};
-
+    const auto ir_filename = fmt::format("{}_{:#018x}.irprogram.txt", info.stage, info.pgm_hash);
+    const auto ir_file = IOFile{dump_dir / ir_filename, FileAccessMode::Write, FileType::TextFile};
 
     size_t index{0};
     std::map<const IR::Inst*, size_t> inst_to_index;
@@ -41,7 +40,15 @@ void DumpProgram(const Program& program, const Info& info) {
 
     for (const auto& block : program.blocks) {
         std::string s = IR::DumpBlock(*block, block_to_index, inst_to_index, index) + '\n';
-        file.WriteString(s);
+        ir_file.WriteString(s);
+    }
+
+    const auto asl_filename = fmt::format("{}_{:#018x}.asl.txt", info.stage, info.pgm_hash);
+    const auto asl_file = IOFile{dump_dir / asl_filename, FileAccessMode::Write, FileType::TextFile};
+
+    for (const auto& node : program.syntax_list) {
+        std::string s = IR::DumpASLNode(node, block_to_index, inst_to_index) + '\n';
+        asl_file.WriteString(s);
     }
 }
 

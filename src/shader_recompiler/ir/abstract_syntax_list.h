@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -52,5 +53,7 @@ struct AbstractSyntaxNode {
     Type type{};
 };
 using AbstractSyntaxList = std::vector<AbstractSyntaxNode>;
+
+std::string DumpASLNode(const AbstractSyntaxNode& node, const std::map<const Block*, size_t>& block_to_index, const std::map<const Inst*, size_t>& inst_to_index);
 
 } // namespace Shader::IR
