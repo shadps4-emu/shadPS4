@@ -291,23 +291,42 @@ size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt
     return result;
 }
 
-size_t PS4_SYSV_ABI writev(int fd, const SceKernelIovec* iov, int iovcn) {
+size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
 
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->writev(iov, iovcn);
+        size_t result = file->device->writev(iov, iovcnt);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     size_t total_written = 0;
-    for (int i = 0; i < iovcn; i++) {
+    for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
+}
+
+size_t PS4_SYSV_ABI posix_writev(int fd, const SceKernelIovec* iov, int iovcnt) {
+    return writev(fd, iov, iovcnt);
+}
+
+size_t PS4_SYSV_ABI sceKernelWritev(int fd, const SceKernelIovec* iov, int iovcnt) {
+    size_t result = writev(fd, iov, iovcnt);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "writev: error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
