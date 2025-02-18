@@ -229,7 +229,12 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->write(buf, nbytes);
+        s64 result = file->device->write(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
@@ -401,7 +406,12 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->read(buf, nbytes);
+        s64 result = file->device->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     return ReadFile(file->f, buf, nbytes);
 }
@@ -575,7 +585,12 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
 
     switch (file->type) {
     case Core::FileSys::FileType::Device:
-        return file->device->fstat(sb);
+        s32 result = file->device->fstat(sb);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     case Core::FileSys::FileType::Regular:
         sb->st_mode = 0000777u | 0100000u;
         sb->st_size = file->f.GetSize();
