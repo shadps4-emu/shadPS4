@@ -870,39 +870,53 @@ s32 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, s32 nbytes, s64* base
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
-    if (d < 3) {
-        return ORBIS_KERNEL_ERROR_EPERM;
-    }
+s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
     if (offset < 0) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
 
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->pwrite(buf, nbytes, offset);
+        s64 result = file->device->pwrite(buf, nbytes, offset);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     const s64 pos = file->f.Tell();
     SCOPE_EXIT {
         file->f.Seek(pos);
     };
     if (!file->f.Seek(offset)) {
-        LOG_CRITICAL(Kernel_Fs, "sceKernelPwrite: failed to seek");
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EIO;
+        return -1;
     }
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
-int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
+s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+    s64 result = posix_pwrite(fd, buf, nbytes, offset);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     if (path == nullptr) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
@@ -911,24 +925,39 @@ int PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     bool ro = false;
     const auto host_path = mnt->GetHostPath(path, &ro);
     if (host_path.empty()) {
-        return ORBIS_KERNEL_ERROR_EACCES;
+        *__Error() = POSIX_EACCES;
+        return -1;
     }
 
     if (ro) {
-        return ORBIS_KERNEL_ERROR_EROFS;
+        *__Error() = POSIX_EROFS;
+        return -1;
     }
 
     if (std::filesystem::is_directory(host_path)) {
-        return ORBIS_KERNEL_ERROR_EPERM;
+        *__Error() = POSIX_EPERM;
+        return -1;
     }
 
     auto* file = h->GetFile(host_path);
-    if (file != nullptr) {
-        file->f.Unlink();
+    if (file == nullptr) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
     }
+
+    file->f.Unlink();
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
+    s32 result = posix_unlink(path);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
@@ -1014,12 +1043,12 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("f09KvIPy-QY", "libkernel", 1, "libkernel", 1, 1, posix_getdirentries);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
 
-    // LIB_FUNCTION("C2kJ-byS5rM", "libScePosix", 1, "libkernel", 1, 1, posix_pwrite);
-    // LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", 1, 1, posix_pwrite);
+    LIB_FUNCTION("C2kJ-byS5rM", "libScePosix", 1, "libkernel", 1, 1, posix_pwrite);
+    LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", 1, 1, posix_pwrite);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
 
-    // LIB_FUNCTION("VAzswvTOCzI", "libScePosix", 1, "libkernel", 1, 1, posix_unlink);
-    // LIB_FUNCTION("VAzswvTOCzI", "libkernel", 1, "libkernel", 1, 1, posix_unlink);
+    LIB_FUNCTION("VAzswvTOCzI", "libScePosix", 1, "libkernel", 1, 1, posix_unlink);
+    LIB_FUNCTION("VAzswvTOCzI", "libkernel", 1, "libkernel", 1, 1, posix_unlink);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
 }
 
