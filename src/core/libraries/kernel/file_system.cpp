@@ -788,21 +788,24 @@ s32 PS4_SYSV_ABI posix_fsync(int fd) {
     return result;
 }
 
-static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
-    if (fd < 3) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-
+static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
     if (buf == nullptr) {
-        return ORBIS_KERNEL_ERROR_EFAULT;
+        *__Error() = POSIX_EFAULT;
+        return -1;
     }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
     if (file->type == Core::FileSys::FileType::Device) {
-        return file->device->getdents(buf, nbytes, basep);
+        s32 result = file->device->getdents(buf, nbytes, basep);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
 
     if (file->dirents_index == file->dirents.size()) {
@@ -810,7 +813,8 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     }
     if (file->type != Core::FileSys::FileType::Directory || nbytes < 512 ||
         file->dirents_index > file->dirents.size()) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
     const auto& entry = file->dirents.at(file->dirents_index++);
     auto str = entry.name;
@@ -831,12 +835,34 @@ static int GetDents(int fd, char* buf, int nbytes, s64* basep) {
     return sizeof(OrbisKernelDirent);
 }
 
-int PS4_SYSV_ABI sceKernelGetdents(int fd, char* buf, int nbytes) {
+s32 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, s32 nbytes) {
     return GetDents(fd, buf, nbytes, nullptr);
 }
 
-int PS4_SYSV_ABI sceKernelGetdirentries(int fd, char* buf, int nbytes, s64* basep) {
+s32 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, s32 nbytes) {
+    s32 result = GetDents(fd, buf, nbytes, nullptr);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
     return GetDents(fd, buf, nbytes, basep);
+}
+
+s32 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+    return GetDents(fd, buf, nbytes, basep);
+}
+
+s32 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+    s32 result = GetDents(fd, buf, nbytes, basep);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelPwrite(int d, void* buf, size_t nbytes, s64 offset) {
@@ -974,13 +1000,13 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
 
-    // LIB_FUNCTION("2G6i6hMIUUY", "libScePosix", 1, "libkernel", 1, 1, posix_getdents);
-    // LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", 1, 1, posix_getdents);
+    LIB_FUNCTION("2G6i6hMIUUY", "libScePosix", 1, "libkernel", 1, 1, posix_getdents);
+    LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", 1, 1, posix_getdents);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
 
-    // LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", 1, 1, getdirentries);
-    // LIB_FUNCTION("f09KvIPy-QY", "libScePosix", 1, "libkernel", 1, 1, posix_getdirentries);
-    // LIB_FUNCTION("f09KvIPy-QY", "libkernel", 1, "libkernel", 1, 1, posix_getdirentries);
+    LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", 1, 1, getdirentries);
+    LIB_FUNCTION("f09KvIPy-QY", "libScePosix", 1, "libkernel", 1, 1, posix_getdirentries);
+    LIB_FUNCTION("f09KvIPy-QY", "libkernel", 1, "libkernel", 1, 1, posix_getdirentries);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
 
     // LIB_FUNCTION("C2kJ-byS5rM", "libScePosix", 1, "libkernel", 1, 1, posix_pwrite);
