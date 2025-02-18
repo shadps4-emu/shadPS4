@@ -519,27 +519,27 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>颜色调整</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>红：</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>绿：</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>蓝：</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>覆盖灯条颜色</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>覆盖颜色</translation>
     </message>
   </context>
   <context>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO 查看器 - </translation>
     </message>
   </context>
   <context>
