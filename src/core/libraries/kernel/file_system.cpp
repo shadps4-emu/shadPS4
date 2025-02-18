@@ -385,17 +385,18 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
 s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
     s64 result = posix_lseek(fd, offset, whence);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "lseek: error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -405,12 +406,15 @@ s64 PS4_SYSV_ABI sceKernelRead(int d, void* buf, size_t nbytes) {
     return ReadFile(file->f, buf, nbytes);
 }
 
-int PS4_SYSV_ABI posix_read(int d, void* buf, size_t nbytes) {
-    int result = sceKernelRead(d, buf, nbytes);
+s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, size_t nbytes) {
+    return read(fd, buf, nbytes);
+}
+
+s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, size_t nbytes) {
+    s64 result = read(fd, buf, nbytes);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_read: error = {}", result);
-        ErrSceToPosix(result);
-        return -1;
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
@@ -865,7 +869,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", 1, 1, posix_lseek);
     LIB_FUNCTION("oib76F-12fk", "libkernel", 1, "libkernel", 1, 1, sceKernelLseek);
 
-    // LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, read);
+    LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, read);
     LIB_FUNCTION("AqBioC2vF3I", "libScePosix", 1, "libkernel", 1, 1, posix_read);
     LIB_FUNCTION("AqBioC2vF3I", "libkernel", 1, "libkernel", 1, 1, posix_read);
     LIB_FUNCTION("Cg4srZ6TKbU", "libkernel", 1, "libkernel", 1, 1, sceKernelRead);
