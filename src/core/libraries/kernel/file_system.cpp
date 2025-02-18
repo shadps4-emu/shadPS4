@@ -285,11 +285,12 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
-size_t PS4_SYSV_ABI readv(int d, const SceKernelIovec* iov, int iovcnt) {
+size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(d);
+    auto* file = h->GetFile(fd);
     if (file == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     std::scoped_lock lk{file->m_mutex};
@@ -306,6 +307,19 @@ size_t PS4_SYSV_ABI readv(int d, const SceKernelIovec* iov, int iovcnt) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
+}
+
+size_t PS4_SYSV_ABI posix_readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+    return readv(fd, iov, iovcnt);
+}
+
+size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+    size_t result = readv(fd, iov, iovcnt);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "readv: error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 size_t PS4_SYSV_ABI writev(int fd, const SceKernelIovec* iov, int iovcn) {
@@ -795,9 +809,9 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", 1, 1, sceKernelWrite);
 
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", 1, 1, readv);
-    // LIB_FUNCTION("I7ImcLds-uU", "libScePosix", 1, "libkernel", 1, 1, posix_readv);
-    // LIB_FUNCTION("I7ImcLds-uU", "libkernel", 1, "libkernel", 1, 1, posix_readv);
-    // LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", 1, 1, SceKernelReadv);
+    LIB_FUNCTION("I7ImcLds-uU", "libScePosix", 1, "libkernel", 1, 1, posix_readv);
+    LIB_FUNCTION("I7ImcLds-uU", "libkernel", 1, "libkernel", 1, 1, posix_readv);
+    LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", 1, 1, SceKernelReadv);
 
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", 1, 1, writev);
     // LIB_FUNCTION("Z2aKdxzS4KE", "libScePosix", 1, "libkernel", 1, 1, posix_writev);
