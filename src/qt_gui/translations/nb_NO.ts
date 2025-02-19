@@ -535,7 +535,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Overstyr farge på lyslinja</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -1749,11 +1749,11 @@
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Offisiell</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nattlig</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1773,11 +1773,11 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asynkron</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>synkron</translation>
     </message>
     <message>
       <source>Auto Select</source>
