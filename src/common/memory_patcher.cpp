@@ -423,7 +423,8 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
         std::vector<u8> payload;
         for (size_t i = 0; i < valueStr.length(); i += 2) {
 
-            const char* byteStr = valueStr.substr(i, 2).c_str();
+            std::string tempStr = valueStr.substr(i, 2);
+            const char* byteStr = tempStr.c_str();
             char* endPtr;
             unsigned int byteVal = std::strtoul(byteStr, &endPtr, 16);
 
