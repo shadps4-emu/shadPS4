@@ -69,6 +69,9 @@ To automatically populate the necessary files to run shadPS4.exe, run in a comma
 
 ## Option 2: MSYS2/MinGW
 
+> [!IMPORTANT]
+> Building with MSYS2 is broken as of right now, the only way to build on Windows is to use [Option 1: Visual Studio 2022](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md#option-1-visual-studio-2022).
+
 ### (Prerequisite) Download [**MSYS2**](https://www.msys2.org/)
 
 Go through the MSYS2 installation as normal
