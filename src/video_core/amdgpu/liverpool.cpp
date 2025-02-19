@@ -761,6 +761,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                       std::back_inserter(compute_cutoff_end_to_prepend[vqid]));
 
             use_split_instruction = true;
+            LOG_INFO(Render_Vulkan, "Start of buffer 2: {}", fmt::ptr(acb.data()));
             LOG_INFO(Render_Vulkan, "Executing split command!");
         } else {
             LOG_INFO(Render_Vulkan,
@@ -795,6 +796,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             carry.reserve(packet_size_dw);
             carry.insert(carry.end(), acb.begin(), acb.end());
             compute_cutoff_end_to_prepend[vqid] = std::move(carry);
+            LOG_INFO(Render_Vulkan, "  End of buffer 1: {}", fmt::ptr(acb.data() + acb.size() - 1));
             acb = {};
             use_split_instruction = true;
             break;
