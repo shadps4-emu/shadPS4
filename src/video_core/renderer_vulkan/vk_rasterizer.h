@@ -117,7 +117,7 @@ private:
     Pipeline::DescriptorWrites set_writes;
     Pipeline::BufferBarriers buffer_barriers;
 
-    using BufferBindingInfo = std::pair<VideoCore::BufferId, AmdGpu::Buffer>;
+    using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
     boost::container::static_vector<BufferBindingInfo, Shader::NumBuffers> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NumImages> image_bindings;
