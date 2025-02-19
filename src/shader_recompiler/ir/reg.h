@@ -51,6 +51,7 @@ union BufferInstInfo {
     BitField<2, 12, u32> inst_offset;
     BitField<14, 1, u32> system_coherent;
     BitField<15, 1, u32> globally_coherent;
+    BitField<16, 1, u32> typed;
 };
 
 enum class ScalarReg : u32 {

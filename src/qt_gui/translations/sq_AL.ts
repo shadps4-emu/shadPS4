@@ -10,10 +10,6 @@
       <translation>Rreth shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 është një emulator eksperimental me burim të hapur për PlayStation 4.</translation>
     </message>
@@ -325,7 +321,7 @@
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>Fshih ndryshimet</translation>
+      <translation>Fshih Ndryshimet</translation>
     </message>
     <message>
       <source>Changes</source>
@@ -414,10 +410,6 @@
       <translation>Konfiguro kontrollet</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Cilësimet e kontrollit</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>D-Pad</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>Kontrollet Tastierë/Mi</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Redaktues Tastierë/Mi</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Leva e djathtë</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>Rregullimi i Ngjyrave</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>Zëvendëso Ngjyrën e Shiritit të ndriçimit</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>Zëvendëso Ngjyrën</translation>
     </message>
   </context>
   <context>
@@ -757,11 +765,11 @@
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Fshi lojën</translation>
+      <translation>Fshi Lojën</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Fshi përditësimin</translation>
+      <translation>Fshi Përditësimin</translation>
     </message>
     <message>
       <source>Delete DLC</source>
@@ -837,7 +845,7 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>Fshi të dhënat e ruajtjes</translation>
+      <translation>Fshi të Dhënat e Ruajtjes</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Të dhënat e ruajtjes</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Shikuesi SFO për </translation>
     </message>
   </context>
   <context>
@@ -911,7 +923,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>Hap dosjen e shadPS4</translation>
+      <translation>Hap Dosjen e shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -1261,7 +1273,7 @@
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation>Gjuha e emulatorit</translation>
+      <translation>Gjuha e Emulatorit</translation>
     </message>
     <message>
       <source>Emulator</source>
@@ -1737,7 +1749,7 @@
     </message>
     <message>
       <source>Release</source>
-      <translation>Botimi</translation>
+      <translation>Release</translation>
     </message>
     <message>
       <source>Nightly</source>

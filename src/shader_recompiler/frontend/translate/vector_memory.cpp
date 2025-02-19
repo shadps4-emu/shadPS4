@@ -195,6 +195,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst)
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(is_typed);
     if (is_typed) {
         const auto& mtbuf = inst.control.mtbuf;
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
@@ -241,6 +242,7 @@ void Translator::BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst) {
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(true);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -283,6 +285,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(is_typed);
     if (is_typed) {
         const auto& mtbuf = inst.control.mtbuf;
         const auto dmft = static_cast<AmdGpu::DataFormat>(mtbuf.dfmt);
@@ -339,6 +342,7 @@ void Translator::BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst) {
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(true);
 
     const IR::VectorReg src_reg{inst.src[1].code};
 

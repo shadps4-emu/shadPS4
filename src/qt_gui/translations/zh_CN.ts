@@ -10,10 +10,6 @@
       <translation>关于 shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 是一款实验性质的开源 PlayStation 4 模拟器软件。</translation>
     </message>
@@ -414,10 +410,6 @@
       <translation>配置按键</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>按键配置</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>D-Pad</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>键鼠</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>键鼠配置</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>右摇杆</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>颜色调整</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>红：</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>绿：</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>蓝：</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>覆盖灯条颜色</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>覆盖颜色</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>存档数据</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>SFO 查看器 - </translation>
     </message>
   </context>
   <context>

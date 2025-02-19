@@ -10,10 +10,6 @@
       <translation>Acerca de shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 es un emulador experimental de código abierto para la PlayStation 4.</translation>
     </message>
@@ -98,7 +94,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>No patch selected.</source>
@@ -257,7 +253,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Network error:</source>
@@ -321,7 +317,7 @@
     </message>
     <message>
       <source>No</source>
-      <translation type="unfinished">No</translation>
+      <translation>No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
@@ -372,7 +368,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
@@ -412,10 +408,6 @@
     <message>
       <source>Configure Controls</source>
       <translation>Configurar Controles</translation>
-    </message>
-    <message>
-      <source>Control Settings</source>
-      <translation type="unfinished">Control Settings</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation type="unfinished">L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Editor KBM</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation type="unfinished">Right Stick</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation type="unfinished">Color Adjustment</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation type="unfinished">R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation type="unfinished">G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation type="unfinished">B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation type="unfinished">Override Lightbar Color</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation type="unfinished">Override Color</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation type="unfinished">Save Data</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation type="unfinished">SFO Viewer for </translation>
     </message>
   </context>
   <context>

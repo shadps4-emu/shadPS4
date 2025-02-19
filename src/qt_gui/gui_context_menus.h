@@ -161,6 +161,7 @@ public:
 
         if (selected == &openSfoViewer) {
             PSF psf;
+            QString gameName = QString::fromStdString(m_games[itemID].name);
             std::filesystem::path game_folder_path = m_games[itemID].path;
             std::filesystem::path game_update_path = game_folder_path;
             game_update_path += "-UPDATE";
@@ -234,7 +235,7 @@ public:
                 tableWidget->horizontalHeader()->setVisible(false);
 
                 tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-                tableWidget->setWindowTitle(tr("SFO Viewer"));
+                tableWidget->setWindowTitle(tr("SFO Viewer for ") + gameName);
                 tableWidget->show();
             }
         }

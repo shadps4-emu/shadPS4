@@ -447,7 +447,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     set_writes.clear();
     buffer_barriers.clear();
     buffer_infos.clear();
-    buffer_views.clear();
     image_infos.clear();
 
     // Bind resource buffers and textures.

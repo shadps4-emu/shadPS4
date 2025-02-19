@@ -210,9 +210,6 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     features = feature_chain.get().features;
-#ifdef __APPLE__
-    portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
-#endif
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
         vk::PhysicalDeviceProperties2, vk::PhysicalDeviceVulkan11Properties,
@@ -258,16 +255,19 @@ bool Instance::CreateDevice() {
     add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
     add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
-    dynamic_color_write_mask = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
-    if (dynamic_color_write_mask) {
-        dynamic_color_write_mask =
-            feature_chain.get<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>()
-                .extendedDynamicState3ColorWriteMask;
+    dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
+    if (dynamic_state_3) {
+        dynamic_state_3_features =
+            feature_chain.get<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- extendedDynamicState3ColorWriteMask: {}",
+                 dynamic_state_3_features.extendedDynamicState3ColorWriteMask);
     }
-    null_descriptor = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
-    if (null_descriptor) {
-        null_descriptor =
-            feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>().nullDescriptor;
+    robustness2 = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+    if (robustness2) {
+        robustness2_features = feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- robustBufferAccess2: {}",
+                 robustness2_features.robustBufferAccess2);
+        LOG_INFO(Render_Vulkan, "- nullDescriptor: {}", robustness2_features.nullDescriptor);
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
@@ -284,6 +284,9 @@ bool Instance::CreateDevice() {
 #ifdef __APPLE__
     // Required by Vulkan spec if supported.
     portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+    if (portability_subset) {
+        portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+    }
 #endif
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
@@ -387,13 +390,15 @@ bool Instance::CreateDevice() {
             .customBorderColorWithoutFormat = true,
         },
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
-            .extendedDynamicState3ColorWriteMask = true,
+            .extendedDynamicState3ColorWriteMask =
+                dynamic_state_3_features.extendedDynamicState3ColorWriteMask,
         },
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
-            .nullDescriptor = true,
+            .robustBufferAccess2 = robustness2_features.robustBufferAccess2,
+            .nullDescriptor = robustness2_features.nullDescriptor,
         },
         vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
             .vertexInputDynamicState = true,
@@ -420,13 +425,13 @@ bool Instance::CreateDevice() {
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
     }
-    if (!dynamic_color_write_mask) {
+    if (!dynamic_state_3) {
         device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
     if (!depth_clip_control) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
     }
-    if (!null_descriptor) {
+    if (!robustness2) {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
     if (!vertex_input_dynamic_state) {

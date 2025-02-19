@@ -57,7 +57,7 @@
     </font>
    </property>
    <property name="text">
-    <string>shadPS4</string>
+    <string notr="true">shadPS4</string>
    </property>
   </widget>
   <widget class="QLabel" name="shad_text">

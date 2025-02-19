@@ -10,10 +10,6 @@
       <translation>Riguardo shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 è un emulatore sperimentale open-source per PlayStation 4.</translation>
     </message>
@@ -414,10 +410,6 @@
       <translation>Configura Comandi</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Impostazioni dei Comandi</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Croce direzionale</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>Controlli Tastiera/Mouse</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Editor Tastiera/Mouse</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Levetta Destra</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>Regolazione Colore</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>V:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>Sostituisci Colore Lightbar</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>Sostituisci Colore</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Dati Salvataggio</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Visualizzatore SFO per </translation>
     </message>
   </context>
   <context>
@@ -1581,7 +1593,7 @@
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Aggiornamento:\nRelease: Versioni ufficiali rilasciate ogni mese che potrebbero essere molto datate, ma sono più affidabili e testate.\nNightly: Versioni di sviluppo che hanno tutte le ultime funzionalità e correzioni, ma potrebbero contenere bug e sono meno stabili.</translation>
+      <translation>Aggiornamento:\nRilascio: Versioni ufficiali rilasciate ogni mese che possono essere molto obsolete, ma sono più affidabili e testati.\nNotturno: Le versioni di sviluppo che hanno tutte le ultime funzionalità e correzioni, ma possono contenere bug e sono meno stabili.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1649,7 +1661,7 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Dispositivo Grafico:\nIn sistemi con più GPU, seleziona la GPU che l&apos;emulatore utilizzerà dall&apos;elenco a discesa,\no seleziona &quot;Auto Select&quot; per determinarlo automaticamente.</translation>
+      <translation>Dispositivo Grafico:\nIn sistemi con più GPU, seleziona la GPU che l&apos;emulatore utilizzerà dall&apos;elenco a discesa,\no seleziona &quot;Selezione Automatica&quot; per determinarlo automaticamente.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>

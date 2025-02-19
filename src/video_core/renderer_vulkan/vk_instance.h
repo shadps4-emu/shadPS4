@@ -99,9 +99,10 @@ public:
         return depth_clip_control;
     }
 
-    /// Returns true when dynamic color write mask state is supported
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature of
+    /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
-        return dynamic_color_write_mask;
+        return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
     }
 
     /// Returns true when VK_EXT_vertex_input_dynamic_state is supported.
@@ -109,9 +110,14 @@ public:
         return vertex_input_dynamic_state;
     }
 
+    /// Returns true when the robustBufferAccess2 feature of VK_EXT_robustness2 is supported.
+    bool IsRobustBufferAccess2Supported() const {
+        return robustness2 && robustness2_features.robustBufferAccess2;
+    }
+
     /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
     bool IsNullDescriptorSupported() const {
-        return null_descriptor;
+        return robustness2 && robustness2_features.nullDescriptor;
     }
 
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
@@ -303,6 +309,8 @@ private:
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
+    vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
+    vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -317,9 +325,9 @@ private:
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool depth_clip_control{};
-    bool dynamic_color_write_mask{};
+    bool dynamic_state_3{};
     bool vertex_input_dynamic_state{};
-    bool null_descriptor{};
+    bool robustness2{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool shader_stencil_export{};
