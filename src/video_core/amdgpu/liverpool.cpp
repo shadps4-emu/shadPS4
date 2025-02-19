@@ -63,6 +63,21 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
     return span.subspan(offset);
 }
 
+// didn't want to modify this everywhere, just in the relevant part for testing
+static std::optional<std::span<const u32>> NextComputePacket(std::span<const u32> span,
+                                                             size_t offset) {
+    if (offset > span.size()) {
+        LOG_ERROR(
+            Lib_GnmDriver,
+            "Packet length exceeds remaining submission size. Packet dword count={}, remaining "
+            "submission dwords={}",
+            offset, span.size());
+        return std::nullopt;
+    }
+
+    return span.subspan(offset);
+}
+
 Liverpool::Liverpool() {
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
@@ -725,18 +740,64 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     FIBER_EXIT;
 }
 
+std::unordered_map<u32, std::vector<u32>> compute_cutoff_end_to_prepend;
+
 template <bool is_indirect>
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
     const auto& queue = asc_queues[{vqid}];
+    bool is_first = true;
+    bool use_split_instruction = false;
+    // if the buffer starts with an invalid instruction, and a cutoff end from a previous one
+    // exists, and by taking the remainder from this buffer's start we get a valid instruction,
+    // it's probably fine to assume the two buffers should be treated as one
+    u32 remainder = 0;
+    if (is_first && compute_cutoff_end_to_prepend.contains(vqid)) {
+        remainder = compute_cutoff_end_to_prepend[vqid].capacity() -
+                    compute_cutoff_end_to_prepend[vqid].size();
+        PM4Header possible_next_command = std::bit_cast<PM4Header>(acb[remainder]);
+        if (acb.size() == remainder || possible_next_command.type == 3) {
+            std::copy(acb.data(), acb.data() + remainder,
+                      std::back_inserter(compute_cutoff_end_to_prepend[vqid]));
+
+            use_split_instruction = true;
+            LOG_INFO(Render_Vulkan, "Executing split command!");
+        } else {
+            LOG_INFO(Render_Vulkan,
+                     "The buffer wasn't split, the next command would have been type: "
+                     "{:x}, data: {:x}, proceeding without merging",
+                     (u32)possible_next_command.type, possible_next_command.raw);
+        }
+    }
 
     auto base_addr = reinterpret_cast<uintptr_t>(acb.data());
     while (!acb.empty()) {
-        const auto* header = reinterpret_cast<const PM4Header*>(acb.data());
-        const u32 type = header->type;
+        auto* header = reinterpret_cast<const PM4Header*>(acb.data());
+        u32 type = header->type;
+        auto packet_size_dw = header->type3.NumWords() + 1;
+        if (use_split_instruction) {
+            header = reinterpret_cast<const PM4Header*>(compute_cutoff_end_to_prepend[vqid].data());
+            type = header->type;
+            packet_size_dw = remainder;
+            use_split_instruction = false;
+        }
         if (type != 3) {
             // No other types of packets were spotted so far
-            UNREACHABLE_MSG("Invalid PM4 type {}", type);
+            UNREACHABLE_MSG("Invalid PM4 type {}, data: 0x{:x}, first pass: {}", type, header->raw,
+                            is_first);
+        }
+
+        std::optional<std::span<const u32>> temp = NextComputePacket(acb, packet_size_dw);
+        if (!temp) {
+            // here we save and transfer the end of the buffer, to be appended to the start of the
+            // next one
+            std::vector<u32> carry;
+            carry.reserve(packet_size_dw);
+            carry.insert(carry.end(), acb.begin(), acb.end());
+            compute_cutoff_end_to_prepend[vqid] = std::move(carry);
+            acb = {};
+            use_split_instruction = true;
+            break;
         }
 
         const u32 count = header->type3.NumWords();
@@ -898,15 +959,17 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                             static_cast<u32>(opcode), count);
         }
 
-        const auto packet_size_dw = header->type3.NumWords() + 1;
-        acb = NextPacket(acb, packet_size_dw);
-
         if constexpr (!is_indirect) {
             *queue.read_addr += packet_size_dw;
             *queue.read_addr %= queue.ring_size_dw;
         }
+        acb = *temp;
+        is_first = false;
     }
 
+    if (!use_split_instruction) {
+        compute_cutoff_end_to_prepend.erase(vqid);
+    }
     FIBER_EXIT;
 }
 
