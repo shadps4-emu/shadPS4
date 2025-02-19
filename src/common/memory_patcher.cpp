@@ -144,37 +144,39 @@ void OnGameLoaded() {
                             std::string type = patchLineIt->attribute("Type").value();
                             std::string address = patchLineIt->attribute("Address").value();
                             std::string patchValue = patchLineIt->attribute("Value").value();
-                            std::string maskOffsetStr = patchLineIt->attribute("type").value();
-
-                            patchValue = convertValueToHex(type, patchValue);
+                            std::string maskOffsetStr = patchLineIt->attribute("Offset").value();
+                            std::string targetStr = "";
+                            std::string sizeStr = "";
+                            if (type == "mask_jump32") {
+                                std::string patchValue = patchLineIt->attribute("Value").value();
+                                targetStr = patchLineIt->attribute("Target").value();
+                                sizeStr = patchLineIt->attribute("Size").value();
+                            } else {
+                                patchValue = convertValueToHex(type, patchValue);
+                            }
 
                             bool littleEndian = false;
 
-                            if (type == "bytes16") {
-                                littleEndian = true;
-                            } else if (type == "bytes32") {
-                                littleEndian = true;
-                            } else if (type == "bytes64") {
+                            if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
                                 littleEndian = true;
                             }
 
                             MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
                             int maskOffsetValue = 0;
 
-                            if (type == "mask") {
+                            if (type == "mask")
                                 patchMask = MemoryPatcher::PatchMask::Mask;
-
-                                // im not sure if this works, there is no games to test the mask
-                                // offset on yet
-                                if (!maskOffsetStr.empty())
-                                    maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
-                            }
 
                             if (type == "mask_jump32")
                                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-                            MemoryPatcher::PatchMemory(currentPatchName, address, patchValue, false,
-                                                       littleEndian, patchMask, maskOffsetValue);
+                            if (type == "mask" || type == "mask_jump32" && !maskOffsetStr.empty()) {
+                                maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
+                            }
+
+                            MemoryPatcher::PatchMemory(currentPatchName, address, patchValue,
+                                                       targetStr, sizeStr, false, littleEndian,
+                                                       patchMask, maskOffsetValue);
                         }
                     }
                 }
@@ -279,6 +281,10 @@ void OnGameLoaded() {
                             lineObject["Address"] = attributes.value("Address").toString();
                             lineObject["Value"] = attributes.value("Value").toString();
                             lineObject["Offset"] = attributes.value("Offset").toString();
+                            if (lineObject["Type"].toString() == "mask_jump32") {
+                                lineObject["Target"] = attributes.value("Target").toString();
+                                lineObject["Size"] = attributes.value("Size").toString();
+                            }
                             linesArray.append(lineObject);
                         }
                     }
@@ -292,37 +298,40 @@ void OnGameLoaded() {
                             QString patchValue = lineObject["Value"].toString();
                             QString maskOffsetStr = lineObject["Offset"].toString();
 
-                            patchValue = QString::fromStdString(
-                                convertValueToHex(type.toStdString(), patchValue.toStdString()));
+                            QString targetStr;
+                            QString sizeStr;
+                            if (type == "mask_jump32") {
+                                QString valueAttributeStr = lineObject["Value"].toString();
+                                targetStr = lineObject["Value"].toString();
+                                sizeStr = lineObject["Size"].toString();
+                            } else {
+                                patchValue = QString::fromStdString(convertValueToHex(
+                                    type.toStdString(), patchValue.toStdString()));
+                            }
 
                             bool littleEndian = false;
 
-                            if (type == "bytes16") {
+                            if (type == "bytes16" || type == "bytes32" || type == "bytes64")
                                 littleEndian = true;
-                            } else if (type == "bytes32") {
-                                littleEndian = true;
-                            } else if (type == "bytes64") {
-                                littleEndian = true;
-                            }
 
                             MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
                             int maskOffsetValue = 0;
 
-                            if (type == "mask") {
+                            if (type == "mask")
                                 patchMask = MemoryPatcher::PatchMask::Mask;
-
-                                // im not sure if this works, there is no games to test the mask
-                                // offset on yet
-                                if (!maskOffsetStr.toStdString().empty())
-                                    maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
-                            }
 
                             if (type == "mask_jump32")
                                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-                            MemoryPatcher::PatchMemory(currentPatchName, address.toStdString(),
-                                                       patchValue.toStdString(), false,
-                                                       littleEndian, patchMask, maskOffsetValue);
+                            if (type == "mask" ||
+                                type == "mask_jump32" && !maskOffsetStr.toStdString().empty()) {
+                                maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+                            }
+
+                            MemoryPatcher::PatchMemory(
+                                currentPatchName, address.toStdString(), patchValue.toStdString(),
+                                targetStr.toStdString(), sizeStr.toStdString(), false, littleEndian,
+                                patchMask, maskOffsetValue);
                         }
                     }
                 }
@@ -351,7 +360,7 @@ void ApplyPendingPatches() {
         if (currentPatch.gameSerial != g_game_serial)
             continue;
 
-        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
+        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr, "", "",
                     currentPatch.isOffset, currentPatch.littleEndian, currentPatch.patchMask,
                     currentPatch.maskOffset);
     }
@@ -359,8 +368,9 @@ void ApplyPendingPatches() {
     pending_patches.clear();
 }
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr, bool isOffset,
-                 bool littleEndian, PatchMask patchMask, int maskOffset) {
+void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
+                 std::string targetStr, std::string sizeStr, bool isOffset, bool littleEndian,
+                 PatchMask patchMask, int maskOffset) {
     // Send a request to modify the process memory.
     void* cheatAddress = nullptr;
 
@@ -377,7 +387,83 @@ void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valu
         cheatAddress = reinterpret_cast<void*>(PatternScan(offsetStr) + maskOffset);
     }
 
-    // TODO: implement mask_jump32
+    if (patchMask == PatchMask::Mask_Jump32) {
+        int jumpSize = std::stoi(sizeStr);
+
+        constexpr int MAX_PATTERN_LENGTH = 256;
+        if (jumpSize < 5) {
+            LOG_ERROR(Loader, "Jump size must be at least 5 bytes");
+            return;
+        }
+        if (jumpSize > MAX_PATTERN_LENGTH) {
+            LOG_ERROR(Loader, "Jump size must be no more than {} bytes.", MAX_PATTERN_LENGTH);
+            return;
+        }
+
+        // Find the base address using "Address"
+        uintptr_t baseAddress = PatternScan(offsetStr);
+        if (baseAddress == 0) {
+            LOG_ERROR(Loader, "PatternScan failed for mask_jump32 with pattern: {}", offsetStr);
+            return;
+        }
+        uintptr_t patchAddress = baseAddress + maskOffset;
+
+        // Fills the original region (jumpSize bytes) with NOPs
+        std::vector<u8> nopBytes(jumpSize, 0x90);
+        std::memcpy(reinterpret_cast<void*>(patchAddress), nopBytes.data(), nopBytes.size());
+
+        // Use "Target" to locate the start of the code cave
+        uintptr_t jump_target = PatternScan(targetStr);
+        if (jump_target == 0) {
+            LOG_ERROR(Loader, "PatternScan failed to Target with pattern: {}", targetStr);
+            return;
+        }
+
+        // Converts the Value attribute to a byte array (payload)
+        std::vector<u8> payload;
+        for (size_t i = 0; i < valueStr.length(); i += 2) {
+
+            std::string tempStr = valueStr.substr(i, 2);
+            const char* byteStr = tempStr.c_str();
+            char* endPtr;
+            unsigned int byteVal = std::strtoul(byteStr, &endPtr, 16);
+
+            if (endPtr != byteStr + 2) {
+                LOG_ERROR(Loader, "Invalid byte in Value: {}", valueStr.substr(i, 2));
+                return;
+            }
+            payload.push_back(static_cast<u8>(byteVal));
+        }
+
+        // Calculates the end of the code cave (where the return jump will be inserted)
+        uintptr_t code_cave_end = jump_target + payload.size();
+
+        // Write the payload to the code cave, from jump_target
+        std::memcpy(reinterpret_cast<void*>(jump_target), payload.data(), payload.size());
+
+        // Inserts the initial jump in the original region to divert to the code cave
+        u8 jumpInstruction[5];
+        jumpInstruction[0] = 0xE9;
+        s32 relJump = static_cast<s32>(jump_target - patchAddress - 5);
+        std::memcpy(&jumpInstruction[1], &relJump, sizeof(relJump));
+        std::memcpy(reinterpret_cast<void*>(patchAddress), jumpInstruction,
+                    sizeof(jumpInstruction));
+
+        // Inserts jump back at the end of the code cave to resume execution after patching
+        u8 jumpBack[5];
+        jumpBack[0] = 0xE9;
+        // Calculates the relative offset to return to the instruction immediately following the
+        // overwritten region
+        s32 target_return = static_cast<s32>((patchAddress + jumpSize) - (code_cave_end + 5));
+        std::memcpy(&jumpBack[1], &target_return, sizeof(target_return));
+        std::memcpy(reinterpret_cast<void*>(code_cave_end), jumpBack, sizeof(jumpBack));
+
+        LOG_INFO(Loader,
+                 "Applied Patch mask_jump32: {}, PatchAddress: {:#x}, JumpTarget: {:#x}, "
+                 "CodeCaveEnd: {:#x}, JumpSize: {}",
+                 modNameStr, patchAddress, jump_target, code_cave_end, jumpSize);
+        return;
+    }
 
     if (cheatAddress == nullptr) {
         LOG_ERROR(Loader, "Failed to get address for patch {}", modNameStr);
