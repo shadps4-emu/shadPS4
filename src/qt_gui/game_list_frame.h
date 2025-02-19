@@ -18,6 +18,26 @@
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
 
+namespace GameListFrameHelper {
+
+/**
+ * Helper function to perform a case-insensitive comparison of two strings.
+ * This function converts both strings to lowercase and then compares them.
+ * 
+ * @param a First string for comparison.
+ * @param b Second string for comparison.
+ * @return true if a < b, false otherwise.
+ */
+inline bool CompareStringsCaseInsensitive(const std::string& a, const std::string& b) {
+    std::string lower_a = a;
+    std::string lower_b = b;
+    std::transform(lower_a.begin(), lower_a.end(), lower_a.begin(), ::tolower);
+    std::transform(lower_b.begin(), lower_b.end(), lower_b.begin(), ::tolower);
+    return lower_a < lower_b;
+}
+
+} // namespace GameListFrameHelper
+
 class GameListFrame : public QTableWidget {
     Q_OBJECT
 public:
@@ -73,10 +93,7 @@ public:
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1: {
-            std::string name_a = a.name, name_b = b.name;
-            std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
-            std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
-            return name_a < name_b;
+            return GameListFrameHelper::CompareStringsCaseInsensitive(a.name, b.name);
         }
         case 2:
             return a.compatibility.status < b.compatibility.status;
@@ -102,10 +119,7 @@ public:
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1: {
-            std::string name_a = a.name, name_b = b.name;
-            std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
-            std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
-            return name_a > name_b;
+            return GameListFrameHelper::CompareStringsCaseInsensitive(a.name, b.name);
         }
         case 2:
             return a.compatibility.status > b.compatibility.status;
