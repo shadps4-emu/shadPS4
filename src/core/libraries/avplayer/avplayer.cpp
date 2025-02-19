@@ -19,7 +19,7 @@ s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filenam
 
 s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(AvPlayerHandle handle, AvPlayerUriType uri_type,
                                         AvPlayerSourceDetails* source_details) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_TRACE(Lib_AvPlayer, "(STUBBED) called");
     if (handle == nullptr || uri_type != AvPlayerUriType::Source) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
@@ -68,7 +68,7 @@ s32 PS4_SYSV_ABI sceAvPlayerEnableStream(AvPlayerHandle handle, u32 stream_id) {
 bool PS4_SYSV_ABI sceAvPlayerGetAudioData(AvPlayerHandle handle, AvPlayerFrameInfo* p_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || p_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
     return handle->GetAudioData(*p_info);
 }
@@ -85,7 +85,7 @@ s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(AvPlayerHandle handle, u32 stream_id,
 bool PS4_SYSV_ABI sceAvPlayerGetVideoData(AvPlayerHandle handle, AvPlayerFrameInfo* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
     return handle->GetVideoData(*video_info);
 }
@@ -94,7 +94,7 @@ bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(AvPlayerHandle handle,
                                             AvPlayerFrameInfoEx* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
     return handle->GetVideoData(*video_info);
 }
