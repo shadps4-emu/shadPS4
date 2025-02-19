@@ -502,16 +502,17 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     for (const auto& desc : stage.buffers) {
         const auto vsharp = desc.GetSharp(stage);
         if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
-            const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, vsharp.GetSize());
-            buffer_bindings.emplace_back(buffer_id, vsharp);
+            const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+            const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
+            buffer_bindings.emplace_back(buffer_id, vsharp, size);
         } else {
-            buffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp);
+            buffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp, 0);
         }
     }
 
     // Second pass to re-bind buffers that were updated after binding
     for (u32 i = 0; i < buffer_bindings.size(); i++) {
-        const auto& [buffer_id, vsharp] = buffer_bindings[i];
+        const auto& [buffer_id, vsharp, size] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
         const bool is_storage = desc.IsStorage(vsharp, pipeline_cache.GetProfile());
         // Buffer is not from the cache, either a special buffer or unbound.
@@ -540,17 +541,15 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
         } else {
-            const auto [vk_buffer, offset] =
-                buffer_cache.ObtainBuffer(vsharp.base_address, vsharp.GetSize(), desc.is_written,
-                                          desc.is_formatted, buffer_id);
+            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
+                vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
             const u32 alignment =
                 is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
             push_data.AddOffset(binding.buffer, adjust);
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned,
-                                      vsharp.GetSize() + adjust);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
             if (auto barrier =
                     vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
                                                           : vk::AccessFlagBits2::eShaderRead,
@@ -558,7 +557,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written && desc.is_formatted) {
-                texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, vsharp.GetSize());
+                texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
             }
         }
 
