@@ -272,7 +272,6 @@ bool AvPlayerSource::Stop() {
         m_video_buffers.Push(std::move(m_current_video_frame.value()));
         m_current_video_frame.reset();
     }
-    m_stop_cv.Notify();
 
     m_audio_packets.Clear();
     m_video_packets.Clear();
@@ -314,27 +313,17 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
-    m_video_frames_cv.Wait([this] { return m_video_frames.Size() != 0 || m_is_eof; });
-
-    auto frame = m_video_frames.Pop();
-    if (!frame.has_value()) {
-        LOG_TRACE(Lib_AvPlayer, "Could get video frame. EOF reached.");
+    if (m_video_frames.Size() == 0) {
         return false;
     }
 
+    auto frame = m_video_frames.Pop();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        const auto desired_time =
+        const auto current_time =
             m_audio_stream_index.has_value() ? m_last_audio_packet_time : CurrentTime();
-        if (desired_time < frame->info.timestamp) {
-            using namespace std::chrono;
-            const auto start = high_resolution_clock::now();
-            if (!m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - desired_time), [&] {
-                    const auto passed =
-                        duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
-                    return (desired_time + passed) >= frame->info.timestamp;
-                })) {
-                return false;
-            }
+        if (0 < current_time && current_time < frame->info.timestamp) {
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(frame->info.timestamp - current_time));
         }
     }
 
@@ -353,16 +342,13 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
         return false;
     }
 
-    m_audio_frames_cv.Wait([this] { return m_audio_frames.Size() != 0 || m_is_eof; });
-
-    auto frame = m_audio_frames.Pop();
-    if (!frame.has_value()) {
-        LOG_TRACE(Lib_AvPlayer, "Could get audio frame. EOF reached.");
+    if (m_audio_frames.Size() == 0) {
         return false;
     }
 
-    // return the buffer to the queue
+    auto frame = m_audio_frames.Pop();
     if (m_current_audio_frame.has_value()) {
+        // return the buffer to the queue
         m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
         m_audio_buffers_cv.Notify();
     }
