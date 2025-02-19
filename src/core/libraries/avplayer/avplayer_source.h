@@ -202,8 +202,6 @@ private:
     EventCV m_video_frames_cv{};
     EventCV m_video_buffers_cv{};
 
-    EventCV m_stop_cv{};
-
     std::mutex m_state_mutex{};
     Kernel::Thread m_demuxer_thread{};
     Kernel::Thread m_video_decoder_thread{};
