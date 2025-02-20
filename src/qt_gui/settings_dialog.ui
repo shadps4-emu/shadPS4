@@ -1005,11 +1005,11 @@
                 </widget>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="resolutionLayout">
+                <layout class="QVBoxLayout" name="windowSizeLayout">
                  <item>
-                  <widget class="QGroupBox" name="resolutionGroupBox">
+                  <widget class="QGroupBox" name="windowSizeGroupBox">
                    <property name="title">
-                    <string>Resolution</string>
+                    <string>Window Size</string>
                    </property>
                    <layout class="QHBoxLayout" name="resLayout">
                     <item>

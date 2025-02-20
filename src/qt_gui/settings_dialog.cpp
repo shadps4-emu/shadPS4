@@ -301,7 +301,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
         // ui->widthGroupBox->installEventFilter(this);
-        ui->resolutionGroupBox->installEventFilter(this);
+        ui->windowSizeGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
@@ -576,7 +576,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     // Graphics
     if (elementName == "graphicsAdapterGroupBox") {
         text = tr("Graphics Device:\\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\\nor select \"Auto Select\" to automatically determine it.");
-    } else if (elementName == "resolutionGroupBox") {
+    } else if (elementName == "windowSizeGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
         text = tr("Vblank Divider:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
