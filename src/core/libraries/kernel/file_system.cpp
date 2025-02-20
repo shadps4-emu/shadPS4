@@ -512,7 +512,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) { 
+s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     s32 result = posix_rmdir(path);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
