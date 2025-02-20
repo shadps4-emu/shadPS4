@@ -16,7 +16,6 @@ namespace Libraries::Kernel {
 
 void ErrSceToPosix(int result);
 int ErrnoToSceKernelError(int e);
-void SetPosixErrno(int e);
 
 template <size_t N>
 struct StringLiteral {

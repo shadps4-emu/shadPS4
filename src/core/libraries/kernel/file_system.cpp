@@ -160,9 +160,9 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         if (e != 0) {
-            // IOFile code uses platform specific errnos, they must be converted to POSIX errnos.
+            // IOFile code uses platform specific errnos. Use POSIX_EIO for now
             h->DeleteHandle(handle);
-            SetPosixErrno(e);
+            *__Error() = POSIX_EIO;
             return -1;
         }
     }
@@ -369,8 +369,8 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
 
     if (!file->f.Seek(offset, origin)) {
         if (errno != 0) {
-            // Seek failed in platform-specific code, errno needs to be converted.
-            SetPosixErrno(errno);
+            // Seek failed in platform-specific code. Use POSIX_EIO for now.
+            *__Error() = POSIX_EIO;
         } else {
             // Seek failed because offset is beyond the end of the file.
             *__Error() = POSIX_ENXIO;
@@ -380,8 +380,8 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
 
     s64 result = file->f.Tell();
     if (result < 0) {
-        // Tell failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(errno);
+        // Tell failed in platform-specific code. Use POSIX_EIO for now.
+        *__Error() = POSIX_EIO;
         return -1;
     }
     return result;

@@ -84,18 +84,6 @@ int ErrnoToSceKernelError(int error) {
     return error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-void SetPosixErrno(int e) {
-    // Some error numbers are different between supported OSes
-    switch (e) {
-    case ENOENT:
-        g_posix_errno = POSIX_ENOENT;
-        break;
-    default:
-        UNREACHABLE_MSG("errno = {}", e);
-        g_posix_errno = e;
-    }
-}
-
 static uint64_t g_mspace_atomic_id_mask = 0;
 static uint64_t g_mstate_table[64] = {0};
 
