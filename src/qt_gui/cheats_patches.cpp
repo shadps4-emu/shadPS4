@@ -71,7 +71,8 @@ void CheatsPatches::setupUI() {
 
     QLabel* gameImageLabel = new QLabel();
     if (!m_gameImage.isNull()) {
-        gameImageLabel->setPixmap(m_gameImage.scaled(275, 275, Qt::KeepAspectRatio));
+        gameImageLabel->setPixmap(
+            m_gameImage.scaled(275, 275, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     } else {
         gameImageLabel->setText(tr("No Image Available"));
     }
@@ -91,9 +92,11 @@ void CheatsPatches::setupUI() {
     gameVersionLabel->setAlignment(Qt::AlignLeft);
     gameInfoLayout->addWidget(gameVersionLabel);
 
-    QLabel* gameSizeLabel = new QLabel(tr("Size: ") + m_gameSize);
-    gameSizeLabel->setAlignment(Qt::AlignLeft);
-    gameInfoLayout->addWidget(gameSizeLabel);
+    if (m_gameSize.left(4) != "0.00") {
+        QLabel* gameSizeLabel = new QLabel(tr("Size: ") + m_gameSize);
+        gameSizeLabel->setAlignment(Qt::AlignLeft);
+        gameInfoLayout->addWidget(gameSizeLabel);
+    }
 
     // Add a text area for instructions and 'Patch' descriptions
     instructionsTextEdit = new QTextEdit();
@@ -1343,7 +1346,7 @@ void CheatsPatches::applyCheat(const QString& modName, bool enabled) {
 
         // Determine if the hint field is present
         bool isHintPresent = m_cheats[modName].hasHint;
-        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, !isHintPresent, false);
+        MemoryPatcher::PatchMemory(modNameStr, offsetStr, valueStr, "", "", !isHintPresent, false);
     }
 }
 
@@ -1365,27 +1368,22 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
 
             bool littleEndian = false;
 
-            if (type == "bytes16") {
-                littleEndian = true;
-            } else if (type == "bytes32") {
-                littleEndian = true;
-            } else if (type == "bytes64") {
+            if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
                 littleEndian = true;
             }
 
             MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
             int maskOffsetValue = 0;
 
-            if (type == "mask") {
+            if (type == "mask")
                 patchMask = MemoryPatcher::PatchMask::Mask;
-
-                // im not sure if this works, there is no games to test the mask offset on yet
-                if (!maskOffsetStr.toStdString().empty())
-                    maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
-            }
 
             if (type == "mask_jump32")
                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
+            if (type == "mask" || type == "mask_jump32" && !maskOffsetStr.toStdString().empty()) {
+                maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
+            }
 
             if (MemoryPatcher::g_eboot_address == 0) {
                 MemoryPatcher::patchInfo addingPatch;
@@ -1402,7 +1400,8 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
                 continue;
             }
             MemoryPatcher::PatchMemory(patchName.toStdString(), address.toStdString(),
-                                       patchValue.toStdString(), false, littleEndian, patchMask);
+                                       patchValue.toStdString(), "", "", false, littleEndian,
+                                       patchMask);
         }
     }
 }

@@ -200,12 +200,26 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 void GameListFrame::RefreshListBackgroundImage() {
     QPalette palette;
     if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
-        palette.setBrush(QPalette::Base,
-                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
+        QSize widgetSize = size();
+        QPixmap scaledPixmap =
+            QPixmap::fromImage(backgroundImage)
+                .scaled(widgetSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (widgetSize.width() - scaledPixmap.width()) / 2;
+        int y = (widgetSize.height() - scaledPixmap.height()) / 2;
+        QPixmap finalPixmap(widgetSize);
+        finalPixmap.fill(Qt::transparent);
+        QPainter painter(&finalPixmap);
+        painter.drawPixmap(x, y, scaledPixmap);
+        palette.setBrush(QPalette::Base, QBrush(finalPixmap));
     }
     QColor transparentColor = QColor(135, 206, 235, 40);
     palette.setColor(QPalette::Highlight, transparentColor);
     this->setPalette(palette);
+}
+
+void GameListFrame::resizeEvent(QResizeEvent* event) {
+    QTableWidget::resizeEvent(event);
+    RefreshListBackgroundImage();
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {

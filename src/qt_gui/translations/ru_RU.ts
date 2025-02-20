@@ -10,10 +10,6 @@
       <translation>О shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
     </message>
@@ -414,10 +410,6 @@
       <translation>Настроить управление</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Настройки управления</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Крестовина</translation>
     </message>
@@ -470,16 +462,8 @@
       <translation>L2 / LT</translation>
     </message>
     <message>
-      <source>KBM Controls</source>
-      <translation type="unfinished">KBM Controls</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation type="unfinished">KBM Editor</translation>
-    </message>
-    <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Назад</translation>
     </message>
     <message>
       <source>R1 / RB</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Правый стик</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>Настройка цвета</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>Заменить цвет световой панели</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>Заменить цвет</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Сохранения</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Просмотр SFO для</translation>
     </message>
   </context>
   <context>
@@ -1238,7 +1250,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Пакет</translation>
     </message>
   </context>
   <context>

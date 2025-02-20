@@ -176,6 +176,13 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     const IR::VectorReg data0{inst.src[1].code};
     const IR::VectorReg data1{inst.src[2].code};
+    const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+    if (info.stage == Stage::Fragment) {
+        ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0,
+                   "Unexpected shared memory offset alignment: {}", offset);
+        ir.SetVectorReg(GetScratchVgpr(offset), ir.GetVectorReg(data0));
+        return;
+    }
     if (is_pair) {
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
@@ -195,14 +202,12 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
                 addr1);
         }
     } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(
-            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
         const IR::Value data =
             ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1));
         ir.WriteShared(bit_size, data, addr0);
     } else {
-        const IR::U32 addr0 = ir.IAdd(
-            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
         ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
     }
 }
@@ -223,6 +228,13 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
                          const GcnInst& inst) {
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     IR::VectorReg dst_reg{inst.dst[0].code};
+    const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+    if (info.stage == Stage::Fragment) {
+        ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0,
+                   "Unexpected shared memory offset alignment: {}", offset);
+        ir.SetVectorReg(dst_reg, ir.GetVectorReg(GetScratchVgpr(offset)));
+        return;
+    }
     if (is_pair) {
         // Pair loads are either 32 or 64-bit
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
@@ -243,14 +255,12 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(data1, 1)});
         }
     } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(
-            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
         const IR::Value data = ir.LoadShared(bit_size, is_signed, addr0);
         ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(data, 0)});
         ir.SetVectorReg(dst_reg + 1, IR::U32{ir.CompositeExtract(data, 1)});
     } else {
-        const IR::U32 addr0 = ir.IAdd(
-            addr, ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0)));
+        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
         const IR::U32 data = IR::U32{ir.LoadShared(bit_size, is_signed, addr0)};
         ir.SetVectorReg(dst_reg, data);
     }

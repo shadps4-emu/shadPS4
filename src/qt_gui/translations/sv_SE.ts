@@ -10,10 +10,6 @@
       <translation>Om shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 är en experimentell emulator för PlayStation 4 baserad på öppen källkod.</translation>
     </message>
@@ -414,10 +410,6 @@
       <translation>Konfigurera kontroller</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Kontrollerinställningar</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Riktningsknappar</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>KBM-kontroller</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>KBM-redigerare</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Höger spak</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>Färgjustering</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>Åsidosätt ljusrampens färg</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>Åsidosätt färg</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Sparat data</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>SFO-visare för </translation>
     </message>
   </context>
   <context>

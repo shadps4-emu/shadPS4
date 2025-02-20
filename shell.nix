@@ -46,6 +46,7 @@ pkgs.mkShell {
     pkgs.stb
     pkgs.qt6.qtwayland
     pkgs.wayland-protocols
+    pkgs.libpng
   ];
 
   shellHook = ''

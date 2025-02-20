@@ -68,6 +68,7 @@ static bool vkCrashDiagnostic = false;
 static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
+static bool isFpsColor = true;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
@@ -280,6 +281,10 @@ bool patchShaders() {
 
 bool isRdocEnabled() {
     return rdocEnable;
+}
+
+bool fpsColor() {
+    return isFpsColor;
 }
 
 u32 vblankDiv() {
@@ -757,6 +762,7 @@ void load(const std::filesystem::path& path) {
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
+        isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
     }
 
     if (data.contains("GUI")) {
@@ -807,8 +813,8 @@ void load(const std::filesystem::path& path) {
     // Check if the loaded language is in the allowed list
     const std::vector<std::string> allowed_languages = {
         "ar_SA", "da_DK", "de_DE", "el_GR", "en_US", "es_ES", "fa_IR", "fi_FI", "fr_FR", "hu_HU",
-        "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nl_NL", "no_NO", "pl_PL", "pt_BR", "ro_RO",
-        "ru_RU", "sq_AL", "sv_SE", "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW"};
+        "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nb_NO", "nl_NL", "pl_PL", "pt_BR", "pt_PT",
+        "ro_RO", "ru_RU", "sq_AL", "sv_SE", "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW"};
 
     if (std::find(allowed_languages.begin(), allowed_languages.end(), emulator_language) ==
         allowed_languages.end()) {
@@ -881,6 +887,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
+    data["Debug"]["FPSColor"] = isFpsColor;
 
     data["Keys"]["TrophyKey"] = trophyKey;
 

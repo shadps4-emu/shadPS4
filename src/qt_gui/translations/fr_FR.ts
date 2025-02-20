@@ -10,10 +10,6 @@
       <translation>À propos de shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 est un émulateur open-source expérimental de la PlayStation 4.</translation>
     </message>
@@ -414,10 +410,6 @@
       <translation>Configurer les Commandes</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Paramètres de Contrôle</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Croix directionnelle</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>Commandes KBM</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Éditeur KBM</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Joystick Droit</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation type="unfinished">Color Adjustment</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation type="unfinished">R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation type="unfinished">G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation type="unfinished">B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation type="unfinished">Override Lightbar Color</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation type="unfinished">Override Color</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Enregistrer les Données</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Visionneuse SFO pour </translation>
     </message>
   </context>
   <context>
@@ -1721,7 +1733,7 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Chemin de sauvegarde :\nLe dossier où les sauvegardes du jeu sont enregistré.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -1745,11 +1757,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Volume de la musique de fond.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Activer les Mouvements</translation>
     </message>
     <message>
       <source>Save Data Path</source>

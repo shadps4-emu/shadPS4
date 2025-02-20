@@ -10,16 +10,12 @@
       <translation>Sobre o shadPS4</translation>
     </message>
     <message>
-      <source>shadPS4</source>
-      <translation>shadPS4</translation>
-    </message>
-    <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
       <translation>shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>Este programa não deve ser usado para jogar jogos piratas.</translation>
+      <translation>Este programa não deve ser usado para jogar jogos que tenham sido obtidos ilegalmente.</translation>
     </message>
   </context>
   <context>
@@ -281,7 +277,7 @@
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>Nenhuma URL de download encontrada para o asset especificado.</translation>
+      <translation>Nenhuma URL de download encontrada para o recurso especificado.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
@@ -414,10 +410,6 @@
       <translation>Configurar Controles</translation>
     </message>
     <message>
-      <source>Control Settings</source>
-      <translation>Configurações do Controle</translation>
-    </message>
-    <message>
       <source>D-Pad</source>
       <translation>Direcional</translation>
     </message>
@@ -468,14 +460,6 @@
     <message>
       <source>L2 / LT</source>
       <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>KBM Controls</source>
-      <translation>Controles T/M</translation>
-    </message>
-    <message>
-      <source>KBM Editor</source>
-      <translation>Editor T/M</translation>
     </message>
     <message>
       <source>Back</source>
@@ -532,6 +516,30 @@
     <message>
       <source>Right Stick</source>
       <translation>Analógico Direito</translation>
+    </message>
+    <message>
+      <source>Color Adjustment</source>
+      <translation>Ajuste de Cores</translation>
+    </message>
+    <message>
+      <source>R:</source>
+      <translation>R:</translation>
+    </message>
+    <message>
+      <source>G:</source>
+      <translation>G:</translation>
+    </message>
+    <message>
+      <source>B:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>Override Lightbar Color</source>
+      <translation>Substituir cor da Lightbar</translation>
+    </message>
+    <message>
+      <source>Override Color</source>
+      <translation>Substituir a Cor</translation>
     </message>
   </context>
   <context>
@@ -854,6 +862,10 @@
     <message>
       <source>Save Data</source>
       <translation>Dados Salvos</translation>
+    </message>
+    <message>
+      <source>SFO Viewer for </source>
+      <translation>Visualizador de SFO para </translation>
     </message>
   </context>
   <context>
@@ -1309,7 +1321,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registro-Log</translation>
+      <translation>Registros de Log</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1497,7 +1509,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Reproduzir música de abertura</translation>
+      <translation>Reproduzir Música do Título</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1573,7 +1585,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo do Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1585,7 +1597,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>Imagem de fundo:\nControle a opacidade da imagem de fundo do jogo.</translation>
+      <translation>Imagem de Fundo:\nControla a transparência da imagem de fundo do jogo.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1705,7 +1717,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnósticos de Falha:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se você tiver isto habilitado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
+      <translation>Diagnóstico de Falhas:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se isto estiver ativado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -1721,11 +1733,11 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation>Diretório dos Dados Salvos:\nA pasta que onde os dados de salvamento de jogo serão salvos.</translation>
+      <translation>Caminho dos Dados Salvos:\nA pasta que onde os dados de salvamento de jogo serão salvos.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation>Navegar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
+      <translation>Procurar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
     </message>
     <message>
       <source>Borderless</source>

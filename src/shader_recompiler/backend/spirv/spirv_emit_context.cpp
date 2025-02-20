@@ -5,7 +5,6 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
-#include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/types.h"
 
@@ -107,6 +106,8 @@ Id EmitContext::Def(const IR::Value& value) {
 void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
+    U8 = Name(TypeUInt(8), "u8_id");
+    U16 = Name(TypeUInt(16), "u16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");
@@ -191,8 +192,30 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
-void EmitContext::DefineBufferOffsets() {
-    for (BufferDefinition& buffer : buffers) {
+Id EmitContext::GetBufferSize(const u32 sharp_idx) {
+    const auto& srt_flatbuf = buffers.back();
+    ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+
+    const auto rsrc1{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
+    const auto rsrc2{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 2)))};
+
+    const auto stride{OpBitFieldUExtract(U32[1], rsrc1, ConstU32(16u), ConstU32(14u))};
+    const auto num_records{rsrc2};
+
+    const auto stride_zero{OpIEqual(U1[1], stride, u32_zero_value)};
+    const auto stride_size{OpIMul(U32[1], num_records, stride)};
+    return OpSelect(U32[1], stride_zero, num_records, stride_size);
+}
+
+void EmitContext::DefineBufferProperties() {
+    for (u32 i = 0; i < buffers.size(); i++) {
+        BufferDefinition& buffer = buffers[i];
+        if (buffer.buffer_type != BufferType::Guest) {
+            continue;
+        }
         const u32 binding = buffer.binding;
         const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
@@ -204,6 +227,22 @@ void EmitContext::DefineBufferOffsets() {
         Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
+
+        // Only need to load size if performing bounds checks and the buffer is both guest and not
+        // inline.
+        if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
+            const BufferResource& desc = info.buffers[i];
+            if (desc.sharp_idx == std::numeric_limits<u32>::max()) {
+                buffer.size = ConstU32(desc.inline_cbuf.GetSize());
+            } else {
+                buffer.size = GetBufferSize(desc.sharp_idx);
+            }
+            Name(buffer.size, fmt::format("buf{}_size", binding));
+            buffer.size_shorts = OpShiftRightLogical(U32[1], buffer.size, ConstU32(1U));
+            Name(buffer.size_shorts, fmt::format("buf{}_short_size", binding));
+            buffer.size_dwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(2U));
+            Name(buffer.size_dwords, fmt::format("buf{}_dword_size", binding));
+        }
     }
 }
 
@@ -211,8 +250,7 @@ void EmitContext::DefineInterpolatedAttribs() {
     if (!profile.needs_manual_interpolation) {
         return;
     }
-    // Iterate all input attributes, load them and manually interpolate with barycentric
-    // coordinates.
+    // Iterate all input attributes, load them and manually interpolate.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
         const u32 semantic = input.param_index;
@@ -235,6 +273,20 @@ void EmitContext::DefineInterpolatedAttribs() {
         Name(params.id, fmt::format("fs_in_attr{}", semantic));
         params.is_loaded = true;
     }
+}
+
+void EmitContext::DefineWorkgroupIndex() {
+    const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
+    const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
+    const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
+    const Id workgroup_z{OpCompositeExtract(U32[1], workgroup_id_val, 2)};
+    const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
+    const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
+    const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
+    workgroup_index_id =
+        OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
+               OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
+    Name(workgroup_index_id, "workgroup_index");
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -305,9 +357,16 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment:
-        frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
-        frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+            frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+        }
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.loads.Get(IR::Attribute::IsFrontFace)) {
+            front_facing =
+                DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        }
         if (profile.needs_manual_interpolation) {
             gl_bary_coord_id =
                 DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
@@ -342,9 +401,19 @@ void EmitContext::DefineInputs() {
         }
         break;
     case LogicalStage::Compute:
-        workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
-        local_invocation_id =
-            DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
+            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+            workgroup_id =
+                DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
+            num_workgroups_id =
+                DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
+            local_invocation_id =
+                DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
         break;
     case LogicalStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
@@ -555,111 +624,117 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4], U32[4],
-                                         U32[4], F32[1], F32[1], F32[1], F32[1]),
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], F32[1], F32[1], F32[1], F32[1], U32[4],
+                                         U32[4], U32[4], U32[4], U32[4], U32[4]),
                               "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
-    MemberName(struct_type, 0, "sr0");
-    MemberName(struct_type, 1, "sr1");
-    MemberName(struct_type, Shader::PushData::BufOffsetIndex + 0, "buf_offsets0");
-    MemberName(struct_type, Shader::PushData::BufOffsetIndex + 1, "buf_offsets1");
-    MemberName(struct_type, Shader::PushData::UdRegsIndex + 0, "ud_regs0");
-    MemberName(struct_type, Shader::PushData::UdRegsIndex + 1, "ud_regs1");
-    MemberName(struct_type, Shader::PushData::UdRegsIndex + 2, "ud_regs2");
-    MemberName(struct_type, Shader::PushData::UdRegsIndex + 3, "ud_regs3");
-    MemberName(struct_type, Shader::PushData::XOffsetIndex, "xoffset");
-    MemberName(struct_type, Shader::PushData::YOffsetIndex, "yoffset");
-    MemberName(struct_type, Shader::PushData::XScaleIndex, "xscale");
-    MemberName(struct_type, Shader::PushData::YScaleIndex, "yscale");
-    MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-    MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
-    MemberDecorate(struct_type, Shader::PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 8U);
-    MemberDecorate(struct_type, Shader::PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 24U);
-    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 0, spv::Decoration::Offset, 40U);
-    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 1, spv::Decoration::Offset, 56U);
-    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 2, spv::Decoration::Offset, 72U);
-    MemberDecorate(struct_type, Shader::PushData::UdRegsIndex + 3, spv::Decoration::Offset, 88U);
-    MemberDecorate(struct_type, Shader::PushData::XOffsetIndex, spv::Decoration::Offset, 104U);
-    MemberDecorate(struct_type, Shader::PushData::YOffsetIndex, spv::Decoration::Offset, 108U);
-    MemberDecorate(struct_type, Shader::PushData::XScaleIndex, spv::Decoration::Offset, 112U);
-    MemberDecorate(struct_type, Shader::PushData::YScaleIndex, spv::Decoration::Offset, 116U);
+    MemberName(struct_type, PushData::Step0Index, "sr0");
+    MemberName(struct_type, PushData::Step1Index, "sr1");
+    MemberName(struct_type, PushData::XOffsetIndex, "xoffset");
+    MemberName(struct_type, PushData::YOffsetIndex, "yoffset");
+    MemberName(struct_type, PushData::XScaleIndex, "xscale");
+    MemberName(struct_type, PushData::YScaleIndex, "yscale");
+    MemberName(struct_type, PushData::UdRegsIndex + 0, "ud_regs0");
+    MemberName(struct_type, PushData::UdRegsIndex + 1, "ud_regs1");
+    MemberName(struct_type, PushData::UdRegsIndex + 2, "ud_regs2");
+    MemberName(struct_type, PushData::UdRegsIndex + 3, "ud_regs3");
+    MemberName(struct_type, PushData::BufOffsetIndex + 0, "buf_offsets0");
+    MemberName(struct_type, PushData::BufOffsetIndex + 1, "buf_offsets1");
+    MemberDecorate(struct_type, PushData::Step0Index, spv::Decoration::Offset, 0U);
+    MemberDecorate(struct_type, PushData::Step1Index, spv::Decoration::Offset, 4U);
+    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 12U);
+    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 16U);
+    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 20U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 24U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 40U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 56U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 72U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 88U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 104U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
 }
 
-void EmitContext::DefineBuffers() {
-    boost::container::small_vector<Id, 8> type_ids;
-    const auto define_struct = [&](Id record_array_type, bool is_instance_data,
-                                   std::optional<std::string_view> explicit_name = {}) {
-        const Id struct_type{TypeStruct(record_array_type)};
-        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
-            return struct_type;
-        }
-        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-        auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
-                                     : fmt::format("{}_cbuf_block_f32", stage);
-        name = explicit_name.value_or(name);
-        Name(struct_type, name);
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
+                                                 BufferType buffer_type, Id data_type) {
+    // Define array type.
+    const Id max_num_items = ConstU32(u32(profile.max_ubo_size) >> elem_shift);
+    const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
+                                          : TypeArray(data_type, max_num_items)};
+    // Define block struct type. Don't perform decorations twice on the same Id.
+    const Id struct_type{TypeStruct(record_array_type)};
+    if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) ==
+        buf_type_ids.end()) {
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 1 << elem_shift);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
         MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-        type_ids.push_back(record_array_type);
-        return struct_type;
-    };
-
-    if (info.has_readconst) {
-        const Id data_type = U32[1];
-        const auto storage_class = spv::StorageClass::Uniform;
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id record_array_type{
-            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.size())))};
-
-        const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
-
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, "srt_flatbuf_ubo");
-
-        srt_flatbuf = {
-            .id = id,
-            .binding = binding.buffer++,
-            .pointer_type = pointer_type,
-        };
-        interfaces.push_back(id);
+        buf_type_ids.push_back(record_array_type);
     }
+    // Define buffer binding interface.
+    const auto storage_class =
+        is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+    const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+    const Id pointer_type = TypePointer(storage_class, data_type);
+    const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+    Decorate(id, spv::Decoration::Binding, binding.unified);
+    Decorate(id, spv::Decoration::DescriptorSet, 0U);
+    if (is_storage && !is_written) {
+        Decorate(id, spv::Decoration::NonWritable);
+    }
+    switch (buffer_type) {
+    case Shader::BufferType::GdsBuffer:
+        Name(id, "gds_buffer");
+        break;
+    case Shader::BufferType::ReadConstUbo:
+        Name(id, "srt_flatbuf_ubo");
+        break;
+    case Shader::BufferType::SharedMemory:
+        Name(id, "ssbo_shmem");
+        break;
+    default:
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "ubo", binding.buffer));
+        break;
+    }
+    interfaces.push_back(id);
+    return {id, pointer_type};
+};
 
-    for (const auto& desc : info.buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(sharp, profile);
-        const u32 array_size = profile.max_ubo_size >> 2;
-        const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
-        const Id data_type = (*data_types)[1];
-        const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(array_size))};
-        const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
-
-        const auto storage_class =
-            is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        if (is_storage && !desc.is_written) {
-            Decorate(id, spv::Decoration::NonWritable);
-        }
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sharp_idx));
-
-        buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .data_types = data_types,
-            .pointer_type = pointer_type,
+void EmitContext::DefineBuffers() {
+    if (!profile.supports_robust_buffer_access && !info.has_readconst) {
+        // In case ReadConstUbo has not already been bound by IR and is needed
+        // to query buffer sizes, bind it now.
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .inline_cbuf = AmdGpu::Buffer::Null(),
+            .buffer_type = BufferType::ReadConstUbo,
         });
-        interfaces.push_back(id);
+    }
+    for (const auto& desc : info.buffers) {
+        const auto buf_sharp = desc.GetSharp(info);
+        const bool is_storage = desc.IsStorage(buf_sharp, profile);
+
+        // Define aliases depending on the shader usage.
+        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        if (True(desc.used_types & IR::Type::U32)) {
+            spv_buffer[BufferAlias::U32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+        }
+        if (True(desc.used_types & IR::Type::F32)) {
+            spv_buffer[BufferAlias::F32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
+        }
+        if (True(desc.used_types & IR::Type::U16)) {
+            spv_buffer[BufferAlias::U16] =
+                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
+        }
+        if (True(desc.used_types & IR::Type::U8)) {
+            spv_buffer[BufferAlias::U8] =
+                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+        }
+        ++binding.unified;
     }
 }
 
@@ -809,51 +884,18 @@ void EmitContext::DefineImagesAndSamplers() {
 }
 
 void EmitContext::DefineSharedMemory() {
-    static constexpr size_t DefaultSharedMemSize = 2_KB;
     if (!info.uses_shared) {
         return;
     }
     ASSERT(info.stage == Stage::Compute);
-
-    const u32 max_shared_memory_size = profile.max_shared_memory_size;
-    u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    if (shared_memory_size == 0) {
-        shared_memory_size = DefaultSharedMemSize;
-    }
-
+    const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
-
-    if (shared_memory_size <= max_shared_memory_size) {
-        shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
-        shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
-        shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
-        Name(shared_memory_u32, "shared_mem");
-        interfaces.push_back(shared_memory_u32);
-    } else {
-        shared_memory_u32_type = TypePointer(spv::StorageClass::StorageBuffer, type);
-        shared_u32 = TypePointer(spv::StorageClass::StorageBuffer, U32[1]);
-
-        Decorate(type, spv::Decoration::ArrayStride, 4);
-
-        const Id struct_type{TypeStruct(type)};
-        Name(struct_type, "shared_memory_buf");
-        Decorate(struct_type, spv::Decoration::Block);
-        MemberName(struct_type, 0, "data");
-        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-
-        const Id struct_pointer_type{TypePointer(spv::StorageClass::StorageBuffer, struct_type)};
-        const Id ssbo_id{AddGlobalVariable(struct_pointer_type, spv::StorageClass::StorageBuffer)};
-        Decorate(ssbo_id, spv::Decoration::Binding, binding.unified++);
-        Decorate(ssbo_id, spv::Decoration::DescriptorSet, 0U);
-        Name(ssbo_id, "shared_mem_ssbo");
-
-        shared_memory_u32 = ssbo_id;
-
-        info.has_emulated_shared_memory = true;
-        info.shared_memory_size = shared_memory_size;
-        interfaces.push_back(ssbo_id);
-    }
+    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+    shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
+    shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
+    Name(shared_memory_u32, "shared_mem");
+    interfaces.push_back(shared_memory_u32);
 }
 
 Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {

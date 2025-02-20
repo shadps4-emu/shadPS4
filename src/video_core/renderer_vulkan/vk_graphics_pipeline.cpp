@@ -7,22 +7,26 @@
 #include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
-#include "common/io_file.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
-#include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
 using Shader::Backend::SPIRV::AuxShaderType;
+
+static constexpr std::array LogicalStageToStageBit = {
+    vk::ShaderStageFlagBits::eFragment,
+    vk::ShaderStageFlagBits::eTessellationControl,
+    vk::ShaderStageFlagBits::eTessellationEvaluation,
+    vk::ShaderStageFlagBits::eVertex,
+    vk::ShaderStageFlagBits::eGeometry,
+    vk::ShaderStageFlagBits::eCompute,
+};
 
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
@@ -39,7 +43,7 @@ GraphicsPipeline::GraphicsPipeline(
     const auto debug_str = GetDebugString();
 
     const vk::PushConstantRange push_constants = {
-        .stageFlags = gp_stage_flags,
+        .stageFlags = AllGraphicsStageBits,
         .offset = 0,
         .size = sizeof(Shader::PushData),
     };
@@ -357,14 +361,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
         if (!stage) {
             continue;
         }
-        if (stage->has_readconst) {
-            bindings.push_back({
-                .binding = binding++,
-                .descriptorType = vk::DescriptorType::eUniformBuffer,
-                .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
-            });
-        }
+        const auto stage_bit = LogicalStageToStageBit[u32(stage->l_stage)];
         for (const auto& buffer : stage->buffers) {
             const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
@@ -373,7 +370,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                                       ? vk::DescriptorType::eStorageBuffer
                                       : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
         for (const auto& image : stage->images) {
@@ -382,7 +379,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
                                                    : vk::DescriptorType::eSampledImage,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
         for (const auto& sampler : stage->samplers) {
@@ -390,7 +387,7 @@ void GraphicsPipeline::BuildDescSetLayout() {
                 .binding = binding++,
                 .descriptorType = vk::DescriptorType::eSampler,
                 .descriptorCount = 1,
-                .stageFlags = gp_stage_flags,
+                .stageFlags = stage_bit,
             });
         }
     }

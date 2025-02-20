@@ -167,6 +167,17 @@ enum class MrtSwizzle : u8 {
 };
 static constexpr u32 MaxColorBuffers = 8;
 
+struct PsColorBuffer {
+    AmdGpu::NumberFormat num_format : 4;
+    AmdGpu::NumberConversion num_conversion : 2;
+    AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
+    u32 needs_unorm_fixup : 1;
+    u32 pad : 21;
+    AmdGpu::CompMapping swizzle;
+
+    auto operator<=>(const PsColorBuffer&) const noexcept = default;
+};
+
 struct FragmentRuntimeInfo {
     struct PsInput {
         u8 param_index;
@@ -184,15 +195,6 @@ struct FragmentRuntimeInfo {
     AmdGpu::Liverpool::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
-    struct PsColorBuffer {
-        AmdGpu::NumberFormat num_format;
-        AmdGpu::NumberConversion num_conversion;
-        AmdGpu::CompMapping swizzle;
-        AmdGpu::Liverpool::ShaderExportFormat export_format;
-        bool needs_unorm_fixup;
-
-        auto operator<=>(const PsColorBuffer&) const noexcept = default;
-    };
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
@@ -264,3 +266,14 @@ struct RuntimeInfo {
 };
 
 } // namespace Shader
+
+template <>
+struct fmt::formatter<Shader::Stage> {
+    constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+    auto format(const Shader::Stage stage, format_context& ctx) const {
+        constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
+        return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
+    }
+};

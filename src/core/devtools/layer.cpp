@@ -259,7 +259,19 @@ void L::DrawAdvanced() {
 
 void L::DrawSimple() {
     const float frameRate = DebugState.Framerate;
+    if (Config::fpsColor()) {
+        if (frameRate < 10) {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
+        } else if (frameRate >= 10 && frameRate < 20) {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
+        } else {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+        }
+    } else {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+    }
     Text("%d FPS (%.1f ms)", static_cast<int>(std::round(frameRate)), 1000.0f / frameRate);
+    PopStyleColor();
 }
 
 static void LoadSettings(const char* line) {

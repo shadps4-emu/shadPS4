@@ -200,6 +200,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
         .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
+        .supports_robust_buffer_access = instance_.IsRobustBufferAccess2Supported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
@@ -345,12 +346,12 @@ bool PipelineCache::RefreshGraphicsKey() {
 
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_buffers[remapped_cb] = {
+        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
-            .swizzle = col_buf.Swizzle(),
             .export_format = regs.color_export_format.GetFormat(cb),
             .needs_unorm_fixup = needs_unorm_fixup,
+            .swizzle = col_buf.Swizzle(),
         };
     }
 
