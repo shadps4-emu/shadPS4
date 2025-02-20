@@ -1005,7 +1005,7 @@
                 </widget>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="windowSizeLayout">
+                <layout class="QHBoxLayout" name="windowSizeLayout">
                  <item>
                   <widget class="QGroupBox" name="windowSizeGroupBox">
                    <property name="title">
