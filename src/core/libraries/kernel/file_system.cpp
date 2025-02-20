@@ -118,10 +118,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     } else {
         file->m_guest_name = path;
         file->m_host_name = mnt->GetHostPath(file->m_guest_name);
+        bool exists = std::filesystem::exists(file->m_host_name);
         int e = 0;
 
         if (create) {
-            if (excl && std::filesystem::exists(file->m_host_name)) {
+            if (excl && exists) {
                 // Error if file exists
                 h->DeleteHandle(handle);
                 *__Error() = POSIX_EEXIST;
@@ -129,6 +130,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             }
             // Create file if it doesn't exist
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+        }
+
+        if (!exists) {
+            // File to open doesn't exist, return ENOENT
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_ENOENT;
+            return -1;
         }
 
         if (read) {
