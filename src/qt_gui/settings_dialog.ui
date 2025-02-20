@@ -1005,13 +1005,20 @@
                 </widget>
                </item>
                <item>
-                <layout class="QHBoxLayout" name="resolutionLayout">
+                <layout class="QVBoxLayout" name="resolutionLayout">
                  <item>
-                  <widget class="QGroupBox" name="widthGroupBox">
+                  <widget class="QGroupBox" name="resolutionGroupBox">
                    <property name="title">
-                    <string>Width</string>
+                    <string>Resolution</string>
                    </property>
-                   <layout class="QVBoxLayout" name="widthLayout">
+                   <layout class="QHBoxLayout" name="resLayout">
+                    <item>
+                     <widget class="QLabel" name="widthLabel">
+                      <property name="text">
+                       <string>W:</string>
+                      </property>
+                     </widget>
+                    </item>
                     <item>
                      <widget class="QSpinBox" name="widthSpinBox">
                       <property name="accelerated">
@@ -1034,15 +1041,13 @@
                       </property>
                      </widget>
                     </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QGroupBox" name="heightGroupBox">
-                   <property name="title">
-                    <string>Height</string>
-                   </property>
-                   <layout class="QVBoxLayout" name="heightLayout">
+                    <item>
+                     <widget class="QLabel" name="widthLabel">
+                      <property name="text">
+                       <string>H:</string>
+                      </property>
+                     </widget>
+                    </item>
                     <item>
                      <widget class="QSpinBox" name="heightSpinBox">
                       <property name="frame">
