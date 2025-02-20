@@ -115,10 +115,18 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setData(Qt::DecorationRole, icon);
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
+
+            std::string detailString = trophyDetails[row].toStdString();
+            std::size_t newline_pos = 0;
+            while ((newline_pos = detailString.find("\n", newline_pos)) != std::string::npos) {
+                detailString.replace(newline_pos, 1, " ");
+                ++newline_pos;
+            }
+
             if (!trophyNames.isEmpty() && !trophyDetails.isEmpty()) {
                 SetTableItem(tableWidget, row, 0, trpUnlocked[row]);
                 SetTableItem(tableWidget, row, 2, trophyNames[row]);
-                SetTableItem(tableWidget, row, 3, trophyDetails[row]);
+                SetTableItem(tableWidget, row, 3, QString::fromStdString(detailString));
                 SetTableItem(tableWidget, row, 4, trpId[row]);
                 SetTableItem(tableWidget, row, 5, trpHidden[row]);
                 SetTableItem(tableWidget, row, 6, GetTrpType(trpType[row].at(0)));
@@ -157,7 +165,7 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
     layout->addWidget(label);
-    if (column != 1 && column != 2)
+    if (column != 1 && column != 2 && column != 3)
         layout->setAlignment(Qt::AlignCenter);
     widget->setLayout(layout);
     parent->setItem(row, column, item);

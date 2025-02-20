@@ -195,6 +195,7 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
+include_directories(Resources)
 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
@@ -956,6 +957,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
 )
 endif()
 
+set(RESOURCEFOLDER ${CMAKE_SOURCE_DIR}/Resources)
+
 if (ENABLE_QT_GUI)
     qt_add_executable(shadps4
         ${AUDIO_CORE}
@@ -967,6 +970,7 @@ if (ENABLE_QT_GUI)
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+	${RESOURCEFOLDER}
         src/images/shadPS4.icns
     )
 else()
@@ -1143,4 +1147,20 @@ if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES "dist/net.shadps4.shadPS4.metainfo.xml" DESTINATION "share/metainfo")
     install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "net.shadps4.shadPS4.png")
     install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")
+endif()
+
+
+# copy Resource folder (trophy images) inside Mac App bundle resources folder
+if (ENABLE_QT_GUI AND APPLE)
+add_custom_command(TARGET shadps4 POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/Resources"
+    "$<TARGET_FILE_DIR:shadps4>/../Resources"
+)
+else()
+add_custom_target(copy-files ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/Resources/
+    ${CMAKE_BINARY_DIR}/Resources/
+    )
 endif()
