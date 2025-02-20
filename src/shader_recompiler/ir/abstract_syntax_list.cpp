@@ -22,7 +22,7 @@ std::string DumpASLNode(const AbstractSyntaxNode& node, const std::map<const Blo
     case AbstractSyntaxNode::Type::Return:
         return "Return";
     case AbstractSyntaxNode::Type::Unreachable:
-        UNREACHABLE();
+        return "Unreachable";
     };
     UNREACHABLE();
 }
