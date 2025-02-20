@@ -991,7 +991,7 @@
                       </property>
                       <item>
                        <property name="text">
-                        <string>Borderless</string>
+                        <string>Windowed</string>
                        </property>
                       </item>
                       <item>
