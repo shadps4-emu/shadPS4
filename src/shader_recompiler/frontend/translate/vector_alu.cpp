@@ -837,7 +837,9 @@ void Translator::V_FFBH_U32(const GcnInst& inst) {
 
 void Translator::V_FFBL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    SetDst(inst.dst[0], ir.FindILsb(src0));
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, ir.FindILsb(src0), ir.Imm32(~0U))});
 }
 
 void Translator::V_FREXP_EXP_I32_F64(const GcnInst& inst) {
