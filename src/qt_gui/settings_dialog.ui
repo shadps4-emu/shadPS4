@@ -973,7 +973,7 @@
                     <number>6</number>
                </property>
                <property name="leftMargin">
-                    <number>0</number>
+                    <number>12</number>
                </property>
                <item>
                   <widget class="QCheckBox" name="fullscreenCheckBox">
