@@ -60,7 +60,7 @@ const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 2
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
-QMap<QString, QString> fullscreenModeMap;
+QMap<QString, QString> screenModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
@@ -77,7 +77,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
     logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
-    fullscreenModeMap = {{tr("Borderless"), "Borderless"}, {tr("Fullscreen"), "Fullscreen"}};
+    screenModeMap = {{tr("Borderless"), "Borderless"}, {tr("Windowed"), "Windowed"}};
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
@@ -382,7 +382,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     QString translatedText_FullscreenMode =
-        fullscreenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
+        screenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
     ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
@@ -646,9 +646,9 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() == "Fullscreen");
+    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() == "Borderless Windowed");
     Config::setFullscreenMode(
-        fullscreenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
+        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
