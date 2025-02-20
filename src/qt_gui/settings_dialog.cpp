@@ -646,7 +646,8 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() == "Borderless Windowed");
+    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() ==
+                            "Borderless Windowed");
     Config::setFullscreenMode(
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
