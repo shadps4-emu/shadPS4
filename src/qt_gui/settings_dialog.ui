@@ -996,7 +996,7 @@
                     </item>
                     <item>
                      <property name="text">
-                      <string>Borderless Windowed</string>
+                      <string>Fullscreen (Borderless)</string>
                      </property>
                     </item>
                    </widget>
