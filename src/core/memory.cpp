@@ -471,7 +471,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
     const auto start_in_vma = addr - vma_base.base;
     const auto adjusted_size =
         vma_base.size - start_in_vma < size ? vma_base.size - start_in_vma : size;
-    
+
     if (vma_base.type == VMAType::Free) {
         LOG_ERROR(Kernel_Vmm, "Cannot change protection on free memory region");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -484,8 +484,8 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
 
     MemoryProt invalid_flags = prot & ~valid_flags;
     if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
-        LOG_ERROR(Kernel_Vmm, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
-                  u32(invalid_flags));
+        LOG_ERROR(Kernel_Vmm, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}",
+                  u32(prot), u32(invalid_flags));
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
