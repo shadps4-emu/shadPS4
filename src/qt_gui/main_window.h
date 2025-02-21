@@ -133,5 +133,4 @@ protected:
     std::filesystem::path last_install_dir = "";
     bool delete_file_on_install = false;
     bool use_for_all_queued = false;
-
 };
