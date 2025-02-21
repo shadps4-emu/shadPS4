@@ -413,6 +413,7 @@ void MainWindow::CreateConnects() {
         int slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
+        ui->mw_searchbar->setText("");
     });
     // Grid
     connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -430,6 +431,7 @@ void MainWindow::CreateConnects() {
         int slider_pos_grid = Config::getSliderPositionGrid();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
+        ui->mw_searchbar->setText("");
     });
     // Elf Viewer
     connect(ui->setlistElfAct, &QAction::triggered, m_dock_widget.data(), [this]() {
