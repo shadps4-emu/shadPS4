@@ -36,7 +36,6 @@ signals:
     void BackgroundOpacityChanged(int opacity);
 
 private:
-    void closeEvent(QCloseEvent* event) override;
     void LoadValuesFromConfig();
     void UpdateSettings();
     void ResetInstallFolders();

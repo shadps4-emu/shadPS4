@@ -129,6 +129,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                     Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
+                    ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+                    emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+                    ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+                    BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
                     ResetInstallFolders();
                 }
                 if (Common::Log::IsActive()) {
@@ -337,13 +341,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->collectShaderCheckBox->installEventFilter(this);
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
     }
-}
-void SettingsDialog::closeEvent(QCloseEvent* event) {
-    ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
-    emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
-    ui->BGMVolumeSlider->setValue(bgm_volume_backup);
-    BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
-    QDialog::closeEvent(event);
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
