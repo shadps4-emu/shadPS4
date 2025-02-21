@@ -63,6 +63,9 @@ QMap<QString, QString> logTypeMap;
 QMap<QString, QString> fullscreenModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 
+int backgroundImageOpacitySlider_backup;
+int bgm_volume_backup;
+
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                                QWidget* parent)
@@ -110,7 +113,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     defaultTextEdit = tr("Point your mouse at an option to display its description.");
     ui->descriptionText->setText(defaultTextEdit);
 
-    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, [this]() {
+        ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+        emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+
+        ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+        BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
+        this->close();
+    });
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this,
             [this, config_dir](QAbstractButton* button) {
@@ -335,6 +345,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
     }
 }
+void SettingsDialog::closeEvent(QCloseEvent* event) {
+    ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+    emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+    ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+    BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
+    QDialog::closeEvent(event);
+}
 
 void SettingsDialog::LoadValuesFromConfig() {
 
@@ -466,6 +483,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ResetInstallFolders();
     ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
     ui->showBackgroundImageCheckBox->setChecked(Config::getShowBackgroundImage());
+
+    backgroundImageOpacitySlider_backup = Config::getBackgroundImageOpacity();
+    bgm_volume_backup = Config::getBGMvolume();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
