@@ -694,7 +694,6 @@ void load(const std::filesystem::path& path) {
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        isHDRAllowed = toml::find_or<bool>(general, "allowHDR", false);
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
@@ -743,6 +742,7 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
         fullscreenMode =
             toml::find_or<std::string>(gpu, "FullscreenMode", "Fullscreen (Borderless)");
+        isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
     }
 
     if (data.contains("Vulkan")) {
@@ -845,7 +845,6 @@ void save(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["General"]["allowHDR"] = isHDRAllowed;
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
@@ -878,6 +877,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["vblankDivider"] = vblankDivider;
     data["GPU"]["Fullscreen"] = isFullscreen;
     data["GPU"]["FullscreenMode"] = fullscreenMode;
+    data["GPU"]["allowHDR"] = isHDRAllowed;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
