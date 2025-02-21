@@ -333,7 +333,6 @@ private:
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
-    bool tooling_info{};
     bool portability_subset{};
 };
 
