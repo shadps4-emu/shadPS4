@@ -481,19 +481,14 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
     return ORBIS_OK;
 }
 
-int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
-    std::scoped_lock lk{mutex};
+s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t size,
+                                MemoryProt prot) {
+    const auto start_in_vma = addr - vma_base.base;
+    const auto adjusted_size =
+        vma_base.size - start_in_vma < size ? vma_base.size - start_in_vma : size;
 
-    // Find the virtual memory area that contains the specified address range.
-    auto it = FindVMA(addr);
-    if (it == vma_map.end() || !it->second.Contains(addr, size)) {
-        LOG_ERROR(Core, "Address range not mapped");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    VirtualMemoryArea& vma = it->second;
-    if (vma.type == VMAType::Free) {
-        LOG_ERROR(Core, "Cannot change protection on free memory region");
+    if (vma_base.type == VMAType::Free) {
+        LOG_ERROR(Kernel_Vmm, "Cannot change protection on free memory region");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -504,13 +499,13 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
 
     MemoryProt invalid_flags = prot & ~valid_flags;
     if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
-        LOG_ERROR(Core, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}", u32(prot),
-                  u32(invalid_flags));
+        LOG_ERROR(Kernel_Vmm, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}",
+                  u32(prot), u32(invalid_flags));
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     // Change protection
-    vma.prot = prot;
+    vma_base.prot = prot;
 
     // Set permissions
     Core::MemoryPermission perms{};
@@ -532,6 +527,24 @@ int MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     }
 
     impl.Protect(addr, size, perms);
+
+    return adjusted_size;
+}
+
+s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
+    std::scoped_lock lk{mutex};
+    s64 protected_bytes = 0;
+    do {
+        auto it = FindVMA(addr + protected_bytes);
+        auto& vma_base = it->second;
+        auto result = 0;
+        result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
+        if (result < 0) {
+            // ProtectBytes returned an error, return it
+            return result;
+        }
+        protected_bytes += result;
+    } while (protected_bytes < size);
 
     return ORBIS_OK;
 }
