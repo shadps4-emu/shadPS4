@@ -17,6 +17,7 @@ public:
     ~GameInfoClass();
     void GetGameInfo(QWidget* parent = nullptr);
     QVector<GameInfo> m_games;
+    QVector<GameInfo> m_games_backup;
 
     static bool CompareStrings(GameInfo& a, GameInfo& b) {
         std::string name_a = a.name, name_b = b.name;

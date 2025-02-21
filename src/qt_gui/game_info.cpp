@@ -49,6 +49,9 @@ void GameInfoClass::GetGameInfo(QWidget* parent) {
                   return readGameInfo(Common::FS::PathFromQString(path));
               }).results();
 
+    // used to retrieve values after performing a search
+    m_games_backup = m_games;
+
     // Progress bar, please be patient :)
     QProgressDialog dialog(tr("Loading game list, please wait :3"), tr("Cancel"), 0, 0, parent);
     dialog.setWindowTitle(tr("Loading..."));
