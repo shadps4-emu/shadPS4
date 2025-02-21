@@ -301,7 +301,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
-        // ui->widthGroupBox->installEventFilter(this);
         ui->windowSizeGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
