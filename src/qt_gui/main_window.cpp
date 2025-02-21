@@ -659,6 +659,10 @@ void MainWindow::StartGame() {
 }
 
 void MainWindow::SearchGameTable(const QString& text) {
+    m_game_info->m_games = m_game_info->m_games_backup;
+    m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+    m_game_list_frame->PopulateGameList();
+
     if (isTableList) {
         for (int row = 0; row < m_game_list_frame->rowCount(); row++) {
             QString game_name = QString::fromStdString(m_game_info->m_games[row].name);
@@ -674,6 +678,7 @@ void MainWindow::SearchGameTable(const QString& text) {
             }
         }
         std::sort(filteredGames.begin(), filteredGames.end(), m_game_info->CompareStrings);
+        m_game_info->m_games = filteredGames;
         m_game_grid_frame->PopulateGameGrid(filteredGames, true);
     }
 }
