@@ -70,11 +70,11 @@
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>Ønsker du å slette den valgte filen?\n%1</translation>
+      <translation>Ønsker du å slette den valgte fila?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>Velg programrettelse-filen:</translation>
+      <translation>Velg programrettelse-fila:</translation>
     </message>
     <message>
       <source>Download Patches</source>
@@ -110,11 +110,11 @@
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>Kan ikke åpne filen for lesing.</translation>
+      <translation>Kan ikke åpne fila for lesing.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>Kan ikke åpne filen for skriving.</translation>
+      <translation>Kan ikke åpne fila for skriving.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
@@ -138,19 +138,19 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Filen eksisterer</translation>
+      <translation>Fila eksisterer</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>Filen eksisterer allerede. Ønsker du å erstatte den?</translation>
+      <translation>Fila eksisterer allerede. Ønsker du å erstatte den?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>Kunne ikke lagre filen:</translation>
+      <translation>Kunne ikke lagre fila:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>Kunne ikke laste ned filen:</translation>
+      <translation>Kunne ikke laste ned fila:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
@@ -166,7 +166,7 @@
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Du har lastet ned juks for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge filen fra listen.</translation>
+      <translation>Du har lastet ned juks for denne versjonen av spillet fra den valgte pakkebrønnen. Du kan prøve å laste ned fra en annen pakkebrønn, hvis det er tilgjengelig, vil det også være mulig å bruke det ved å velge fila fra lista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -210,7 +210,7 @@
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>Kunne ikke åpne filen:</translation>
+      <translation>Kunne ikke åpne fila:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
@@ -341,7 +341,7 @@
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>Kunne ikke lagre oppdateringsfilen på</translation>
+      <translation>Kunne ikke lagre oppdateringsfila på</translation>
     </message>
     <message>
       <source>Starting Update...</source>
@@ -349,7 +349,7 @@
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>Kunne ikke opprette oppdateringsskriptfilen</translation>
+      <translation>Kunne ikke opprette oppdateringsskriptfila</translation>
     </message>
   </context>
   <context>
@@ -479,7 +479,7 @@
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -519,27 +519,27 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Fargejustering</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Overstyr farge på lyslinja</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Overstyr farge</translation>
     </message>
   </context>
   <context>
@@ -553,7 +553,7 @@
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation>Laster spill-liste, vennligst vent :3</translation>
+      <translation>Laster spilliste, vennligst vent :3</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -572,7 +572,7 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Mappe for å installere spill</translation>
+      <translation>Mappe for installering av spill</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -584,7 +584,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation>Mappe for å installere DLC</translation>
+      <translation>Mappe for installering av DLC</translation>
     </message>
   </context>
   <context>
@@ -717,7 +717,7 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Trofé viser</translation>
+      <translation>Troféviser</translation>
     </message>
     <message>
       <source>Open Folder...</source>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO-viser for </translation>
     </message>
   </context>
   <context>
@@ -939,11 +939,11 @@
     </message>
     <message>
       <source>Show Game List</source>
-      <translation>Vis spill-listen</translation>
+      <translation>Vis spilliste</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
-      <translation>Oppdater spill-listen</translation>
+      <translation>Oppdater spillista</translation>
     </message>
     <message>
       <source>Tiny</source>
@@ -983,11 +983,11 @@
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>Dump spill-liste</translation>
+      <translation>Dump spilliste</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
-      <translation>PKG viser</translation>
+      <translation>PKG-viser</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1003,11 +1003,11 @@
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation>Spill-liste ikoner</translation>
+      <translation>Spilliste ikoner</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>Spill-liste modus</translation>
+      <translation>Spilliste modus</translation>
     </message>
     <message>
       <source>Settings</source>
@@ -1051,7 +1051,7 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>Spill-liste</translation>
+      <translation>Spilliste</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
@@ -1159,7 +1159,7 @@
     </message>
     <message>
       <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Filen ser ikke ut til å være en gyldig PKG-fil</translation>
+      <translation>Fila ser ikke ut til å være en gyldig PKG-fil</translation>
     </message>
     <message>
       <source>Run Game</source>
@@ -1297,7 +1297,7 @@
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>Vis spillstørrelse i listen</translation>
+      <translation>Vis spillstørrelse i lista</translation>
     </message>
     <message>
       <source>Show Splash</source>
@@ -1325,11 +1325,11 @@
     </message>
     <message>
       <source>Log Type</source>
-      <translation>Logg type</translation>
+      <translation>Loggføringstype</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>Logg filter</translation>
+      <translation>Loggfilter</translation>
     </message>
     <message>
       <source>Open Log Location</source>
@@ -1437,7 +1437,7 @@
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Bruk Vulkan Validation Layers</translation>
+      <translation>Bruk Vulkan Synchronization Validation</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
@@ -1585,15 +1585,15 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Logg type:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for emulatoren.</translation>
+      <translation>Loggføringstype:\nAngir om loggvinduets utdata skal synkroniseres for ytelse. Kan ha negative effekter for emulatoren.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Logg filter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Nivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i listen og logger alle nivåer etter det.</translation>
+      <translation>Loggfilter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; \nNivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i lista og loggfører alle nivåer etter det.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Oppdatering:\nRelease: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNightly: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
+      <translation>Oppdatering:\nOffisiell: Offisielle versjoner utgitt hver måned som kan være veldig utdaterte, men er mer pålitelige og testet.\nNattlig: Utviklingsversjoner som har alle de nyeste funksjonene og feilrettingene, men som kan inneholde feil og er mindre stabile.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1661,7 +1661,7 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlisten,\neller &quot;Velg automatisk&quot;.</translation>
+      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlista,\neller &quot;Velg automatisk&amp;quot.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
@@ -1689,11 +1689,11 @@
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Legg til:\nLegg til en mappe til listen.</translation>
+      <translation>Legg til:\nLegg til en mappe til lista.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>Fjern:\nFjern en mappe fra listen.</translation>
+      <translation>Fjern:\nFjern en mappe fra lista.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
@@ -1701,11 +1701,11 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Bruk Vulkan Validation Layers:\nAktiverer et system som bekrefter tilstanden til Vulkan-gjengiveren og logger informasjon om dens indre tilstand.\n Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
+      <translation>Bruk Vulkan Validation Layers:\nAktiverer et system som bekrefter tilstanden til Vulkan-gjengiveren og loggfører informasjon om dens indre tilstand.\n Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Bruk Vulkan synkronisering validering:\nEt system som bekrefter frekvens tiden av Vulkan-gjengivelseoppgaver.\nDette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
+      <translation>Bruk Vulkan Synchronization Validation:\nEt system som bekrefter frekvens tiden av Vulkan-gjengivelseoppgaver.\nDette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -1749,11 +1749,11 @@
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Offisiell</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nattlig</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1773,11 +1773,11 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asynkron</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>synkron</translation>
     </message>
     <message>
       <source>Auto Select</source>
@@ -1796,7 +1796,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Trofé viser</translation>
+      <translation>Troféviser</translation>
     </message>
   </context>
 </TS>
