@@ -933,7 +933,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     bool ro = false;
     const auto host_path = mnt->GetHostPath(path, &ro);
     if (host_path.empty()) {
-        *__Error() = POSIX_EACCES;
+        *__Error() = POSIX_ENOENT;
         return -1;
     }
 
@@ -949,8 +949,8 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
 
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
-        *__Error() = POSIX_ENOENT;
-        return -1;
+        // Cannot unlink an unopened file
+        return ORBIS_OK;
     }
 
     file->f.Unlink();
