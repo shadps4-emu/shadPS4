@@ -957,7 +957,11 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
 )
 endif()
 
-set(RESOURCEFOLDER ${CMAKE_SOURCE_DIR}/Resources)
+set(RESOURCEFOLDER Resources/bronze.png
+    		   Resources/gold.png
+    		   Resources/platinum.png
+    		   Resources/silver.png
+)
 
 if (ENABLE_QT_GUI)
     qt_add_executable(shadps4
@@ -1152,11 +1156,7 @@ endif()
 
 # copy Resource folder (trophy images) inside Mac App bundle resources folder
 if (ENABLE_QT_GUI AND APPLE)
-add_custom_command(TARGET shadps4 POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_SOURCE_DIR}/Resources"
-    "$<TARGET_FILE_DIR:shadps4>/../Resources"
-)
+set_source_files_properties(${RESOURCEFOLDER} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 else()
 add_custom_target(copy-files ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory

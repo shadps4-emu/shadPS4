@@ -95,7 +95,10 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
     - name: Move Files and Resources
-      run: "mkdir upload\n\t move build/Resources upload\nmove build/shadPS4.exe upload\n"
+      run: |
+        mkdir upload
+        move build/Resources upload
+        move build/shadPS4.exe upload
 
     - name: Upload Windows SDL artifact
       uses: actions/upload-artifact@v4
@@ -152,7 +155,10 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
     - name: Move Files and Resources
-      run: "mkdir upload\n\t move build/Resources upload\nmove build/shadPS4.exe upload\n"
+      run: |
+        mkdir upload
+        move build/Resources upload
+        move build/shadPS4.exe upload
 
     - name: Deploy and Package
       run: |
@@ -206,7 +212,10 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
 
     - name: Move Files and Resources
-      run: "mkdir upload\n\t mv ${{github.workspace}}/build/shadps4 upload\nmv ${{github.workspace}}/build/Resources upload\n"
+      run: |
+        mkdir upload
+        mv build/shadps4 upload
+        mv build/Resources upload
 
     - name: Package and Upload macOS SDL artifact
       run: |
@@ -314,15 +323,16 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
-  
+
     - name: Package and Upload Linux(ubuntu64) SDL artifact 
       run: |
-        ls -la ${{ github.workspace }}/build/shadps4
-    
+        mkdir upload
+        cp build/shadps4 upload
+        cp -a build/Resources upload
     - uses: actions/upload-artifact@v4
       with:
         name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: ${{ github.workspace }}/build/shadps4
+        path: upload/
 
     - name: Run AppImage packaging script
       run:  ./.github/linux-appimage-sdl.sh
