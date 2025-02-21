@@ -399,13 +399,15 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
 
 set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal.h
+                 src/core/libraries/libc_internal/libc_internal_io.cpp
+                 src/core/libraries/libc_internal/libc_internal_io.h
                  src/core/libraries/libc_internal/libc_internal_memory.cpp
                  src/core/libraries/libc_internal/libc_internal_memory.h
                  src/core/libraries/libc_internal/libc_internal_str.cpp
                  src/core/libraries/libc_internal/libc_internal_str.h
                  src/core/libraries/libc_internal/libc_internal_math.cpp
                  src/core/libraries/libc_internal/libc_internal_math.h
-
+                 src/core/libraries/libc_internal/printf.h
 )
 
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
