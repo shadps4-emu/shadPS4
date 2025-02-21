@@ -118,6 +118,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this,
             [this, config_dir](QAbstractButton* button) {
                 if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
+                    is_saving = true;
                     UpdateSettings();
                     Config::save(config_dir / "config.toml");
                     QWidget::close();
@@ -341,6 +342,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->collectShaderCheckBox->installEventFilter(this);
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
     }
+}
+
+void SettingsDialog::closeEvent(QCloseEvent* event) {
+    if (!is_saving) {
+        ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+        emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+        ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+        BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
+    }
+    QDialog::closeEvent(event);
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
