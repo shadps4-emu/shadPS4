@@ -197,6 +197,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     // Gui TAB
     {
+        connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
+                [this](int value) { emit BackgroundOpacityChanged(value); });
+
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
+                [](int value) { BackgroundMusicPlayer::getInstance().setVolume(value); });
+
         connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
