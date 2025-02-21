@@ -262,6 +262,13 @@ private:
     }
 };
 
+static constexpr CompMapping IdentityMapping = {
+    .r = CompSwizzle::Red,
+    .g = CompSwizzle::Green,
+    .b = CompSwizzle::Blue,
+    .a = CompSwizzle::Alpha,
+};
+
 inline DataFormat RemapDataFormat(const DataFormat format) {
     switch (format) {
     case DataFormat::Format11_11_10:
