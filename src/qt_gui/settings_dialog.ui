@@ -1047,7 +1047,7 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QLabel" name="widthLabel">
+                     <widget class="QLabel" name="heightLabel">
                       <property name="text">
                        <string>H:</string>
                       </property>
