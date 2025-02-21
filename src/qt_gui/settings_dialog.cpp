@@ -78,7 +78,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
     logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
     screenModeMap = {{tr("Fullscreen (Borderless)"), "Fullscreen (Borderless)"},
-                     {tr("Windowed"), "Windowed"}};
+                     {tr("Windowed"), "Windowed"},
+                     {tr("Fullscreen"), "Fullscreen"}};
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
@@ -647,8 +648,7 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() ==
-                            "Fullscreen (Borderless)");
+    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() == "Fullscreen");
     Config::setFullscreenMode(
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());

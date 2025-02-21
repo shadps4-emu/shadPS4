@@ -996,6 +996,11 @@
                     </item>
                     <item>
                      <property name="text">
+                      <string>Fullscreen</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
                       <string>Fullscreen (Borderless)</string>
                      </property>
                     </item>
