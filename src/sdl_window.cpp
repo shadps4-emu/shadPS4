@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <thread>
+#include <sys/stat.h>
+
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
@@ -22,6 +29,12 @@
 
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
 namespace Input {
@@ -392,9 +405,77 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
-    default:
+    case SDL_EVENT_QUIT + 1:
+        is_open = false;
+        RelaunchEmulator();
         break;
     }
+}
+
+void WindowSDL::RelaunchEmulator() {
+#ifdef _WIN32
+    char emulatorPath[MAX_PATH];
+    GetModuleFileNameA(nullptr, emulatorPath, MAX_PATH); // Get current executable path
+
+    std::string emulatorDir = std::string(emulatorPath);
+    size_t pos = emulatorDir.find_last_of("\\/");
+    if (pos != std::string::npos) {
+        emulatorDir = emulatorDir.substr(0, pos); // Extract directory
+    }
+
+    std::string scriptFileName = std::getenv("TEMP") + std::string("\\relaunch.ps1");
+    std::ofstream scriptFile(scriptFileName);
+
+    if (scriptFile.is_open()) {
+        scriptFile << "Start-Sleep -Seconds 2\n"
+                   << "Start-Process -FilePath '" << emulatorPath
+                   << "' -WorkingDirectory ([WildcardPattern]::Escape('" << emulatorDir << "'))\n";
+        scriptFile.close();
+
+        // Execute PowerShell script
+        std::string command =
+            "powershell.exe -ExecutionPolicy Bypass -File \"" + scriptFileName + "\"";
+        system(command.c_str());
+    } else {
+        std::cerr << "Failed to create relaunch script" << std::endl;
+    }
+
+#elif defined(__linux__) || defined(__APPLE__)
+    char emulatorPath[1024];
+    ssize_t count = readlink("/proc/self/exe", emulatorPath, sizeof(emulatorPath) - 1);
+    if (count != -1) {
+        emulatorPath[count] = '\0';
+    } else {
+        std::cerr << "Failed to get executable path" << std::endl;
+        return;
+    }
+
+    std::string emulatorDir = std::string(emulatorPath);
+    size_t pos = emulatorDir.find_last_of("/");
+    if (pos != std::string::npos) {
+        emulatorDir = emulatorDir.substr(0, pos); // Extract directory
+    }
+
+    std::string scriptFileName = "/tmp/relaunch.sh";
+    std::ofstream scriptFile(scriptFileName);
+
+    if (scriptFile.is_open()) {
+        scriptFile << "#!/bin/bash\n"
+                   << "sleep 2\n"
+                   << "cd '" << emulatorDir << "'\n"
+                   << "./'" << emulatorPath + pos + 1 << "' &\n";
+        scriptFile.close();
+
+        // Make script executable
+        chmod(scriptFileName.c_str(), S_IRWXU);
+
+        // Execute bash script
+        std::string command = "bash " + scriptFileName;
+        system(command.c_str());
+    } else {
+        std::cerr << "Failed to create relaunch script" << std::endl;
+    }
+#endif
 }
 
 void WindowSDL::InitTimers() {

@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QHoverEvent>
 #include <fmt/format.h>
+#include "main_window.h"
 
 #include "common/config.h"
 #include "common/version.h"
@@ -167,9 +168,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                     }
                 });
 
-        connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
-            auto checkUpdate = new CheckUpdate(true);
-            checkUpdate->exec();
+        connect(ui->checkUpdateButton, &QPushButton::clicked, this, [this, parent = (parent)]() {
+            MainWindow* mainWindow = dynamic_cast<MainWindow*>(parent); // Use the captured 'parent'
+            if (mainWindow) {
+                auto checkUpdate =
+                    new CheckUpdate(mainWindow, true, this); // Pass MainWindow* and bool
+                checkUpdate->exec();
+            }
         });
 #else
         ui->updaterGroupBox->setVisible(false);

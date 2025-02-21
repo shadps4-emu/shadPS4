@@ -29,8 +29,8 @@
 
 using namespace Common::FS;
 
-CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
-    : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
+CheckUpdate::CheckUpdate(MainWindow* mainWindow, bool showMessage, QWidget* parent)
+    : QDialog(parent), networkManager(new QNetworkAccessManager(this)), m_mainWindow(mainWindow) {
     setWindowTitle(tr("Auto Updater"));
     setFixedSize(0, 0);
     CheckForUpdates(showMessage);
@@ -422,6 +422,13 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
 }
 
 void CheckUpdate::Install() {
+    if (m_mainWindow && m_mainWindow->isGameRunning) {
+        QMessageBox::warning(this, tr("Update Warning"),
+                             tr("A game is currently running. Please close the game to prevent "
+                                "save file corruption."));
+        m_mainWindow->StopGameforUpdate(false);
+    }
+
     QString userPath;
     Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 

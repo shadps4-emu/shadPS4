@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
+#include <iostream>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QPlainTextEdit>
 #include <QProgressDialog>
+#include <SDL3/SDL_events.h>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -30,6 +33,7 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#include <SDL3/SDL_messagebox.h>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -222,12 +226,10 @@ void MainWindow::LoadGameLists() {
 
 #ifdef ENABLE_UPDATER
 void MainWindow::CheckUpdateMain(bool checkSave) {
-    if (checkSave) {
-        if (!Config::autoUpdate()) {
-            return;
-        }
+    if (checkSave && !Config::autoUpdate()) {
+        return;
     }
-    auto checkUpdate = new CheckUpdate(false);
+    auto checkUpdate = new CheckUpdate(this, false, this);
     checkUpdate->exec();
 }
 #endif
@@ -276,6 +278,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -335,7 +338,7 @@ void MainWindow::CreateConnects() {
 
 #ifdef ENABLE_UPDATER
     connect(ui->updaterAct, &QAction::triggered, this, [this]() {
-        auto checkUpdate = new CheckUpdate(true);
+        auto checkUpdate = new CheckUpdate(this, false, this);
         checkUpdate->exec();
     });
 #endif
@@ -1151,6 +1154,10 @@ void MainWindow::HandleResize(QResizeEvent* event) {
     }
 }
 
+std::string MainWindow::getLastEbootPath() {
+    return std::string();
+}
+
 void MainWindow::AddRecentFiles(QString filePath) {
     std::vector<std::string> vec = Config::getRecentFiles();
     if (!vec.empty()) {
@@ -1226,6 +1233,10 @@ void MainWindow::OnLanguageChanged(const std::string& locale) {
     LoadTranslation();
 }
 
+static void ShowMessageBox(const std::string& title, const std::string& message) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, title.c_str(), message.c_str(), NULL);
+}
+
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -1257,4 +1268,34 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     });
     emulator_thread.detach();
 #endif
+}
+
+void MainWindow::StopGameforUpdate(bool shouldRelaunch) {
+    if (!isGameRunning) {
+        return;
+    }
+
+    Core::Emulator& emulator = Core::Emulator::GetInstance();
+    emulator.StopEmulation();
+
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&quitEvent);
+
+    isGameRunning = false;
+}
+
+void MainWindow::StopGame() {
+    if (!isGameRunning) {
+        return;
+    }
+
+    Core::Emulator& emulator = Core::Emulator::GetInstance();
+    emulator.StopEmulation();
+
+    if (isGameRunning == true)
+        ;
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT + 1;
+    SDL_PushEvent(&quitEvent);
 }
