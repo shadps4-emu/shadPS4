@@ -290,8 +290,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         error = true;
     }
     if (!error) {
-        SDL_SetWindowFullscreenMode(window,
-                                    Config::getFullscreenMode() == "True" ? displayMode : NULL);
+        SDL_SetWindowFullscreenMode(
+            window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
     }
     SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
