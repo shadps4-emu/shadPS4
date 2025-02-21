@@ -116,6 +116,29 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
 
+            std::filesystem::path trophyTypePath;
+            if (std::filesystem::exists(std::filesystem::current_path() / "Resources")) {
+                trophyTypePath = std::filesystem::current_path() / "Resources";
+            } else {
+#if defined(__linux__)
+                const char* AppDir = getenv("APPDIR");
+                trophyTypePath = std::filesystem::path(AppDir);
+#elif defined(__APPLE__)
+                trophyTypePath = Common::GetBundleParentDirectory().parent_path() / "Resources";
+#endif
+            }
+
+            const std::string filename = GetTrpType(trpType[row].at(0));
+            const std::filesystem::path typeIconpath = trophyTypePath / filename;
+
+            QTableWidgetItem* typeitem = new QTableWidgetItem();
+            QImage type_icon =
+                QImage(QFileInfo(typeIconpath).absoluteFilePath())
+                    .scaled(QSize(64, 64), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            typeitem->setData(Qt::DecorationRole, type_icon);
+            typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
+            tableWidget->setItem(row, 6, typeitem);
+
             std::string detailString = trophyDetails[row].toStdString();
             std::size_t newline_pos = 0;
             while ((newline_pos = detailString.find("\n", newline_pos)) != std::string::npos) {
@@ -129,7 +152,6 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 SetTableItem(tableWidget, row, 3, QString::fromStdString(detailString));
                 SetTableItem(tableWidget, row, 4, trpId[row]);
                 SetTableItem(tableWidget, row, 5, trpHidden[row]);
-                SetTableItem(tableWidget, row, 6, GetTrpType(trpType[row].at(0)));
                 SetTableItem(tableWidget, row, 7, trpPid[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
