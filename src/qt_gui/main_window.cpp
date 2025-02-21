@@ -658,18 +658,24 @@ void MainWindow::StartGame() {
     }
 }
 
+bool isTable;
 void MainWindow::SearchGameTable(const QString& text) {
-    m_game_info->m_games = m_game_info->m_games_backup;
-
     if (isTableList) {
-        m_game_list_frame->PopulateGameList();
+        if (isTable != true) {
+            m_game_info->m_games = m_game_info->m_games_backup;
+            m_game_list_frame->PopulateGameList();
+            isTable = true;
+        }
         for (int row = 0; row < m_game_list_frame->rowCount(); row++) {
             QString game_name = QString::fromStdString(m_game_info->m_games[row].name);
             bool match = (game_name.contains(text, Qt::CaseInsensitive)); // Check only in column 1
             m_game_list_frame->setRowHidden(row, !match);
         }
     } else {
+        isTable = false;
+        m_game_info->m_games = m_game_info->m_games_backup;
         m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+
         QVector<GameInfo> filteredGames;
         for (const auto& gameInfo : m_game_info->m_games) {
             QString game_name = QString::fromStdString(gameInfo.name);
