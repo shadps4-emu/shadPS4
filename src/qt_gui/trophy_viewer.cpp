@@ -124,7 +124,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 const char* AppDir = getenv("APPDIR");
                 trophyTypePath = std::filesystem::path(AppDir);
 #elif defined(__APPLE__)
-                trophyTypePath = Common::GetBundleParentDirectory().parent_path() / "Resources";
+                trophyTypePath = std::filesystem::current_path().parent_path() / "Resources";
 #endif
             }
 

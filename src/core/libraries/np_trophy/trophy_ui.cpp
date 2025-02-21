@@ -38,7 +38,6 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         const char* AppDir = getenv("APPDIR");
         ResourceDir = std::filesystem::path(AppDir);
 #elif defined(__APPLE__)
-        // for testing on Mac QT
         ResourceDir = std::filesystem::current_path().parent_path() / "Resources";
 #endif
     }
