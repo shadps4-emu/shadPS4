@@ -18,26 +18,6 @@
 #include "game_list_utils.h"
 #include "gui_context_menus.h"
 
-namespace GameListFrameHelper {
-
-/**
- * Helper function to perform a case-insensitive comparison of two strings.
- * This function converts both strings to lowercase and then compares them.
- * 
- * @param a First string for comparison.
- * @param b Second string for comparison.
- * @return true if a < b, false otherwise.
- */
-inline bool CompareStringsCaseInsensitive(const std::string& a, const std::string& b) {
-    std::string lower_a = a;
-    std::string lower_b = b;
-    std::transform(lower_a.begin(), lower_a.end(), lower_a.begin(), ::tolower);
-    std::transform(lower_b.begin(), lower_b.end(), lower_b.begin(), ::tolower);
-    return lower_a < lower_b;
-}
-
-} // namespace GameListFrameHelper
-
 class GameListFrame : public QTableWidget {
     Q_OBJECT
 public:
@@ -93,7 +73,7 @@ public:
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1: {
-            return GameListFrameHelper::CompareStringsCaseInsensitive(a.name, b.name);
+            return CompareStringsCaseInsensitive(a.name, b.name);
         }
         case 2:
             return a.compatibility.status < b.compatibility.status;
@@ -119,7 +99,7 @@ public:
     static bool CompareStringsDescending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1: {
-            return GameListFrameHelper::CompareStringsCaseInsensitive(a.name, b.name);
+            return CompareStringsCaseInsensitive(b.name, a.name);
         }
         case 2:
             return a.compatibility.status > b.compatibility.status;
@@ -140,5 +120,11 @@ public:
         default:
             return false;
         }
+    }
+
+    static bool CompareStringsCaseInsensitive(std::string_view a, std::string_view b) {
+        auto lhs = a | std::views::transform(::tolower);
+        auto rhs = b | std::views::transform(::tolower);
+        return std::ranges::lexicographical_compare(lhs, rhs);
     }
 };
