@@ -65,6 +65,10 @@ public:
         m_queue.emplace(std::forward<T>(value));
     }
 
+    T& Front() {
+        return m_queue.front();
+    }
+
     std::optional<T> Pop() {
         if (Size() == 0) {
             return std::nullopt;

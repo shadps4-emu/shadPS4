@@ -291,10 +291,6 @@ void AvPlayerSource::Resume() {
 }
 
 bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
-    if (!IsActive()) {
-        return false;
-    }
-
     AvPlayerFrameInfoEx info{};
     if (!GetVideoData(info)) {
         return false;
@@ -317,18 +313,18 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
-    auto frame = m_video_frames.Pop();
+    const auto& last_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
         const auto current_time =
             m_audio_stream_index.has_value() ? m_last_audio_packet_time : CurrentTime();
-        if (0 < current_time && current_time < frame->info.timestamp) {
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(frame->info.timestamp - current_time));
+        if (0 < current_time && current_time < last_frame.info.timestamp) {
+            return false;
         }
     }
 
-    // return the buffer to the queue
+    auto frame = m_video_frames.Pop();
     if (m_current_video_frame.has_value()) {
+        // return the buffer to the queue
         m_video_buffers.Push(std::move(m_current_video_frame.value()));
         m_video_buffers_cv.Notify();
     }
