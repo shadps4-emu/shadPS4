@@ -69,6 +69,7 @@ static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
 static bool isFpsColor = true;
+static bool isSplitLogEnabled = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
@@ -451,6 +452,10 @@ void setLogFilter(const std::string& type) {
     logFilter = type;
 }
 
+void setSplitLogEnabled(bool enabled) {
+    isSplitLogEnabled = enabled;
+}
+
 void setUserName(const std::string& type) {
     userName = type;
 }
@@ -656,6 +661,10 @@ u32 GetLanguage() {
     return m_language;
 }
 
+bool getSplitLogEnabled() {
+    return isSplitLogEnabled;
+}
+
 int getBackgroundImageOpacity() {
     return backgroundImageOpacity;
 }
@@ -761,6 +770,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
+        isSplitLogEnabled = toml::find_or<bool>(debug, "isSplitLogEnabled", false);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
     }
@@ -887,6 +897,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
+    data["Debug"]["isSplitLogEnabled"] = isSplitLogEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
 
     data["Keys"]["TrophyKey"] = trophyKey;

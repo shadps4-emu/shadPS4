@@ -404,6 +404,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         QString::fromStdString(toml::find_or<std::string>(data, "Keys", "TrophyKey", "")));
     ui->trophyKeyLineEdit->setEchoMode(QLineEdit::Password);
     ui->debugDump->setChecked(toml::find_or<bool>(data, "Debug", "DebugDump", false));
+    ui->splitLogCheckbox->setChecked(toml::find_or<bool>(data, "Debug", "isSplitLogEnabled", false));
     ui->vkValidationCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "validation", false));
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
@@ -626,7 +627,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Copy GPU Buffers:\\nGets around race conditions involving GPU submits.\\nMay or may not help with PM4 type 0 crashes.");
     } else if (elementName == "collectShaderCheckBox") {
         text = tr("Collect Shaders:\\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).");
-    }
+    } else if (elementName == "splitLogCheckbox") {
+        text = tr("Split Log File:\\nSplits the log file into multiple files, one for each game.");}
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
@@ -678,6 +680,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
+    Config::setSplitLogEnabled(ui->splitLogCheckbox->isChecked());
     Config::setVkValidation(ui->vkValidationCheckBox->isChecked());
     Config::setVkSyncValidation(ui->vkSyncValidationCheckBox->isChecked());
     Config::setRdocEnabled(ui->rdocCheckBox->isChecked());

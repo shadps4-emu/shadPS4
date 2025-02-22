@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -59,7 +57,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -1877,39 +1875,50 @@
           </property>
           <layout class="QVBoxLayout" name="advancedLayout">
            <item>
-            <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
-             <property name="text">
-              <string>Enable Crash Diagnostics</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="collectShaderCheckBox">
-             <property name="text">
-              <string>Collect Shaders</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
-             <property name="text">
-              <string>Copy GPU Buffers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="hostMarkersCheckBox">
-             <property name="text">
-              <string>Host Debug Markers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="guestMarkersCheckBox">
-             <property name="text">
-              <string>Guest Debug Markers</string>
-             </property>
-            </widget>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="collectShaderCheckBox">
+               <property name="text">
+                <string>Collect Shaders</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+               <property name="text">
+                <string>Copy GPU Buffers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+               <property name="text">
+                <string>Enable Crash Diagnostics</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QCheckBox" name="hostMarkersCheckBox">
+               <property name="text">
+                <string>Host Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="guestMarkersCheckBox">
+               <property name="text">
+                <string>Guest Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="splitLogCheckbox">
+               <property name="text">
+                <string>Split Log To Seperate Files For Games</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

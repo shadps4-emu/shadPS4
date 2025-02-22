@@ -111,7 +111,8 @@ void setIsMotionControlsEnabled(bool use);
 
 void setLogType(const std::string& type);
 void setLogFilter(const std::string& type);
-
+void setSplitLogEnabled(bool enabled);
+bool getSplitLogEnabled();
 void setVkValidation(bool enable);
 void setVkSyncValidation(bool enable);
 void setRdocEnabled(bool enable);
