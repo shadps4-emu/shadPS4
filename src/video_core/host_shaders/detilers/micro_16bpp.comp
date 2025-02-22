@@ -52,7 +52,7 @@ void main() {
     uint mip = 0u;
     for (int m = 0; m < info.num_levels; ++m) {
         mip += (gl_GlobalInvocationID.x * 4) >= info.sizes[m] ? 1 : 0;
-    }    
+    }
     uint tiles_per_pitch = max(((info.pitch >> mip) / 8u), 1u);
     uint target_tile_x = gl_WorkGroupID.x % tiles_per_pitch;
     uint target_tile_y = gl_WorkGroupID.x / tiles_per_pitch;

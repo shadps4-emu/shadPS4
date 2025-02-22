@@ -63,10 +63,10 @@ const uint lut_8bpp[][16] = {
     },
 };
 
-#define MICRO_TILE_DIM      (8)
-#define MICRO_TILE_SZ       (256)
-#define TEXELS_PER_ELEMENT  (1)
-#define BPP                 (8)
+#define MICRO_TILE_DIM      8
+#define MICRO_TILE_SZ       256
+#define TEXELS_PER_ELEMENT  1
+#define BPP                 8
 
 shared uint scratch[16];
 

@@ -16,7 +16,7 @@ layout(push_constant) uniform settings {
 const float cutoff = 0.0031308, a = 1.055, b = 0.055, d = 12.92;
 vec3 gamma(vec3 rgb) {
     return mix(
-        a * pow(rgb, vec3(1.0 / (2.4 + 1.0 - pp.gamma))) - b,
+        a * pow(rgb, vec3(1.0 / (3.4 - pp.gamma))) - b,
         d * rgb / pp.gamma,
         lessThan(rgb, vec3(cutoff))
     );

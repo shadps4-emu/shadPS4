@@ -32,7 +32,7 @@ const uint rmort[16] = {
     0x57475646, 0x77677666,
 };
 
-#define MICRO_TILE_DIM      (8)
+#define MICRO_TILE_DIM      8
 
 void main() {
     uint block_ofs = 4 * gl_GlobalInvocationID.x;
@@ -57,7 +57,7 @@ void main() {
     uint dw_ofs_x = (target_tile_x * MICRO_TILE_DIM) + 4 * col;
     uint dw_ofs_y = ((target_tile_y * tiles_per_pitch) * 64u) + ((row * tiles_per_pitch) * MICRO_TILE_DIM);
     out_data[dw_ofs_x + dw_ofs_y] = p0;
-    out_data[dw_ofs_x + dw_ofs_y + 1] = p1; 
-    out_data[dw_ofs_x + dw_ofs_y + 2] = p2; 
-    out_data[dw_ofs_x + dw_ofs_y + 3] = p3; 
+    out_data[dw_ofs_x + dw_ofs_y + 1] = p1;
+    out_data[dw_ofs_x + dw_ofs_y + 2] = p2;
+    out_data[dw_ofs_x + dw_ofs_y + 3] = p3;
 }

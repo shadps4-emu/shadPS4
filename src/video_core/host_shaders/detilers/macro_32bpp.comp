@@ -64,10 +64,10 @@ const uint lut_32bpp[][16] = {
     }
 };
 
-#define MICRO_TILE_DIM      (8)
-#define MICRO_TILE_SZ       (1024)
-#define TEXELS_PER_ELEMENT  (1)
-#define BPP                 (32)
+#define MICRO_TILE_DIM      8
+#define MICRO_TILE_SZ       1024
+#define TEXELS_PER_ELEMENT  1
+#define BPP                 32
 
 void main() {
     uint x =  gl_GlobalInvocationID.x % info.pitch;

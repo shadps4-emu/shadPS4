@@ -32,8 +32,8 @@ const uint rmort[16] = {
     0x57475646, 0x77677666,
 };
 
-#define MICRO_TILE_DIM      (8)
-#define TEXELS_PER_ELEMENT  (1)
+#define MICRO_TILE_DIM      8
+#define TEXELS_PER_ELEMENT  1
 
 void main() {
     uint tile_base = gl_GlobalInvocationID.x - gl_LocalInvocationID.x; // WG*16
