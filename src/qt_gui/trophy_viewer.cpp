@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QMessageBox>
+#include <cmrc/cmrc.hpp>
 #include "common/path_util.h"
 #include "trophy_viewer.h"
+
+CMRC_DECLARE(res);
 
 TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
     this->setWindowTitle(tr("Trophy Viewer"));
@@ -116,24 +119,16 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
 
-            std::filesystem::path trophyTypePath;
-            if (std::filesystem::exists(std::filesystem::current_path() / "Resources")) {
-                trophyTypePath = std::filesystem::current_path() / "Resources";
-            } else {
-#if defined(__linux__)
-                const char* AppDir = getenv("APPDIR");
-                trophyTypePath = std::filesystem::path(AppDir);
-#elif defined(__APPLE__)
-                trophyTypePath = std::filesystem::current_path().parent_path() / "Resources";
-#endif
-            }
 
             const std::string filename = GetTrpType(trpType[row].at(0));
-            const std::filesystem::path typeIconpath = trophyTypePath / filename;
-
             QTableWidgetItem* typeitem = new QTableWidgetItem();
+
+            auto resource = cmrc::res::get_filesystem();
+            std::string resourceString = "Resources/" + filename;
+            auto trophytypefile = resource.open(resourceString);
+
             QImage type_icon =
-                QImage(QFileInfo(typeIconpath).absoluteFilePath())
+                QImage(QString::fromStdString(resourceString))
                     .scaled(QSize(64, 64), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             typeitem->setData(Qt::DecorationRole, type_icon);
             typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);

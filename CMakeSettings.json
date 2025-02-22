@@ -1,40 +1,40 @@
 ﻿{
-  "configurations": [
-    {
-      "name": "x64-Clang-Release",
-      "generator": "Ninja",
-      "configurationType": "Release",
-      "buildRoot": "${projectDir}\\Build\\${name}",
-      "installRoot": "${projectDir}\\Install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "clang_cl_x64_x64" ],
-      "intelliSenseMode": "windows-clang-x64"
-    },
-    {
-      "name": "x64-Clang-Debug",
-      "generator": "Ninja",
-      "configurationType": "Debug",
-      "buildRoot": "${projectDir}\\Build\\${name}",
-      "installRoot": "${projectDir}\\Install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "clang_cl_x64_x64" ],
-      "intelliSenseMode": "windows-clang-x64"
-    },
-    {
-      "name": "x64-Clang-RelWithDebInfo",
-      "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
-      "buildRoot": "${projectDir}\\Build\\${name}",
-      "installRoot": "${projectDir}\\Install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "clang_cl_x64_x64" ],
-      "intelliSenseMode": "windows-clang-x64"
-    }
-  ]
+    "configurations": [
+        {
+            "name": "x64-Clang-Release",
+            "generator": "Ninja",
+            "configurationType": "Release",
+            "buildRoot": "${projectDir}\\Build\\${name}",
+            "installRoot": "${projectDir}\\Install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "clang_cl_x64_x64" ],
+            "intelliSenseMode": "windows-clang-x64"
+        },
+        {
+            "name": "x64-Clang-Debug",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "buildRoot": "${projectDir}\\Build\\${name}",
+            "installRoot": "${projectDir}\\Install\\${name}",
+            "cmakeCommandArgs": "-DENABLE_QT_GUI=ON -DCMAKE_PREFIX_PATH=C:\\Qt\\6.9.0\\msvc2022_64",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "clang_cl_x64_x64" ],
+            "intelliSenseMode": "windows-clang-x64"
+        },
+        {
+            "name": "x64-Clang-RelWithDebInfo",
+            "generator": "Ninja",
+            "configurationType": "RelWithDebInfo",
+            "buildRoot": "${projectDir}\\Build\\${name}",
+            "installRoot": "${projectDir}\\Install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "clang_cl_x64_x64" ],
+            "intelliSenseMode": "windows-clang-x64"
+        }
+    ]
 }

@@ -3,12 +3,15 @@
 
 #include <chrono>
 #include <mutex>
+#include <cmrc/cmrc.hpp>
 #include <imgui.h>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
+
+CMRC_DECLARE(res);
 
 using namespace ImGui;
 namespace Libraries::NpTrophy {
@@ -28,30 +31,20 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                   fmt::UTF(trophyIconPath.u8string()));
     }
 
-    std::filesystem::path trophyTypePath;
-    std::filesystem::path ResourceDir;
-    // covers Windows, Mac SDL, locally compiled builds
-    if (std::filesystem::exists(std::filesystem::current_path() / "Resources")) {
-        ResourceDir = std::filesystem::current_path() / "Resources";
-    } else {
-#if defined(__linux__)
-        const char* AppDir = getenv("APPDIR");
-        ResourceDir = std::filesystem::path(AppDir);
-#elif defined(__APPLE__)
-        ResourceDir = std::filesystem::current_path().parent_path() / "Resources";
-#endif
-    }
-
+    std::string pathString;
     if (trophy_type == "P") {
-        trophyTypePath = ResourceDir / "platinum.png";
+        pathString = "Resources/platinum.png";
     } else if (trophy_type == "G") {
-        trophyTypePath = ResourceDir / "gold.png";
+        pathString = "Resources/gold.png";
     } else if (trophy_type == "S") {
-        trophyTypePath = ResourceDir / "silver.png";
+        pathString = "Resources/silver.png";
     } else if (trophy_type == "B") {
-        trophyTypePath = ResourceDir / "bronze.png";
+        pathString = "Resources/bronze.png";
     }
 
+    auto resource = cmrc::res::get_filesystem();
+    auto trophytypefile = resource.open(pathString);
+    std::filesystem::path trophyTypePath = pathString;
     if (std::filesystem::exists(trophyTypePath))
         trophy_type_icon = RefCountedTexture::DecodePngFile(trophyTypePath);
 

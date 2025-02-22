@@ -1113,6 +1113,16 @@ add_subdirectory(${HOST_SHADERS_INCLUDE})
 add_dependencies(shadps4 host_shaders)
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
+# embed resources
+
+include(CMakeRC)
+cmrc_add_resource_library(embedded-resources
+        ALIAS res::embedded
+        NAMESPACE res
+        ${RESOURCEFOLDER})
+
+target_link_libraries(shadps4 PRIVATE res::embedded)
+
 # ImGui resources
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
 add_dependencies(shadps4 ImGui_Resources)
