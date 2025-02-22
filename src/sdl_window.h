@@ -88,7 +88,6 @@ public:
     }
 
     void WaitEvent();
-    void OnStopButtonClicked();
     void RelaunchEmulator();
     void InitTimers();
 
@@ -108,7 +107,6 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
-    bool stopButtonClicked = false;
 };
 
 } // namespace Frontend

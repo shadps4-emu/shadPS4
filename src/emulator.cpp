@@ -289,14 +289,6 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     std::quick_exit(0);
 }
 
-void Emulator::saveLastEbootPath(const std::string& path) {
-    lastEbootPath = path;
-}
-
-std::string Emulator::getLastEbootPath() const {
-    return lastEbootPath;
-}
-
 Emulator& Emulator::GetInstance() {
     static Emulator instance;
     return instance;
