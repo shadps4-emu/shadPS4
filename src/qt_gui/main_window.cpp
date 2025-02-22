@@ -231,7 +231,7 @@ void MainWindow::CheckUpdateMain(bool checkSave) {
             return;
         }
     }
-    auto checkUpdate = new CheckUpdate(this, true, this);
+    auto checkUpdate = new CheckUpdate(this, false, this);
     checkUpdate->exec();
 }
 #endif
@@ -340,7 +340,7 @@ void MainWindow::CreateConnects() {
 
 #ifdef ENABLE_UPDATER
     connect(ui->updaterAct, &QAction::triggered, this, [this]() {
-        auto checkUpdate = new CheckUpdate(this, false, this);
+        auto checkUpdate = new CheckUpdate(this, true, this);
         checkUpdate->exec();
     });
 #endif
