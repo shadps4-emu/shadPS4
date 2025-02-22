@@ -226,10 +226,12 @@ void MainWindow::LoadGameLists() {
 
 #ifdef ENABLE_UPDATER
 void MainWindow::CheckUpdateMain(bool checkSave) {
-    if (checkSave && !Config::autoUpdate()) {
-        return;
+    if (checkSave) {
+        if (!Config::autoUpdate()) {
+            return;
+        }
     }
-    auto checkUpdate = new CheckUpdate(this, false, this);
+    auto checkUpdate = new CheckUpdate(this, true, this);
     checkUpdate->exec();
 }
 #endif
