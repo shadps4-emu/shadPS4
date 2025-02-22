@@ -628,7 +628,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Copy GPU Buffers:\\nGets around race conditions involving GPU submits.\\nMay or may not help with PM4 type 0 crashes.");
     } else if (elementName == "collectShaderCheckBox") {
         text = tr("Collect Shaders:\\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).");
-    } else if (elementName == "splitLogCheckbox") {
+    } else if (elementName == "seperateLogFilesCheckbox") {
         text = tr("Split Log File:\\nSplits the log file into multiple files, one for each game.");}
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
