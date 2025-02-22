@@ -70,6 +70,12 @@ public:
         return (size[size.size() - 2] == 'G') ? num * 1024 : num;
     }
 
+    static bool CompareStringsCaseInsensitive(std::string_view a, std::string_view b) {
+        auto lhs = a | std::views::transform(::tolower);
+        auto rhs = b | std::views::transform(::tolower);
+        return std::ranges::lexicographical_compare(lhs, rhs);
+    }
+    
     static bool CompareStringsAscending(GameInfo a, GameInfo b, int columnIndex) {
         switch (columnIndex) {
         case 1: {
@@ -120,11 +126,5 @@ public:
         default:
             return false;
         }
-    }
-
-    static bool CompareStringsCaseInsensitive(std::string_view a, std::string_view b) {
-        auto lhs = a | std::views::transform(::tolower);
-        auto rhs = b | std::views::transform(::tolower);
-        return std::ranges::lexicographical_compare(lhs, rhs);
     }
 };
