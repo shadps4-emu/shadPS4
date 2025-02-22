@@ -76,7 +76,7 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -94,17 +94,11 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
-    - name: Move Files and Resources
-      run: |
-        mkdir upload
-        move build/Resources upload
-        move build/shadPS4.exe upload
-
     - name: Upload Windows SDL artifact
       uses: actions/upload-artifact@v4
       with:
         name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: upload/
+        path: ${{github.workspace}}/build/shadPS4.exe
 
   windows-qt:
     runs-on: windows-2025
@@ -117,7 +111,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.8.2
+        version: 6.9.0
         host: windows
         target: desktop
         arch: win64_msvc2022_64
@@ -136,7 +130,7 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -154,14 +148,10 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
-    - name: Move Files and Resources
-      run: |
-        mkdir upload
-        move build/Resources upload
-        move build/shadPS4.exe upload
-
     - name: Deploy and Package
       run: |
+        mkdir upload
+        move build/shadPS4.exe upload
         windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
@@ -196,7 +186,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
@@ -211,14 +201,10 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
 
-    - name: Move Files and Resources
-      run: |
-        mkdir upload
-        mv build/shadps4 upload
-        mv build/Resources upload
-
     - name: Package and Upload macOS SDL artifact
       run: |
+        mkdir upload
+        mv ${{github.workspace}}/build/shadps4 upload
         cp ${{github.workspace}}/build/externals/MoltenVK/libMoltenVK.dylib upload
         tar cf shadps4-macos-sdl.tar.gz -C upload .
     - uses: actions/upload-artifact@v4
@@ -242,7 +228,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.8.2
+        version: 6.9.0
         host: mac
         target: desktop
         arch: clang_64
@@ -261,7 +247,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{runner.os}}-qt-cache-cmake-build
       with:
@@ -275,12 +261,11 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
-    
-    - name: Move Files and Resources
-      run: "mkdir upload\n\t mv ${{github.workspace}}/build/shadps4.app upload\n"
 
     - name: Package and Upload macOS Qt artifact
       run: |
+        mkdir upload
+        mv ${{github.workspace}}/build/shadps4.app upload
         macdeployqt upload/shadps4.app
         tar cf shadps4-macos-qt.tar.gz -C upload .
     - uses: actions/upload-artifact@v4
@@ -311,7 +296,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -323,16 +308,15 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
-
+  
     - name: Package and Upload Linux(ubuntu64) SDL artifact 
       run: |
-        mkdir upload
-        cp build/shadps4 upload
-        cp -a build/Resources upload
+        ls -la ${{ github.workspace }}/build/shadps4
+    
     - uses: actions/upload-artifact@v4
       with:
         name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: upload/
+        path: ${{ github.workspace }}/build/shadps4
 
     - name: Run AppImage packaging script
       run:  ./.github/linux-appimage-sdl.sh
@@ -368,7 +352,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -415,7 +399,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
@@ -451,7 +435,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.14
+      uses: hendrikmuhs/ccache-action@v1.2.17
       env:
           cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-build
       with:

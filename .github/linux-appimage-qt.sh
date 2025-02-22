@@ -25,7 +25,6 @@ chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
 
-rsync -a "$GITHUB_WORKSPACE/Resources/" AppDir/
 cp -a "$GITHUB_WORKSPACE/build/translations" AppDir/usr/bin
 
 ./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/dist/net.shadps4.shadPS4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/src/images/net.shadps4.shadPS4.svg --plugin qt

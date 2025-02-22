@@ -119,7 +119,6 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
 
-
             const std::string filename = GetTrpType(trpType[row].at(0));
             QTableWidgetItem* typeitem = new QTableWidgetItem();
 

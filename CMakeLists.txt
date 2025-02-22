@@ -987,6 +987,7 @@ else()
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+        ${RESOURCEFOLDER}
         src/main.cpp
         src/emulator.cpp
         src/emulator.h
@@ -1161,16 +1162,4 @@ if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES "dist/net.shadps4.shadPS4.metainfo.xml" DESTINATION "share/metainfo")
     install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "net.shadps4.shadPS4.png")
     install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")
-endif()
-
-
-# copy Resource folder (trophy images) inside Mac App bundle resources folder
-if (ENABLE_QT_GUI AND APPLE)
-set_source_files_properties(${RESOURCEFOLDER} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-else()
-add_custom_target(copy-files ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/Resources/
-    ${CMAKE_BINARY_DIR}/Resources/
-    )
 endif()

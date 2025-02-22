@@ -107,3 +107,7 @@ path = "externals/gcn/include/**"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
 
+[[annotations]]
+path = "cmake/CMakeRC.cmake"
+SPDX-FileCopyrightText = "Copyright (c) 2017 vector-of-bool <vectorofbool@gmail.com>"
+SPDX-License-Identifier = "MIT"
