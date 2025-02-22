@@ -72,20 +72,21 @@ void TrophyUI::Draw() {
     float AdjustWidth = io.DisplaySize.x / 1280;
     float AdjustHeight = io.DisplaySize.y / 720;
     const ImVec2 window_size{
-        std::min(io.DisplaySize.x, (330 * AdjustWidth)),
+        std::min(io.DisplaySize.x, (350 * AdjustWidth)),
         std::min(io.DisplaySize.y, (70 * AdjustHeight)),
     };
 
     SetNextWindowSize(window_size);
     SetNextWindowCollapsed(false);
-    SetNextWindowPos(ImVec2(io.DisplaySize.x - (350 * AdjustWidth), (50 * AdjustHeight)));
+    SetNextWindowPos(ImVec2(io.DisplaySize.x - (370 * AdjustWidth), (50 * AdjustHeight)));
     KeepNavHighlight();
     if (Begin("Trophy Window", nullptr,
               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
                   ImGuiWindowFlags_NoInputs)) {
-        if (trophy_icon) {
+        if (trophy_type_icon) {
             SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
-            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+            Image(trophy_type_icon.GetTexture().im_id,
+                  ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
         } else {
             // placeholder
             const auto pos = GetCursorScreenPos();
@@ -94,24 +95,26 @@ void TrophyUI::Draw() {
         }
 
         ImGui::SameLine();
-        if (trophy_type_icon) {
-            SetCursorPosY((window_size.y * 0.5f) - (15 * AdjustHeight));
-            Image(trophy_type_icon.GetTexture().im_id,
-                  ImVec2((30 * AdjustWidth), (30 * AdjustHeight)));
+
+        SetWindowFontScale((1.2 * AdjustHeight));
+        char earned_text[] = "Trophy earned!\n%s";
+        const float text_height =
+            ImGui::CalcTextSize(std::strcat(earned_text, trophy_name.c_str())).y;
+        SetCursorPosY((window_size.y - text_height) * 0.5f);
+
+        ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
+        TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
+        ImGui::SameLine(window_size.x - (60 * AdjustWidth));
+
+        if (trophy_icon) {
+            SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
+            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
         } else {
             // placeholder
             const auto pos = GetCursorScreenPos();
             ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{30.0f * AdjustHeight},
                                                       GetColorU32(ImVec4{0.7f}));
         }
-
-        ImGui::SameLine();
-        SetWindowFontScale((1.2 * AdjustHeight));
-        char earned_text[] = "Trophy earned!\n%s";
-        const float text_height =
-            ImGui::CalcTextSize(std::strcat(earned_text, trophy_name.c_str())).y;
-        SetCursorPosY((window_size.y - text_height) * 0.5f);
-        TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
     }
     End();
 
