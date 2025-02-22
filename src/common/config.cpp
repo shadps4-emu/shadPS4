@@ -69,7 +69,7 @@ static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
 static bool isFpsColor = true;
-static bool isSplitLogEnabled = false;
+static bool isSeperateLogFilesEnabled = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
@@ -452,8 +452,8 @@ void setLogFilter(const std::string& type) {
     logFilter = type;
 }
 
-void setSplitLogEnabled(bool enabled) {
-    isSplitLogEnabled = enabled;
+void setSeperateLogFilesEnabled(bool enabled) {
+    isSeperateLogFilesEnabled = enabled;
 }
 
 void setUserName(const std::string& type) {
@@ -661,8 +661,8 @@ u32 GetLanguage() {
     return m_language;
 }
 
-bool getSplitLogEnabled() {
-    return isSplitLogEnabled;
+bool getSeperateLogFilesEnabled() {
+    return isSeperateLogFilesEnabled;
 }
 
 int getBackgroundImageOpacity() {
@@ -770,7 +770,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
-        isSplitLogEnabled = toml::find_or<bool>(debug, "isSplitLogEnabled", false);
+        isSeperateLogFilesEnabled = toml::find_or<bool>(debug, "isSeperateLogFilesEnabled", false);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
     }
@@ -897,7 +897,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
-    data["Debug"]["isSplitLogEnabled"] = isSplitLogEnabled;
+    data["Debug"]["isSeperateLogFilesEnabled"] = isSeperateLogFilesEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
 
     data["Keys"]["TrophyKey"] = trophyKey;

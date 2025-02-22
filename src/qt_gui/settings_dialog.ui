@@ -71,8 +71,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>718</width>
+         <height>332</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -492,8 +492,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>646</width>
+         <height>395</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -941,8 +941,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>545</width>
+         <height>141</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1185,8 +1185,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>234</width>
+         <height>292</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1329,8 +1329,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>455</width>
+         <height>252</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1613,8 +1613,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>216</width>
+         <height>254</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1912,9 +1912,9 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QCheckBox" name="splitLogCheckbox">
+              <widget class="QCheckBox" name="seperateLogFilesCheckbox">
                <property name="text">
-                <string>Split Log To Seperate Files For Games</string>
+                <string>Seperate Log Files</string>
                </property>
               </widget>
              </item>

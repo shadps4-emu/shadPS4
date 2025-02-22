@@ -404,7 +404,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         QString::fromStdString(toml::find_or<std::string>(data, "Keys", "TrophyKey", "")));
     ui->trophyKeyLineEdit->setEchoMode(QLineEdit::Password);
     ui->debugDump->setChecked(toml::find_or<bool>(data, "Debug", "DebugDump", false));
-    ui->splitLogCheckbox->setChecked(toml::find_or<bool>(data, "Debug", "isSplitLogEnabled", false));
+    ui->seperateLogFilesCheckbox->setChecked(
+        toml::find_or<bool>(data, "Debug", "isSeperateLogFilesEnabled", false));
     ui->vkValidationCheckBox->setChecked(toml::find_or<bool>(data, "Vulkan", "validation", false));
     ui->vkSyncValidationCheckBox->setChecked(
         toml::find_or<bool>(data, "Vulkan", "validation_sync", false));
@@ -680,7 +681,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
-    Config::setSplitLogEnabled(ui->splitLogCheckbox->isChecked());
+    Config::setSeperateLogFilesEnabled(ui->seperateLogFilesCheckbox->isChecked());
     Config::setVkValidation(ui->vkValidationCheckBox->isChecked());
     Config::setVkSyncValidation(ui->vkSyncValidationCheckBox->isChecked());
     Config::setRdocEnabled(ui->rdocCheckBox->isChecked());
