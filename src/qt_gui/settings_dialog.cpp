@@ -629,7 +629,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "collectShaderCheckBox") {
         text = tr("Collect Shaders:\\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).");
     } else if (elementName == "seperateLogFilesCheckbox") {
-        text = tr("Split Log File:\\nSplits the log file into multiple files, one for each game.");}
+        text = tr("Seperate Log Files:\\nWrites a seperate logfile for each game.");}
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
