@@ -11,8 +11,6 @@
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
 
-CMRC_DECLARE(res);
-
 using namespace ImGui;
 namespace Libraries::NpTrophy {
 
