@@ -118,6 +118,10 @@ struct QuadRectListEmitter : public Sirit::Module {
 
         // Set attributes
         for (int i = 0; i < inputs.size(); i++) {
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
             // vec4 in_paramN3 = interpolate(bary_coord, in_paramN[0], in_paramN[1], in_paramN[2]);
             const Id v0{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(0)))};
             const Id v1{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(1)))};
@@ -163,6 +167,10 @@ struct QuadRectListEmitter : public Sirit::Module {
         OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
 
         for (int i = 0; i < inputs.size(); i++) {
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
             // out_paramN[gl_InvocationID] = in_paramN[gl_InvocationID];
             const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
             OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), in_param);
@@ -191,6 +199,10 @@ struct QuadRectListEmitter : public Sirit::Module {
 
         // out_paramN = in_paramN[index];
         for (int i = 0; i < inputs.size(); i++) {
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
             const Id param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
             OpStore(outputs[i], param);
         }
