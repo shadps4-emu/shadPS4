@@ -27,7 +27,7 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_ADD_I32:
             return S_ADD_I32(inst);
         case Opcode::S_SUB_I32:
-            return S_SUB_U32(inst);
+            return S_SUB_I32(inst);
         case Opcode::S_ADDC_U32:
             return S_ADDC_U32(inst);
         case Opcode::S_MIN_I32:
@@ -216,24 +216,52 @@ void Translator::EmitSOPK(const GcnInst& inst) {
 void Translator::S_ADD_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IAdd(src0, src1));
-    // TODO: Carry out
-    ir.SetScc(ir.Imm1(false));
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    // SCC = tmp >= 0x100000000ULL ? 1'1U : 1'0U;
+    // The above assumes tmp is a 64-bit value.
+    // It should be enough however to test that the truncated result is less than at least one
+    // of the operands. In unsigned addition the result is always bigger than both the operands,
+    // except in the case of overflow where the truncated result is less than both.
+    ir.SetScc(ir.ILessThan(result, src0, false));
 }
 
 void Translator::S_SUB_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ISub(src0, src1));
-    // TODO: Carry out
-    ir.SetScc(ir.Imm1(false));
+
+    // SCC = S1.u > S0.u ? 1'1U : 1'0U;
+    ir.SetScc(ir.IGreaterThan(src1, src0, false));
 }
 
 void Translator::S_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], ir.IAdd(src0, src1));
-    // TODO: Overflow flag
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    // SCC = ((S0.u[31] == S1.u[31]) && (S0.u[31] != Result.u[31]));
+    const IR::U32 shift{ir.Imm32(31)};
+    const IR::U32 sign0{ir.ShiftRightLogical(src0, shift)};
+    const IR::U32 sign1{ir.ShiftRightLogical(src1, shift)};
+    const IR::U32 signr{ir.ShiftRightLogical(result, shift)};
+    ir.SetScc(ir.LogicalAnd(ir.IEqual(sign0, sign1), ir.INotEqual(sign0, signr)));
+}
+
+void Translator::S_SUB_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 result{ir.ISub(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    // SCC = ((S0.u[31] != S1.u[31]) && (S0.u[31] != tmp.u[31]));
+    const IR::U32 shift{ir.Imm32(31)};
+    const IR::U32 sign0{ir.ShiftRightLogical(src0, shift)};
+    const IR::U32 sign1{ir.ShiftRightLogical(src1, shift)};
+    const IR::U32 signr{ir.ShiftRightLogical(result, shift)};
+    ir.SetScc(ir.LogicalAnd(ir.INotEqual(sign0, sign1), ir.INotEqual(sign0, signr)));
 }
 
 void Translator::S_ADDC_U32(const GcnInst& inst) {
