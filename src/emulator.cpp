@@ -44,11 +44,14 @@ Frontend::WindowSDL* g_window = nullptr;
 namespace Core {
 
 Emulator::Emulator() {
-    // Initialize NT API functions and set high priority
+    // Initialize NT API functions and set high priority.
 #ifdef _WIN32
     Common::NtApi::Initialize();
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
+
+    // Rename shad_log.txt to shad_log.old.txt
+    Common::FS::RenameLog();
 
     // Start logger.
     Common::Log::Initialize();
