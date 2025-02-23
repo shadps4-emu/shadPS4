@@ -115,7 +115,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
         id = std::string(*content_id, 7, 9);
 
-        if (Config::getSeperateLogFilesEnabled()) {
+        if (Config::getSeparateLogFilesEnabled()) {
             Common::Log::Initialize(id + ".log");
         }
         else {

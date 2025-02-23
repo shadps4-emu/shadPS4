@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -1912,9 +1914,9 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QCheckBox" name="seperateLogFilesCheckbox">
+              <widget class="QCheckBox" name="separateLogFilesCheckbox">
                <property name="text">
-                <string>Seperate Log Files</string>
+                <string>Separate Log Files</string>
                </property>
               </widget>
              </item>
