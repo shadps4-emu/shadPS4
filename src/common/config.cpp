@@ -31,10 +31,7 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 
 namespace Config {
 
-static bool isHDRAllowed = false;
 static bool isNeo = false;
-static bool isFullscreen = false;
-static std::string fullscreenMode = "Fullscreen (Borderless)";
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -102,6 +99,9 @@ std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
 static int backgroundImageOpacity = 50;
 static bool showBackgroundImage = true;
+static bool isFullscreen = false;
+static std::string fullscreenMode = "Windowed";
+static bool isHDRAllowed = false;
 
 // Language
 u32 m_language = 1; // english
@@ -740,8 +740,7 @@ void load(const std::filesystem::path& path) {
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
-        fullscreenMode =
-            toml::find_or<std::string>(gpu, "FullscreenMode", "Fullscreen (Borderless)");
+        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", "Windowed");
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
     }
 
