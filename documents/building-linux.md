@@ -36,7 +36,7 @@ sudo dnf install clang git cmake libatomic alsa-lib-devel \
 
 ```bash
 sudo pacman -S base-devel clang git cmake sndio jack2 openal \
-    qt6-base qt6-declarative qt6-multimedia sdl2 \
+    qt6-base qt6-declarative qt6-multimedia qt6-tools sdl2 \
     vulkan-validation-layers libpng
 ```
 
