@@ -100,7 +100,7 @@ std::string emulator_language = "en_US";
 static int backgroundImageOpacity = 50;
 static bool showBackgroundImage = true;
 static bool isFullscreen = false;
-static std::string fullscreenMode = "Fullscreen (Borderless)";
+static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
 
 // Language
@@ -740,8 +740,7 @@ void load(const std::filesystem::path& path) {
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
-        fullscreenMode =
-            toml::find_or<std::string>(gpu, "FullscreenMode", "Fullscreen (Borderless)");
+        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", "Windowed");
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
     }
 
