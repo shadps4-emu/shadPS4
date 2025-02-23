@@ -68,7 +68,7 @@ Emulator::Emulator() {
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
     QFile file(filePath);
     ASSERT_MSG(file.open(QIODevice::ReadWrite | QIODevice::Text),
-        "Error opening or creating play_time.txt");
+               "Error opening or creating play_time.txt");
 #endif
 }
 
