@@ -63,6 +63,9 @@ QMap<QString, QString> logTypeMap;
 QMap<QString, QString> fullscreenModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 
+int backgroundImageOpacitySlider_backup;
+int bgm_volume_backup;
+
 SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                                QWidget* parent)
@@ -115,6 +118,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this,
             [this, config_dir](QAbstractButton* button) {
                 if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
+                    is_saving = true;
                     UpdateSettings();
                     Config::save(config_dir / "config.toml");
                     QWidget::close();
@@ -126,6 +130,10 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                     Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
+                    ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+                    emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+                    ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+                    BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
                     ResetInstallFolders();
                 }
                 if (Common::Log::IsActive()) {
@@ -197,6 +205,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     // Gui TAB
     {
+        connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
+                [this](int value) { emit BackgroundOpacityChanged(value); });
+
+        connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
+                [](int value) { BackgroundMusicPlayer::getInstance().setVolume(value); });
+
         connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
@@ -330,6 +344,16 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     }
 }
 
+void SettingsDialog::closeEvent(QCloseEvent* event) {
+    if (!is_saving) {
+        ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
+        emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+        ui->BGMVolumeSlider->setValue(bgm_volume_backup);
+        BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
+    }
+    QDialog::closeEvent(event);
+}
+
 void SettingsDialog::LoadValuesFromConfig() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -460,6 +484,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ResetInstallFolders();
     ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
     ui->showBackgroundImageCheckBox->setChecked(Config::getShowBackgroundImage());
+
+    backgroundImageOpacitySlider_backup = Config::getBackgroundImageOpacity();
+    bgm_volume_backup = Config::getBGMvolume();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
