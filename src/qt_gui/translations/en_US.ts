@@ -1361,7 +1361,7 @@
     </message>
     <message>
         <source>GUI</source>
-        <translation>Gui</translation>
+        <translation>GUI</translation>
     </message>
     <message>
         <source>User</source>
