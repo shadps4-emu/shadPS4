@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <QMessageBox>
+#include <cmrc/cmrc.hpp>
 #include "common/path_util.h"
 #include "trophy_viewer.h"
+
+CMRC_DECLARE(res);
 
 TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
     this->setWindowTitle(tr("Trophy Viewer"));
@@ -115,13 +118,34 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setData(Qt::DecorationRole, icon);
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
+
+            const std::string filename = GetTrpType(trpType[row].at(0));
+            QTableWidgetItem* typeitem = new QTableWidgetItem();
+
+            auto resource = cmrc::res::get_filesystem();
+            std::string resourceString = "Resources/" + filename;
+            auto trophytypefile = resource.open(resourceString);
+
+            QImage type_icon =
+                QImage(QString::fromStdString(resourceString))
+                    .scaled(QSize(64, 64), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            typeitem->setData(Qt::DecorationRole, type_icon);
+            typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
+            tableWidget->setItem(row, 6, typeitem);
+
+            std::string detailString = trophyDetails[row].toStdString();
+            std::size_t newline_pos = 0;
+            while ((newline_pos = detailString.find("\n", newline_pos)) != std::string::npos) {
+                detailString.replace(newline_pos, 1, " ");
+                ++newline_pos;
+            }
+
             if (!trophyNames.isEmpty() && !trophyDetails.isEmpty()) {
                 SetTableItem(tableWidget, row, 0, trpUnlocked[row]);
                 SetTableItem(tableWidget, row, 2, trophyNames[row]);
-                SetTableItem(tableWidget, row, 3, trophyDetails[row]);
+                SetTableItem(tableWidget, row, 3, QString::fromStdString(detailString));
                 SetTableItem(tableWidget, row, 4, trpId[row]);
                 SetTableItem(tableWidget, row, 5, trpHidden[row]);
-                SetTableItem(tableWidget, row, 6, GetTrpType(trpType[row].at(0)));
                 SetTableItem(tableWidget, row, 7, trpPid[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
@@ -157,7 +181,7 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
     label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
 
     layout->addWidget(label);
-    if (column != 1 && column != 2)
+    if (column != 1 && column != 2 && column != 3)
         layout->setAlignment(Qt::AlignCenter);
     widget->setLayout(layout);
     parent->setItem(row, column, item);

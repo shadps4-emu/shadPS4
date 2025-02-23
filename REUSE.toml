@@ -19,6 +19,10 @@ path = [
     "documents/Screenshots/*",
     "documents/Screenshots/Linux/*",
     "externals/MoltenVK/MoltenVK_icd.json",
+    "Resources/bronze.png",
+    "Resources/gold.png",
+    "Resources/platinum.png",
+    "Resources/silver.png",
     "scripts/ps4_names.txt",
     "src/images/about_icon.png",
     "src/images/controller_icon.png",
@@ -103,3 +107,7 @@ path = "externals/gcn/include/**"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
 
+[[annotations]]
+path = "cmake/CMakeRC.cmake"
+SPDX-FileCopyrightText = "Copyright (c) 2017 vector-of-bool <vectorofbool@gmail.com>"
+SPDX-License-Identifier = "MIT"
