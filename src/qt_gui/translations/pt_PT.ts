@@ -1765,43 +1765,43 @@
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Vídeo</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Modo de Exibição</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Em Janela</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Ecrã inteiro</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Ecrã Inteiro (Sem Bordas)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Tamanho da Janela</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>L:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>A:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Separar Ficheiros de Registo</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Separar Ficheiros de Registo:\nEscreve um ficheiro de registo para cada jogo.</translation>
     </message>
   </context>
   <context>
