@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>718</width>
+         <height>332</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -454,8 +454,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>646</width>
+         <height>395</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -903,8 +903,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>545</width>
+         <height>141</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1198,8 +1198,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>234</width>
+         <height>292</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1342,8 +1342,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>455</width>
+         <height>252</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1626,8 +1626,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>216</width>
+         <height>254</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1888,39 +1888,50 @@
           </property>
           <layout class="QVBoxLayout" name="advancedLayout">
            <item>
-            <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
-             <property name="text">
-              <string>Enable Crash Diagnostics</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="collectShaderCheckBox">
-             <property name="text">
-              <string>Collect Shaders</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
-             <property name="text">
-              <string>Copy GPU Buffers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="hostMarkersCheckBox">
-             <property name="text">
-              <string>Host Debug Markers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="guestMarkersCheckBox">
-             <property name="text">
-              <string>Guest Debug Markers</string>
-             </property>
-            </widget>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="collectShaderCheckBox">
+               <property name="text">
+                <string>Collect Shaders</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+               <property name="text">
+                <string>Copy GPU Buffers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+               <property name="text">
+                <string>Enable Crash Diagnostics</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QCheckBox" name="hostMarkersCheckBox">
+               <property name="text">
+                <string>Host Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="guestMarkersCheckBox">
+               <property name="text">
+                <string>Guest Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="separateLogFilesCheckbox">
+               <property name="text">
+                <string>Separate Log Files</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

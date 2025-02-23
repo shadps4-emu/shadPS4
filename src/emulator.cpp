@@ -50,29 +50,6 @@ Emulator::Emulator() {
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
 #endif
 
-    // Start logger.
-    Common::Log::Initialize();
-    Common::Log::Start();
-    LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
-    LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
-    LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
-    LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
-    LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
-
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
-    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
-    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-    LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
-    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
-    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
-    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
-    LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
-    LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
-    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
-
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
 
@@ -90,9 +67,8 @@ Emulator::Emulator() {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-        LOG_INFO(Loader, "Error opening or creating play_time.txt");
-    }
+    ASSERT_MSG(file.open(QIODevice::ReadWrite | QIODevice::Text),
+               "Error opening or creating play_time.txt");
 #endif
 }
 
@@ -138,6 +114,34 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
         id = std::string(*content_id, 7, 9);
+
+        if (Config::getSeparateLogFilesEnabled()) {
+            Common::Log::Initialize(id + ".log");
+        }
+        else {
+            Common::Log::Initialize();
+        }
+        Common::Log::Start();
+        LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
+        LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
+        LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
+        LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
+        LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
+
+        LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+        LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
+        LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+        LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
+        LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
+        LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
+        LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
+        LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
+        LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
+        LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
+        LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
+        LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
+        LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+
         Libraries::NpTrophy::game_serial = id;
         const auto trophyDir =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
