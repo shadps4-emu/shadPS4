@@ -31,18 +31,4 @@ private:
     QStringList headers;
     QString gameTrpPath_;
     TRP trp;
-
-    std::string GetTrpType(const QChar trp_) {
-        switch (trp_.toLatin1()) {
-        case 'B':
-            return "bronze.png";
-        case 'S':
-            return "silver.png";
-        case 'G':
-            return "gold.png";
-        case 'P':
-            return "platinum.png";
-        }
-        return "Unknown";
-    }
 };

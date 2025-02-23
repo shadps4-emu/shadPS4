@@ -31,23 +31,6 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                   fmt::UTF(trophyIconPath.u8string()));
     }
 
-    std::string pathString;
-    if (trophy_type == "P") {
-        pathString = "Resources/platinum.png";
-    } else if (trophy_type == "G") {
-        pathString = "Resources/gold.png";
-    } else if (trophy_type == "S") {
-        pathString = "Resources/silver.png";
-    } else if (trophy_type == "B") {
-        pathString = "Resources/bronze.png";
-    }
-
-    auto resource = cmrc::res::get_filesystem();
-    auto trophytypefile = resource.open(pathString);
-    std::filesystem::path trophyTypePath = pathString;
-    if (std::filesystem::exists(trophyTypePath))
-        trophy_type_icon = RefCountedTexture::DecodePngFile(trophyTypePath);
-
     AddLayer(this);
 }
 
@@ -76,38 +59,24 @@ void TrophyUI::Draw() {
     if (Begin("Trophy Window", nullptr,
               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
                   ImGuiWindowFlags_NoInputs)) {
-        if (trophy_type_icon) {
+        if (trophy_icon) {
             SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
-            Image(trophy_type_icon.GetTexture().im_id,
-                  ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+            ImGui::SameLine();
         } else {
             // placeholder
             const auto pos = GetCursorScreenPos();
             ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{50.0f * AdjustHeight},
                                                       GetColorU32(ImVec4{0.7f}));
+            ImGui::Indent(60);
         }
-
-        ImGui::SameLine();
 
         SetWindowFontScale((1.2 * AdjustHeight));
         char earned_text[] = "Trophy earned!\n%s";
         const float text_height =
             ImGui::CalcTextSize(std::strcat(earned_text, trophy_name.c_str())).y;
         SetCursorPosY((window_size.y - text_height) * 0.5f);
-
-        ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
         TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
-        ImGui::SameLine(window_size.x - (60 * AdjustWidth));
-
-        if (trophy_icon) {
-            SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
-            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
-        } else {
-            // placeholder
-            const auto pos = GetCursorScreenPos();
-            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{30.0f * AdjustHeight},
-                                                      GetColorU32(ImVec4{0.7f}));
-        }
     }
     End();
 
