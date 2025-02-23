@@ -43,6 +43,10 @@ static void EmitBarrierInBlock(IR::Block* block) {
             action = BarrierAction::BarrierOnRead;
         }
     }
+    if (action != BarrierAction::None) {
+        IR::IREmitter ir{*block, --block->end()};
+        ir.Barrier();
+    }
 }
 
 // Inserts a barrier after divergent conditional blocks to avoid undefined
