@@ -60,7 +60,7 @@ const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 2
                                       15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
-QMap<QString, QString> fullscreenModeMap;
+QMap<QString, QString> screenModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 
 int backgroundImageOpacitySlider_backup;
@@ -80,7 +80,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
     logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
-    fullscreenModeMap = {{tr("Borderless"), "Borderless"}, {tr("True"), "True"}};
+    screenModeMap = {{tr("Fullscreen (Borderless)"), "Fullscreen (Borderless)"},
+                     {tr("Windowed"), "Windowed"},
+                     {tr("Fullscreen"), "Fullscreen"}};
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
@@ -288,7 +290,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         // General
         ui->consoleLanguageGroupBox->installEventFilter(this);
         ui->emulatorLanguageGroupBox->installEventFilter(this);
-        ui->fullscreenCheckBox->installEventFilter(this);
         ui->separateUpdatesCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
@@ -314,8 +315,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
-        ui->widthGroupBox->installEventFilter(this);
-        ui->heightGroupBox->installEventFilter(this);
+        ui->windowSizeGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
@@ -406,12 +406,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
-    ui->fullscreenCheckBox->setChecked(toml::find_or<bool>(data, "General", "Fullscreen", false));
     QString translatedText_FullscreenMode =
-        fullscreenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
-    if (!translatedText_FullscreenMode.isEmpty()) {
-        ui->fullscreenModeComboBox->setCurrentText(translatedText_FullscreenMode);
-    }
+        screenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
+    ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
     ui->separateUpdatesCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
@@ -560,8 +557,6 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Console Language:\\nSets the language that the PS4 game uses.\\nIt's recommended to set this to a language the game supports, which will vary by region.");
     } else if (elementName == "emulatorLanguageGroupBox") {
         text = tr("Emulator Language:\\nSets the language of the emulator's user interface.");
-    } else if (elementName == "fullscreenCheckBox") {
-        text = tr("Enable Full Screen:\\nAutomatically puts the game window into full-screen mode.\\nThis can be toggled by pressing the F11 key.");
     } else if (elementName == "separateUpdatesCheckBox") {
         text = tr("Enable Separate Update Folder:\\nEnables installing game updates into a separate folder for easy management.\\nThis can be manually created by adding the extracted update to the game folder with the name \"CUSA00000-UPDATE\" where the CUSA ID matches the game's ID.");
     } else if (elementName == "showSplashCheckBox") {
@@ -608,7 +603,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     // Graphics
     if (elementName == "graphicsAdapterGroupBox") {
         text = tr("Graphics Device:\\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\\nor select \"Auto Select\" to automatically determine it.");
-    } else if (elementName == "widthGroupBox" || elementName == "heightGroupBox") {
+    } else if (elementName == "windowSizeGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
         text = tr("Vblank Divider:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
@@ -679,9 +674,9 @@ void SettingsDialog::UpdateSettings() {
 
     const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
     Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
-    Config::setIsFullscreen(ui->fullscreenCheckBox->isChecked());
+    Config::setIsFullscreen(ui->displayModeComboBox->currentText().toStdString() != "Windowed");
     Config::setFullscreenMode(
-        fullscreenModeMap.value(ui->fullscreenModeComboBox->currentText()).toStdString());
+        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
