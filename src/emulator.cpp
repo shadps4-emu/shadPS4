@@ -117,8 +117,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
         if (Config::getSeparateLogFilesEnabled()) {
             Common::Log::Initialize(id + ".log");
-        }
-        else {
+        } else {
             Common::Log::Initialize();
         }
         Common::Log::Start();
