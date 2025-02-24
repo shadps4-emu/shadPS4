@@ -134,13 +134,17 @@ void SDLInputEngine::Init() {
             m_gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_GYRO);
             LOG_INFO(Input, "Gyro initialized, poll rate: {}", m_gyro_poll_rate);
         } else {
-            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
+            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad, error: {}",
+                      SDL_GetError());
+            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, false);
         }
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, true)) {
             m_accel_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_ACCEL);
             LOG_INFO(Input, "Accel initialized, poll rate: {}", m_accel_poll_rate);
         } else {
-            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
+            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad, error: {}",
+                      SDL_GetError());
+            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, false);
         }
     }
 

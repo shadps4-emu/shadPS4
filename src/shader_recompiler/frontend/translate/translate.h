@@ -81,6 +81,7 @@ public:
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
+    void S_SUB_I32(const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
     void S_MIN_U32(bool is_signed, const GcnInst& inst);
     void S_MAX_U32(bool is_signed, const GcnInst& inst);
