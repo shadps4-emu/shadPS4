@@ -674,6 +674,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
                     vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+                    break;
                 }
                 while (!wait_reg_mem->Test()) {
                     YIELD_GFX();

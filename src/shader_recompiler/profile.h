@@ -21,6 +21,7 @@ struct Profile {
     bool support_separate_rounding_mode{};
     bool support_fp32_denorm_preserve{};
     bool support_fp32_denorm_flush{};
+    bool support_fp32_round_to_zero{};
     bool support_explicit_workgroup_layout{};
     bool support_legacy_vertex_attributes{};
     bool supports_image_load_store_lod{};
