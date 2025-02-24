@@ -250,7 +250,6 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
     if (mip < 0) {
         return -1;
     }
-    ASSERT(mip != 0);
 
     const auto mip_w = std::max(info.size.width >> mip, 1u);
     const auto mip_h = std::max(info.size.height >> mip, 1u);
