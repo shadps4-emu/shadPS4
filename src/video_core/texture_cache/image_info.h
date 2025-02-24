@@ -30,8 +30,8 @@ struct ImageInfo {
     bool IsDepthStencil() const;
     bool HasStencil() const;
 
-    int IsMipOf(const ImageInfo& info) const;
-    int IsSliceOf(const ImageInfo& info) const;
+    s32 MipOf(const ImageInfo& info) const;
+    s32 SliceOf(const ImageInfo& info, s32 mip) const;
 
     /// Verifies if images are compatible for subresource merging.
     bool IsCompatible(const ImageInfo& info) const {

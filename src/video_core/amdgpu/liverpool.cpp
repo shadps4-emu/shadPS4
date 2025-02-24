@@ -93,17 +93,14 @@ void Liverpool::Process(std::stop_token stoken) {
 
             // Process incoming commands with high priority
             while (num_commands) {
-
                 Common::UniqueFunction<void> callback{};
                 {
                     std::unique_lock lk{submit_mutex};
-                    callback = std::move(command_queue.back());
+                    callback = std::move(command_queue.front());
                     command_queue.pop();
+                    --num_commands;
                 }
-
                 callback();
-
-                --num_commands;
             }
 
             curr_qid = (curr_qid + 1) % num_mapped_queues;
@@ -395,6 +392,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                             header + 2, (count - 1) * sizeof(u32));
                 break;
             }
+            case PM4ItOpcode::SetPredication: {
+                LOG_WARNING(Render_Vulkan, "Unimplemented IT_SET_PREDICATION");
+                break;
+            }
             case PM4ItOpcode::IndexType: {
                 const auto* index_type = reinterpret_cast<const PM4CmdDrawIndexType*>(header);
                 regs.index_buffer_type.raw = index_type->raw;
@@ -670,6 +671,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
                     vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+                    break;
                 }
                 while (!wait_reg_mem->Test()) {
                     YIELD_GFX();
@@ -693,7 +695,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::WaitOnCeCounter: {
-                while (cblock.ce_count <= cblock.de_count) {
+                while (cblock.ce_count <= cblock.de_count && !ce_task.handle.done()) {
                     RESUME_GFX(ce_task);
                 }
                 break;
@@ -714,7 +716,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     }
 
     if (ce_task.handle) {
-        ASSERT_MSG(ce_task.handle.done(), "Partially processed CCB");
+        while (!ce_task.handle.done()) {
+            RESUME_GFX(ce_task);
+        }
         ce_task.handle.destroy();
     }
 

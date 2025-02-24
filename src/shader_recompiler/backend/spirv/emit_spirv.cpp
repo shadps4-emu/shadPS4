@@ -369,7 +369,12 @@ void SetupFloatMode(EmitContext& ctx, const Profile& profile, const RuntimeInfo&
         LOG_WARNING(Render_Vulkan, "Unknown FP denorm mode {}", u32(fp_denorm_mode));
     }
     const auto fp_round_mode = runtime_info.fp_round_mode32;
-    if (fp_round_mode != AmdGpu::FpRoundMode::NearestEven) {
+    if (fp_round_mode == AmdGpu::FpRoundMode::ToZero) {
+        if (profile.support_fp32_round_to_zero) {
+            ctx.AddCapability(spv::Capability::RoundingModeRTZ);
+            ctx.AddExecutionMode(main_func, spv::ExecutionMode::RoundingModeRTZ, 32U);
+        }
+    } else if (fp_round_mode != AmdGpu::FpRoundMode::NearestEven) {
         LOG_WARNING(Render_Vulkan, "Unknown FP rounding mode {}", u32(fp_round_mode));
     }
 }

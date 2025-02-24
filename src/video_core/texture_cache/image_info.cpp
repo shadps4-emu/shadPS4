@@ -208,15 +208,14 @@ void ImageInfo::UpdateSize() {
             mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
             mip_info.height = std::max(mip_info.height * 4, 32u);
         }
-        mip_info.size *= mip_d;
+        mip_info.size *= mip_d * resources.layers;
         mip_info.offset = guest_size;
         mips_layout.emplace_back(mip_info);
         guest_size += mip_info.size;
     }
-    guest_size *= resources.layers;
 }
 
-int ImageInfo::IsMipOf(const ImageInfo& info) const {
+s32 ImageInfo::MipOf(const ImageInfo& info) const {
     if (!IsCompatible(info)) {
         return -1;
     }
@@ -237,7 +236,12 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
     // Find mip
     auto mip = -1;
     for (auto m = 0; m < info.mips_layout.size(); ++m) {
-        if (guest_address == (info.guest_address + info.mips_layout[m].offset)) {
+        const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = info.mips_layout[m];
+        const VAddr mip_base = info.guest_address + mip_ofs;
+        const VAddr mip_end = mip_base + mip_size;
+        const u32 slice_size = mip_size / info.resources.layers;
+        if (guest_address >= mip_base && guest_address < mip_end &&
+            (guest_address - mip_base) % slice_size == 0) {
             mip = m;
             break;
         }
@@ -246,7 +250,6 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
     if (mip < 0) {
         return -1;
     }
-    ASSERT(mip != 0);
 
     const auto mip_w = std::max(info.size.width >> mip, 1u);
     const auto mip_h = std::max(info.size.height >> mip, 1u);
@@ -269,7 +272,7 @@ int ImageInfo::IsMipOf(const ImageInfo& info) const {
     return mip;
 }
 
-int ImageInfo::IsSliceOf(const ImageInfo& info) const {
+s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     if (!IsCompatible(info)) {
         return -1;
     }
@@ -285,13 +288,13 @@ int ImageInfo::IsSliceOf(const ImageInfo& info) const {
     }
 
     // Check for size alignment.
-    const bool slice_size = info.guest_size / info.resources.layers;
+    const u32 slice_size = info.mips_layout[mip].size / info.resources.layers;
     if (guest_size % slice_size != 0) {
         return -1;
     }
 
     // Ensure that address is aligned too.
-    const auto addr_diff = guest_address - info.guest_address;
+    const auto addr_diff = guest_address - (info.guest_address + info.mips_layout[mip].offset);
     if ((addr_diff % guest_size) != 0) {
         return -1;
     }

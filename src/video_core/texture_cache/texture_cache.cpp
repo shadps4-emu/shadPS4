@@ -223,16 +223,13 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
     if (image_info.guest_address > tex_cache_image.info.guest_address) {
-        if (auto mip = image_info.IsMipOf(tex_cache_image.info); mip >= 0) {
-            return {cache_image_id, mip, -1};
+        if (auto mip = image_info.MipOf(tex_cache_image.info); mip >= 0) {
+            if (auto slice = image_info.SliceOf(tex_cache_image.info, mip); slice >= 0) {
+                return {cache_image_id, mip, slice};
+            }
         }
 
-        if (auto slice = image_info.IsSliceOf(tex_cache_image.info); slice >= 0) {
-            return {cache_image_id, -1, slice};
-        }
-
-        // TODO: slice and mip
-
+        // Image isn't a subresource but a chance overlap.
         if (safe_to_delete) {
             FreeImage(cache_image_id);
         }
@@ -240,31 +237,33 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
-        if (auto mip = tex_cache_image.info.IsMipOf(image_info); mip >= 0) {
-            if (tex_cache_image.binding.is_target) {
-                // We have a larger image created and a separate one, representing a subres of it,
-                // bound as render target. In this case we need to rebind render target.
-                tex_cache_image.binding.needs_rebind = 1u;
-                if (merged_image_id) {
-                    GetImage(merged_image_id).binding.is_target = 1u;
+        if (auto mip = tex_cache_image.info.MipOf(image_info); mip >= 0) {
+            if (auto slice = tex_cache_image.info.SliceOf(image_info, mip); slice >= 0) {
+                if (tex_cache_image.binding.is_target) {
+                    // We have a larger image created and a separate one, representing a subres of
+                    // it, bound as render target. In this case we need to rebind render target.
+                    tex_cache_image.binding.needs_rebind = 1u;
+                    if (merged_image_id) {
+                        GetImage(merged_image_id).binding.is_target = 1u;
+                    }
+
+                    FreeImage(cache_image_id);
+                    return {merged_image_id, -1, -1};
                 }
 
-                FreeImage(cache_image_id);
-                return {merged_image_id, -1, -1};
-            }
+                // We need to have a larger, already allocated image to copy this one into
+                if (merged_image_id) {
+                    tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
+                                            vk::AccessFlagBits2::eTransferRead, {});
 
-            // We need to have a larger, already allocated image to copy this one into
-            if (merged_image_id) {
-                tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                        vk::AccessFlagBits2::eTransferRead, {});
+                    const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
+                    ASSERT(num_mips_to_copy == 1);
 
-                const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
-                ASSERT(num_mips_to_copy == 1);
+                    auto& merged_image = slot_images[merged_image_id];
+                    merged_image.CopyMip(tex_cache_image, mip, slice);
 
-                auto& merged_image = slot_images[merged_image_id];
-                merged_image.CopyMip(tex_cache_image, mip);
-
-                FreeImage(cache_image_id);
+                    FreeImage(cache_image_id);
+                }
             }
         }
     }
@@ -374,12 +373,16 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
         RegisterImage(image_id);
     }
 
+    Image& image = slot_images[image_id];
+    image.tick_accessed_last = scheduler.CurrentTick();
+
+    // If the image requested is a subresource of the image from cache record its location.
     if (view_mip > 0) {
         desc.view_info.range.base.level = view_mip;
     }
-
-    Image& image = slot_images[image_id];
-    image.tick_accessed_last = scheduler.CurrentTick();
+    if (view_slice > 0) {
+        desc.view_info.range.base.layer = view_slice;
+    }
 
     return image_id;
 }
@@ -526,7 +529,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         }
 
         image_copy.push_back({
-            .bufferOffset = mip.offset * num_layers,
+            .bufferOffset = mip.offset,
             .bufferRowLength = static_cast<u32>(mip.pitch),
             .bufferImageHeight = static_cast<u32>(mip.height),
             .imageSubresource{
