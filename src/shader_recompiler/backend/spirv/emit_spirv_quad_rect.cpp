@@ -13,8 +13,7 @@ constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
     explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
-        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_}, inputs{fs_info_.num_inputs},
-          outputs{fs_info_.num_inputs} {
+        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_} {
         void_id = TypeVoid();
         bool_id = TypeBool();
         float_id = TypeFloat(32);
@@ -118,10 +117,6 @@ struct QuadRectListEmitter : public Sirit::Module {
 
         // Set attributes
         for (int i = 0; i < inputs.size(); i++) {
-            const auto& input = fs_info.inputs[i];
-            if (input.IsDefault()) {
-                continue;
-            }
             // vec4 in_paramN3 = interpolate(bary_coord, in_paramN[0], in_paramN[1], in_paramN[2]);
             const Id v0{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(0)))};
             const Id v1{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(1)))};
@@ -167,10 +162,6 @@ struct QuadRectListEmitter : public Sirit::Module {
         OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
 
         for (int i = 0; i < inputs.size(); i++) {
-            const auto& input = fs_info.inputs[i];
-            if (input.IsDefault()) {
-                continue;
-            }
             // out_paramN[gl_InvocationID] = in_paramN[gl_InvocationID];
             const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
             OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), in_param);
@@ -199,10 +190,6 @@ struct QuadRectListEmitter : public Sirit::Module {
 
         // out_paramN = in_paramN[index];
         for (int i = 0; i < inputs.size(); i++) {
-            const auto& input = fs_info.inputs[i];
-            if (input.IsDefault()) {
-                continue;
-            }
             const Id param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
             OpStore(outputs[i], param);
         }
@@ -265,15 +252,16 @@ private:
         } else {
             gl_per_vertex = AddOutput(gl_per_vertex_type);
         }
+        outputs.reserve(fs_info.num_inputs);
         for (int i = 0; i < fs_info.num_inputs; i++) {
             const auto& input = fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
             }
-            outputs[i] = AddOutput(model == spv::ExecutionModel::TessellationControl
-                                       ? TypeArray(vec4_id, Int(4))
-                                       : vec4_id);
-            Decorate(outputs[i], spv::Decoration::Location, input.param_index);
+            outputs.emplace_back(AddOutput(model == spv::ExecutionModel::TessellationControl
+                                               ? TypeArray(vec4_id, Int(4))
+                                               : vec4_id));
+            Decorate(outputs.back(), spv::Decoration::Location, input.param_index);
         }
     }
 
@@ -288,13 +276,14 @@ private:
         const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 32U))};
         gl_in = AddInput(gl_per_vertex_array);
         const Id float_arr{TypeArray(vec4_id, Int(32))};
+        inputs.reserve(fs_info.num_inputs);
         for (int i = 0; i < fs_info.num_inputs; i++) {
             const auto& input = fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
             }
-            inputs[i] = AddInput(float_arr);
-            Decorate(inputs[i], spv::Decoration::Location, input.param_index);
+            inputs.emplace_back(AddInput(float_arr));
+            Decorate(inputs.back(), spv::Decoration::Location, input.param_index);
         }
     }
 
