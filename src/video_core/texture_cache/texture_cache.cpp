@@ -240,8 +240,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         if (auto mip = tex_cache_image.info.MipOf(image_info); mip >= 0) {
             if (auto slice = tex_cache_image.info.SliceOf(image_info, mip); slice >= 0) {
                 if (tex_cache_image.binding.is_target) {
-                    // We have a larger image created and a separate one, representing a subres of it,
-                    // bound as render target. In this case we need to rebind render target.
+                    // We have a larger image created and a separate one, representing a subres of
+                    // it, bound as render target. In this case we need to rebind render target.
                     tex_cache_image.binding.needs_rebind = 1u;
                     if (merged_image_id) {
                         GetImage(merged_image_id).binding.is_target = 1u;
