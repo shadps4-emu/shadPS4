@@ -1280,14 +1280,6 @@
       <translation>Emulator</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>Aktivera helskärm</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>Helskärmsläge</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Grafikenhet</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>Bredd</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>Höjd</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Aktivera helskärm:\nStäller automatiskt in spelfönstret till helskämsläget.\nDetta kan växlas genom att trycka på F11-tangenten</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>Fönster utan kanter</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>Sant</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>Release</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>Katalog för sparat data</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation type="unfinished">Video</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation type="unfinished">Display Mode</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation type="unfinished">Windowed</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation type="unfinished">Fullscreen</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation type="unfinished">Fullscreen (Borderless)</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation type="unfinished">Window Size</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation type="unfinished">W:</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation type="unfinished">H:</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation type="unfinished">Separate Log Files</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
     </message>
   </context>
   <context>

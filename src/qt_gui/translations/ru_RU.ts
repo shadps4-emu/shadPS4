@@ -1280,14 +1280,6 @@
       <translation>Эмулятор</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>Полноэкранный режим</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>Тип полноэкранного режима</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>Отдельная папка обновлений</translation>
     </message>
@@ -1333,7 +1325,7 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Открыть местоположение журнала</translation>
+      <translation>Открыть местоположение логов</translation>
     </message>
     <message>
       <source>Input</source>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Графическое устройство</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>Ширина</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>Высота</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Язык эмулятора:\nУстанавливает язык пользовательского интерфейса эмулятора.</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Полноэкранный режим:\nАвтоматически переводит игровое окно в полноэкранный режим.\nЭто можно переключить, нажав клавишу F11.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>Обзор:\nНайдите папку, которую можно указать в качестве пути для сохранений.</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>Без полей</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>Истинный</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>Релиз</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>Каталог для сохранений</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation>Видео</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation>Режим отображения</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation>Оконный</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation>Полный экран</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation>Полный экран (без рамок)</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation>Размер окна</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation>Ш:</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation>В:</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation>Отдельные файлы логов</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation>Отдельные файлы логов:\nПишет отдельный файл логов для каждой игры.</translation>
     </message>
   </context>
   <context>

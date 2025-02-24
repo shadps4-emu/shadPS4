@@ -1280,14 +1280,6 @@
       <translation>模拟器</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>启用全屏</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>全屏模式</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>启用单独的更新目录</translation>
     </message>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>图形设备</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>宽度</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>高度</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>启用全屏：\n以全屏模式启动游戏。\n您可以按 F11 键切换回窗口模式。</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>无边框全屏</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>真全屏</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>稳定版</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>存档数据目录</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation>显示</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation>显示模式</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation>窗口</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation>全屏</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation>无边框全屏</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation>窗口大小</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation>宽：</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation>高：</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation>独立日志文件</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation>独立日志文件：\n每个游戏使用单独的日志文件。</translation>
     </message>
   </context>
   <context>

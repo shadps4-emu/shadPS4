@@ -1280,14 +1280,6 @@
       <translation>Emulator</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>Bruk fullskjerm</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>Fullskjermmodus</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>Bruk seperat oppdateringsmappe</translation>
     </message>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Grafikkenhet</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>Bredde</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>Høyde</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulatorspråket:\nAngir språket for emulatorens brukergrensesnitt.</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Bruk fullskjerm:\nSetter spillvinduet automatisk i fullskjermmodus.\nDette kan slås av ved å trykke på F11-tasten.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>Endre mappe:\nEndrer hvilken mappe shadPS4 skal lagre data til.</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>Kantløs</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>Sant</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>Offisiell</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>Mappe for lagring av data</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation>Video</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation>Skjermmodus</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation>I vindu</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation>Fullskjerm</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation>Fullskjerm i vindu</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation>Vindustørrelse</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation>B:</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation>H:</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation>Separate loggfiler</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation>Separate loggfiler:\nOppretter en separat loggfil for hvert spill.</translation>
     </message>
   </context>
   <context>
