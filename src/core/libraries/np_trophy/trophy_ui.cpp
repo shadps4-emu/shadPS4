@@ -33,13 +33,13 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     std::string pathString;
     if (trophy_type == "P") {
-        pathString = "Resources/platinum.png";
+        pathString = "src/images/platinum.png";
     } else if (trophy_type == "G") {
-        pathString = "Resources/gold.png";
+        pathString = "src/images/gold.png";
     } else if (trophy_type == "S") {
-        pathString = "Resources/silver.png";
+        pathString = "src/images/silver.png";
     } else if (trophy_type == "B") {
-        pathString = "Resources/bronze.png";
+        pathString = "src/images/bronze.png";
     }
 
     auto resource = cmrc::res::get_filesystem();

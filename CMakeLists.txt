@@ -977,7 +977,6 @@ else()
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
-        ${RESOURCEFOLDER}
         src/main.cpp
         src/emulator.cpp
         src/emulator.h
@@ -1110,7 +1109,10 @@ include(CMakeRC)
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
-        ${RESOURCEFOLDER})
+        src/images/bronze.png
+        src/images/gold.png
+        src/images/platinum.png
+        src/images/silver.png)
 
 target_link_libraries(shadps4 PRIVATE res::embedded)
 

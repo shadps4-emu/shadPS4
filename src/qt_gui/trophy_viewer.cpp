@@ -123,7 +123,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             QTableWidgetItem* typeitem = new QTableWidgetItem();
 
             auto resource = cmrc::res::get_filesystem();
-            std::string resourceString = "Resources/" + filename;
+            std::string resourceString = "src/images/" + filename;
             auto file = resource.open(resourceString);
             std::vector<char> imgdata(file.begin(), file.end());
             QImage type_icon = QImage::fromData(imgdata).scaled(QSize(64, 64), Qt::KeepAspectRatio,
