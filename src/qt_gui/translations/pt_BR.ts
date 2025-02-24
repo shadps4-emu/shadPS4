@@ -1801,7 +1801,7 @@
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation>Separar Arquivos de Log:\nEscreve um arquivo de log para cada jogo.</translation>
+      <translation>Separar Arquivos de Log:\nGrava um arquivo de log para cada jogo.</translation>
     </message>
   </context>
   <context>
