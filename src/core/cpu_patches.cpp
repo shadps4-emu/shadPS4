@@ -225,9 +225,9 @@ static void SaveContext(Xbyak::CodeGenerator& c, bool save_flags = false) {
     for (int reg = Xbyak::Operand::RAX; reg <= Xbyak::Operand::R15; reg++) {
         c.push(Xbyak::Reg64(reg));
     }
-    for (int reg = 0; reg <= 7; reg++) {
-        c.lea(rsp, ptr[rsp - 32]);
-        c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
+    c.lea(rsp, ptr[rsp - 32 * 16]);
+    for (int reg = 0; reg <= 15; reg++) {
+        c.vmovdqu(ptr[rsp + 32 * reg], Xbyak::Ymm(reg));
     }
     if (save_flags) {
         c.pushfq();
@@ -241,12 +241,12 @@ static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
     if (restore_flags) {
         c.popfq();
     }
-    for (int reg = 7; reg >= 0; reg--) {
+    for (int reg = 15; reg >= 0; reg--) {
         if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
-            c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
+            c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp + 32 * reg]);
         }
-        c.lea(rsp, ptr[rsp + 32]);
     }
+    c.lea(rsp, ptr[rsp + 32 * 16]);
     for (int reg = Xbyak::Operand::R15; reg >= Xbyak::Operand::RAX; reg--) {
         if (!dst.isREG() || dst.getIdx() != reg) {
             c.pop(Xbyak::Reg64(reg));
