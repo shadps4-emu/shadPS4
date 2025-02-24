@@ -323,7 +323,7 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
     static constexpr std::string_view TmpMount = "/temp0";
-    TmpMount.copy(mountPoint->data, sizeof(mountPoint->data));
+    TmpMount.copy(mountPoint->data, TmpMount.size());
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
              option, mountPoint->data);
     return ORBIS_OK;
