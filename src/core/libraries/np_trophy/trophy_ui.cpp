@@ -88,12 +88,22 @@ void TrophyUI::Draw() {
             ImGui::Indent(60);
         }
 
-        SetWindowFontScale((1.2 * AdjustHeight));
-        char earned_text[] = "Trophy earned!\n%s";
-        const float text_height =
-            ImGui::CalcTextSize(std::strcat(earned_text, trophy_name.c_str())).y;
-        SetCursorPosY((window_size.y - text_height) * 0.5f);
-
+        const std::string combinedString = "Trophy earned!\n%s" + trophy_name;
+        const float wrap_width =
+            CalcWrapWidthForPos(GetCursorScreenPos(), (window_size.x - (60 * AdjustWidth)));
+        SetWindowFontScale(1.2 * AdjustHeight);
+        // If trophy name exceeds 1 line
+        if (CalcTextSize(trophy_name.c_str()).x > wrap_width) {
+            SetCursorPosY(5 * AdjustHeight);
+            if (CalcTextSize(trophy_name.c_str()).x > (wrap_width * 2)) {
+                SetWindowFontScale(0.95 * AdjustHeight);
+            } else {
+                SetWindowFontScale(1.1 * AdjustHeight);
+            }
+        } else {
+            const float text_height = ImGui::CalcTextSize(combinedString.c_str()).y;
+            SetCursorPosY((window_size.y - text_height) * 0.5);
+        }
         ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
         TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
         ImGui::SameLine(window_size.x - (60 * AdjustWidth));
@@ -104,7 +114,7 @@ void TrophyUI::Draw() {
         } else {
             // placeholder
             const auto pos = GetCursorScreenPos();
-            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{30.0f * AdjustHeight},
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{50.0f * AdjustHeight},
                                                       GetColorU32(ImVec4{0.7f}));
         }
     }
