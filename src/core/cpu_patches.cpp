@@ -202,19 +202,39 @@ static void RestoreStack(Xbyak::CodeGenerator& c) {
 
 /// Switches to the patch stack, saves registers, and restores the original stack.
 static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
+    // Uses a more robust solution for saving registers on MacOS to avoid potential stack corruption
+    // if games decide to not follow the ABI and use the red zone.
+#ifdef __APPLE__
+    SaveStack(c);
+#else
     c.lea(rsp, ptr[rsp - 128]); // red zone
+#endif
     for (const auto& reg : regs) {
         c.push(reg.cvt64());
     }
+#ifdef __APPLE__
+    RestoreStack(c);
+#else
+    c.lea(rsp, ptr[rsp + 128]);
+#endif
 }
 
 /// Switches to the patch stack, restores registers, and restores the original stack.
 static void RestoreRegisters(Xbyak::CodeGenerator& c,
                              const std::initializer_list<Xbyak::Reg> regs) {
+#ifdef __APPLE__
+    SaveStack(c);
+#else
+    c.lea(rsp, ptr[rsp - 128]); // red zone
+#endif
     for (const auto& reg : regs) {
         c.pop(reg.cvt64());
     }
+#ifdef __APPLE__
+    RestoreStack(c);
+#else
     c.lea(rsp, ptr[rsp + 128]);
+#endif
 }
 
 /// Switches to the patch stack and stores all registers.
