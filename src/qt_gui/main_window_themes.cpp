@@ -6,6 +6,7 @@
 void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
     QPalette themePalette;
 
+    qApp->setStyleSheet("");
     switch (theme) {
     case Theme::Dark:
         mw_searchbar->setStyleSheet(
@@ -167,9 +168,6 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         break;
     case Theme::Oled:
         mw_searchbar->setStyleSheet(
-            "QLineEdit {"
-            "background-color: #000000; color: #ffffff; border: 1px solid #ffffff; "
-            "border-radius: 4px; padding: 5px; }"
             "QLineEdit:focus {"
             "border: 1px solid #2A82DA; }");
         themePalette.setColor(QPalette::Window, Qt::black);
@@ -186,6 +184,13 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
+        qApp->setStyleSheet(
+            "QLineEdit {"
+            "background-color: #000000; color: #ffffff; border: 1px solid #a0a0a0; "
+            "border-radius: 4px; padding: 5px; }"
+
+            "QCheckBox::indicator:unchecked {"
+            "border: 1px solid #808080; border-radius: 4px; }");
         break;
     }
 }
