@@ -391,6 +391,32 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
     RestoreRegisters(c, {scratch});
 }
 
+static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    const auto src = ZydisToXbyakOperand(operands[1]);
+
+    Xbyak::Label src_zero, end;
+
+    c.cmp(*src, 0);
+    c.je(src_zero);
+
+    // If src is not zero, functions like a BSF, but also clears the CF
+    c.bsf(dst, *src);
+    c.clc();
+    c.jmp(end);
+
+    c.L(src_zero);
+    c.mov(dst, operands[0].size);
+    // Since dst is not zero, also set ZF to zero. Testing dst with itself when we know
+    // it isn't zero is a good way to do this.
+    // Use cvt32 to avoid REX/Operand size prefixes.
+    c.test(dst.cvt32(), dst.cvt32());
+    // When source is zero, TZCNT also sets CF.
+    c.stc();
+
+    c.L(end);
+}
+
 static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
@@ -910,6 +936,7 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     {ZYDIS_MNEMONIC_BLSI, {FilterNoBMI1, GenerateBLSI, true}},
     {ZYDIS_MNEMONIC_BLSMSK, {FilterNoBMI1, GenerateBLSMSK, true}},
     {ZYDIS_MNEMONIC_BLSR, {FilterNoBMI1, GenerateBLSR, true}},
+    {ZYDIS_MNEMONIC_TZCNT, {FilterNoBMI1, GenerateTZCNT, true}},
 
 #ifdef __APPLE__
     // Patches for instruction sets not supported by Rosetta 2.
