@@ -279,8 +279,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
         ASSERT(info.resources.levels <= 14);
         std::memset(&params.sizes, 0, sizeof(params.sizes));
         for (int m = 0; m < info.resources.levels; ++m) {
-            params.sizes[m] = info.mips_layout[m].size * info.resources.layers +
-                              (m > 0 ? params.sizes[m - 1] : 0);
+            params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
         }
     }
 
