@@ -315,6 +315,7 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.x = states[i].angularVelocity.x;
         pData[i].angularVelocity.y = states[i].angularVelocity.y;
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
+        pData[i].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
         if (engine) {
             const auto gyro_poll_rate = engine->GetAccelPollRate();
             if (gyro_poll_rate != 0.0f) {
@@ -384,6 +385,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->angularVelocity.x = state.angularVelocity.x;
     pData->angularVelocity.y = state.angularVelocity.y;
     pData->angularVelocity.z = state.angularVelocity.z;
+    pData->orientation = {0.0f, 0.0f, 0.0f, 1.0f};
     if (engine) {
         const auto gyro_poll_rate = engine->GetAccelPollRate();
         if (gyro_poll_rate != 0.0f) {
