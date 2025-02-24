@@ -259,6 +259,7 @@ static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
     const auto src2 = ZydisToXbyakOperand(operands[2]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "ANDN overwriting the stack pointer");
 
     // Check if src2 is a memory operand or a register different to dst.
     // In those cases, we don't need to use a temporary register and are free to modify dst.
@@ -297,6 +298,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
     const auto start_len = ZydisToXbyakRegisterOperand(operands[2]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BEXTR overwriting the stack pointer");
 
     const Xbyak::Reg32e shift(Xbyak::Operand::RCX, static_cast<int>(start_len.getBit()));
     const auto scratch1 =
@@ -334,6 +336,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSI overwriting the stack pointer");
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -363,6 +366,7 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSMSK overwriting the stack pointer");
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -394,6 +398,7 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
 static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "TZCNT overwriting the stack pointer");
 
     Xbyak::Label src_zero, end;
 
@@ -420,6 +425,7 @@ static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSR overwriting the stack pointer");
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -641,12 +647,8 @@ static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
 }
 
 static bool FilterNoBMI1(const ZydisDecodedOperand*) {
-#ifdef __APPLE__
-    return FilterRosetta2Only(nullptr);
-#else
     Cpu cpu;
     return !cpu.has(Cpu::tBMI1);
-#endif
 }
 
 static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
