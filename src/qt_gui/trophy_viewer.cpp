@@ -118,18 +118,19 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             item->setData(Qt::DecorationRole, icon);
             item->setFlags(item->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 1, item);
+
+            const std::string filename = GetTrpType(trpType[row].at(0));
             QTableWidgetItem* typeitem = new QTableWidgetItem();
 
-            QString type;
-            if (trpType[row] == "P") {
-                type = "Platinum";
-            } else if (trpType[row] == "G") {
-                type = "Gold";
-            } else if (trpType[row] == "S") {
-                type = "Silver";
-            } else if (trpType[row] == "B") {
-                type = "Bronze";
-            }
+            auto resource = cmrc::res::get_filesystem();
+            std::string resourceString = "Resources/" + filename;
+            auto file = resource.open(resourceString);
+            std::vector<char> imgdata(file.begin(), file.end());
+            QImage type_icon = QImage::fromData(imgdata).scaled(QSize(64, 64), Qt::KeepAspectRatio,
+                                                                Qt::SmoothTransformation);
+            typeitem->setData(Qt::DecorationRole, type_icon);
+            typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
+            tableWidget->setItem(row, 6, typeitem);
 
             std::string detailString = trophyDetails[row].toStdString();
             std::size_t newline_pos = 0;
@@ -144,7 +145,6 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 SetTableItem(tableWidget, row, 3, QString::fromStdString(detailString));
                 SetTableItem(tableWidget, row, 4, trpId[row]);
                 SetTableItem(tableWidget, row, 5, trpHidden[row]);
-                SetTableItem(tableWidget, row, 6, type);
                 SetTableItem(tableWidget, row, 7, trpPid[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());

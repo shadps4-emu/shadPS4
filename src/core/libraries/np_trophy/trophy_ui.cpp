@@ -31,6 +31,22 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                   fmt::UTF(trophyIconPath.u8string()));
     }
 
+    std::string pathString;
+    if (trophy_type == "P") {
+        pathString = "Resources/platinum.png";
+    } else if (trophy_type == "G") {
+        pathString = "Resources/gold.png";
+    } else if (trophy_type == "S") {
+        pathString = "Resources/silver.png";
+    } else if (trophy_type == "B") {
+        pathString = "Resources/bronze.png";
+    }
+
+    auto resource = cmrc::res::get_filesystem();
+    auto file = resource.open(pathString);
+    std::vector<u8> imgdata(file.begin(), file.end());
+    trophy_type_icon = RefCountedTexture::DecodePngTexture(imgdata);
+
     AddLayer(this);
 }
 
@@ -59,9 +75,10 @@ void TrophyUI::Draw() {
     if (Begin("Trophy Window", nullptr,
               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
                   ImGuiWindowFlags_NoInputs)) {
-        if (trophy_icon) {
+        if (trophy_type_icon) {
             SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
-            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+            Image(trophy_type_icon.GetTexture().im_id,
+                  ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
             ImGui::SameLine();
         } else {
             // placeholder
@@ -71,12 +88,35 @@ void TrophyUI::Draw() {
             ImGui::Indent(60);
         }
 
-        SetWindowFontScale((1.2 * AdjustHeight));
-        char earned_text[] = "Trophy earned!\n%s";
-        const float text_height =
-            ImGui::CalcTextSize(std::strcat(earned_text, trophy_name.c_str())).y;
-        SetCursorPosY((window_size.y - text_height) * 0.5f);
+        const std::string combinedString = "Trophy earned!\n%s" + trophy_name;
+        const float wrap_width =
+            CalcWrapWidthForPos(GetCursorScreenPos(), (window_size.x - (60 * AdjustWidth)));
+        SetWindowFontScale(1.2 * AdjustHeight);
+        // If trophy name exceeds 1 line
+        if (CalcTextSize(trophy_name.c_str()).x > wrap_width) {
+            SetCursorPosY(5 * AdjustHeight);
+            if (CalcTextSize(trophy_name.c_str()).x > (wrap_width * 2)) {
+                SetWindowFontScale(0.95 * AdjustHeight);
+            } else {
+                SetWindowFontScale(1.1 * AdjustHeight);
+            }
+        } else {
+            const float text_height = ImGui::CalcTextSize(combinedString.c_str()).y;
+            SetCursorPosY((window_size.y - text_height) * 0.5);
+        }
+        ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
         TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
+        ImGui::SameLine(window_size.x - (60 * AdjustWidth));
+
+        if (trophy_icon) {
+            SetCursorPosY((window_size.y * 0.5f) - (25 * AdjustHeight));
+            Image(trophy_icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+        } else {
+            // placeholder
+            const auto pos = GetCursorScreenPos();
+            ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + ImVec2{50.0f * AdjustHeight},
+                                                      GetColorU32(ImVec4{0.7f}));
+        }
     }
     End();
 
