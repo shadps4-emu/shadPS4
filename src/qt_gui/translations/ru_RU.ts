@@ -1325,7 +1325,7 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Открыть местоположение журнала</translation>
+      <translation>Открыть местоположение логов</translation>
     </message>
     <message>
       <source>Input</source>
