@@ -283,7 +283,9 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     }
 
     // 2D dimensions of both images should be the same.
-    if ((size.width != info.size.width) || (size.height != info.size.height)) {
+    const auto mip_w = std::max(info.size.width >> mip, 1u);
+    const auto mip_h = std::max(info.size.height >> mip, 1u);
+    if ((size.width != mip_w) || (size.height != mip_h)) {
         return -1;
     }
 
