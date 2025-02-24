@@ -202,21 +202,19 @@ static void RestoreStack(Xbyak::CodeGenerator& c) {
 
 /// Switches to the patch stack, saves registers, and restores the original stack.
 static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
-    SaveStack(c);
+    c.lea(rsp, ptr[rsp - 128]); // red zone
     for (const auto& reg : regs) {
         c.push(reg.cvt64());
     }
-    RestoreStack(c);
 }
 
 /// Switches to the patch stack, restores registers, and restores the original stack.
 static void RestoreRegisters(Xbyak::CodeGenerator& c,
                              const std::initializer_list<Xbyak::Reg> regs) {
-    SaveStack(c);
     for (const auto& reg : regs) {
         c.pop(reg.cvt64());
     }
-    RestoreStack(c);
+    c.lea(rsp, ptr[rsp + 128]);
 }
 
 /// Switches to the patch stack and stores all registers.
@@ -256,8 +254,6 @@ static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
     }
     RestoreStack(c);
 }
-
-#ifdef __APPLE__
 
 static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
@@ -425,6 +421,8 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     RestoreRegisters(c, {scratch});
 }
+
+#ifdef __APPLE__
 
 static __attribute__((sysv_abi)) void PerformVCVTPH2PS(float* out, const half_float::half* in,
                                                        const u32 count) {
@@ -614,6 +612,15 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
     return !cpu.has(Cpu::tSSE4a);
+}
+
+static bool FilterNoBMI1(const ZydisDecodedOperand*) {
+#ifdef __APPLE__
+    return FilterRosetta2Only(nullptr);
+#else
+    Cpu cpu;
+    return !cpu.has(Cpu::tBMI1);
+#endif
 }
 
 static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
@@ -897,14 +904,15 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
     {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
 
+    // BMI1
+    {ZYDIS_MNEMONIC_ANDN, {FilterNoBMI1, GenerateANDN, true}},
+    {ZYDIS_MNEMONIC_BEXTR, {FilterNoBMI1, GenerateBEXTR, true}},
+    {ZYDIS_MNEMONIC_BLSI, {FilterNoBMI1, GenerateBLSI, true}},
+    {ZYDIS_MNEMONIC_BLSMSK, {FilterNoBMI1, GenerateBLSMSK, true}},
+    {ZYDIS_MNEMONIC_BLSR, {FilterNoBMI1, GenerateBLSR, true}},
+
 #ifdef __APPLE__
     // Patches for instruction sets not supported by Rosetta 2.
-    // BMI1
-    {ZYDIS_MNEMONIC_ANDN, {FilterRosetta2Only, GenerateANDN, true}},
-    {ZYDIS_MNEMONIC_BEXTR, {FilterRosetta2Only, GenerateBEXTR, true}},
-    {ZYDIS_MNEMONIC_BLSI, {FilterRosetta2Only, GenerateBLSI, true}},
-    {ZYDIS_MNEMONIC_BLSMSK, {FilterRosetta2Only, GenerateBLSMSK, true}},
-    {ZYDIS_MNEMONIC_BLSR, {FilterRosetta2Only, GenerateBLSR, true}},
     // F16C
     {ZYDIS_MNEMONIC_VCVTPH2PS, {FilterRosetta2Only, GenerateVCVTPH2PS, true}},
     {ZYDIS_MNEMONIC_VCVTPS2PH, {FilterRosetta2Only, GenerateVCVTPS2PH, true}},
