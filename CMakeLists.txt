@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
-    enable_language(OBJC)
+    list(APPEND ADDITIONAL_LANGUAGES OBJC)
     set(CMAKE_OSX_DEPLOYMENT_TARGET 14)
 endif()
 
@@ -16,7 +16,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-project(shadPS4 CXX C ASM)
+project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
