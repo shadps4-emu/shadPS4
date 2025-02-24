@@ -316,11 +316,11 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.y = states[i].angularVelocity.y;
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
         if (engine) {
-            const auto accel_poll_rate = engine->GetAccelPollRate();
-            if (accel_poll_rate != 0.0f) {
+            const auto gyro_poll_rate = engine->GetAccelPollRate();
+            if (gyro_poll_rate != 0.0f) {
                 GameController::CalculateOrientation(pData[i].acceleration,
                                                      pData[i].angularVelocity,
-                                                     1.0f / accel_poll_rate, pData[i].orientation);
+                                                     1.0f / gyro_poll_rate, pData[i].orientation);
             }
         }
         pData[i].touchData.touchNum =
@@ -385,10 +385,10 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->angularVelocity.y = state.angularVelocity.y;
     pData->angularVelocity.z = state.angularVelocity.z;
     if (engine) {
-        const auto accel_poll_rate = engine->GetAccelPollRate();
-        if (accel_poll_rate != 0.0f) {
+        const auto gyro_poll_rate = engine->GetAccelPollRate();
+        if (gyro_poll_rate != 0.0f) {
             GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
-                                                 1.0f / accel_poll_rate, pData->orientation);
+                                                 1.0f / gyro_poll_rate, pData->orientation);
         }
     }
     pData->touchData.touchNum =
