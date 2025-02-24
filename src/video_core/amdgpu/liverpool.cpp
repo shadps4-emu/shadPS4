@@ -395,6 +395,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                             header + 2, (count - 1) * sizeof(u32));
                 break;
             }
+            case PM4ItOpcode::SetPredication: {
+                LOG_WARNING(Render_Vulkan, "Unimplemented IT_SET_PREDICATION");
+                break;
+            }
             case PM4ItOpcode::IndexType: {
                 const auto* index_type = reinterpret_cast<const PM4CmdDrawIndexType*>(header);
                 regs.index_buffer_type.raw = index_type->raw;
