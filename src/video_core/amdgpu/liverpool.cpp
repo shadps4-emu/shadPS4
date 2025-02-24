@@ -93,17 +93,14 @@ void Liverpool::Process(std::stop_token stoken) {
 
             // Process incoming commands with high priority
             while (num_commands) {
-
                 Common::UniqueFunction<void> callback{};
                 {
                     std::unique_lock lk{submit_mutex};
-                    callback = std::move(command_queue.back());
+                    callback = std::move(command_queue.front());
                     command_queue.pop();
+                    --num_commands;
                 }
-
                 callback();
-
-                --num_commands;
             }
 
             curr_qid = (curr_qid + 1) % num_mapped_queues;
