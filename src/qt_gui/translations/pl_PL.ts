@@ -22,7 +22,7 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Kody / Łatki dla </translation>
+      <translation>Kody / Poprawki dla </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
@@ -202,7 +202,7 @@
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>Możesz potrzebować zaktualizować swoją grę.</translation>
+      <translation>Może być konieczne uaktualnienie gry.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -249,7 +249,7 @@
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>Automatyczne aktualizacje</translation>
+      <translation>Asystent aktualizacji</translation>
     </message>
     <message>
       <source>Error</source>
@@ -297,7 +297,7 @@
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>Ostatnia wersja</translation>
+      <translation>Najnowsza wersja</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
@@ -388,7 +388,7 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>Buty</translation>
+      <translation>Uruchamia się</translation>
     </message>
     <message>
       <source>Menus</source>
@@ -400,7 +400,7 @@
     </message>
     <message>
       <source>Playable</source>
-      <translation>Do grania</translation>
+      <translation>Grywalne</translation>
     </message>
   </context>
   <context>
@@ -439,7 +439,7 @@
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Lewy drążek</translation>
     </message>
     <message>
       <source>Config Selection</source>
@@ -515,11 +515,11 @@
     </message>
     <message>
       <source>Right Stick</source>
-      <translation>Prawa gałka</translation>
+      <translation>Prawy drążek</translation>
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Dostosowanie koloru</translation>
     </message>
     <message>
       <source>R:</source>
@@ -603,7 +603,7 @@
     </message>
     <message>
       <source>Compatibility</source>
-      <translation>Zgodność</translation>
+      <translation>Kompatybilność</translation>
     </message>
     <message>
       <source>Region</source>
@@ -765,7 +765,7 @@
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Usuń Grę</translation>
+      <translation>Usuń grę</translation>
     </message>
     <message>
       <source>Delete Update</source>
@@ -773,11 +773,11 @@
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>Usuń DLC</translation>
+      <translation>Usuń dodatkową zawartość (DLC)</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation>kompatybilność...</translation>
+      <translation>Kompatybilność...</translation>
     </message>
     <message>
       <source>Update database</source>
@@ -825,7 +825,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>Ta gra nie ma DLC do usunięcia!</translation>
+      <translation>Ta gra nie ma dodatkowej zawartości (DLC) do usunięcia!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -1127,7 +1127,7 @@
     </message>
     <message>
       <source>DLC Installation</source>
-      <translation>Instalacja DLC</translation>
+      <translation>Instalacja dodatkowej zawartości (DLC)</translation>
     </message>
     <message>
       <source>Would you like to install DLC: %1?</source>
@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Input</source>
-      <translation>Wejście</translation>
+      <translation>Sterowanie</translation>
     </message>
     <message>
       <source>Cursor</source>
@@ -1697,7 +1697,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos; . Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nNie działa na kartach graficznych Intela.\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
