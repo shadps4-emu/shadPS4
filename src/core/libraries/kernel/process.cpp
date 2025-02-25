@@ -40,36 +40,80 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    std::string guest_path(moduleFileName);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path = mnt->GetHostPath(moduleFileName);
-
-    // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    u32 handle = linker->FindByName(path);
-    if (handle != -1) {
-        return handle;
-    }
-    handle = linker->LoadModule(path, true);
-    if (handle == -1) {
-        return ORBIS_KERNEL_ERROR_ESRCH;
-    }
-    auto* module = linker->GetModule(handle);
-    linker->RelocateAnyImports(module);
+    std::filesystem::path path;
+    s32 handle;
 
-    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
-    if (module->tls.image_size != 0) {
-        linker->AdvanceGenerationCounter();
-    }
+    if(guest_path[0] == '/') {
+        path = mnt->GetHostPath("/system/common/lib" + guest_path);
+        handle = linker->LoadAndStartModule(path, args, argp, pRes);
+        if (handle != -1) {
+            return handle;
+        }
 
-    // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
-    s32 ret = module->Start(args, argp, param);
-    if (pRes) {
-        *pRes = ret;
-    }
+        path = mnt->GetHostPath("/system/priv/lib" + guest_path);
+        handle = linker->LoadAndStartModule(path, args, argp, pRes);
+        if (handle != -1) {
+            return handle;
+        }
 
-    return handle;
+        path = mnt->GetHostPath(guest_path);
+        handle = linker->LoadAndStartModule(path, args, argp, pRes);
+        if (handle != -1) {
+            return handle;
+        }
+    } else {
+        auto* process_params = linker->GetProcParam();
+        if (process_params->sdk_version > 0x3ffffff) {
+            if (process_params->process_name != nullptr &&
+                strstr(process_params->process_name, "web_core.elf")) {
+                if (guest_path.contains("libScePigletv2VSH") ||
+                    guest_path.contains("libSceSysCore") ||
+                    guest_path.contains("libSceVideoCoreServerInterface")) {
+                    path = mnt->GetHostPath(guest_path);
+                    handle = linker->LoadAndStartModule(path, args, argp, pRes);
+                    if (handle != -1) {
+                        return handle;
+                    }
+                } else {
+                    // loading prohibited
+                    return ORBIS_KERNEL_ERROR_ENOENT;
+                }
+            } else {
+                // loading prohibited
+                return ORBIS_KERNEL_ERROR_ENOENT;
+            }
+        }
+        if (!guest_path.contains('/')) {
+            path = mnt->GetHostPath("/app0/" + guest_path);
+            handle = linker->LoadAndStartModule(path, args, argp, pRes);
+            if (handle != -1) {
+                return handle;
+            }
+            if ((flags & 0x10000) != 0) {
+                path = mnt->GetHostPath("/system/priv/lib/" + guest_path);
+                handle = linker->LoadAndStartModule(path, args, argp, pRes);
+                if (handle != -1) {
+                    return handle;
+                }
+
+                path = mnt->GetHostPath("/system/common/lib" + guest_path);
+                handle = linker->LoadAndStartModule(path, args, argp, pRes);
+                if (handle != -1) {
+                    return handle;
+                }
+            }
+        } else {
+            path = mnt->GetHostPath(guest_path);
+            handle = linker->LoadAndStartModule(path, args, argp, pRes);
+            if (handle != -1) {
+                return handle;
+            }
+        }
+    }
+    return ORBIS_KERNEL_ERROR_ENOENT;
 }
 
 s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
