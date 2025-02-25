@@ -248,6 +248,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
+    const auto shader_cache_dir = Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache";
+    if (!std::filesystem::exists(shader_cache_dir)) {
+        std::filesystem::create_directories(shader_cache_dir);
+        LOG_INFO(Loader, "Created shader cache directory: {}", shader_cache_dir.string());
+    }
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 

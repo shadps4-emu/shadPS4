@@ -17,6 +17,7 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include <common/scm_rev.h>
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
@@ -504,8 +505,31 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
-    auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
-    DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+    std::string shader_name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
+    std::string cacheFilename =
+        shader_name + "_" + Common::g_scm_rev + ".spv ";
+
+    const auto shader_cache_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache";
+    std::filesystem::path shader_cache_file_path = shader_cache_dir / cacheFilename;
+
+    std::vector<u32> spv;
+
+    if (std::filesystem::exists(shader_cache_file_path)) {
+        Common::FS::IOFile shader_cache_file(shader_cache_file_path, Common::FS::FileAccessMode::Read);
+        spv.resize(shader_cache_file.GetSize() / sizeof(u32));
+        shader_cache_file.Read(spv);
+        LOG_INFO(Render_Vulkan, "Loaded SPIR-V from cache: {}", shader_cache_file_path.string());
+    } else {
+        spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
+
+        DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+        Common::FS::IOFile shader_cache_file(shader_cache_file_path, Common::FS::FileAccessMode::Write);
+        shader_cache_file.WriteSpan(std::span<const u32>(spv));
+        LOG_INFO(Render_Vulkan, "Compiled SPIR-V and stored in cache: {}", shader_cache_file_path.string());
+    }
 
     vk::ShaderModule module;
 
@@ -520,6 +544,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
+
     if (Config::collectShadersForDebug()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
