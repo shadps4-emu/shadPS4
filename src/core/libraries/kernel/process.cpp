@@ -46,7 +46,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     std::filesystem::path path;
     s32 handle;
 
-    if(guest_path[0] == '/') {
+    if (guest_path[0] == '/') {
         path = mnt->GetHostPath("/system/common/lib" + guest_path);
         handle = linker->LoadAndStartModule(path, args, argp, pRes);
         if (handle != -1) {
