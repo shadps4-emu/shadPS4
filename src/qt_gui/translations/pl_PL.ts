@@ -435,7 +435,7 @@
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Martwa strefa lewego drążka</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -443,15 +443,15 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Wybór konfiguracji</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Typowa konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Użyj osobnej konfiguracji dla każdej gry</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -511,7 +511,7 @@
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Martwa strefa prawego drążka</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -535,11 +535,11 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Zastąp kolor paska świetlnego</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Zastąp kolor</translation>
     </message>
   </context>
   <context>
@@ -729,7 +729,7 @@
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Otwórz Folder Danych Zapisów</translation>
+      <translation>Otwórz folder zapisanych danych</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
@@ -753,7 +753,7 @@
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>Kopiuj rozmiar</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -769,7 +769,7 @@
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Usuń Aktualizację</translation>
+      <translation>Usuń aktualizację</translation>
     </message>
     <message>
       <source>Delete DLC</source>
@@ -861,7 +861,7 @@
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Zapisane dane</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1131,7 +1131,7 @@
     </message>
     <message>
       <source>Would you like to install DLC: %1?</source>
-      <translation>Czy chcesz zainstalować DLC: %1?</translation>
+      <translation>Czy chcesz zainstalować dodatkową zawartość (DLC): %1?</translation>
     </message>
     <message>
       <source>DLC already installed:</source>
@@ -1701,19 +1701,19 @@
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Kopiowanie buforów karty graficznej:\nOmija problemy wyścigów związane z przesyłaniem danych do karty graficznej.\nMoże, ale nie musi, pomóc w przypadku awarii typu PM4 0.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Wskaźniki debugowania gospodarza:\nWstawia informacje emulatora, takie jak znaczniki dla konkretnych poleceń AMDGPU wokół poleceń Vulkan, a także nadaje nazwy debugowania zasobów.\nJeśli ta opcja jest włączona, powinieneś włączyć diagnostykę awarii.\nPrzydatne dla programów takich jak RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Znaczniki debugowania gościa:\nWstawia wszystkie znaczniki debugowania, które gra dodała do buforu poleceń.\nJeśli ta opcja jest włączona, powinieneś włączyć diagnostykę awarii.\nPrzydatne dla programów takich jak RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Ścieżka zapisu danych:\nFolder, w którym zapisywane będą dane gry.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -1797,11 +1797,11 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Oddzielne pliki dziennika</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Oddzielne pliki dziennika:\nZapisuje oddzielny plik dziennika dla każdej gry.</translation>
     </message>
   </context>
   <context>
