@@ -609,7 +609,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
 
     //User
     if (elementName == "OpenCustomTrophyLocationButton") {
-        text = tr("It is possible to add custom images to the trophies.\\nAdd the files to custom_trophy with the following names:\\nbronze.png, gold.png, platinum.png, silver.png");
+        text = tr("Open custom trophy image folder:\\nIt is possible to add custom images to the trophies.\\nAdd the files to custom_trophy with the following names:\\nbronze.png, gold.png, platinum.png, silver.png");
     }
 
     // Input

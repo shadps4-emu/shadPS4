@@ -1616,8 +1616,8 @@
         <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
-        <source>It is possible to add custom images to the trophies.\nAdd the files to custom_trophy with the following names:\nbronze.png, gold.png, platinum.png, silver.png</source>
-        <translation>It is possible to add custom images to the trophies.\nAdd the files to custom_trophy with the following names:\nbronze.png, gold.png, platinum.png, silver.png</translation>
+        <source>Open custom trophy image folder:\nIt is possible to add custom images to the trophies.\nAdd the files to custom_trophy with the following names:\nbronze.png, gold.png, platinum.png, silver.png</source>
+        <translation>Open custom trophy image folder:\nIt is possible to add custom images to the trophies.\nAdd the files to custom_trophy with the following names:\nbronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
         <source>Never</source>
