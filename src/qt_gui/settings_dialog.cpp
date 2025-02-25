@@ -225,6 +225,19 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
             Config::setShowBackgroundImage(state == Qt::Checked);
         });
     }
+
+    // User TAB
+    {
+        connect(ui->OpenCustom_trophyLocationButton, &QPushButton::clicked, this, []() {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+        });
+
+        ui->label_Custom_Trophy->setText(ui->label_Custom_Trophy->text().replace("\\n", "\n"));
+    }
+
     // Input TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -280,8 +293,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         connect(ui->OpenLogLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
             Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+                                      Common::FS::GetUserPath(Common::FS::PathType::LogDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
     }
 

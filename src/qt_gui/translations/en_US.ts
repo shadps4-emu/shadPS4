@@ -1312,6 +1312,16 @@
         <translation>Trophy</translation>
     </message>
     <message>
+        <source>It is possible to add custom images to the trophies.
+Add the files to custom_trophy with the following names:
+bronze.png, gold.png, platinum.png, silver.png</source>
+        <translation>It is possible to add custom images to the trophies.\nAdd the files to custom_trophy with the following names:\nbronze.png, gold.png, platinum.png, silver.png</translation>
+    </message>
+    <message>
+        <source>Open custom_trophy folder</source>
+        <translation>Open custom_trophy folder</translation>
+    </message>
+    <message>
         <source>Logger</source>
         <translation>Logger</translation>
     </message>

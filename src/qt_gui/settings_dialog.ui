@@ -1243,73 +1243,89 @@
          </layout>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="vLayoutTrophy">
-          <property name="spacing">
-           <number>6</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>50</number>
-          </property>
-          <item>
-           <layout class="QHBoxLayout" name="hLayoutTrophy">
+          <layout class="QVBoxLayout" name="vLayoutTrophy">
+            <property name="spacing">
+              <number>6</number>
+            </property>
+            <property name="leftMargin">
+              <number>0</number>
+            </property>
+            <property name="bottomMargin">
+              <number>50</number>
+            </property>
             <item>
-             <widget class="QGroupBox" name="trophyGroupBox">
-              <property name="title">
-               <string>Trophy</string>
-              </property>
-              <layout class="QVBoxLayout" name="userNameLayout_2">
-               <item>
-                <widget class="QCheckBox" name="disableTrophycheckBox">
-                 <property name="text">
-                  <string>Disable Trophy Pop-ups</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_Trophy">
-                 <property name="text">
-                  <string>Trophy Key</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="trophyKeyLineEdit">
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>10</pointsize>
-                   <bold>false</bold>
-                  </font>
-                 </property>
-                </widget>
-               </item>
+              <layout class="QHBoxLayout" name="hLayoutTrophy">
+                <item>
+                  <widget class="QGroupBox" name="trophyGroupBox">
+                    <property name="title">
+                      <string>Trophy</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="userNameLayout_2">
+                      <item>
+                        <widget class="QCheckBox" name="disableTrophycheckBox">
+                          <property name="text">
+                            <string>Disable Trophy Pop-ups</string>
+                          </property>
+                        </widget>
+                      </item>
+                      <item>
+                        <widget class="QLabel" name="label_Trophy">
+                          <property name="text">
+                            <string>Trophy Key</string>
+                          </property>
+                        </widget>
+                      </item>
+                      <item>
+                        <widget class="QLineEdit" name="trophyKeyLineEdit">
+                          <property name="minimumSize">
+                            <size>
+                              <width>0</width>
+                              <height>0</height>
+                            </size>
+                          </property>
+                          <property name="font">
+                            <font>
+                              <pointsize>10</pointsize>
+                              <bold>false</bold>
+                            </font>
+                          </property>
+                        </widget>
+                      </item>
+                      <item>
+                        <widget class="QLabel" name="label_Custom_Trophy">
+                          <property name="text">
+                            <string>It is possible to add custom images to the trophies.
+Add the files to custom_trophy with the following names:
+bronze.png, gold.png, platinum.png, silver.png</string>
+                          </property>
+                        </widget>
+                      </item>
+                      <item>
+                        <widget class="QPushButton" name="OpenCustom_trophyLocationButton">
+                          <property name="text">
+                            <string>Open custom_trophy folder</string>
+                          </property>
+                        </widget>
+                      </item>
+                    </layout>
+                  </widget>
+                </item>
+                <item>
+                  <spacer name="horizontalSpacer_3">
+                    <property name="orientation">
+                      <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                      <size>
+                        <width>40</width>
+                        <height>20</height>
+                      </size>
+                    </property>
+                  </spacer>
+                </item>
               </layout>
-             </widget>
             </item>
-            <item>
-             <spacer name="horizontalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-         </layout>
+          </layout>
         </item>
         <item>
          <spacer name="userTabSpacer">
