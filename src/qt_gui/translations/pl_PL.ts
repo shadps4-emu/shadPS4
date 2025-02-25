@@ -455,11 +455,11 @@
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>Back</source>
@@ -467,23 +467,23 @@
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Opcje / Start</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -523,15 +523,15 @@
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>Czerwony:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>Zielony:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>Niebieski:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -584,7 +584,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Katalog do instalacji dodatkowej zawartości (DLC)</translation>
     </message>
   </context>
   <context>
@@ -607,7 +607,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -635,15 +635,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>godz.</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>min</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -682,23 +682,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
@@ -829,7 +829,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation>Zawartość dodatkowa (DLC)</translation>
+      <translation>Dodatkowa zawartość (DLC)</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>Menedżer plików SFO dla </translation>
     </message>
   </context>
   <context>
@@ -880,11 +880,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Zainstaluj wszystkie oczekujące do wybranego folderu</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Usuń plik PKG po instalacji</translation>
     </message>
   </context>
   <context>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Wersja aplikacji</translation>
     </message>
     <message>
       <source>FW</source>
@@ -1234,7 +1234,7 @@
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Flagi</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1250,7 +1250,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Paczka</translation>
     </message>
   </context>
   <context>
@@ -1265,7 +1265,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -1277,7 +1277,7 @@
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulator</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
@@ -1345,7 +1345,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1481,15 +1481,15 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Obraz tła</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Pokaż obraz tła</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Przezroczystość</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1577,7 +1577,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Obraz tła:\nKontroluj przezroczystość obrazu tła gry.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1661,7 +1661,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Włącz HDR:\nWłącza HDR w grach, które go wspierają.\nTwój monitor musi mieć wsparcie dla przestrzeni kolorów BT2020 PQ oraz formatu RGB10A2 swapchain.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1693,7 +1693,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Zbieranie cieni:\nPotrzebujesz tej opcji aby edytować cienie za pomocą menu debugowania (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
