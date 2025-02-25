@@ -228,14 +228,12 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     // User TAB
     {
-        connect(ui->OpenCustom_trophyLocationButton, &QPushButton::clicked, this, []() {
+        connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
             Common::FS::PathToQString(userPath,
                                       Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
-
-        ui->label_Custom_Trophy->setText(ui->label_Custom_Trophy->text().replace("\\n", "\n"));
     }
 
     // Input TAB
@@ -320,6 +318,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
+
+        // User
+        ui->OpenCustomTrophyLocationButton->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -604,6 +605,11 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Update Compatibility On Startup:\\nAutomatically update the compatibility database when shadPS4 starts.");
     } else if (elementName == "updateCompatibilityButton") {
         text = tr("Update Compatibility Database:\\nImmediately update the compatibility database.");
+    }
+
+    //User
+    if (elementName == "OpenCustomTrophyLocationButton") {
+        text = tr("It is possible to add custom images to the trophies.\\nAdd the files to custom_trophy with the following names:\\nbronze.png, gold.png, platinum.png, silver.png");
     }
 
     // Input
