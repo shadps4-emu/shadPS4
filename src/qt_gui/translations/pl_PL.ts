@@ -1737,7 +1737,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Ścieżka zapisanych danych</translation>
     </message>
     <message>
       <source>Browse</source>
