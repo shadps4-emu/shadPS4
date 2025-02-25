@@ -515,7 +515,7 @@
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Prawa gałka</translation>
     </message>
     <message>
       <source>Color Adjustment</source>
@@ -829,7 +829,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>Zawartość dodatkowa (DLC)</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -841,23 +841,23 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Otwórz folder aktualizacji</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Usuń zapisane dane</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Ta gra nie ma folderu aktualizacji do otwarcia!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Nie udało się przekonwertować ikony.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Ta gra nie ma zapisów do usunięcia!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1226,11 +1226,11 @@
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>Oprogramowanie</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
@@ -1389,7 +1389,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Włącz HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1717,7 +1717,7 @@
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Przeglądaj:\nPrzeglądaj folder, aby ustawić ścieżkę zapisywania danych.</translation>
     </message>
     <message>
       <source>Release</source>
@@ -1729,11 +1729,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Wybierz poziom głośności muzyki w tle.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Włącz sterowanie ruchem</translation>
     </message>
     <message>
       <source>Save Data Path</source>
