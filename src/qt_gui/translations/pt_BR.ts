@@ -487,7 +487,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>Botões de Face</translation>
+      <translation>Botões de Ação</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
