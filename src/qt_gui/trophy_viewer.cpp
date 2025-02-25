@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
 #include <QMessageBox>
 #include <cmrc/cmrc.hpp>
 #include "common/path_util.h"
 #include "trophy_viewer.h"
+
+namespace fs = std::filesystem;
 
 CMRC_DECLARE(res);
 
@@ -122,10 +125,29 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             const std::string filename = GetTrpType(trpType[row].at(0));
             QTableWidgetItem* typeitem = new QTableWidgetItem();
 
-            auto resource = cmrc::res::get_filesystem();
-            std::string resourceString = "src/images/" + filename;
-            auto file = resource.open(resourceString);
-            std::vector<char> imgdata(file.begin(), file.end());
+            const auto CustomTrophy_Dir =
+                Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy);
+            std::string customPath;
+
+            if (fs::exists(CustomTrophy_Dir / filename)) {
+                customPath = (CustomTrophy_Dir / filename).string();
+            }
+
+            std::vector<char> imgdata;
+
+            if (!customPath.empty()) {
+                std::ifstream file(customPath, std::ios::binary);
+                if (file) {
+                    imgdata = std::vector<char>(std::istreambuf_iterator<char>(file),
+                                                std::istreambuf_iterator<char>());
+                }
+            } else {
+                auto resource = cmrc::res::get_filesystem();
+                std::string resourceString = "src/images/" + filename;
+                auto file = resource.open(resourceString);
+                imgdata = std::vector<char>(file.begin(), file.end());
+            }
+
             QImage type_icon = QImage::fromData(imgdata).scaled(QSize(64, 64), Qt::KeepAspectRatio,
                                                                 Qt::SmoothTransformation);
             typeitem->setData(Qt::DecorationRole, type_icon);

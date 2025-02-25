@@ -2,9 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <mutex>
 #include <cmrc/cmrc.hpp>
+#include <common/path_util.h>
 #include <imgui.h>
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/singleton.h"
@@ -12,7 +16,7 @@
 #include "trophy_ui.h"
 
 CMRC_DECLARE(res);
-
+namespace fs = std::filesystem;
 using namespace ImGui;
 namespace Libraries::NpTrophy {
 
@@ -31,20 +35,46 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                   fmt::UTF(trophyIconPath.u8string()));
     }
 
-    std::string pathString;
+    std::string pathString = "src/images/";
+
     if (trophy_type == "P") {
-        pathString = "src/images/platinum.png";
+        pathString += "platinum.png";
     } else if (trophy_type == "G") {
-        pathString = "src/images/gold.png";
+        pathString += "gold.png";
     } else if (trophy_type == "S") {
-        pathString = "src/images/silver.png";
+        pathString += "silver.png";
     } else if (trophy_type == "B") {
-        pathString = "src/images/bronze.png";
+        pathString += "bronze.png";
     }
 
-    auto resource = cmrc::res::get_filesystem();
-    auto file = resource.open(pathString);
-    std::vector<u8> imgdata(file.begin(), file.end());
+    const auto CustomTrophy_Dir = Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy);
+    std::string customPath;
+
+    if (trophy_type == "P" && fs::exists(CustomTrophy_Dir / "platinum.png")) {
+        customPath = (CustomTrophy_Dir / "platinum.png").string();
+    } else if (trophy_type == "G" && fs::exists(CustomTrophy_Dir / "gold.png")) {
+        customPath = (CustomTrophy_Dir / "gold.png").string();
+    } else if (trophy_type == "S" && fs::exists(CustomTrophy_Dir / "silver.png")) {
+        customPath = (CustomTrophy_Dir / "silver.png").string();
+    } else if (trophy_type == "B" && fs::exists(CustomTrophy_Dir / "bronze.png")) {
+        customPath = (CustomTrophy_Dir / "bronze.png").string();
+    }
+
+    std::vector<u8> imgdata;
+    if (!customPath.empty()) {
+        std::ifstream file(customPath, std::ios::binary);
+        if (file) {
+            imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
+                                      std::istreambuf_iterator<char>());
+        } else {
+            LOG_ERROR(Lib_NpTrophy, "Could not open custom file for trophy in {}", customPath);
+        }
+    } else {
+        auto resource = cmrc::res::get_filesystem();
+        auto file = resource.open(pathString);
+        imgdata = std::vector<u8>(file.begin(), file.end());
+    }
+
     trophy_type_icon = RefCountedTexture::DecodePngTexture(imgdata);
 
     AddLayer(this);
