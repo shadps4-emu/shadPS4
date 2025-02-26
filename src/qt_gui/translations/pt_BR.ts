@@ -15,7 +15,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>Este programa não deve ser usado para jogar jogos que tenham sido obtidos ilegalmente.</translation>
+      <translation>Este programa não deve ser usado para executar jogos que tenham sido obtidos ilegalmente.</translation>
     </message>
   </context>
   <context>
@@ -837,7 +837,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1 ?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -849,7 +849,7 @@
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>Este jogo não tem atualização para deletar!</translation>
+      <translation>Este jogo não possui pasta de atualização para abrir!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -880,11 +880,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation>Instalar Todas da Fila para a Pasta Selecionada</translation>
+      <translation>Instalar Tudo da Fila para a Pasta Selecionada</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation>Deletar PKG após instalação</translation>
+      <translation>Deletar o PKG após a Instalação</translation>
     </message>
   </context>
   <context>
@@ -923,7 +923,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>Abrir pasta shadPS4</translation>
+      <translation>Abrir Pasta do shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -983,7 +983,7 @@
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>Dumpar Lista de Jogos</translation>
+      <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1071,7 +1071,7 @@
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>Você baixou cheats para todos os jogos que instalou.</translation>
+      <translation>Você baixou trapaças para todos os jogos que instalou.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
@@ -1107,7 +1107,7 @@
     </message>
     <message>
       <source>PKG and Game versions match: </source>
-      <translation>As versões do PKG e do Jogo são igual: </translation>
+      <translation>As versões do PKG e do Jogo são iguais: </translation>
     </message>
     <message>
       <source>Would you like to overwrite?</source>
@@ -1115,7 +1115,7 @@
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
-      <translation>Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
+      <translation>A Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
     </message>
     <message>
       <source>Game is installed: </source>
@@ -1143,7 +1143,7 @@
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>ERRO de PKG</translation>
+      <translation>ERRO DE PKG</translation>
     </message>
     <message>
       <source>Extracting PKG %1/%2</source>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>ERRO de PKG</translation>
+      <translation>ERRO DE PKG</translation>
     </message>
     <message>
       <source>Name</source>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation>App Ver</translation>
+      <translation>Versão do App</translation>
     </message>
     <message>
       <source>FW</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Path</source>
-      <translation>Diretório</translation>
+      <translation>Caminho</translation>
     </message>
     <message>
       <source>File</source>
@@ -1381,7 +1381,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Ativar Dumping de Shaders</translation>
+      <translation>Ativar Exportação de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1413,7 +1413,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Ativar Depuração de Dumping</translation>
+      <translation>Ativar Exportação de Depuração</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -1653,7 +1653,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Ativar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
+      <translation>Ativar Exportação de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
@@ -1677,7 +1677,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Ativar Depuração de Dumping:\nArmazena os símbolos de importação, exportação e informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
+      <translation>Ativar Exportação de Depuração:\nArmazena os símbolos de importação, exportação e informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
