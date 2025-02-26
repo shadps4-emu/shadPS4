@@ -241,8 +241,10 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
     trophy_queue.push(new_trophy);
 
     if (!current_trophy_ui.has_value()) {
-        // Resetting the animation for the next trophy
+#ifdef ENABLE_QT_GUI
         BackgroundMusicPlayer::getInstance().stopMusic();
+#endif
+        // Resetting the animation for the next trophy
         elapsed_time = 0.0f;                // Resetting animation time
         fade_opacity = 0.0f;                // Starts invisible
         start_pos = ImVec2(1280.0f, 50.0f); // Starts off screen, right
