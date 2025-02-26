@@ -128,6 +128,7 @@ static auto UserPaths = [] {
     create_path(PathType::CheatsDir, user_dir / CHEATS_DIR);
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
+    create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
 
     return paths;
 }();

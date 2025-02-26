@@ -225,6 +225,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
             Config::setShowBackgroundImage(state == Qt::Checked);
         });
     }
+
+    // User TAB
+    {
+        connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+        });
+    }
+
     // Input TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -280,8 +291,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         connect(ui->OpenLogLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
             Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+                                      Common::FS::GetUserPath(Common::FS::PathType::LogDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
     }
 
@@ -307,6 +318,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
+
+        // User
+        ui->OpenCustomTrophyLocationButton->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
@@ -403,6 +417,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
+    ui->popUpDurationSpinBox->setValue(Config::getTrophyNotificationDuration());
+    ui->radioButton_Left->setChecked(Config::leftSideTrophy());
+    ui->radioButton_Right->setChecked(!ui->radioButton_Left->isChecked());
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
@@ -593,6 +610,11 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Update Compatibility Database:\\nImmediately update the compatibility database.");
     }
 
+    //User
+    if (elementName == "OpenCustomTrophyLocationButton") {
+        text = tr("Open the custom trophy images/sounds folder:\\nYou can add custom images to the trophies and an audio.\\nAdd the files to custom_trophy with the following names:\\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png");
+    }
+
     // Input
     if (elementName == "hideCursorGroupBox") {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
@@ -683,6 +705,8 @@ void SettingsDialog::UpdateSettings() {
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
+    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value());
+    Config::setLeftSideTrophy(ui->radioButton_Left->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
