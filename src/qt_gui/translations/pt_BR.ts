@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
+      <translation>O shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
@@ -22,15 +22,15 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Cheats / Patches para </translation>
+      <translation>Trapaças / Patches para </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte os problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\n</translation>
+      <translation>As Trapaças/Patches são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Patches, você pode baixar todos os patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Patches,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Imagem Não Disponível</translation>
+      <translation>Nenhuma Imagem Disponível</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -46,7 +46,7 @@
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>Selecione o Arquivo de Cheat:</translation>
+      <translation>Selecione o Arquivo de Trapaça:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,7 +54,7 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>Baixar Cheats</translation>
+      <translation>Baixar Trapaças</translation>
     </message>
     <message>
       <source>Delete File</source>
@@ -66,7 +66,7 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>Você pode excluir os cheats que não deseja após baixá-los.</translation>
+      <translation>Você pode excluir as trapaças que não deseja após baixá-las.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
@@ -86,7 +86,7 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation>Cheats</translation>
+      <translation>Trapaças</translation>
     </message>
     <message>
       <source>Patches</source>
@@ -118,7 +118,7 @@
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>Falha ao analisar XML: </translation>
+      <translation>Falha ao analisar o XML: </translation>
     </message>
     <message>
       <source>Success</source>
@@ -154,19 +154,19 @@
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>Cheats Não Encontrados</translation>
+      <translation>Trapaças Não Encontradas</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>Nenhum cheat encontrado para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
+      <translation>Nenhuma trapaça encontrada para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>Cheats Baixados com Sucesso</translation>
+      <translation>Trapaças Baixadas com Sucesso</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Você baixou os cheats para esta versão do jogo do repositório selecionado com sucesso. É possível tentar baixar de outro repositório, se estiver disponível, também será possível utilizá-lo selecionando o arquivo da lista.</translation>
+      <translation>Você baixou as trapaças para esta versão do jogo do repositório selecionado com sucesso. É possível tentar baixar de outro repositório, se estiver disponível, também será possível utilizá-lo selecionando o arquivo da lista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -182,11 +182,11 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Cheats. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
+      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Falha ao analisar dados JSON do HTML.</translation>
+      <translation>Falha ao analisar os dados JSON do HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
@@ -206,7 +206,7 @@
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>Aviso de incompatibilidade</translation>
+      <translation>Aviso de Incompatibilidade</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
@@ -214,7 +214,7 @@
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>ERRO de XML:</translation>
+      <translation>ERRO DE XML:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
@@ -238,7 +238,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>Não é possível aplicar cheats antes que o jogo comece.</translation>
+      <translation>Não é possível aplicar trapaças antes de começar o jogo.</translation>
     </message>
     <message>
       <source>Close</source>
@@ -285,7 +285,7 @@
     </message>
     <message>
       <source>Update Available</source>
-      <translation>Atualização disponível</translation>
+      <translation>Atualização Disponível</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -309,7 +309,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verificar Atualizações ao Iniciar</translation>
+      <translation>Verificar por Atualizações ao Iniciar</translation>
     </message>
     <message>
       <source>Update</source>
@@ -376,7 +376,7 @@
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Não foi possível abrir o compatibility_data.json para escrita.</translation>
+      <translation>Não foi possível abrir o compatibility_data.json para gravação.</translation>
     </message>
     <message>
       <source>Unknown</source>
@@ -388,7 +388,7 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>Boot</translation>
+      <translation>Inicia</translation>
     </message>
     <message>
       <source>Menus</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Cheats / Patches</translation>
+      <translation>Trapaças / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -979,7 +979,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Baixar Cheats/Patches</translation>
+      <translation>Baixar Trapaças/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1059,7 +1059,7 @@
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>Baixar Cheats para Todos os Jogos Instalados</translation>
+      <translation>Baixar Trapaças para Todos os Jogos Instalados</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
@@ -1111,7 +1111,7 @@
     </message>
     <message>
       <source>Would you like to overwrite?</source>
-      <translation>Gostaria de substituir?</translation>
+      <translation>Você gostaria de sobrescrever?</translation>
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
