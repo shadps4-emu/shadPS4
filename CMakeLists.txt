@@ -294,6 +294,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/posix_error.h
                src/core/libraries/kernel/aio.cpp
                src/core/libraries/kernel/aio.h
+               src/core/libraries/kernel/posix_net.cpp
+               src/core/libraries/kernel/posix_net.h
 )
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
@@ -311,6 +313,14 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/ssl.h
                  src/core/libraries/network/ssl2.cpp
                  src/core/libraries/network/ssl2.h
+                 src/core/libraries/network/posix_sockets.cpp
+                 src/core/libraries/network/p2p_sockets.cpp
+                 src/core/libraries/network/sockets.h
+                 src/core/libraries/network/net_error.h
+                 src/core/libraries/network/epoll.cpp
+                 src/core/libraries/network/epoll.h
+                 src/core/libraries/network/net_util.cpp
+                 src/core/libraries/network/net_util.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
