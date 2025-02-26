@@ -47,23 +47,12 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     s32 handle;
 
     if (guest_path[0] == '/') {
-        path = mnt->GetHostPath("/system/common/lib" + guest_path);
-        handle = linker->LoadAndStartModule(path, args, argp, pRes);
-        if (handle != -1) {
-            return handle;
-        }
-
-        path = mnt->GetHostPath("/system/priv/lib" + guest_path);
-        handle = linker->LoadAndStartModule(path, args, argp, pRes);
-        if (handle != -1) {
-            return handle;
-        }
-
         path = mnt->GetHostPath(guest_path);
         handle = linker->LoadAndStartModule(path, args, argp, pRes);
         if (handle != -1) {
             return handle;
         }
+        ASSERT_MSG(0, "Trying to load system module {}", guest_path);
     } else {
         auto* process_params = linker->GetProcParam();
         if (process_params->sdk_version > 0x3ffffff) {
@@ -72,11 +61,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
                 if (guest_path.contains("libScePigletv2VSH") ||
                     guest_path.contains("libSceSysCore") ||
                     guest_path.contains("libSceVideoCoreServerInterface")) {
-                    path = mnt->GetHostPath(guest_path);
-                    handle = linker->LoadAndStartModule(path, args, argp, pRes);
-                    if (handle != -1) {
-                        return handle;
-                    }
+                    ASSERT_MSG(0, "Trying to load system module {}", guest_path);
                 } else {
                     // loading prohibited
                     return ORBIS_KERNEL_ERROR_ENOENT;
@@ -93,17 +78,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
                 return handle;
             }
             if ((flags & 0x10000) != 0) {
-                path = mnt->GetHostPath("/system/priv/lib/" + guest_path);
-                handle = linker->LoadAndStartModule(path, args, argp, pRes);
-                if (handle != -1) {
-                    return handle;
-                }
-
-                path = mnt->GetHostPath("/system/common/lib" + guest_path);
-                handle = linker->LoadAndStartModule(path, args, argp, pRes);
-                if (handle != -1) {
-                    return handle;
-                }
+                ASSERT_MSG(0, "Trying to load system module {}", guest_path);
             }
         } else {
             path = mnt->GetHostPath(guest_path);
