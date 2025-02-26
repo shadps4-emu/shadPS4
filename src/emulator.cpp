@@ -125,7 +125,6 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             Common::Log::Initialize(id + ".log");
             Common::Log::Start();
         }
-        
         LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
         LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
         LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
