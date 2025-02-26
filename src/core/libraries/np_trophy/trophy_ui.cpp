@@ -183,13 +183,20 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
     if (Config::getisTrophyPopupDisabled()) {
         return;
     } else if (current_trophy_ui.has_value()) {
-        TrophyInfo new_trophy;
-        new_trophy.trophy_icon_path = trophyIconPath;
-        new_trophy.trophy_name = trophyName;
-        new_trophy.trophy_type = rarity;
-        trophy_queue.push(new_trophy);
-    } else {
-        current_trophy_ui.emplace(trophyIconPath, trophyName, rarity);
+        current_trophy_ui.reset();
+    }
+
+    TrophyInfo new_trophy;
+    new_trophy.trophy_icon_path = trophyIconPath;
+    new_trophy.trophy_name = trophyName;
+    new_trophy.trophy_type = rarity;
+    trophy_queue.push(new_trophy);
+
+    if (!current_trophy_ui.has_value()) {
+        TrophyInfo next_trophy = trophy_queue.front();
+        trophy_queue.pop();
+        current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.trophy_name,
+                                  next_trophy.trophy_type);
     }
 }
 
