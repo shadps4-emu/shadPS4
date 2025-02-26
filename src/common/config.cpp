@@ -722,7 +722,8 @@ void load(const std::filesystem::path& path) {
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
-        trophyNotificationDuration = toml::find_or<double>(general, "trophyNotificationDuration", 5.0);
+        trophyNotificationDuration =
+            toml::find_or<double>(general, "trophyNotificationDuration", 5.0);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
