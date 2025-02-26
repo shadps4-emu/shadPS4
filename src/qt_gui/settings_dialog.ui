@@ -1294,7 +1294,7 @@
                       <item>
                         <widget class="QPushButton" name="OpenCustomTrophyLocationButton">
                           <property name="text">
-                            <string>Open custom trophy images folder</string>
+                            <string>Open the custom trophy images/sounds folder</string>
                           </property>
                         </widget>
                       </item>

@@ -9,6 +9,10 @@
 #include <common/path_util.h>
 #include <imgui.h>
 
+#ifdef ENABLE_QT_GUI
+#include <qt_gui/background_music_player.h>
+#endif
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/singleton.h"
@@ -78,6 +82,14 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     trophy_type_icon = RefCountedTexture::DecodePngTexture(imgdata);
 
     AddLayer(this);
+
+#ifdef ENABLE_QT_GUI
+    QString musicPath = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.mp3");
+    if (fs::exists(musicPath.toStdString())) {
+        BackgroundMusicPlayer::getInstance().setVolume(100);
+        BackgroundMusicPlayer::getInstance().playMusic(musicPath, false);
+    }
+#endif
 }
 
 TrophyUI::~TrophyUI() {
