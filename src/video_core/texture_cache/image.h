@@ -104,7 +104,7 @@ struct Image {
     void Upload(vk::Buffer buffer, u64 offset);
 
     void CopyImage(const Image& image);
-    void CopyMip(const Image& image, u32 mip);
+    void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
     bool IsTracked() {
         return track_addr != 0 && track_addr_end != 0;

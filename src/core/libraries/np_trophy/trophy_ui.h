@@ -17,7 +17,8 @@ namespace Libraries::NpTrophy {
 
 class TrophyUI final : public ImGui::Layer {
 public:
-    TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
+    TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
+             const std::string_view& rarity);
     ~TrophyUI() override;
 
     void Finish();
@@ -26,15 +27,19 @@ public:
 
 private:
     std::string trophy_name;
+    std::string_view trophy_type;
     float trophy_timer = 5.0f;
     ImGui::RefCountedTexture trophy_icon;
+    ImGui::RefCountedTexture trophy_type_icon;
 };
 
 struct TrophyInfo {
     std::filesystem::path trophy_icon_path;
     std::string trophy_name;
+    std::string_view trophy_type;
 };
 
-void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName);
+void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
+                      const std::string_view& rarity);
 
 }; // namespace Libraries::NpTrophy

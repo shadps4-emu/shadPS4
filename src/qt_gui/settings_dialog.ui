@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>718</width>
+         <height>332</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -130,54 +130,14 @@
                <property name="bottomMargin">
                 <number>9</number>
                </property>
+               <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+                 </property>
                <item>
                 <layout class="QVBoxLayout" name="emulatorverticalLayout">
                  <property name="spacing">
                   <number>10</number>
                  </property>
-                 <item>
-                  <widget class="QCheckBox" name="fullscreenCheckBox">
-                   <property name="text">
-                    <string>Enable Fullscreen</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QGroupBox" name="fullscreenModeGroupBox">
-                   <property name="title">
-                    <string>Fullscreen Mode</string>
-                   </property>
-                   <layout class="QVBoxLayout" name="fullscreenModeLayout">
-                    <item>
-                     <widget class="QComboBox" name="fullscreenModeComboBox">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <item>
-                       <property name="text">
-                        <string>Borderless</string>
-                       </property>
-                      </item>
-                      <item>
-                       <property name="text">
-                        <string>True</string>
-                       </property>
-                      </item>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="enableHDRCheckBox">
-                   <property name="text">
-                    <string>Enable HDR</string>
-                   </property>
-                  </widget>
-                 </item>
                  <item>
                   <widget class="QCheckBox" name="separateUpdatesCheckBox">
                    <property name="text">
@@ -494,8 +454,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>646</width>
+         <height>395</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -943,8 +903,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>545</width>
+         <height>141</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1007,117 +967,168 @@
           <item>
            <layout class="QVBoxLayout" name="graphicsTabLayoutMiddle">
             <item>
-             <layout class="QVBoxLayout" name="layoutResolution">
-              <property name="spacing">
-               <number>6</number>
+             <widget class="QGroupBox" name="displayOptionsGroupBox">
+              <property name="title">
+               <string>Video</string>
               </property>
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <layout class="QHBoxLayout" name="resolutionLayout">
-                <item>
-                 <widget class="QGroupBox" name="widthGroupBox">
-                  <property name="title">
-                   <string>Width</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="widthLayout">
-                   <item>
-                    <widget class="QSpinBox" name="widthSpinBox">
-                     <property name="accelerated">
-                      <bool>true</bool>
+              <layout class="QVBoxLayout" name="layoutResolution">
+               <property name="spacing">
+                <number>6</number>
+               </property>
+               <property name="leftMargin">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QGroupBox" name="displayModeGroupBox">
+                 <property name="title">
+                  <string>Display Mode</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="displayModeLayout">
+                  <item>
+                   <widget class="QComboBox" name="displayModeComboBox">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Windowed</string>
                      </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Fullscreen</string>
                      </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Fullscreen (Borderless)</string>
                      </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>1280</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="heightGroupBox">
-                  <property name="title">
-                   <string>Height</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="heightLayout">
-                   <item>
-                    <widget class="QSpinBox" name="heightSpinBox">
-                     <property name="frame">
-                      <bool>true</bool>
-                     </property>
-                     <property name="accelerated">
-                      <bool>true</bool>
-                     </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
-                     </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimum">
-                      <number>0</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>720</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QGroupBox" name="heightDivider">
-                  <property name="title">
-                   <string>Vblank Divider</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="vblankLayout">
-                   <item>
-                    <widget class="QSpinBox" name="vblankSpinBox">
-                     <property name="frame">
-                      <bool>true</bool>
-                     </property>
-                     <property name="accelerated">
-                      <bool>true</bool>
-                     </property>
-                     <property name="correctionMode">
-                      <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
-                     </property>
-                     <property name="keyboardTracking">
-                      <bool>false</bool>
-                     </property>
-                     <property name="minimum">
-                      <number>1</number>
-                     </property>
-                     <property name="maximum">
-                      <number>9999</number>
-                     </property>
-                     <property name="value">
-                      <number>1</number>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="windowSizeLayout">
+                 <item>
+                  <widget class="QGroupBox" name="windowSizeGroupBox">
+                   <property name="title">
+                    <string>Window Size</string>
+                   </property>
+                   <layout class="QHBoxLayout" name="resLayout">
+                    <item>
+                     <widget class="QLabel" name="widthLabel">
+                      <property name="text">
+                       <string>W:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="widthSpinBox">
+                      <property name="accelerated">
+                       <bool>true</bool>
+                      </property>
+                      <property name="correctionMode">
+                       <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                      </property>
+                      <property name="keyboardTracking">
+                       <bool>false</bool>
+                      </property>
+                      <property name="minimum">
+                       <number>0</number>
+                      </property>
+                      <property name="maximum">
+                       <number>9999</number>
+                      </property>
+                      <property name="value">
+                       <number>1280</number>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="heightLabel">
+                      <property name="text">
+                       <string>H:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="heightSpinBox">
+                      <property name="frame">
+                       <bool>true</bool>
+                      </property>
+                      <property name="accelerated">
+                       <bool>true</bool>
+                      </property>
+                      <property name="correctionMode">
+                       <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                      </property>
+                      <property name="keyboardTracking">
+                       <bool>false</bool>
+                      </property>
+                      <property name="minimum">
+                       <number>0</number>
+                      </property>
+                      <property name="maximum">
+                       <number>9999</number>
+                      </property>
+                      <property name="value">
+                       <number>720</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QGroupBox" name="heightDivider">
+                   <property name="title">
+                    <string>Vblank Divider</string>
+                   </property>
+                   <layout class="QVBoxLayout" name="vblankLayout">
+                    <item>
+                     <widget class="QSpinBox" name="vblankSpinBox">
+                      <property name="frame">
+                       <bool>true</bool>
+                      </property>
+                      <property name="accelerated">
+                       <bool>true</bool>
+                      </property>
+                      <property name="correctionMode">
+                       <enum>QAbstractSpinBox::CorrectionMode::CorrectToNearestValue</enum>
+                      </property>
+                      <property name="keyboardTracking">
+                       <bool>false</bool>
+                      </property>
+                      <property name="minimum">
+                       <number>1</number>
+                      </property>
+                      <property name="maximum">
+                       <number>9999</number>
+                      </property>
+                      <property name="value">
+                       <number>1</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="enableHDRCheckBox">
+                 <property name="text">
+                  <string>Enable HDR</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </item>
             <item>
              <spacer name="verticalSpacer">
@@ -1187,8 +1198,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>234</width>
+         <height>292</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1331,8 +1342,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>455</width>
+         <height>252</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1615,8 +1626,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>216</width>
+         <height>254</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1877,39 +1888,50 @@
           </property>
           <layout class="QVBoxLayout" name="advancedLayout">
            <item>
-            <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
-             <property name="text">
-              <string>Enable Crash Diagnostics</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="collectShaderCheckBox">
-             <property name="text">
-              <string>Collect Shaders</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
-             <property name="text">
-              <string>Copy GPU Buffers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="hostMarkersCheckBox">
-             <property name="text">
-              <string>Host Debug Markers</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="guestMarkersCheckBox">
-             <property name="text">
-              <string>Guest Debug Markers</string>
-             </property>
-            </widget>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="0" column="0">
+              <widget class="QCheckBox" name="collectShaderCheckBox">
+               <property name="text">
+                <string>Collect Shaders</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+               <property name="text">
+                <string>Copy GPU Buffers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+               <property name="text">
+                <string>Enable Crash Diagnostics</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QCheckBox" name="hostMarkersCheckBox">
+               <property name="text">
+                <string>Host Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="guestMarkersCheckBox">
+               <property name="text">
+                <string>Guest Debug Markers</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="separateLogFilesCheckbox">
+               <property name="text">
+                <string>Separate Log Files</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

@@ -111,7 +111,8 @@ void setIsMotionControlsEnabled(bool use);
 
 void setLogType(const std::string& type);
 void setLogFilter(const std::string& type);
-
+void setSeparateLogFilesEnabled(bool enabled);
+bool getSeparateLogFilesEnabled();
 void setVkValidation(bool enable);
 void setVkSyncValidation(bool enable);
 void setRdocEnabled(bool enable);

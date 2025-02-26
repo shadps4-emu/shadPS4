@@ -610,9 +610,10 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     Image& image = texture_cache.GetImage(image_id);
     // Only perform sync if image is:
     // - GPU modified; otherwise there are no changes to synchronize.
-    // - Not CPU modified; otherwise we could overwrite CPU changes with stale GPU changes.
+    // - Not CPU dirty; otherwise we could overwrite CPU changes with stale GPU changes.
+    // - Not GPU dirty; otherwise we could overwrite GPU changes with stale image data.
     if (False(image.flags & ImageFlagBits::GpuModified) ||
-        True(image.flags & ImageFlagBits::CpuDirty)) {
+        True(image.flags & ImageFlagBits::Dirty)) {
         return false;
     }
     ASSERT_MSG(device_addr == image.info.guest_address,
@@ -628,8 +629,8 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
-        offset += mip_ofs * num_layers;
-        if (offset + (mip_size * num_layers) > max_offset) {
+        offset += mip_ofs;
+        if (offset + mip_size > max_offset) {
             break;
         }
         copies.push_back({

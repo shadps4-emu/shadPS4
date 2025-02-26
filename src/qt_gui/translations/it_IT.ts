@@ -1280,14 +1280,6 @@
       <translation>Emulatore</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>Abilita Schermo Intero</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>Modalità Schermo Intero</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>Abilita Cartella Aggiornamenti Separata</translation>
     </message>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Scheda Grafica</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>Larghezza</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>Altezza</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Lingua dell&apos;Emulatore:\nImposta la lingua dell&apos;interfaccia utente dell&apos;emulatore.</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Abilita Schermo Intero:\nMetti automaticamente la finestra di gioco in modalità schermo intero.\nQuesto può essere disattivato premendo il tasto F11.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>Esplora:\nEsplora una cartella da impostare come percorso dati di salvataggio.</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>Finestra senza bordi</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>Vero</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>Rilascio</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>Cartella per salvare i dati</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation>Video</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation>Modalità di visualizzazione</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation>In finestra</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation>Schermo Intero</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation>Schermo Intero (Senza Bordi)</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation>Dimensione Finestra</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation>L:</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation>A:</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation>File Di Registro Separati</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation>File di registro separati:\nScrive un file di registro separato per ogni gioco.</translation>
     </message>
   </context>
   <context>

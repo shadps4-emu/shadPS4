@@ -148,7 +148,6 @@ void OnGameLoaded() {
                             std::string targetStr = "";
                             std::string sizeStr = "";
                             if (type == "mask_jump32") {
-                                std::string patchValue = patchLineIt->attribute("Value").value();
                                 targetStr = patchLineIt->attribute("Target").value();
                                 sizeStr = patchLineIt->attribute("Size").value();
                             } else {
@@ -301,8 +300,7 @@ void OnGameLoaded() {
                             QString targetStr;
                             QString sizeStr;
                             if (type == "mask_jump32") {
-                                QString valueAttributeStr = lineObject["Value"].toString();
-                                targetStr = lineObject["Value"].toString();
+                                targetStr = lineObject["Target"].toString();
                                 sizeStr = lineObject["Size"].toString();
                             } else {
                                 patchValue = QString::fromStdString(convertValueToHex(

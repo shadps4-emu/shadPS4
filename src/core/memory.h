@@ -198,7 +198,9 @@ public:
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
-    int Protect(VAddr addr, size_t size, MemoryProt prot);
+    s32 Protect(VAddr addr, size_t size, MemoryProt prot);
+
+    s64 ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t size, MemoryProt prot);
 
     int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 

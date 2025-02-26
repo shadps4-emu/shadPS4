@@ -139,8 +139,9 @@ public:
         std::filesystem::create_directory(log_dir);
         Filter filter;
         filter.ParseFilterString(Config::getLogFilter());
-        instance = std::unique_ptr<Impl, decltype(&Deleter)>(new Impl(log_dir / LOG_FILE, filter),
-                                                             Deleter);
+        const auto& log_file_path = log_file.empty() ? LOG_FILE : log_file;
+        instance = std::unique_ptr<Impl, decltype(&Deleter)>(
+            new Impl(log_dir / log_file_path, filter), Deleter);
         initialization_in_progress_suppress_logging = false;
     }
 

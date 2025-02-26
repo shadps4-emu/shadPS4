@@ -225,9 +225,9 @@ static void SaveContext(Xbyak::CodeGenerator& c, bool save_flags = false) {
     for (int reg = Xbyak::Operand::RAX; reg <= Xbyak::Operand::R15; reg++) {
         c.push(Xbyak::Reg64(reg));
     }
-    for (int reg = 0; reg <= 7; reg++) {
-        c.lea(rsp, ptr[rsp - 32]);
-        c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
+    c.lea(rsp, ptr[rsp - 32 * 16]);
+    for (int reg = 0; reg <= 15; reg++) {
+        c.vmovdqu(ptr[rsp + 32 * reg], Xbyak::Ymm(reg));
     }
     if (save_flags) {
         c.pushfq();
@@ -241,12 +241,12 @@ static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
     if (restore_flags) {
         c.popfq();
     }
-    for (int reg = 7; reg >= 0; reg--) {
+    for (int reg = 15; reg >= 0; reg--) {
         if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
-            c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
+            c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp + 32 * reg]);
         }
-        c.lea(rsp, ptr[rsp + 32]);
     }
+    c.lea(rsp, ptr[rsp + 32 * 16]);
     for (int reg = Xbyak::Operand::R15; reg >= Xbyak::Operand::RAX; reg--) {
         if (!dst.isREG() || dst.getIdx() != reg) {
             c.pop(Xbyak::Reg64(reg));
@@ -264,16 +264,37 @@ static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
     const auto src2 = ZydisToXbyakOperand(operands[2]);
 
-    const auto scratch = AllocateScratchRegister({&dst, &src1, src2.get()}, dst.getBit());
+    // Check if src2 is a memory operand or a register different to dst.
+    // In those cases, we don't need to use a temporary register and are free to modify dst.
+    // In cases where dst and src2 are the same register, a temporary needs to be used to avoid
+    // modifying src2.
+    bool src2_uses_dst = false;
+    if (src2->isMEM()) {
+        const auto base = src2->getAddress().getRegExp().getBase().getIdx();
+        const auto index = src2->getAddress().getRegExp().getIndex().getIdx();
+        src2_uses_dst = base == dst.getIdx() || index == dst.getIdx();
+    } else {
+        ASSERT(src2->isREG());
+        src2_uses_dst = src2->getReg() == dst;
+    }
 
-    SaveRegisters(c, {scratch});
+    if (!src2_uses_dst) {
+        if (dst != src1)
+            c.mov(dst, src1);
+        c.not_(dst);
+        c.and_(dst, *src2);
+    } else {
+        const auto scratch = AllocateScratchRegister({&dst, &src1, src2.get()}, dst.getBit());
 
-    c.mov(scratch, src1);
-    c.not_(scratch);
-    c.and_(scratch, *src2);
-    c.mov(dst, scratch);
+        SaveRegisters(c, {scratch});
 
-    RestoreRegisters(c, {scratch});
+        c.mov(scratch, src1);
+        c.not_(scratch);
+        c.and_(scratch, *src2);
+        c.mov(dst, scratch);
+
+        RestoreRegisters(c, {scratch});
+    }
 }
 
 static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {

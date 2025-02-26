@@ -31,10 +31,7 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 
 namespace Config {
 
-static bool isHDRAllowed = false;
 static bool isNeo = false;
-static bool isFullscreen = false;
-static std::string fullscreenMode = "borderless";
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -69,6 +66,7 @@ static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
 static bool isFpsColor = true;
+static bool isSeparateLogFilesEnabled = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useUnifiedInputConfig = true;
@@ -102,6 +100,9 @@ std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
 static int backgroundImageOpacity = 50;
 static bool showBackgroundImage = true;
+static bool isFullscreen = false;
+static std::string fullscreenMode = "Windowed";
+static bool isHDRAllowed = false;
 
 // Language
 u32 m_language = 1; // english
@@ -451,6 +452,10 @@ void setLogFilter(const std::string& type) {
     logFilter = type;
 }
 
+void setSeparateLogFilesEnabled(bool enabled) {
+    isSeparateLogFilesEnabled = enabled;
+}
+
 void setUserName(const std::string& type) {
     userName = type;
 }
@@ -656,6 +661,10 @@ u32 GetLanguage() {
     return m_language;
 }
 
+bool getSeparateLogFilesEnabled() {
+    return isSeparateLogFilesEnabled;
+}
+
 int getBackgroundImageOpacity() {
     return backgroundImageOpacity;
 }
@@ -694,10 +703,7 @@ void load(const std::filesystem::path& path) {
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        isHDRAllowed = toml::find_or<bool>(general, "allowHDR", false);
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
-        isFullscreen = toml::find_or<bool>(general, "Fullscreen", false);
-        fullscreenMode = toml::find_or<std::string>(general, "FullscreenMode", "borderless");
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
@@ -742,6 +748,9 @@ void load(const std::filesystem::path& path) {
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
+        isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
+        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", "Windowed");
+        isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
     }
 
     if (data.contains("Vulkan")) {
@@ -761,6 +770,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
+        isSeparateLogFilesEnabled = toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", false);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
     }
@@ -824,7 +834,7 @@ void load(const std::filesystem::path& path) {
 }
 
 void save(const std::filesystem::path& path) {
-    toml::value data;
+    toml::ordered_value data;
 
     std::error_code error;
     if (std::filesystem::exists(path, error)) {
@@ -832,7 +842,8 @@ void save(const std::filesystem::path& path) {
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
-            data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+            data = toml::parse<toml::ordered_type_config>(
+                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -844,10 +855,7 @@ void save(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["General"]["allowHDR"] = isHDRAllowed;
     data["General"]["isPS4Pro"] = isNeo;
-    data["General"]["Fullscreen"] = isFullscreen;
-    data["General"]["FullscreenMode"] = fullscreenMode;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["playBGM"] = playBGM;
     data["General"]["BGMvolume"] = BGMvolume;
@@ -877,6 +885,9 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["patchShaders"] = shouldPatchShaders;
     data["GPU"]["vblankDivider"] = vblankDivider;
+    data["GPU"]["Fullscreen"] = isFullscreen;
+    data["GPU"]["FullscreenMode"] = fullscreenMode;
+    data["GPU"]["allowHDR"] = isHDRAllowed;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
@@ -887,6 +898,7 @@ void save(const std::filesystem::path& path) {
     data["Vulkan"]["rdocEnable"] = rdocEnable;
     data["Debug"]["DebugDump"] = isDebugDump;
     data["Debug"]["CollectShader"] = isShaderDebug;
+    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
 
     data["Keys"]["TrophyKey"] = trophyKey;
@@ -913,7 +925,7 @@ void save(const std::filesystem::path& path) {
 }
 
 void saveMainWindow(const std::filesystem::path& path) {
-    toml::value data;
+    toml::ordered_value data;
 
     std::error_code error;
     if (std::filesystem::exists(path, error)) {
@@ -921,7 +933,8 @@ void saveMainWindow(const std::filesystem::path& path) {
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
-            data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+            data = toml::parse<toml::ordered_type_config>(
+                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;

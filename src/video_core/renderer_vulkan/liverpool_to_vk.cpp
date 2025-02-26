@@ -121,7 +121,7 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     case AmdGpu::PrimitiveType::RectList:
         return vk::PrimitiveTopology::ePatchList;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unimplemented primitive type: {}", static_cast<u32>(type));
         return vk::PrimitiveTopology::eTriangleList;
     }
 }

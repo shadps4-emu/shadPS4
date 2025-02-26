@@ -1280,14 +1280,6 @@
       <translation>Emulador</translation>
     </message>
     <message>
-      <source>Enable Fullscreen</source>
-      <translation>Ativar Tela Cheia</translation>
-    </message>
-    <message>
-      <source>Fullscreen Mode</source>
-      <translation>Modo de Tela Cheia</translation>
-    </message>
-    <message>
       <source>Enable Separate Update Folder</source>
       <translation>Ativar Pasta de Atualização Separada</translation>
     </message>
@@ -1378,14 +1370,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Placa de Vídeo</translation>
-    </message>
-    <message>
-      <source>Width</source>
-      <translation>Largura</translation>
-    </message>
-    <message>
-      <source>Height</source>
-      <translation>Altura</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1558,10 +1542,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Idioma do emulador:\nDefine o idioma da interface do emulador.</translation>
-    </message>
-    <message>
-      <source>Enable Full Screen:\nAutomatically puts the game window into full-screen mode.\nThis can be toggled by pressing the F11 key.</source>
-      <translation>Ativar Tela Cheia:\nAltera a janela do jogo para o modo tela cheia.\nIsso pode ser alterado pressionando a tecla F11.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
@@ -1740,14 +1720,6 @@
       <translation>Procurar:\nProcure uma pasta para definir como o caminho para salvar dados.</translation>
     </message>
     <message>
-      <source>Borderless</source>
-      <translation>Janela sem Bordas</translation>
-    </message>
-    <message>
-      <source>True</source>
-      <translation>Tela Cheia</translation>
-    </message>
-    <message>
       <source>Release</source>
       <translation>Release</translation>
     </message>
@@ -1790,6 +1762,46 @@
     <message>
       <source>Directory to save data</source>
       <translation>Diretório para salvar dados</translation>
+    </message>
+    <message>
+      <source>Video</source>
+      <translation>Vídeo</translation>
+    </message>
+    <message>
+      <source>Display Mode</source>
+      <translation>Modo de Exibição</translation>
+    </message>
+    <message>
+      <source>Windowed</source>
+      <translation>Em Janela</translation>
+    </message>
+    <message>
+      <source>Fullscreen</source>
+      <translation>Tela Cheia</translation>
+    </message>
+    <message>
+      <source>Fullscreen (Borderless)</source>
+      <translation>Tela Cheia (Sem Bordas)</translation>
+    </message>
+    <message>
+      <source>Window Size</source>
+      <translation>Tamanho da Janela</translation>
+    </message>
+    <message>
+      <source>W:</source>
+      <translation>L:</translation>
+    </message>
+    <message>
+      <source>H:</source>
+      <translation>A:</translation>
+    </message>
+    <message>
+      <source>Separate Log Files</source>
+      <translation>Separar Arquivos de Log</translation>
+    </message>
+    <message>
+      <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
+      <translation>Separar Arquivos de Log:\nGrava um arquivo de log para cada jogo.</translation>
     </message>
   </context>
   <context>

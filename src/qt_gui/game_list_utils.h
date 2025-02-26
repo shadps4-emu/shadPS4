@@ -69,8 +69,12 @@ public:
         }
 
         // Cache path
-        QFile size_cache_file(Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                              game.serial / "size_cache.txt");
+        QDir cacheDir =
+            QDir(Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game.serial);
+        if (!cacheDir.exists()) {
+            cacheDir.mkpath(".");
+        }
+        QFile size_cache_file(cacheDir.absoluteFilePath("size_cache.txt"));
         QFileInfo cacheInfo(size_cache_file);
         QFileInfo dirInfo(dirPath);
 

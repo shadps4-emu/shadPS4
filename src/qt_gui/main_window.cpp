@@ -290,6 +290,27 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
+        connect(settingsDialog, &SettingsDialog::accepted, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::rejected, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::close, this, &MainWindow::RefreshGameTable);
+
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
+
         settingsDialog->exec();
     });
 
@@ -301,6 +322,10 @@ void MainWindow::CreateConnects() {
 
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
+
+        connect(settingsDialog, &SettingsDialog::accepted, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::rejected, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::close, this, &MainWindow::RefreshGameTable);
 
         connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
                 [this](int opacity) {
@@ -413,6 +438,7 @@ void MainWindow::CreateConnects() {
         int slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
+        ui->mw_searchbar->setText("");
     });
     // Grid
     connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -430,6 +456,7 @@ void MainWindow::CreateConnects() {
         int slider_pos_grid = Config::getSliderPositionGrid();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
+        ui->mw_searchbar->setText("");
     });
     // Elf Viewer
     connect(ui->setlistElfAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -658,14 +685,24 @@ void MainWindow::StartGame() {
     }
 }
 
+bool isTable;
 void MainWindow::SearchGameTable(const QString& text) {
     if (isTableList) {
+        if (isTable != true) {
+            m_game_info->m_games = m_game_info->m_games_backup;
+            m_game_list_frame->PopulateGameList();
+            isTable = true;
+        }
         for (int row = 0; row < m_game_list_frame->rowCount(); row++) {
             QString game_name = QString::fromStdString(m_game_info->m_games[row].name);
             bool match = (game_name.contains(text, Qt::CaseInsensitive)); // Check only in column 1
             m_game_list_frame->setRowHidden(row, !match);
         }
     } else {
+        isTable = false;
+        m_game_info->m_games = m_game_info->m_games_backup;
+        m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+
         QVector<GameInfo> filteredGames;
         for (const auto& gameInfo : m_game_info->m_games) {
             QString game_name = QString::fromStdString(gameInfo.name);
@@ -674,6 +711,7 @@ void MainWindow::SearchGameTable(const QString& text) {
             }
         }
         std::sort(filteredGames.begin(), filteredGames.end(), m_game_info->CompareStrings);
+        m_game_info->m_games = filteredGames;
         m_game_grid_frame->PopulateGameGrid(filteredGames, true);
     }
 }
