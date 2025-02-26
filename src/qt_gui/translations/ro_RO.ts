@@ -7,7 +7,7 @@
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>Despre shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -584,7 +584,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Director pentru a instala DLC</translation>
     </message>
   </context>
   <context>
@@ -845,11 +845,11 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Șterge Salvare Date</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Acest joc nu are folderul de actualizări pentru a fi deschis!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -1190,7 +1190,7 @@
     <name>PKGViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
+      <translation>Deschide Folder</translation>
     </message>
     <message>
       <source>PKG ERROR</source>

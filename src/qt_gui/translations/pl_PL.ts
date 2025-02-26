@@ -22,7 +22,7 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Kody / Łatki dla </translation>
+      <translation>Kody / Poprawki dla </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
@@ -58,15 +58,15 @@
     </message>
     <message>
       <source>Delete File</source>
-      <translation type="unfinished">Delete File</translation>
+      <translation>Usuń plik</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation type="unfinished">No files selected.</translation>
+      <translation>Nie wybrano pliku.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
+      <translation>Możesz usunąć kody, których nie chcesz po ich pobraniu.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
@@ -202,7 +202,7 @@
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>Możesz potrzebować zaktualizować swoją grę.</translation>
+      <translation>Może być konieczne uaktualnienie gry.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -230,11 +230,11 @@
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation type="unfinished">Failed to open files.json for reading.</translation>
+      <translation>Nie można otworzyć pliku files.json do odczytu.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>Nazwa:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
@@ -249,7 +249,7 @@
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>Automatyczne aktualizacje</translation>
+      <translation>Asystent aktualizacji</translation>
     </message>
     <message>
       <source>Error</source>
@@ -289,7 +289,7 @@
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Kanał Aktualizacji</translation>
+      <translation>Kanał aktualizacji</translation>
     </message>
     <message>
       <source>Current Version</source>
@@ -297,7 +297,7 @@
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>Ostatnia wersja</translation>
+      <translation>Najnowsza wersja</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
@@ -388,7 +388,7 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>Buty</translation>
+      <translation>Uruchamia się</translation>
     </message>
     <message>
       <source>Menus</source>
@@ -400,146 +400,146 @@
     </message>
     <message>
       <source>Playable</source>
-      <translation>Do grania</translation>
+      <translation>Grywalne</translation>
     </message>
   </context>
   <context>
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Skonfiguruj sterowanie</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Krzyżak</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Góra</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Lewo</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Prawo</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Dół</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Martwa strefa lewego drążka (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Martwa strefa lewego drążka</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Lewy drążek</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Wybór konfiguracji</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Typowa konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Użyj osobnej konfiguracji dla każdej gry</translation>
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Wstecz</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Opcje / Start</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Przyciski akcji</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Trójkąt / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Kwadrat / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Kółko / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Krzyżyk / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Martwa strefa prawego drążka (def:2 max:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Martwa strefa prawego drążka</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Prawy drążek</translation>
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Dostosowanie koloru</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>Czerwony:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>Zielony:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>Niebieski:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Zastąp kolor paska świetlnego</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Zastąp kolor</translation>
     </message>
   </context>
   <context>
@@ -584,7 +584,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Katalog do instalacji dodatkowej zawartości (DLC)</translation>
     </message>
   </context>
   <context>
@@ -603,11 +603,11 @@
     </message>
     <message>
       <source>Compatibility</source>
-      <translation>Zgodność</translation>
+      <translation>Kompatybilność</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -635,15 +635,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>godz.</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>min</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -682,23 +682,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
@@ -729,7 +729,7 @@
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Otwórz Folder Danych Zapisów</translation>
+      <translation>Otwórz folder zapisanych danych</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
@@ -749,11 +749,11 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>Kopiuj wersję</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>Kopiuj rozmiar</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -765,19 +765,19 @@
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Usuń Grę</translation>
+      <translation>Usuń grę</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Usuń Aktualizację</translation>
+      <translation>Usuń aktualizację</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>Usuń DLC</translation>
+      <translation>Usuń dodatkową zawartość (DLC)</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation>kompatybilność...</translation>
+      <translation>Kompatybilność...</translation>
     </message>
     <message>
       <source>Update database</source>
@@ -825,11 +825,11 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>Ta gra nie ma DLC do usunięcia!</translation>
+      <translation>Ta gra nie ma dodatkowej zawartości (DLC) do usunięcia!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>Dodatkowa zawartość (DLC)</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -841,31 +841,31 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Otwórz folder aktualizacji</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Usuń zapisane dane</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Ta gra nie ma folderu aktualizacji do otwarcia!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Nie udało się przekonwertować ikony.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Ta gra nie ma zapisów do usunięcia!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Zapisane dane</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>Menedżer plików SFO dla </translation>
     </message>
   </context>
   <context>
@@ -880,11 +880,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Zainstaluj wszystkie oczekujące do wybranego folderu</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Usuń plik PKG po instalacji</translation>
     </message>
   </context>
   <context>
@@ -1127,15 +1127,15 @@
     </message>
     <message>
       <source>DLC Installation</source>
-      <translation>Instalacja DLC</translation>
+      <translation>Instalacja dodatkowej zawartości (DLC)</translation>
     </message>
     <message>
       <source>Would you like to install DLC: %1?</source>
-      <translation>Czy chcesz zainstalować DLC: %1?</translation>
+      <translation>Czy chcesz zainstalować dodatkową zawartość (DLC): %1?</translation>
     </message>
     <message>
       <source>DLC already installed:</source>
-      <translation>DLC już zainstalowane:</translation>
+      <translation>Dodatkowa zawartość (DLC) już zainstalowana:</translation>
     </message>
     <message>
       <source>Game already installed</source>
@@ -1163,27 +1163,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Uruchom grę</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Nie znaleziono pliku EBOOT.BIN</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>Plik PKG (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG jest aktualizacją lub dodatkową zawartością (DLC), najpierw zainstaluj grę!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Gra jest już uruchomiona!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1206,7 +1206,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Zainstalowano</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1214,27 +1214,27 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategoria</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Typ</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Wersja aplikacji</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>Oprogramowanie</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Flagi</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1250,7 +1250,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Paczka</translation>
     </message>
   </context>
   <context>
@@ -1265,7 +1265,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -1277,7 +1277,7 @@
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulator</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Input</source>
-      <translation>Wejście</translation>
+      <translation>Sterowanie</translation>
     </message>
     <message>
       <source>Cursor</source>
@@ -1345,7 +1345,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1389,7 +1389,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Włącz HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1429,23 +1429,23 @@
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>Włącz diagnostykę awarii</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>Zbieraj cienie</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>Kopiuj bufory GPU</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation type="unfinished">Host Debug Markers</translation>
+      <translation>Znaczniki diagnostyczne gospodarza</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation type="unfinished">Guest Debug Markers</translation>
+      <translation>Znaczniki diagnostyczne gościa</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1473,7 +1473,7 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>Muzyka tytułowa</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups</source>
@@ -1481,15 +1481,15 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Obraz tła</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Pokaż obraz tła</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Przezroczystość</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1577,7 +1577,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Obraz tła:\nKontroluj przezroczystość obrazu tła gry.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1661,7 +1661,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Włącz HDR:\nWłącza HDR w grach, które go wspierają.\nTwój monitor musi mieć wsparcie dla przestrzeni kolorów BT2020 PQ oraz formatu RGB10A2 swapchain.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1693,51 +1693,51 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Zbieranie cieni:\nPotrzebujesz tej opcji aby edytować cienie za pomocą menu debugowania (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos; . Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nNie działa na kartach graficznych Intela.\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Kopiowanie buforów karty graficznej:\nOmija problemy wyścigów związane z przesyłaniem danych do karty graficznej.\nMoże, ale nie musi, pomóc w przypadku awarii typu PM4 0.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Wskaźniki debugowania gospodarza:\nWstawia informacje emulatora, takie jak znaczniki dla konkretnych poleceń AMDGPU wokół poleceń Vulkan, a także nadaje nazwy debugowania zasobów.\nJeśli ta opcja jest włączona, powinieneś włączyć diagnostykę awarii.\nPrzydatne dla programów takich jak RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Znaczniki debugowania gościa:\nWstawia wszystkie znaczniki debugowania, które gra dodała do buforu poleceń.\nJeśli ta opcja jest włączona, powinieneś włączyć diagnostykę awarii.\nPrzydatne dla programów takich jak RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Ścieżka zapisu danych:\nFolder, w którym zapisywane będą dane gry.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Przeglądaj:\nPrzeglądaj folder, aby ustawić ścieżkę zapisywania danych.</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Wersja stablina</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Wersja rozwojowa</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Wybierz poziom głośności muzyki w tle.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Włącz sterowanie ruchem</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Ścieżka zapisanych danych</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1745,15 +1745,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asynchroniczny</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>synchroniczny</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Wybór automatyczny</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1761,47 +1761,47 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Katalog do zapisywania danych</translation>
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Wyświetlanie</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Tryb wyświetlania</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Tryb okna</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Tryb pełnoekranowy</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Tryb pełnoekranowy (bez obramowania)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Rozmiar okna</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>Szerokość:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>Wysokość:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Oddzielne pliki dziennika</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Oddzielne pliki dziennika:\nZapisuje oddzielny plik dziennika dla każdej gry.</translation>
     </message>
   </context>
   <context>
