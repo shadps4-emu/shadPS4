@@ -28,7 +28,6 @@ public:
 private:
     std::string trophy_name;
     std::string_view trophy_type;
-    float trophy_timer = 5.0f;
     ImGui::RefCountedTexture trophy_icon;
     ImGui::RefCountedTexture trophy_type_icon;
 };

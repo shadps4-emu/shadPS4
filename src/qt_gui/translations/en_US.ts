@@ -1480,8 +1480,8 @@
         <translation>Title Music</translation>
     </message>
     <message>
-        <source>Disable Trophy Pop-ups</source>
-        <translation>Disable Trophy Pop-ups</translation>
+        <source>Disable Trophy Notification</source>
+        <translation>Disable Trophy Notification</translation>
     </message>
     <message>
         <source>Background Image</source>

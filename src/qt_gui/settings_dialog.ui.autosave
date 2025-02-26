@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
  <widget class="QDialog" name="SettingsDialog">
@@ -59,7 +57,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +72,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -130,9 +128,6 @@
                <property name="bottomMargin">
                 <number>9</number>
                </property>
-               <property name="alignment">
-                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-                 </property>
                <item>
                 <layout class="QVBoxLayout" name="emulatorverticalLayout">
                  <property name="spacing">
@@ -455,7 +450,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -904,7 +899,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1199,7 +1194,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1327,8 +1322,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QDoubleSpinBox" name="popUpDurationSpinBox">
-                  </widget>
+                  <widget class="QDoubleSpinBox" name="popUpDurationSpinBox"/>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_4">
@@ -1434,7 +1428,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1448,7 +1442,7 @@
             <property name="bottomMargin">
              <number>0</number>
             </property>
-            <item alignment="Qt::AlignmentFlag::AlignTop">
+            <item alignment="Qt::AlignmentFlag::Qt::AlignmentFlag::AlignTop">
              <widget class="QGroupBox" name="cursorGroupBox">
               <property name="title">
                <string>Cursor</string>
@@ -1718,7 +1712,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1808,7 +1802,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
