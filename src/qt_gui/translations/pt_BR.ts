@@ -1453,7 +1453,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verificar Atualizações ao Iniciar</translation>
+      <translation>Verificar por Atualizações ao Iniciar</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>Atualizar Compatibilidade ao Inicializar</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade ao Inicializar</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
@@ -1537,15 +1537,15 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Idioma do console:\nDefine o idioma usado pelo jogo do PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
+      <translation>Idioma do Console:\nDefine o idioma usado pelo jogo do PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Idioma do emulador:\nDefine o idioma da interface do emulador.</translation>
+      <translation>Idioma do Emulador:\nDefine o idioma da interface do emulador.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Ativar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
+      <translation>Ativar Pasta de Atualização Separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1557,7 +1557,7 @@
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Nome de usuário:\nDefine o nome de usuário da conta PS4 que pode ser exibido por alguns jogos.</translation>
+      <translation>Nome de usuário:\nDefine o nome de usuário da conta do PS4, que pode ser exibido por alguns jogos.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
@@ -1565,7 +1565,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1601,7 +1601,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na visualização de tabela.\nAtivar &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
+      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na visualização de tabela.\nAtive &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1609,7 +1609,7 @@
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>Atualizar Lista de Compatibilidade:\nAtualizar imediatamente o banco de dados de compatibilidade.</translation>
+      <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Touchpad Centro</translation>
+      <translation>Centro do Touchpad</translation>
     </message>
     <message>
       <source>None</source>
