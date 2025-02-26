@@ -289,7 +289,7 @@
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Kanał Aktualizacji</translation>
+      <translation>Kanał aktualizacji</translation>
     </message>
     <message>
       <source>Current Version</source>
