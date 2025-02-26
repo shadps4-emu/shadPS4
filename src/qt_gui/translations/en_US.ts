@@ -888,13 +888,6 @@
     </message>
 </context>
 <context>
-    <name>Libraries::NpTrophy::TrophyUI</name>
-    <message>
-        <source>Trophy earned!</source>
-        <translation>Trophy earned!</translation>
-    </message>
-</context>
-<context>
     <name>MainWindow</name>
     <message>
         <source>Open/Add Elf Folder</source>
