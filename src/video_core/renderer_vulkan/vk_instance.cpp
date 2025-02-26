@@ -537,10 +537,6 @@ void Instance::CollectDeviceParameters() {
 }
 
 void Instance::CollectToolingInfo() {
-    if (GetDriverID() == vk::DriverId::eAmdProprietary) {
-        // Currently causes issues with Reshade on AMD proprietary, disabled until fix released.
-        return;
-    }
     const auto [tools_result, tools] = physical_device.getToolPropertiesEXT();
     if (tools_result != vk::Result::eSuccess) {
         LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",
