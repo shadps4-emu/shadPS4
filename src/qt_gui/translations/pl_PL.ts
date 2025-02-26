@@ -1135,7 +1135,7 @@
     </message>
     <message>
       <source>DLC already installed:</source>
-      <translation>DLC już zainstalowane:</translation>
+      <translation>Dodatkowa zawartość (DLC) już zainstalowana:</translation>
     </message>
     <message>
       <source>Game already installed</source>
