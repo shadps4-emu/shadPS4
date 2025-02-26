@@ -30,6 +30,8 @@ class AvPlayerStateCallback {
 public:
     virtual ~AvPlayerStateCallback() = default;
 
+    virtual AvPlayerAvSyncMode GetSyncMode() = 0;
+
     virtual void OnWarning(u32 id) = 0;
     virtual void OnError() = 0;
     virtual void OnEOF() = 0;
@@ -37,7 +39,7 @@ public:
 
 class FrameBuffer {
 public:
-    FrameBuffer(const SceAvPlayerMemAllocator& memory_replacement, u32 align, u32 size) noexcept
+    FrameBuffer(const AvPlayerMemAllocator& memory_replacement, u32 align, u32 size) noexcept
         : m_memory_replacement(memory_replacement),
           m_data(Allocate(memory_replacement, align, size)) {
         ASSERT_MSG(m_data, "Could not allocated frame buffer.");
@@ -68,22 +70,22 @@ public:
     }
 
 private:
-    static u8* Allocate(const SceAvPlayerMemAllocator& memory_replacement, u32 align, u32 size) {
+    static u8* Allocate(const AvPlayerMemAllocator& memory_replacement, u32 align, u32 size) {
         return reinterpret_cast<u8*>(
             memory_replacement.allocate(memory_replacement.object_ptr, align, size));
     }
 
-    static void Deallocate(const SceAvPlayerMemAllocator& memory_replacement, void* ptr) {
+    static void Deallocate(const AvPlayerMemAllocator& memory_replacement, void* ptr) {
         memory_replacement.deallocate(memory_replacement.object_ptr, ptr);
     }
 
-    const SceAvPlayerMemAllocator& m_memory_replacement;
+    const AvPlayerMemAllocator& m_memory_replacement;
     u8* m_data = nullptr;
 };
 
 struct Frame {
     FrameBuffer buffer;
-    SceAvPlayerFrameInfoEx info;
+    AvPlayerFrameInfoEx info;
 };
 
 class EventCV {
@@ -121,18 +123,20 @@ public:
     AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2);
     ~AvPlayerSource();
 
-    bool Init(const SceAvPlayerInitData& init_data, std::string_view path);
+    bool Init(const AvPlayerInitData& init_data, std::string_view path);
     bool FindStreamInfo();
     s32 GetStreamCount();
-    bool GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    bool GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
     void SetLooping(bool is_looping);
     std::optional<bool> HasFrames(u32 num_frames);
     bool Start();
     bool Stop();
-    bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
-    bool GetVideoData(SceAvPlayerFrameInfo& video_info);
-    bool GetVideoData(SceAvPlayerFrameInfoEx& video_info);
+    void Pause();
+    void Resume();
+    bool GetAudioData(AvPlayerFrameInfo& audio_info);
+    bool GetVideoData(AvPlayerFrameInfo& video_info);
+    bool GetVideoData(AvPlayerFrameInfoEx& video_info);
     u64 CurrentTime();
     bool IsActive();
 
@@ -166,10 +170,11 @@ private:
     AvPlayerStateCallback& m_state;
     bool m_use_vdec2 = false;
 
-    SceAvPlayerMemAllocator m_memory_replacement{};
+    AvPlayerMemAllocator m_memory_replacement{};
     u32 m_num_output_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
+    std::atomic_bool m_is_paused = false;
     std::atomic_bool m_is_eof = false;
 
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
@@ -197,8 +202,6 @@ private:
     EventCV m_video_frames_cv{};
     EventCV m_video_buffers_cv{};
 
-    EventCV m_stop_cv{};
-
     std::mutex m_state_mutex{};
     Kernel::Thread m_demuxer_thread{};
     Kernel::Thread m_video_decoder_thread{};
@@ -211,6 +214,9 @@ private:
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 
     std::chrono::high_resolution_clock::time_point m_start_time{};
+    std::chrono::high_resolution_clock::time_point m_last_paused_time{};
+    std::chrono::high_resolution_clock::duration m_stalled_time{};
+    u64 m_last_audio_packet_time{};
 };
 
 } // namespace Libraries::AvPlayer
