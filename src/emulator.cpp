@@ -107,8 +107,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     Common::PSFAttributes psf_attributes{};
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    if (!std::filesystem::exists(param_sfo_path) ||
-        !Config::getSeparateLogFilesEnabled()) {
+    if (!std::filesystem::exists(param_sfo_path) || !Config::getSeparateLogFilesEnabled()) {
         Common::Log::Initialize();
         Common::Log::Start();
     }
