@@ -107,6 +107,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     Common::PSFAttributes psf_attributes{};
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    if (!std::filesystem::exists(param_sfo_path) || !Config::getSeparateLogFilesEnabled()) {
+        Common::Log::Initialize();
+        Common::Log::Start();
+    }
+
     if (std::filesystem::exists(param_sfo_path)) {
         auto* param_sfo = Common::Singleton<PSF>::Instance();
         const bool success = param_sfo->Open(param_sfo_path);
@@ -117,10 +122,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
         if (Config::getSeparateLogFilesEnabled()) {
             Common::Log::Initialize(id + ".log");
-        } else {
-            Common::Log::Initialize();
+            Common::Log::Start();
         }
-        Common::Log::Start();
         LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
         LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
         LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
