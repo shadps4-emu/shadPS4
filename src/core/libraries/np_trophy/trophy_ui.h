@@ -13,9 +13,12 @@
 #include "imgui/imgui_layer.h"
 #include "imgui/imgui_texture.h"
 
+#include <QObject>
+
 namespace Libraries::NpTrophy {
 
-class TrophyUI final : public ImGui::Layer {
+class TrophyUI final : public QObject, public ImGui::Layer {
+    Q_OBJECT
 public:
     TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
              const std::string_view& rarity);

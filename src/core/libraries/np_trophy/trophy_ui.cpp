@@ -118,7 +118,7 @@ void TrophyUI::Draw() {
             ImGui::Indent(60);
         }
 
-        const std::string combinedString = "Trophy earned!\n%s" + trophy_name;
+        const std::string combinedString = tr("Trophy earned!").toStdString() + "\n" + trophy_name;
         const float wrap_width =
             CalcWrapWidthForPos(GetCursorScreenPos(), (window_size.x - (60 * AdjustWidth)));
         SetWindowFontScale(1.2 * AdjustHeight);
@@ -135,7 +135,7 @@ void TrophyUI::Draw() {
             SetCursorPosY((window_size.y - text_height) * 0.5);
         }
         ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
-        TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
+        TextWrapped("%s", combinedString.c_str());
         ImGui::SameLine(window_size.x - (60 * AdjustWidth));
 
         if (trophy_icon) {
