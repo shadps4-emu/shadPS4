@@ -49,9 +49,9 @@ public:
 
         // Are we supposed to call the event handler on init with
         // ADD_OSK?
-        if (!ime_mode && False(m_param.key.option & OrbisImeKeyboardOption::AddOsk)) {
+        /* if (!ime_mode && False(m_param.key.option & OrbisImeKeyboardOption::AddOsk)) {
             Execute(nullptr, &openEvent, true);
-        }
+        }*/
 
         if (ime_mode) {
             g_ime_state = ImeState(&m_param.ime);
@@ -274,6 +274,13 @@ s32 PS4_SYSV_ABI sceImeKeyboardOpen(s32 userId, const OrbisImeKeyboardParam* par
     if (!param) {
         return ORBIS_IME_ERROR_INVALID_ADDRESS;
     }
+    if (!param->arg) {
+        return ORBIS_IME_ERROR_INVALID_ARG;
+    }
+    if (!param->handler) {
+        return ORBIS_IME_ERROR_INVALID_HANDLER;
+    }
+
     if (g_keyboard_handler) {
         return ORBIS_IME_ERROR_BUSY;
     }

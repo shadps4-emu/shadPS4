@@ -20,7 +20,7 @@ enum class OrbisImeKeyboardOption : u32 {
     Repeat = 1,
     RepeatEachKey = 2,
     AddOsk = 4,
-    EffectiveWithTime = 8,
+    EffectiveWithIme = 8,
     DisableResume = 16,
     DisableCapslockWithoutShift = 32,
 };
