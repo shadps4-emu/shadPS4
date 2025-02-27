@@ -553,10 +553,6 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         // to do it, and it would be inconvenient to force it here, when AddUpdate does the job just
         // fine, and a toggle doesn't have to checked against every input that's bound to it, it's
         // enough that one is pressed
-        case SDL_GAMEPAD_BUTTON_START:
-            controllers[gamepad_index]->CheckButton(0, SDLGamepadToOrbisButton(button),
-                                                    new_button_state);
-            break;
         default: // is a normal key (hopefully)
             controllers[gamepad_index]->CheckButton(0, SDLGamepadToOrbisButton(button),
                                                     new_button_state);
