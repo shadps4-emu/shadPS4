@@ -11,6 +11,7 @@
 
 #include "common/object_pool.h"
 #include "common/types.h"
+#include "shader_recompiler/ir/abstract_syntax_list.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -18,6 +19,12 @@ namespace Shader::IR {
 
 class Block {
 public:
+    struct ConditionalData {
+        std::uint32_t depth;
+        const ConditionalData* parent;
+        const AbstractSyntaxNode* asl_node;
+    };
+
     using InstructionList = boost::intrusive::list<Inst>;
     using size_type = InstructionList::size_type;
     using iterator = InstructionList::iterator;
@@ -63,6 +70,16 @@ public:
     /// Gets an immutable span to the immediate successors.
     [[nodiscard]] std::span<Block* const> ImmSuccessors() const noexcept {
         return imm_successors;
+    }
+
+    // Set the conditional data for this block.
+    void SetConditionalData(const ConditionalData& data) {
+        cond_data = data;
+    }
+
+    // Get the conditional data for this block.
+    [[nodiscard]] const ConditionalData& CondData() const {
+        return cond_data;
     }
 
     /// Intrusively store the host definition of this instruction.
@@ -163,6 +180,9 @@ private:
     std::vector<Block*> imm_predecessors;
     /// Block immediate successors
     std::vector<Block*> imm_successors;
+
+    // Conditional data
+    Block::ConditionalData cond_data;
 
     /// Intrusively store if the block is sealed in the SSA pass.
     bool is_ssa_sealed{false};
