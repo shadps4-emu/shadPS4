@@ -13,7 +13,11 @@ namespace Libraries::Font {
 
 struct OrbisFontTextCharacter {
     // Other fields...
-    u8 bidiLevel; // Assuming the field at offset 0x3B stores the Bidi level
+    void* textOrder;   // Field at offset 0x10 (pointer to text order info)
+    u32 characterCode; // Field assumed at offset 0x28
+    u8 charType;       // Field assumed at offset 0x39
+    u8 bidiLevel;      // Field assumed at offset 0x3B stores the Bidi level
+    u8 formatFlags;    // Field at offset 0x3D (stores format-related flags)
 };
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer();
@@ -22,9 +26,10 @@ s32 PS4_SYSV_ABI sceFontCharacterGetBidiLevel(OrbisFontTextCharacter* textCharac
                                               int* bidiLevel);
 s32 PS4_SYSV_ABI sceFontCharacterGetSyllableStringState();
 s32 PS4_SYSV_ABI sceFontCharacterGetTextFontCode();
-s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder();
-s32 PS4_SYSV_ABI sceFontCharacterLooksFormatCharacters();
-s32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace();
+s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder(OrbisFontTextCharacter* textCharacter,
+                                              void** pTextOrder);
+u32 PS4_SYSV_ABI sceFontCharacterLooksFormatCharacters(OrbisFontTextCharacter* textCharacter);
+u32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace(OrbisFontTextCharacter* textCharacter);
 s32 PS4_SYSV_ABI sceFontCharacterRefersTextBack();
 s32 PS4_SYSV_ABI sceFontCharacterRefersTextNext();
 s32 PS4_SYSV_ABI sceFontCharactersRefersTextCodes();
