@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QWheelEvent>
 
 #include "common/path_util.h"
 #include "kbm_config_dialog.h"
@@ -989,6 +990,46 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             default:
                 break;
             }
+            return true;
+        }
+
+        QList<QPushButton*> AxisList = {
+            ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
+            ui->RStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->RStickRightButton};
+
+        if (event->type() == QEvent::Wheel) {
+            QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+            if (wheelEvent->angleDelta().y() > 5) {
+                if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
+                    SetMapping("mousewheelup");
+                } else {
+                    QMessageBox::information(this, "Cannot set mapping",
+                                             "Mousewheel cannot be mapped to stick outputs");
+                }
+            } else if (wheelEvent->angleDelta().y() < -5) {
+                if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
+                    SetMapping("mousewheeldown");
+                } else {
+                    QMessageBox::information(this, "Cannot set mapping",
+                                             "Mousewheel cannot be mapped to stick outputs");
+                }
+            }
+            if (wheelEvent->angleDelta().x() > 5) {
+                if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
+                    SetMapping("mousewheelright");
+                } else {
+                    QMessageBox::information(this, "Cannot set mapping",
+                                             "Mousewheel cannot be mapped to stick outputs");
+                }
+            } else if (wheelEvent->angleDelta().x() < -5) {
+                if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
+                    SetMapping("mousewheelleft");
+                } else {
+                    QMessageBox::information(this, "Cannot set mapping",
+                                             "Mousewheel cannot be mapped to stick outputs");
+                }
+            }
+
             return true;
         }
     }
