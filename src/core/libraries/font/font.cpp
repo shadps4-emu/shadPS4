@@ -40,19 +40,39 @@ s32 PS4_SYSV_ABI sceFontCharacterGetTextFontCode() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder(OrbisFontTextCharacter* textCharacter,
+                                              void** pTextOrder) {
+    if (!pTextOrder) {
+        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!textCharacter) {
+        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        *pTextOrder = NULL;
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Retrieve text order
+    *pTextOrder = textCharacter->textOrder;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterLooksFormatCharacters() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceFontCharacterLooksFormatCharacters(OrbisFontTextCharacter* textCharacter) {
+    if (!textCharacter) {
+        return 0;
+    }
+
+    // Check if the format flag (bit 2) is set
+    return (textCharacter->formatFlags & 0x04) ? textCharacter->characterCode : 0;
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+u32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace(OrbisFontTextCharacter* textCharacter) {
+    if (!textCharacter) {
+        return 0;
+    }
+
+    return (textCharacter->charType == 0x0E) ? textCharacter->characterCode : 0;
 }
 
 s32 PS4_SYSV_ABI sceFontCharacterRefersTextBack() {
