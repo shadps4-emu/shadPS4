@@ -11,7 +11,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1043</width>
+    <width>1193</width>
     <height>754</height>
    </rect>
   </property>
@@ -38,7 +38,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1023</width>
+        <width>1173</width>
         <height>704</height>
        </rect>
       </property>
@@ -47,7 +47,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1021</width>
+         <width>1171</width>
          <height>703</height>
         </rect>
        </property>
@@ -115,7 +115,7 @@
                  <widget class="QGroupBox" name="gb_dpad_up">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -228,6 +228,12 @@
                 </property>
                 <item>
                  <widget class="QGroupBox" name="gb_dpad_down">
+                  <property name="minimumSize">
+                   <size>
+                    <width>160</width>
+                    <height>0</height>
+                   </size>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>124</width>
@@ -365,7 +371,7 @@
                  <widget class="QGroupBox" name="gb_left_stick_up">
                   <property name="minimumSize">
                    <size>
-                    <width>0</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -486,7 +492,7 @@
                  <widget class="QGroupBox" name="gb_left_stick_down">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -677,6 +683,12 @@
               </item>
               <item>
                <widget class="QGroupBox" name="gb_l2">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="title">
                  <string>L2</string>
                 </property>
@@ -750,6 +762,12 @@
              <layout class="QVBoxLayout" name="layout_r1_r2">
               <item>
                <widget class="QGroupBox" name="gb_r1">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="title">
                  <string>R1</string>
                 </property>
@@ -869,6 +887,12 @@
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <item>
                <widget class="QGroupBox" name="gb_l3">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="title">
                  <string>L3</string>
                 </property>
@@ -958,6 +982,12 @@
              <layout class="QVBoxLayout" name="verticalLayout_12">
               <item>
                <widget class="QGroupBox" name="gb_r3">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="title">
                  <string>R3</string>
                 </property>
@@ -989,6 +1019,12 @@
               </item>
               <item>
                <widget class="QGroupBox" name="gb_options">
+                <property name="minimumSize">
+                 <size>
+                  <width>145</width>
+                  <height>0</height>
+                 </size>
+                </property>
                 <property name="title">
                  <string>Options</string>
                 </property>
@@ -1236,7 +1272,7 @@
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1351,7 +1387,7 @@
                  <widget class="QGroupBox" name="gb_cross">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1492,7 +1528,7 @@
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>0</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1508,6 +1544,12 @@
                   <layout class="QVBoxLayout" name="verticalLayout_7">
                    <item>
                     <widget class="QPushButton" name="RStickUpButton">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
                      <property name="focusPolicy">
                       <enum>Qt::FocusPolicy::NoFocus</enum>
                      </property>
@@ -1607,7 +1649,7 @@
                  <widget class="QGroupBox" name="gb_right_stick_down">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>160</width>
                     <height>0</height>
                    </size>
                   </property>

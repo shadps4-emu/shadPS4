@@ -993,7 +993,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             return true;
         }
 
-        QList<QPushButton*> AxisList = {
+        const QList<QPushButton*> AxisList = {
             ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
             ui->RStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->RStickRightButton};
 
@@ -1029,7 +1029,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                                              "Mousewheel cannot be mapped to stick outputs");
                 }
             }
-
             return true;
         }
     }
