@@ -758,7 +758,7 @@ void ActivateOutputsFromInputs() {
 }
 
 u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
-    return SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
+    return SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id)) + 1;
 }
 
 } // namespace Input
