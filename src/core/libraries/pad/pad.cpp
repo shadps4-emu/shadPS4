@@ -365,7 +365,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;
-    controllers[ handle - 1]->ReadState(&state, &isConnected, &connectedCount);
+    controllers[handle - 1]->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
     pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
     pData->leftStick.y = state.axes[static_cast<int>(Input::Axis::LeftY)];

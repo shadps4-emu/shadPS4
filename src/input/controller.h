@@ -47,7 +47,8 @@ inline int GetAxis(int min, int max, int value) {
 constexpr u32 MAX_STATES = 32;
 
 class GameController {
-friend class GameControllers;
+    friend class GameControllers;
+
 public:
     GameController();
     virtual ~GameController() = default;
@@ -91,8 +92,11 @@ private:
 
 class GameControllers {
     std::array<GameController*, 4> controllers;
+
 public:
-    GameControllers() : controllers({new GameController(), new GameController(), new GameController(), new GameController()}) {};
+    GameControllers()
+        : controllers({new GameController(), new GameController(), new GameController(),
+                       new GameController()}) {};
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
         if (i > 3) {
