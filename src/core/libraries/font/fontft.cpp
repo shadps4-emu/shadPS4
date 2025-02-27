@@ -113,16 +113,6 @@ s32 PS4_SYSV_ABI sceFontSelectRendererFt() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI module_start() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI module_stop() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("e60aorDdpB8", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtInitAliases);
     LIB_FUNCTION("BxcmiMc3UaA", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSetAliasFont);
