@@ -1834,5 +1834,21 @@
         <source>Trophy Viewer</source>
         <translation>Trophy Viewer</translation>
     </message>
+    <message>
+        <source>Progress</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Earned Trophies</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Not Earned Trophies</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Hidden Trophies</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 </TS>
