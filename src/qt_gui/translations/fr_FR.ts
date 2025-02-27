@@ -523,11 +523,11 @@
     </message>
     <message>
       <source>R:</source>
-      <translation>R</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation>G</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
