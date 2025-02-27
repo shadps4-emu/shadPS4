@@ -43,7 +43,7 @@ struct OrbisFontStyleFrame {
     u16 magic; // Expected to be 0xF09
     u16 flags;
     //
-    float slantRatio; //0x24
+    float slantRatio; // 0x24
 };
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer();
