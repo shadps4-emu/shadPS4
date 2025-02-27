@@ -834,6 +834,7 @@ s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* rende
     // Assign style frame pointer
     renderSurface->unkn_28[0] = styleFrame;
     *(uint32_t*)(renderSurface->unkn_28 + 1) = 0; // Reset related field
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceFontSetEffectSlant() {
@@ -947,8 +948,35 @@ s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectSlant(OrbisFontStyleFrame* styleFrame
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectWeight() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectWeight(OrbisFontStyleFrame* fontStyleFrame,
+                                                  float* weightXScale, float* weightYScale,
+                                                  uint32_t* mode) {
+    if (!fontStyleFrame) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Validate the magic number
+    if (fontStyleFrame->magic != 0xF09) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Check if the weight effect is enabled (bit 2 in flags)
+    if (!(fontStyleFrame->flags & 0x04)) {
+        return ORBIS_FONT_ERROR_UNSET_PARAMETER;
+    }
+
+    // Retrieve weight scales (default is +1.0 to maintain normal weight)
+    if (weightXScale) {
+        *weightXScale = fontStyleFrame->weightXScale + 1.0f;
+    }
+    if (weightYScale) {
+        *weightYScale = fontStyleFrame->weightYScale + 1.0f;
+    }
+
+    // Reset mode if provided
+    if (mode) {
+        *mode = 0;
+    }
     return ORBIS_OK;
 }
 
@@ -1293,16 +1321,6 @@ s32 PS4_SYSV_ABI Func_FE4788A96EF46256() {
 }
 
 s32 PS4_SYSV_ABI Func_FE7E5AE95D3058F5() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI module_start() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI module_stop() {
     LOG_ERROR(Lib_Font, "(STUBBED) called");
     return ORBIS_OK;
 }
