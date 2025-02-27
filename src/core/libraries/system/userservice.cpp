@@ -126,23 +126,6 @@ s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
     }
 
     return ORBIS_USER_SERVICE_ERROR_NO_EVENT;
-
-    // // fake a login event
-    // static bool logged_in_1 = false;
-    // static bool logged_in_2 = false;
-
-    // if (!logged_in_1) {
-    //     logged_in_1 = true;
-    //     event->event = OrbisUserServiceEventType::Login;
-    //     event->userId = 1;
-    //     return ORBIS_OK;
-    // }
-    // if (!logged_in_2) {
-    //     logged_in_2 = true;
-    //     event->event = OrbisUserServiceEventType::Login;
-    //     event->userId = 2;
-    //     return ORBIS_OK;
-    // }
 }
 
 int PS4_SYSV_ABI sceUserServiceGetEventCalendarType() {
