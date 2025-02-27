@@ -1789,11 +1789,11 @@
     </message>
     <message>
       <source>W:</source>
-      <translation>W: </translation>
+      <translation>W:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation>H: </translation>
+      <translation>H:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
