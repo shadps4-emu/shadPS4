@@ -761,19 +761,19 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation>Deletar...</translation>
+      <translation>Excluir...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Deletar Jogo</translation>
+      <translation>Excluir Jogo</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Deletar Atualização</translation>
+      <translation>Excluir Atualização</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>Deletar DLC</translation>
+      <translation>Excluir DLC</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -825,7 +825,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>Este jogo não tem DLC para deletar!</translation>
+      <translation>Este jogo não tem DLC para excluir!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -833,7 +833,7 @@
     </message>
     <message>
       <source>Delete %1</source>
-      <translation>Deletar %1</translation>
+      <translation>Excluir %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation>Este jogo não tem dados salvos para deletar!</translation>
+      <translation>Este jogo não tem dados salvos para excluir!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -884,7 +884,7 @@
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation>Deletar o PKG após a Instalação</translation>
+      <translation>Excluir o PKG após a Instalação</translation>
     </message>
   </context>
   <context>
