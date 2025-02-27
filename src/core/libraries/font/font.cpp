@@ -3,8 +3,9 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/font/font.h"
+#include "core/libraries/libs.h"
+#include "font_error.h"
 
 namespace Libraries::Font {
 
@@ -18,8 +19,14 @@ s32 PS4_SYSV_ABI sceFontBindRenderer() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterGetBidiLevel() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontCharacterGetBidiLevel(OrbisFontTextCharacter* textCharacter,
+                                              int* bidiLevel) {
+    if (!textCharacter || !bidiLevel) {
+        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    *bidiLevel = textCharacter->bidiLevel;
     return ORBIS_OK;
 }
 
@@ -1202,8 +1209,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8h-SOB-asgk", "libSceFont", 1, "libSceFont", 1, 1, sceFontDefineAttribute);
     LIB_FUNCTION("LHDoRWVFGqk", "libSceFont", 1, "libSceFont", 1, 1, sceFontDeleteGlyph);
     LIB_FUNCTION("5QG71IjgOpQ", "libSceFont", 1, "libSceFont", 1, 1, sceFontDestroyGraphicsDevice);
-    LIB_FUNCTION("zZQD3EwJo3c", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontDestroyGraphicsService);
+    LIB_FUNCTION("zZQD3EwJo3c", "libSceFont", 1, "libSceFont", 1, 1, sceFontDestroyGraphicsService);
     LIB_FUNCTION("FXP359ygujs", "libSceFont", 1, "libSceFont", 1, 1, sceFontDestroyLibrary);
     LIB_FUNCTION("exAxkyVLt0s", "libSceFont", 1, "libSceFont", 1, 1, sceFontDestroyRenderer);
     LIB_FUNCTION("SSCaczu2aMQ", "libSceFont", 1, "libSceFont", 1, 1, sceFontDestroyString);
@@ -1234,8 +1240,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontGetRenderCharGlyphMetrics);
     LIB_FUNCTION("Gqa5Pp7y4MU", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetRenderEffectSlant);
     LIB_FUNCTION("woOjHrkjIYg", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetRenderEffectWeight);
-    LIB_FUNCTION("ryPlnDDI3rU", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGetRenderScaledKerning);
+    LIB_FUNCTION("ryPlnDDI3rU", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetRenderScaledKerning);
     LIB_FUNCTION("EY38A01lq2k", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetRenderScalePixel);
     LIB_FUNCTION("FEafYUcxEGo", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetRenderScalePoint);
     LIB_FUNCTION("8REoLjNGCpM", "libSceFont", 1, "libSceFont", 1, 1, sceFontGetResolutionDpi);
@@ -1268,8 +1273,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("DOmdOwV3Aqw", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsEndFrame);
     LIB_FUNCTION("zdYdKRQC3rw", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsExchangeResource);
-    LIB_FUNCTION("UkMUIoj-e9s", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsFillMethodInit);
+    LIB_FUNCTION("UkMUIoj-e9s", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsFillMethodInit);
     LIB_FUNCTION("DJURdcnVUqo", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsFillPlotInit);
     LIB_FUNCTION("eQac6ftmBQQ", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsFillPlotSetLayout);
@@ -1282,27 +1286,22 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontGraphicsFillRatesSetLayout);
     LIB_FUNCTION("W66Kqtt0xU0", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsFillRatesSetMapping);
-    LIB_FUNCTION("FzpLsBQEegQ", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsGetDeviceUsage);
+    LIB_FUNCTION("FzpLsBQEegQ", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsGetDeviceUsage);
     LIB_FUNCTION("W80hs0g5d+E", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsRegionInit);
     LIB_FUNCTION("S48+njg9p-o", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsRegionInitCircular);
     LIB_FUNCTION("wcOQ8Fz73+M", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsRegionInitRoundish);
     LIB_FUNCTION("YBaw2Yyfd5E", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsRelease);
-    LIB_FUNCTION("qkySrQ4FGe0", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsRenderResource);
-    LIB_FUNCTION("qzNjJYKVli0", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsSetFramePolicy);
+    LIB_FUNCTION("qkySrQ4FGe0", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsRenderResource);
+    LIB_FUNCTION("qzNjJYKVli0", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetFramePolicy);
     LIB_FUNCTION("9iRbHCtcx-o", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupClipping);
     LIB_FUNCTION("KZ3qPyz5Opc", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsSetupColorRates);
     LIB_FUNCTION("LqclbpVzRvM", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsSetupFillMethod);
-    LIB_FUNCTION("Wl4FiI4qKY0", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsSetupFillRates);
-    LIB_FUNCTION("WC7s95TccVo", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsSetupGlyphFill);
+    LIB_FUNCTION("Wl4FiI4qKY0", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupFillRates);
+    LIB_FUNCTION("WC7s95TccVo", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupGlyphFill);
     LIB_FUNCTION("zC6I4ty37NA", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsSetupGlyphFillPlot);
     LIB_FUNCTION("drZUF0XKTEI", "libSceFont", 1, "libSceFont", 1, 1,
@@ -1312,8 +1311,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontGraphicsSetupPositioning);
     LIB_FUNCTION("98XGr2Bkklg", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupRotation);
     LIB_FUNCTION("Nj-ZUVOVAvc", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupScaling);
-    LIB_FUNCTION("p0avT2ggev0", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsSetupShapeFill);
+    LIB_FUNCTION("p0avT2ggev0", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsSetupShapeFill);
     LIB_FUNCTION("0C5aKg9KghY", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsSetupShapeFillPlot);
     LIB_FUNCTION("4pA3qqAcYco", "libSceFont", 1, "libSceFont", 1, 1,
@@ -1326,8 +1324,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontGraphicsStructureDesignResource);
     LIB_FUNCTION("bhmZlml6NBs", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsStructureSurfaceTexture);
-    LIB_FUNCTION("5sAWgysOBfE", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsUpdateClipping);
+    LIB_FUNCTION("5sAWgysOBfE", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsUpdateClipping);
     LIB_FUNCTION("W4e8obm+w6o", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsUpdateColorRates);
     LIB_FUNCTION("EgIn3QBajPs", "libSceFont", 1, "libSceFont", 1, 1,
@@ -1338,12 +1335,10 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontGraphicsUpdateGlyphFill);
     LIB_FUNCTION("b9R+HQuHSMI", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsUpdateGlyphFillPlot);
-    LIB_FUNCTION("IN4P5pJADQY", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsUpdateLocation);
+    LIB_FUNCTION("IN4P5pJADQY", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsUpdateLocation);
     LIB_FUNCTION("U+LLXdr2DxM", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsUpdatePositioning);
-    LIB_FUNCTION("yStTYSeb4NM", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontGraphicsUpdateRotation);
+    LIB_FUNCTION("yStTYSeb4NM", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsUpdateRotation);
     LIB_FUNCTION("eDxmMoxE5xU", "libSceFont", 1, "libSceFont", 1, 1, sceFontGraphicsUpdateScaling);
     LIB_FUNCTION("Ax6LQJJq6HQ", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontGraphicsUpdateShapeFill);
@@ -1380,14 +1375,12 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sw65+7wXCKE", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetScalePoint);
     LIB_FUNCTION("PxSR9UfJ+SQ", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetScriptLanguage);
     LIB_FUNCTION("SnsZua35ngs", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetTypographicDesign);
-    LIB_FUNCTION("lz9y9UFO2UU", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontSetupRenderEffectSlant);
+    LIB_FUNCTION("lz9y9UFO2UU", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetupRenderEffectSlant);
     LIB_FUNCTION("XIGorvLusDQ", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontSetupRenderEffectWeight);
     LIB_FUNCTION("6vGCkkQJOcI", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetupRenderScalePixel);
     LIB_FUNCTION("nMZid4oDfi4", "libSceFont", 1, "libSceFont", 1, 1, sceFontSetupRenderScalePoint);
-    LIB_FUNCTION("ObkDGDBsVtw", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontStringGetTerminateCode);
+    LIB_FUNCTION("ObkDGDBsVtw", "libSceFont", 1, "libSceFont", 1, 1, sceFontStringGetTerminateCode);
     LIB_FUNCTION("+B-xlbiWDJ4", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontStringGetTerminateOrder);
     LIB_FUNCTION("o1vIEHeb6tw", "libSceFont", 1, "libSceFont", 1, 1, sceFontStringGetWritingForm);
@@ -1445,8 +1438,7 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
                  sceFontWritingLineGetRenderMetrics);
     LIB_FUNCTION("+FYcYefsVX0", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontWritingLineRefersRenderStep);
-    LIB_FUNCTION("wyKFUOWdu3Q", "libSceFont", 1, "libSceFont", 1, 1,
-                 sceFontWritingLineWritesOrder);
+    LIB_FUNCTION("wyKFUOWdu3Q", "libSceFont", 1, "libSceFont", 1, 1, sceFontWritingLineWritesOrder);
     LIB_FUNCTION("W-2WOXEHGck", "libSceFont", 1, "libSceFont", 1, 1,
                  sceFontWritingRefersRenderStep);
     LIB_FUNCTION("f4Onl7efPEY", "libSceFont", 1, "libSceFont", 1, 1,
