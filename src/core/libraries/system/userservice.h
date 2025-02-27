@@ -57,6 +57,8 @@ struct OrbisUserServiceEvent {
     OrbisUserServiceUserId userId;
 };
 
+void AddUserServiceEvent(const OrbisUserServiceEvent e);
+
 int PS4_SYSV_ABI sceUserServiceInitializeForShellCore();
 int PS4_SYSV_ABI sceUserServiceTerminateForShellCore();
 int PS4_SYSV_ABI sceUserServiceDestroyUser();

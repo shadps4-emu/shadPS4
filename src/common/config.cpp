@@ -75,6 +75,8 @@ static double trophyNotificationDuration = 6.0;
 static bool useUnifiedInputConfig = true;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
+static int numberOfPlayers = 1;
+static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
@@ -109,6 +111,14 @@ static bool showLabelsUnderIcons = true;
 
 // Language
 u32 m_language = 1; // english
+
+void SetNumberOfPlayers(int num) {
+    numberOfPlayers = num;
+}
+
+int GetNumberOfPlayers() {
+    return numberOfPlayers;
+}
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -788,6 +798,7 @@ void load(const std::filesystem::path& path) {
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
         isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
         useUnifiedInputConfig = toml::find_or<bool>(input, "useUnifiedInputConfig", true);
+        numberOfPlayers = toml::find_or<int>(input, "numberOfPlayers", 1);
     }
 
     if (data.contains("GPU")) {
@@ -976,6 +987,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
+    data["Input"]["numberOfPlayers"] = numberOfPlayers;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;

@@ -20,6 +20,8 @@ void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 void saveMainWindow(const std::filesystem::path& path);
 
+void SetNumberOfPlayers(int num);
+int GetNumberOfPlayers();
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
 bool GetLoadGameSizeEnabled();
