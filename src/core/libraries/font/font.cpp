@@ -757,7 +757,7 @@ void PS4_SYSV_ABI sceFontRenderSurfaceInit(OrbisFontRenderSurface* renderSurface
 
         // Initialize unknown fields (likely reserved or flags)
         renderSurface->unkn_0xd = 0;
-        renderSurface->unkn_0xe = 0;
+        renderSurface->styleFlag = 0;
         renderSurface->unkn_0xf = 0;
 
         // Ensure width and height are non-negative
@@ -814,9 +814,26 @@ void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderS
     }
 }
 
-s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* renderSurface,
+                                                   OrbisFontStyleFrame* styleFrame) {
+    if (!renderSurface) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!styleFrame) {
+        renderSurface->styleFlag &= 0xFE; // Clear style flag
+    } else {
+        // Validate magic number
+        if (styleFrame->magic != 0xF09) {
+            return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+        }
+
+        renderSurface->styleFlag |= 1; // Set style flag
+    }
+
+    // Assign style frame pointer
+    renderSurface->unkn_28[0] = styleFrame;
+    *(uint32_t*)(renderSurface->unkn_28 + 1) = 0; // Reset related field
 }
 
 s32 PS4_SYSV_ABI sceFontSetEffectSlant() {
@@ -904,8 +921,29 @@ s32 PS4_SYSV_ABI sceFontStringRefersTextCharacters() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectSlant() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectSlant(OrbisFontStyleFrame* styleFrame,
+                                                 float* slantRatio) {
+    if (!styleFrame) {
+        printf("[ERROR] Style frame is NULL.\n");
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Validate the magic number
+    if (styleFrame->magic != 0xF09) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Check if the slant effect is enabled (bit 1 in flags)
+    if (!(styleFrame->flags & 0x02)) {
+        return ORBIS_FONT_ERROR_UNSET_PARAMETER;
+    }
+
+    if (!slantRatio) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    // Retrieve slant ratio
+    *slantRatio = styleFrame->slantRatio;
     return ORBIS_OK;
 }
 
