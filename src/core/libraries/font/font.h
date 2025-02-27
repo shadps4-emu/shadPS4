@@ -14,7 +14,7 @@ namespace Libraries::Font {
 struct OrbisFontTextCharacter {
     // Other fields...
     u8 bidiLevel; // Assuming the field at offset 0x3B stores the Bidi level
-} FontCharacter;
+};
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer();
 s32 PS4_SYSV_ABI sceFontBindRenderer();
