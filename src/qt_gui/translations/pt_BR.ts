@@ -535,7 +535,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation>Substituir cor da Lightbar</translation>
+      <translation>Substituir Cor da Barra de Luz</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -631,7 +631,7 @@
     </message>
     <message>
       <source>Never Played</source>
-      <translation>Nunca jogado</translation>
+      <translation>Nunca Jogado</translation>
     </message>
     <message>
       <source>h</source>
@@ -663,11 +663,11 @@
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>O jogo tem falhas que interrompem o jogo ou desempenho injogável</translation>
+      <translation>O jogo tem defeitos que interrompem o jogo ou desempenho injogável</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation>O jogo pode ser concluído com desempenho jogável e sem grandes falhas</translation>
+      <translation>O jogo pode ser concluído com desempenho jogável e sem grandes defeitos</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
