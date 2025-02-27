@@ -13,6 +13,10 @@ namespace fs = std::filesystem;
 
 CMRC_DECLARE(res);
 
+// true: European format; false: American format
+bool useEuropeanDateFormat = false;
+// TODO : Use the interface language to set this value
+
 void TrophyViewer::updateTrophyInfo() {
     int total = 0;
     int unlocked = 0;
@@ -110,7 +114,8 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
             << "ID"
             << "Hidden"
             << "Type"
-            << "PID";
+            << "PID"
+            << "Time Unlocked";
     PopulateTrophyWidget(trophyPath);
 
     QDockWidget* trophyInfoDock = new QDockWidget("", this);
@@ -197,6 +202,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         QStringList trpPid;
         QStringList trophyNames;
         QStringList trophyDetails;
+        QStringList trpTimeUnlocked;
 
         QString xmlPath = trpDir + "/Xml/TROP.XML";
         QFile file(xmlPath);
@@ -213,14 +219,35 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 trpHidden.append(reader.attributes().value("hidden").toString());
                 trpType.append(reader.attributes().value("ttype").toString());
                 trpPid.append(reader.attributes().value("pid").toString());
+
                 if (reader.attributes().hasAttribute("unlockstate")) {
                     if (reader.attributes().value("unlockstate").toString() == "true") {
                         trpUnlocked.append("unlocked");
                     } else {
                         trpUnlocked.append("locked");
                     }
+                    if (reader.attributes().hasAttribute("timestamp")) {
+                        QString ts = reader.attributes().value("timestamp").toString();
+                        if (ts.length() > 10)
+                            trpTimeUnlocked.append("unknown");
+                        else {
+                            bool ok;
+                            qint64 timestampInt = ts.toLongLong(&ok);
+                            if (ok) {
+                                QDateTime dt = QDateTime::fromSecsSinceEpoch(timestampInt);
+                                QString format = useEuropeanDateFormat ? "dd/MM/yyyy HH:mm:ss"
+                                                                       : "MM/dd/yyyy HH:mm:ss";
+                                trpTimeUnlocked.append(dt.toString(format));
+                            } else {
+                                trpTimeUnlocked.append("unknown");
+                            }
+                        }
+                    } else {
+                        trpTimeUnlocked.append("");
+                    }
                 } else {
                     trpUnlocked.append("locked");
+                    trpTimeUnlocked.append("");
                 }
             }
 
@@ -234,7 +261,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         }
         QTableWidget* tableWidget = new QTableWidget(this);
         tableWidget->setShowGrid(false);
-        tableWidget->setColumnCount(8);
+        tableWidget->setColumnCount(9);
         tableWidget->setHorizontalHeaderLabels(headers);
         tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
         tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -296,13 +323,14 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 SetTableItem(tableWidget, row, 4, trpId[row]);
                 SetTableItem(tableWidget, row, 5, trpHidden[row]);
                 SetTableItem(tableWidget, row, 7, trpPid[row]);
+                SetTableItem(tableWidget, row, 8, trpTimeUnlocked[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
             row++;
         }
         tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
         int width = 16;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 9; i++) {
             width += tableWidget->horizontalHeader()->sectionSize(i);
         }
         tableWidget->resize(width, 720);
