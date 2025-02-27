@@ -93,11 +93,14 @@ void SetPosixErrno(int e) {
     case ENOENT:
         g_posix_errno = POSIX_ENOENT;
         break;
-    case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
+    case EDEADLK:
+        g_posix_errno = POSIX_EDEADLK;
         break;
     case ENOMEM:
         g_posix_errno = POSIX_ENOMEM;
+        break;
+    case EACCES:
+        g_posix_errno = POSIX_EACCES;
         break;
     case EINVAL:
         g_posix_errno = POSIX_EINVAL;
@@ -108,8 +111,8 @@ void SetPosixErrno(int e) {
     case ERANGE:
         g_posix_errno = POSIX_ERANGE;
         break;
-    case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
+    case EAGAIN:
+        g_posix_errno = POSIX_EAGAIN;
         break;
     case ETIMEDOUT:
         g_posix_errno = POSIX_ETIMEDOUT;
