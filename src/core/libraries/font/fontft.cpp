@@ -150,8 +150,6 @@ void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ojW+VKl4Ehs", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectGlyphsFt);
     LIB_FUNCTION("oM+XCzVG3oM", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectLibraryFt);
     LIB_FUNCTION("Xx974EW-QFY", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectRendererFt);
-    LIB_FUNCTION("BaOKcng8g88", "libkernel", 1, "libSceFontFt", 1, 1, module_start);
-    LIB_FUNCTION("KpDMrPHvt3Q", "libkernel", 1, "libSceFontFt", 1, 1, module_stop);
 };
 
 } // namespace Libraries::FontFt

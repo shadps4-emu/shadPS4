@@ -13,11 +13,30 @@ namespace Libraries::Font {
 
 struct OrbisFontTextCharacter {
     // Other fields...
-    void* textOrder;   // Field at offset 0x10 (pointer to text order info)
-    u32 characterCode; // Field assumed at offset 0x28
-    u8 charType;       // Field assumed at offset 0x39
-    u8 bidiLevel;      // Field assumed at offset 0x3B stores the Bidi level
-    u8 formatFlags;    // Field at offset 0x3D (stores format-related flags)
+    struct OrbisFontTextCharacter* next; // Pointer to the next node 0x00
+    struct OrbisFontTextCharacter* prev; // Pointer to the next node 0x08
+    void* textOrder;                     // Field at offset 0x10 (pointer to text order info)
+    u32 characterCode;                   // Field assumed at offset 0x28
+    u8 unkn_0x31;                        // Offset 0x31
+    u8 unkn_0x33;                        // Offset 0x33
+    u8 charType;                         // Field assumed at offset 0x39
+    u8 bidiLevel;                        // Field assumed at offset 0x3B stores the Bidi level
+    u8 formatFlags;                      // Field at offset 0x3D (stores format-related flags)
+};
+
+struct OrbisFontRenderSurface {
+    void* buffer;
+    s32 widthByte;
+    s8 pixelSizeByte;
+    u8 unkn_0xd;
+    u8 unkn_0xe;
+    u8 unkn_0xf;
+    s32 width, height;
+    u32 sc_x0;
+    u32 sc_y0;
+    u32 sc_x1;
+    u32 sc_y1;
+    u32 unkn_28[22];
 };
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer();
@@ -30,8 +49,10 @@ s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder(OrbisFontTextCharacter* textCharac
                                               void** pTextOrder);
 u32 PS4_SYSV_ABI sceFontCharacterLooksFormatCharacters(OrbisFontTextCharacter* textCharacter);
 u32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace(OrbisFontTextCharacter* textCharacter);
-s32 PS4_SYSV_ABI sceFontCharacterRefersTextBack();
-s32 PS4_SYSV_ABI sceFontCharacterRefersTextNext();
+OrbisFontTextCharacter* PS4_SYSV_ABI
+sceFontCharacterRefersTextBack(OrbisFontTextCharacter* textCharacter);
+OrbisFontTextCharacter* PS4_SYSV_ABI
+sceFontCharacterRefersTextNext(OrbisFontTextCharacter* textCharacter);
 s32 PS4_SYSV_ABI sceFontCharactersRefersTextCodes();
 s32 PS4_SYSV_ABI sceFontClearDeviceCache();
 s32 PS4_SYSV_ABI sceFontCloseFont();
@@ -160,8 +181,11 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageVertical();
 s32 PS4_SYSV_ABI sceFontRendererGetOutlineBufferSize();
 s32 PS4_SYSV_ABI sceFontRendererResetOutlineBuffer();
 s32 PS4_SYSV_ABI sceFontRendererSetOutlineBufferPolicy();
-s32 PS4_SYSV_ABI sceFontRenderSurfaceInit();
-s32 PS4_SYSV_ABI sceFontRenderSurfaceSetScissor();
+void PS4_SYSV_ABI sceFontRenderSurfaceInit(OrbisFontRenderSurface* renderSurface, void* buffer,
+                                           int bufWidthByte, int pixelSizeByte, int widthPixel,
+                                           int heightPixel);
+void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderSurface, int x0,
+                                                 int y0, int w, int h);
 s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame();
 s32 PS4_SYSV_ABI sceFontSetEffectSlant();
 s32 PS4_SYSV_ABI sceFontSetEffectWeight();
@@ -251,8 +275,6 @@ s32 PS4_SYSV_ABI Func_E48D3CD01C342A33();
 s32 PS4_SYSV_ABI Func_EAC96B2186B71E14();
 s32 PS4_SYSV_ABI Func_FE4788A96EF46256();
 s32 PS4_SYSV_ABI Func_FE7E5AE95D3058F5();
-s32 PS4_SYSV_ABI module_start();
-s32 PS4_SYSV_ABI module_stop();
 
 void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Font
