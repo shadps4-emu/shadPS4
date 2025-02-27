@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <QCheckBox>
+#include <QDockWidget>
 #include <QMessageBox>
 #include <cmrc/cmrc.hpp>
 #include "common/path_util.h"
@@ -10,6 +12,91 @@
 namespace fs = std::filesystem;
 
 CMRC_DECLARE(res);
+
+void TrophyViewer::updateTrophyInfo() {
+    int total = 0;
+    int unlocked = 0;
+
+    // Cycles through each tab (table) of the QTabWidget
+    for (int i = 0; i < tabWidget->count(); i++) {
+        QTableWidget* table = qobject_cast<QTableWidget*>(tabWidget->widget(i));
+        if (table) {
+            total += table->rowCount();
+            for (int row = 0; row < table->rowCount(); ++row) {
+                QString cellText;
+                // The "Unlocked" column can be a widget or a simple item
+                QWidget* widget = table->cellWidget(row, 0);
+                if (widget) {
+                    // Looks for the QLabel inside the widget (as defined in SetTableItem)
+                    QLabel* label = widget->findChild<QLabel*>();
+                    if (label) {
+                        cellText = label->text();
+                    }
+                } else {
+                    QTableWidgetItem* item = table->item(row, 0);
+                    if (item) {
+                        cellText = item->text();
+                    }
+                }
+                if (cellText == "unlocked")
+                    unlocked++;
+            }
+        }
+    }
+    int progress = (total > 0) ? (unlocked * 100 / total) : 0;
+    trophyInfoLabel->setText(
+        QString(tr("Progress") + ": %1% (%2/%3)").arg(progress).arg(unlocked).arg(total));
+}
+
+void TrophyViewer::updateTableFilters() {
+    bool showEarned = showEarnedCheck->isChecked();
+    bool showNotEarned = showNotEarnedCheck->isChecked();
+    bool showHidden = showHiddenCheck->isChecked();
+
+    // Cycles through each tab of the QTabWidget
+    for (int i = 0; i < tabWidget->count(); ++i) {
+        QTableWidget* table = qobject_cast<QTableWidget*>(tabWidget->widget(i));
+        if (!table)
+            continue;
+        for (int row = 0; row < table->rowCount(); ++row) {
+            QString unlockedText;
+            // Gets the text of the "Unlocked" column (index 0)
+            QWidget* widget = table->cellWidget(row, 0);
+            if (widget) {
+                QLabel* label = widget->findChild<QLabel*>();
+                if (label)
+                    unlockedText = label->text();
+            } else {
+                QTableWidgetItem* item = table->item(row, 0);
+                if (item)
+                    unlockedText = item->text();
+            }
+
+            QString hiddenText;
+            // Gets the text of the "Hidden" column (index 5)
+            QWidget* hiddenWidget = table->cellWidget(row, 5);
+            if (hiddenWidget) {
+                QLabel* label = hiddenWidget->findChild<QLabel*>();
+                if (label)
+                    hiddenText = label->text();
+            } else {
+                QTableWidgetItem* item = table->item(row, 5);
+                if (item)
+                    hiddenText = item->text();
+            }
+
+            bool visible = true;
+            if (unlockedText == "unlocked" && !showEarned)
+                visible = false;
+            if (unlockedText == "locked" && !showNotEarned)
+                visible = false;
+            if (hiddenText.toLower() == "yes" && !showHidden)
+                visible = false;
+
+            table->setRowHidden(row, !visible);
+        }
+    }
+}
 
 TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
     this->setWindowTitle(tr("Trophy Viewer"));
@@ -25,6 +112,44 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
             << "Type"
             << "PID";
     PopulateTrophyWidget(trophyPath);
+
+    QDockWidget* trophyInfoDock = new QDockWidget("", this);
+    QWidget* dockWidget = new QWidget(trophyInfoDock);
+    QVBoxLayout* dockLayout = new QVBoxLayout(dockWidget);
+    dockLayout->setAlignment(Qt::AlignTop);
+
+    trophyInfoLabel = new QLabel(tr("Progress") + ": 0% (0/0)", dockWidget);
+    trophyInfoLabel->setStyleSheet(
+        "font-weight: bold; font-size: 16px; color: white; background: #333; padding: 5px;");
+    dockLayout->addWidget(trophyInfoLabel);
+
+    // Creates QCheckBox to filter trophies
+    showEarnedCheck = new QCheckBox(tr("Show Earned Trophies"), dockWidget);
+    showNotEarnedCheck = new QCheckBox(tr("Show Not Earned Trophies"), dockWidget);
+    showHiddenCheck = new QCheckBox(tr("Show Hidden Trophies"), dockWidget);
+
+    // Defines the initial states (all checked)
+    showEarnedCheck->setChecked(true);
+    showNotEarnedCheck->setChecked(true);
+    showHiddenCheck->setChecked(false);
+
+    // Adds checkboxes to the layout
+    dockLayout->addWidget(showEarnedCheck);
+    dockLayout->addWidget(showNotEarnedCheck);
+    dockLayout->addWidget(showHiddenCheck);
+
+    dockWidget->setLayout(dockLayout);
+    trophyInfoDock->setWidget(dockWidget);
+
+    // Adds the dock to the left area
+    this->addDockWidget(Qt::LeftDockWidgetArea, trophyInfoDock);
+
+    // Connects checkbox signals to update trophy display
+    connect(showEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
+    connect(showNotEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
+    connect(showHiddenCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
+
+    updateTrophyInfo();
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
@@ -116,6 +241,8 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tableWidget->horizontalHeader()->setStretchLastSection(true);
         tableWidget->verticalHeader()->setVisible(false);
         tableWidget->setRowCount(icons.size());
+        tableWidget->setSortingEnabled(true);
+
         for (int row = 0; auto& icon : icons) {
             QTableWidgetItem* item = new QTableWidgetItem();
             item->setData(Qt::DecorationRole, icon);
@@ -180,7 +307,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tableWidget->resize(width, 720);
         tabWidget->addTab(tableWidget,
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
-        this->resize(width + 20, 720);
+        this->resize(width + 300, 720);
     }
     this->setCentralWidget(tabWidget);
 }
@@ -189,7 +316,7 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
     QWidget* widget = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout();
     QLabel* label = new QLabel(str);
-    QTableWidgetItem* item = new QTableWidgetItem();
+
     label->setWordWrap(true);
     label->setStyleSheet("color: white; font-size: 15px; font-weight: bold;");
 
@@ -205,6 +332,12 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
     if (column != 1 && column != 2 && column != 3)
         layout->setAlignment(Qt::AlignCenter);
     widget->setLayout(layout);
-    parent->setItem(row, column, item);
     parent->setCellWidget(row, column, widget);
+    QTableWidgetItem* item = new QTableWidgetItem(str);
+
+    // Make QTableWidgetItem text invisible
+    item->setForeground(Qt::transparent);
+    // Set item in cell (but text will be invisible)
+    parent->setItem(row, column, item);
+    // TODO: improve this workaround :)
 }
