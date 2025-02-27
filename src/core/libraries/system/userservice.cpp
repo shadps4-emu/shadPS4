@@ -600,7 +600,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
     // TODO only first user, do the others as well
     int player_count = Config::GetNumberOfPlayers();
     for (int i = 0; i < 4; i++) {
-        if(i < player_count) {
+        if (i < player_count) {
             userIdList->user_id[i] = i + 1;
         } else {
             userIdList->user_id[i] = ORBIS_USER_SERVICE_USER_ID_INVALID;
