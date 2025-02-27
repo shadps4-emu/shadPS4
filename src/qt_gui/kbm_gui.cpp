@@ -1016,14 +1016,23 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             }
             if (wheelEvent->angleDelta().x() > 5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
-                    SetMapping("mousewheelright");
+                    // QT changes scrolling to horizontal for all widgets with the alt modifier
+                    if (Qt::AltModifier & QApplication::keyboardModifiers()) {
+                        SetMapping("mousewheelup");
+                    } else {
+                        SetMapping("mousewheelright");
+                    }
                 } else {
                     QMessageBox::information(this, "Cannot set mapping",
                                              "Mousewheel cannot be mapped to stick outputs");
                 }
             } else if (wheelEvent->angleDelta().x() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
-                    SetMapping("mousewheelleft");
+                    if (Qt::AltModifier & QApplication::keyboardModifiers()) {
+                        SetMapping("mousewheeldown");
+                    } else {
+                        SetMapping("mousewheelleft");
+                    }
                 } else {
                     QMessageBox::information(this, "Cannot set mapping",
                                              "Mousewheel cannot be mapped to stick outputs");
