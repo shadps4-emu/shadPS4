@@ -598,11 +598,14 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
     // TODO only first user, do the others as well
-    userIdList->user_id[0] = 1;
-    userIdList->user_id[1] = 2;
-    userIdList->user_id[2] = 3;
-    userIdList->user_id[3] = 4;
-
+    int player_count = Config::GetNumberOfPlayers();
+    for (int i = 0; i < 4; i++) {
+        if(i < player_count) {
+            userIdList->user_id[i] = i + 1;
+        } else {
+            userIdList->user_id[i] = ORBIS_USER_SERVICE_USER_ID_INVALID;
+        }
+    }
     return ORBIS_OK;
 }
 
@@ -1073,7 +1076,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserCol
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = OrbisUserServiceUserColor::Blue;
+    *color = (OrbisUserServiceUserColor)(user_id - 1);
     return ORBIS_OK;
 }
 
