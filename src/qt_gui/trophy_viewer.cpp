@@ -150,6 +150,7 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     connect(showHiddenCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
 
     updateTrophyInfo();
+    updateTableFilters();
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
