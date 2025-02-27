@@ -75,14 +75,36 @@ u32 PS4_SYSV_ABI sceFontCharacterLooksWhiteSpace(OrbisFontTextCharacter* textCha
     return (textCharacter->charType == 0x0E) ? textCharacter->characterCode : 0;
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterRefersTextBack() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+OrbisFontTextCharacter* PS4_SYSV_ABI
+sceFontCharacterRefersTextBack(OrbisFontTextCharacter* textCharacter) {
+    if (!textCharacter)
+        return NULL; // Check if input is NULL
+
+    OrbisFontTextCharacter* current = textCharacter->prev; // Move backward instead of forward
+    while (current) {
+        if (current->unkn_0x31 == 0 && current->unkn_0x33 == 0) {
+            return current; // Return the first matching node
+        }
+        current = current->prev; // Move to the previous node
+    }
+
+    return NULL; // No valid node found
 }
 
-s32 PS4_SYSV_ABI sceFontCharacterRefersTextNext() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+OrbisFontTextCharacter* PS4_SYSV_ABI
+sceFontCharacterRefersTextNext(OrbisFontTextCharacter* textCharacter) {
+    if (!textCharacter)
+        return NULL; // Null check
+
+    OrbisFontTextCharacter* current = textCharacter->next;
+    while (current) {
+        if (current->unkn_0x31 == 0 && current->unkn_0x33 == 0) {
+            return current; // Found a match
+        }
+        current = current->next; // Move to the next node
+    }
+
+    return NULL; // No matching node found
 }
 
 s32 PS4_SYSV_ABI sceFontCharactersRefersTextCodes() {
@@ -725,14 +747,71 @@ s32 PS4_SYSV_ABI sceFontRendererSetOutlineBufferPolicy() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontRenderSurfaceInit() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceFontRenderSurfaceInit(OrbisFontRenderSurface* renderSurface, void* buffer,
+                                           int bufWidthByte, int pixelSizeByte, int widthPixel,
+                                           int heightPixel) {
+    if (renderSurface) { // Ensure surface is not NULL before modifying it
+        renderSurface->buffer = buffer;
+        renderSurface->widthByte = bufWidthByte;
+        renderSurface->pixelSizeByte = pixelSizeByte;
+
+        // Initialize unknown fields (likely reserved or flags)
+        renderSurface->unkn_0xd = 0;
+        renderSurface->unkn_0xe = 0;
+        renderSurface->unkn_0xf = 0;
+
+        // Ensure width and height are non-negative
+        renderSurface->width = (widthPixel < 0) ? 0 : widthPixel;
+        renderSurface->height = (heightPixel < 0) ? 0 : heightPixel;
+
+        // Set the clipping/scaling rectangle
+        renderSurface->sc_x0 = 0;
+        renderSurface->sc_y0 = 0;
+        renderSurface->sc_x1 = renderSurface->width;
+        renderSurface->sc_y1 = renderSurface->height;
+    }
 }
 
-s32 PS4_SYSV_ABI sceFontRenderSurfaceSetScissor() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderSurface, int x0,
+                                                 int y0, int w, int h) {
+    if (!renderSurface)
+        return; // Null check
+
+    // Handle horizontal clipping
+    int surfaceWidth = renderSurface->width;
+    int clip_x0, clip_x1;
+
+    if (surfaceWidth != 0) {
+        if (x0 < 0) { // Adjust for negative x0
+            clip_x0 = 0;
+            clip_x1 = (w + x0 > surfaceWidth) ? surfaceWidth : w + x0;
+            if (w <= -x0)
+                clip_x1 = 0; // Entire width is clipped
+        } else {
+            clip_x0 = (x0 > surfaceWidth) ? surfaceWidth : x0;
+            clip_x1 = (w + x0 > surfaceWidth) ? surfaceWidth : w + x0;
+        }
+        renderSurface->sc_x0 = clip_x0;
+        renderSurface->sc_x1 = clip_x1;
+    }
+
+    // Handle vertical clipping
+    int surfaceHeight = renderSurface->height;
+    int clip_y0, clip_y1;
+
+    if (surfaceHeight != 0) {
+        if (y0 < 0) { // Adjust for negative y0
+            clip_y0 = 0;
+            clip_y1 = (h + y0 > surfaceHeight) ? surfaceHeight : h + y0;
+            if (h <= -y0)
+                clip_y1 = 0; // Entire height is clipped
+        } else {
+            clip_y0 = (y0 > surfaceHeight) ? surfaceHeight : y0;
+            clip_y1 = (h + y0 > surfaceHeight) ? surfaceHeight : h + y0;
+        }
+        renderSurface->sc_y0 = clip_y0;
+        renderSurface->sc_y1 = clip_y1;
+    }
 }
 
 s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame() {
@@ -1501,8 +1580,6 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6slrIYa3HhQ", "libSceFont", 1, "libSceFont", 1, 1, Func_EAC96B2186B71E14);
     LIB_FUNCTION("-keIqW70YlY", "libSceFont", 1, "libSceFont", 1, 1, Func_FE4788A96EF46256);
     LIB_FUNCTION("-n5a6V0wWPU", "libSceFont", 1, "libSceFont", 1, 1, Func_FE7E5AE95D3058F5);
-    LIB_FUNCTION("BaOKcng8g88", "libkernel", 1, "libSceFont", 1, 1, module_start);
-    LIB_FUNCTION("KpDMrPHvt3Q", "libkernel", 1, "libSceFont", 1, 1, module_stop);
 };
 
 } // namespace Libraries::Font
