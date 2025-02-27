@@ -166,7 +166,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         if (e != 0) {
-            // IOFile code uses platform specific errnos, they must be converted to POSIX errnos.
+            // Open failed in platform-specific code, errno needs to be converted.
             h->DeleteHandle(handle);
             SetPosixErrno(e);
             return -1;
