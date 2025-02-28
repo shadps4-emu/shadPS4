@@ -856,6 +856,10 @@
       <translation>У этой игры нет папки обновлений, которую можно открыть!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Не удалось преобразовать иконку.</translation>
     </message>
