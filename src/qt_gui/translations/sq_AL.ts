@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>Nuk u gjet asnjë skedar ditari për këtë lojë!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -877,7 +877,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Trofeu</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Hap dosjen e imazheve/tingujve të trofeve të personalizuar</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <translation>Hap dosjen e imazheve/tingujve të trofeve të personalizuar:\nMund të shtosh imazhe të personalizuara për trofetë dhe një skedar audio.\nShto skedarët në dosjen custom_trophy me emrat që vijojnë:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1829,7 +1829,7 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Pozicioni i Njoftimit të Trofeve</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1841,7 +1841,7 @@
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>Kohëzgjatja e Njoftimit</translation>
     </message>
   </context>
   <context>
@@ -1856,15 +1856,15 @@
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>Shfaq Trofetë që janë fituar</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Shfaq Trofetë që nuk janë fituar</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>Shfaq Trofetë e Fshehur</translation>
     </message>
   </context>
 </TS>
