@@ -6,6 +6,10 @@
 
 #include <span>
 
+// This can be used to get, for a given block, the list of conditions that
+// must be true for the block to be executed. Can be also useful for
+// for determining the maximum number of thimes a block is executed.
+
 namespace Shader::IR {
 
 static void AddConditionalTree(std::span<AbstractSyntaxNode> asl_span, Block::ConditionalData* parent) {
