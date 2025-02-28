@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/system/userservice.h"
 #include "input/controller.h"
 
 namespace Input {
@@ -239,13 +240,24 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
 }
 
 void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
+    using namespace Libraries::UserService;
     int controller_count;
     SDL_JoystickID* joysticks = SDL_GetGamepads(&controller_count);
     for (int i = 0; i < 4; i++) {
         if (i < controller_count) {
+            SDL_Gamepad** temp = &(controllers[i]->m_sdl_gamepad);
             controllers[i]->m_sdl_gamepad = SDL_OpenGamepad(joysticks[i]);
+            if (*temp == 0) {
+                AddUserServiceEvent({OrbisUserServiceEventType::Login,
+                                     SDL_GetGamepadPlayerIndex(controllers[i]->m_sdl_gamepad) + 2});
+            }
         } else {
+            SDL_Gamepad** temp = &(controllers[i]->m_sdl_gamepad);
             controllers[i]->m_sdl_gamepad = nullptr;
+            if (*temp != 0) {
+                AddUserServiceEvent(
+                    {OrbisUserServiceEventType::Logout, SDL_GetGamepadPlayerIndex(*temp) + 2});
+            }
         }
     }
 
