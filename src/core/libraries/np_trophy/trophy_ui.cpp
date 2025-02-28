@@ -27,6 +27,7 @@ namespace Libraries::NpTrophy {
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
+bool isTopSide;
 bool isLeftSide;
 double trophy_timer;
 
@@ -34,6 +35,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                    const std::string_view& rarity)
     : trophy_name(trophyName), trophy_type(rarity) {
 
+    isTopSide = Config::TopSideTrophy();
     isLeftSide = Config::leftSideTrophy();
     trophy_timer = Config::getTrophyNotificationDuration();
 
@@ -115,8 +117,8 @@ float fade_out_duration = 0.5f;            // Final fade duration
 void TrophyUI::Draw() {
     const auto& io = GetIO();
 
-    float AdjustWidth = io.DisplaySize.x / 1280;
-    float AdjustHeight = io.DisplaySize.y / 720;
+    float AdjustWidth = io.DisplaySize.x / 1920;
+    float AdjustHeight = io.DisplaySize.y / 1080;
     const ImVec2 window_size{
         std::min(io.DisplaySize.x, (350 * AdjustWidth)),
         std::min(io.DisplaySize.y, (70 * AdjustHeight)),
@@ -125,20 +127,32 @@ void TrophyUI::Draw() {
     elapsed_time += io.DeltaTime;
     float progress = std::min(elapsed_time / animation_duration, 1.0f);
 
-    // left or right position
-    float final_pos_x;
-    if (isLeftSide) {
-        start_pos.x = -window_size.x;
+    float final_pos_x, start_x;
+    float final_pos_y, start_y;
+
+    if (isTopSide) {
+        start_x = (io.DisplaySize.x - window_size.x) * 0.5f; 
+        start_y = -window_size.y;
+        final_pos_x = start_x;
+        final_pos_y = 50 * AdjustHeight;
+    } else if (isLeftSide) {
+        start_x = -window_size.x;
+        start_y = 50 * AdjustHeight;
         final_pos_x = 20 * AdjustWidth;
+        final_pos_y = start_y;
     } else {
-        start_pos.x = io.DisplaySize.x;
+        start_x = io.DisplaySize.x;
+        start_y = 50 * AdjustHeight;
         final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
+        final_pos_y = start_y;
     }
 
-    ImVec2 current_pos = ImVec2(start_pos.x + (final_pos_x - start_pos.x) * progress,
-                                start_pos.y + (target_pos.y - start_pos.y) * progress);
+    ImVec2 current_pos = ImVec2(start_x + (final_pos_x - start_x) * progress,
+                                start_y + (final_pos_y - start_y) * progress);
 
     trophy_timer -= io.DeltaTime;
+
+    ImGui::SetNextWindowPos(current_pos);
 
     // If the remaining time of the trophy is less than or equal to 1 second, the fade-out begins.
     if (trophy_timer <= 1.0f) {

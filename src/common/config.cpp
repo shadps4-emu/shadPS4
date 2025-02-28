@@ -53,6 +53,7 @@ static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
 static bool isAlwaysShowChangelog = false;
+static bool isTopSideTrophy = false;
 static bool isLeftSideTrophy = false;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
@@ -270,6 +271,10 @@ bool alwaysShowChangelog() {
     return isAlwaysShowChangelog;
 }
 
+bool TopSideTrophy() {
+    return isTopSideTrophy;
+}
+
 bool leftSideTrophy() {
     return isLeftSideTrophy;
 }
@@ -380,6 +385,9 @@ void setAutoUpdate(bool enable) {
 
 void setAlwaysShowChangelog(bool enable) {
     isAlwaysShowChangelog = enable;
+}
+void setTopSideTrophy(bool enable) {
+    isTopSideTrophy = enable;
 }
 void setLeftSideTrophy(bool enable) {
     isLeftSideTrophy = enable;
@@ -737,6 +745,7 @@ void load(const std::filesystem::path& path) {
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
+        isTopSideTrophy = toml::find_or<bool>(general, "TopSideTrophy", false);
         isLeftSideTrophy = toml::find_or<bool>(general, "leftSideTrophy", false);
         separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
@@ -888,6 +897,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
+    data["General"]["TopSideTrophy"] = isTopSideTrophy;
     data["General"]["leftSideTrophy"] = isLeftSideTrophy;
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
@@ -1018,6 +1028,7 @@ void setDefaultValues() {
     isShowSplash = false;
     isAutoUpdate = false;
     isAlwaysShowChangelog = false;
+    isTopSideTrophy = false;
     isLeftSideTrophy = false;
     isNullGpu = false;
     shouldDumpShaders = false;

@@ -418,8 +418,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
     ui->popUpDurationSpinBox->setValue(Config::getTrophyNotificationDuration());
+    ui->radioButton_Top->setChecked(Config::TopSideTrophy());
     ui->radioButton_Left->setChecked(Config::leftSideTrophy());
-    ui->radioButton_Right->setChecked(!ui->radioButton_Left->isChecked());
+    ui->radioButton_Right->setChecked(!(ui->radioButton_Left->isChecked() || ui->radioButton_Top->isChecked()));
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
@@ -706,6 +707,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value());
+    Config::setTopSideTrophy(ui->radioButton_Top->isChecked());
     Config::setLeftSideTrophy(ui->radioButton_Left->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
