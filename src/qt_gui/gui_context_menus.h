@@ -97,11 +97,13 @@ public:
         QAction* deleteUpdate = new QAction(tr("Delete Update"), widget);
         QAction* deleteSaveData = new QAction(tr("Delete Save Data"), widget);
         QAction* deleteDLC = new QAction(tr("Delete DLC"), widget);
+        QAction* deleteTrophy = new QAction(tr("Delete Trophy"), widget);
 
         deleteMenu->addAction(deleteGame);
         deleteMenu->addAction(deleteUpdate);
         deleteMenu->addAction(deleteSaveData);
         deleteMenu->addAction(deleteDLC);
+        deleteMenu->addAction(deleteTrophy);
 
         menu.addMenu(deleteMenu);
 
@@ -380,9 +382,9 @@ public:
         }
 
         if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC ||
-            selected == deleteSaveData) {
+            selected == deleteSaveData || selected == deleteTrophy) {
             bool error = false;
-            QString folder_path, game_update_path, dlc_path, save_data_path;
+            QString folder_path, game_update_path, dlc_path, save_data_path, trophy_data_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             game_update_path = folder_path + "-UPDATE";
             Common::FS::PathToQString(
@@ -391,6 +393,11 @@ public:
             Common::FS::PathToQString(save_data_path,
                                       Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                           "savedata/1" / m_games[itemID].serial);
+
+            Common::FS::PathToQString(trophy_data_path,
+                                      Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                                          m_games[itemID].serial / "TrophyFiles");
+
             QString message_type = tr("Game");
 
             if (selected == deleteUpdate) {
@@ -419,6 +426,16 @@ public:
                 } else {
                     folder_path = save_data_path;
                     message_type = tr("Save Data");
+                }
+            } else if (selected == deleteTrophy) {
+                if (!std::filesystem::exists(Common::FS::PathFromQString(trophy_data_path))) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This game has no saved trophies to delete!")));
+                    error = true;
+                } else {
+                    folder_path = trophy_data_path;
+                    message_type = tr("Trophy");
                 }
             }
             if (!error) {
