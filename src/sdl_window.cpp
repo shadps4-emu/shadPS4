@@ -270,6 +270,7 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 
     // Handle window controls outside of the input maps
     if (event->type == SDL_EVENT_KEY_DOWN) {
+        using namespace Libraries::UserService;
         u32 input_id = input_event.input.sdl_id;
         // Reparse kbm inputs
         if (input_id == SDLK_F8) {
@@ -294,6 +295,17 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
         else if (input_id == SDLK_F12) {
             VideoCore::TriggerCapture();
             return;
+        }
+        // test controller connect/disconnect
+        else if (input_id == SDLK_F4) {
+            int player_count = Config::GetNumberOfPlayers();
+            AddUserServiceEvent({OrbisUserServiceEventType::Logout, player_count});
+            Config::SetNumberOfPlayers(player_count - 1);
+        }
+        else if (input_id == SDLK_F5) {
+            int player_count = Config::GetNumberOfPlayers();
+            AddUserServiceEvent({OrbisUserServiceEventType::Login, player_count + 1});
+            Config::SetNumberOfPlayers(player_count + 1);
         }
     }
 
