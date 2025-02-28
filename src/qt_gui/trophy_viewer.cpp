@@ -16,8 +16,7 @@ namespace fs = std::filesystem;
 CMRC_DECLARE(res);
 
 // true: European format; false: American format
-bool useEuropeanDateFormat = false;
-// TODO : Use the interface language to set this value
+bool useEuropeanDateFormat = true;
 
 void TrophyViewer::updateTrophyInfo() {
     int total = 0;
@@ -108,6 +107,13 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     this->setWindowTitle(tr("Trophy Viewer"));
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);
+
+    auto lan = Config::getEmulatorLanguage();
+    if (lan == "en_US" || lan == "zh_CN" || lan == "zh_TW" || lan == "ja_JP" || lan == "ko_KR" ||
+        lan == "lt_LT" || lan == "nb_NO" || lan == "nl_NL") {
+        useEuropeanDateFormat = false;
+    }
+
     gameTrpPath_ = gameTrpPath;
     headers << "Unlocked"
             << "Trophy"
