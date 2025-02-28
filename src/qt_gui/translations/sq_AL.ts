@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Fshi Trofeun</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>Kjo lojë nuk ka trofe të ruajtur për të fshirë!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1493,7 +1493,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Çaktivizo Njoftimin e Trofeut</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1829,11 +1829,11 @@
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Majtas</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Djathtas</translation>
     </message>
     <message>
       <source>Notification Duration</source>
@@ -1848,7 +1848,7 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>Ecuria</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
