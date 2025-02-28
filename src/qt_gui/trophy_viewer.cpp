@@ -158,9 +158,18 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     this->addDockWidget(Qt::LeftDockWidgetArea, trophyInfoDock);
 
     // Connects checkbox signals to update trophy display
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
     connect(showEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
     connect(showNotEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
     connect(showHiddenCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
+#else
+    connect(showEarnedCheck, &QCheckBox::checkStateChanged, this,
+            &TrophyViewer::updateTableFilters);
+    connect(showNotEarnedCheck, &QCheckBox::checkStateChanged, this,
+            &TrophyViewer::updateTableFilters);
+    connect(showHiddenCheck, &QCheckBox::checkStateChanged, this,
+            &TrophyViewer::updateTableFilters);
+#endif
 
     updateTrophyInfo();
     updateTableFilters();
