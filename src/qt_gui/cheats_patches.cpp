@@ -1082,7 +1082,11 @@ void CheatsPatches::addCheatsToLayout(const QJsonArray& modsArray, const QJsonAr
     QLabel* creditsLabel = new QLabel();
     QString creditsText = tr("Author: ");
     if (!creditsArray.isEmpty()) {
-        creditsText += creditsArray[0].toString();
+        QStringList authors;
+        for (const QJsonValue& credit : creditsArray) {
+            authors << credit.toString();
+        }
+        creditsText += authors.join(", ");
     }
     creditsLabel->setText(creditsText);
     creditsLabel->setAlignment(Qt::AlignLeft);
