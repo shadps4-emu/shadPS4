@@ -306,7 +306,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
             }
 
             QImage type_icon = QImage::fromData(imgdata).scaled(
-                QSize(128, 128), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                QSize(100, 100), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             typeitem->setData(Qt::DecorationRole, type_icon);
             typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 6, typeitem);
@@ -338,13 +338,18 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tableWidget->resize(width, 720);
         tabWidget->addTab(tableWidget,
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
-        this->resize(width + 300, 720);
+
+        this->showMaximized();
+
+        tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
+        tableWidget->setColumnWidth(3, 650);
     }
     this->setCentralWidget(tabWidget);
 }
 
 void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QString str) {
     QTableWidgetItem* item = new QTableWidgetItem(str);
+
     if (column != 1 && column != 2 && column != 3)
         item->setTextAlignment(Qt::AlignCenter);
     item->setFont(QFont("Arial", 12, QFont::Bold));

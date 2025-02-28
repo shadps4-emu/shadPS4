@@ -871,6 +871,7 @@
         <source>Save Data</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
         <source>Trophy</source>
         <translation type="unfinished"></translation>
     </message>
