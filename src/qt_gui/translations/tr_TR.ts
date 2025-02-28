@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Kupayı Sil</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>Bu oyunun silinecek kupası yok!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -873,7 +873,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Kupa</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1325,7 +1325,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Özel kupa görüntüleri/sesleri klasörünü aç</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1493,7 +1493,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Kupa Bildirimini Devre Dışı Bırak</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1681,7 +1681,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>HDR'yi Etkinleştir:\nDestekleyen oyunlarda HDR'yi etkinleştirir.\nMonitörünüz, BT2020 PQ renk alanını ve RGB10A2 takas zinciri biçimini desteklemelidir.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1785,15 +1785,15 @@
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Görüntü</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Görüntü Modu</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Pencereli</translation>
     </message>
     <message>
       <source>Fullscreen</source>
@@ -1825,19 +1825,19 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Kupa Bildirim Konumu</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Sol</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Sağ</translation>
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>Bildirim Süresi</translation>
     </message>
   </context>
   <context>
@@ -1848,19 +1848,19 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>İlerleme</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>Kazanılmış Kupaları Göster</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Kazanılmamış Kupaları Göster</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>Gizli Kupaları Göster</translation>
     </message>
   </context>
 </TS>
