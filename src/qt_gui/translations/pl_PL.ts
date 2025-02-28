@@ -856,6 +856,10 @@
       <translation>Ta gra nie ma folderu aktualizacji do otwarcia!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Nie udało się przekonwertować ikony.</translation>
     </message>
