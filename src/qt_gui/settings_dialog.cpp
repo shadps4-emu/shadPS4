@@ -420,7 +420,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->popUpDurationSpinBox->setValue(Config::getTrophyNotificationDuration());
     ui->radioButton_Top->setChecked(Config::TopSideTrophy());
     ui->radioButton_Left->setChecked(Config::leftSideTrophy());
-    ui->radioButton_Right->setChecked(!(ui->radioButton_Left->isChecked() || ui->radioButton_Top->isChecked()));
+    ui->radioButton_Right->setChecked(
+        !(ui->radioButton_Left->isChecked() || ui->radioButton_Top->isChecked()));
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));

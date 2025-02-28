@@ -131,7 +131,7 @@ void TrophyUI::Draw() {
     float final_pos_y, start_y;
 
     if (isTopSide) {
-        start_x = (io.DisplaySize.x - window_size.x) * 0.5f; 
+        start_x = (io.DisplaySize.x - window_size.x) * 0.5f;
         start_y = -window_size.y;
         final_pos_x = start_x;
         final_pos_y = 50 * AdjustHeight;
