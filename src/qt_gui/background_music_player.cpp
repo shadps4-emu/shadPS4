@@ -40,4 +40,5 @@ void BackgroundMusicPlayer::playMusic(const QString& snd0path, bool loops) {
 
 void BackgroundMusicPlayer::stopMusic() {
     m_mediaPlayer->stop();
+    m_mediaPlayer->setSource(QUrl(""));
 }

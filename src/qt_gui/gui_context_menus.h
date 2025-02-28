@@ -10,6 +10,7 @@
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
+#include <qt_gui/background_music_player.h>
 #include "cheats_patches.h"
 #include "common/config.h"
 #include "common/version.h"
@@ -442,9 +443,12 @@ public:
                                       Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
                                           m_games[itemID].serial / "TrophyFiles");
 
-            QString message_type = tr("Game");
+            QString message_type;
 
-            if (selected == deleteUpdate) {
+            if (selected == deleteGame) {
+                BackgroundMusicPlayer::getInstance().stopMusic();
+                message_type = tr("Game");
+            } else if (selected == deleteUpdate) {
                 if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update to delete!")));
