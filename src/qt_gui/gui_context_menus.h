@@ -155,10 +155,43 @@ public:
         }
 
         if (selected == openLogFolder) {
-            QString userPath;
-            Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+            QString logPath;
+            Common::FS::PathToQString(logPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::LogDir));
+            if (!Config::getSeparateLogFilesEnabled()) {
+                QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+            } else {
+                QString fileName = QString::fromStdString(m_games[itemID].serial) + ".log";
+                QString filePath = logPath + "/" + fileName;
+                QStringList arguments;
+                if (QFile::exists(filePath)) {
+#ifdef Q_OS_WIN
+                    arguments << "/select," << filePath.replace("/", "\\");
+                    QProcess::startDetached("explorer", arguments);
+
+#elif defined(Q_OS_MAC)
+                    arguments << "-R" << filePath;
+                    QProcess::startDetached("open", arguments);
+
+#elif defined(Q_OS_LINUX)
+                    QStringList arguments;
+                    arguments << "--select" << filePath;
+                    if (!QProcess::startDetached("nautilus", arguments)) {
+                        // Failed to open Nautilus to select file
+                        arguments.clear();
+                        arguments << logPath;
+                        if (!QProcess::startDetached("xdg-open", arguments)) {
+                            // Failed to open directory on Linux
+                        }
+                    }
+#else
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+#endif
+                } else {
+                    QMessageBox::information(nullptr, tr("Error"),
+                                             QString(tr("No log file found for this game!")));
+                }
+            }
         }
 
         if (selected == &openSfoViewer) {
