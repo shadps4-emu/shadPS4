@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Удалить трофей</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -865,7 +865,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>У этой игры нет сохраненных трофеев для удаления!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -873,7 +873,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Трофей</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1325,7 +1325,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Откройте папку с пользовательскими изображениями/звуками трофеев</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1493,7 +1493,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Отключить уведомления о трофее</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1629,7 +1629,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <translation>Открыть пользовательскую папку с трофеями изображений/звуков:\nВы можете добавить пользовательские изображения к трофеям и аудио.\nДобавьте файлы в custom_trophy со следующими именами:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1825,19 +1825,19 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Местоположение уведомления о трофее</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Влево</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Вправо</translation>
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>Продолжительность уведомления</translation>
     </message>
   </context>
   <context>
@@ -1848,19 +1848,19 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>Прогресс</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>Показать заработанные трофеи</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Показать не заработанные трофеи</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>Показать скрытые трофеи</translation>
     </message>
   </context>
 </TS>
