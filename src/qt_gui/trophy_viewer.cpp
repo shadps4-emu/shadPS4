@@ -6,7 +6,9 @@
 #include <QDockWidget>
 #include <QMessageBox>
 #include <cmrc/cmrc.hpp>
+#include <common/config.h>
 #include "common/path_util.h"
+#include "main_window_themes.h"
 #include "trophy_viewer.h"
 
 namespace fs = std::filesystem;
@@ -303,8 +305,8 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 imgdata = std::vector<char>(file.begin(), file.end());
             }
 
-            QImage type_icon = QImage::fromData(imgdata).scaled(QSize(64, 64), Qt::KeepAspectRatio,
-                                                                Qt::SmoothTransformation);
+            QImage type_icon = QImage::fromData(imgdata).scaled(
+                QSize(128, 128), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             typeitem->setData(Qt::DecorationRole, type_icon);
             typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
             tableWidget->setItem(row, 6, typeitem);
@@ -342,31 +344,18 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
 }
 
 void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QString str) {
-    QWidget* widget = new QWidget();
-    QVBoxLayout* layout = new QVBoxLayout();
-    QLabel* label = new QLabel(str);
-
-    label->setWordWrap(true);
-    label->setStyleSheet("color: white; font-size: 15px; font-weight: bold;");
-
-    // Create shadow effect
-    QGraphicsDropShadowEffect* shadowEffect = new QGraphicsDropShadowEffect();
-    shadowEffect->setBlurRadius(5);               // Set the blur radius of the shadow
-    shadowEffect->setColor(QColor(0, 0, 0, 160)); // Set the color and opacity of the shadow
-    shadowEffect->setOffset(2, 2);                // Set the offset of the shadow
-
-    label->setGraphicsEffect(shadowEffect); // Apply shadow effect to the QLabel
-
-    layout->addWidget(label);
-    if (column != 1 && column != 2 && column != 3)
-        layout->setAlignment(Qt::AlignCenter);
-    widget->setLayout(layout);
-    parent->setCellWidget(row, column, widget);
     QTableWidgetItem* item = new QTableWidgetItem(str);
+    if (column != 1 && column != 2 && column != 3)
+        item->setTextAlignment(Qt::AlignCenter);
+    item->setFont(QFont("Arial", 12, QFont::Bold));
 
-    // Make QTableWidgetItem text invisible
-    item->setForeground(Qt::transparent);
-    // Set item in cell (but text will be invisible)
+    Theme theme = static_cast<Theme>(Config::getMainWindowTheme());
+
+    if (theme == Theme::Light) {
+        item->setForeground(QBrush(Qt::black));
+    } else {
+        item->setForeground(QBrush(Qt::white));
+    }
+
     parent->setItem(row, column, item);
-    // TODO: improve this workaround :)
 }
