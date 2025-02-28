@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Usuń trofeum</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>Nie znaleziono pliku dziennika dla tej gry!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -869,7 +869,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>Ta gra nie ma zapisanych trofeuów do usunięcia!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -877,7 +877,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Trofeum</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1325,11 +1325,11 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation>Trofeum</translation>
+      <translation>Trofea</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Otwórz niestandardowy folder obrazów/dźwięków trofeów</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Wyłącz powiadomienia o trofeach</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <translation>Otwórz niestandardowy folder obrazów/dźwięków:\nMożesz dodać własne obrazy do trofeów i dźwięku.\nDodaj pliki do custom_trophy o następujących nazwach:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1829,19 +1829,19 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Pozycja powiadomień trofeów</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Z lewej</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Z prawej</translation>
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>Czas trwania powiadomienia</translation>
     </message>
   </context>
   <context>
@@ -1852,19 +1852,19 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>Postęp</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>Pokaż zdobyte trofea</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Pokaż niezdobyte trofea</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>Pokaż ukryte trofea</translation>
     </message>
   </context>
 </TS>
