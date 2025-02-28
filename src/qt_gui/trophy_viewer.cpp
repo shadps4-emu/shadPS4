@@ -79,14 +79,14 @@ void TrophyViewer::updateTableFilters() {
             }
 
             QString hiddenText;
-            // Gets the text of the "Hidden" column (index 5)
-            QWidget* hiddenWidget = table->cellWidget(row, 5);
+            // Gets the text of the "Hidden" column (index 7)
+            QWidget* hiddenWidget = table->cellWidget(row, 7);
             if (hiddenWidget) {
                 QLabel* label = hiddenWidget->findChild<QLabel*>();
                 if (label)
                     hiddenText = label->text();
             } else {
-                QTableWidgetItem* item = table->item(row, 5);
+                QTableWidgetItem* item = table->item(row, 7);
                 if (item)
                     hiddenText = item->text();
             }
@@ -113,11 +113,11 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
             << "Trophy"
             << "Name"
             << "Description"
+            << "Time Unlocked"
+            << "Type"
             << "ID"
             << "Hidden"
-            << "Type"
-            << "PID"
-            << "Time Unlocked";
+            << "PID";
     PopulateTrophyWidget(trophyPath);
 
     QDockWidget* trophyInfoDock = new QDockWidget("", this);
@@ -309,7 +309,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 QSize(100, 100), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             typeitem->setData(Qt::DecorationRole, type_icon);
             typeitem->setFlags(typeitem->flags() & ~Qt::ItemIsEditable);
-            tableWidget->setItem(row, 6, typeitem);
+            tableWidget->setItem(row, 5, typeitem);
 
             std::string detailString = trophyDetails[row].toStdString();
             std::size_t newline_pos = 0;
@@ -322,10 +322,10 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 SetTableItem(tableWidget, row, 0, trpUnlocked[row]);
                 SetTableItem(tableWidget, row, 2, trophyNames[row]);
                 SetTableItem(tableWidget, row, 3, QString::fromStdString(detailString));
-                SetTableItem(tableWidget, row, 4, trpId[row]);
-                SetTableItem(tableWidget, row, 5, trpHidden[row]);
-                SetTableItem(tableWidget, row, 7, trpPid[row]);
-                SetTableItem(tableWidget, row, 8, trpTimeUnlocked[row]);
+                SetTableItem(tableWidget, row, 4, trpTimeUnlocked[row]);
+                SetTableItem(tableWidget, row, 6, trpId[row]);
+                SetTableItem(tableWidget, row, 7, trpHidden[row]);
+                SetTableItem(tableWidget, row, 8, trpPid[row]);
             }
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
             row++;
