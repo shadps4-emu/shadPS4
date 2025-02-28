@@ -733,7 +733,7 @@
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Abrir Pasta de Log</translation>
+      <translation>Abrir Pasta de Registros</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>Nenhum arquivo de registro foi encontrado para este jogo!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -1333,7 +1333,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registros de Log</translation>
+      <translation>Registros de Depuração</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1821,7 +1821,7 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation>Separar Arquivos de Log</translation>
+      <translation>Separar Arquivos de Registro</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
