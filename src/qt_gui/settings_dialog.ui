@@ -1285,6 +1285,7 @@
                     <string>Trophy Notification Position</string>
                    </property>
                   </widget>
+                 </item>
 				 <item>
 				  <widget class="QRadioButton" name="radioButton_Top">
 				   <property name="text">
