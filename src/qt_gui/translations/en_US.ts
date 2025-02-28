@@ -419,11 +419,11 @@
     </message>
     <message>
         <source>Left</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Left</translation>
     </message>
     <message>
         <source>Right</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Right</translation>
     </message>
     <message>
         <source>Down</source>
@@ -873,7 +873,7 @@
     </message>
     <message>
         <source>Trophy</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Trophy</translation>
     </message>
     <message>
         <source>SFO Viewer for </source>
