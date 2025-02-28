@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation>Elimina Trofeo</translation>
+      <translation>Elimina Trofei</translation>
     </message>
     <message>
       <source>Compatibility...</source>
