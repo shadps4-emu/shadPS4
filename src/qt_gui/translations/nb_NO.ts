@@ -856,6 +856,10 @@
       <translation>Dette spillet har ingen oppdateringsmappe å åpne!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Klarte ikke konvertere ikon.</translation>
     </message>
