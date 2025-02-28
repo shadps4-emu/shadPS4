@@ -53,8 +53,7 @@ static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
 static bool isAlwaysShowChangelog = false;
-static bool isTopSideTrophy = false;
-static bool isLeftSideTrophy = false;
+static std::string isSideTrophy = "right";
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool shouldDumpShaders = false;
@@ -271,12 +270,8 @@ bool alwaysShowChangelog() {
     return isAlwaysShowChangelog;
 }
 
-bool TopSideTrophy() {
-    return isTopSideTrophy;
-}
-
-bool leftSideTrophy() {
-    return isLeftSideTrophy;
+std::string sideTrophy() {
+    return isSideTrophy;
 }
 
 bool nullGpu() {
@@ -386,11 +381,9 @@ void setAutoUpdate(bool enable) {
 void setAlwaysShowChangelog(bool enable) {
     isAlwaysShowChangelog = enable;
 }
-void setTopSideTrophy(bool enable) {
-    isTopSideTrophy = enable;
-}
-void setLeftSideTrophy(bool enable) {
-    isLeftSideTrophy = enable;
+
+void setSideTrophy(std::string side) {
+    isSideTrophy = side;
 }
 
 void setNullGpu(bool enable) {
@@ -745,8 +738,7 @@ void load(const std::filesystem::path& path) {
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
-        isTopSideTrophy = toml::find_or<bool>(general, "TopSideTrophy", false);
-        isLeftSideTrophy = toml::find_or<bool>(general, "leftSideTrophy", false);
+        isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
         separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
         checkCompatibilityOnStartup =
@@ -897,8 +889,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
-    data["General"]["TopSideTrophy"] = isTopSideTrophy;
-    data["General"]["leftSideTrophy"] = isLeftSideTrophy;
+    data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
@@ -1028,8 +1019,7 @@ void setDefaultValues() {
     isShowSplash = false;
     isAutoUpdate = false;
     isAlwaysShowChangelog = false;
-    isTopSideTrophy = false;
-    isLeftSideTrophy = false;
+    isSideTrophy = "right";
     isNullGpu = false;
     shouldDumpShaders = false;
     vblankDivider = 1;

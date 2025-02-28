@@ -1286,13 +1286,6 @@
                    </property>
                   </widget>
                  </item>
-				 <item>
-				  <widget class="QRadioButton" name="radioButton_Top">
-				   <property name="text">
-				    <string>Top</string>
-				   </property>
-				  </widget>
-				  </item>
                  <item>
                   <widget class="QRadioButton" name="radioButton_Left">
                    <property name="text">
@@ -1302,17 +1295,25 @@
                  </item>
                  <item>
                   <widget class="QRadioButton" name="radioButton_Right">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
                    <property name="text">
                     <string>Right</string>
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QRadioButton" name="radioButton_Top">
+                   <property name="text">
+                    <string>Top</string>
+                   </property>
+                  </widget>
+                  </item>
+                 <item>
+                  <widget class="QRadioButton" name="radioButton_Bottom">
+                   <property name="text">
+                    <string>Bottom</string>
+                   </property>
+                  </widget>
+                  </item>
                 </layout>
                </item>
                <item>

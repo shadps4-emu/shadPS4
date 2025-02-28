@@ -27,16 +27,17 @@ namespace Libraries::NpTrophy {
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
-bool isTopSide;
-bool isLeftSide;
+
+std::string side = "right";
+
 double trophy_timer;
 
 TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
                    const std::string_view& rarity)
     : trophy_name(trophyName), trophy_type(rarity) {
 
-    isTopSide = Config::TopSideTrophy();
-    isLeftSide = Config::leftSideTrophy();
+    side = Config::sideTrophy();
+
     trophy_timer = Config::getTrophyNotificationDuration();
 
     if (std::filesystem::exists(trophyIconPath)) {
@@ -130,21 +131,26 @@ void TrophyUI::Draw() {
     float final_pos_x, start_x;
     float final_pos_y, start_y;
 
-    if (isTopSide) {
+    if (side == "top") {
         start_x = (io.DisplaySize.x - window_size.x) * 0.5f;
         start_y = -window_size.y;
         final_pos_x = start_x;
-        final_pos_y = 50 * AdjustHeight;
-    } else if (isLeftSide) {
+        final_pos_y = 20 * AdjustHeight;
+    } else if (side == "left") {
         start_x = -window_size.x;
         start_y = 50 * AdjustHeight;
         final_pos_x = 20 * AdjustWidth;
         final_pos_y = start_y;
-    } else {
+    } else if (side == "right") {
         start_x = io.DisplaySize.x;
         start_y = 50 * AdjustHeight;
         final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
         final_pos_y = start_y;
+    } else if (side == "bottom") {
+        start_x = (io.DisplaySize.x - window_size.x) * 0.5f;
+        start_y = io.DisplaySize.y;
+        final_pos_x = start_x;
+        final_pos_y = io.DisplaySize.y - window_size.y - 20 * AdjustHeight;
     }
 
     ImVec2 current_pos = ImVec2(start_x + (final_pos_x - start_x) * progress,
