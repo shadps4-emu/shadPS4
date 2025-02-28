@@ -776,6 +776,10 @@
         <translation>Delete DLC</translation>
     </message>
     <message>
+        <source>Delete Trophy</source>
+        <translation>Delete Trophy</translation>
+    </message>
+    <message>
         <source>Compatibility...</source>
         <translation>Compatibility...</translation>
     </message>
@@ -860,7 +864,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>This game has no saved trophies to delete!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Save Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+        <source>Trophy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
