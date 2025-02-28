@@ -856,6 +856,10 @@
       <translation>这个游戏没有可打开的更新文件夹！</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>转换图标失败。</translation>
     </message>
