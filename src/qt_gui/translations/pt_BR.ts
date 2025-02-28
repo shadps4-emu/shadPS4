@@ -869,7 +869,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation>Este jogo não tem troféus salvos para deletar!</translation>
+      <translation>Este jogo não tem troféus salvos para excluir!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1325,7 +1325,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation>Troféus</translation>
+      <translation>Troféu</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
@@ -1333,7 +1333,7 @@
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registros de Depuração</translation>
+      <translation>Log/Registro</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation>Desativar Notificação de Troféu</translation>
+      <translation>Desativar Notificações de Troféu</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1585,7 +1585,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de registro deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1825,7 +1825,7 @@
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation>Separar Arquivos de Log:\nGrava um arquivo de log para cada jogo.</translation>
+      <translation>Separar Arquivos de Registro:\nGrava um arquivo de registro para cada jogo.</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
