@@ -856,6 +856,10 @@
       <translation>Acest joc nu are folderul de actualizări pentru a fi deschis!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation type="unfinished">Failed to convert icon.</translation>
     </message>
