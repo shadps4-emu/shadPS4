@@ -190,8 +190,19 @@ public:
                     QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
 #endif
                 } else {
-                    QMessageBox::information(nullptr, tr("Error"),
-                                             QString(tr("No log file found for this game!")));
+                    QMessageBox msgBox;
+                    msgBox.setIcon(QMessageBox::Information);
+                    msgBox.setText(tr("No log file found for this game!"));
+
+                    QPushButton* okButton = msgBox.addButton(QMessageBox::Ok);
+                    QPushButton* openFolderButton =
+                        msgBox.addButton(tr("Open Log Folder"), QMessageBox::ActionRole);
+
+                    msgBox.exec();
+
+                    if (msgBox.clickedButton() == openFolderButton) {
+                        QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+                    }
                 }
             }
         }
