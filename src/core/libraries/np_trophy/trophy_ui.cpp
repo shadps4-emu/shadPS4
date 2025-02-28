@@ -212,6 +212,13 @@ void TrophyUI::Draw() {
             const float text_height = ImGui::CalcTextSize(combinedString.c_str()).y;
             SetCursorPosY((window_size.y - text_height) * 0.5);
         }
+
+        if (side == "top" || side == "bottom") {
+            float text_width = ImGui::CalcTextSize(trophy_name.c_str()).x;
+            float centered_x = (window_size.x - text_width) * 0.5f;
+            ImGui::SetCursorPosX(std::max(centered_x, 10.0f * AdjustWidth));
+        } 
+
         ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
         TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
         ImGui::SameLine(window_size.x - (60 * AdjustWidth));
