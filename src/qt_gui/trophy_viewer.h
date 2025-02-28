@@ -23,6 +23,10 @@ class TrophyViewer : public QMainWindow {
 public:
     explicit TrophyViewer(QString trophyPath, QString gameTrpPath);
 
+    void updateTrophyInfo();
+
+    void updateTableFilters();
+
 private:
     void PopulateTrophyWidget(QString title);
     void SetTableItem(QTableWidget* parent, int row, int column, QString str);
@@ -31,6 +35,10 @@ private:
     QStringList headers;
     QString gameTrpPath_;
     TRP trp;
+    QLabel* trophyInfoLabel;
+    QCheckBox* showEarnedCheck;
+    QCheckBox* showNotEarnedCheck;
+    QCheckBox* showHiddenCheck;
 
     std::string GetTrpType(const QChar trp_) {
         switch (trp_.toLatin1()) {
