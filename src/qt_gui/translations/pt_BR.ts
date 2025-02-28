@@ -11,26 +11,26 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
+      <translation>O shadPS4 é um emulador experimental de código-fonte aberto para o PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>Este programa não deve ser usado para jogar jogos que tenham sido obtidos ilegalmente.</translation>
+      <translation>Este programa não deve ser usado para executar jogos que tenham sido obtidos ilegalmente.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Cheats / Patches para </translation>
+      <translation>Trapaças / Patches para </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches são experimentais.\nUse com cautela.\n\nBaixe os cheats individualmente selecionando o repositório e clicando no botão de download.\nNa aba Patches, você pode baixar todos os Patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos os Cheats/Patches,\npor favor, reporte os problemas relacionados ao autor do cheat.\n\nCriou um novo cheat? Visite:\n</translation>
+      <translation>As Trapaças/Patches são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Patches, você pode baixar todos os patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Patches,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Imagem Não Disponível</translation>
+      <translation>Nenhuma Imagem Disponível</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -46,7 +46,7 @@
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>Selecione o Arquivo de Cheat:</translation>
+      <translation>Selecione o Arquivo de Trapaça:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,7 +54,7 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>Baixar Cheats</translation>
+      <translation>Baixar Trapaças</translation>
     </message>
     <message>
       <source>Delete File</source>
@@ -66,7 +66,7 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>Você pode excluir os cheats que não deseja após baixá-los.</translation>
+      <translation>Você pode excluir as trapaças que não deseja após baixá-las.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
@@ -86,7 +86,7 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation>Cheats</translation>
+      <translation>Trapaças</translation>
     </message>
     <message>
       <source>Patches</source>
@@ -118,7 +118,7 @@
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>Falha ao analisar XML: </translation>
+      <translation>Falha ao analisar o XML: </translation>
     </message>
     <message>
       <source>Success</source>
@@ -154,19 +154,19 @@
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>Cheats Não Encontrados</translation>
+      <translation>Trapaças Não Encontradas</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>Nenhum cheat encontrado para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
+      <translation>Nenhuma trapaça encontrada para este jogo nesta versão do repositório selecionado, tente outro repositório ou uma versão diferente do jogo.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>Cheats Baixados com Sucesso</translation>
+      <translation>Trapaças Baixadas com Sucesso</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Você baixou os cheats para esta versão do jogo do repositório selecionado com sucesso. É possível tentar baixar de outro repositório, se estiver disponível, também será possível utilizá-lo selecionando o arquivo da lista.</translation>
+      <translation>Você baixou as trapaças para esta versão do jogo do repositório selecionado com sucesso. É possível tentar baixar de outro repositório, se estiver disponível, também será possível utilizá-lo selecionando o arquivo da lista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -182,11 +182,11 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Cheats. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
+      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Falha ao analisar dados JSON do HTML.</translation>
+      <translation>Falha ao analisar os dados JSON do HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
@@ -206,7 +206,7 @@
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>Aviso de incompatibilidade</translation>
+      <translation>Aviso de Incompatibilidade</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
@@ -214,7 +214,7 @@
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>ERRO de XML:</translation>
+      <translation>ERRO DE XML:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
@@ -238,7 +238,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>Não é possível aplicar cheats antes que o jogo comece.</translation>
+      <translation>Não é possível aplicar trapaças antes de começar o jogo.</translation>
     </message>
     <message>
       <source>Close</source>
@@ -285,7 +285,7 @@
     </message>
     <message>
       <source>Update Available</source>
-      <translation>Atualização disponível</translation>
+      <translation>Atualização Disponível</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -309,7 +309,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verificar Atualizações ao Iniciar</translation>
+      <translation>Verificar por Atualizações ao Iniciar</translation>
     </message>
     <message>
       <source>Update</source>
@@ -376,7 +376,7 @@
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Não foi possível abrir o compatibility_data.json para escrita.</translation>
+      <translation>Não foi possível abrir o compatibility_data.json para gravação.</translation>
     </message>
     <message>
       <source>Unknown</source>
@@ -388,7 +388,7 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>Boot</translation>
+      <translation>Inicia</translation>
     </message>
     <message>
       <source>Menus</source>
@@ -487,7 +487,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>Botões de Face</translation>
+      <translation>Botões de Ação</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -535,7 +535,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation>Substituir cor da Lightbar</translation>
+      <translation>Substituir Cor da Barra de Luz</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -631,7 +631,7 @@
     </message>
     <message>
       <source>Never Played</source>
-      <translation>Nunca jogado</translation>
+      <translation>Nunca Jogado</translation>
     </message>
     <message>
       <source>h</source>
@@ -663,11 +663,11 @@
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>O jogo tem falhas que interrompem o jogo ou desempenho injogável</translation>
+      <translation>O jogo tem defeitos que interrompem o jogo ou desempenho injogável</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation>O jogo pode ser concluído com desempenho jogável e sem grandes falhas</translation>
+      <translation>O jogo pode ser concluído com desempenho jogável e sem grandes defeitos</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Cheats / Patches</translation>
+      <translation>Trapaças / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -761,19 +761,19 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation>Deletar...</translation>
+      <translation>Excluir...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>Deletar Jogo</translation>
+      <translation>Excluir Jogo</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>Deletar Atualização</translation>
+      <translation>Excluir Atualização</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>Deletar DLC</translation>
+      <translation>Excluir DLC</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -825,7 +825,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>Este jogo não tem DLC para deletar!</translation>
+      <translation>Este jogo não tem DLC para excluir!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -833,11 +833,11 @@
     </message>
     <message>
       <source>Delete %1</source>
-      <translation>Deletar %1</translation>
+      <translation>Excluir %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1 ?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -849,7 +849,7 @@
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>Este jogo não tem atualização para deletar!</translation>
+      <translation>Este jogo não possui pasta de atualização para abrir!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation>Este jogo não tem dados salvos para deletar!</translation>
+      <translation>Este jogo não tem dados salvos para excluir!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -880,11 +880,11 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation>Instalar Todas da Fila para a Pasta Selecionada</translation>
+      <translation>Instalar Tudo da Fila para a Pasta Selecionada</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation>Deletar PKG após instalação</translation>
+      <translation>Excluir o PKG após a Instalação</translation>
     </message>
   </context>
   <context>
@@ -923,7 +923,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>Abrir pasta shadPS4</translation>
+      <translation>Abrir Pasta do shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -979,11 +979,11 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Baixar Cheats/Patches</translation>
+      <translation>Baixar Trapaças/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>Dumpar Lista de Jogos</translation>
+      <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1059,7 +1059,7 @@
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>Baixar Cheats para Todos os Jogos Instalados</translation>
+      <translation>Baixar Trapaças para Todos os Jogos Instalados</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
@@ -1071,7 +1071,7 @@
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>Você baixou cheats para todos os jogos que instalou.</translation>
+      <translation>Você baixou trapaças para todos os jogos que instalou.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
@@ -1107,15 +1107,15 @@
     </message>
     <message>
       <source>PKG and Game versions match: </source>
-      <translation>As versões do PKG e do Jogo são igual: </translation>
+      <translation>As versões do PKG e do Jogo são iguais: </translation>
     </message>
     <message>
       <source>Would you like to overwrite?</source>
-      <translation>Gostaria de substituir?</translation>
+      <translation>Você gostaria de sobrescrever?</translation>
     </message>
     <message>
       <source>PKG Version %1 is older than installed version: </source>
-      <translation>Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
+      <translation>A Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
     </message>
     <message>
       <source>Game is installed: </source>
@@ -1143,7 +1143,7 @@
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>ERRO de PKG</translation>
+      <translation>ERRO DE PKG</translation>
     </message>
     <message>
       <source>Extracting PKG %1/%2</source>
@@ -1194,7 +1194,7 @@
     </message>
     <message>
       <source>PKG ERROR</source>
-      <translation>ERRO de PKG</translation>
+      <translation>ERRO DE PKG</translation>
     </message>
     <message>
       <source>Name</source>
@@ -1222,7 +1222,7 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation>App Ver</translation>
+      <translation>Versão do App</translation>
     </message>
     <message>
       <source>FW</source>
@@ -1238,7 +1238,7 @@
     </message>
     <message>
       <source>Path</source>
-      <translation>Diretório</translation>
+      <translation>Caminho</translation>
     </message>
     <message>
       <source>File</source>
@@ -1381,7 +1381,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Ativar Dumping de Shaders</translation>
+      <translation>Ativar Exportação de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1413,7 +1413,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Ativar Depuração de Dumping</translation>
+      <translation>Ativar Exportação de Depuração</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -1453,7 +1453,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verificar Atualizações ao Iniciar</translation>
+      <translation>Verificar por Atualizações ao Iniciar</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>Atualizar Compatibilidade ao Inicializar</translation>
+      <translation>Atualizar Base de Dados de Compatibilidade ao Inicializar</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
@@ -1537,15 +1537,15 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Idioma do console:\nDefine o idioma usado pelo jogo do PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
+      <translation>Idioma do Console:\nDefine o idioma usado pelo jogo do PS4.\nRecomenda-se configurá-lo para um idioma que o jogo suporte, o que pode variar conforme a região.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Idioma do emulador:\nDefine o idioma da interface do emulador.</translation>
+      <translation>Idioma do Emulador:\nDefine o idioma da interface do emulador.</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Ativar pasta de atualização separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
+      <translation>Ativar Pasta de Atualização Separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1557,7 +1557,7 @@
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Nome de usuário:\nDefine o nome de usuário da conta PS4 que pode ser exibido por alguns jogos.</translation>
+      <translation>Nome de usuário:\nDefine o nome de usuário da conta do PS4, que pode ser exibido por alguns jogos.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
@@ -1565,7 +1565,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente a emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1601,7 +1601,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na visualização de tabela.\nAtivar &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
+      <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos na visualização de tabela.\nAtive &quot;Atualizar Compatibilidade ao Inicializar&quot; para obter informações atualizadas.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1609,7 +1609,7 @@
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>Atualizar Lista de Compatibilidade:\nAtualizar imediatamente o banco de dados de compatibilidade.</translation>
+      <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Touchpad Centro</translation>
+      <translation>Centro do Touchpad</translation>
     </message>
     <message>
       <source>None</source>
@@ -1653,7 +1653,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Ativar Dumping de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
+      <translation>Ativar Exportação de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
@@ -1677,7 +1677,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Ativar Depuração de Dumping:\nArmazena os símbolos de importação, exportação e informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
+      <translation>Ativar Exportação de Depuração:\nArmazena os símbolos de importação, exportação e informações do cabeçalho do arquivo do programa PS4 atual em um diretório.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>

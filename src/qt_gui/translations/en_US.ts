@@ -419,11 +419,11 @@
     </message>
     <message>
         <source>Left</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Left</translation>
     </message>
     <message>
         <source>Right</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Right</translation>
     </message>
     <message>
         <source>Down</source>
@@ -776,6 +776,10 @@
         <translation>Delete DLC</translation>
     </message>
     <message>
+        <source>Delete Trophy</source>
+        <translation>Delete Trophy</translation>
+    </message>
+    <message>
         <source>Compatibility...</source>
         <translation>Compatibility...</translation>
     </message>
@@ -852,6 +856,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>No log file found for this game!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Failed to convert icon.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -860,8 +868,16 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>This game has no saved trophies to delete!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Save Data</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Trophy</source>
+        <translation type="unfinished">Trophy</translation>
     </message>
     <message>
         <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
         <translation>Trophy</translation>
     </message>
     <message>
+        <source>Open the custom trophy images/sounds folder</source>
+        <translation>Open the custom trophy images/sounds folder</translation>
+    </message>
+    <message>
         <source>Logger</source>
         <translation>Logger</translation>
     </message>
@@ -1476,8 +1496,8 @@
         <translation>Title Music</translation>
     </message>
     <message>
-        <source>Disable Trophy Pop-ups</source>
-        <translation>Disable Trophy Pop-ups</translation>
+        <source>Disable Trophy Notification</source>
+        <translation>Disable Trophy Notification</translation>
     </message>
     <message>
         <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
         <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
         <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+    </message>
+    <message>
+        <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+        <translation>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
         <source>Never</source>
@@ -1803,12 +1827,44 @@
         <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Trophy Notification Position</source>
+        <translation>Trophy Notification Position</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>Left</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>Right</translation>
+    </message>
+    <message>
+        <source>Notification Duration</source>
+        <translation>Notification Duration</translation>
+    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
     <message>
         <source>Trophy Viewer</source>
         <translation>Trophy Viewer</translation>
+    </message>
+    <message>
+        <source>Progress</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Earned Trophies</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Not Earned Trophies</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Hidden Trophies</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

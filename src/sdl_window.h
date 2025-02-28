@@ -27,8 +27,8 @@ public:
 private:
     SDL_Gamepad* m_gamepad = nullptr;
 
-    float m_gyro_poll_rate{};
-    float m_accel_poll_rate{};
+    float m_gyro_poll_rate = 0.0f;
+    float m_accel_poll_rate = 0.0f;
 };
 
 } // namespace Input

@@ -78,25 +78,38 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
 CompatibilityEntry CompatibilityInfoClass::GetCompatibilityInfo(const std::string& serial) {
     QString title_id = QString::fromStdString(serial);
     if (m_compatibility_database.contains(title_id)) {
-        {
-            QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
-            for (int os_int = 0; os_int != static_cast<int>(OSType::Last); os_int++) {
-                QString os_string = OSTypeToString.at(static_cast<OSType>(os_int));
-                if (compatibility_obj.contains(os_string)) {
-                    QJsonObject compatibility_entry_obj = compatibility_obj[os_string].toObject();
-                    CompatibilityEntry compatibility_entry{
-                        LabelToCompatStatus.at(compatibility_entry_obj["status"].toString()),
-                        compatibility_entry_obj["version"].toString(),
-                        QDateTime::fromString(compatibility_entry_obj["last_tested"].toString(),
-                                              Qt::ISODate),
-                        compatibility_entry_obj["url"].toString(),
-                        compatibility_entry_obj["issue_number"].toString()};
-                    return compatibility_entry;
-                }
-            }
+        QJsonObject compatibility_obj = m_compatibility_database[title_id].toObject();
+
+        // Set current_os automatically
+        QString current_os;
+#ifdef Q_OS_WIN
+        current_os = "os-windows";
+#elif defined(Q_OS_MAC)
+        current_os = "os-macOS";
+#elif defined(Q_OS_LINUX)
+        current_os = "os-linux";
+#else
+        current_os = "os-unknown";
+#endif
+        // Check if the game is compatible with the current operating system
+        if (compatibility_obj.contains(current_os)) {
+            QJsonObject compatibility_entry_obj = compatibility_obj[current_os].toObject();
+            CompatibilityEntry compatibility_entry{
+                LabelToCompatStatus.at(compatibility_entry_obj["status"].toString()),
+                compatibility_entry_obj["version"].toString(),
+                QDateTime::fromString(compatibility_entry_obj["last_tested"].toString(),
+                                      Qt::ISODate),
+                compatibility_entry_obj["url"].toString(),
+                compatibility_entry_obj["issue_number"].toString()};
+            return compatibility_entry;
+        } else {
+            // If there is no entry for the current operating system, return "Unknown"
+            return CompatibilityEntry{CompatibilityStatus::Unknown, "",
+                                      QDateTime::currentDateTime(), "", 0};
         }
     }
 
+    // If title not found, return "Unknown"
     return CompatibilityEntry{CompatibilityStatus::Unknown, "", QDateTime::currentDateTime(), "",
                               0};
 }

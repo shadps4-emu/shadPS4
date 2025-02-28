@@ -97,11 +97,13 @@ public:
         QAction* deleteUpdate = new QAction(tr("Delete Update"), widget);
         QAction* deleteSaveData = new QAction(tr("Delete Save Data"), widget);
         QAction* deleteDLC = new QAction(tr("Delete DLC"), widget);
+        QAction* deleteTrophy = new QAction(tr("Delete Trophy"), widget);
 
         deleteMenu->addAction(deleteGame);
         deleteMenu->addAction(deleteUpdate);
         deleteMenu->addAction(deleteSaveData);
         deleteMenu->addAction(deleteDLC);
+        deleteMenu->addAction(deleteTrophy);
 
         menu.addMenu(deleteMenu);
 
@@ -155,10 +157,54 @@ public:
         }
 
         if (selected == openLogFolder) {
-            QString userPath;
-            Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+            QString logPath;
+            Common::FS::PathToQString(logPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::LogDir));
+            if (!Config::getSeparateLogFilesEnabled()) {
+                QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+            } else {
+                QString fileName = QString::fromStdString(m_games[itemID].serial) + ".log";
+                QString filePath = logPath + "/" + fileName;
+                QStringList arguments;
+                if (QFile::exists(filePath)) {
+#ifdef Q_OS_WIN
+                    arguments << "/select," << filePath.replace("/", "\\");
+                    QProcess::startDetached("explorer", arguments);
+
+#elif defined(Q_OS_MAC)
+                    arguments << "-R" << filePath;
+                    QProcess::startDetached("open", arguments);
+
+#elif defined(Q_OS_LINUX)
+                    QStringList arguments;
+                    arguments << "--select" << filePath;
+                    if (!QProcess::startDetached("nautilus", arguments)) {
+                        // Failed to open Nautilus to select file
+                        arguments.clear();
+                        arguments << logPath;
+                        if (!QProcess::startDetached("xdg-open", arguments)) {
+                            // Failed to open directory on Linux
+                        }
+                    }
+#else
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+#endif
+                } else {
+                    QMessageBox msgBox;
+                    msgBox.setIcon(QMessageBox::Information);
+                    msgBox.setText(tr("No log file found for this game!"));
+
+                    QPushButton* okButton = msgBox.addButton(QMessageBox::Ok);
+                    QPushButton* openFolderButton =
+                        msgBox.addButton(tr("Open Log Folder"), QMessageBox::ActionRole);
+
+                    msgBox.exec();
+
+                    if (msgBox.clickedButton() == openFolderButton) {
+                        QDesktopServices::openUrl(QUrl::fromLocalFile(logPath));
+                    }
+                }
+            }
         }
 
         if (selected == &openSfoViewer) {
@@ -380,9 +426,9 @@ public:
         }
 
         if (selected == deleteGame || selected == deleteUpdate || selected == deleteDLC ||
-            selected == deleteSaveData) {
+            selected == deleteSaveData || selected == deleteTrophy) {
             bool error = false;
-            QString folder_path, game_update_path, dlc_path, save_data_path;
+            QString folder_path, game_update_path, dlc_path, save_data_path, trophy_data_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             game_update_path = folder_path + "-UPDATE";
             Common::FS::PathToQString(
@@ -391,6 +437,11 @@ public:
             Common::FS::PathToQString(save_data_path,
                                       Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                           "savedata/1" / m_games[itemID].serial);
+
+            Common::FS::PathToQString(trophy_data_path,
+                                      Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
+                                          m_games[itemID].serial / "TrophyFiles");
+
             QString message_type = tr("Game");
 
             if (selected == deleteUpdate) {
@@ -419,6 +470,16 @@ public:
                 } else {
                     folder_path = save_data_path;
                     message_type = tr("Save Data");
+                }
+            } else if (selected == deleteTrophy) {
+                if (!std::filesystem::exists(Common::FS::PathFromQString(trophy_data_path))) {
+                    QMessageBox::critical(
+                        nullptr, tr("Error"),
+                        QString(tr("This game has no saved trophies to delete!")));
+                    error = true;
+                } else {
+                    folder_path = trophy_data_path;
+                    message_type = tr("Trophy");
                 }
             }
             if (!error) {

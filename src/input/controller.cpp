@@ -182,7 +182,7 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
 
     // Normalize accelerometer measurement
     float norm = std::sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f)
+    if (norm == 0.0f || deltaTime == 0.0f)
         return; // Handle NaN
     norm = 1.0f / norm;
     ax *= norm;
