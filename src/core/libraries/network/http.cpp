@@ -623,7 +623,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         currentPos += 2;  // Skip "//"
     }
 
-    //in case it starts with file://///
+    // in case it starts with file://///
     if (strncmp(currentPos, "//", 2) == 0) {
         currentPos += 2; // Skip "//"
     }
