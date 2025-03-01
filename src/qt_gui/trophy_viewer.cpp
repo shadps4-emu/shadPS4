@@ -390,7 +390,9 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
 
         this->resize(width + 400, 720);
-        this->showMaximized();
+        QSize mainWindowSize = QApplication::activeWindow()->size();
+        this->resize(mainWindowSize.width() * 0.8, mainWindowSize.height() * 0.8);
+        this->show();
 
         tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
         tableWidget->setColumnWidth(3, 650);
