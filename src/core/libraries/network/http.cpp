@@ -597,7 +597,6 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
 
-    // Initialize the output structure if provided
     if (out) {
         memset(out, 0, sizeof(OrbisHttpUriElement));
     }
@@ -612,12 +611,12 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         LOG_ERROR(Lib_Http, "invalid url");
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
-    requiredBufferSize +=
-        calculateComponentLength(currentPos, schemeEnd) + 1; // Include null terminator
+    requiredBufferSize += calculateComponentLength(currentPos, schemeEnd) + 1;
     currentPos = schemeEnd + 1;
 
     // Check if the URI is opaque or hierarchical
     bool isOpaque = true; // Assume opaque by default
+    bool isFile = false;
     if (strncmp(currentPos, "//", 2) == 0) {
         isOpaque = false; // Hierarchical if "//" is present
         currentPos += 2;  // Skip "//"
@@ -625,6 +624,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 
     // in case it starts with file://///
     if (strncmp(currentPos, "//", 2) == 0) {
+        isFile = true;
         currentPos += 2; // Skip "//"
     }
 
@@ -637,22 +637,19 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     // Check for credentials (username:password@host)
     char* atSymbol = strchr(currentPos, '@');
     if (atSymbol && atSymbol < hostEnd) {
-        requiredBufferSize +=
-            calculateComponentLength(currentPos, atSymbol) + 1; // Include null terminator
+        requiredBufferSize += calculateComponentLength(currentPos, atSymbol) + 1;
         currentPos = atSymbol + 1;
     }
 
     // Check for port (host:port)
     char* colon = strchr(currentPos, ':');
     if (colon && colon < hostEnd) {
-        requiredBufferSize +=
-            calculateComponentLength(currentPos, colon) + 1; // Include null terminator
+        requiredBufferSize += calculateComponentLength(currentPos, colon) + 1;
         currentPos = colon + 1;
     }
 
     // Host
-    requiredBufferSize +=
-        calculateComponentLength(currentPos, hostEnd) + 1; // Include null terminator
+    requiredBufferSize += calculateComponentLength(currentPos, hostEnd) + 1;
     currentPos = hostEnd;
 
     // Path (e.g., "/path")
@@ -663,8 +660,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
             pathEnd = currentPos + strlen(currentPos);
         }
     }
-    requiredBufferSize +=
-        calculateComponentLength(currentPos, pathEnd) + 1; // Include null terminator
+    requiredBufferSize += calculateComponentLength(currentPos, pathEnd) + 1;
     currentPos = pathEnd;
 
     // Query (e.g., "?query=value")
@@ -674,8 +670,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         if (!queryEnd) {
             queryEnd = currentPos + strlen(currentPos);
         }
-        requiredBufferSize +=
-            calculateComponentLength(currentPos, queryEnd) + 1; // Include null terminator
+        requiredBufferSize += calculateComponentLength(currentPos, queryEnd) + 1;
         currentPos = queryEnd;
     }
 
@@ -683,10 +678,11 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     if (*currentPos == '#') {
         currentPos++;
         requiredBufferSize +=
-            calculateComponentLength(currentPos, currentPos + strlen(currentPos)) +
-            1; // Include null terminator
+            calculateComponentLength(currentPos, currentPos + strlen(currentPos)) + 1;
     }
-
+    if (isFile) {
+        requiredBufferSize += 3; // if it is size needs 3 more
+    }
     // Return the required buffer size
     if (require) {
         *require = requiredBufferSize;
@@ -706,7 +702,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     // Copy the URI components to the buffer
     char* buffer = (char*)pool;
     strncpy(buffer, srcUri, prepare);
-    buffer[prepare - 1] = '\0'; // Ensure null termination
+    buffer[prepare - 1] = '\0';
 
     // Parse and assign the components to the output structure if provided
     if (out) {
@@ -721,6 +717,10 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 
         // Host and port
         if (!isOpaque) {
+            buffer += 2; // Skip "//"
+        }
+
+        if (isFile) {
             buffer += 2; // Skip "//"
         }
 
