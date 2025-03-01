@@ -13,6 +13,7 @@
 #include <qt_gui/background_music_player.h>
 #include "cheats_patches.h"
 #include "common/config.h"
+#include "common/path_util.h"
 #include "common/version.h"
 #include "compatibility_info.h"
 #include "game_info.h"
@@ -26,12 +27,11 @@
 #include <shobjidl.h>
 #include <wrl/client.h>
 #endif
-#include "common/path_util.h"
 
 class GuiContextMenus : public QObject {
     Q_OBJECT
 public:
-    void RequestGameMenu(const QPoint& pos, QVector<GameInfo> m_games,
+    void RequestGameMenu(const QPoint& pos, QVector<GameInfo>& m_games,
                          std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                          QTableWidget* widget, bool isList) {
         QPoint global_pos = widget->viewport()->mapToGlobal(pos);
