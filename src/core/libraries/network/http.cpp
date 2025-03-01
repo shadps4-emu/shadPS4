@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
+#include "http_error.h"
 
 namespace Libraries::Http {
 
@@ -566,17 +567,244 @@ int PS4_SYSV_ABI sceHttpUriMerge() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriParse() {
+// Helper function to calculate the length of a URI component
+static size_t calculateComponentLength(const char* start, const char* end) {
+    return (end > start) ? (size_t)(end - start) : 0;
+}
+
+// Helper function to parse the port from the URI
+static int parsePort(const char* uri, int* offset) {
+    int port = 0;
+    int digits = 0;
+
+    while (uri[*offset] >= '0' && uri[*offset] <= '9' && digits < 5) {
+        port = port * 10 + (uri[*offset] - '0');
+        (*offset)++;
+        digits++;
+    }
+
+    if (digits == 0 || port > 65535) {
+        return 0; // Invalid port
+    }
+    return port;
+}
+
+int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
+                                 size_t* require, size_t prepare) {
+    LOG_INFO(Lib_Http, "srcUri = {}", std::string(srcUri));
+    if (!srcUri) {
+        LOG_ERROR(Lib_Http, "invalid values");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+
+    // Initialize the output structure if provided
+    if (out) {
+        memset(out, 0, sizeof(OrbisHttpUriElement));
+    }
+
+    // Calculate the required buffer size
+    size_t requiredBufferSize = 0;
+    char* currentPos = (char*)srcUri;
+
+    // Scheme (e.g., "http:")
+    char* schemeEnd = strchr(currentPos, ':');
+    if (!schemeEnd) {
+        LOG_ERROR(Lib_Http, "invalid url");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+    requiredBufferSize +=
+        calculateComponentLength(currentPos, schemeEnd) + 1; // Include null terminator
+    currentPos = schemeEnd + 1;
+
+    // Check if the URI is opaque or hierarchical
+    bool isOpaque = true; // Assume opaque by default
+    if (strncmp(currentPos, "//", 2) == 0) {
+        isOpaque = false; // Hierarchical if "//" is present
+        currentPos += 2;  // Skip "//"
+    }
+
+    //in case it starts with file://///
+    if (strncmp(currentPos, "//", 2) == 0) {
+        currentPos += 2; // Skip "//"
+    }
+
+    // Host and port (e.g., "example.com:8080")
+    char* hostEnd = strchr(currentPos, '/');
+    if (!hostEnd) {
+        hostEnd = currentPos + strlen(currentPos);
+    }
+
+    // Check for credentials (username:password@host)
+    char* atSymbol = strchr(currentPos, '@');
+    if (atSymbol && atSymbol < hostEnd) {
+        requiredBufferSize +=
+            calculateComponentLength(currentPos, atSymbol) + 1; // Include null terminator
+        currentPos = atSymbol + 1;
+    }
+
+    // Check for port (host:port)
+    char* colon = strchr(currentPos, ':');
+    if (colon && colon < hostEnd) {
+        requiredBufferSize +=
+            calculateComponentLength(currentPos, colon) + 1; // Include null terminator
+        currentPos = colon + 1;
+    }
+
+    // Host
+    requiredBufferSize +=
+        calculateComponentLength(currentPos, hostEnd) + 1; // Include null terminator
+    currentPos = hostEnd;
+
+    // Path (e.g., "/path")
+    char* pathEnd = strchr(currentPos, '?');
+    if (!pathEnd) {
+        pathEnd = strchr(currentPos, '#');
+        if (!pathEnd) {
+            pathEnd = currentPos + strlen(currentPos);
+        }
+    }
+    requiredBufferSize +=
+        calculateComponentLength(currentPos, pathEnd) + 1; // Include null terminator
+    currentPos = pathEnd;
+
+    // Query (e.g., "?query=value")
+    if (*currentPos == '?') {
+        currentPos++;
+        char* queryEnd = strchr(currentPos, '#');
+        if (!queryEnd) {
+            queryEnd = currentPos + strlen(currentPos);
+        }
+        requiredBufferSize +=
+            calculateComponentLength(currentPos, queryEnd) + 1; // Include null terminator
+        currentPos = queryEnd;
+    }
+
+    // Fragment (e.g., "#fragment")
+    if (*currentPos == '#') {
+        currentPos++;
+        requiredBufferSize +=
+            calculateComponentLength(currentPos, currentPos + strlen(currentPos)) +
+            1; // Include null terminator
+    }
+
+    // Return the required buffer size
+    if (require) {
+        *require = requiredBufferSize;
+    }
+
+    // If pool is NULL, we're done
+    if (!pool) {
+        return ORBIS_OK;
+    }
+
+    // Check if the provided buffer is large enough
+    if (prepare < requiredBufferSize) {
+        LOG_ERROR(Lib_Http, "out of memory");
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Copy the URI components to the buffer
+    char* buffer = (char*)pool;
+    strncpy(buffer, srcUri, prepare);
+    buffer[prepare - 1] = '\0'; // Ensure null termination
+
+    // Parse and assign the components to the output structure if provided
+    if (out) {
+        // Scheme
+        schemeEnd = strchr(buffer, ':');
+        *schemeEnd = '\0';
+        out->scheme = buffer;
+        buffer = schemeEnd + 1;
+
+        // Opaque flag
+        out->opaque = isOpaque;
+
+        // Host and port
+        if (!isOpaque) {
+            buffer += 2; // Skip "//"
+        }
+
+        hostEnd = strchr(buffer, '/');
+        if (!hostEnd) {
+            hostEnd = buffer + strlen(buffer);
+        }
+
+        // Credentials (username:password@host)
+        atSymbol = strchr(buffer, '@');
+        if (atSymbol && atSymbol < hostEnd) {
+            *atSymbol = '\0';
+            colon = strchr(buffer, ':');
+            if (colon) {
+                *colon = '\0';
+                out->username = buffer;
+                out->password = colon + 1;
+            } else {
+                out->username = buffer;
+            }
+            buffer = atSymbol + 1;
+        }
+
+        // Port (host:port)
+        colon = strchr(buffer, ':');
+        if (colon && colon < hostEnd) {
+            *colon = '\0';
+            int offset = colon + 1 - buffer;
+            out->port = parsePort(buffer, &offset);
+            if (out->port == 0) {
+                LOG_ERROR(Lib_Http, "invalid url");
+                return ORBIS_HTTP_ERROR_INVALID_URL;
+            }
+        }
+
+        // Host
+        *hostEnd = '\0';
+        out->hostname = buffer;
+        buffer = hostEnd + 1;
+
+        // Path
+        pathEnd = strchr(buffer, '?');
+        if (!pathEnd) {
+            pathEnd = strchr(buffer, '#');
+            if (!pathEnd) {
+                pathEnd = buffer + strlen(buffer);
+            }
+        }
+        *pathEnd = '\0';
+        out->path = buffer;
+        buffer = pathEnd + 1;
+
+        // Query
+        if (*buffer == '?') {
+            buffer++;
+            char* queryEnd = strchr(buffer, '#');
+            if (!queryEnd) {
+                queryEnd = buffer + strlen(buffer);
+            }
+            *queryEnd = '\0';
+            out->query = buffer;
+            buffer = queryEnd + 1;
+        }
+
+        // Fragment
+        if (*buffer == '#') {
+            buffer++;
+            out->fragment = buffer;
+        }
+
+        // Initialize the reserved field to zero
+        memset(out->reserved, 0, sizeof(out->reserved)); // RE indicates some works here but haven't
+                                                         // been added not sure if it neccesary
+    }
+
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriSweepPath() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpUriUnescape() {
+int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
