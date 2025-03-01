@@ -22,11 +22,11 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Trapaças / Patches para </translation>
+      <translation>Trapaças / Modificações para </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>As Trapaças/Patches são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Patches, você pode baixar todos os patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Patches,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
+      <translation>As Trapaças/Modificações são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Modificações, você pode baixar todas as modificações de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Modificações,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -78,7 +78,7 @@
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>Baixar Patches</translation>
+      <translation>Baixar Modificações</translation>
     </message>
     <message>
       <source>Save</source>
@@ -90,7 +90,7 @@
     </message>
     <message>
       <source>Patches</source>
-      <translation>Patches</translation>
+      <translation>Modificações</translation>
     </message>
     <message>
       <source>Error</source>
@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
+      <translation>Modificações Baixados com Sucesso! Todos as modificações disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em trapaças. Se a modificação não aparecer, pode ser que ela não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Trapaças / Patches</translation>
+      <translation>Trapaças / Modificações</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -995,7 +995,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Baixar Trapaças/Patches</translation>
+      <translation>Baixar Trapaças/Modificações</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1079,7 +1079,7 @@
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>Baixar Patches para Todos os Jogos</translation>
+      <translation>Baixar Modificações para Todos os Jogos</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -1091,11 +1091,11 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>Patches Baixados com Sucesso!</translation>
+      <translation>Modificações Baixadas com Sucesso!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>Todos os patches disponíveis para todos os jogos foram baixados.</translation>
+      <translation>Todos as modificações disponíveis para todos os jogos foram baixadas.</translation>
     </message>
     <message>
       <source>Games: </source>
