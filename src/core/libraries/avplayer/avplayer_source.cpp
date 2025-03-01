@@ -91,10 +91,6 @@ static AvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
     }
 }
 
-static f32 AVRationalToF32(const AVRational rational) {
-    return f32(rational.num) / rational.den;
-}
-
 bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
@@ -265,11 +261,11 @@ bool AvPlayerSource::Stop() {
     m_demuxer_thread.Stop();
 
     if (m_current_audio_frame.has_value()) {
-        m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
+        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
         m_current_audio_frame.reset();
     }
     if (m_current_video_frame.has_value()) {
-        m_video_buffers.Push(std::move(m_current_video_frame.value()));
+        m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_current_video_frame.reset();
     }
 
@@ -281,12 +277,12 @@ bool AvPlayerSource::Stop() {
 }
 
 void AvPlayerSource::Pause() {
-    m_last_paused_time = std::chrono::high_resolution_clock::now();
+    m_pause_time = std::chrono::high_resolution_clock::now();
     m_is_paused = true;
 }
 
 void AvPlayerSource::Resume() {
-    m_stalled_time += std::chrono::high_resolution_clock::now() - m_last_paused_time;
+    m_pause_duration += std::chrono::high_resolution_clock::now() - m_pause_time;
     m_is_paused = false;
 }
 
@@ -313,11 +309,10 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
-    const auto& last_frame = m_video_frames.Front();
+    const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        const auto current_time =
-            m_audio_stream_index.has_value() ? m_last_audio_packet_time : CurrentTime();
-        if (0 < current_time && current_time < last_frame.info.timestamp) {
+        const auto current_time = CurrentTime();
+        if (0 < current_time && current_time < new_frame.info.timestamp) {
             return false;
         }
     }
@@ -325,11 +320,11 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     auto frame = m_video_frames.Pop();
     if (m_current_video_frame.has_value()) {
         // return the buffer to the queue
-        m_video_buffers.Push(std::move(m_current_video_frame.value()));
+        m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_video_buffers_cv.Notify();
     }
-    m_current_video_frame = std::move(frame->buffer);
     video_info = frame->info;
+    m_current_video_frame = std::move(frame);
     return true;
 }
 
@@ -345,11 +340,9 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
     auto frame = m_audio_frames.Pop();
     if (m_current_audio_frame.has_value()) {
         // return the buffer to the queue
-        m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
+        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
         m_audio_buffers_cv.Notify();
     }
-    m_current_audio_frame = std::move(frame->buffer);
-    m_last_audio_packet_time = frame->info.timestamp;
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
@@ -357,6 +350,7 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
     audio_info.details.audio.sample_rate = frame->info.details.audio.sample_rate;
     audio_info.details.audio.size = frame->info.details.audio.size;
     audio_info.details.audio.channel_count = frame->info.details.audio.channel_count;
+    m_current_audio_frame = std::move(frame);
     return true;
 }
 
@@ -365,7 +359,8 @@ u64 AvPlayerSource::CurrentTime() {
         return 0;
     }
     using namespace std::chrono;
-    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time - m_stalled_time)
+    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time -
+                                       m_pause_duration)
         .count();
 }
 
@@ -568,7 +563,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                             {
                                 .width = width,
                                 .height = height,
-                                .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
+                                .aspect_ratio = (float)av_q2d(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
                                 .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
                                 .crop_top_offset = u32(frame.crop_top),
