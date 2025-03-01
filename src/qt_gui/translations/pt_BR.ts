@@ -931,7 +931,7 @@
     </message>
     <message>
       <source>Install application from a .pkg file</source>
-      <translation>Instalar aplicação de um arquivo .pkg</translation>
+      <translation>Instalar aplicativo de um arquivo .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
