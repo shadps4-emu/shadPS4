@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
+      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -951,7 +951,7 @@
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation>Sair da aplicação.</translation>
+      <translation>Sair do aplicativo.</translation>
     </message>
     <message>
       <source>Show Game List</source>
