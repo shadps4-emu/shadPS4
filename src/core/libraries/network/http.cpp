@@ -567,233 +567,266 @@ int PS4_SYSV_ABI sceHttpUriMerge() {
     return ORBIS_OK;
 }
 
-// Helper function to calculate the length of a URI component
-static size_t calculateComponentLength(const char* start, const char* end) {
-    return (end > start) ? (size_t)(end - start) : 0;
-}
-
-// Helper function to parse the port from the URI
-static int parsePort(const char* uri, int* offset) {
-    int port = 0;
-    int digits = 0;
-
-    while (uri[*offset] >= '0' && uri[*offset] <= '9' && digits < 5) {
-        port = port * 10 + (uri[*offset] - '0');
-        (*offset)++;
-        digits++;
-    }
-
-    if (digits == 0 || port > 65535) {
-        return 0; // Invalid port
-    }
-    return port;
-}
-
 int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
                                  size_t* require, size_t prepare) {
     LOG_INFO(Lib_Http, "srcUri = {}", std::string(srcUri));
     if (!srcUri) {
-        LOG_ERROR(Lib_Http, "invalid values");
-        return ORBIS_HTTP_ERROR_INVALID_URL;
-    }
-
-    if (out) {
-        memset(out, 0, sizeof(OrbisHttpUriElement));
-    }
-
-    // Calculate the required buffer size
-    size_t requiredBufferSize = 0;
-    char* currentPos = (char*)srcUri;
-
-    // Scheme (e.g., "http:")
-    char* schemeEnd = strchr(currentPos, ':');
-    if (!schemeEnd) {
         LOG_ERROR(Lib_Http, "invalid url");
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
-    requiredBufferSize += calculateComponentLength(currentPos, schemeEnd) + 1;
-    currentPos = schemeEnd + 1;
-
-    // Check if the URI is opaque or hierarchical
-    bool isOpaque = true; // Assume opaque by default
-    bool isFile = false;
-    if (strncmp(currentPos, "//", 2) == 0) {
-        isOpaque = false; // Hierarchical if "//" is present
-        currentPos += 2;  // Skip "//"
+    if (!out && !pool && !require) {
+        LOG_ERROR(Lib_Http, "invalid values");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
-    // in case it starts with file://///
-    if (strncmp(currentPos, "//", 2) == 0) {
-        isFile = true;
-        currentPos += 2; // Skip "//"
+    if (out && pool) {
+        memset(out, 0, sizeof(OrbisHttpUriElement));
+        out->scheme = (char*)pool;
     }
 
-    // Host and port (e.g., "example.com:8080")
-    char* hostEnd = strchr(currentPos, '/');
-    if (!hostEnd) {
-        hostEnd = currentPos + strlen(currentPos);
-    }
+    // Track the total required buffer size
+    size_t requiredSize = 0;
 
-    // Check for credentials (username:password@host)
-    char* atSymbol = strchr(currentPos, '@');
-    if (atSymbol && atSymbol < hostEnd) {
-        requiredBufferSize += calculateComponentLength(currentPos, atSymbol) + 1;
-        currentPos = atSymbol + 1;
-    }
-
-    // Check for port (host:port)
-    char* colon = strchr(currentPos, ':');
-    if (colon && colon < hostEnd) {
-        requiredBufferSize += calculateComponentLength(currentPos, colon) + 1;
-        currentPos = colon + 1;
-    }
-
-    // Host
-    requiredBufferSize += calculateComponentLength(currentPos, hostEnd) + 1;
-    currentPos = hostEnd;
-
-    // Path (e.g., "/path")
-    char* pathEnd = strchr(currentPos, '?');
-    if (!pathEnd) {
-        pathEnd = strchr(currentPos, '#');
-        if (!pathEnd) {
-            pathEnd = currentPos + strlen(currentPos);
+    // Parse the scheme (e.g., "http:", "https:", "file:")
+    size_t schemeLength = 0;
+    while (srcUri[schemeLength] && srcUri[schemeLength] != ':') {
+        if (!isalnum(srcUri[schemeLength])) {
+            LOG_ERROR(Lib_Http, "invalid url");
+            return ORBIS_HTTP_ERROR_INVALID_URL;
         }
-    }
-    requiredBufferSize += calculateComponentLength(currentPos, pathEnd) + 1;
-    currentPos = pathEnd;
-
-    // Query (e.g., "?query=value")
-    if (*currentPos == '?') {
-        currentPos++;
-        char* queryEnd = strchr(currentPos, '#');
-        if (!queryEnd) {
-            queryEnd = currentPos + strlen(currentPos);
-        }
-        requiredBufferSize += calculateComponentLength(currentPos, queryEnd) + 1;
-        currentPos = queryEnd;
+        schemeLength++;
     }
 
-    // Fragment (e.g., "#fragment")
-    if (*currentPos == '#') {
-        currentPos++;
-        requiredBufferSize +=
-            calculateComponentLength(currentPos, currentPos + strlen(currentPos)) + 1;
-    }
-    if (isFile) {
-        requiredBufferSize += 3; // if it is size needs 3 more
-    }
-    // Return the required buffer size
-    if (require) {
-        *require = requiredBufferSize;
-    }
-
-    // If pool is NULL, we're done
-    if (!pool) {
-        return ORBIS_OK;
-    }
-
-    // Check if the provided buffer is large enough
-    if (prepare < requiredBufferSize) {
+    if (pool && prepare < schemeLength + 1) {
         LOG_ERROR(Lib_Http, "out of memory");
         return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
     }
 
-    // Copy the URI components to the buffer
-    char* buffer = (char*)pool;
-    strncpy(buffer, srcUri, prepare);
-    buffer[prepare - 1] = '\0';
+    if (out && pool) {
+        memcpy(out->scheme, srcUri, schemeLength);
+        out->scheme[schemeLength] = '\0';
+    }
 
-    // Parse and assign the components to the output structure if provided
-    if (out) {
-        // Scheme
-        schemeEnd = strchr(buffer, ':');
-        *schemeEnd = '\0';
-        out->scheme = buffer;
-        buffer = schemeEnd + 1;
+    requiredSize += schemeLength + 1;
 
-        // Opaque flag
-        out->opaque = isOpaque;
+    // Move past the scheme and ':' character
+    size_t offset = schemeLength + 1;
 
-        // Host and port
-        if (!isOpaque) {
-            buffer += 2; // Skip "//"
+    // Check if "//" appears after the scheme
+    if (strncmp(srcUri + offset, "//", 2) == 0) {
+        // "//" is present
+        if (out) {
+            out->opaque = false;
         }
-
-        if (isFile) {
-            buffer += 2; // Skip "//"
+        offset += 2; // Move past "//"
+    } else {
+        // "//" is not present
+        if (out) {
+            out->opaque = true;
         }
+    }
 
-        hostEnd = strchr(buffer, '/');
-        if (!hostEnd) {
-            hostEnd = buffer + strlen(buffer);
-        }
-
-        // Credentials (username:password@host)
-        atSymbol = strchr(buffer, '@');
-        if (atSymbol && atSymbol < hostEnd) {
-            *atSymbol = '\0';
-            colon = strchr(buffer, ':');
-            if (colon) {
-                *colon = '\0';
-                out->username = buffer;
-                out->password = colon + 1;
-            } else {
-                out->username = buffer;
+    // Handle "file" scheme
+    if (strncmp(srcUri, "file", 4) == 0) {
+        // File URIs typically start with "file://"
+        if (out && !out->opaque) {
+            // Skip additional slashes (e.g., "////")
+            while (srcUri[offset] == '/') {
+                offset++;
             }
-            buffer = atSymbol + 1;
+
+            // Parse the path (everything after the slashes)
+            char* pathStart = (char*)srcUri + offset;
+            size_t pathLength = 0;
+            while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
+                   pathStart[pathLength] != '#') {
+                pathLength++;
+            }
+
+            // Ensure the path starts with '/'
+            if (pathLength > 0 && pathStart[0] != '/') {
+                // Prepend '/' to the path
+                requiredSize += pathLength + 2; // Include '/' and null terminator
+
+                if (pool && prepare < requiredSize) {
+                    LOG_ERROR(Lib_Http, "out of memory");
+                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+                }
+
+                if (out && pool) {
+                    out->path = (char*)pool + (requiredSize - pathLength - 2);
+                    out->path[0] = '/'; // Add leading '/'
+                    memcpy(out->path + 1, pathStart, pathLength);
+                    out->path[pathLength + 1] = '\0';
+                }
+            } else {
+                // Path already starts with '/'
+                requiredSize += pathLength + 1;
+
+                if (pool && prepare < requiredSize) {
+                    LOG_ERROR(Lib_Http, "out of memory");
+                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+                }
+
+                if (out && pool) {
+                    memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
+                    out->path = (char*)pool + (requiredSize - pathLength - 1);
+                    out->path[pathLength] = '\0';
+                }
+            }
+
+            // Move past the path
+            offset += pathLength;
+        }
+    }
+
+    // Handle non-file schemes (e.g., "http", "https")
+    if (out && !out->opaque) {
+        // Parse the host and port
+        char* hostStart = (char*)srcUri + offset;
+        while (*hostStart == '/') {
+            hostStart++;
         }
 
-        // Port (host:port)
-        colon = strchr(buffer, ':');
-        if (colon && colon < hostEnd) {
-            *colon = '\0';
-            int offset = colon + 1 - buffer;
-            out->port = parsePort(buffer, &offset);
-            if (out->port == 0) {
+        size_t hostLength = 0;
+        while (hostStart[hostLength] && hostStart[hostLength] != '/' &&
+               hostStart[hostLength] != '?' && hostStart[hostLength] != ':') {
+            hostLength++;
+        }
+
+        requiredSize += hostLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - hostLength - 1), hostStart, hostLength);
+            out->hostname = (char*)pool + (requiredSize - hostLength - 1);
+            out->hostname[hostLength] = '\0';
+        }
+
+        // Move past the host
+        offset += hostLength;
+
+        // Parse the port (if present)
+        if (hostStart[hostLength] == ':') {
+            char* portStart = hostStart + hostLength + 1;
+            size_t portLength = 0;
+            while (portStart[portLength] && isdigit(portStart[portLength])) {
+                portLength++;
+            }
+
+            requiredSize += portLength + 1;
+
+            if (pool && prepare < requiredSize) {
+                LOG_ERROR(Lib_Http, "out of memory");
+                return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+            }
+
+            // Convert the port string to a uint16_t
+            char portStr[6]; // Max length for a port number (65535)
+            if (portLength > 5) {
                 LOG_ERROR(Lib_Http, "invalid url");
                 return ORBIS_HTTP_ERROR_INVALID_URL;
             }
-        }
+            memcpy(portStr, portStart, portLength);
+            portStr[portLength] = '\0';
 
-        // Host
-        *hostEnd = '\0';
-        out->hostname = buffer;
-        buffer = hostEnd + 1;
-
-        // Path
-        pathEnd = strchr(buffer, '?');
-        if (!pathEnd) {
-            pathEnd = strchr(buffer, '#');
-            if (!pathEnd) {
-                pathEnd = buffer + strlen(buffer);
+            uint16_t port = (uint16_t)atoi(portStr);
+            if (port == 0 && portStr[0] != '0') {
+                LOG_ERROR(Lib_Http, "invalid url");
+                return ORBIS_HTTP_ERROR_INVALID_URL;
             }
-        }
-        *pathEnd = '\0';
-        out->path = buffer;
-        buffer = pathEnd + 1;
 
-        // Query
-        if (*buffer == '?') {
-            buffer++;
-            char* queryEnd = strchr(buffer, '#');
-            if (!queryEnd) {
-                queryEnd = buffer + strlen(buffer);
+            // Set the port in the output structure
+            if (out) {
+                out->port = port;
             }
-            *queryEnd = '\0';
-            out->query = buffer;
-            buffer = queryEnd + 1;
+
+            // Move past the port
+            offset += portLength + 1;
+        }
+    }
+
+    // Parse the path (if present)
+    if (srcUri[offset] == '/') {
+        char* pathStart = (char*)srcUri + offset;
+        size_t pathLength = 0;
+        while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
+               pathStart[pathLength] != '#') {
+            pathLength++;
         }
 
-        // Fragment
-        if (*buffer == '#') {
-            buffer++;
-            out->fragment = buffer;
+        requiredSize += pathLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
         }
 
-        // Initialize the reserved field to zero
-        memset(out->reserved, 0, sizeof(out->reserved)); // RE indicates some works here but haven't
-                                                         // been added not sure if it neccesary
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
+            out->path = (char*)pool + (requiredSize - pathLength - 1);
+            out->path[pathLength] = '\0';
+        }
+
+        // Move past the path
+        offset += pathLength;
+    }
+
+    // Parse the query (if present)
+    if (srcUri[offset] == '?') {
+        char* queryStart = (char*)srcUri + offset + 1;
+        size_t queryLength = 0;
+        while (queryStart[queryLength] && queryStart[queryLength] != '#') {
+            queryLength++;
+        }
+
+        requiredSize += queryLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - queryLength - 1), queryStart, queryLength);
+            out->query = (char*)pool + (requiredSize - queryLength - 1);
+            out->query[queryLength] = '\0';
+        }
+
+        // Move past the query
+        offset += queryLength + 1;
+    }
+
+    // Parse the fragment (if present)
+    if (srcUri[offset] == '#') {
+        char* fragmentStart = (char*)srcUri + offset + 1;
+        size_t fragmentLength = 0;
+        while (fragmentStart[fragmentLength]) {
+            fragmentLength++;
+        }
+
+        requiredSize += fragmentLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - fragmentLength - 1), fragmentStart,
+                   fragmentLength);
+            out->fragment = (char*)pool + (requiredSize - fragmentLength - 1);
+            out->fragment[fragmentLength] = '\0';
+        }
+    }
+
+    // Calculate the total required buffer size
+    if (require) {
+        *require = requiredSize; // Update with actual required size
     }
 
     return ORBIS_OK;
