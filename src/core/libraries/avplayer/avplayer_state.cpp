@@ -429,7 +429,7 @@ void AvPlayerState::ProcessEvent() {
     }
     switch (event->event) {
     case AvEventType::WarningId: {
-        OnWarning(event->payload.error);
+        EmitEvent(AvPlayerEvents::WarningId, &event->payload.error);
         break;
     }
     case AvEventType::RevertState: {

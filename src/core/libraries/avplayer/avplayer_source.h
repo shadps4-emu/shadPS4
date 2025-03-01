@@ -188,8 +188,8 @@ private:
     AvPlayerQueue<Frame> m_audio_frames;
     AvPlayerQueue<Frame> m_video_frames;
 
-    std::optional<FrameBuffer> m_current_video_frame;
-    std::optional<FrameBuffer> m_current_audio_frame;
+    std::optional<Frame> m_current_video_frame;
+    std::optional<Frame> m_current_audio_frame;
 
     std::optional<s32> m_video_stream_index{};
     std::optional<s32> m_audio_stream_index{};
@@ -214,9 +214,8 @@ private:
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 
     std::chrono::high_resolution_clock::time_point m_start_time{};
-    std::chrono::high_resolution_clock::time_point m_last_paused_time{};
-    std::chrono::high_resolution_clock::duration m_stalled_time{};
-    u64 m_last_audio_packet_time{};
+    std::chrono::high_resolution_clock::time_point m_pause_time{};
+    std::chrono::high_resolution_clock::duration m_pause_duration{};
 };
 
 } // namespace Libraries::AvPlayer
