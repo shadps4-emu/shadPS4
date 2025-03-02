@@ -27,14 +27,17 @@ namespace Libraries::NpTrophy {
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
-bool isLeftSide;
+
+std::string side = "right";
+
 double trophy_timer;
 
 TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
                    const std::string_view& rarity)
     : trophy_name(trophyName), trophy_type(rarity) {
 
-    isLeftSide = Config::leftSideTrophy();
+    side = Config::sideTrophy();
+
     trophy_timer = Config::getTrophyNotificationDuration();
 
     if (std::filesystem::exists(trophyIconPath)) {
@@ -115,8 +118,8 @@ float fade_out_duration = 0.5f;            // Final fade duration
 void TrophyUI::Draw() {
     const auto& io = GetIO();
 
-    float AdjustWidth = io.DisplaySize.x / 1280;
-    float AdjustHeight = io.DisplaySize.y / 720;
+    float AdjustWidth = io.DisplaySize.x / 1920;
+    float AdjustHeight = io.DisplaySize.y / 1080;
     const ImVec2 window_size{
         std::min(io.DisplaySize.x, (350 * AdjustWidth)),
         std::min(io.DisplaySize.y, (70 * AdjustHeight)),
@@ -125,20 +128,37 @@ void TrophyUI::Draw() {
     elapsed_time += io.DeltaTime;
     float progress = std::min(elapsed_time / animation_duration, 1.0f);
 
-    // left or right position
-    float final_pos_x;
-    if (isLeftSide) {
-        start_pos.x = -window_size.x;
+    float final_pos_x, start_x;
+    float final_pos_y, start_y;
+
+    if (side == "top") {
+        start_x = (io.DisplaySize.x - window_size.x) * 0.5f;
+        start_y = -window_size.y;
+        final_pos_x = start_x;
+        final_pos_y = 20 * AdjustHeight;
+    } else if (side == "left") {
+        start_x = -window_size.x;
+        start_y = 50 * AdjustHeight;
         final_pos_x = 20 * AdjustWidth;
-    } else {
-        start_pos.x = io.DisplaySize.x;
+        final_pos_y = start_y;
+    } else if (side == "right") {
+        start_x = io.DisplaySize.x;
+        start_y = 50 * AdjustHeight;
         final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
+        final_pos_y = start_y;
+    } else if (side == "bottom") {
+        start_x = (io.DisplaySize.x - window_size.x) * 0.5f;
+        start_y = io.DisplaySize.y;
+        final_pos_x = start_x;
+        final_pos_y = io.DisplaySize.y - window_size.y - 20 * AdjustHeight;
     }
 
-    ImVec2 current_pos = ImVec2(start_pos.x + (final_pos_x - start_pos.x) * progress,
-                                start_pos.y + (target_pos.y - start_pos.y) * progress);
+    ImVec2 current_pos = ImVec2(start_x + (final_pos_x - start_x) * progress,
+                                start_y + (final_pos_y - start_y) * progress);
 
     trophy_timer -= io.DeltaTime;
+
+    ImGui::SetNextWindowPos(current_pos);
 
     // If the remaining time of the trophy is less than or equal to 1 second, the fade-out begins.
     if (trophy_timer <= 1.0f) {
@@ -192,6 +212,13 @@ void TrophyUI::Draw() {
             const float text_height = ImGui::CalcTextSize(combinedString.c_str()).y;
             SetCursorPosY((window_size.y - text_height) * 0.5);
         }
+
+        if (side == "top" || side == "bottom") {
+            float text_width = ImGui::CalcTextSize(trophy_name.c_str()).x;
+            float centered_x = (window_size.x - text_width) * 0.5f;
+            ImGui::SetCursorPosX(std::max(centered_x, 10.0f * AdjustWidth));
+        }
+
         ImGui::PushTextWrapPos(window_size.x - (60 * AdjustWidth));
         TextWrapped("Trophy earned!\n%s", trophy_name.c_str());
         ImGui::SameLine(window_size.x - (60 * AdjustWidth));
