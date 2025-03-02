@@ -778,6 +778,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
                       src/shader_recompiler/info.h
+                      src/shader_recompiler/pools.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
                       src/shader_recompiler/specialization.h
@@ -863,8 +864,11 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp
                       src/shader_recompiler/ir/program.h
-                      src/shader_recompiler/ir/reinterpret.h
                       src/shader_recompiler/ir/reg.h
+                      src/shader_recompiler/ir/reinterpret.h
+                      src/shader_recompiler/ir/srt_gvn_table.h
+                      src/shader_recompiler/ir/subprogram.cpp
+                      src/shader_recompiler/ir/subprogram.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h
                       src/shader_recompiler/ir/value.cpp
