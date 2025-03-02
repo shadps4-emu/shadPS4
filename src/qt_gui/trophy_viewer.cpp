@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QDockWidget>
 #include <QMessageBox>
+#include <QPushButton>
 #include <cmrc/cmrc.hpp>
 #include <common/config.h>
 #include "common/path_util.h"
@@ -157,6 +158,15 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     // Adds the dock to the left area
     this->addDockWidget(Qt::LeftDockWidgetArea, trophyInfoDock);
 
+    expandButton = new QPushButton(">>", this);
+    expandButton->setGeometry(80, 0, 27, 27);
+    expandButton->hide();
+
+    connect(expandButton, &QPushButton::clicked, this, [this, trophyInfoDock] {
+        trophyInfoDock->setVisible(true);
+        expandButton->hide();
+    });
+
     // Connects checkbox signals to update trophy display
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
     connect(showEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
@@ -173,6 +183,31 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 
     updateTrophyInfo();
     updateTableFilters();
+
+    connect(trophyInfoDock, &QDockWidget::topLevelChanged, this, [this, trophyInfoDock] {
+        if (!trophyInfoDock->isVisible()) {
+            expandButton->show();
+        }
+    });
+
+    connect(trophyInfoDock, &QDockWidget::visibilityChanged, this, [this, trophyInfoDock] {
+        if (!trophyInfoDock->isVisible()) {
+            expandButton->show();
+        } else {
+            expandButton->hide();
+        }
+    });
+}
+
+void TrophyViewer::onDockClosed() {
+    if (!trophyInfoDock->isVisible()) {
+        reopenButton->setVisible(true);
+    }
+}
+
+void TrophyViewer::reopenLeftDock() {
+    trophyInfoDock->show();
+    reopenButton->setVisible(false);
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
@@ -354,7 +389,10 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tabWidget->addTab(tableWidget,
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
 
-        this->showMaximized();
+        this->resize(width + 400, 720);
+        QSize mainWindowSize = QApplication::activeWindow()->size();
+        this->resize(mainWindowSize.width() * 0.8, mainWindowSize.height() * 0.8);
+        this->show();
 
         tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
         tableWidget->setColumnWidth(3, 650);

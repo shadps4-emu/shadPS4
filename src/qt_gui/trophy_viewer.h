@@ -4,12 +4,15 @@
 #pragma once
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QDir>
+#include <QDockWidget>
 #include <QFileInfoList>
 #include <QGraphicsBlurEffect>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMainWindow>
+#include <QPushButton>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
@@ -26,6 +29,8 @@ public:
     void updateTrophyInfo();
 
     void updateTableFilters();
+    void onDockClosed();
+    void reopenLeftDock();
 
 private:
     void PopulateTrophyWidget(QString title);
@@ -39,6 +44,9 @@ private:
     QCheckBox* showEarnedCheck;
     QCheckBox* showNotEarnedCheck;
     QCheckBox* showHiddenCheck;
+    QPushButton* expandButton;
+    QDockWidget* trophyInfoDock;
+    QPushButton* reopenButton;
 
     std::string GetTrpType(const QChar trp_) {
         switch (trp_.toLatin1()) {
