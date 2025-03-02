@@ -88,6 +88,7 @@ public:
     }
 
     void WaitEvent();
+    void RelaunchEmulator();
     void InitTimers();
 
     void RequestKeyboard();

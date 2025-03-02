@@ -3,17 +3,20 @@
 
 #ifndef CHECKUPDATE_H
 #define CHECKUPDATE_H
+#pragma once
 
 #include <QCheckBox>
 #include <QDialog>
 #include <QNetworkAccessManager>
 #include <QPushButton>
+#include "main_window.h"
 
 class CheckUpdate : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CheckUpdate(const bool showMessage, QWidget* parent = nullptr);
+    explicit CheckUpdate(MainWindow* mainWindow, bool showMessage, QWidget* parent = nullptr);
+    CheckUpdate(const bool showMessage, QWidget* parent);
     ~CheckUpdate();
 
 private slots:
@@ -35,6 +38,7 @@ private:
     QString updateDownloadUrl;
 
     QNetworkAccessManager* networkManager;
+    MainWindow* m_mainWindow;
 };
 
 #endif // CHECKUPDATE_H
