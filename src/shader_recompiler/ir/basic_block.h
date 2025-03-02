@@ -20,7 +20,7 @@ namespace Shader::IR {
 class Block {
 public:
     struct ConditionalData {
-        std::uint32_t depth;
+        u32 depth;
         const ConditionalData* parent;
         const AbstractSyntaxNode* asl_node;
     };
@@ -70,6 +70,14 @@ public:
     /// Gets an immutable span to the immediate successors.
     [[nodiscard]] std::span<Block* const> ImmSuccessors() const noexcept {
         return imm_successors;
+    }
+    // Returns if the block has a given immediate predecessor.
+    [[nodiscard]] bool HasImmPredecessor(const Block* block) const noexcept {
+        return std::ranges::find(imm_predecessors, block) != imm_predecessors.end();
+    }
+    // Returns if the block has a given immediate successor.
+    [[nodiscard]] bool HasImmSuccessor(const Block* block) const noexcept {
+        return std::ranges::find(imm_successors, block) != imm_successors.end();
     }
 
     // Set the conditional data for this block.
