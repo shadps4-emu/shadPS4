@@ -22,11 +22,11 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Trapaças / Patches para </translation>
+      <translation>Trapaças / Modificações para </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>As Trapaças/Patches são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Patches, você pode baixar todos os patches de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Patches,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
+      <translation>As Trapaças/Modificações são experimentais.\nUse com cautela.\n\nBaixe as trapaças individualmente selecionando o repositório e clicando no botão de baixar.\nNa aba Modificações, você pode baixar todas as modificações de uma vez, escolha qual deseja usar e salve a opção.\n\nComo não desenvolvemos as Trapaças/Modificações,\npor favor, reporte os problemas relacionados ao autor da trapaça.\n\nCriou uma nova trapaça? Visite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -78,7 +78,7 @@
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>Baixar Patches</translation>
+      <translation>Baixar Modificações</translation>
     </message>
     <message>
       <source>Save</source>
@@ -90,7 +90,7 @@
     </message>
     <message>
       <source>Patches</source>
-      <translation>Patches</translation>
+      <translation>Modificações</translation>
     </message>
     <message>
       <source>Error</source>
@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches Baixados com Sucesso! Todos os patches disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em Trapaças. Se o patch não aparecer, pode ser que ele não exista para o serial e versão específicas do jogo.</translation>
+      <translation>Modificações Baixados com Sucesso! Todos as modificações disponíveis para todos os jogos foram baixados, não é necessário baixá-los individualmente para cada jogo como acontece em trapaças. Se a modificação não aparecer, pode ser que ela não exista para o serial e versão específicas do jogo.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Trapaças / Patches</translation>
+      <translation>Trapaças / Modificações</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -733,7 +733,7 @@
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Abrir Pasta de Log</translation>
+      <translation>Abrir Pasta de Registros</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -774,6 +774,10 @@
     <message>
       <source>Delete DLC</source>
       <translation>Excluir DLC</translation>
+    </message>
+    <message>
+      <source>Delete Trophy</source>
+      <translation>Excluir Troféu</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -852,6 +856,10 @@
       <translation>Este jogo não possui pasta de atualização para abrir!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Nenhum arquivo de registro foi encontrado para este jogo!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Falha ao converter o ícone.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Este jogo não tem dados salvos para excluir!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Este jogo não tem troféus salvos para excluir!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Dados Salvos</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Troféus</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -915,7 +931,7 @@
     </message>
     <message>
       <source>Install application from a .pkg file</source>
-      <translation>Instalar aplicação de um arquivo .pkg</translation>
+      <translation>Instalar aplicativo de um arquivo .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -935,7 +951,7 @@
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation>Sair da aplicação.</translation>
+      <translation>Sair do aplicativo.</translation>
     </message>
     <message>
       <source>Show Game List</source>
@@ -979,7 +995,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Baixar Trapaças/Patches</translation>
+      <translation>Baixar Trapaças/Modificações</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1063,7 +1079,7 @@
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>Baixar Patches para Todos os Jogos</translation>
+      <translation>Baixar Modificações para Todos os Jogos</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -1075,11 +1091,11 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>Patches Baixados com Sucesso!</translation>
+      <translation>Modificações Baixadas com Sucesso!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>Todos os patches disponíveis para todos os jogos foram baixados.</translation>
+      <translation>Todos as modificações disponíveis para todos os jogos foram baixadas.</translation>
     </message>
     <message>
       <source>Games: </source>
@@ -1309,11 +1325,15 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation>Troféus</translation>
+      <translation>Troféu</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados</translation>
     </message>
     <message>
       <source>Logger</source>
-      <translation>Registros de Log</translation>
+      <translation>Log/Registro</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1476,8 +1496,8 @@
       <translation>Música no Menu</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Desabilitar Pop-ups dos Troféus</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Desativar Notificações de Troféu</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1565,7 +1585,7 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tipo de Registro:\nDetermina se a saída da janela de log deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
+      <translation>Tipo de Registro:\nDetermina se a saída da janela de registro deve ser sincronizada por motivos de desempenho. Pode impactar negativamente na emulação.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nVocê pode adicionar imagens e sons personalizados aos troféus.\nAdicione os arquivos em custom_trophy com os seguintes nomes:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1797,11 +1821,27 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation>Separar Arquivos de Log</translation>
+      <translation>Separar Arquivos de Registro</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation>Separar Arquivos de Log:\nGrava um arquivo de log para cada jogo.</translation>
+      <translation>Separar Arquivos de Registro:\nGrava um arquivo de registro para cada jogo.</translation>
+    </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Posição da Notificação do Troféu</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Esquerda</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Direita</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Duração da Notificação</translation>
     </message>
   </context>
   <context>
@@ -1809,6 +1849,22 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Progresso</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Mostrar Troféus Conquistados</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Mostrar Troféus Não Conquistados</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Mostrar Troféus Ocultos</translation>
     </message>
   </context>
 </TS>

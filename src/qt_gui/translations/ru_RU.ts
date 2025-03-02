@@ -776,6 +776,10 @@
       <translation>Удалить DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Удалить трофей</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Совместимость...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>У этой игры нет папки обновлений, которую можно открыть!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Не найден файл журнала для этой игры!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Не удалось преобразовать иконку.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>У этой игры нет сохранений, которые можно удалить!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>У этой игры нет сохраненных трофеев для удаления!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Сохранения</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Трофей</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>Трофеи</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Откройте папку с пользовательскими изображениями/звуками трофеев</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Логирование</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>Заглавная музыка</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Отключить уведомления о трофеях</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Отключить уведомления о трофее</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Обновить базу совместимости:\nНемедленно обновить базу данных совместимости.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Открыть пользовательскую папку с трофеями изображений/звуков:\nВы можете добавить пользовательские изображения к трофеям и аудио.\nДобавьте файлы в custom_trophy со следующими именами:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Отдельные файлы логов:\nПишет отдельный файл логов для каждой игры.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Местоположение уведомления о трофее</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Влево</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Вправо</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Продолжительность уведомления</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Прогресс</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Показать заработанные трофеи</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Показать не заработанные трофеи</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Показать скрытые трофеи</translation>
     </message>
   </context>
 </TS>

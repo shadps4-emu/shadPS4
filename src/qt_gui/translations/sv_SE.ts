@@ -776,6 +776,10 @@
       <translation>Ta bort DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Ta bort trofé</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Kompatibilitet...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>Detta spel har ingen uppdateringsmapp att öppna!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Ingen loggfil hittades för detta spel!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Misslyckades med att konvertera ikon.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Detta spel har inget sparat data att ta bort!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Detta spel har inga sparade troféer att ta bort!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Sparat data</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofé</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>Troféer</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Öppna mapp för anpassade trofébilder/ljud</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Loggning</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>Titelmusik</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Inaktivera popup för troféer</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Inaktivera troféaviseringar</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Öppna mappen med anpassade trofébilder/ljud:\nDu kan lägga till anpassade bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Separata loggfiler:\nSkriver en separat loggfil för varje spel.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Aviseringsposition för trofé</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Vänster</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Höger</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Varaktighet för avisering</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Trofé-visare</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Förlopp</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Visa förtjänade troféer</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Visa icke-förtjänade troféer</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Visa dolda troféer</translation>
     </message>
   </context>
 </TS>

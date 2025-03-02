@@ -776,6 +776,10 @@
       <translation>删除 DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>删除奖杯</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>兼容性...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>这个游戏没有可打开的更新文件夹！</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>没有找到这个游戏的日志文件！</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>转换图标失败。</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>这个游戏没有更新可以删除！</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>这个游戏没有保存的奖杯可删除！</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>存档数据</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>奖杯</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>奖杯</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>打开自定义奖杯图像/声音文件夹</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>日志</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>标题音乐</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>禁止弹出奖杯</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>禁用奖杯通知</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>更新兼容性数据库：\n立即更新兼容性数据库。</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>打开自定义奖杯图像/声音文件夹：\n您可以自定义奖杯图像和声音。\n将文件添加到 custom_trophy 文件夹中，文件名如下：\nthophy.mp3、bronze.png、gold.png、platinum.png、silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>独立日志文件：\n每个游戏使用单独的日志文件。</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>奖杯通知位置</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>左边</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>右边</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>通知显示持续时间</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>奖杯查看器</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>进度</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>显示获得的奖杯</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>显示未获得的奖杯</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>显示隐藏奖杯</translation>
     </message>
   </context>
 </TS>

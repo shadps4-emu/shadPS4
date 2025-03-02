@@ -776,6 +776,10 @@
       <translation>Usuń dodatkową zawartość (DLC)</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Usuń trofeum</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Kompatybilność...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>Ta gra nie ma folderu aktualizacji do otwarcia!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Nie znaleziono pliku dziennika dla tej gry!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Nie udało się przekonwertować ikony.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Ta gra nie ma zapisów do usunięcia!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Ta gra nie ma zapisanych trofeuów do usunięcia!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Zapisane dane</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofeum</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1309,7 +1325,11 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation>Trofeum</translation>
+      <translation>Trofea</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Otwórz niestandardowy folder obrazów/dźwięków trofeów</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1476,8 +1496,8 @@
       <translation>Muzyka tytułowa</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Wyłącz wyskakujące okienka trofeów</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Wyłącz powiadomienia o trofeach</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Zaktualizuj bazę danych zgodności:\nNatychmiast zaktualizuj bazę danych zgodności.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Otwórz niestandardowy folder obrazów/dźwięków:\nMożesz dodać własne obrazy do trofeów i dźwięku.\nDodaj pliki do custom_trophy o następujących nazwach:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Oddzielne pliki dziennika:\nZapisuje oddzielny plik dziennika dla każdej gry.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Pozycja powiadomień trofeów</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Z lewej</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Z prawej</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Czas trwania powiadomienia</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Menedżer trofeów</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Postęp</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Pokaż zdobyte trofea</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Pokaż niezdobyte trofea</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Pokaż ukryte trofea</translation>
     </message>
   </context>
 </TS>

@@ -776,6 +776,10 @@
       <translation>Fshi DLC-në</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Fshi Trofeun</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Përputhshmëria...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>Kjo lojë nuk ka dosje përditësimi për të hapur!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Nuk u gjet asnjë skedar ditari për këtë lojë!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Konvertimi i ikonës dështoi.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Kjo lojë nuk ka të dhëna ruajtje për të fshirë!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Kjo lojë nuk ka trofe të ruajtur për të fshirë!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Të dhënat e ruajtjes</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofeu</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>Trofeu</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Hap dosjen e imazheve/tingujve të trofeve të personalizuar</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Regjistruesi i ditarit</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>Muzika e titullit</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Çaktivizo njoftimet për Trofetë</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Çaktivizo Njoftimin e Trofeut</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Përditëso bazën e të dhënave të përputhshmërisë:\nPërditëso menjëherë bazën e të dhënave të përputhshmërisë.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Hap dosjen e imazheve/tingujve të trofeve të personalizuar:\nMund të shtosh imazhe të personalizuara për trofetë dhe një skedar audio.\nShto skedarët në dosjen custom_trophy me emrat që vijojnë:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Skedarë të Ditarit të Ndarë:\nShkruan një skedar të ditarit të veçuar për secilën lojë.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Pozicioni i Njoftimit të Trofeve</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Majtas</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Djathtas</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Kohëzgjatja e Njoftimit</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Shikuesi i Trofeve</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Ecuria</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Shfaq Trofetë që janë fituar</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Shfaq Trofetë që nuk janë fituar</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Shfaq Trofetë e Fshehur</translation>
     </message>
   </context>
 </TS>
