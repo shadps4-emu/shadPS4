@@ -268,6 +268,9 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (info.has_image_query) {
         ctx.AddCapability(spv::Capability::ImageQuery);
     }
+    if (info.has_layer_output) {
+        ctx.AddCapability(spv::Capability::ShaderLayer);
+    }
     if (info.uses_lane_id) {
         ctx.AddCapability(spv::Capability::GroupNonUniform);
     }
