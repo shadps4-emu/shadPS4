@@ -33,6 +33,8 @@ public:
     bool IsActive();
     u64 CurrentTime();
     s32 Stop();
+    s32 Pause();
+    s32 Resume();
     bool SetLooping(bool is_looping);
 
 private:
