@@ -681,7 +681,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     }
 
     // Handle non-file schemes (e.g., "http", "https")
-    if (out && !out->opaque) {
+    else {
         // Parse the host and port
         char* hostStart = (char*)srcUri + offset;
         while (*hostStart == '/') {
