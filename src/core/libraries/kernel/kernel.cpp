@@ -29,6 +29,7 @@
 #endif
 #include <common/singleton.h>
 #include "aio.h"
+#include "posix_net.h"
 
 namespace Libraries::Kernel {
 
@@ -111,6 +112,13 @@ void SetPosixErrno(int e) {
     case ETIMEDOUT:
         g_posix_errno = POSIX_ETIMEDOUT;
         break;
+    case EBADF:
+        g_posix_errno = POSIX_EBADF;
+        break;
+    case EINTR:
+        g_posix_errno = POSIX_EINTR;
+        break;
+
     default:
         g_posix_errno = e;
     }
@@ -196,16 +204,41 @@ const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
     return path;
 }
 
-int PS4_SYSV_ABI posix_connect() {
-    return -1;
-}
-
 int PS4_SYSV_ABI _sigprocmask() {
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_getpagesize() {
     return 16_KB;
+}
+
+int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              const timeval* timeout) {
+    /* int result = select(nfds, readfds, writefds, exceptfds, timeout);
+    if (result < 0) {
+#ifdef _WIN32
+        int err = WSAGetLastError();
+        switch (err) {
+        case WSAEINVAL:
+            SetPosixErrno(EINVAL);
+            break;
+        case WSAENOTSOCK:
+            SetPosixErrno(ENOTSOCK);
+            break;
+        case WSAEINTR:
+            SetPosixErrno(EINTR);
+            break;
+        case WSAEINPROGRESS:
+            SetPosixErrno(EINPROGRESS);
+            break; 
+        }
+#else
+        SetPosixErrno(result);
+#endif
+        return -1;
+    }
+    return result;*/
+    return 0;
 }
 
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
@@ -220,11 +253,11 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
     Libraries::Kernel::RegisterAio(sym);
+    Libraries::Kernel::RegisterNet(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
-    LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", 1, 1, _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
@@ -236,6 +269,9 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
                  sceLibcHeapGetTraceInfo);
     LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
     LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, ps4__write);
+
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
+    //LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", 1, 1, posix_socket);
 }
 
 } // namespace Libraries::Kernel
