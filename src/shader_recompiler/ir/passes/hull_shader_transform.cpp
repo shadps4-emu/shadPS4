@@ -75,10 +75,12 @@ namespace Shader::Optimization {
  *
  * output_patch_stride and output_cp_stride are usually compile time constants in the gcn
  *
- * Hull shaders can probably also read output control points corresponding to other threads, like
- * shared memory (but we havent seen this yet).
- * ^ This is an UNREACHABLE for now. We may need to insert additional barriers if this happens.
- * They should also be able to read PatchConst values,
+ * Hull shaders can also read output control points corresponding to other threads.
+ * In HLSL style, this should only be possible in the Patch Constant function.
+ * TODO we may need to insert additional barriers if sync is free/more permissive
+ * on AMD LDS HW
+
+ * They should also be able to read output PatchConst values,
  * although not sure if this happens in practice.
  *
  * To determine which type of attribute (input, output, patchconst) we the check the users of
@@ -101,22 +103,22 @@ namespace Shader::Optimization {
  * layout (location = 0) in vec4 in_attrs[][NUM_INPUT_ATTRIBUTES];
  *
  * Here the NUM_INPUT_ATTRIBUTES is derived from the ls_stride member of the TessConstants V#.
- * We divide ls_stride (in bytes) by 16 to get the number of vec4 attributes.
- * For TES, the number of attributes comes from hs_cp_stride / 16.
+ * We take ALIGN_UP(ls_stride, 16) / 16 to get the number of vec4 attributes.
+ * For TES, NUM_INPUT_ATTRIBUTES is ALIGN_UP(hs_cp_stride, 16) / 16.
  * The first (outer) dimension is unsized but corresponds to the number of vertices in the hs input
  * patch (for Hull) or the hs output patch (for Domain).
  *
  * For input reads in TCS or TES, we emit SPIR-V like:
- * float value = in_attrs[addr / ls_stride][(addr % ls_stride) >> 4][(addr & 0xF) >> 2];
+ * float value = in_attrs[addr / ls_stride][(addr % ls_stride) >> 4][(addr % ls_stride) >> 2];
  *
  * For output writes, we assume the control point index is InvocationId, since high level languages
  * impose that restriction (although maybe it's technically possible on hardware). So SPIR-V looks
  * like this:
  * layout (location = 0) in vec4 in_attrs[][NUM_OUTPUT_ATTRIBUTES];
- * out_attrs[InvocationId][(addr % hs_cp_stride) >> 4][(addr & 0xF) >> 2] = value;
+ * out_attrs[InvocationId][(addr % hs_cp_stride) >> 4][(addr % hs_cp_stride) >> 2] = value;
  *
- * NUM_OUTPUT_ATTRIBUTES is derived by hs_cp_stride / 16, so it can link with the TES in_attrs
- * variable.
+ * NUM_OUTPUT_ATTRIBUTES is derived by ALIGN_UP(hs_cp_stride, 16) / 16, so it matches
+ * NUM_INPUT_ATTRIBUTES of the TES.
  *
  * Another challenge is the fact that the GCN shader needs to address attributes from LDS as a whole
  * which contains the attributes from many patches. On the other hand, higher level shading
@@ -235,12 +237,11 @@ private:
         case IR::Opcode::Phi: {
             struct PhiCounter {
                 u16 seq_num;
-                u8 unique_edge;
-                u8 counter;
+                u16 unique_edge;
             };
 
             PhiCounter count = inst->Flags<PhiCounter>();
-            ASSERT_MSG(count.counter == 0 || count.unique_edge == use.operand);
+            ASSERT_MSG(count.seq_num == 0 || count.unique_edge == use.operand);
             // the point of seq_num is to tell us if we've already traversed this
             // phi on the current walk. Alternatively we could keep a set of phi's
             // seen on the current walk. This is to handle phi cycles
@@ -249,13 +250,11 @@ private:
                 count.seq_num = seq_num;
                 // Mark the phi as having been traversed originally through this edge
                 count.unique_edge = use.operand;
-                count.counter = inc;
             } else if (count.seq_num < seq_num) {
                 count.seq_num = seq_num;
                 // For now, assume we are visiting this phi via the same edge
                 // as on other walks. If not, some dataflow analysis might be necessary
                 ASSERT(count.unique_edge == use.operand);
-                count.counter += inc;
             } else {
                 // count.seq_num == seq_num
                 // there's a cycle, and we've already been here on this walk
