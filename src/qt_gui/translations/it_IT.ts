@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\nthophy.mp3, bronzo. ng, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1841,11 +1841,11 @@
     </message>
     <message>
       <source>Top</source>
-      <translation type="unfinished">Top</translation>
+      <translation>In alto</translation>
     </message>
     <message>
       <source>Bottom</source>
-      <translation type="unfinished">Bottom</translation>
+      <translation>In basso</translation>
     </message>
     <message>
       <source>Notification Duration</source>
