@@ -1043,7 +1043,7 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color) {
     // TODO fix me better
-    LOG_INFO(Lib_UserService, "called user_id = {}", user_id);
+    LOG_DEBUG(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
@@ -1068,7 +1068,7 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
-    LOG_INFO(Lib_UserService, "called user_id = {} ,size = {} ", user_id, size);
+    LOG_DEBUG(Lib_UserService, "called user_id = {} ,size = {} ", user_id, size);
     if (user_name == nullptr) {
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;

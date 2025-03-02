@@ -776,6 +776,10 @@
       <translation>İndirilebilir İçeriği Sil</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Kupayı Sil</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Uyumluluk...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>Bu oyunun açılacak güncelleme klasörü yok!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation type="unfinished">No log file found for this game!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Simge dönüştürülemedi.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Bu oyunun silinecek kayıt verisi yok!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Bu oyunun silinecek kupası yok!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Kayıt Verisi</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Kupa</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>Kupa</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Özel kupa görüntüleri/sesleri klasörünü aç</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Kayıt Tutucu</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>Oyun Müziği</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Kupa Açılır Pencerelerini Devre Dışı Bırak</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Kupa Bildirimini Devre Dışı Bırak</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1612,6 +1632,10 @@
       <translation>Uyumluluk Veritabanını Güncelle:\nUyumluluk veri tabanını hemen güncelleyin.</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+    </message>
+    <message>
       <source>Never</source>
       <translation>Asla</translation>
     </message>
@@ -1661,7 +1685,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>HDR'yi Etkinleştir:\nDestekleyen oyunlarda HDR'yi etkinleştirir.\nMonitörünüz, BT2020 PQ renk alanını ve RGB10A2 takas zinciri biçimini desteklemelidir.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1765,15 +1789,15 @@
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Görüntü</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Görüntü Modu</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Pencereli</translation>
     </message>
     <message>
       <source>Fullscreen</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Ayrı Günlük Dosyaları:\nHer oyun için ayrı bir günlük dosyası yazar.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Kupa Bildirim Konumu</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Sol</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Sağ</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Bildirim Süresi</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Kupa Görüntüleyici</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>İlerleme</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Kazanılmış Kupaları Göster</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Kazanılmamış Kupaları Göster</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Gizli Kupaları Göster</translation>
     </message>
   </context>
 </TS>

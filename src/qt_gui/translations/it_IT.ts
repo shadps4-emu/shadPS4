@@ -776,6 +776,10 @@
       <translation>Elimina DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Elimina Trofei</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Compatibilità...</translation>
     </message>
@@ -852,6 +856,10 @@
       <translation>Questo gioco non ha nessuna cartella di aggiornamento da aprire!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Nessun file di log trovato per questo gioco!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Impossibile convertire l'icona.</translation>
     </message>
@@ -860,8 +868,16 @@
       <translation>Questo gioco non ha alcun salvataggio dati da eliminare!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Questo gioco non ha nessun trofeo salvato da eliminare!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Dati Salvataggio</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofei</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1312,6 +1328,10 @@
       <translation>Trofei</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Apri la cartella personalizzata delle immagini/suoni dei trofei</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Registro</translation>
     </message>
@@ -1476,8 +1496,8 @@
       <translation>Musica del Titolo</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Disabilita Notifica Trofei</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Disabilita Notifiche Trofei</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1610,6 +1630,10 @@
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
       <translation>Aggiorna Database Compatibilità:\nAggiorna immediatamente il database di compatibilità.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
+      <translation>Apri la cartella personalizzata delle immagini/suoni dei trofei:\nPuoi aggiungere immagini e audio personalizzato ai trofei.\nAggiungi i file in custom_trophy con i seguenti nomi:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1803,12 +1827,44 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>File di registro separati:\nScrive un file di registro separato per ogni gioco.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Posizione Notifica Trofei</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Sinistra</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Destra</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Durata Notifica</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizzatore Trofei</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Progresso</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Mostra Trofei Guadagnati</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Mostra Trofei Non Guadagnati</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Mostra Trofei Nascosti</translation>
     </message>
   </context>
 </TS>
