@@ -4,12 +4,13 @@
 #include <algorithm>
 #include <boost/container/flat_set.hpp>
 #include "shader_recompiler/ir/conditional_tree.h"
-#include "shader_recompiler/ir/subprogram.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/ir/subprogram.h"
 
 namespace Shader::IR {
 
-SubProgram::SubProgram(Program* super_program, Pools& pools) : super_program(super_program), pools(pools) {}
+SubProgram::SubProgram(Program* super_program, Pools& pools)
+    : super_program(super_program), pools(pools) {}
 
 Block* SubProgram::AddBlock(Block* orig_block) {
     auto it = orig_block_to_block.find(orig_block);
@@ -80,7 +81,9 @@ void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
     const Value& arg1 = orig_phi->Arg(1);
     AddPhiOperand(phi, block0, arg0);
     AddPhiOperand(phi, block1, arg1);
-    const auto get_conds = [orig_block0, orig_block1]() -> std::pair<const Block::ConditionalData&, const Block::ConditionalData&> {
+    const auto get_conds =
+        [orig_block0,
+         orig_block1]() -> std::pair<const Block::ConditionalData&, const Block::ConditionalData&> {
         const Block::ConditionalData& cond0 = orig_block0->CondData();
         const Block::ConditionalData& cond1 = orig_block1->CondData();
         if (cond0.depth > cond1.depth) {

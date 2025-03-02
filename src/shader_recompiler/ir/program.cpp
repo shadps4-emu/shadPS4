@@ -44,7 +44,8 @@ void DumpProgram(const Program& program, const Info& info) {
     }
 
     const auto asl_filename = fmt::format("{}_{:#018x}.asl.txt", info.stage, info.pgm_hash);
-    const auto asl_file = IOFile{dump_dir / asl_filename, FileAccessMode::Write, FileType::TextFile};
+    const auto asl_file =
+        IOFile{dump_dir / asl_filename, FileAccessMode::Write, FileType::TextFile};
 
     for (const auto& node : program.syntax_list) {
         std::string s = IR::DumpASLNode(node, block_to_index, inst_to_index) + '\n';
