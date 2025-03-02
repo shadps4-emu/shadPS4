@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/control_flow_graph.h"
-#include "shader_recompiler/ir/conditional_tree.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
+#include "shader_recompiler/ir/conditional_tree.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/recompiler.h"
@@ -59,7 +59,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
                                                 program.info, runtime_info, profile);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
-    
+
     Shader::IR::AddConditionalTreeFromASL(program.syntax_list);
 
     // Run optimization passes

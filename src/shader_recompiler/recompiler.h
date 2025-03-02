@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "shader_recompiler/pools.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/pools.h"
 
 namespace Shader {
 
