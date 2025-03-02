@@ -14,6 +14,7 @@ namespace Shader {
 
 struct VsAttribSpecialization {
     AmdGpu::NumberClass num_class{};
+    AmdGpu::CompMapping dst_select{};
 
     auto operator<=>(const VsAttribSpecialization&) const = default;
 };
@@ -95,6 +96,7 @@ struct StageSpecialization {
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
                          [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                              spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                             spec.dst_select = sharp.DstSelect();
                          });
         }
         u32 binding{};
