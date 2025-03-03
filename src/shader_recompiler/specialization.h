@@ -13,6 +13,7 @@
 namespace Shader {
 
 struct VsAttribSpecialization {
+    AmdGpu::DataFormat data_format{};
     AmdGpu::NumberClass num_class{};
     AmdGpu::CompMapping dst_select{};
 
@@ -94,6 +95,8 @@ struct StageSpecialization {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
                          [&profile_](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                             spec.data_format =
+                                 desc.UsesStepRates() ? sharp.GetDataFmt() : AmdGpu::DataFormat{};
                              spec.num_class = profile_.support_legacy_vertex_attributes
                                                   ? AmdGpu::NumberClass{}
                                                   : AmdGpu::GetNumberClass(sharp.GetNumberFmt());
