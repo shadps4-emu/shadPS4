@@ -38,6 +38,8 @@ public:
     void InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg);
     void InstallDirectory();
     void StartGame();
+    void StopGame();
+    void RestartGame();
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
@@ -65,6 +67,9 @@ private:
     void SetUiIcons(bool isWhite);
     void InstallPkg();
     void BootGame();
+    std::string lastGamePath;
+    std::string getLastEbootPath();
+
     void AddRecentFiles(QString filePath);
     void LoadTranslation();
     void PlayBackgroundMusic();

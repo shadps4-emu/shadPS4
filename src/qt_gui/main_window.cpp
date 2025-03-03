@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
+#include <iostream>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QPlainTextEdit>
 #include <QProgressDialog>
+#include <SDL3/SDL_events.h>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -30,6 +33,7 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#include <SDL3/SDL_messagebox.h>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -144,6 +148,7 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
     ui->toolBar->addWidget(ui->keyboardButton);
+    ui->toolBar->addWidget(ui->restartButton);
     QFrame* line = new QFrame(this);
     line->setFrameShape(QFrame::StyledPanel);
     line->setFrameShadow(QFrame::Sunken);
@@ -277,6 +282,8 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
+    connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::RestartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -1168,6 +1175,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
+    ui->restartButton->setIcon(RecolorIcon(ui->restartButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
@@ -1265,6 +1273,10 @@ void MainWindow::OnLanguageChanged(const std::string& locale) {
     LoadTranslation();
 }
 
+static void ShowMessageBox(const std::string& title, const std::string& message) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, title.c_str(), message.c_str(), NULL);
+}
+
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -1296,4 +1308,46 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     });
     emulator_thread.detach();
 #endif
+}
+
+void MainWindow::StopGame() {
+    if (!isGameRunning) {
+        ShowMessageBox("Stop Game", "No game is currently running.");
+        return;
+    }
+
+    Core::Emulator& emulator = Core::Emulator::GetInstance();
+    emulator.StopEmulation();
+
+    if (isGameRunning == true)
+        ;
+    ShowMessageBox("Stop Game", "Game has been stopped successfully.");
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT + 1;
+    SDL_PushEvent(&quitEvent);
+}
+
+std::string MainWindow::getLastEbootPath() {
+    return std::string();
+}
+
+void MainWindow::RestartGame() {
+    if (!isGameRunning) {
+        ShowMessageBox("Restart Game", "No game is running to restart.");
+        return;
+    }
+
+    std::string lastGamePath = getLastEbootPath();
+
+    if (lastGamePath.empty()) {
+        ShowMessageBox("Restart Game", "No recent game found.");
+    }
+
+    StopGame();
+
+    while (isGameRunning) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    StartEmulator(lastGamePath);
 }
