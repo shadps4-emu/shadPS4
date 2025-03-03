@@ -1633,7 +1633,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>Åpne mappa med tilpassede bilder og lyder for trofé:\nDu kan legge til tilpassede bilder til trofeer med en lyd.\nLegg filene til custom_trophy med følgende navn:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nMerk: Avspilling av lyden vil bare fungere med Qt versjonen.</translation>
     </message>
     <message>
       <source>Never</source>
