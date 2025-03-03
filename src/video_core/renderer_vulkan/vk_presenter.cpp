@@ -10,6 +10,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
+#include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -126,11 +127,9 @@ void Presenter::CreatePostProcessPipeline() {
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
-    auto desc_layout_result = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-    ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
-               "Failed to create descriptor set layout: {}",
-               vk::to_string(desc_layout_result.result));
-    pp_desc_set_layout = std::move(desc_layout_result.value);
+
+    pp_desc_set_layout = Check<"create pp descriptor set layout">(
+        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci));
 
     const vk::PushConstantRange push_constants = {
         .stageFlags = vk::ShaderStageFlagBits::eFragment,
@@ -168,10 +167,9 @@ void Presenter::CreatePostProcessPipeline() {
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push_constants,
     };
-    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
-    ASSERT_MSG(layout_result == vk::Result::eSuccess, "Failed to create pipeline layout: {}",
-               vk::to_string(layout_result));
-    pp_pipeline_layout = std::move(layout);
+
+    pp_pipeline_layout = Check<"create pp pipeline layout">(
+        instance.GetDevice().createPipelineLayoutUnique(layout_info));
 
     const std::array pp_color_formats{
         vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
@@ -265,13 +263,9 @@ void Presenter::CreatePostProcessPipeline() {
         .layout = *pp_pipeline_layout,
     };
 
-    auto result = instance.GetDevice().createGraphicsPipelineUnique(
-        /*pipeline_cache*/ {}, pipeline_info);
-    if (result.result == vk::Result::eSuccess) {
-        pp_pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Post process pipeline creation failed!");
-    }
+    pp_pipeline =
+        Check<"create post process pipeline">(instance.GetDevice().createGraphicsPipelineUnique(
+            /*pipeline_cache*/ {}, pipeline_info));
 
     // Once pipeline is compiled, we don't need the shader module anymore
     instance.GetDevice().destroyShaderModule(vs_module);
@@ -285,10 +279,7 @@ void Presenter::CreatePostProcessPipeline() {
         .addressModeU = vk::SamplerAddressMode::eClampToEdge,
         .addressModeV = vk::SamplerAddressMode::eClampToEdge,
     };
-    auto [sampler_result, smplr] = instance.GetDevice().createSamplerUnique(sampler_ci);
-    ASSERT_MSG(sampler_result == vk::Result::eSuccess, "Failed to create sampler: {}",
-               vk::to_string(sampler_result));
-    pp_sampler = std::move(smplr);
+    pp_sampler = Check<"create pp sampler">(instance.GetDevice().createSamplerUnique(sampler_ci));
 }
 
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
@@ -306,10 +297,8 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     present_frames.resize(num_images);
     for (u32 i = 0; i < num_images; i++) {
         Frame& frame = present_frames[i];
-        auto [fence_result, fence] =
-            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
-        ASSERT_MSG(fence_result == vk::Result::eSuccess, "Failed to create present done fence: {}",
-                   vk::to_string(fence_result));
+        auto fence = Check<"create present done fence">(
+            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled}));
         frame.present_done = fence;
         free_queue.push(&frame);
     }
@@ -389,9 +378,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
             .layerCount = 1,
         },
     };
-    auto [view_result, view] = device.createImageView(view_info);
-    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create frame image view: {}",
-               vk::to_string(view_result));
+    auto view = Check<"create frame image view">(device.createImageView(view_info));
     frame->image_view = view;
     frame->width = width;
     frame->height = height;
