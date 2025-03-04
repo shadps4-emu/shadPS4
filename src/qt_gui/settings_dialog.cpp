@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QFileDialog>
 #include <QHoverEvent>
+#include <QMessageBox>
 #include <fmt/format.h>
 
 #include "common/config.h"
@@ -234,6 +235,21 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                                       Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
+
+        connect(ui->PortableUserButton, &QPushButton::clicked, this, []() {
+            QString userDir;
+            Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
+            if (std::filesystem::exists(std::filesystem::current_path() / "user")) {
+                QMessageBox::information(NULL, "Cannot create portable user folder",
+                                         userDir + " already exists");
+            } else {
+                std::filesystem::copy(Common::FS::GetUserPath(Common::FS::PathType::UserDir),
+                                      std::filesystem::current_path() / "user",
+                                      std::filesystem::copy_options::recursive);
+                QMessageBox::information(NULL, "Portable user folder created",
+                                         userDir + " successfully created");
+            }
+        });
     }
 
     // Input TAB
@@ -344,6 +360,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->saveDataGroupBox->installEventFilter(this);
         ui->currentSaveDataPath->installEventFilter(this);
         ui->browseButton->installEventFilter(this);
+        ui->PortableUserFolderGroupBox->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -650,6 +667,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Add:\\nAdd a folder to the list.");
     } else if (elementName == "removeFolderButton") {
         text = tr("Remove:\\nRemove a folder from the list.");
+    } else if (elementName == "PortableUserFolderGroupBox") {
+        text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.");
     }
 
     // Save Data
