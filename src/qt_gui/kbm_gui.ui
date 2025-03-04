@@ -634,7 +634,7 @@
                   <enum>Qt::FocusPolicy::NoFocus</enum>
                  </property>
                  <property name="text">
-                  <string>Copy  from Common Config</string>
+                  <string>Copy from Common Config</string>
                  </property>
                 </widget>
                </item>
