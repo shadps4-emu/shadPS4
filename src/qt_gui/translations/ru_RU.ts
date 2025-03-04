@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation>Не найден файл журнала для этой игры!</translation>
+      <translation>Не найден файл логов для этой игры!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -1488,7 +1488,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation>Откройте папку с пользовательскими изображениями/звуками трофеев</translation>
+      <translation>Открыть папку с пользовательскими изображениями/звуками трофеев</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1992,11 +1992,11 @@
     </message>
     <message>
       <source>Left</source>
-      <translation>Влево</translation>
+      <translation>Слева</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation>Вправо</translation>
+      <translation>Справа</translation>
     </message>
     <message>
       <source>Top</source>
