@@ -1051,15 +1051,15 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>Copiar da Configuração Comum</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>Deslocamento da Zona Morta (Pad 0,50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>Multiplicador de Velocidade (Pad 1,0):</translation>
     </message>
   </context>
   <context>
