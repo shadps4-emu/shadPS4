@@ -733,7 +733,7 @@
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Abrir Pasta de Registros</translation>
+      <translation>Abrir Pasta de Log</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -1517,7 +1517,7 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>Atualizar Base de Dados de Compatibilidade ao Inicializar</translation>
+      <translation>Atualizar Banco de Dados de Compatibilidade ao Inicializar</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
@@ -1589,7 +1589,7 @@
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Filtro de Registro:\nFiltra o registro para exibir apenas informações específicas.\nExemplos: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNíveis: Trace, Debug, Info, Warning, Error, Critical - nesta ordem, um nível específico silencia todos os níveis anteriores na lista e registra todos os níveis após ele.</translation>
+      <translation>Filtro do Registro:\nFiltra o registro para exibir apenas informações específicas.\nExemplos: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNíveis: Trace, Debug, Info, Warning, Error, Critical - nesta ordem, um nível específico silencia todos os níveis anteriores na lista e registra todos os níveis após este.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
@@ -1632,8 +1632,8 @@
       <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nVocê pode adicionar imagens e sons personalizados aos troféus.\nAdicione os arquivos em custom_trophy com os seguintes nomes:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nVocê pode adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas em versões Qt.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1838,6 +1838,14 @@
     <message>
       <source>Right</source>
       <translation>Direita</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Acima</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Abaixo</translation>
     </message>
     <message>
       <source>Notification Duration</source>

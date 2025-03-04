@@ -1632,8 +1632,8 @@
       <translation>Zaktualizuj bazę danych zgodności:\nNatychmiast zaktualizuj bazę danych zgodności.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation>Otwórz niestandardowy folder obrazów/dźwięków:\nMożesz dodać własne obrazy do trofeów i dźwięku.\nDodaj pliki do custom_trophy o następujących nazwach:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1838,6 +1838,14 @@
     <message>
       <source>Right</source>
       <translation>Z prawej</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Z góry</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Z dołu</translation>
     </message>
     <message>
       <source>Notification Duration</source>

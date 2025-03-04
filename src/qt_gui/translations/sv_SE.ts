@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation>Öppna mapp för anpassade trofébilder/ljud</translation>
+      <translation>Öppna mappen för anpassade trofébilder/ljud</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1632,8 +1632,8 @@
       <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation>Öppna mappen med anpassade trofébilder/ljud:\nDu kan lägga till anpassade bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Öppna mappen för anpassade trofébilder/ljud:\nDu kan lägga till anpassade bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservera: Ljudet fungerar endast i QT-versioner.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1838,6 +1838,14 @@
     <message>
       <source>Right</source>
       <translation>Höger</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Överst</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Nederst</translation>
     </message>
     <message>
       <source>Notification Duration</source>

@@ -777,7 +777,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Eliminar Troféu</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -857,7 +857,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>Não foi encontrado nenhum ficheiro de registo para este jogo!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -869,7 +869,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>Este jogo não tem troféus guardados para eliminar!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -877,7 +877,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Troféus</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1329,7 +1329,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1497,7 +1497,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Desativar Notificações de Troféus</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1632,8 +1632,8 @@
       <translation>Atualizar Base de Dados de Compatibilidade:\nAtualiza imediatamente a base de dados de compatibilidade.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nPoderá adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os ficheiros na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas nas versões Qt.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1829,19 +1829,27 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Posição da Notificação do Troféu</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Esquerda</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Direita</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Acima</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Abaixo</translation>
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>Duração da Notificação</translation>
     </message>
   </context>
   <context>
@@ -1852,19 +1860,19 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>Progresso</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>Mostrar Troféus Conquistados</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Mostrar Troféus Não Conquistados</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>Mostrar Troféus Ocultos</translation>
     </message>
   </context>
 </TS>
