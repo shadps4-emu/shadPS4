@@ -17,7 +17,6 @@
 #include "video_core/texture_cache/image.h"
 
 #include "video_core/host_shaders/fs_tri_vert.h"
-#include "video_core/host_shaders/post_process_frag.h"
 
 #include <vk_mem_alloc.h>
 
@@ -107,181 +106,6 @@ static vk::Rect2D FitImage(s32 frame_width, s32 frame_height, s32 swapchain_widt
                          dst_rect.offset.x, dst_rect.offset.y);
 }
 
-void Presenter::CreatePostProcessPipeline() {
-    static const std::array pp_shaders{
-        HostShaders::FS_TRI_VERT,
-        HostShaders::POST_PROCESS_FRAG,
-    };
-
-    boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
-        {
-            .binding = 0,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-    };
-
-    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
-        .bindingCount = static_cast<u32>(bindings.size()),
-        .pBindings = bindings.data(),
-    };
-
-    pp_desc_set_layout = Check<"create pp descriptor set layout">(
-        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci));
-
-    const vk::PushConstantRange push_constants = {
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        .offset = 0,
-        .size = sizeof(PostProcessSettings),
-    };
-
-    const auto& vs_module =
-        Vulkan::Compile(pp_shaders[0], vk::ShaderStageFlagBits::eVertex, instance.GetDevice());
-    ASSERT(vs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "fs_tri.vert");
-
-    const auto& fs_module =
-        Vulkan::Compile(pp_shaders[1], vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
-    ASSERT(fs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), fs_module, "post_process.frag");
-
-    const std::array shaders_ci{
-        vk::PipelineShaderStageCreateInfo{
-            .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = vs_module,
-            .pName = "main",
-        },
-        vk::PipelineShaderStageCreateInfo{
-            .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = fs_module,
-            .pName = "main",
-        },
-    };
-
-    const vk::DescriptorSetLayout set_layout = *pp_desc_set_layout;
-    const vk::PipelineLayoutCreateInfo layout_info = {
-        .setLayoutCount = 1U,
-        .pSetLayouts = &set_layout,
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges = &push_constants,
-    };
-
-    pp_pipeline_layout = Check<"create pp pipeline layout">(
-        instance.GetDevice().createPipelineLayoutUnique(layout_info));
-
-    const std::array pp_color_formats{
-        vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
-    };
-    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = 1u,
-        .pColorAttachmentFormats = pp_color_formats.data(),
-    };
-
-    const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
-        .vertexBindingDescriptionCount = 0u,
-        .vertexAttributeDescriptionCount = 0u,
-    };
-
-    const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
-        .topology = vk::PrimitiveTopology::eTriangleList,
-    };
-
-    const vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = 1.0f,
-        .height = 1.0f,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    const vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = {1, 1},
-    };
-
-    const vk::PipelineViewportStateCreateInfo viewport_info = {
-        .viewportCount = 1,
-        .pViewports = &viewport,
-        .scissorCount = 1,
-        .pScissors = &scissor,
-    };
-
-    const vk::PipelineRasterizationStateCreateInfo raster_state = {
-        .depthClampEnable = false,
-        .rasterizerDiscardEnable = false,
-        .polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eBack,
-        .frontFace = vk::FrontFace::eClockwise,
-        .depthBiasEnable = false,
-        .lineWidth = 1.0f,
-    };
-
-    const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = vk::SampleCountFlagBits::e1,
-    };
-
-    const std::array attachments{
-        vk::PipelineColorBlendAttachmentState{
-            .blendEnable = false,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
-        },
-    };
-
-    const vk::PipelineColorBlendStateCreateInfo color_blending = {
-        .logicOpEnable = false,
-        .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = attachments.size(),
-        .pAttachments = attachments.data(),
-        .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
-    };
-
-    const std::array dynamic_states = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eScissor,
-    };
-
-    const vk::PipelineDynamicStateCreateInfo dynamic_info = {
-        .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
-        .pDynamicStates = dynamic_states.data(),
-    };
-
-    const vk::GraphicsPipelineCreateInfo pipeline_info = {
-        .pNext = &pipeline_rendering_ci,
-        .stageCount = static_cast<u32>(shaders_ci.size()),
-        .pStages = shaders_ci.data(),
-        .pVertexInputState = &vertex_input_info,
-        .pInputAssemblyState = &input_assembly,
-        .pViewportState = &viewport_info,
-        .pRasterizationState = &raster_state,
-        .pMultisampleState = &multisampling,
-        .pColorBlendState = &color_blending,
-        .pDynamicState = &dynamic_info,
-        .layout = *pp_pipeline_layout,
-    };
-
-    pp_pipeline =
-        Check<"create post process pipeline">(instance.GetDevice().createGraphicsPipelineUnique(
-            /*pipeline_cache*/ {}, pipeline_info));
-
-    // Once pipeline is compiled, we don't need the shader module anymore
-    instance.GetDevice().destroyShaderModule(vs_module);
-    instance.GetDevice().destroyShaderModule(fs_module);
-
-    // Create sampler resource
-    const vk::SamplerCreateInfo sampler_ci = {
-        .magFilter = vk::Filter::eLinear,
-        .minFilter = vk::Filter::eLinear,
-        .mipmapMode = vk::SamplerMipmapMode::eNearest,
-        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
-        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
-    };
-    pp_sampler = Check<"create pp sampler">(instance.GetDevice().createSamplerUnique(sampler_ci));
-}
-
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
@@ -303,7 +127,7 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         free_queue.push(&frame);
     }
 
-    CreatePostProcessPipeline();
+    pp_pass.Create(device);
 
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }
@@ -365,6 +189,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         UNREACHABLE();
     }
     frame->image = vk::Image{unsafe_image};
+    SetObjectName(device, frame->image, "Frame image");
 
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
@@ -592,32 +417,11 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &pre_barrier,
     });
 
-    const std::array attachments = {vk::RenderingAttachmentInfo{
-        .imageView = frame->image_view,
-        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-        .loadOp = vk::AttachmentLoadOp::eClear,
-        .storeOp = vk::AttachmentStoreOp::eStore,
-    }};
-    const vk::RenderingInfo rendering_info{
-        .renderArea =
-            vk::Rect2D{
-                .offset = {0, 0},
-                .extent = {frame->width, frame->height},
-            },
-        .layerCount = 1,
-        .colorAttachmentCount = attachments.size(),
-        .pColorAttachments = attachments.data(),
-    };
-
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
+        vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
                       cmdbuf);
-
-        static vk::DescriptorImageInfo image_info{
-            .sampler = *pp_sampler,
-            .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-        };
 
         VideoCore::ImageViewInfo info{};
         info.format = image.info.pixel_format;
@@ -628,52 +432,32 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
             .b = vk::ComponentSwizzle::eIdentity,
             .a = vk::ComponentSwizzle::eOne,
         };
+        vk::ImageView imageView;
         if (auto view = image.FindView(info)) {
-            image_info.imageView = *texture_cache.GetImageView(view).image_view;
+            imageView = *texture_cache.GetImageView(view).image_view;
         } else {
-            image_info.imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
+            imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
         }
 
-        static const std::array set_writes{
-            vk::WriteDescriptorSet{
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                .pImageInfo = &image_info,
-            },
-        };
-
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *pp_pipeline);
-
-        const auto& dst_rect =
-            FitImage(image.info.size.width, image.info.size.height, frame->width, frame->height);
-
-        const std::array viewports = {
-            vk::Viewport{
-                .x = 1.0f * dst_rect.offset.x,
-                .y = 1.0f * dst_rect.offset.y,
-                .width = 1.0f * dst_rect.extent.width,
-                .height = 1.0f * dst_rect.extent.height,
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f,
-            },
-        };
-
-        cmdbuf.setViewport(0, viewports);
-        cmdbuf.setScissor(0, {dst_rect});
-
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pp_pipeline_layout, 0,
-                                    set_writes);
-        cmdbuf.pushConstants(*pp_pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0,
-                             sizeof(PostProcessSettings), &pp_settings);
-
-        cmdbuf.beginRendering(rendering_info);
-        cmdbuf.draw(3, 1, 0, 0);
-        cmdbuf.endRendering();
+        pp_pass.Render(cmdbuf, imageView, image_size, *frame, pp_settings);
     } else {
         // Fix display of garbage images on startup on some drivers
+        const std::array<vk::RenderingAttachmentInfo, 1> attachments = {{
+            {
+                .imageView = frame->image_view,
+                .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+                .loadOp = vk::AttachmentLoadOp::eClear,
+                .storeOp = vk::AttachmentStoreOp::eStore,
+            },
+        }};
+        const vk::RenderingInfo rendering_info{
+            .renderArea{
+                .extent{frame->width, frame->height},
+            },
+            .layerCount = 1,
+            .colorAttachmentCount = attachments.size(),
+            .pColorAttachments = attachments.data(),
+        };
         cmdbuf.beginRendering(rendering_info);
         cmdbuf.endRendering();
     }

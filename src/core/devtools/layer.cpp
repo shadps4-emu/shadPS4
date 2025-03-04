@@ -81,8 +81,9 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
+            auto& pp_settings = presenter->GetPPSettingsRef();
             if (BeginMenu("Brightness")) {
-                SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
+                SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();

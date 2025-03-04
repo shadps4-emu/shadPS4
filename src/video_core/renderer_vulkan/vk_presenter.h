@@ -7,6 +7,7 @@
 
 #include "imgui/imgui_config.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -45,17 +46,12 @@ enum SchedulerType {
 class Rasterizer;
 
 class Presenter {
-    struct PostProcessSettings {
-        float gamma = 1.0f;
-        u32 hdr = 0;
-    };
-
 public:
     Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
     ~Presenter();
 
-    float& GetGammaRef() {
-        return pp_settings.gamma;
+    HostPasses::PostProcessingPass::Settings& GetPPSettingsRef() {
+        return pp_settings;
     }
 
     Frontend::WindowSDL& GetWindow() const {
@@ -117,16 +113,12 @@ public:
     }
 
 private:
-    void CreatePostProcessPipeline();
     Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
     Frame* GetRenderFrame();
 
 private:
-    PostProcessSettings pp_settings{};
-    vk::UniquePipeline pp_pipeline{};
-    vk::UniquePipelineLayout pp_pipeline_layout{};
-    vk::UniqueDescriptorSetLayout pp_desc_set_layout{};
-    vk::UniqueSampler pp_sampler{};
+    HostPasses::PostProcessingPass::Settings pp_settings{};
+    HostPasses::PostProcessingPass pp_pass;
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;
