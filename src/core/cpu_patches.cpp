@@ -180,28 +180,44 @@ static void RestoreStack(Xbyak::CodeGenerator& c) {
     c.mov(rsp, qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))]);
 }
 
+/// Validates that the dst register is supported given the SaveStack/RestoreStack implementation.
+static void ValidateDst(const Xbyak::Reg& dst) {
+    // No restrictions.
+}
+
 #else
 
-// These utilities are not implemented as we can't save anything to thread local storage without
-// temporary registers.
 void InitializeThreadPatchStack() {
     // No-op
 }
 
+// NOTE: Since stack pointer here is subtracted through safe zone and not saved anywhere,
+// it must not be modified during the instruction. Otherwise, we will not be able to find
+// and load registers back from where they were saved. Thus, a limitation is placed on
+// instructions, that they must not use the stack pointer register as a destination.
+
 /// Saves the stack pointer to thread local storage and loads the patch stack.
 static void SaveStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
+    c.lea(rsp, ptr[rsp - 128]); // red zone
 }
 
 /// Restores the stack pointer from thread local storage.
 static void RestoreStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
+    c.lea(rsp, ptr[rsp + 128]); // red zone
+}
+
+/// Validates that the dst register is supported given the SaveStack/RestoreStack implementation.
+static void ValidateDst(const Xbyak::Reg& dst) {
+    // Stack pointer is not preserved, so it can't be used as a dst.
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "Stack pointer not supported as destination.");
 }
 
 #endif
 
 /// Switches to the patch stack, saves registers, and restores the original stack.
 static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
+    // Uses a more robust solution for saving registers on MacOS to avoid potential stack corruption
+    // if games decide to not follow the ABI and use the red zone.
     SaveStack(c);
     for (const auto& reg : regs) {
         c.push(reg.cvt64());
@@ -257,12 +273,11 @@ static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
     RestoreStack(c);
 }
 
-#ifdef __APPLE__
-
 static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
     const auto src2 = ZydisToXbyakOperand(operands[2]);
+    ValidateDst(dst);
 
     // Check if src2 is a memory operand or a register different to dst.
     // In those cases, we don't need to use a temporary register and are free to modify dst.
@@ -301,6 +316,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
     const auto start_len = ZydisToXbyakRegisterOperand(operands[2]);
+    ValidateDst(dst);
 
     const Xbyak::Reg32e shift(Xbyak::Operand::RCX, static_cast<int>(start_len.getBit()));
     const auto scratch1 =
@@ -338,6 +354,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -367,6 +384,7 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -395,9 +413,37 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
     RestoreRegisters(c, {scratch});
 }
 
+static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    const auto src = ZydisToXbyakOperand(operands[1]);
+    ValidateDst(dst);
+
+    Xbyak::Label src_zero, end;
+
+    c.cmp(*src, 0);
+    c.je(src_zero);
+
+    // If src is not zero, functions like a BSF, but also clears the CF
+    c.bsf(dst, *src);
+    c.clc();
+    c.jmp(end);
+
+    c.L(src_zero);
+    c.mov(dst, operands[0].size);
+    // Since dst is not zero, also set ZF to zero. Testing dst with itself when we know
+    // it isn't zero is a good way to do this.
+    // Use cvt32 to avoid REX/Operand size prefixes.
+    c.test(dst.cvt32(), dst.cvt32());
+    // When source is zero, TZCNT also sets CF.
+    c.stc();
+
+    c.L(end);
+}
+
 static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -425,6 +471,8 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 
     RestoreRegisters(c, {scratch});
 }
+
+#ifdef __APPLE__
 
 static __attribute__((sysv_abi)) void PerformVCVTPH2PS(float* out, const half_float::half* in,
                                                        const u32 count) {
@@ -614,6 +662,11 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
     return !cpu.has(Cpu::tSSE4a);
+}
+
+static bool FilterNoBMI1(const ZydisDecodedOperand*) {
+    Cpu cpu;
+    return !cpu.has(Cpu::tBMI1);
 }
 
 static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
@@ -897,14 +950,16 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
     {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
 
+    // BMI1
+    {ZYDIS_MNEMONIC_ANDN, {FilterNoBMI1, GenerateANDN, true}},
+    {ZYDIS_MNEMONIC_BEXTR, {FilterNoBMI1, GenerateBEXTR, true}},
+    {ZYDIS_MNEMONIC_BLSI, {FilterNoBMI1, GenerateBLSI, true}},
+    {ZYDIS_MNEMONIC_BLSMSK, {FilterNoBMI1, GenerateBLSMSK, true}},
+    {ZYDIS_MNEMONIC_BLSR, {FilterNoBMI1, GenerateBLSR, true}},
+    {ZYDIS_MNEMONIC_TZCNT, {FilterNoBMI1, GenerateTZCNT, true}},
+
 #ifdef __APPLE__
     // Patches for instruction sets not supported by Rosetta 2.
-    // BMI1
-    {ZYDIS_MNEMONIC_ANDN, {FilterRosetta2Only, GenerateANDN, true}},
-    {ZYDIS_MNEMONIC_BEXTR, {FilterRosetta2Only, GenerateBEXTR, true}},
-    {ZYDIS_MNEMONIC_BLSI, {FilterRosetta2Only, GenerateBLSI, true}},
-    {ZYDIS_MNEMONIC_BLSMSK, {FilterRosetta2Only, GenerateBLSMSK, true}},
-    {ZYDIS_MNEMONIC_BLSR, {FilterRosetta2Only, GenerateBLSR, true}},
     // F16C
     {ZYDIS_MNEMONIC_VCVTPH2PS, {FilterRosetta2Only, GenerateVCVTPH2PS, true}},
     {ZYDIS_MNEMONIC_VCVTPS2PH, {FilterRosetta2Only, GenerateVCVTPS2PH, true}},

@@ -31,7 +31,7 @@
    <string>Settings</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="../shadps4.qrc">
     <normaloff>:/images/shadps4.ico</normaloff>:/images/shadps4.ico</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>5</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -130,9 +130,6 @@
                <property name="bottomMargin">
                 <number>9</number>
                </property>
-               <property name="alignment">
-                  <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-                 </property>
                <item>
                 <layout class="QVBoxLayout" name="emulatorverticalLayout">
                  <property name="spacing">
@@ -455,7 +452,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -904,7 +901,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1199,7 +1196,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1306,14 +1303,14 @@
                     <string>Top</string>
                    </property>
                   </widget>
-                  </item>
+                 </item>
                  <item>
                   <widget class="QRadioButton" name="radioButton_Bottom">
                    <property name="text">
                     <string>Bottom</string>
                    </property>
                   </widget>
-                  </item>
+                 </item>
                 </layout>
                </item>
                <item>
@@ -1335,8 +1332,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QDoubleSpinBox" name="popUpDurationSpinBox">
-                  </widget>
+                  <widget class="QDoubleSpinBox" name="popUpDurationSpinBox"/>
                  </item>
                  <item>
                   <spacer name="horizontalSpacer_4">
@@ -1442,7 +1438,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1726,7 +1722,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1800,6 +1796,58 @@
           </layout>
          </widget>
         </item>
+        <item>
+         <widget class="QGroupBox" name="PortableUserFolderGroupBox">
+          <property name="title">
+           <string>Portable User Folder</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
+             <item>
+              <spacer name="horizontalSpacer_6">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="PortableUserButton">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Create Portable User Folder from Common User Folder</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_5">
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -1816,7 +1864,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>545</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
@@ -2068,6 +2116,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../shadps4.qrc"/>
+ </resources>
  <connections/>
 </ui>
