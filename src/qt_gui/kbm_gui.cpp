@@ -117,7 +117,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
 
     connect(ui->SpeedOffsetSlider, &QSlider::valueChanged, this, [this](int value) {
         QString SOSValue = QString::number(value / 1000.0, 'f', 3);
-        QString SOSString = tr("Speed Offset (def 0.125):") + " " + SOSValue;
+        QString SOSString = tr("Speed Offset (def 0.125): ") + " " + SOSValue;
         ui->SpeedOffsetLabel->setText(SOSString);
     });
 }
