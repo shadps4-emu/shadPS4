@@ -958,10 +958,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Copy  from Common Config</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>L1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1050,19 +1046,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Deadzone Offset (def 0.50): </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Speed Multiplier (def 1.0): </source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Speed Offset (def 0.125):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Speed Offset (def 0.125): </source>
+        <source>Copy from Common Config</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deadzone Offset (def 0.50):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed Multiplier (def 1.0):</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
