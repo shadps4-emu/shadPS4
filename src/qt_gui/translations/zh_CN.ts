@@ -904,6 +904,169 @@
     </message>
   </context>
   <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>配置键鼠</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>D-Pad</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>上</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>未映射</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>左</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>右</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>下</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>左摇杆半速模式</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>按住以半速移动左摇杆</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>左摇杆</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>配置选择</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>通用配置</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>每个游戏使用单独的配置</translation>
+    </message>
+    <message>
+      <source>Copy  from Common Config</source>
+      <translation>从通用配置中复制</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>文本编辑器</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>帮助</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>触摸板点击</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>鼠标控制摇杆</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>* 按 F7 键激活</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>鼠标移动参数</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>注意：点击帮助按钮 -> Special Bindings 获取更多信息</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>正面按钮</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Cross</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>右摇杆半速模式</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>按住以半速移动右摇杆</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>右摇杆</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50): </source>
+      <translation>死区偏移量（默认 0.50）：</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0): </source>
+      <translation>速度系数（默认 1.0）：</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>速度偏移量（默认 0.125）：</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125): </source>
+      <translation>速度偏移量（默认 0.125）：</translation>
+    </message>
+  </context>
+  <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
@@ -1633,7 +1796,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>打开自定义奖杯图像/声音文件夹：\n您可以自定义奖杯图像和声音。\n将文件添加到 custom_trophy 文件夹中，文件名如下：\ntrophy.mp3、bronze.png、gold.png、platinum.png、silver.png。\n注意：自定义声音只能在 QT 版本中生效。</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1841,15 +2004,27 @@
     </message>
     <message>
       <source>Top</source>
-      <translation type="unfinished">Top</translation>
+      <translation>顶部</translation>
     </message>
     <message>
       <source>Bottom</source>
-      <translation type="unfinished">Bottom</translation>
+      <translation>底部</translation>
     </message>
     <message>
       <source>Notification Duration</source>
       <translation>通知显示持续时间</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>从公共用户文件夹创建本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>本地用户文件夹：\n存储 shadPS4 设置和数据，这些设置和数据仅应用于当前运行的 shadPS4。创建本地用户文件夹后，重启应用即可开始使用。</translation>
     </message>
   </context>
   <context>

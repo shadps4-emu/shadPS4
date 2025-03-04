@@ -904,6 +904,169 @@
     </message>
   </context>
   <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation type="unfinished">Configure Controls</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation type="unfinished">D-Pad</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation type="unfinished">Up</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation type="unfinished">Left</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation type="unfinished">Right</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation type="unfinished">Down</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation type="unfinished">Left Analog Halfmode</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation type="unfinished">hold to move left stick at half-speed</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation type="unfinished">Left Stick</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation type="unfinished">Config Selection</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation type="unfinished">Common Config</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation type="unfinished">Use per-game configs</translation>
+    </message>
+    <message>
+      <source>Copy  from Common Config</source>
+      <translation type="unfinished">Copy  from Common Config</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation type="unfinished">Text Editor</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation type="unfinished">L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation type="unfinished">Touchpad Click</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation type="unfinished">Mouse to Joystick</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation type="unfinished">*press F7 ingame to activate</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation type="unfinished">R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation type="unfinished">Mouse Movement Parameters</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation type="unfinished">Face Buttons</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation type="unfinished">Right Analog Halfmode</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation type="unfinished">hold to move right stick at half-speed</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation type="unfinished">Right Stick</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50): </source>
+      <translation type="unfinished">Deadzone Offset (def 0.50): </translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0): </source>
+      <translation type="unfinished">Speed Multiplier (def 1.0): </translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125): </source>
+      <translation type="unfinished">Speed Offset (def 0.125): </translation>
+    </message>
+  </context>
+  <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
@@ -1850,6 +2013,18 @@
     <message>
       <source>Notification Duration</source>
       <translation>Kohëzgjatja e Njoftimit</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation type="unfinished">Portable User Folder</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
     </message>
   </context>
   <context>
