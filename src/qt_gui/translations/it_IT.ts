@@ -907,163 +907,163 @@
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Configura Comandi</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Croce direzionale</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Su</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>non mappato</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Sinistra</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Destra</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Giù</translation>
     </message>
     <message>
       <source>Left Analog Halfmode</source>
-      <translation type="unfinished">Left Analog Halfmode</translation>
+      <translation>Mezza Modalità Analogico Sinistra</translation>
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation type="unfinished">hold to move left stick at half-speed</translation>
+      <translation>tieni premuto per muovere la levetta analogica sinistra a metà velocità</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Levetta Sinistra</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Selezione Configurazione</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Configurazione Comune</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Usa configurazioni per gioco</translation>
     </message>
     <message>
       <source>Copy  from Common Config</source>
-      <translation type="unfinished">Copy  from Common Config</translation>
+      <translation>Copia da Configurazione Comune</translation>
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Text Editor</source>
-      <translation type="unfinished">Text Editor</translation>
+      <translation>Editor Testuale</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Aiuto</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>Click Touchpad</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
-      <translation type="unfinished">Mouse to Joystick</translation>
+      <translation>Mouse a Joystick</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
+      <translation>*premere F7 in gioco per attivare</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
+      <translation>Opzioni</translation>
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>Parametri Movimento Del Mouse</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>nota: cliccare sul Pulsante Aiuto/Associazioni Speciali dei Tasti per maggiori informazioni</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Pulsanti Frontali</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>Triangolo</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>Quadrato</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>Cerchio</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>Croce</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation type="unfinished">Right Analog Halfmode</translation>
+      <translation>Mezza Modalità Analogico Destra</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>tieni premuto per muovere la levetta analogica destra a metà velocità</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Levetta Destra</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50): </source>
-      <translation type="unfinished">Deadzone Offset (def 0.50): </translation>
+      <translation>Scostamento Zona Morta (def 0,50): </translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0): </source>
-      <translation type="unfinished">Speed Multiplier (def 1.0): </translation>
+      <translation>Moltiplicatore Di Velocità (def 1,0): </translation>
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Scostamento Velocità (def 0,125):</translation>
     </message>
     <message>
       <source>Speed Offset (def 0.125): </source>
-      <translation type="unfinished">Speed Offset (def 0.125): </translation>
+      <translation>Scostamento Velocità (def 0,125): </translation>
     </message>
   </context>
   <context>
@@ -1796,7 +1796,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.mp3, bronzo. ng, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
+      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -2024,7 +2024,7 @@
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
+      <translation>Cartella utente portatile:\nMemorizza le impostazioni e i dati shadPS4 che saranno applicati solo alla build shadPS4 situata nella cartella attuale. Riavviare l'applicazione dopo aver creato la cartella utente portatile per iniziare a usarla.</translation>
     </message>
   </context>
   <context>
