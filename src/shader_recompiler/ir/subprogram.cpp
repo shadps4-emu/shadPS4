@@ -7,6 +7,11 @@
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/ir/subprogram.h"
 
+// Given an IR program, this class is used to create a subprogram that contains
+// only the blocks and instructions that relevant to a group of given instructions.
+// Taking into account only the given instructions, the instructions that it uses and
+// conditions.
+
 namespace Shader::IR {
 
 SubProgram::SubProgram(Program* super_program, Pools& pools)
@@ -60,6 +65,8 @@ Inst* SubProgram::GetInst(Inst* orig_inst) {
 }
 
 Program SubProgram::GetSubProgram() {
+    ASSERT_MSG(!completed, "SubProgram already completed");
+    completed = true;
     Program sub_program(super_program->info);
     BuildBlockListAndASL(sub_program);
     sub_program.post_order_blocks = PostOrder(sub_program.syntax_list.front());
@@ -155,8 +162,8 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             asl_node.data.if_node.cond = U1(Value(cond));
             asl_node.data.if_node.body = body_block;
             asl_node.data.if_node.merge = merge_block;
-            block->AddBranch(merge_block);
             block->AddBranch(body_block);
+            block->AddBranch(merge_block);
             filter_blocks.insert(merge_block);
             break;
         }
@@ -209,8 +216,8 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             asl_node.data.break_node.cond = U1(Value(&block->back()));
             asl_node.data.break_node.merge = merge_block;
             asl_node.data.break_node.skip = skip_block;
-            block->AddBranch(merge_block);
             block->AddBranch(skip_block);
+            block->AddBranch(merge_block);
             break;
         }
         case AbstractSyntaxNode::Type::Unreachable:

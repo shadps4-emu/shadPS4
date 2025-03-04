@@ -29,6 +29,7 @@ private:
 
     void BuildBlockListAndASL(Program& sub_program);
 
+    bool completed = false;
     Program* super_program;
     Pools& pools;
     boost::container::flat_map<Block*, Block*> orig_block_to_block;
