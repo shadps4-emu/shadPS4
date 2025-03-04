@@ -668,7 +668,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "removeFolderButton") {
         text = tr("Remove:\\nRemove a folder from the list.");
     } else if (elementName == "PortableUserFolderGroupBox") {
-        text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder");
+        text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.");
     }
 
     // Save Data
