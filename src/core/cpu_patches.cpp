@@ -180,22 +180,36 @@ static void RestoreStack(Xbyak::CodeGenerator& c) {
     c.mov(rsp, qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))]);
 }
 
+/// Validates that the dst register is supported given the SaveStack/RestoreStack implementation.
+static void ValidateDst(const Xbyak::Reg& dst) {
+    // No restrictions.
+}
+
 #else
 
-// These utilities are not implemented as we can't save anything to thread local storage without
-// temporary registers.
 void InitializeThreadPatchStack() {
     // No-op
 }
 
+// NOTE: Since stack pointer here is subtracted through safe zone and not saved anywhere,
+// it must not be modified during the instruction. Otherwise, we will not be able to find
+// and load registers back from where they were saved. Thus, a limitation is placed on
+// instructions, that they must not use the stack pointer register as a destination.
+
 /// Saves the stack pointer to thread local storage and loads the patch stack.
 static void SaveStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
+    c.lea(rsp, ptr[rsp - 128]); // red zone
 }
 
 /// Restores the stack pointer from thread local storage.
 static void RestoreStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
+    c.lea(rsp, ptr[rsp + 128]); // red zone
+}
+
+/// Validates that the dst register is supported given the SaveStack/RestoreStack implementation.
+static void ValidateDst(const Xbyak::Reg& dst) {
+    // Stack pointer is not preserved, so it can't be used as a dst.
+    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "Stack pointer not supported as destination.");
 }
 
 #endif
@@ -204,37 +218,21 @@ static void RestoreStack(Xbyak::CodeGenerator& c) {
 static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
     // Uses a more robust solution for saving registers on MacOS to avoid potential stack corruption
     // if games decide to not follow the ABI and use the red zone.
-#ifdef __APPLE__
     SaveStack(c);
-#else
-    c.lea(rsp, ptr[rsp - 128]); // red zone
-#endif
     for (const auto& reg : regs) {
         c.push(reg.cvt64());
     }
-#ifdef __APPLE__
     RestoreStack(c);
-#else
-    c.lea(rsp, ptr[rsp + 128]);
-#endif
 }
 
 /// Switches to the patch stack, restores registers, and restores the original stack.
 static void RestoreRegisters(Xbyak::CodeGenerator& c,
                              const std::initializer_list<Xbyak::Reg> regs) {
-#ifdef __APPLE__
     SaveStack(c);
-#else
-    c.lea(rsp, ptr[rsp - 128]); // red zone
-#endif
     for (const auto& reg : regs) {
         c.pop(reg.cvt64());
     }
-#ifdef __APPLE__
     RestoreStack(c);
-#else
-    c.lea(rsp, ptr[rsp + 128]);
-#endif
 }
 
 /// Switches to the patch stack and stores all registers.
@@ -279,7 +277,7 @@ static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
     const auto src2 = ZydisToXbyakOperand(operands[2]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "ANDN overwriting the stack pointer");
+    ValidateDst(dst);
 
     // Check if src2 is a memory operand or a register different to dst.
     // In those cases, we don't need to use a temporary register and are free to modify dst.
@@ -318,7 +316,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
     const auto start_len = ZydisToXbyakRegisterOperand(operands[2]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BEXTR overwriting the stack pointer");
+    ValidateDst(dst);
 
     const Xbyak::Reg32e shift(Xbyak::Operand::RCX, static_cast<int>(start_len.getBit()));
     const auto scratch1 =
@@ -356,7 +354,7 @@ static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSI overwriting the stack pointer");
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -386,7 +384,7 @@ static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
 static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSMSK overwriting the stack pointer");
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
@@ -418,7 +416,7 @@ static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGener
 static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "TZCNT overwriting the stack pointer");
+    ValidateDst(dst);
 
     Xbyak::Label src_zero, end;
 
@@ -445,7 +443,7 @@ static void GenerateTZCNT(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
     const auto src = ZydisToXbyakOperand(operands[1]);
-    ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "BLSR overwriting the stack pointer");
+    ValidateDst(dst);
 
     const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
 
