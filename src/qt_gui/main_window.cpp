@@ -21,10 +21,9 @@
 #include "core/loader.h"
 #include "game_install_dialog.h"
 #include "install_dir_select.h"
+#include "kbm_gui.h"
 #include "main_window.h"
 #include "settings_dialog.h"
-
-#include "kbm_config_dialog.h"
 
 #include "video_core/renderer_vulkan/vk_instance.h"
 #ifdef ENABLE_DISCORD_RPC
@@ -348,14 +347,13 @@ void MainWindow::CreateConnects() {
         settingsDialog->exec();
     });
 
-    // this is the editor for kbm keybinds
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
         auto configWindow = new ControlSettings(m_game_info, this);
         configWindow->exec();
     });
 
     connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
-        auto kbmWindow = new EditorDialog(this);
+        auto kbmWindow = new KBMSettings(m_game_info, this);
         kbmWindow->exec();
     });
 
