@@ -935,11 +935,11 @@
     </message>
     <message>
       <source>Left Analog Halfmode</source>
-      <translation type="unfinished">Left Analog Halfmode</translation>
+      <translation>Halvläge för vänster analog</translation>
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation type="unfinished">hold to move left stick at half-speed</translation>
+      <translation>håll ner för att flytta vänster spak i halvfart</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -947,15 +947,15 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Konfigurationsval</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Gemensam konfiguration</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Använd konfiguration per-spel</translation>
     </message>
     <message>
       <source>L1</source>
@@ -987,7 +987,7 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>Klick på styrplatta</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1007,11 +1007,11 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>Parametrar för musrörelse</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>observera: klicka på Hjälp-knapp/Speciella tangentbindningar för mer information</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1035,11 +1035,11 @@
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation type="unfinished">Right Analog Halfmode</translation>
+      <translation>Halvläge för höger analog</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>håll ner för att flytta höger spak i halvfart</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -1047,19 +1047,19 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Offset för hastighet (standard 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>Kopiera från gemensam konfiguration</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>Offset för dödläge (standard 0.50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>Hastighetsmultiplikator (standard 1.0):</translation>
     </message>
   </context>
   <context>
