@@ -42,4 +42,4 @@ public:
     explicit(false) operator bool() const;
 };
 
-}; // namespace ImGui
+} // namespace ImGui

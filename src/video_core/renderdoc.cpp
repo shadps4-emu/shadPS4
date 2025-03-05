@@ -8,7 +8,7 @@
 #include <renderdoc_app.h>
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <dlfcn.h>
 #endif

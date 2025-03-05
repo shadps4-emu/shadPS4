@@ -8,7 +8,7 @@
 #include "core/signals.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <csignal>
 #ifdef ARCH_X86_64

@@ -5,7 +5,7 @@
 
 #ifdef _WIN32
 
-#include <windows.h>
+#include <Windows.h>
 #include "common/types.h"
 
 typedef enum _FILE_INFORMATION_CLASS {

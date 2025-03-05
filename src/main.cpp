@@ -15,7 +15,7 @@
 #include "emulator.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 int main(int argc, char* argv[]) {

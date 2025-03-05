@@ -10,8 +10,8 @@
 #include "core/libraries/libs.h"
 
 #ifdef _WIN64
+#include <Windows.h>
 #include <pthread_time.h>
-#include <windows.h>
 
 #include "common/ntapi.h"
 

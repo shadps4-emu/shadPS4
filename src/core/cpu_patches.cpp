@@ -19,7 +19,7 @@
 #include "cpu_patches.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <pthread.h>
 #ifdef __APPLE__

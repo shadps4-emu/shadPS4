@@ -6,7 +6,7 @@
 #include "common/signal_context.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <sys/ucontext.h>
 #endif

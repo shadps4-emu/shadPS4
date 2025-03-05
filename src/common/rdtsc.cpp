@@ -6,7 +6,7 @@
 #include "common/uint128.h"
 
 #ifdef _WIN64
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 namespace Common {

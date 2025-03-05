@@ -10,7 +10,7 @@
 #include "common/types.h"
 
 #ifdef _WIN64
-#include <windows.h>
+#include <Windows.h>
 #elif defined(__APPLE__)
 #include <dispatch/dispatch.h>
 #else

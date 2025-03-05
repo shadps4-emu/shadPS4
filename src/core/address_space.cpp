@@ -13,7 +13,7 @@
 #include "libraries/error_codes.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <fcntl.h>
 #include <sys/mman.h>

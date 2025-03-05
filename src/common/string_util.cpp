@@ -9,7 +9,7 @@
 #include "common/types.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 namespace Common {

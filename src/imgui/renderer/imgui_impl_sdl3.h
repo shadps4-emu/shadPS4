@@ -28,4 +28,4 @@ enum GamepadMode {
 void SetGamepadMode(GamepadMode mode, SDL_Gamepad** manual_gamepads_array = NULL,
                     int manual_gamepads_count = -1);
 
-}; // namespace ImGui::Sdl
+} // namespace ImGui::Sdl

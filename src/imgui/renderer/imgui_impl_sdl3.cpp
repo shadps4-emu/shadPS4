@@ -632,9 +632,9 @@ static void UpdateMouseData() {
             io.AddMousePosEvent(mouse_x_global, mouse_y_global);
             // SDL_EVENT_MOUSE_MOTION isn't triggered before the first frame is rendered
             // force update the prev_cursor coords
-            if (mouse_x_global != bd->prev_mouse_pos.x || mouse_y_global != bd->prev_mouse_pos.y &&
-                                                              bd->prev_mouse_pos.y == 0 &&
-                                                              bd->prev_mouse_pos.x == 0) {
+            if (mouse_x_global != bd->prev_mouse_pos.x ||
+                (mouse_y_global != bd->prev_mouse_pos.y && bd->prev_mouse_pos.y == 0 &&
+                 bd->prev_mouse_pos.x == 0)) {
                 bd->prev_mouse_pos.x = mouse_x_global;
                 bd->prev_mouse_pos.y = mouse_y_global;
                 bd->lastCursorMoveTime = bd->time;
