@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>Oyuna özel yapılandırmaları kullan</translation>
+      <translation>Oyuna özel yapılandırma kullan</translation>
     </message>
     <message>
       <source>L1 / LB</source>
