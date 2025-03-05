@@ -1051,15 +1051,15 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>从通用配置中复制</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>死区偏移量（默认 0.50）：</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>速度系数（默认 1.0）：</translation>
     </message>
   </context>
   <context>
