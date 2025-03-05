@@ -240,14 +240,14 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
             QString userDir;
             Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
             if (std::filesystem::exists(std::filesystem::current_path() / "user")) {
-                QMessageBox::information(NULL, "Cannot create portable user folder",
-                                         userDir + " already exists");
+                QMessageBox::information(NULL, tr("Cannot create portable user folder"),
+                                         userDir + " " + tr("already exists"));
             } else {
                 std::filesystem::copy(Common::FS::GetUserPath(Common::FS::PathType::UserDir),
                                       std::filesystem::current_path() / "user",
                                       std::filesystem::copy_options::recursive);
-                QMessageBox::information(NULL, "Portable user folder created",
-                                         userDir + " successfully created");
+                QMessageBox::information(NULL, tr("Portable user folder created"),
+                                         userDir + " " + tr("successfully created"));
             }
         });
     }

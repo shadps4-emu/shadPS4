@@ -100,8 +100,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     if (count_axis_left_x > 1 | count_axis_left_y > 1 | count_axis_right_x > 1 |
         count_axis_right_y > 1) {
         QMessageBox::StandardButton nosave;
-        nosave = QMessageBox::information(this, "Unable to Save",
-                                          "Cannot bind axis values more than once");
+        nosave = QMessageBox::information(this, tr("Unable to Save"),
+                                          tr("Cannot bind axis values more than once"));
         return;
     }
 
