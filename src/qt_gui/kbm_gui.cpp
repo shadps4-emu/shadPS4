@@ -88,14 +88,15 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
     connect(ui->CopyCommonButton, &QPushButton::clicked, this, [this] {
         if (ui->ProfileComboBox->currentText() == "Common Config") {
             QMessageBox::information(this, tr("Common Config Selected"),
-                                     tr("This button copies mappings from the Common Config to the "
-                                        "currently selected profile, and cannot be used when the "
-                                        "currently selected profile is the Common Config."));
+                                     // clang-format off
+tr("This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config."));
+            // clang-format on
         } else {
             QMessageBox::StandardButton reply =
                 QMessageBox::question(this, tr("Copy values from Common Config"),
-                                      tr("Do you want to overwrite existing mappings with the "
-                                         "mappings from the Common Config?"),
+                                      // clang-format off
+tr("Do you want to overwrite existing mappings with the mappings from the Common Config?"),
+                                      // clang-format on
                                       QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::Yes) {
                 SetUIValuestoMappings("default");
