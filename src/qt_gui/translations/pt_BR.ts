@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>Direcionais</translation>
+      <translation>Direcional</translation>
     </message>
     <message>
       <source>Up</source>
@@ -956,10 +956,6 @@
     <message>
       <source>Use per-game configs</source>
       <translation>Usar configurações por jogo</translation>
-    </message>
-    <message>
-      <source>Copy  from Common Config</source>
-      <translation>Copiar da Configuração Comum</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1050,20 +1046,20 @@
       <translation>Analógico Direito</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation>Deslocamento da Zona Morta (Pad 0,50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation>Multiplicador de Velocidade (Pad 1,0): </translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation>Deslocamento de Velocidade (Pad 0,125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation>Deslocamento de Velocidade (Pad 0,125): </translation>
+      <source>Copy from Common Config</source>
+      <translation>Copiar da Configuração Comum</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Deslocamento da Zona Morta (Pad 0,50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Multiplicador de Velocidade (Pad 1,0):</translation>
     </message>
   </context>
   <context>
@@ -2016,15 +2012,15 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation>Pasta de Usuário Portátil</translation>
+      <translation>Pasta Portátil do Usuário</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation>Criar Pasta de Usuário Portátil a partir da Pasta de Usuário Comum</translation>
+      <translation>Criar Pasta Portátil do Usuário a partir da Pasta Comum do Usuário</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation>Pasta de usuário portátil:\nArmazena as configurações e dados do shadPS4 que serão aplicados apenas à compilação do shadPS4 localizada na pasta atual. Reinicie o aplicativo após criar a pasta de usuário portátil para começar a usá-la.</translation>
+      <translation>Pasta Portátil do Usuário:\nArmazena as configurações e dados do shadPS4 que serão aplicados apenas à compilação do shadPS4 localizada na pasta atual. Reinicie o aplicativo após criar a pasta portátil do usuário para começar a usá-la.</translation>
     </message>
   </context>
   <context>

@@ -958,10 +958,6 @@
       <translation>Utilizar configurações por jogo</translation>
     </message>
     <message>
-      <source>Copy  from Common Config</source>
-      <translation>Copiar da Configuração Comum</translation>
-    </message>
-    <message>
       <source>L1</source>
       <translation>L1</translation>
     </message>
@@ -1050,20 +1046,20 @@
       <translation>Manípulo Direito</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation>Deslocamento da Zona Morta (def 0,50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation>Multiplicador de Velocidade (def 1,0): </translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation>Deslocamento de Velocidade (def 0,125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation>Deslocamento de Velocidade (def 0,125): </translation>
+      <source>Copy from Common Config</source>
+      <translation type="unfinished">Copy from Common Config</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
     </message>
   </context>
   <context>

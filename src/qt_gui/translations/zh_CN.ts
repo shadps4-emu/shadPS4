@@ -958,10 +958,6 @@
       <translation>每个游戏使用单独的配置</translation>
     </message>
     <message>
-      <source>Copy  from Common Config</source>
-      <translation>从通用配置中复制</translation>
-    </message>
-    <message>
       <source>L1</source>
       <translation>L1</translation>
     </message>
@@ -1050,20 +1046,20 @@
       <translation>右摇杆</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation>死区偏移量（默认 0.50）：</translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation>速度系数（默认 1.0）：</translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation>速度偏移量（默认 0.125）：</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation>速度偏移量（默认 0.125）：</translation>
+      <source>Copy from Common Config</source>
+      <translation>从通用配置中复制</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>死区偏移量（默认 0.50）：</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>速度系数（默认 1.0）：</translation>
     </message>
   </context>
   <context>
