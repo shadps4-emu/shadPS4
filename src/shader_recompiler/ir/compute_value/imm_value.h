@@ -13,6 +13,9 @@
 
 namespace Shader::IR {
 
+// Live IR::Value but can only hold immediate values. Additionally, can hold vectors of values.
+// Has arithmetic operations defined for it. Usefull for computing a value at shader compile time.
+
 class ImmValue {
 public:
     ImmValue() noexcept = default;

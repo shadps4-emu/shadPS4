@@ -10,6 +10,11 @@
 
 namespace Shader::IR {
 
+// Given an IR program, this class is used to create a subprogram that contains
+// only the blocks and instructions that relevant to a group of given instructions.
+// Taking into account only the given instructions, the instructions that it uses and
+// conditions.
+    
 struct SubProgram {
     SubProgram(Program* super_program, Pools& pools);
 
