@@ -562,7 +562,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erro</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Ajuda</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
