@@ -97,7 +97,8 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     if (tp == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    clockid_t pclock_id = CLOCK_REALTIME;
+
+    clockid_t pclock_id;
     switch (clock_id) {
     case ORBIS_CLOCK_REALTIME:
     case ORBIS_CLOCK_REALTIME_PRECISE:
@@ -111,18 +112,26 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
         pclock_id = CLOCK_MONOTONIC;
         break;
     default:
-        LOG_ERROR(Lib_Kernel, "unsupported = {} using CLOCK_REALTIME", clock_id);
-        break;
-    }
-
-    time_t raw_time = time(nullptr);
-
-    if (raw_time == (time_t)(-1)) {
+        LOG_ERROR(Lib_Kernel, "unsupported clock_id = {}. Returning error.", clock_id);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    tp->tv_sec = static_cast<long>(raw_time);
-    tp->tv_nsec = 0;
+    struct timespec ts;
+    if (clock_gettime(pclock_id, &ts) != 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (pclock_id == CLOCK_REALTIME) {
+        time_t raw_time = time(nullptr);
+        if (raw_time == (time_t)(-1)) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        tp->tv_sec = static_cast<long>(raw_time);
+        tp->tv_nsec = ts.tv_nsec;
+    } else {
+        tp->tv_sec = ts.tv_sec;
+        tp->tv_nsec = ts.tv_nsec;
+    }
 
     return ORBIS_OK;
 }
@@ -130,7 +139,7 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
 int PS4_SYSV_ABI posix_clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
     int result = sceKernelClockGettime(clock_id, time);
     if (result < 0) {
-        UNREACHABLE(); // TODO return posix error code
+        return ORBIS_KERNEL_ERROR_EINVAL; // this should return a proper error
     }
     return result;
 }
