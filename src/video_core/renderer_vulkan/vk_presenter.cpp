@@ -121,12 +121,14 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     present_frames.resize(num_images);
     for (u32 i = 0; i < num_images; i++) {
         Frame& frame = present_frames[i];
+        frame.id = i;
         auto fence = Check<"create present done fence">(
             device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled}));
         frame.present_done = fence;
         free_queue.push(&frame);
     }
 
+    fsr_pass.Create(device, instance.GetAllocator(), num_images);
     pp_pass.Create(device);
 
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
@@ -189,7 +191,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         UNREACHABLE();
     }
     frame->image = vk::Image{unsafe_image};
-    SetObjectName(device, frame->image, "Frame image");
+    SetObjectName(device, frame->image, "Frame image #{}", frame->id);
 
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
@@ -372,13 +374,9 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
-    if (image_id != VideoCore::NULL_IMAGE_ID) {
-        const auto& image = texture_cache.GetImage(image_id);
-        const auto extent = image.info.size;
-        if (frame->width != extent.width || frame->height != extent.height ||
-            frame->is_hdr != swapchain.GetHDR()) {
-            RecreateFrame(frame, extent.width, extent.height);
-        }
+    if (frame->width != expected_frame_width || frame->height != expected_frame_height ||
+        frame->is_hdr != swapchain.GetHDR()) {
+        RecreateFrame(frame, expected_frame_width, expected_frame_height);
     }
 
     // EOP flips are triggered from GPU thread so use the drawing scheduler to record
@@ -387,7 +385,9 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    if (Config::getVkHostMarkersEnabled()) {
+
+    bool vk_host_markers_enabled = Config::getVkHostMarkersEnabled();
+    if (vk_host_markers_enabled) {
         const auto label = fmt::format("PrepareFrameInternal:{}", image_id.index);
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = label.c_str(),
@@ -439,7 +439,25 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
             imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
         }
 
+        if (vk_host_markers_enabled) {
+            cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+                .pLabelName = "Host/FSR",
+            });
+        }
+
+        imageView = fsr_pass.Render(cmdbuf, imageView, image_size, {frame->width, frame->height},
+                                    fsr_settings, frame->is_hdr);
+
+        if (vk_host_markers_enabled) {
+            cmdbuf.endDebugUtilsLabelEXT();
+            cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+                .pLabelName = "Host/Post processing",
+            });
+        }
         pp_pass.Render(cmdbuf, imageView, image_size, *frame, pp_settings);
+        if (vk_host_markers_enabled) {
+            cmdbuf.endDebugUtilsLabelEXT();
+        }
     } else {
         // Fix display of garbage images on startup on some drivers
         const std::array<vk::RenderingAttachmentInfo, 1> attachments = {{
@@ -477,7 +495,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &post_barrier,
     });
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (vk_host_markers_enabled) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
@@ -607,6 +625,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
             ImVec2 contentArea = ImGui::GetContentRegionAvail();
             const vk::Rect2D imgRect =
                 FitImage(frame->width, frame->height, (s32)contentArea.x, (s32)contentArea.y);
+            SetExpectedGameSize((s32)contentArea.x, (s32)contentArea.y);
             ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2{
                                                                  (float)imgRect.offset.x,
                                                                  (float)imgRect.offset.y,
@@ -685,12 +704,20 @@ Frame* Presenter::GetRenderFrame() {
         }
     }
 
-    // Initialize default frame image
-    if (frame->width == 0 || frame->height == 0 || frame->is_hdr != swapchain.GetHDR()) {
-        RecreateFrame(frame, Config::getScreenWidth(), Config::getScreenHeight());
-    }
-
     return frame;
+}
+
+void Presenter::SetExpectedGameSize(s32 width, s32 height) {
+    constexpr float expectedRatio = 1920.0 / 1080.0f;
+    const float ratio = (float)width / (float)height;
+
+    expected_frame_height = height;
+    expected_frame_width = width;
+    if (ratio > expectedRatio) {
+        expected_frame_width = static_cast<s32>(height * expectedRatio);
+    } else {
+        expected_frame_height = static_cast<s32>(width / expectedRatio);
+    }
 }
 
 } // namespace Vulkan

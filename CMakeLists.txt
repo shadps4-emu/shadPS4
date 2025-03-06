@@ -845,6 +845,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
+               src/video_core/renderer_vulkan/host_passes/fsr_pass.cpp
+               src/video_core/renderer_vulkan/host_passes/fsr_pass.h
                src/video_core/renderer_vulkan/host_passes/pp_pass.cpp
                src/video_core/renderer_vulkan/host_passes/pp_pass.h
                src/video_core/texture_cache/image.cpp
