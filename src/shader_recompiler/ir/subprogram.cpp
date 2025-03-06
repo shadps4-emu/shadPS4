@@ -7,11 +7,6 @@
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/ir/subprogram.h"
 
-// Given an IR program, this class is used to create a subprogram that contains
-// only the blocks and instructions that relevant to a group of given instructions.
-// Taking into account only the given instructions, the instructions that it uses and
-// conditions.
-
 namespace Shader::IR {
 
 SubProgram::SubProgram(Program* super_program, Pools& pools)
@@ -159,7 +154,7 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             Block* block = cond->GetParent();
             Block* merge_block = AddBlock(orig_asl_node.data.if_node.merge);
             Block* body_block = AddBlock(orig_asl_node.data.if_node.body);
-            asl_node.data.if_node.cond = U1(Value(cond));
+            asl_node.data.if_node.cond = U1(cond);
             asl_node.data.if_node.body = body_block;
             asl_node.data.if_node.merge = merge_block;
             block->AddBranch(body_block);
@@ -198,7 +193,7 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             Block* block = cond->GetParent();
             Block* merge_block = AddBlock(orig_asl_node.data.repeat.merge);
             Block* loop_header_block = AddBlock(orig_asl_node.data.repeat.loop_header);
-            asl_node.data.repeat.cond = U1(Value(cond));
+            asl_node.data.repeat.cond = U1(cond);
             asl_node.data.repeat.loop_header = loop_header_block;
             asl_node.data.repeat.merge = merge_block;
             block->AddBranch(loop_header_block);
@@ -213,7 +208,7 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             Block* block = cond->GetParent();
             Block* merge_block = AddBlock(orig_asl_node.data.break_node.merge);
             Block* skip_block = AddBlock(orig_asl_node.data.break_node.skip);
-            asl_node.data.break_node.cond = U1(Value(&block->back()));
+            asl_node.data.break_node.cond = U1(&block->back());
             asl_node.data.break_node.merge = merge_block;
             asl_node.data.break_node.skip = skip_block;
             block->AddBranch(skip_block);
