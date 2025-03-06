@@ -541,6 +541,61 @@
         <source>Override Color</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind axis values more than once</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>EditorDialog</name>
+    <message>
+        <source>Edit Keyboard + Mouse and Controller input bindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use Per-Game configs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+        <source>Could not open the file for reading</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not open the file for writing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save Changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to save changes?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+        <source>Do you want to reset your custom default config to the original default config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to reset this config to your custom default config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset to Default</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ElfViewer</name>
@@ -885,6 +940,29 @@
     </message>
 </context>
 <context>
+    <name>HelpDialog</name>
+    <message>
+        <source>Quickstart</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FAQ</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Syntax</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Special Bindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keybindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>InstallDirSelect</name>
     <message>
         <source>shadPS4 - Choose directory</source>
@@ -1059,6 +1137,42 @@
     </message>
     <message>
         <source>Speed Multiplier (def 1.0):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Common Config Selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy values from Common Config</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Press a key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot set mapping</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mousewheel cannot be mapped to stick outputs</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2020,6 +2134,22 @@
     </message>
     <message>
         <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot create portable user folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 already exists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Portable user folder created</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 successfully created.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
