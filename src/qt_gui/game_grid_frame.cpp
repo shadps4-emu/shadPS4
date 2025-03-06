@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #include "common/path_util.h"
 #include "game_grid_frame.h"
 #include "qt_gui/compatibility_info.h"
+
 
 GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,

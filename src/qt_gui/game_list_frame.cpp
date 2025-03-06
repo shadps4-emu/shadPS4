@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #include <QToolTip>
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -8,6 +7,7 @@
 #include "common/string_util.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
+
 
 GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,
