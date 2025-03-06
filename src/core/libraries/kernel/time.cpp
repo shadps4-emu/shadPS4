@@ -135,7 +135,6 @@ int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
     return ORBIS_OK;
 }
 
-
 int PS4_SYSV_ABI posix_clock_gettime(s32 clock_id, OrbisKernelTimespec* time) {
     int result = sceKernelClockGettime(clock_id, time);
     if (result < 0) {
