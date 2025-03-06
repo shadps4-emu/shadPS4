@@ -163,7 +163,7 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
         OrbisVideodec2AvcPictureInfo* picInfo =
             static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
         if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
-            LOG_CRITICAL(Lib_Vdec2, "GetPictureInfo mismatching sizes, first = {}, second = {}",
+            LOG_CRITICAL(Lib_Vdec2, "Mismatching sizes, first = {}, second = {}",
                          picInfo->thisSize, sizeof(OrbisVideodec2AvcPictureInfo));
             return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
         }
