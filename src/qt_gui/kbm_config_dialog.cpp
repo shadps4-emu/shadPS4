@@ -28,7 +28,7 @@ HelpDialog* helpDialog;
 
 EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
-    setWindowTitle("Edit Keyboard + Mouse and Controller input bindings");
+    setWindowTitle(tr("Edit Keyboard + Mouse and Controller input bindings"));
     resize(600, 400);
 
     // Create the editor widget
@@ -42,7 +42,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
     // Load all installed games
     loadInstalledGames();
 
-    QCheckBox* unifiedInputCheckBox = new QCheckBox("Use Per-Game configs", this);
+    QCheckBox* unifiedInputCheckBox = new QCheckBox(tr("Use Per-Game configs"), this);
     unifiedInputCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
 
     // Connect checkbox signal
@@ -94,7 +94,7 @@ void EditorDialog::loadFile(QString game) {
         originalConfig = editor->toPlainText();
         file.close();
     } else {
-        QMessageBox::warning(this, "Error", "Could not open the file for reading");
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the file for reading"));
     }
 }
 
@@ -108,7 +108,7 @@ void EditorDialog::saveFile(QString game) {
         out << editor->toPlainText();
         file.close();
     } else {
-        QMessageBox::warning(this, "Error", "Could not open the file for writing");
+        QMessageBox::warning(this, tr("Error"), tr("Could not open the file for writing"));
     }
 }
 
@@ -121,7 +121,7 @@ void EditorDialog::closeEvent(QCloseEvent* event) {
     }
     if (hasUnsavedChanges()) {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Save Changes", "Do you want to save changes?",
+        reply = QMessageBox::question(this, tr("Save Changes"), tr("Do you want to save changes?"),
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 
         if (reply == QMessageBox::Yes) {
@@ -168,7 +168,7 @@ void EditorDialog::onCancelClicked() {
 void EditorDialog::onHelpClicked() {
     if (!isHelpOpen) {
         helpDialog = new HelpDialog(&isHelpOpen, this);
-        helpDialog->setWindowTitle("Help");
+        helpDialog->setWindowTitle(tr("Help"));
         helpDialog->setAttribute(Qt::WA_DeleteOnClose); // Clean up on close
         // Get the position and size of the Config window
         QRect configGeometry = this->geometry();
@@ -188,10 +188,10 @@ void EditorDialog::onResetToDefaultClicked() {
     bool default_default = gameComboBox->currentText() == "default";
     QString prompt =
         default_default
-            ? "Do you want to reset your custom default config to the original default config?"
-            : "Do you want to reset this config to your custom default config?";
-    QMessageBox::StandardButton reply =
-        QMessageBox::question(this, "Reset to Default", prompt, QMessageBox::Yes | QMessageBox::No);
+            ? tr("Do you want to reset your custom default config to the original default config?")
+            : tr("Do you want to reset this config to your custom default config?");
+    QMessageBox::StandardButton reply = QMessageBox::question(this, tr("Reset to Default"), prompt,
+                                                              QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
         if (default_default) {
@@ -206,7 +206,7 @@ void EditorDialog::onResetToDefaultClicked() {
             editor->setPlainText(in.readAll());
             file.close();
         } else {
-            QMessageBox::warning(this, "Error", "Could not open the file for reading");
+            QMessageBox::warning(this, tr("Error"), tr("Could not open the file for reading"));
         }
         // saveFile(gameComboBox->currentText());
     }
