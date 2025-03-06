@@ -1,0 +1,91 @@
+// SPDX-FileCopyrightText: Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+// SPDX-License-Identifier: MIT
+
+#version 450
+#extension GL_ARB_separate_shader_objects: enable
+#extension GL_ARB_shading_language_420pack: enable
+
+// FidelityFX Super Resolution Sample
+//
+// Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+layout (push_constant) uniform const_buffer
+{
+    uvec4 Const0;
+    uvec4 Const1;
+    uvec4 Const2;
+    uvec4 Const3;
+    uvec4 Sample;
+};
+
+#define A_GPU 1
+#define A_GLSL 1
+
+#define A_HALF
+#include "fsr/ffx_a.h"
+
+layout (set = 0, binding = 0) uniform texture2D InputTexture;
+layout (set = 0, binding = 1, rgba16f) uniform image2D OutputTexture;
+layout (set = 0, binding = 2) uniform sampler InputSampler;
+
+#if SAMPLE_EASU
+#define FSR_EASU_H 1
+AH4 FsrEasuRH(AF2 p) { AH4 res = AH4(textureGather(sampler2D(InputTexture, InputSampler), p, 0)); return res; }
+AH4 FsrEasuGH(AF2 p) { AH4 res = AH4(textureGather(sampler2D(InputTexture, InputSampler), p, 1)); return res; }
+AH4 FsrEasuBH(AF2 p) { AH4 res = AH4(textureGather(sampler2D(InputTexture, InputSampler), p, 2)); return res; }
+#endif// SAMPLE_EASU
+
+#if SAMPLE_RCAS
+#define FSR_RCAS_H
+AH4 FsrRcasLoadH(ASW2 p) { return AH4(texelFetch(sampler2D(InputTexture, InputSampler), ASU2(p), 0)); }
+void FsrRcasInputH(inout AH1 r, inout AH1 g, inout AH1 b) { }
+#endif// SAMPLE_RCAS
+
+#include "fsr/ffx_fsr1.h"
+
+void CurrFilter(AU2 pos)
+{
+    #if SAMPLE_EASU
+    AH3 c;
+    FsrEasuH(c, pos, Const0, Const1, Const2, Const3);
+    if (Sample.x == 1)
+    c *= c;
+    imageStore(OutputTexture, ASU2(pos), AH4(c, 1));
+    #endif// SAMPLE_EASU
+#if SAMPLE_RCAS
+    AH3 c;
+    FsrRcasH(c.r, c.g, c.b, pos, Const0);
+    if (Sample.x == 1)
+    c *= c;
+    imageStore(OutputTexture, ASU2(pos), AH4(c, 1));
+    #endif// SAMPLE_RCAS
+}
+
+layout (local_size_x = 64) in;
+void main()
+{
+    // Do remapping of local xy in workgroup for a more PS-like swizzle pattern.
+    AU2 gxy = ARmp8x8(gl_LocalInvocationID.x) + AU2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
+    CurrFilter(gxy);
+    gxy.x += 8u;
+    CurrFilter(gxy);
+    gxy.y += 8u;
+    CurrFilter(gxy);
+    gxy.x -= 8u;
+    CurrFilter(gxy);
+}

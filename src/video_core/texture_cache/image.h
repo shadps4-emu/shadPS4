@@ -35,6 +35,7 @@ enum ImageFlagBits : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
 struct UniqueImage {
+    explicit UniqueImage();
     explicit UniqueImage(vk::Device device, VmaAllocator allocator);
     ~UniqueImage();
 

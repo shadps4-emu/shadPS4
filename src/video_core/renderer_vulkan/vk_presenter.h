@@ -7,6 +7,7 @@
 
 #include "imgui/imgui_config.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
 #include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -33,6 +34,7 @@ struct Frame {
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
     bool is_hdr{false};
+    u8 id{};
 
     ImTextureID imgui_texture;
 };
@@ -52,6 +54,10 @@ public:
 
     HostPasses::PostProcessingPass::Settings& GetPPSettingsRef() {
         return pp_settings;
+    }
+
+    HostPasses::FsrPass::Settings& GetFsrSettingsRef() {
+        return fsr_settings;
     }
 
     Frontend::WindowSDL& GetWindow() const {
@@ -116,7 +122,14 @@ private:
     Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
     Frame* GetRenderFrame();
 
+    void SetExpectedGameSize(s32 width, s32 height);
+
 private:
+    u32 expected_frame_width{1920};
+    u32 expected_frame_height{1080};
+
+    HostPasses::FsrPass fsr_pass;
+    HostPasses::FsrPass::Settings fsr_settings{};
     HostPasses::PostProcessingPass::Settings pp_settings{};
     HostPasses::PostProcessingPass pp_pass;
     Frontend::WindowSDL& window;
