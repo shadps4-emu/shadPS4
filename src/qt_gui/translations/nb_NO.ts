@@ -22,11 +22,11 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Juks / Programrettelser for </translation>
+      <translation>Juks og programrettelser for</translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juks/Programrettelse,\nvær vennlig å rapportere problemer til juks/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\n</translation>
+      <translation>Juks og programrettelser er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og trykke på nedlastingsknappen.\nPå fanen programrettelser kan du laste ned alle programrettelser samtidig, velg hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler juks eller programrettelser,\nmeld fra om feil til jukse eller programrettelse utvikleren.\n\nHar du utviklet en ny juks? Besøk:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Oppdateringen har blitt lastet ned, trykk OK for å installere.</translation>
+      <translation>Oppdateringen ble lastet ned, trykk OK for å installere.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
@@ -407,11 +407,11 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>Sett opp kontroller</translation>
+      <translation>Kontrolleroppsett</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>Navigasjonsknapper</translation>
     </message>
     <message>
       <source>Up</source>
@@ -443,7 +443,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>Utvalg av oppsett</translation>
+      <translation>Valg av oppsett</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -709,7 +709,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Juks / Programrettelse</translation>
+      <translation>Juks og programrettelser</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -841,7 +841,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Er du sikker på at du vil slette %1&apos;s %2 directory?</translation>
+      <translation>Er du sikker på at du vil slette %1&apos;s %2 mappa?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -1154,7 +1154,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Last ned juks/programrettelse</translation>
+      <translation>Last ned juks og programrettelser</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1436,7 +1436,7 @@
     </message>
     <message>
       <source>General</source>
-      <translation>Generell</translation>
+      <translation>Generelt</translation>
     </message>
     <message>
       <source>System</source>
@@ -1824,7 +1824,7 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlista,\neller &quot;Velg automatisk&amp;quot.</translation>
+      <translation>Grafikkenhet:\nSystemer med flere GPU-er, kan emulatoren velge hvilken enhet som skal brukes fra rullegardinlista,\neller velg &quot;Velg automatisk&quot;.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
@@ -1940,7 +1940,7 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Mappe for å installere spill</translation>
+      <translation>Mappe for installering av spill</translation>
     </message>
     <message>
       <source>Directory to save data</source>
