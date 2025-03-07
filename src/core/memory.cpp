@@ -37,14 +37,23 @@ MemoryManager::~MemoryManager() = default;
 void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
+
     auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
+    if (NeedsExtraMemory()) {
+        total_size = SCE_KERNEL_TOTAL_MEM * 1.2;
+    }
+
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
     }
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
+
     total_flexible_size = flexible_size - SCE_FLEXIBLE_MEMORY_BASE;
+    if (NeedsExtraMemory()) {
+        total_flexible_size = flexible_size - SCE_FLEXIBLE_MEMORY_BASE * 1.2;
+    }
     total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers direct memory physical block.

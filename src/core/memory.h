@@ -36,6 +36,7 @@ enum class MemoryProt : u32 {
     GpuRead = 16,
     GpuWrite = 32,
     GpuReadWrite = 48,
+    UnifiedReadWrite = 50,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 
@@ -144,16 +145,12 @@ public:
         return impl;
     }
 
-    u64 GetTotalDirectSize() const {
-        return total_direct_size;
+    u64 GetTotalUnifiedMemorySize() const {
+        return total_direct_size + total_flexible_size;
     }
 
-    u64 GetTotalFlexibleSize() const {
-        return total_flexible_size;
-    }
-
-    u64 GetAvailableFlexibleSize() const {
-        return total_flexible_size - flexible_usage;
+    u64 GetAvailableUnifiedMemorySize() const {
+        return GetTotalUnifiedMemorySize() - flexible_usage;
     }
 
     VAddr SystemReservedVirtualBase() noexcept {
@@ -168,8 +165,9 @@ public:
     }
     bool NeedsExtraMemory() {
         static const std::unordered_set<std::string> extra_memory_games = {
-            // here should be games with needs of extra memory as EXAMPLE
-            "CUSA03173"};
+            "CUSA28615", // Example game that needs extra memory
+            "CUSA03173"  // Add other games here if needed
+        };
 
         return extra_memory_games.find(MemoryPatcher::g_game_serial) != extra_memory_games.end();
     }

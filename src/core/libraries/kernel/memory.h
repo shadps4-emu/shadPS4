@@ -5,12 +5,17 @@
 
 #include "common/bit_field.h"
 #include "common/types.h"
+#include "core/linker.h"
+#include "core/memory.h"
+#include "src/common/memory_patcher.h"  
 
-constexpr u64 SCE_KERNEL_TOTAL_MEM = 5248_MB * 4;
-constexpr u64 SCE_KERNEL_TOTAL_MEM_PRO = 5888_MB * 4;
+constexpr bool USE_EXPANDED_MEMORY = true;
 
-constexpr u64 SCE_FLEXIBLE_MEMORY_BASE = 64_MB;
-constexpr u64 SCE_FLEXIBLE_MEMORY_SIZE = 512_MB;
+constexpr u64 SCE_KERNEL_TOTAL_MEM = (USE_EXPANDED_MEMORY ? 5248_MB * 1.2 : 5248_MB);
+constexpr u64 SCE_KERNEL_TOTAL_MEM_PRO = (USE_EXPANDED_MEMORY ? 5888_MB * 1.2 : 5888_MB);
+
+constexpr u64 SCE_FLEXIBLE_MEMORY_BASE = (USE_EXPANDED_MEMORY ? 64_MB * 1.2 : 64_MB);
+constexpr u64 SCE_FLEXIBLE_MEMORY_SIZE = (USE_EXPANDED_MEMORY ? 512_MB * 1.2 : 512_MB);
 
 namespace Core::Loader {
 class SymbolsResolver;
