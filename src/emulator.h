@@ -32,7 +32,7 @@ private:
     void LoadSystemModules(const std::string& game_serial);
 
     Core::MemoryManager* memory;
-    Input::GameController* controller;
+    Input::GameControllers* controllers;
     Core::Linker* linker;
     std::unique_ptr<Frontend::WindowSDL> window;
     std::chrono::steady_clock::time_point start_time;
