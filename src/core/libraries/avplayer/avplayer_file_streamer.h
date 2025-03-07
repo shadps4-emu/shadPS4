@@ -13,7 +13,7 @@ namespace Libraries::AvPlayer {
 
 class AvPlayerFileStreamer : public IDataStreamer {
 public:
-    AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement);
+    AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
     ~AvPlayerFileStreamer();
 
     bool Init(std::string_view path) override;
@@ -26,7 +26,7 @@ private:
     static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
     static s64 Seek(void* opaque, s64 buffer, int whence);
 
-    SceAvPlayerFileReplacement m_file_replacement;
+    AvPlayerFileReplacement m_file_replacement;
 
     int m_fd = -1;
     u64 m_position{};
