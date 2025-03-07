@@ -578,7 +578,7 @@
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation type="unfinished">Do you want to save changes?</translation>
+      <translation/>
     </message>
     <message>
       <source>Help</source>
@@ -832,7 +832,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Видалити трофей</translation>
     </message>
     <message>
       <source>Compatibility...</source>
