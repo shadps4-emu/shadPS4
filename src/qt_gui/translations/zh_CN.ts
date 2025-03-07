@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>十字键</translation>
     </message>
     <message>
       <source>Up</source>
@@ -487,7 +487,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>正面按钮</translation>
+      <translation>功能键（动作键）</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -989,7 +989,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>十字键</translation>
     </message>
     <message>
       <source>Up</source>
@@ -1093,23 +1093,23 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>正面按钮</translation>
+      <translation>功能键（动作键）</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation>Triangle</translation>
+      <translation>三角</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation>Square</translation>
+      <translation>方框</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation>Circle</translation>
+      <translation>圈</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation>Cross</translation>
+      <translation>叉</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
