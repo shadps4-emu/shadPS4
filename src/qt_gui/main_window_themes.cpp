@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "main_window_themes.h"
+#include "common/config.h"
 
 void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
     QPalette themePalette;
@@ -189,6 +190,15 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
 
                             "QCheckBox::indicator:unchecked {"
                             "border: 1px solid #808080; border-radius: 4px; }");
+        if (Config::getShowBackgroundImage()) {
+            qApp->setStyleSheet(qApp->styleSheet() + 
+                                "QWidget {"
+                                "background-image: url(:/images/background.jpg);"
+                                "background-repeat: no-repeat;"
+                                "background-position: center;"
+                                "background-attachment: fixed;"
+                                "opacity: " + QString::number(Config::getBackgroundImageOpacity() / 100.0) + "; }");
+        }
         break;
     }
 }
