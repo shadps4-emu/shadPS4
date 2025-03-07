@@ -541,6 +541,61 @@
       <source>Override Color</source>
       <translation>Substituir a Cor</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Não foi possível salvar</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Não é possível vincular os valores do eixo mais de uma vez</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Editar atalhos de entrada do Teclado + Mouse e do Controle</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Usar configurações por jogo</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Erro</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Não foi possível abrir o arquivo para leitura</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Não foi possível abrir o arquivo para gravação</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Salvar Alterações</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Gostaria de salvar as alterações?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Ajuda</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Você gostaria de redefinir sua configuração padrão personalizada de volta para a configuração padrão original?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Você gostaria de redefinir esta configuração para a sua configuração padrão personalizada?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Redefinir ao Padrão</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -651,7 +706,7 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>Jogo não inicializa corretamente / trava o emulador</translation>
+      <translation>O jogo não inicializa corretamente ou trava o emulador</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
@@ -885,6 +940,29 @@
     </message>
   </context>
   <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Introdução</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>Perguntas frequentes</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Sintaxe</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Atalhos Especiais</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Teclas de atalho</translation>
+    </message>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
       <source>shadPS4 - Choose directory</source>
@@ -1060,6 +1138,42 @@
     <message>
       <source>Speed Multiplier (def 1.0):</source>
       <translation>Multiplicador de Velocidade (Pad 1,0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configuração Comum Selecionada</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Este botão copia os mapeamentos da Configuração Comum para o perfil atualmente selecionado, e não pode ser usado quando o perfil atualmente selecionado é a Configuração Comum.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copiar valores da Configuração Comum</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Você deseja substituir os mapeamentos existentes com os mapeamentos da Configuração Comum?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Não foi possível salvar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Não é possível vincular qualquer entrada única mais de uma vez</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Aperte uma tecla</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Não é possível definir o mapeamento</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>A rolagem do mouse não pode ser mapeada para saídas do analógico</translation>
     </message>
   </context>
   <context>
@@ -1488,7 +1602,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation>Abrir a pasta de imagens/sons de troféus personalizados</translation>
+      <translation>Abrir a pasta de imagens e sons de troféus personalizados</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1791,10 +1905,6 @@
       <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nVocê pode adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas em versões Qt.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>Nunca</translation>
     </message>
@@ -2021,6 +2131,26 @@
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
       <translation>Pasta Portátil do Usuário:\nArmazena as configurações e dados do shadPS4 que serão aplicados apenas à compilação do shadPS4 localizada na pasta atual. Reinicie o aplicativo após criar a pasta portátil do usuário para começar a usá-la.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Não é possível criar a pasta portátil do usuário</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 já existe</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Pasta portátil do usuário criada</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 criado com sucesso.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Abrir a pasta de imagens e sons de troféus personalizados:\nVocê pode adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.wav OU trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas em versões Qt.</translation>
     </message>
   </context>
   <context>

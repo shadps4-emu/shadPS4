@@ -541,6 +541,61 @@
       <source>Override Color</source>
       <translation>Sostituisci Colore</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossibile Salvare</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Impossibile associare i valori degli assi più di una volta</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Modifica le associazioni di input di tastiera + mouse e controller</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Usa Configurazioni Per Gioco</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Errore</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Impossibile aprire il file per la lettura</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Impossibile aprire il file per la scrittura</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Salva Modifiche</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Vuoi salvare le modifiche?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Aiuto</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Vuoi reimpostare la configurazione predefinita personalizzata alla configurazione predefinita originale?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Vuoi reimpostare questa configurazione alla configurazione predefinita personalizzata?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Ripristina a Predefinito</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -885,6 +940,29 @@
     </message>
   </context>
   <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Avvio rapido</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>FAQ</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Sintassi</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Associazioni Speciali</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Associazioni dei pulsanti</translation>
+    </message>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
       <source>shadPS4 - Choose directory</source>
@@ -1060,6 +1138,42 @@
     <message>
       <source>Speed Multiplier (def 1.0):</source>
       <translation>Moltiplicatore Di Velocità (def 1,0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configurazione Comune Selezionata</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Questo pulsante copia le mappature dalla Configurazione Comune al profilo attualmente selezionato, e non può essere usato quando il profilo attualmente selezionato è Configurazione Comune.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copia valori da Configurazione Comune</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Vuoi sovrascrivere le mappature esistenti con le mappature dalla Configurazione Comune?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossibile Salvare</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Non è possibile associare qualsiasi input univoco più di una volta</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Premi un tasto</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Impossibile impostare la mappatura</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>La rotella del mouse non può essere associata ai comandi della levetta analogica</translation>
     </message>
   </context>
   <context>
@@ -1791,10 +1905,6 @@
       <translation>Aggiorna Database Compatibilità:\nAggiorna immediatamente il database di compatibilità.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>Mai</translation>
     </message>
@@ -2021,6 +2131,26 @@
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
       <translation>Cartella utente portatile:\nMemorizza le impostazioni e i dati shadPS4 che saranno applicati solo alla build shadPS4 situata nella cartella attuale. Riavviare l'applicazione dopo aver creato la cartella utente portatile per iniziare a usarla.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Impossibile creare la cartella utente portatile</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1: esiste già</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Cartella utente portatile creata</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 creato con successo.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.wav OPPURE trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
     </message>
   </context>
   <context>

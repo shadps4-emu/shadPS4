@@ -541,6 +541,61 @@
       <source>Override Color</source>
       <translation>覆盖颜色</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>无法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>摇杆 X/Y 轴的操作绑定不在同一直线</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>编辑键盘鼠标和手柄按键绑定</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>每个游戏使用单独的配置</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>错误</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>无法打开文件进行读取</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>无法打开文件进行读取</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>保存更改</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>您要保存更改吗？</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>帮助</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>您要将自定义默认配置重置为默认配置吗？</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>您想要将此配置重置为自定义默认配置吗？</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>重置为默认</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -885,6 +940,29 @@
     </message>
   </context>
   <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>快速入门</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>常见问题</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>语法</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>特殊绑定</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>按键绑定</translation>
+    </message>
+  </context>
+  <context>
     <name>InstallDirSelect</name>
     <message>
       <source>shadPS4 - Choose directory</source>
@@ -1060,6 +1138,42 @@
     <message>
       <source>Speed Multiplier (def 1.0):</source>
       <translation>速度系数（默认 1.0）：</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>已选中通用配置</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>此按钮用于将通用配置中的映射复制到当前选定的配置文件，当前选定的配置文件为通用配置时无法使用。</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>从通用配置中复制配置</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>您想要用通用配置的映射覆盖现有映射吗？</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>无法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>不能绑定重复的按键</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>按下按键</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>无法设置映射</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>鼠标滚轮无法映射到摇杆</translation>
     </message>
   </context>
   <context>
@@ -1791,10 +1905,6 @@
       <translation>更新兼容性数据库：\n立即更新兼容性数据库。</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>打开自定义奖杯图像/声音文件夹：\n您可以自定义奖杯图像和声音。\n将文件添加到 custom_trophy 文件夹中，文件名如下：\ntrophy.mp3、bronze.png、gold.png、platinum.png、silver.png。\n注意：自定义声音只能在 QT 版本中生效。</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>从不</translation>
     </message>
@@ -2021,6 +2131,26 @@
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
       <translation>本地用户文件夹：\n存储 shadPS4 设置和数据，这些设置和数据仅应用于当前运行的 shadPS4。创建本地用户文件夹后，重启应用即可开始使用。</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>无法创建本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 已存在</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>本地用户文件夹已创建</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 创建成功。</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>打开自定义奖杯图像/声音文件夹：\n您可以自定义奖杯图像和声音。\n将文件添加到 custom_trophy 文件夹中，文件名如下：\ntrophy.wav 或 trophy.mp3、bronze.png、gold.png、platinum.png、silver.png。\n注意：自定义声音只能在 QT 版本中生效。</translation>
     </message>
   </context>
   <context>
