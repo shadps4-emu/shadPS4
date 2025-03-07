@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>المساعدة</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
@@ -639,7 +639,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>مكان تثبيت حزمات DLC</translation>
     </message>
   </context>
   <context>
@@ -658,7 +658,7 @@
     </message>
     <message>
       <source>Compatibility</source>
-      <translation type="unfinished">Compatibility</translation>
+      <translation>التوافق</translation>
     </message>
     <message>
       <source>Region</source>
