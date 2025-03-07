@@ -164,12 +164,22 @@ public:
         return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
     }
     bool NeedsExtraMemory() {
-        static const std::unordered_set<std::string> extra_memory_games = {
-            "CUSA28615", // Example game that needs extra memory
-            "CUSA03173"  // Add other games here if needed
-        };
+        if (IsNeoModeEnabled()) {
+            bool USE_EXPANDED_MEMORY = false;
+            return true;
+        }
+        return false;
+    }
 
-        return extra_memory_games.find(MemoryPatcher::g_game_serial) != extra_memory_games.end();
+    bool IsNeoModeEnabled() {
+        return (getSystemMemoryFlag() == SCE_KERNEL_TOTAL_MEM_PRO);
+    }
+
+    uint64_t getSystemMemoryFlag() {
+        if (USE_EXPANDED_MEMORY) {
+            return SCE_KERNEL_TOTAL_MEM_PRO; // Expanded memory
+        }
+        return SCE_KERNEL_TOTAL_MEM; // Regular memory
     }
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);

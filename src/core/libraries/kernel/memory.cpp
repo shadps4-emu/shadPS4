@@ -276,7 +276,7 @@ int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInf
 
 s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* out_size) {
     auto* memory = Core::Memory::Instance();
-    *out_size = memory->GetTotalUnifiedMemorySize();
+    *out_size = memory->GetAvailableUnifiedMemorySize();
     LOG_INFO(Kernel_Vmm, "called size = {:#x}", *out_size);
     return ORBIS_OK;
 }
