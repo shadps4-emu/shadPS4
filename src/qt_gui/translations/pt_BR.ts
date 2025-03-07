@@ -682,7 +682,7 @@
     </message>
     <message>
       <source>Play Time</source>
-      <translation>Tempo Jogado</translation>
+      <translation>Tempo de Jogo</translation>
     </message>
     <message>
       <source>Never Played</source>
