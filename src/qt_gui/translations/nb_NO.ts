@@ -102,7 +102,7 @@
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>Kan ikke åpne files.json for lesing.</translation>
+      <translation>Klarte ikke åpne files.json for lesing.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
@@ -110,11 +110,11 @@
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>Kan ikke åpne fila for lesing.</translation>
+      <translation>Klarte ikke åpne fila for lesing.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>Kan ikke åpne fila for skriving.</translation>
+      <translation>Klarte ikke åpne fila for skriving.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
@@ -372,11 +372,11 @@
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>Kan ikke oppdatere kompatibilitetsdata! Prøv igjen senere.</translation>
+      <translation>Klarte ikke oppdatere kompatibilitetsdata! Prøv igjen senere.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Kan ikke åpne compatibility_data.json for skriving.</translation>
+      <translation>Klarte ikke åpne compatibility_data.json for skriving.</translation>
     </message>
     <message>
       <source>Unknown</source>
