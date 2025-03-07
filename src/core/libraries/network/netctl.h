@@ -49,8 +49,26 @@ union OrbisNetCtlInfo {
 
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
+constexpr int ORBIS_NET_CTL_INFO_ETHER_ADDR = 2;
+constexpr int ORBIS_NET_CTL_INFO_MTU = 3;
 constexpr int ORBIS_NET_CTL_INFO_LINK = 4;
+constexpr int ORBIS_NET_CTL_INFO_BSSID = 5;
+constexpr int ORBIS_NET_CTL_INFO_SSID = 6;
+constexpr int ORBIS_NET_CTL_INFO_WIFI_SECURITY = 7;
+constexpr int ORBIS_NET_CTL_INFO_RSSI_DBM = 8;
+constexpr int ORBIS_NET_CTL_INFO_RSSI_PERCENTAGE = 9;
+constexpr int ORBIS_NET_CTL_INFO_CHANNEL = 10;
+constexpr int ORBIS_NET_CTL_INFO_IP_CONFIG = 11;
+constexpr int ORBIS_NET_CTL_INFO_DHCP_HOSTNAME = 12;
+constexpr int ORBIS_NET_CTL_INFO_PPPOE_AUTH_NAME = 13;
 constexpr int ORBIS_NET_CTL_INFO_IP_ADDRESS = 14;
+constexpr int ORBIS_NET_CTL_INFO_NETMASK = 15;
+constexpr int ORBIS_NET_CTL_INFO_DEFAULT_ROUTE = 16;
+constexpr int ORBIS_NET_CTL_INFO_PRIMARY_DNS = 17;
+constexpr int ORBIS_NET_CTL_INFO_SECONDARY_DNS = 18;
+constexpr int ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG = 19;
+constexpr int ORBIS_NET_CTL_INFO_HTTP_PROXY_SERVER = 20;
+constexpr int ORBIS_NET_CTL_INFO_HTTP_PROXY_PORT = 21;
 
 int PS4_SYSV_ABI sceNetBweCheckCallbackIpcInt();
 int PS4_SYSV_ABI sceNetBweClearEventIpcInt();
