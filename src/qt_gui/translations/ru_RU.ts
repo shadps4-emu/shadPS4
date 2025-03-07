@@ -1089,7 +1089,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>примечание: нажмите кнопку Help/Special Keybindings клавиш для получения дополнительной информации</translation>
+      <translation>примечание: нажмите кнопку Помощь/Специальные бинды для получения дополнительной информации</translation>
     </message>
     <message>
       <source>Face Buttons</source>
