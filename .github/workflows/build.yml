@@ -276,6 +276,12 @@ jobs:
   linux-sdl:
     runs-on: ubuntu-24.04
     needs: get-info
+    container:
+      image: ubuntu:noble
+      volumes:
+        - /proc:/proc
+        - /:/run/host
+      options: --privileged -it
     steps:
     - uses: actions/checkout@v4
       with:
@@ -332,6 +338,12 @@ jobs:
   linux-qt:
     runs-on: ubuntu-24.04
     needs: get-info
+    container:
+      image: ubuntu:noble
+      volumes:
+        - /proc:/proc
+        - /:/run/host
+      options: --privileged -it
     steps:
     - uses: actions/checkout@v4
       with:
@@ -379,6 +391,12 @@ jobs:
   linux-sdl-gcc:
     runs-on: ubuntu-24.04
     needs: get-info
+    container:
+      image: ubuntu:noble
+      volumes:
+        - /proc:/proc
+        - /:/run/host
+      options: --privileged -it
     steps:
     - uses: actions/checkout@v4
       with:
@@ -415,6 +433,12 @@ jobs:
   linux-qt-gcc:
     runs-on: ubuntu-24.04
     needs: get-info
+    container:
+      image: ubuntu:noble
+      volumes:
+        - /proc:/proc
+        - /:/run/host
+      options: --privileged -it
     steps:
     - uses: actions/checkout@v4
       with:
