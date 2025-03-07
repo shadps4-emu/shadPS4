@@ -702,7 +702,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
     }
     interfaces.push_back(id);
     return {id, pointer_type};
-};
+}
 
 void EmitContext::DefineBuffers() {
     if (!profile.supports_robust_buffer_access && !info.has_readconst) {

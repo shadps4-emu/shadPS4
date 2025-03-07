@@ -14,7 +14,7 @@
 #include <mach/mach_time.h>
 #include <pthread.h>
 #elif defined(_WIN32)
-#include <windows.h>
+#include <Windows.h>
 #include "common/string_util.h"
 #else
 #if defined(__Bitrig__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)

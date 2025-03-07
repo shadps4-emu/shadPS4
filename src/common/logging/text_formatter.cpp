@@ -5,7 +5,7 @@
 #include <cstdio>
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 #include "common/assert.h"

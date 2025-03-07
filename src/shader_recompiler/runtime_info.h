@@ -123,7 +123,7 @@ struct HullRuntimeInfo {
     // output control points and attributes that shouldnt be read by the TES anyways
     bool IsPassthrough() const {
         return hs_output_base == 0 && ls_stride == hs_output_cp_stride && num_threads == 1;
-    };
+    }
 
     // regs.ls_hs_config.hs_output_control_points contains the number of threads, which
     // isn't exactly the number of output control points.

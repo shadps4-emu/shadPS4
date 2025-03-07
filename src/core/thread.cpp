@@ -6,7 +6,7 @@
 #include "thread.h"
 
 #ifdef _WIN64
-#include <windows.h>
+#include <Windows.h>
 #include "common/ntapi.h"
 #else
 #include <csignal>

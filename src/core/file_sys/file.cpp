@@ -6,9 +6,9 @@
 #include "core/file_sys/file.h"
 
 #ifdef _WIN64
+#include <Windows.h>
 #include <io.h>
 #include <share.h>
-#include <windows.h>
 #include "common/ntapi.h"
 #endif
 

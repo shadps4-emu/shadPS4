@@ -13,9 +13,9 @@
 #ifdef _WIN32
 #include "common/ntapi.h"
 
+#include <Windows.h>
 #include <io.h>
 #include <share.h>
-#include <windows.h>
 #else
 #include <unistd.h>
 #endif

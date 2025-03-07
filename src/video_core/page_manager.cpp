@@ -21,7 +21,7 @@
 #include <sys/ioctl.h>
 #endif
 #else
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 namespace VideoCore {

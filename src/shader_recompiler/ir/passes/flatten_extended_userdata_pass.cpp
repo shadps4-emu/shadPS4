@@ -103,7 +103,7 @@ static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
 
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
-};
+}
 
 static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
@@ -182,7 +182,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
-}; // namespace
+} // namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
     Shader::Info& info = program.info;

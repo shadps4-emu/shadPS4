@@ -66,7 +66,7 @@ private:
         if (it == labels.end()) {
             labels.push_back(address);
         }
-    };
+    }
 
     size_t GetIndex(Label label) {
         if (label == 0) {
@@ -75,7 +75,7 @@ private:
         const auto it_index = std::ranges::lower_bound(index_to_pc, label);
         ASSERT(it_index != index_to_pc.end() || label > index_to_pc.back());
         return std::distance(index_to_pc.begin(), it_index);
-    };
+    }
 
 public:
     Common::ObjectPool<Block>& block_pool;

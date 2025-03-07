@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#ifndef CHEATS_PATCHES_H
-#define CHEATS_PATCHES_H
+#pragma once
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -116,5 +115,3 @@ private:
     QString CheatsDownloadedSuccessfully_MSG;
     QString DownloadComplete_MSG;
 };
-
-#endif // CHEATS_PATCHES_H

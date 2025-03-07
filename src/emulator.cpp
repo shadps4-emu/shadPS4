@@ -103,7 +103,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     std::string id;
     std::string title;
     std::string app_version;
-    u32 fw_version;
+    u32 fw_version = 0;
     Common::PSFAttributes psf_attributes{};
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");

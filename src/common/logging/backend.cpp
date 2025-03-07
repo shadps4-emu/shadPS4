@@ -8,7 +8,7 @@
 #include <fmt/format.h>
 
 #ifdef _WIN32
-#include <windows.h> // For OutputDebugStringW
+#include <Windows.h> // For OutputDebugStringW
 #endif
 
 #include "common/bounded_threadsafe_queue.h"

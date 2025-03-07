@@ -8,7 +8,7 @@
 #include "common/types.h"
 
 #ifdef _WIN64
-#include <windows.h>
+#include <Windows.h>
 #else
 #include <mutex>
 #endif

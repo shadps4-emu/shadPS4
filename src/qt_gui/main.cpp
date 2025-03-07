@@ -13,7 +13,7 @@
 #include "main_window.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 // Custom message handler to ignore Qt logs

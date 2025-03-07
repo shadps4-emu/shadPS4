@@ -27,4 +27,4 @@ void DecodePngFile(std::filesystem::path path, Inner* core);
 
 void Submit();
 
-}; // namespace ImGui::Core::TextureManager
+} // namespace ImGui::Core::TextureManager

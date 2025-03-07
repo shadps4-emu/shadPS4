@@ -10,7 +10,7 @@
 #include "core/tls.h"
 
 #ifdef _WIN32
-#include <windows.h>
+#include <Windows.h>
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
 #include <architecture/i386/table.h>
 #include <boost/icl/interval_set.hpp>

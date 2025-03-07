@@ -730,7 +730,7 @@ void MainWindow::ShowGameList() {
         m_game_grid_frame->clearContents();
         m_game_list_frame->clearContents();
     }
-};
+}
 
 void MainWindow::RefreshGameTable() {
     // m_game_info->m_games.clear();

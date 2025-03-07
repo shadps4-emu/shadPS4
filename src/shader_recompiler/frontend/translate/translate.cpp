@@ -197,7 +197,7 @@ IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
         it->second = new_vgpr;
     }
     return it->second;
-};
+}
 
 template <typename T>
 T Translator::GetSrc(const InstOperand& operand) {
