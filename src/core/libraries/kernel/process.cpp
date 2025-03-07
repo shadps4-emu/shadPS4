@@ -41,7 +41,8 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path = mnt->GetHostPath(moduleFileName);
+    const auto path = mnt->GetHostPath(
+        moduleFileName[0] == '/' ? moduleFileName : std::string("/app0/") + moduleFileName);
 
     // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
