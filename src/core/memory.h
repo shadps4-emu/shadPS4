@@ -5,12 +5,15 @@
 
 #include <map>
 #include <mutex>
+#include <unordered_set>
+
 #include <string_view>
 #include "common/enum.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
+#include "src/common/memory_patcher.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -162,6 +165,13 @@ public:
         const auto end_it = std::prev(vma_map.end());
         const VAddr end_addr = end_it->first + end_it->second.size;
         return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
+    }
+    bool NeedsExtraMemory() {
+        static const std::unordered_set<std::string> extra_memory_games = {
+            // here should be games with needs of extra memory as EXAMPLE
+            "CUSA03173"};
+
+        return extra_memory_games.find(MemoryPatcher::g_game_serial) != extra_memory_games.end();
     }
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
