@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Ruajtja Dështoi</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
