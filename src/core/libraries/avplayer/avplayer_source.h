@@ -34,6 +34,7 @@ public:
 
     virtual void OnWarning(u32 id) = 0;
     virtual void OnError() = 0;
+    virtual void OnLoop() = 0;
     virtual void OnEOF() = 0;
 };
 
@@ -86,6 +87,7 @@ private:
 struct Frame {
     FrameBuffer buffer;
     AvPlayerFrameInfoEx info;
+    bool is_loop = false;
 };
 
 class EventCV {
@@ -160,12 +162,13 @@ private:
     void AudioDecoderThread(std::stop_token stop);
 
     bool HasRunningThreads() const;
+    void AddPacket(AVPacketPtr up_packet);
 
     AVFramePtr ConvertAudioFrame(const AVFrame& frame);
     AVFramePtr ConvertVideoFrame(const AVFrame& frame);
 
-    Frame PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame);
-    Frame PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame);
+    Frame PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame, bool is_loop);
+    Frame PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame, bool is_loop);
 
     AvPlayerStateCallback& m_state;
     bool m_use_vdec2 = false;

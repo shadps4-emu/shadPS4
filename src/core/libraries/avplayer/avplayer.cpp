@@ -42,11 +42,14 @@ s32 PS4_SYSV_ABI sceAvPlayerClose(AvPlayerHandle handle) {
 }
 
 u64 PS4_SYSV_ABI sceAvPlayerCurrentTime(AvPlayerHandle handle) {
-    LOG_TRACE(Lib_AvPlayer, "called");
+    // LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return handle->CurrentTime();
+    const auto res = handle->CurrentTime();
+    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
+    return res;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerDisableStream(AvPlayerHandle handle, u32 stream_id) {
@@ -66,11 +69,18 @@ s32 PS4_SYSV_ABI sceAvPlayerEnableStream(AvPlayerHandle handle, u32 stream_id) {
 }
 
 bool PS4_SYSV_ABI sceAvPlayerGetAudioData(AvPlayerHandle handle, AvPlayerFrameInfo* p_info) {
-    LOG_TRACE(Lib_AvPlayer, "called");
+    // LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || p_info == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning false");
         return false;
     }
-    return handle->GetAudioData(*p_info);
+    const auto res = handle->GetAudioData(*p_info);
+    if (res) {
+        LOG_TRACE(Lib_AvPlayer, "returning {}, ts = {}", res, p_info->timestamp);
+    } else {
+        LOG_TRACE(Lib_AvPlayer, "returning false");
+    }
+    return res;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(AvPlayerHandle handle, u32 stream_id,
@@ -92,11 +102,19 @@ bool PS4_SYSV_ABI sceAvPlayerGetVideoData(AvPlayerHandle handle, AvPlayerFrameIn
 
 bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(AvPlayerHandle handle,
                                             AvPlayerFrameInfoEx* video_info) {
-    LOG_TRACE(Lib_AvPlayer, "called");
+    // LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning {}", false);
         return false;
     }
-    return handle->GetVideoData(*video_info);
+    // for (int i = 0; i < 20; ++i) {
+    if (handle->GetVideoData(*video_info)) {
+        LOG_TRACE(Lib_AvPlayer, "returning {}, ts = {}", true, video_info->timestamp);
+        return true;
+    }
+    // }
+    LOG_TRACE(Lib_AvPlayer, "returning {}", false);
+    return false;
 }
 
 AvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(AvPlayerInitData* data) {
@@ -143,11 +161,14 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const AvPlayerInitDataEx* p_data, AvPlayerHan
 }
 
 bool PS4_SYSV_ABI sceAvPlayerIsActive(AvPlayerHandle handle) {
-    LOG_TRACE(Lib_AvPlayer, "called");
+    // LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
+        LOG_TRACE(Lib_AvPlayer, "returning false");
         return false;
     }
-    return handle->IsActive();
+    const auto res = handle->IsActive();
+    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
+    return res;
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(AvPlayerHandle handle, uint64_t time) {

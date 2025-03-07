@@ -24,12 +24,13 @@ enum class AvState {
     Stop,
     EndOfFile,
     Pause,
-    C0x08,
+    PauseOnEOF,
     Jump,
     TrickMode,
     C0x0B,
     Buffering,
     Starting,
+    C0x10,
     Error,
 };
 

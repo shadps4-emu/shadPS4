@@ -16,6 +16,33 @@ namespace Libraries::AvPlayer {
 class Stream;
 class AvDecoder;
 
+class AvPlayerTimer {
+public:
+    enum class State {
+        Ok,
+        WaitForSync,
+        VideoAhead,
+        VideoBehind,
+        Error,
+    };
+
+    void Update();
+    void UpdateAPts(u64 timestamp);
+    void UpdateVHintPts(u64 hint);
+    void UpdateVPts();
+    void Reset();
+    State GetState(AvPlayerAvSyncMode sync_mode);
+
+private:
+    static u64 Now();
+
+    std::atomic<s64> m_ts_diff = -1;
+    std::atomic<s64> m_v_pts = -1;
+    std::atomic<s64> m_v_hint_pts = -1;
+    std::atomic<u64> m_last_update_pts = 0;
+    std::atomic<u64> m_a_pts = 0;
+};
+
 class AvPlayerState : public AvPlayerStateCallback {
 public:
     AvPlayerState(const AvPlayerInitData& init_data);
@@ -49,6 +76,7 @@ private:
     AvPlayerAvSyncMode GetSyncMode() override;
     void OnWarning(u32 id) override;
     void OnError() override;
+    void OnLoop() override;
     void OnEOF() override;
 
     void OnPlaybackStateChanged(AvState state);
@@ -78,6 +106,7 @@ private:
 
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
+    AvPlayerTimer m_timer;
     u32 m_thread_priority;
     u32 m_thread_affinity;
     std::atomic_uint32_t m_some_event_result{};

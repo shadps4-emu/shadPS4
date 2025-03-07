@@ -313,6 +313,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
         const auto current_time = CurrentTime();
         if (0 < current_time && current_time < new_frame.info.timestamp) {
+            LOG_TRACE(Lib_AvPlayer, "{} < {}", current_time, new_frame.info.timestamp);
             return false;
         }
     }
@@ -323,6 +324,11 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_video_buffers_cv.Notify();
     }
+
+    if (frame->is_loop && m_is_looping) {
+        m_state.OnLoop();
+    }
+
     video_info = frame->info;
     m_current_video_frame = std::move(frame);
     return true;
@@ -342,6 +348,10 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
         // return the buffer to the queue
         m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
         m_audio_buffers_cv.Notify();
+    }
+
+    if (frame->is_loop && m_is_looping) {
+        m_state.OnLoop();
     }
 
     audio_info = {};
@@ -405,8 +415,11 @@ void AvPlayerSource::ReleaseAVFormatContext(AVFormatContext* context) {
     }
 }
 
+// Custom flag that is not passed to ffmpeg
+// It's here to get rid of the need for a separate structure
+#define AV_PKT_FLAG_LOOP 0x100000
+
 void AvPlayerSource::DemuxerThread(std::stop_token stop) {
-    using namespace std::chrono;
     Common::SetCurrentThreadName("shadPS4:AvDemuxer");
 
     if (!m_audio_stream_index.has_value() && !m_video_stream_index.has_value()) {
@@ -415,50 +428,46 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     }
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread started");
 
+    bool is_loop = false;
     while (!stop.stop_requested()) {
         if (m_video_packets.Size() > 30 &&
             (!m_audio_stream_index.has_value() || m_audio_packets.Size() > 8)) {
-            std::this_thread::sleep_for(milliseconds(5));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
         }
+
         AVPacketPtr up_packet(av_packet_alloc(), &ReleaseAVPacket);
         const auto res = av_read_frame(m_avformat_context.get(), up_packet.get());
-        if (res < 0) {
-            if (res == AVERROR_EOF) {
-                if (m_is_looping) {
-                    LOG_INFO(Lib_AvPlayer, "EOF reached in demuxer. Looping the source...");
-                    m_state.OnWarning(ORBIS_AVPLAYER_ERROR_WAR_LOOPING_BACK);
-                    avio_seek(m_avformat_context->pb, 0, SEEK_SET);
-                    if (m_video_stream_index.has_value()) {
-                        const auto index = m_video_stream_index.value();
-                        const auto stream = m_avformat_context->streams[index];
-                        avformat_seek_file(m_avformat_context.get(), index, 0, 0, stream->duration,
-                                           0);
-                    }
-                    if (m_audio_stream_index.has_value()) {
-                        const auto index = m_audio_stream_index.value();
-                        const auto stream = m_avformat_context->streams[index];
-                        avformat_seek_file(m_avformat_context.get(), index, 0, 0, stream->duration,
-                                           0);
-                    }
-                    continue;
-                } else {
-                    LOG_INFO(Lib_AvPlayer, "EOF reached in demuxer. Exiting.");
-                    break;
-                }
-            } else {
-                LOG_ERROR(Lib_AvPlayer, "Could not read AV frame: error = {}", res);
-                m_state.OnError();
-                return;
+        if (res >= 0) [[likely]] {
+            if (is_loop) {
+                up_packet->flags |= AV_PKT_FLAG_LOOP;
+                is_loop = false;
             }
+            AddPacket(std::move(up_packet));
+            continue;
+        }
+
+        if (res != AVERROR_EOF) [[unlikely]] {
+            LOG_ERROR(Lib_AvPlayer, "Could not read AV frame: error = {}", res);
+            m_state.OnError();
             break;
         }
-        if (up_packet->stream_index == m_video_stream_index) {
-            m_video_packets.Push(std::move(up_packet));
-            m_video_packets_cv.Notify();
-        } else if (up_packet->stream_index == m_audio_stream_index) {
-            m_audio_packets.Push(std::move(up_packet));
-            m_audio_packets_cv.Notify();
+
+        if (!m_is_looping) {
+            LOG_INFO(Lib_AvPlayer, "EOF reached in demuxer. Exiting.");
+            break;
+        }
+
+        is_loop = true;
+
+        LOG_INFO(Lib_AvPlayer, "Looping the source...");
+        avio_seek(m_avformat_context->pb, 0, SEEK_SET);
+        if (m_audio_stream_index.has_value()) {
+            const auto index = m_audio_stream_index.value();
+            av_seek_frame(m_avformat_context.get(), index, 0, 0);
+        } else if (m_video_stream_index.has_value()) {
+            const auto index = m_video_stream_index.value();
+            av_seek_frame(m_avformat_context.get(), index, 0, 0);
         }
     }
 
@@ -474,6 +483,16 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     m_state.OnEOF();
 
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
+}
+
+void AvPlayerSource::AddPacket(AVPacketPtr up_packet) {
+    if (up_packet->stream_index == m_video_stream_index) {
+        m_video_packets.Push(std::move(up_packet));
+        m_video_packets_cv.Notify();
+    } else if (up_packet->stream_index == m_audio_stream_index) {
+        m_audio_packets.Push(std::move(up_packet));
+        m_audio_packets_cv.Notify();
+    }
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& frame) {
@@ -531,7 +550,7 @@ static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
     }
 }
 
-Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame) {
+Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame, bool is_loop) {
     ASSERT(frame.format == AV_PIX_FMT_NV12);
 
     auto p_buffer = buffer.GetBuffer();
@@ -575,6 +594,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                             },
                     },
             },
+        .is_loop = is_loop,
     };
 }
 
@@ -593,6 +613,8 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
             continue;
         }
 
+        bool is_loop = (packet->get()->flags & AV_PKT_FLAG_LOOP) == AV_PKT_FLAG_LOOP;
+        packet->get()->flags &= ~AV_PKT_FLAG_LOOP; // Remove the fake flag
         auto res = avcodec_send_packet(m_video_codec_context.get(), packet->get());
         if (res < 0 && res != AVERROR(EAGAIN)) {
             m_state.OnError();
@@ -628,10 +650,13 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
                 }
                 if (up_frame->format != AV_PIX_FMT_NV12) {
                     const auto nv12_frame = ConvertVideoFrame(*up_frame);
-                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *nv12_frame));
+                    m_video_frames.Push(
+                        PrepareVideoFrame(std::move(buffer.value()), *nv12_frame, is_loop));
                 } else {
-                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *up_frame));
+                    m_video_frames.Push(
+                        PrepareVideoFrame(std::move(buffer.value()), *up_frame, is_loop));
                 }
+                is_loop = false;
                 m_video_frames_cv.Notify();
             }
         }
@@ -666,7 +691,7 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertAudioFrame(const AVFrame& fram
     return pcm16_frame;
 }
 
-Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame) {
+Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame, bool is_loop) {
     ASSERT(frame.format == AV_SAMPLE_FMT_S16);
     ASSERT(frame.nb_samples <= 1024);
 
@@ -697,6 +722,7 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
                             },
                     },
             },
+        .is_loop = is_loop,
     };
 }
 
@@ -714,6 +740,8 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
         if (!packet.has_value()) {
             continue;
         }
+        bool is_loop = (packet->get()->flags & AV_PKT_FLAG_LOOP) == AV_PKT_FLAG_LOOP;
+        packet->get()->flags &= ~AV_PKT_FLAG_LOOP; // Remove the fake flag
         auto res = avcodec_send_packet(m_audio_codec_context.get(), packet->get());
         if (res < 0 && res != AVERROR(EAGAIN)) {
             m_state.OnError();
@@ -750,10 +778,13 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
                 }
                 if (up_frame->format != AV_SAMPLE_FMT_S16) {
                     const auto pcm16_frame = ConvertAudioFrame(*up_frame);
-                    m_audio_frames.Push(PrepareAudioFrame(std::move(buffer.value()), *pcm16_frame));
+                    m_audio_frames.Push(
+                        PrepareAudioFrame(std::move(buffer.value()), *pcm16_frame, is_loop));
                 } else {
-                    m_audio_frames.Push(PrepareAudioFrame(std::move(buffer.value()), *up_frame));
+                    m_audio_frames.Push(
+                        PrepareAudioFrame(std::move(buffer.value()), *up_frame, is_loop));
                 }
+                is_loop = false;
                 m_audio_frames_cv.Notify();
             }
         }

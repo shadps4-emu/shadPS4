@@ -171,6 +171,7 @@ struct AvPlayerFileReplacement {
 };
 
 enum class AvPlayerEvents {
+    Initial = 0x00,
     StateStop = 0x01,
     StateReady = 0x02,
     StatePlay = 0x03,
