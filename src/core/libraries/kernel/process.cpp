@@ -50,7 +50,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t arg
         if (handle != -1) {
             return handle;
         }
-        //Trying to load a system module
+        // Trying to load a system module
         UNREACHABLE();
     } else {
         if (!guest_path.contains('/')) {
