@@ -284,7 +284,7 @@ jobs:
       options: --privileged -it
     steps:
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: apt-get update && apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - uses: actions/checkout@v4
       with:
@@ -346,7 +346,7 @@ jobs:
       options: --privileged -it
     steps:
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: apt-get update && apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - uses: actions/checkout@v4
       with:
@@ -399,7 +399,7 @@ jobs:
       options: --privileged -it
     steps:
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: apt-get update && apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - uses: actions/checkout@v4
       with:
@@ -441,7 +441,7 @@ jobs:
       options: --privileged -it
     steps:
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: apt-get update && apt install -y git libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libasound2-dev libpulse-dev libopenal-dev libudev-dev
 
     - uses: actions/checkout@v4
       with:
