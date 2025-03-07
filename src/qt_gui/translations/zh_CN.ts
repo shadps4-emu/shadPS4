@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>十字键</translation>
     </message>
     <message>
       <source>Up</source>
@@ -487,7 +487,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>正面按钮</translation>
+      <translation>动作键（功能键）</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -911,7 +911,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>十字键</translation>
     </message>
     <message>
       <source>Up</source>
@@ -987,7 +987,7 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation>触摸板点击</translation>
+      <translation>点击触摸板</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
