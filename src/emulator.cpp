@@ -78,6 +78,7 @@ Emulator::~Emulator() {
 }
 
 void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+    is_running = true;
     const auto eboot_name = file.filename().string();
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
@@ -292,6 +293,19 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 #endif
 
     std::quick_exit(0);
+}
+
+Emulator& Emulator::GetInstance() {
+    static Emulator instance;
+    return instance;
+}
+
+void Emulator::StopEmulation() {
+    if (!is_running)
+        return;
+
+    is_running = false;
+    LOG_INFO(Loader, "Stopping emulator...");
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
