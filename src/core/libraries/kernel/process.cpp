@@ -85,19 +85,7 @@ s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
     return ORBIS_OK;
 }
 
-static constexpr size_t ORBIS_DBG_MAX_NAME_LENGTH = 256;
-
-struct OrbisModuleInfoForUnwind {
-    u64 st_size;
-    std::array<char, ORBIS_DBG_MAX_NAME_LENGTH> name;
-    VAddr eh_frame_hdr_addr;
-    VAddr eh_frame_addr;
-    u64 eh_frame_size;
-    VAddr seg0_addr;
-    u64 seg0_size;
-};
-
-s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));
