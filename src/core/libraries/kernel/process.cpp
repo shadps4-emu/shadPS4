@@ -85,7 +85,7 @@ s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));

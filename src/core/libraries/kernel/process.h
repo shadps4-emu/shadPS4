@@ -11,10 +11,6 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
-int PS4_SYSV_ABI sceKernelIsNeoMode();
-
-int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
-
 static constexpr size_t ORBIS_DBG_MAX_NAME_LENGTH = 256;
 
 struct OrbisModuleInfoForUnwind {
@@ -27,7 +23,12 @@ struct OrbisModuleInfoForUnwind {
     u64 seg0_size;
 };
 
-s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags, OrbisModuleInfoForUnwind* info);
+int PS4_SYSV_ABI sceKernelIsNeoMode();
+
+int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
+                                                 OrbisModuleInfoForUnwind* info);
 
 void RegisterProcess(Core::Loader::SymbolsResolver* sym);
 
