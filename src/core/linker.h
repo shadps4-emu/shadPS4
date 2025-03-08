@@ -144,7 +144,7 @@ public:
     void FreeTlsForNonPrimaryThread(void* pointer);
 
     s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
-    s32 LoadAndStartModule(const std::filesystem::path& path, size_t args, const void* argp,
+    s32 LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
                            int* pRes);
     Module* FindByAddress(VAddr address);
 

@@ -139,7 +139,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     return m_modules.size() - 1;
 }
 
-s32 Linker::LoadAndStartModule(const std::filesystem::path& path, size_t args, const void* argp,
+s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
                                int* pRes) {
     u32 handle = FindByName(path);
     if (handle != -1) {
