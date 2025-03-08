@@ -128,36 +128,38 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     std::scoped_lock lk{mutex};
     alignment = alignment > 0 ? alignment : 16_KB;
 
-    auto dmem_area = FindDmemArea(search_start);
+    PAddr best_addr = -1;
+    size_t best_size = 0;
 
-    const auto is_suitable = [&] {
-        if (dmem_area == dmem_map.end()) {
-            return false;
+    for (auto dmem_area = FindDmemArea(search_start);
+         dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end; ++dmem_area) {
+
+        if (!dmem_area->second.is_free)
+            continue;
+
+        PAddr aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
+        size_t alignment_size = aligned_base - dmem_area->second.base;
+        size_t remaining_size = (dmem_area->second.size >= alignment_size)
+                                    ? (dmem_area->second.size - alignment_size)
+                                    : 0;
+
+        // Select the largest available block
+        if (remaining_size >= size && remaining_size > best_size) {
+            best_addr = aligned_base;
+            best_size = remaining_size;
         }
-        const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
-        const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
-            dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
-        return dmem_area->second.is_free && remaining_size >= size;
-    };
-    while (dmem_area != dmem_map.end() && !is_suitable() &&
-           dmem_area->second.GetEnd() <= search_end) {
-        ++dmem_area;
     }
-    if (!is_suitable()) {
-        LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+
+    if (best_addr == -1) {
+        LOG_ERROR(Kernel_Vmm, "Failed to find a large enough free memory block: size = {:#x}",
+                  size);
         return -1;
     }
 
-    // Align free position
-    PAddr free_addr = dmem_area->second.base;
-    free_addr = Common::AlignUp(free_addr, alignment);
-
-    // Add the allocated region to the list and commit its pages.
-    auto& area = CarveDmemArea(free_addr, size)->second;
+    auto& area = CarveDmemArea(best_addr, size)->second;
     area.memory_type = memory_type;
     area.is_free = false;
-    return free_addr;
+    return best_addr;
 }
 
 void MemoryManager::Free(PAddr phys_addr, size_t size) {
