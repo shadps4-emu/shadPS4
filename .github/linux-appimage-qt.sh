@@ -26,7 +26,7 @@ chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
 
 # Bundle libc and all dependencies
-echo AppDir/usr/bin/shadps4
+ldd AppDir/usr/bin/shadps4
 ldd AppDir/usr/bin/shadps4 | awk -F"[> ]" '{print $4}' \
 	| xargs -I {} cp -vf {} AppDir/usr/lib
 cp -v /lib64/ld-linux-x86-64.so.2 AppDir
