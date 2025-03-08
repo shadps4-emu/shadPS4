@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>Përdor konfigurime për secilën lojë</translation>
+      <translation>Përdor konfigurime të veçanta për secilën lojë</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -1674,7 +1674,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Aktivizo Zbrazjen e Shaders-ave</translation>
+      <translation>Aktivizo Zbrazjen e Shader-ave</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1750,7 +1750,7 @@
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Shfaq gjithmonë regjistrin e ndryshimeve</translation>
+      <translation>Shfaq gjithmonë ditarin e ndryshimeve</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1890,7 +1890,7 @@
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të panelit prekës do të imitojë një prekje butoni mbrapa.</translation>
+      <translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të panelit me prekje të dorezës do të imitojë një prekje butoni mbrapa.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
@@ -1926,7 +1926,7 @@
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Paneli prekës në qendër</translation>
+      <translation>Paneli me Prekje në Qendër</translation>
     </message>
     <message>
       <source>None</source>
