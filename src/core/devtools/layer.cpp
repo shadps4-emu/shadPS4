@@ -81,8 +81,24 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
+            auto& pp_settings = presenter->GetPPSettingsRef();
             if (BeginMenu("Brightness")) {
-                SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
+                SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
+                ImGui::EndMenu();
+            }
+            if (BeginMenu("FSR")) {
+                auto& fsr = presenter->GetFsrSettingsRef();
+                Checkbox("FSR Enabled", &fsr.enable);
+                BeginDisabled(!fsr.enable);
+                {
+                    Checkbox("RCAS", &fsr.use_rcas);
+                    BeginDisabled(!fsr.use_rcas);
+                    {
+                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
+                    }
+                    EndDisabled();
+                }
+                EndDisabled();
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
