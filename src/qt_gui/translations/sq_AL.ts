@@ -74,7 +74,7 @@
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>Përzgjidh Skedarin e Arnës:</translation>
+      <translation>Përzgjidh skedarin e arnës:</translation>
     </message>
     <message>
       <source>Download Patches</source>
@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Skedari Ekziston</translation>
+      <translation>Skedari ekziston</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
