@@ -32,41 +32,32 @@ void* PS4_SYSV_ABI sceKernelGetProcParam() {
     return linker->GetProcParam();
 }
 
-s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t args, const void* argp,
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
                                           u32 flags, const void* pOpt, int* pRes) {
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
-
     ASSERT(flags == 0);
 
-    std::string guest_path(moduleFileName);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    std::filesystem::path path;
-    s32 handle;
 
-    if (guest_path[0] == '/') {
+    std::filesystem::path path;
+    std::string guest_path(moduleFileName);
+
+    const bool is_root = guest_path[0] == '/';
+    if (is_root || guest_path.contains('/')) {
         path = mnt->GetHostPath(guest_path);
-        handle = linker->LoadAndStartModule(path, args, argp, pRes);
-        if (handle != -1) {
-            return handle;
-        }
-        // Trying to load a system module
-        UNREACHABLE();
-    } else {
-        if (!guest_path.contains('/')) {
-            path = mnt->GetHostPath("/app0/" + guest_path);
-            handle = linker->LoadAndStartModule(path, args, argp, pRes);
-            if (handle != -1) {
-                return handle;
-            }
-        } else {
-            path = mnt->GetHostPath(guest_path);
-            handle = linker->LoadAndStartModule(path, args, argp, pRes);
-            if (handle != -1) {
-                return handle;
-            }
-        }
+    } else if (!guest_path.contains('/')) {
+        path = mnt->GetHostPath("/app0/" + guest_path);
     }
+
+    if (const s32 handle = linker->LoadAndStartModule(path, args, argp, pRes); handle != -1) {
+        return handle;
+    }
+
+    if (is_root) {
+        UNREACHABLE();
+    }
+
     return ORBIS_KERNEL_ERROR_ENOENT;
 }
 
