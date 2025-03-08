@@ -10,6 +10,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/system_error.h"
+#include "core/libraries/kernel/process.h"
 
 namespace Libraries::SysModule {
 
@@ -18,9 +19,12 @@ int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind() {
+s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags, void* info) {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+    Kernel::OrbisModuleInfoForUnwind module_info;
+    module_info.st_size = 0x130;
+    s32 res = Kernel::sceKernelGetModuleInfoForUnwind(addr, flags, &module_info);
+    return res;
 }
 
 int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule() {
