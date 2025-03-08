@@ -63,6 +63,11 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
         }
     });
 
+    ui->buttonBox->button(QDialogButtonBox::Save)->setText(tr("Save"));
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
+    ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+
     connect(ui->HelpButton, &QPushButton::clicked, this, &KBMSettings::onHelpClicked);
     connect(ui->TextEditorButton, &QPushButton::clicked, this, [this]() {
         auto kbmWindow = new EditorDialog(this);
