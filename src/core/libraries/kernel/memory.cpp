@@ -506,8 +506,8 @@ s32 PS4_SYSV_ABI sceKernelConfiguredFlexibleMemorySize(u64* sizeOut) {
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}", fmt::ptr(addr), len);
-    if (len == 0) {
-        return ORBIS_OK;
+    if (len <= 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
     auto* memory = Core::Memory::Instance();
     return memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
