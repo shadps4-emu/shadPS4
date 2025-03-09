@@ -1507,7 +1507,7 @@
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Typ</translation>
     </message>
     <message>
       <source>App Ver</source>
@@ -2046,7 +2046,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Auto-Wählen</translation>
     </message>
     <message>
       <source>Directory to install games</source>
