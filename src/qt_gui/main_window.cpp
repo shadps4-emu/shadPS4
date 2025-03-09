@@ -134,61 +134,39 @@ void MainWindow::CreateActions() {
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
+
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
 
-    QWidget* toolbarContainer = new QWidget(this);
-    QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
-    mainLayout->setContentsMargins(5, 5, 5, 5);
-    mainLayout->setSpacing(15);
+    // Detect background color
+    QColor bgColor = palette().color(QPalette::Window);
+    QString textColor = (bgColor.lightness() > 128) ? "#000" : "#fff";
 
-    auto createButtonWithLabel = [&](QPushButton* button, const QString& labelText) {
-        QWidget* container = new QWidget(this);
-        QVBoxLayout* layout = new QVBoxLayout(container);
-        layout->setAlignment(Qt::AlignCenter);
-        layout->setContentsMargins(0, 0, 0, 0);
+    ui->playButton->setToolTip(
+        QString("<span style='color:%1;'><b>Play</b></span>").arg(textColor));
+    ui->pauseButton->setToolTip(
+        QString("<span style='color:%1;'><b>Pause</b></span>").arg(textColor));
+    ui->stopButton->setToolTip(
+        QString("<span style='color:%1;'><b>Stop</b></span>").arg(textColor));
+    ui->settingsButton->setToolTip(
+        QString("<span style='color:%1;'><b>Config</b></span>").arg(textColor));
+    ui->controllerButton->setToolTip(
+        QString("<span style='color:%1;'><b>Pads</b></span>").arg(textColor));
+    ui->keyboardButton->setToolTip(
+        QString("<span style='color:%1;'><b>KBM</b></span>").arg(textColor));
+    ui->refreshButton->setToolTip(
+        QString("<span style='color:%1;'><b>RefreshList</b></span>").arg(textColor));
 
-        QLabel* label = new QLabel(labelText, this);
-        label->setAlignment(Qt::AlignCenter);
+    ui->toolBar->addWidget(ui->playButton);
+    ui->toolBar->addWidget(ui->pauseButton);
+    ui->toolBar->addWidget(ui->stopButton);
+    ui->toolBar->addWidget(ui->settingsButton);
+    ui->toolBar->addWidget(ui->controllerButton);
+    ui->toolBar->addWidget(ui->keyboardButton);
+    ui->toolBar->addWidget(ui->refreshButton);
 
-        layout->addWidget(button);
-        layout->addWidget(label);
-        container->setLayout(layout);
-
-        return container;
-    };
-
-    QWidget* buttonGroup = new QWidget(this);
-    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
-    buttonLayout->setSpacing(15);
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, "Play"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, "Pause"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, "Stop"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, "Config"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, "Pads"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, "KBM"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, "Rfrsh"));
-
-    buttonGroup->setLayout(buttonLayout);
-
-    QWidget* searchSliderContainer = new QWidget(this);
-    QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
-    searchSliderLayout->setContentsMargins(0, 0, 0, 0);
-    searchSliderLayout->setSpacing(10);
-
-    searchSliderLayout->addWidget(ui->sizeSliderContainer);
-    searchSliderLayout->addWidget(ui->mw_searchbar);
-
-    searchSliderContainer->setLayout(searchSliderLayout);
-
-    mainLayout->addWidget(buttonGroup);
-    mainLayout->addWidget(searchSliderContainer);
-
-    toolbarContainer->setLayout(mainLayout);
-
-    ui->toolBar->addWidget(toolbarContainer);
+    ui->toolBar->addWidget(ui->sizeSliderContainer);
+    ui->toolBar->addWidget(ui->mw_searchbar);
 }
 
 void MainWindow::CreateDockWindows() {
