@@ -166,10 +166,10 @@ void MainWindow::AddUiWidgets() {
     buttonLayout->addWidget(createButtonWithLabel(ui->playButton, "Play"));
     buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, "Pause"));
     buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, "Stop"));
-    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, "Rfrsh"));
     buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, "Config"));
     buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, "Pads"));
     buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, "KBM"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, "Rfrsh"));
 
     buttonGroup->setLayout(buttonLayout);
 
