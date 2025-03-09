@@ -562,7 +562,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erreur</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Aide</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
@@ -947,7 +947,7 @@
     </message>
     <message>
       <source>FAQ</source>
-      <translation type="unfinished">FAQ</translation>
+      <translation>FAQ</translation>
     </message>
     <message>
       <source>Syntax</source>
@@ -1165,7 +1165,7 @@
     </message>
     <message>
       <source>Press a key</source>
-      <translation type="unfinished">Press a key</translation>
+      <translation>Appuyez sur un bouton</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
