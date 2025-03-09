@@ -72,17 +72,13 @@ int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds) {
 
     return 0;
 #else
-    timespec start;
-    timespec remain;
-    start.tv_sec = microseconds / 1000000;
-    start.tv_nsec = (microseconds % 1000000) * 1000;
-    timespec* requested = &start;
-    int ret = 0;
-    do {
-        ret = nanosleep(requested, &remain);
-        requested = &remain;
-    } while (ret != 0);
-    return ret;
+    struct timespec req, rem;
+    req.tv_sec = microseconds / 1000000;
+    req.tv_nsec = (microseconds % 1000000) * 1000;
+    while (nanosleep(&req, &rem) == -1) {
+        req = rem;
+    }
+    return 0;
 #endif
 }
 
@@ -114,6 +110,9 @@ u32 PS4_SYSV_ABI sceKernelSleep(u32 seconds) {
 #ifndef CLOCK_MONOTONIC_COARSE
 #define CLOCK_MONOTONIC_COARSE 6
 #endif
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW 7
+#endif
 
 #define DELTA_EPOCH_IN_100NS 116444736000000000ULL
 
@@ -133,7 +132,7 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
         return 0;
     }
     case CLOCK_MONOTONIC:
-    case CLOCK_MONOTONIC_COARSE: {
+    case CLOCK_MONOTONIC_RAW: {
         static LARGE_INTEGER pf = [] {
             LARGE_INTEGER res{};
             QueryPerformanceFrequency(&pf);
@@ -158,7 +157,7 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
     }
     case CLOCK_THREAD_CPUTIME_ID: {
         FILETIME ct, et, kt, ut;
-        if (!GetThreadTimes(GetCurrentThread(), &ct, &et, &kt, &ut)) {
+        if (!GetThreadTimes(GetCurrentProcess(), &ct, &et, &kt, &ut)) {
             return EFAULT;
         }
         const u64 ns = FileTimeTo100Ns(ut) + FileTimeTo100Ns(kt);
@@ -172,8 +171,8 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
 }
 #endif
 
-int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
-    if (ts == nullptr) {
+int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, OrbisKernelTimespec* tp) {
+    if (tp == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
@@ -185,12 +184,11 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
         break;
     case ORBIS_CLOCK_SECOND:
     case ORBIS_CLOCK_REALTIME_FAST:
-#ifndef __APPLE__
-        pclock_id = CLOCK_REALTIME_COARSE;
-#else
+#ifdef __APPLE__
         pclock_id = CLOCK_REALTIME;
-#endif
-        break;
+#else
+        pclock_id = CLOCK_REALTIME_COARSE;
+#endif break;
     case ORBIS_CLOCK_UPTIME:
     case ORBIS_CLOCK_UPTIME_PRECISE:
     case ORBIS_CLOCK_MONOTONIC:
@@ -199,19 +197,15 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
         break;
     case ORBIS_CLOCK_UPTIME_FAST:
     case ORBIS_CLOCK_MONOTONIC_FAST:
-#ifndef __APPLE__
-        pclock_id = CLOCK_MONOTONIC_COARSE;
-#else
-        pclock_id = CLOCK_MONOTONIC;
-#endif
+        pclock_id = CLOCK_MONOTONIC_RAW;
         break;
     case ORBIS_CLOCK_THREAD_CPUTIME_ID:
         pclock_id = CLOCK_THREAD_CPUTIME_ID;
         break;
     case ORBIS_CLOCK_PROCTIME: {
         const auto us = sceKernelGetProcessTime();
-        ts->tv_sec = us / 1'000'000;
-        ts->tv_nsec = (us % 1'000'000) * 1000;
+        tp->tv_sec = us / 1'000'000;
+        tp->tv_nsec = (us % 1'000'000) * 1000;
         return 0;
     }
     case ORBIS_CLOCK_VIRTUAL: {
@@ -221,16 +215,16 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
             return EFAULT;
         }
         const u64 ns = FileTimeTo100Ns(ut);
-        ts->tv_sec = ns / 10'000'000;
-        ts->tv_nsec = (ns % 10'000'000) * 100;
+        tp->tv_sec = ns / 10'000'000;
+        tp->tv_nsec = (ns % 10'000'000) * 100;
 #else
         struct rusage ru;
         const auto res = getrusage(RUSAGE_SELF, &ru);
         if (res < 0) {
             return res;
         }
-        ts->tv_sec = ru.ru_utime.tv_sec;
-        ts->tv_nsec = ru.ru_utime.tv_usec * 1000;
+        tp->tv_sec = ru.ru_utime.tv_sec;
+        tp->tv_nsec = ru.ru_utime.tv_usec * 1000;
 #endif
         return 0;
     }
@@ -241,16 +235,16 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
             return EFAULT;
         }
         const u64 ns = FileTimeTo100Ns(kt);
-        ts->tv_sec = ns / 10'000'000;
-        ts->tv_nsec = (ns % 10'000'000) * 100;
+        tp->tv_sec = ns / 10'000'000;
+        tp->tv_nsec = (ns % 10'000'000) * 100;
 #else
         struct rusage ru;
         const auto res = getrusage(RUSAGE_SELF, &ru);
         if (res < 0) {
             return res;
         }
-        ts->tv_sec = ru.ru_stime.tv_sec;
-        ts->tv_nsec = ru.ru_stime.tv_usec * 1000;
+        tp->tv_sec = ru.ru_stime.tv_sec;
+        tp->tv_nsec = ru.ru_stime.tv_usec * 1000;
 #endif
         return 0;
     }
@@ -265,17 +259,23 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
         return EINVAL;
     }
 
-    return clock_gettime(pclock_id, ts);
+    struct timespec ts;
+    const auto res = clock_gettime(pclock_id, &ts);
+    if (res < 0) {
+        return res;
+    }
+
+    tp->tv_sec = ts.tv_sec;
+    tp->tv_nsec = ts.tv_nsec;
+
+    return 0;
 }
 
 int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
-    struct timespec ts;
-    const auto res = orbis_clock_gettime(clock_id, &ts);
+    const auto res = orbis_clock_gettime(clock_id, tp);
     if (res < 0) {
         return ErrnoToSceKernelError(res);
     }
-    tp->tv_sec = ts.tv_sec;
-    tp->tv_nsec = ts.tv_nsec;
     return ORBIS_OK;
 }
 
