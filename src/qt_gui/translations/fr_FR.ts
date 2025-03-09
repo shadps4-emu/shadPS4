@@ -543,50 +543,50 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Impossible de sauvegarder</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
-      <translation type="unfinished">Cannot bind axis values more than once</translation>
+      <translation>Impossible de lier les valeurs de l'axe plusieurs fois</translation>
     </message>
   </context>
   <context>
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Modifier les raccourcis d'entrée clavier + souris et contrôleur</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation type="unfinished">Use Per-Game configs</translation>
+      <translation>Utiliser les configurations pour chaque jeu</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Erreur</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation type="unfinished">Could not open the file for reading</translation>
+      <translation>Impossible d'ouvrir le fichier pour la lecture</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
-      <translation type="unfinished">Could not open the file for writing</translation>
+      <translation>Impossible d'ouvrir le fichier pour l'écriture</translation>
     </message>
     <message>
       <source>Save Changes</source>
-      <translation type="unfinished">Save Changes</translation>
+      <translation>Enregistrer les Modifications</translation>
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation type="unfinished">Do you want to save changes?</translation>
+      <translation>Voulez-vous sauvegarder les modifications?</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Aide</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
-      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+      <translation>Voulez-vous réinitialiser votre configuration par défaut personnalisée à la configuration par défaut d'origine ?</translation>
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
@@ -947,7 +947,7 @@
     </message>
     <message>
       <source>FAQ</source>
-      <translation type="unfinished">FAQ</translation>
+      <translation>FAQ</translation>
     </message>
     <message>
       <source>Syntax</source>
@@ -1157,7 +1157,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Impossible de sauvegarder</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
@@ -1165,7 +1165,7 @@
     </message>
     <message>
       <source>Press a key</source>
-      <translation type="unfinished">Press a key</translation>
+      <translation>Appuyez sur un bouton</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
@@ -2150,7 +2150,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>Ouvrez le dossier des images/sons des trophées personnalisés:\nVous pouvez ajouter des images personnalisées aux trophées et aux sons.\nAjoutez les fichiers à custom_trophy avec les noms suivants:\ntrophy.wav OU trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote : Le son ne fonctionnera que dans les versions QT.</translation>
     </message>
   </context>
   <context>

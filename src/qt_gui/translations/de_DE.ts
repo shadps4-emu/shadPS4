@@ -234,7 +234,7 @@
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>Name:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
@@ -463,7 +463,7 @@
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Zurück</translation>
     </message>
     <message>
       <source>R1 / RB</source>
@@ -523,15 +523,15 @@
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -562,7 +562,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Fehler</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Hilfe</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
@@ -932,7 +932,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Trophäe</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -943,7 +943,7 @@
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>Schnellstart</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -1049,7 +1049,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Hilfe</translation>
     </message>
     <message>
       <source>R1</source>
@@ -1487,7 +1487,7 @@
     </message>
     <message>
       <source>Name</source>
-      <translation type="unfinished">Name</translation>
+      <translation>Name</translation>
     </message>
     <message>
       <source>Serial</source>
@@ -1503,11 +1503,11 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategorie</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Typ</translation>
     </message>
     <message>
       <source>App Ver</source>
@@ -1519,7 +1519,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
@@ -1554,7 +1554,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -2046,7 +2046,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Auto-Wählen</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -2058,7 +2058,7 @@
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Video</translation>
     </message>
     <message>
       <source>Display Mode</source>
@@ -2102,11 +2102,11 @@
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Links</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Rechts</translation>
     </message>
     <message>
       <source>Top</source>
