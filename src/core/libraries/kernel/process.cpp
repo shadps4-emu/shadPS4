@@ -32,44 +32,33 @@ void* PS4_SYSV_ABI sceKernelGetProcParam() {
     return linker->GetProcParam();
 }
 
-s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t args, const void* argp,
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
                                           u32 flags, const void* pOpt, int* pRes) {
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
-
-    if (flags != 0) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
+    ASSERT(flags == 0);
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path = mnt->GetHostPath(moduleFileName);
-
-    // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    u32 handle = linker->FindByName(path);
-    if (handle != -1) {
+
+    std::filesystem::path path;
+    std::string guest_path(moduleFileName);
+
+    const bool is_root = guest_path[0] == '/';
+    if (is_root || guest_path.contains('/')) {
+        path = mnt->GetHostPath(guest_path);
+    } else if (!guest_path.contains('/')) {
+        path = mnt->GetHostPath("/app0/" + guest_path);
+    }
+
+    if (const s32 handle = linker->LoadAndStartModule(path, args, argp, pRes); handle != -1) {
         return handle;
     }
-    handle = linker->LoadModule(path, true);
-    if (handle == -1) {
-        return ORBIS_KERNEL_ERROR_ESRCH;
-    }
-    auto* module = linker->GetModule(handle);
-    linker->RelocateAnyImports(module);
 
-    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
-    if (module->tls.image_size != 0) {
-        linker->AdvanceGenerationCounter();
+    if (is_root) {
+        UNREACHABLE();
     }
 
-    // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
-    s32 ret = module->Start(args, argp, param);
-    if (pRes) {
-        *pRes = ret;
-    }
-
-    return handle;
+    return ORBIS_KERNEL_ERROR_ENOENT;
 }
 
 s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
