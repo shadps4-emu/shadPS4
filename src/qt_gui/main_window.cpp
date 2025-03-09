@@ -136,19 +136,59 @@ void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
-    ui->toolBar->addWidget(ui->playButton);
-    ui->toolBar->addWidget(ui->pauseButton);
-    ui->toolBar->addWidget(ui->stopButton);
-    ui->toolBar->addWidget(ui->refreshButton);
-    ui->toolBar->addWidget(ui->settingsButton);
-    ui->toolBar->addWidget(ui->controllerButton);
-    ui->toolBar->addWidget(ui->keyboardButton);
-    QFrame* line = new QFrame(this);
-    line->setFrameShape(QFrame::StyledPanel);
-    line->setFrameShadow(QFrame::Sunken);
-    ui->toolBar->addWidget(line);
-    ui->toolBar->addWidget(ui->sizeSliderContainer);
-    ui->toolBar->addWidget(ui->mw_searchbar);
+
+    QWidget* toolbarContainer = new QWidget(this);
+    QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
+    mainLayout->setContentsMargins(5, 5, 5, 5);
+    mainLayout->setSpacing(15);
+
+    auto createButtonWithLabel = [&](QPushButton* button, const QString& labelText) {
+        QWidget* container = new QWidget(this);
+        QVBoxLayout* layout = new QVBoxLayout(container);
+        layout->setAlignment(Qt::AlignCenter);
+        layout->setContentsMargins(0, 0, 0, 0);
+
+        QLabel* label = new QLabel(labelText, this);
+        label->setAlignment(Qt::AlignCenter);
+
+        layout->addWidget(button);
+        layout->addWidget(label);
+        container->setLayout(layout);
+
+        return container;
+    };
+
+    QWidget* buttonGroup = new QWidget(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    buttonLayout->setSpacing(15);
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, "Play"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, "Pause"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, "Stop"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, "Rfrsh"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, "Config"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, "Pads"));
+    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, "KBM"));
+
+    buttonGroup->setLayout(buttonLayout);
+
+    QWidget* searchSliderContainer = new QWidget(this);
+    QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
+    searchSliderLayout->setContentsMargins(0, 0, 0, 0);
+    searchSliderLayout->setSpacing(10);
+
+    searchSliderLayout->addWidget(ui->sizeSliderContainer);
+    searchSliderLayout->addWidget(ui->mw_searchbar);
+
+    searchSliderContainer->setLayout(searchSliderLayout);
+
+    mainLayout->addWidget(buttonGroup);
+    mainLayout->addWidget(searchSliderContainer);
+
+    toolbarContainer->setLayout(mainLayout);
+
+    ui->toolBar->addWidget(toolbarContainer);
 }
 
 void MainWindow::CreateDockWindows() {
