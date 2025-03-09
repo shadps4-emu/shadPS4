@@ -594,7 +594,7 @@
     </message>
     <message>
       <source>Reset to Default</source>
-      <translation type="unfinished">Reset to Default</translation>
+      <translation>Resetear A Valores Originales</translation>
     </message>
   </context>
   <context>
