@@ -28,6 +28,11 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
         }
     });
 
+    ui->buttonBox->button(QDialogButtonBox::Save)->setText(tr("Save"));
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
+    ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
 
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
