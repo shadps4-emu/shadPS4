@@ -33,6 +33,8 @@ public:
     bool GetVideoData(SceAvPlayerFrameInfoEx& video_info);
     bool IsActive();
     u64 CurrentTime();
+    bool Pause();
+    bool Resume();
     bool SetLooping(bool is_looping);
 
 private:
