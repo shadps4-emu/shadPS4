@@ -112,3 +112,8 @@ SPDX-License-Identifier = "CC0-1.0"
 path = "cmake/CMakeRC.cmake"
 SPDX-FileCopyrightText = "Copyright (c) 2017 vector-of-bool <vectorofbool@gmail.com>"
 SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "src/video_core/host_shaders/fsr/*"
+SPDX-FileCopyrightText = "Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved."
+SPDX-License-Identifier = "MIT"

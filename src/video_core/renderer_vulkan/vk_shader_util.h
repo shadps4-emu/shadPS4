@@ -16,7 +16,8 @@ namespace Vulkan {
  * @param stage The pipeline stage the shader will be used in.
  * @param device The vulkan device handle.
  */
-vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device);
+vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device,
+                         std::vector<std::string> defines = {});
 
 /**
  * @brief Creates a vulkan shader module from SPIR-V bytecode.
