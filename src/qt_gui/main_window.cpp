@@ -134,19 +134,37 @@ void MainWindow::CreateActions() {
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
+
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
+
+    // Detect background color
+    QColor bgColor = palette().color(QPalette::Window);
+    QString textColor = (bgColor.lightness() > 128) ? "#000" : "#fff";
+
+    ui->playButton->setToolTip(
+        QString("<span style='color:%1;'><b>Play</b></span>").arg(textColor));
+    ui->pauseButton->setToolTip(
+        QString("<span style='color:%1;'><b>Pause</b></span>").arg(textColor));
+    ui->stopButton->setToolTip(
+        QString("<span style='color:%1;'><b>Stop</b></span>").arg(textColor));
+    ui->settingsButton->setToolTip(
+        QString("<span style='color:%1;'><b>Config</b></span>").arg(textColor));
+    ui->controllerButton->setToolTip(
+        QString("<span style='color:%1;'><b>Pads</b></span>").arg(textColor));
+    ui->keyboardButton->setToolTip(
+        QString("<span style='color:%1;'><b>KBM</b></span>").arg(textColor));
+    ui->refreshButton->setToolTip(
+        QString("<span style='color:%1;'><b>RefreshList</b></span>").arg(textColor));
+
     ui->toolBar->addWidget(ui->playButton);
     ui->toolBar->addWidget(ui->pauseButton);
     ui->toolBar->addWidget(ui->stopButton);
-    ui->toolBar->addWidget(ui->refreshButton);
     ui->toolBar->addWidget(ui->settingsButton);
     ui->toolBar->addWidget(ui->controllerButton);
     ui->toolBar->addWidget(ui->keyboardButton);
-    QFrame* line = new QFrame(this);
-    line->setFrameShape(QFrame::StyledPanel);
-    line->setFrameShadow(QFrame::Sunken);
-    ui->toolBar->addWidget(line);
+    ui->toolBar->addWidget(ui->refreshButton);
+
     ui->toolBar->addWidget(ui->sizeSliderContainer);
     ui->toolBar->addWidget(ui->mw_searchbar);
 }
