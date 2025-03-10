@@ -1161,11 +1161,11 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>Denne knappen kopierer oppsettet ifra felles oppsettet til den valgte profilen, og kan ikke brukes når den gjeldende brukte profilen er felles oppsettet.</translation>
+      <translation>Denne knappen kopierer oppsettet fra felles oppsettet til den valgte profilen, og kan ikke brukes når den gjeldende brukte profilen er felles oppsettet.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>Kopier verdier ifra felles oppsettet</translation>
+      <translation>Kopier verdier fra felles oppsettet</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
