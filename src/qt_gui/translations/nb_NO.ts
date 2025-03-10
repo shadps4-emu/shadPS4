@@ -1818,7 +1818,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Spill tittelmusikk</translation>
+      <translation>Spill av tittelmusikk</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
