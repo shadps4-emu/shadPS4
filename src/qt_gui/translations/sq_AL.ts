@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>Shigjetat</translation>
     </message>
     <message>
       <source>Up</source>

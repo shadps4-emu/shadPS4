@@ -590,11 +590,11 @@
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
-      <translation type="unfinished">Do you want to reset this config to your custom default config?</translation>
+      <translation>Voulez-vous réinitialiser cette configuration à votre configuration personnalisée par défaut ?</translation>
     </message>
     <message>
       <source>Reset to Default</source>
-      <translation type="unfinished">Reset to Default</translation>
+      <translation>Rétablir par défaut</translation>
     </message>
   </context>
   <context>
@@ -943,7 +943,7 @@
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>Démarrage rapide</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -951,15 +951,15 @@
     </message>
     <message>
       <source>Syntax</source>
-      <translation type="unfinished">Syntax</translation>
+      <translation>Syntaxe</translation>
     </message>
     <message>
       <source>Special Bindings</source>
-      <translation type="unfinished">Special Bindings</translation>
+      <translation>Special bindings</translation>
     </message>
     <message>
       <source>Keybindings</source>
-      <translation type="unfinished">Keybindings</translation>
+      <translation>Raccourcis</translation>
     </message>
   </context>
   <context>
@@ -1141,19 +1141,19 @@
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation type="unfinished">Common Config Selected</translation>
+      <translation>Configuration courante sélectionnée</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>Ce bouton copie les mappings de la configuration commune vers le profil actuellement sélectionné, et ne peut pas être utilisé lorsque le profil actuellement sélectionné est la configuration commune.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation type="unfinished">Copy values from Common Config</translation>
+      <translation>Copier à partir de la configuration commune</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>Voulez-vous remplacer les mappings existants par les mappings de la configuration commune ?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1161,7 +1161,7 @@
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
-      <translation type="unfinished">Cannot bind any unique input more than once</translation>
+      <translation>Impossible de lier une entrée unique plus d'une fois</translation>
     </message>
     <message>
       <source>Press a key</source>
@@ -1169,11 +1169,11 @@
     </message>
     <message>
       <source>Cannot set mapping</source>
-      <translation type="unfinished">Cannot set mapping</translation>
+      <translation>Impossible de définir le mapping</translation>
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+      <translation>La molette de la souris ne peut pas être affectée aux sorties de la manette</translation>
     </message>
   </context>
   <context>
@@ -2134,19 +2134,19 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>Impossible de créer le dossier utilisateur portable</translation>
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation type="unfinished">%1 already exists</translation>
+      <translation>%1 existe déjà</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>Dossier utilisateur portable créé</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
-      <translation type="unfinished">%1 successfully created.</translation>
+      <translation>%1 a été créé avec succès.</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
