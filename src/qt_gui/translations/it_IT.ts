@@ -549,6 +549,22 @@
       <source>Cannot bind axis values more than once</source>
       <translation>Impossibile associare i valori degli assi più di una volta</translation>
     </message>
+    <message>
+      <source>Save</source>
+      <translation>Salva</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Applica</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Ripristina Impostazioni Predefinite</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annulla</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1174,6 +1190,22 @@
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
       <translation>La rotella del mouse non può essere associata ai comandi della levetta analogica</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salva</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Applica</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Ripristina Impostazioni Predefinite</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annulla</translation>
     </message>
   </context>
   <context>

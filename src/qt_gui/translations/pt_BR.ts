@@ -549,6 +549,22 @@
       <source>Cannot bind axis values more than once</source>
       <translation>Não é possível vincular os valores do eixo mais de uma vez</translation>
     </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Padrões</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1174,6 +1190,22 @@
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
       <translation>A rolagem do mouse não pode ser mapeada para saídas do analógico</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Padrões</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
     </message>
   </context>
   <context>
