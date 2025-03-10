@@ -40,7 +40,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Window, QColor(240, 240, 240));   // Light gray
         themePalette.setColor(QPalette::WindowText, Qt::black);           // Black
         themePalette.setColor(QPalette::Base, QColor(230, 230, 230, 80)); // Grayish
-        themePalette.setColor(QPalette::ToolTipBase, Qt::black);          // Black
+        themePalette.setColor(QPalette::ToolTipBase, Qt::white);          // Black
         themePalette.setColor(QPalette::ToolTipText, Qt::black);          // Black
         themePalette.setColor(QPalette::Text, Qt::black);                 // Black
         themePalette.setColor(QPalette::Button, QColor(240, 240, 240));   // Light gray
@@ -173,7 +173,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::WindowText, Qt::white);
         themePalette.setColor(QPalette::Base, Qt::black);
         themePalette.setColor(QPalette::AlternateBase, Qt::black);
-        themePalette.setColor(QPalette::ToolTipBase, Qt::black);
+        themePalette.setColor(QPalette::ToolTipBase, Qt::white);
         themePalette.setColor(QPalette::ToolTipText, Qt::white);
         themePalette.setColor(QPalette::Text, Qt::white);
         themePalette.setColor(QPalette::Button, QColor(5, 5, 5));
