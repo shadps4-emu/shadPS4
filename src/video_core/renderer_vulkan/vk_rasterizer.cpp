@@ -162,7 +162,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         const auto mip = image_view.info.range.base.level;
         state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
         state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
-        state.color_attachments[state.num_color_attachments++] = {
+        state.color_attachments[state.num_color_attachments] = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
@@ -170,6 +170,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             .clearValue =
                 is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{},
         };
+        state.cb_slices[state.num_color_attachments] = image_view.info.range.extent.layers;
+        state.num_color_attachments++;
     }
 
     if ((regs.depth_control.depth_enable && regs.depth_buffer.DepthValid()) ||
@@ -196,6 +198,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         state.has_depth = regs.depth_buffer.DepthValid();
         state.has_stencil = regs.depth_buffer.StencilValid();
         if (state.has_depth) {
+            state.depth_slices = image_view.info.range.extent.layers;
             state.depth_attachment = {
                 .imageView = *image_view.image_view,
                 .imageLayout = vk::ImageLayout::eUndefined,

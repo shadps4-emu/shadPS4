@@ -183,6 +183,7 @@ public:
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id output_layer{};
     Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
