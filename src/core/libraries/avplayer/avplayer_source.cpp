@@ -5,6 +5,7 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 
@@ -29,7 +30,7 @@ AvPlayerSource::~AvPlayerSource() {
     Stop();
 }
 
-bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view path) {
+bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view path) {
     m_memory_replacement = init_data.memory_replacement,
     m_num_output_video_framebuffers =
         std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
@@ -76,25 +77,21 @@ s32 AvPlayerSource::GetStreamCount() {
     return m_avformat_context->nb_streams;
 }
 
-static SceAvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
+static AvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
     switch (codec_type) {
     case AVMediaType::AVMEDIA_TYPE_VIDEO:
-        return SceAvPlayerStreamType::Video;
+        return AvPlayerStreamType::Video;
     case AVMediaType::AVMEDIA_TYPE_AUDIO:
-        return SceAvPlayerStreamType::Audio;
+        return AvPlayerStreamType::Audio;
     case AVMediaType::AVMEDIA_TYPE_SUBTITLE:
-        return SceAvPlayerStreamType::TimedText;
+        return AvPlayerStreamType::TimedText;
     default:
         LOG_ERROR(Lib_AvPlayer, "Unexpected AVMediaType {}", magic_enum::enum_name(codec_type));
-        return SceAvPlayerStreamType::Unknown;
+        return AvPlayerStreamType::Unknown;
     }
 }
 
-static f32 AVRationalToF32(const AVRational rational) {
-    return f32(rational.num) / rational.den;
-}
-
-bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info.", stream_index);
@@ -115,7 +112,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         LOG_WARNING(Lib_AvPlayer, "Stream {} language is unknown", stream_index);
     }
     switch (info.type) {
-    case SceAvPlayerStreamType::Video: {
+    case AvPlayerStreamType::Video: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
@@ -133,7 +130,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SceAvPlayerStreamType::Audio: {
+    case AvPlayerStreamType::Audio: {
         LOG_INFO(Lib_AvPlayer, "Stream {} is an audio stream.", stream_index);
         info.details.audio.channel_count = p_stream->codecpar->ch_layout.nb_channels;
         info.details.audio.sample_rate = p_stream->codecpar->sample_rate;
@@ -144,7 +141,7 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info
         }
         break;
     }
-    case SceAvPlayerStreamType::TimedText: {
+    case AvPlayerStreamType::TimedText: {
         LOG_WARNING(Lib_AvPlayer, "Stream {} is a timedtext stream.", stream_index);
         info.details.subs.font_size = 12;
         info.details.subs.text_size = 12;
@@ -264,14 +261,13 @@ bool AvPlayerSource::Stop() {
     m_demuxer_thread.Stop();
 
     if (m_current_audio_frame.has_value()) {
-        m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
+        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
         m_current_audio_frame.reset();
     }
     if (m_current_video_frame.has_value()) {
-        m_video_buffers.Push(std::move(m_current_video_frame.value()));
+        m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_current_video_frame.reset();
     }
-    m_stop_cv.Notify();
 
     m_audio_packets.Clear();
     m_video_packets.Clear();
@@ -280,97 +276,81 @@ bool AvPlayerSource::Stop() {
     return true;
 }
 
-bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfo& video_info) {
-    if (!IsActive()) {
-        return false;
-    }
+void AvPlayerSource::Pause() {
+    m_pause_time = std::chrono::high_resolution_clock::now();
+    m_is_paused = true;
+}
 
-    SceAvPlayerFrameInfoEx info{};
+void AvPlayerSource::Resume() {
+    m_pause_duration += std::chrono::high_resolution_clock::now() - m_pause_time;
+    m_is_paused = false;
+}
+
+bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
+    AvPlayerFrameInfoEx info{};
     if (!GetVideoData(info)) {
         return false;
     }
     video_info = {};
     video_info.timestamp = u64(info.timestamp);
-    video_info.pData = reinterpret_cast<u8*>(info.pData);
+    video_info.p_data = reinterpret_cast<u8*>(info.p_data);
     video_info.details.video.aspect_ratio = info.details.video.aspect_ratio;
     video_info.details.video.width = info.details.video.width;
     video_info.details.video.height = info.details.video.height;
     return true;
 }
 
-bool AvPlayerSource::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
-    if (!IsActive()) {
+bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
+    if (!IsActive() || m_is_paused) {
         return false;
     }
 
-    m_video_frames_cv.Wait([this] { return m_video_frames.Size() != 0 || m_is_eof; });
-
-    auto frame = m_video_frames.Pop();
-    if (!frame.has_value()) {
-        LOG_TRACE(Lib_AvPlayer, "Could get video frame. EOF reached.");
+    if (m_video_frames.Size() == 0) {
         return false;
     }
 
-    {
-        using namespace std::chrono;
-        auto elapsed_time =
-            duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
-        if (elapsed_time < frame->info.timestamp) {
-            if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
-                                  [&] { return elapsed_time >= frame->info.timestamp; })) {
-                return false;
-            }
+    const auto& new_frame = m_video_frames.Front();
+    if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
+        const auto current_time = CurrentTime();
+        if (0 < current_time && current_time < new_frame.info.timestamp) {
+            return false;
         }
     }
 
-    // return the buffer to the queue
+    auto frame = m_video_frames.Pop();
     if (m_current_video_frame.has_value()) {
-        m_video_buffers.Push(std::move(m_current_video_frame.value()));
+        // return the buffer to the queue
+        m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_video_buffers_cv.Notify();
     }
-    m_current_video_frame = std::move(frame->buffer);
     video_info = frame->info;
+    m_current_video_frame = std::move(frame);
     return true;
 }
 
-bool AvPlayerSource::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
-    if (!IsActive()) {
+bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
+    if (!IsActive() || m_is_paused) {
         return false;
     }
 
-    m_audio_frames_cv.Wait([this] { return m_audio_frames.Size() != 0 || m_is_eof; });
+    if (m_audio_frames.Size() == 0) {
+        return false;
+    }
 
     auto frame = m_audio_frames.Pop();
-    if (!frame.has_value()) {
-        LOG_TRACE(Lib_AvPlayer, "Could get audio frame. EOF reached.");
-        return false;
-    }
-
-    {
-        using namespace std::chrono;
-        auto elapsed_time =
-            duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
-        if (elapsed_time < frame->info.timestamp) {
-            if (m_stop_cv.WaitFor(milliseconds(frame->info.timestamp - elapsed_time),
-                                  [&] { return elapsed_time >= frame->info.timestamp; })) {
-                return false;
-            }
-        }
-    }
-
-    // return the buffer to the queue
     if (m_current_audio_frame.has_value()) {
-        m_audio_buffers.Push(std::move(m_current_audio_frame.value()));
+        // return the buffer to the queue
+        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
         m_audio_buffers_cv.Notify();
     }
-    m_current_audio_frame = std::move(frame->buffer);
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
-    audio_info.pData = reinterpret_cast<u8*>(frame->info.pData);
+    audio_info.p_data = reinterpret_cast<u8*>(frame->info.p_data);
     audio_info.details.audio.sample_rate = frame->info.details.audio.sample_rate;
     audio_info.details.audio.size = frame->info.details.audio.size;
     audio_info.details.audio.channel_count = frame->info.details.audio.channel_count;
+    m_current_audio_frame = std::move(frame);
     return true;
 }
 
@@ -379,7 +359,9 @@ u64 AvPlayerSource::CurrentTime() {
         return 0;
     }
     using namespace std::chrono;
-    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time).count();
+    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time -
+                                       m_pause_duration)
+        .count();
 }
 
 bool AvPlayerSource::IsActive() {
@@ -445,6 +427,7 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
             if (res == AVERROR_EOF) {
                 if (m_is_looping) {
                     LOG_INFO(Lib_AvPlayer, "EOF reached in demuxer. Looping the source...");
+                    m_state.OnWarning(ORBIS_AVPLAYER_ERROR_WAR_LOOPING_BACK);
                     avio_seek(m_avformat_context->pb, 0, SEEK_SET);
                     if (m_video_stream_index.has_value()) {
                         const auto index = m_video_stream_index.value();
@@ -572,7 +555,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
         .buffer = std::move(buffer),
         .info =
             {
-                .pData = p_buffer,
+                .p_data = p_buffer,
                 .timestamp = timestamp,
                 .details =
                     {
@@ -580,7 +563,7 @@ Frame AvPlayerSource::PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame
                             {
                                 .width = width,
                                 .height = height,
-                                .aspect_ratio = AVRationalToF32(frame.sample_aspect_ratio),
+                                .aspect_ratio = (float)av_q2d(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
                                 .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
                                 .crop_top_offset = u32(frame.crop_top),
@@ -702,7 +685,7 @@ Frame AvPlayerSource::PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame
         .buffer = std::move(buffer),
         .info =
             {
-                .pData = p_buffer,
+                .p_data = p_buffer,
                 .timestamp = timestamp,
                 .details =
                     {
