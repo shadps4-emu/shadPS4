@@ -551,19 +551,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Сохранить</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Применить</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>По умолчанию</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Отмена</translation>
     </message>
   </context>
   <context>
@@ -1193,19 +1193,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Сохранить</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Применить</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>По умолчанию</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Отмена</translation>
     </message>
   </context>
   <context>
