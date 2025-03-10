@@ -971,6 +971,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", 1, 1, posix_open);
     LIB_FUNCTION("1G3lF1Gg1k8", "libkernel", 1, "libkernel", 1, 1, sceKernelOpen);
+    LIB_FUNCTION("NNtFaKJbPt0", "libkernel", 1, "libkernel", 1, 1, close);
     LIB_FUNCTION("bY-PO6JhzhQ", "libScePosix", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("bY-PO6JhzhQ", "libkernel", 1, "libkernel", 1, 1, posix_close);
     LIB_FUNCTION("UK2Tl2DWUns", "libkernel", 1, "libkernel", 1, 1, sceKernelClose);
@@ -1000,6 +1001,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", 1, 1, posix_fstat);
     LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", 1, 1, posix_fstat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFstat);
+    LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
@@ -1010,6 +1012,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", 1, 1, posix_fsync);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", 1, 1, sceKernelFsync);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdents);
+    LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", 1, 1, getdirentries);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
     LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", 1, 1, posix_pwrite);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
