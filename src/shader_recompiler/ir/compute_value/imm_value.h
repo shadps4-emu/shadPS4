@@ -16,6 +16,58 @@ namespace Shader::IR {
 // Live IR::Value but can only hold immediate values. Additionally, can hold vectors of values.
 // Has arithmetic operations defined for it. Usefull for computing a value at shader compile time.
 
+template <IR::Type type_, bool is_signed_>
+class TypedImmValue;
+
+using ImmU1 = TypedImmValue<Type::U1, false>;
+using ImmU8 = TypedImmValue<Type::U8, false>;
+using ImmS8 = TypedImmValue<Type::U8, true>;
+using ImmU16 = TypedImmValue<Type::U16, false>;
+using ImmS16 = TypedImmValue<Type::U16, true>;
+using ImmU32 = TypedImmValue<Type::U32, false>;
+using ImmS32 = TypedImmValue<Type::U32, true>;
+using ImmF32 = TypedImmValue<Type::F32, true>;
+using ImmU64 = TypedImmValue<Type::U64, false>;
+using ImmS64 = TypedImmValue<Type::U64, true>;
+using ImmF64 = TypedImmValue<Type::F64, true>;
+using ImmS32F32 = TypedImmValue<Type::U32 | Type::F32, true>;
+using ImmS64F64 = TypedImmValue<Type::U64 | Type::F64, true>;
+using ImmU32U64 = TypedImmValue<Type::U32 | Type::U64, false>;
+using ImmS32S64 = TypedImmValue<Type::U32 | Type::U64, true>;
+using ImmU16U32U64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, false>;
+using ImmS16S32S64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, true>;
+using ImmF32F64 = TypedImmValue<Type::F32 | Type::F64, true>;
+using ImmUAny = TypedImmValue<Type::U1 | Type::U8 | Type::U16 | Type::U32 | Type::U64, false>;
+using ImmSAny = TypedImmValue<Type::U8 | Type::U16 | Type::U32 | Type::U64, true>;
+using ImmU32x2 = TypedImmValue<Type::U32x2, false>;
+using ImmU32x3 = TypedImmValue<Type::U32x3, false>;
+using ImmU32x4 = TypedImmValue<Type::U32x4, false>;
+using ImmS32x2 = TypedImmValue<Type::U32x2, true>;
+using ImmS32x3 = TypedImmValue<Type::U32x3, true>;
+using ImmS32x4 = TypedImmValue<Type::U32x4, true>;
+using ImmF32x2 = TypedImmValue<Type::F32x2, true>;
+using ImmF32x3 = TypedImmValue<Type::F32x3, true>;
+using ImmF32x4 = TypedImmValue<Type::F32x4, true>;
+using ImmF64x2 = TypedImmValue<Type::F64x2, true>;
+using ImmF64x3 = TypedImmValue<Type::F64x3, true>;
+using ImmF64x4 = TypedImmValue<Type::F64x4, true>;
+using ImmS32F32x2 = TypedImmValue<Type::U32x2 | Type::F32x2, true>;
+using ImmS32F32x3 = TypedImmValue<Type::U32x3 | Type::F32x3, true>;
+using ImmS32F32x4 = TypedImmValue<Type::U32x4 | Type::F32x4, true>;
+using ImmF32F64x2 = TypedImmValue<Type::F32x2 | Type::F64x2, true>;
+using ImmF32F64x3 = TypedImmValue<Type::F32x3 | Type::F64x3, true>;
+using ImmF32F64x4 = TypedImmValue<Type::F32x4 | Type::F64x4, true>;
+using ImmU32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, false>;
+using ImmS32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, true>;
+using ImmF32xAny = TypedImmValue<Type::F32 | Type::F32x2 | Type::F32x3 | Type::F32x4, true>;
+using ImmF64xAny = TypedImmValue<Type::F64 | Type::F64x2 | Type::F64x3 | Type::F64x4, true>;
+using ImmS32F32xAny = TypedImmValue<Type::U32 | Type::F32 | Type::U32x2 | Type::F32x2 |
+                                    Type::U32x3 | Type::F32x3 | Type::U32x4 | Type::F32x4,
+                                    true>;
+using ImmF32F64xAny = TypedImmValue<Type::F32 | Type::F64 | Type::F32x2 | Type::F64x2 |
+                                    Type::F32x3 | Type::F64x3 | Type::F32x4 | Type::F64x4,
+                                    true>;
+
 class ImmValue {
 public:
     ImmValue() noexcept = default;
@@ -59,8 +111,8 @@ public:
 
     [[nodiscard]] ImmValue Convert(IR::Type new_type, bool new_signed) const noexcept;
     [[nodiscard]] ImmValue Bitcast(IR::Type new_type, bool new_signed) const noexcept;
-    [[nodiscard]] ImmValue Extract(const ImmValue& index) const noexcept;
-    [[nodiscard]] ImmValue Insert(const ImmValue& value, const ImmValue& index) const noexcept;
+    [[nodiscard]] ImmValue Extract(const ImmU32& index) const noexcept;
+    [[nodiscard]] ImmValue Insert(const ImmValue& value, const ImmU32& indndex) const noexcept;
 
     [[nodiscard]] bool U1() const;
     [[nodiscard]] u8 U8() const;
@@ -104,8 +156,8 @@ public:
     [[nodiscard]] ImmValue operator&(const ImmValue& other) const noexcept;
     [[nodiscard]] ImmValue operator|(const ImmValue& other) const noexcept;
     [[nodiscard]] ImmValue operator^(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator<<(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator>>(const ImmValue& other) const noexcept;
+    [[nodiscard]] ImmValue operator<<(const ImmU32& other) const noexcept;
+    [[nodiscard]] ImmValue operator>>(const ImmU32& other) const noexcept;
     [[nodiscard]] ImmValue operator~() const noexcept;
 
     [[nodiscard]] ImmValue operator++(int) noexcept;
@@ -125,8 +177,8 @@ public:
     ImmValue& operator&=(const ImmValue& other) noexcept;
     ImmValue& operator|=(const ImmValue& other) noexcept;
     ImmValue& operator^=(const ImmValue& other) noexcept;
-    ImmValue& operator<<=(const ImmValue& other) noexcept;
-    ImmValue& operator>>=(const ImmValue& other) noexcept;
+    ImmValue& operator<<=(const ImmU32& other) noexcept;
+    ImmValue& operator>>=(const ImmU32& other) noexcept;
 
     [[nodiscard]] ImmValue abs() const noexcept;
     [[nodiscard]] ImmValue recip() const noexcept;
@@ -135,7 +187,7 @@ public:
     [[nodiscard]] ImmValue sin() const noexcept;
     [[nodiscard]] ImmValue cos() const noexcept;
     [[nodiscard]] ImmValue exp2() const noexcept;
-    [[nodiscard]] ImmValue ldexp(const ImmValue& exp) const noexcept;
+    [[nodiscard]] ImmValue ldexp(const ImmU32& exp) const noexcept;
     [[nodiscard]] ImmValue log2() const noexcept;
     [[nodiscard]] ImmValue clamp(const ImmValue& min, const ImmValue& max) const noexcept;
     [[nodiscard]] ImmValue floor() const noexcept;
@@ -145,7 +197,7 @@ public:
     [[nodiscard]] ImmValue fract() const noexcept;
     [[nodiscard]] bool isnan() const noexcept;
     
-    [[nodiscard]] static ImmValue fma(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept;
+    [[nodiscard]] static ImmValue fma(const ImmF32F64& a, const ImmF32F64& b, const ImmF32F64& c) noexcept;
     
     static bool IsSupportedValue(const IR::Value& value) noexcept;
 private:
@@ -192,55 +244,6 @@ public:
         }
     }
 };
-
-using ImmU1 = TypedImmValue<Type::U1, false>;
-using ImmU8 = TypedImmValue<Type::U8, false>;
-using ImmS8 = TypedImmValue<Type::U8, true>;
-using ImmU16 = TypedImmValue<Type::U16, false>;
-using ImmS16 = TypedImmValue<Type::U16, true>;
-using ImmU32 = TypedImmValue<Type::U32, false>;
-using ImmS32 = TypedImmValue<Type::U32, true>;
-using ImmF32 = TypedImmValue<Type::F32, true>;
-using ImmU64 = TypedImmValue<Type::U64, false>;
-using ImmS64 = TypedImmValue<Type::U64, true>;
-using ImmF64 = TypedImmValue<Type::F64, true>;
-using ImmS32F32 = TypedImmValue<Type::U32 | Type::F32, true>;
-using ImmS64F64 = TypedImmValue<Type::U64 | Type::F64, true>;
-using ImmU32U64 = TypedImmValue<Type::U32 | Type::U64, false>;
-using ImmS32S64 = TypedImmValue<Type::U32 | Type::U64, true>;
-using ImmU16U32U64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, false>;
-using ImmS16S32S64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, true>;
-using ImmF32F64 = TypedImmValue<Type::F32 | Type::F64, true>;
-using ImmUAny = TypedImmValue<Type::U1 | Type::U8 | Type::U16 | Type::U32 | Type::U64, false>;
-using ImmSAny = TypedImmValue<Type::U8 | Type::U16 | Type::U32 | Type::U64, true>;
-using ImmU32x2 = TypedImmValue<Type::U32x2, false>;
-using ImmU32x3 = TypedImmValue<Type::U32x3, false>;
-using ImmU32x4 = TypedImmValue<Type::U32x4, false>;
-using ImmS32x2 = TypedImmValue<Type::U32x2, true>;
-using ImmS32x3 = TypedImmValue<Type::U32x3, true>;
-using ImmS32x4 = TypedImmValue<Type::U32x4, true>;
-using ImmF32x2 = TypedImmValue<Type::F32x2, true>;
-using ImmF32x3 = TypedImmValue<Type::F32x3, true>;
-using ImmF32x4 = TypedImmValue<Type::F32x4, true>;
-using ImmF64x2 = TypedImmValue<Type::F64x2, true>;
-using ImmF64x3 = TypedImmValue<Type::F64x3, true>;
-using ImmF64x4 = TypedImmValue<Type::F64x4, true>;
-using ImmS32F32x2 = TypedImmValue<Type::U32x2 | Type::F32x2, true>;
-using ImmS32F32x3 = TypedImmValue<Type::U32x3 | Type::F32x3, true>;
-using ImmS32F32x4 = TypedImmValue<Type::U32x4 | Type::F32x4, true>;
-using ImmF32F64x2 = TypedImmValue<Type::F32x2 | Type::F64x2, true>;
-using ImmF32F64x3 = TypedImmValue<Type::F32x3 | Type::F64x3, true>;
-using ImmF32F64x4 = TypedImmValue<Type::F32x4 | Type::F64x4, true>;
-using ImmU32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, false>;
-using ImmS32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, true>;
-using ImmF32xAny = TypedImmValue<Type::F32 | Type::F32x2 | Type::F32x3 | Type::F32x4, true>;
-using ImmF64xAny = TypedImmValue<Type::F64 | Type::F64x2 | Type::F64x3 | Type::F64x4, true>;
-using ImmS32F32xAny = TypedImmValue<ImmS32F32::static_type | ImmS32F32x2::static_type |
-                                        ImmS32F32x3::static_type | ImmS32F32x4::static_type,
-                                    true>;
-using ImmF32F64xAny = TypedImmValue<ImmF32F64::static_type | ImmF32F64x2::static_type |
-                                        ImmF32F64x3::static_type | ImmF32F64x4::static_type,
-                                    true>;
 
 inline bool ImmValue::IsEmpty() const noexcept {
     return type == Type::Void;
