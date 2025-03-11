@@ -345,8 +345,8 @@ ImmValue ImmValue::Bitcast(IR::Type new_type, bool new_signed) const noexcept {
     return result;
 }
 
-ImmValue ImmValue::Extract(const ImmValue& index) const noexcept {
-    ASSERT(index.type == Type::U32 && !index.is_signed && index.imm_values[0].imm_u32 < Dimensions());
+ImmValue ImmValue::Extract(const ImmU32& index) const noexcept {
+    ASSERT(index.imm_values[0].imm_u32 < Dimensions());
     ImmValue result;
     result.type = BaseType();
     result.is_signed = IsSigned();
@@ -354,8 +354,8 @@ ImmValue ImmValue::Extract(const ImmValue& index) const noexcept {
     return result;
 }
 
-ImmValue ImmValue::Insert(const ImmValue& value, const ImmValue& index) const noexcept {
-    ASSERT(index.type == Type::U32 && !index.is_signed && index.imm_values[0].imm_u32 < Dimensions());
+ImmValue ImmValue::Insert(const ImmValue& value, const ImmU32& index) const noexcept {
+    ASSERT(index.imm_values[0].imm_u32 < Dimensions());
     ASSERT(value.type == BaseType() && value.IsSigned() == IsSigned());
     ImmValue result = *this;
     result.imm_values[index.imm_values[0].imm_u32] = value.imm_values[0];
@@ -879,8 +879,7 @@ ImmValue ImmValue::operator^(const ImmValue& other) const noexcept {
     }
 }
 
-ImmValue ImmValue::operator<<(const ImmValue& other) const noexcept {
-    ASSERT(other.type == Type::U32 && other.Dimensions() == 1);
+ImmValue ImmValue::operator<<(const ImmU32& other) const noexcept {
     switch (type) {
     case Type::U1:
         return ImmValue(imm_values[0].imm_u1 << other.imm_values[0].imm_u1);
@@ -905,8 +904,7 @@ ImmValue ImmValue::operator<<(const ImmValue& other) const noexcept {
     }
 }
 
-ImmValue ImmValue::operator>>(const ImmValue& other) const noexcept {
-    ASSERT(other.type == Type::U32 && other.Dimensions() == 1);
+ImmValue ImmValue::operator>>(const ImmU32& other) const noexcept {
     switch (type) {
     case Type::U1:
         return ImmValue(imm_values[0].imm_u1 >> other.imm_values[0].imm_u1);
@@ -1170,13 +1168,13 @@ ImmValue& ImmValue::operator^=(const ImmValue& other) noexcept {
     return *this;
 }
 
-ImmValue& ImmValue::operator<<=(const ImmValue& other) noexcept {
+ImmValue& ImmValue::operator<<=(const ImmU32& other) noexcept {
     ImmValue result = *this << other;
     *this = result;
     return *this;
 }
 
-ImmValue& ImmValue::operator>>=(const ImmValue& other) noexcept {
+ImmValue& ImmValue::operator>>=(const ImmU32& other) noexcept {
     ImmValue result = *this >> other;
     *this = result;
     return *this;
@@ -1271,8 +1269,7 @@ ImmValue ImmValue::exp2() const noexcept {
     }
 }
 
-ImmValue ImmValue::ldexp(const ImmValue& exp) const noexcept {
-    ASSERT(type == exp.type);
+ImmValue ImmValue::ldexp(const ImmU32& exp) const noexcept {
     switch (type) {
     case Type::F32:
         return ImmValue(std::ldexp(imm_values[0].imm_f32, exp.imm_values[0].imm_s32));
@@ -1414,7 +1411,7 @@ bool ImmValue::isnan() const noexcept {
     }
 }
 
-ImmValue ImmValue::fma(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+ImmValue ImmValue::fma(const ImmF32F64& a, const ImmF32F64& b, const ImmF32F64& c) noexcept {
     ASSERT(a.type == b.type && b.type == c.type);
     switch (a.type) {
     case Type::F32:

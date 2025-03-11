@@ -89,7 +89,7 @@ static void OperationFma(Inst* inst, ImmValueList& inst_values, ComputeImmValues
     ComputeImmValues(inst->Arg(2), args2, cache);
 
     const auto op = [](const ImmValue& a, const ImmValue& b, const ImmValue& c) {
-        return ImmValue::fma(a, b, c);
+        return ImmValue::fma(ImmF32F64(a), ImmF32F64(b), ImmF32F64(c));
     };
 
     CartesianInvoke(op, std::inserter(inst_values, inst_values.begin()), args0, args1, args2);
@@ -242,7 +242,7 @@ static void OperationLdexp(Inst* inst, ImmValueList& inst_values, ComputeImmValu
     ComputeImmValues(inst->Arg(1), args1, cache);
 
     const auto op = [](const ImmValue& a, const ImmValue& b) {
-        return a.ldexp(b);
+        return a.ldexp(ImmU32(b));
     };
 
     CartesianInvoke(op, std::inserter(inst_values, inst_values.begin()), args0, args1);
@@ -346,7 +346,7 @@ static void OperationShiftLeft(Inst* inst, ImmValueList& inst_values, ComputeImm
     ComputeImmValues(inst->Arg(1), args1, cache);
 
     const auto op = [](const ImmValue& a, const ImmValue& b) {
-        return a << b;
+        return a << ImmU32(b);
     };
 
     SetSigned(args1, false);
@@ -359,7 +359,7 @@ static void OperationShiftRight(Inst* inst, bool is_signed, ImmValueList& inst_v
     ComputeImmValues(inst->Arg(1), args1, cache);
 
     const auto op = [](const ImmValue& a, const ImmValue& b) {
-        return a >> b;
+        return a >> ImmU32(b);
     };
 
     SetSigned(args0, is_signed);
@@ -460,7 +460,7 @@ static void OperationCompositeExtract(Inst* inst, ImmValueList& inst_values, Com
     ComputeImmValues(inst->Arg(1), args1, cache);
 
     const auto op = [](const ImmValue& a, const ImmValue& b) {
-        return a.Extract(b);
+        return a.Extract(ImmU32(b));
     };
 
     SetSigned(args1, false);
