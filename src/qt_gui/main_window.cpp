@@ -153,11 +153,6 @@ void MainWindow::toggleFullscreen() {
     event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
 
     SDL_PushEvent(&event);
-
-    SDL_Event check_event;
-    while (SDL_PollEvent(&check_event)) {
-        SDL_PushEvent(&check_event);
-    }
 }
 
 void MainWindow::AddUiWidgets() {
@@ -173,33 +168,27 @@ void MainWindow::AddUiWidgets() {
     mainLayout->setSpacing(15);
 
     bool showLabels = ui->toggleLabelsAct->isChecked();
+    QPalette palette = qApp->palette();
 
     auto createButtonWithLabel = [&](QPushButton* button, const QString& labelText) {
         QWidget* container = new QWidget(this);
         QVBoxLayout* layout = new QVBoxLayout(container);
         layout->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
         layout->setContentsMargins(0, 0, 0, 0);
-
         layout->addWidget(button);
 
-        if (ui->toggleLabelsAct->isChecked()) {
+        if (showLabels) {
             QLabel* label = new QLabel(labelText, this);
-            label->setAlignment(Qt::AlignCenter);
+            label->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
             layout->addWidget(label);
+            button->setToolTip("");
         } else {
-
-            button->setToolTip(
-                QString("<span style='color:%1;'><b>%2</b></span>")
-                    .arg(palette().color(QPalette::Window).lightness() > 128 ? "#000" : "#000",
-                         labelText));
+            button->setToolTip(labelText);
         }
 
         container->setLayout(layout);
         return container;
     };
-
-    QWidget* buttonGroup = new QWidget(this);
-    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
 
     auto createLine = [this]() {
         QFrame* line = new QFrame(this);
@@ -209,22 +198,19 @@ void MainWindow::AddUiWidgets() {
         return line;
     };
 
+    QWidget* buttonGroup = new QWidget(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
     buttonLayout->setContentsMargins(0, 0, 0, 0);
     buttonLayout->setSpacing(15);
 
     buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play")));
     buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause")));
     buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop")));
-    buttonLayout->addWidget(createLine());
-
     buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings")));
     buttonLayout->addWidget(createButtonWithLabel(ui->fullscreenButton, tr("Full Screen")));
-    buttonLayout->addWidget(createLine());
-
     buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, tr("Controllers")));
     buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard")));
     buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, tr("Refresh List")));
-    buttonLayout->addWidget(createLine());
 
     QWidget* searchSliderContainer = new QWidget(this);
     QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
@@ -232,14 +218,12 @@ void MainWindow::AddUiWidgets() {
     searchSliderLayout->setSpacing(10);
 
     searchSliderLayout->addWidget(ui->sizeSliderContainer);
-
     searchSliderLayout->addWidget(ui->mw_searchbar);
-
     searchSliderContainer->setLayout(searchSliderLayout);
 
-    mainLayout->addWidget(buttonGroup);
-    mainLayout->addWidget(searchSliderContainer);
+    buttonLayout->addWidget(searchSliderContainer);
 
+    mainLayout->addWidget(buttonGroup);
     toolbarContainer->setLayout(mainLayout);
     ui->toolBar->addWidget(toolbarContainer);
 }

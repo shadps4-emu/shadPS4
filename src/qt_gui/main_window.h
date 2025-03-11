@@ -75,7 +75,6 @@ private:
     void PlayBackgroundMusic();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     void StartEmulator(std::filesystem::path);
-    bool is_paused = false;
     bool isIconBlack = false;
     bool isTableList = true;
     bool isGameRunning = false;

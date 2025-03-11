@@ -229,15 +229,15 @@ public:
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
-        settingsButton->setIconSize(QSize(42, 42));
+        settingsButton->setIconSize(QSize(40, 40));
         controllerButton = new QPushButton(centralWidget);
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));
-        controllerButton->setIconSize(QSize(40, 40));
+        controllerButton->setIconSize(QSize(55, 48));
         keyboardButton = new QPushButton(centralWidget);
         keyboardButton->setFlat(true);
         keyboardButton->setIcon(QIcon(":images/keyboard_icon.png"));
-        keyboardButton->setIconSize(QSize(48, 44));
+        keyboardButton->setIconSize(QSize(50, 50));
 
         sizeSliderContainer = new QWidget(centralWidget);
         sizeSliderContainer->setObjectName("sizeSliderContainer");
