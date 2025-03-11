@@ -9,6 +9,7 @@
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
 #define A_CPU
+#include "core/debug_state.h"
 #include "video_core/host_shaders/fsr/ffx_a.h"
 #include "video_core/host_shaders/fsr/ffx_fsr1.h"
 
@@ -139,11 +140,15 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
                               vk::Extent2D input_size, vk::Extent2D output_size, Settings settings,
                               bool hdr) {
     if (!settings.enable) {
+        DebugState.is_using_fsr = false;
         return input;
     }
     if (input_size.width >= output_size.width && input_size.height >= output_size.height) {
+        DebugState.is_using_fsr = false;
         return input;
     }
+
+    DebugState.is_using_fsr = true;
 
     if (output_size != cur_size) {
         ResizeAndInvalidate(output_size.width, output_size.height);

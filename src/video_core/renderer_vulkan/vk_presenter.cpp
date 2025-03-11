@@ -458,6 +458,9 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         if (vk_host_markers_enabled) {
             cmdbuf.endDebugUtilsLabelEXT();
         }
+
+        DebugState.game_resolution = {image_size.width, image_size.height};
+        DebugState.output_resolution = {frame->width, frame->height};
     } else {
         // Fix display of garbage images on startup on some drivers
         const std::array<vk::RenderingAttachmentInfo, 1> attachments = {{
