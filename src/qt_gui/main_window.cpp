@@ -161,7 +161,7 @@ void MainWindow::toggleFullscreen() {
 }
 
 void MainWindow::AddUiWidgets() {
-    // Add toolbar widgets
+    // add toolbar widgets
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
 
