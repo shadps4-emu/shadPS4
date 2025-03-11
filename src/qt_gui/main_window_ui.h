@@ -20,6 +20,7 @@ public:
     QAction* setIconSizeSmallAct;
     QAction* setIconSizeMediumAct;
     QAction* setIconSizeLargeAct;
+    QAction* toggleLabelsAct;
     QAction* setlistModeListAct;
     QAction* setlistModeGridAct;
     QAction* setlistElfAct;
@@ -50,6 +51,7 @@ public:
     QPushButton* settingsButton;
     QPushButton* controllerButton;
     QPushButton* keyboardButton;
+    QPushButton* fullscreenButton;
 
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
@@ -105,6 +107,14 @@ public:
         refreshGameListAct = new QAction(MainWindow);
         refreshGameListAct->setObjectName("refreshGameListAct");
         refreshGameListAct->setIcon(QIcon(":images/refresh_icon.png"));
+
+        toggleLabelsAct = new QAction(MainWindow);
+        toggleLabelsAct->setObjectName("toggleLabelsAct");
+        toggleLabelsAct->setText(
+            QCoreApplication::translate("MainWindow", "Show Labels Under Icons"));
+        toggleLabelsAct->setCheckable(true);
+        toggleLabelsAct->setChecked(Config::getShowLabelsUnderIcons());
+
         setIconSizeTinyAct = new QAction(MainWindow);
         setIconSizeTinyAct->setObjectName("setIconSizeTinyAct");
         setIconSizeTinyAct->setCheckable(true);
@@ -211,11 +221,15 @@ public:
         refreshButton = new QPushButton(centralWidget);
         refreshButton->setFlat(true);
         refreshButton->setIcon(QIcon(":images/refresh_icon.png"));
-        refreshButton->setIconSize(QSize(32, 32));
+        refreshButton->setIconSize(QSize(38, 38));
+        fullscreenButton = new QPushButton(centralWidget);
+        fullscreenButton->setFlat(true);
+        fullscreenButton->setIcon(QIcon(":images/fullscreen_icon.png"));
+        fullscreenButton->setIconSize(QSize(38, 38));
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
-        settingsButton->setIconSize(QSize(44, 44));
+        settingsButton->setIconSize(QSize(42, 42));
         controllerButton = new QPushButton(centralWidget);
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));
@@ -304,6 +318,7 @@ public:
         menuView->addAction(refreshGameListAct);
         menuView->addAction(menuGame_List_Mode->menuAction());
         menuView->addAction(menuGame_List_Icons->menuAction());
+        menuView->addAction(toggleLabelsAct);
         menuView->addAction(menuThemes->menuAction());
         menuThemes->addAction(setThemeDark);
         menuThemes->addAction(setThemeLight);

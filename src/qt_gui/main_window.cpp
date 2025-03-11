@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "SDL3/SDL_events.h"
+
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QPlainTextEdit>
@@ -132,41 +134,118 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeOled);
 }
 
-void MainWindow::AddUiWidgets() {
-    // add toolbar widgets
+void MainWindow::PauseGame() {
+    SDL_Event event;
+    SDL_memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_TOGGLE_PAUSE;
+    SDL_PushEvent(&event);
+}
 
+void MainWindow::toggleLabelsUnderIcons() {
+    bool showLabels = ui->toggleLabelsAct->isChecked();
+    Config::setShowLabelsUnderIcons();
+    UpdateToolbarLabels();
+}
+
+void MainWindow::toggleFullscreen() {
+    SDL_Event event;
+    SDL_memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
+
+    SDL_PushEvent(&event);
+
+    SDL_Event check_event;
+    while (SDL_PollEvent(&check_event)) {
+        SDL_PushEvent(&check_event);
+    }
+}
+
+void MainWindow::AddUiWidgets() {
+    // Add toolbar widgets
     QApplication::setStyle("Fusion");
     ui->toolBar->setObjectName("mw_toolbar");
 
-    // Detect background color
-    QColor bgColor = palette().color(QPalette::Window);
-    QString textColor = (bgColor.lightness() > 128) ? "#000" : "#fff";
+    ui->toolBar->clear();
 
-    ui->playButton->setToolTip(
-        QString("<span style='color:%1;'><b>Play</b></span>").arg(textColor));
-    ui->pauseButton->setToolTip(
-        QString("<span style='color:%1;'><b>Pause</b></span>").arg(textColor));
-    ui->stopButton->setToolTip(
-        QString("<span style='color:%1;'><b>Stop</b></span>").arg(textColor));
-    ui->settingsButton->setToolTip(
-        QString("<span style='color:%1;'><b>Config</b></span>").arg(textColor));
-    ui->controllerButton->setToolTip(
-        QString("<span style='color:%1;'><b>Pads</b></span>").arg(textColor));
-    ui->keyboardButton->setToolTip(
-        QString("<span style='color:%1;'><b>KBM</b></span>").arg(textColor));
-    ui->refreshButton->setToolTip(
-        QString("<span style='color:%1;'><b>RefreshList</b></span>").arg(textColor));
+    QWidget* toolbarContainer = new QWidget(this);
+    QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
+    mainLayout->setContentsMargins(5, 5, 5, 5);
+    mainLayout->setSpacing(15);
 
-    ui->toolBar->addWidget(ui->playButton);
-    ui->toolBar->addWidget(ui->pauseButton);
-    ui->toolBar->addWidget(ui->stopButton);
-    ui->toolBar->addWidget(ui->settingsButton);
-    ui->toolBar->addWidget(ui->controllerButton);
-    ui->toolBar->addWidget(ui->keyboardButton);
-    ui->toolBar->addWidget(ui->refreshButton);
+    bool showLabels = ui->toggleLabelsAct->isChecked();
 
-    ui->toolBar->addWidget(ui->sizeSliderContainer);
-    ui->toolBar->addWidget(ui->mw_searchbar);
+    auto createButtonWithLabel = [&](QPushButton* button, const QString& labelText) {
+        QWidget* container = new QWidget(this);
+        QVBoxLayout* layout = new QVBoxLayout(container);
+        layout->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+        layout->setContentsMargins(0, 0, 0, 0);
+
+        layout->addWidget(button);
+
+        if (ui->toggleLabelsAct->isChecked()) {
+            QLabel* label = new QLabel(labelText, this);
+            label->setAlignment(Qt::AlignCenter);
+            layout->addWidget(label);
+        } else {
+
+            button->setToolTip(
+                QString("<span style='color:%1;'><b>%2</b></span>")
+                    .arg(palette().color(QPalette::Window).lightness() > 128 ? "#000" : "#000",
+                         labelText));
+        }
+
+        container->setLayout(layout);
+        return container;
+    };
+
+    QWidget* buttonGroup = new QWidget(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
+
+    auto createLine = [this]() {
+        QFrame* line = new QFrame(this);
+        line->setFrameShape(QFrame::VLine);
+        line->setFrameShadow(QFrame::Sunken);
+        line->setFixedWidth(2);
+        return line;
+    };
+
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
+    buttonLayout->setSpacing(15);
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop")));
+    buttonLayout->addWidget(createLine());
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->fullscreenButton, tr("Full Screen")));
+    buttonLayout->addWidget(createLine());
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, tr("Controllers")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, tr("Refresh List")));
+    buttonLayout->addWidget(createLine());
+
+    QWidget* searchSliderContainer = new QWidget(this);
+    QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
+    searchSliderLayout->setContentsMargins(0, 0, 0, 0);
+    searchSliderLayout->setSpacing(10);
+
+    searchSliderLayout->addWidget(ui->sizeSliderContainer);
+
+    searchSliderLayout->addWidget(ui->mw_searchbar);
+
+    searchSliderContainer->setLayout(searchSliderLayout);
+
+    mainLayout->addWidget(buttonGroup);
+    mainLayout->addWidget(searchSliderContainer);
+
+    toolbarContainer->setLayout(mainLayout);
+    ui->toolBar->addWidget(toolbarContainer);
+}
+
+void MainWindow::UpdateToolbarLabels() {
+    AddUiWidgets();
 }
 
 void MainWindow::CreateDockWindows() {
@@ -271,6 +350,8 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
+    connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
+    connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
@@ -294,6 +375,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->pauseButton, &QPushButton::clicked, this, &MainWindow::PauseGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -1236,6 +1318,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
     ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
+    ui->fullscreenButton->setIcon(RecolorIcon(ui->fullscreenButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
