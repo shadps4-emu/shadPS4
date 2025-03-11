@@ -19,6 +19,7 @@ namespace Shader::IR {
 class ImmValue {
 public:
     ImmValue() noexcept = default;
+    ImmValue(const ImmValue& value) noexcept = default;
     explicit ImmValue(const IR::Value& value) noexcept;
     explicit ImmValue(bool value) noexcept;
     explicit ImmValue(u8 value) noexcept;
@@ -43,6 +44,9 @@ public:
     ImmValue(f64 value1, f64 value2) noexcept;
     ImmValue(f64 value1, f64 value2, f64 value3) noexcept;
     ImmValue(f64 value1, f64 value2, f64 value3, f64 value4) noexcept;
+    ImmValue(const ImmValue& value1, const ImmValue& value2) noexcept;
+    ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3) noexcept;
+    ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3, const ImmValue& value4) noexcept;
 
     [[nodiscard]] bool IsEmpty() const noexcept;
     [[nodiscard]] IR::Type Type() const noexcept;
@@ -52,6 +56,11 @@ public:
     [[nodiscard]] bool IsSigned() const noexcept;
     void SetSigned(bool signed_) noexcept;
     void SameSignAs(const ImmValue& other) noexcept;
+
+    [[nodiscard]] ImmValue Convert(IR::Type new_type, bool new_signed) const noexcept;
+    [[nodiscard]] ImmValue Bitcast(IR::Type new_type, bool new_signed) const noexcept;
+    [[nodiscard]] ImmValue Extract(const ImmValue& index) const noexcept;
+    [[nodiscard]] ImmValue Insert(const ImmValue& value, const ImmValue& index) const noexcept;
 
     [[nodiscard]] bool U1() const;
     [[nodiscard]] u8 U8() const;
@@ -77,6 +86,8 @@ public:
     [[nodiscard]] std::tuple<f64, f64> F64x2() const;
     [[nodiscard]] std::tuple<f64, f64, f64> F64x3() const;
     [[nodiscard]] std::tuple<f64, f64, f64, f64> F64x4() const;
+
+    ImmValue& operator=(const ImmValue& value) noexcept = default;
 
     [[nodiscard]] bool operator==(const ImmValue& other) const noexcept;
     [[nodiscard]] bool operator!=(const ImmValue& other) const noexcept;
@@ -117,6 +128,26 @@ public:
     ImmValue& operator<<=(const ImmValue& other) noexcept;
     ImmValue& operator>>=(const ImmValue& other) noexcept;
 
+    [[nodiscard]] ImmValue abs() const noexcept;
+    [[nodiscard]] ImmValue recip() const noexcept;
+    [[nodiscard]] ImmValue sqrt() const noexcept;
+    [[nodiscard]] ImmValue rsqrt() const noexcept;
+    [[nodiscard]] ImmValue sin() const noexcept;
+    [[nodiscard]] ImmValue cos() const noexcept;
+    [[nodiscard]] ImmValue exp2() const noexcept;
+    [[nodiscard]] ImmValue ldexp(const ImmValue& exp) const noexcept;
+    [[nodiscard]] ImmValue log2() const noexcept;
+    [[nodiscard]] ImmValue clamp(const ImmValue& min, const ImmValue& max) const noexcept;
+    [[nodiscard]] ImmValue floor() const noexcept;
+    [[nodiscard]] ImmValue ceil() const noexcept;
+    [[nodiscard]] ImmValue round() const noexcept;
+    [[nodiscard]] ImmValue trunc() const noexcept;
+    [[nodiscard]] ImmValue fract() const noexcept;
+    [[nodiscard]] bool isnan() const noexcept;
+    
+    [[nodiscard]] static ImmValue fma(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept;
+    
+    static bool IsSupportedValue(const IR::Value& value) noexcept;
 private:
     union Value {
         bool imm_u1;

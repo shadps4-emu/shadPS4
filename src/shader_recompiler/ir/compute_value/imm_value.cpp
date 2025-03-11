@@ -7,29 +7,28 @@
 namespace Shader::IR {
 
 ImmValue::ImmValue(const IR::Value& value) noexcept {
-    IR::Value resolved = value.Resolve();
-    type = resolved.Type();
+    type = value.Type();
     switch (type) {
     case Type::U1:
-        imm_values[0].imm_u1 = resolved.U1();
+        imm_values[0].imm_u1 = value.U1();
         break;
     case Type::U8:
-        imm_values[0].imm_u8 = resolved.U8();
+        imm_values[0].imm_u8 = value.U8();
         break;
     case Type::U16:
-        imm_values[0].imm_u16 = resolved.U16();
+        imm_values[0].imm_u16 = value.U16();
         break;
     case Type::U32:
-        imm_values[0].imm_u32 = resolved.U32();
+        imm_values[0].imm_u32 = value.U32();
         break;
     case Type::F32:
-        imm_values[0].imm_f32 = resolved.F32();
+        imm_values[0].imm_f32 = value.F32();
         break;
     case Type::U64:
-        imm_values[0].imm_u64 = resolved.U64();
+        imm_values[0].imm_u64 = value.U64();
         break;
     case Type::F64:
-        imm_values[0].imm_f64 = resolved.F64();
+        imm_values[0].imm_f64 = value.F64();
         break;
     default:
         UNREACHABLE_MSG("Invalid type {}", type);
@@ -160,6 +159,44 @@ ImmValue::ImmValue(f64 value1, f64 value2, f64 value3, f64 value4) noexcept
     imm_values[3].imm_f64 = value4;
 }
 
+ImmValue::ImmValue(const ImmValue& value1, const ImmValue& value2) noexcept
+    : type{value1.type}, is_signed{value1.is_signed} {
+    ASSERT(value1.type == value2.type && value1.is_signed == value2.is_signed);
+    switch (value1.Dimensions()) {
+    case 1:
+        imm_values[0] = value1.imm_values[0];
+        imm_values[1] = value2.imm_values[0];
+        break;
+    case 2:
+        imm_values[0] = value1.imm_values[0];
+        imm_values[1] = value1.imm_values[1];
+        imm_values[2] = value2.imm_values[0];
+        imm_values[3] = value2.imm_values[1];
+        break;
+    default:
+        UNREACHABLE_MSG("Invalid dimensions {}", value1.Dimensions());
+    }
+}
+
+ImmValue::ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3) noexcept
+    : type{value1.type}, is_signed{value1.is_signed} {
+    ASSERT(value1.type == value2.type && value1.type == value3.type && value1.is_signed == value2.is_signed &&
+           value1.is_signed == value3.is_signed && value1.Dimensions() == 1);
+    imm_values[0] = value1.imm_values[0];
+    imm_values[1] = value2.imm_values[0];
+    imm_values[2] = value3.imm_values[0];
+}
+
+ImmValue::ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3, const ImmValue& value4) noexcept
+    : type{value1.type}, is_signed{value1.is_signed} {
+    ASSERT(value1.type == value2.type && value1.type == value3.type && value1.type == value4.type && value1.is_signed == value2.is_signed &&
+           value1.is_signed == value3.is_signed && value1.is_signed == value4.is_signed && value1.Dimensions() == 1);
+    imm_values[0] = value1.imm_values[0];
+    imm_values[1] = value2.imm_values[0];
+    imm_values[2] = value3.imm_values[0];
+    imm_values[3] = value4.imm_values[0];
+}
+
 IR::Type ImmValue::BaseType() const noexcept {
     switch (type) {
     case Type::U1:
@@ -227,6 +264,102 @@ void ImmValue::SetSigned(bool signed_) noexcept {
 
 void ImmValue::SameSignAs(const ImmValue& other) noexcept {
     SetSigned(other.IsSigned());
+}
+
+ImmValue ImmValue::Convert(IR::Type new_type, bool new_signed) const noexcept {
+    switch (new_type) {
+    case Type::U16: {
+        switch (type) {
+        case Type::U32:
+            return ImmValue(static_cast<u16>(imm_values[0].imm_u32));
+        default:
+            break;
+        }
+        break;
+    }
+    case Type::U32: {
+        if (new_signed) {
+            switch (type) {
+                case Type::F32:
+                    return ImmValue(static_cast<s32>(imm_values[0].imm_f32));
+                case Type::F64:
+                    return ImmValue(static_cast<s32>(imm_values[0].imm_f64));
+                default:
+                    break;
+            }
+        } else {
+            switch (type) {
+            case Type::U16:
+                return ImmValue(static_cast<u32>(imm_values[0].imm_u16));
+            case Type::U32:
+                if (is_signed) {
+                    return ImmValue(static_cast<u32>(imm_values[0].imm_s32));
+                }
+                break;
+            case Type::F32:
+                return ImmValue(static_cast<u32>(imm_values[0].imm_f32));
+            default:
+                break;
+            }
+        }
+    }
+    case Type::F32: {
+        switch (type) {
+        case Type::U16:
+            return ImmValue(static_cast<f32>(imm_values[0].imm_u16));
+        case Type::U32:
+            if (is_signed) {
+                return ImmValue(static_cast<f32>(imm_values[0].imm_s32));
+            } else {
+                return ImmValue(static_cast<f32>(imm_values[0].imm_u32));
+            }
+        case Type::F64:
+            return ImmValue(static_cast<f32>(imm_values[0].imm_f64));
+        default:
+            break;
+        }
+        break;
+    }
+    case Type::F64: {
+        switch (type) {
+        case Type::F32:
+            return ImmValue(static_cast<f64>(imm_values[0].imm_f32));
+        default:
+            break;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    UNREACHABLE_MSG("Invalid conversion from {} {} to {} {}", is_signed ? "signed" : "unsigned",
+                    type, new_signed ? "signed" : "unsigned", new_type);
+}
+
+ImmValue ImmValue::Bitcast(IR::Type new_type, bool new_signed) const noexcept {
+    ImmValue result;
+    result.type = new_type;
+    result.is_signed = new_signed;
+    result.imm_values = imm_values;
+    ASSERT(Dimensions() == result.Dimensions());
+    return result;
+}
+
+ImmValue ImmValue::Extract(const ImmValue& index) const noexcept {
+    ASSERT(index.type == Type::U32 && !index.is_signed && index.imm_values[0].imm_u32 < Dimensions());
+    ImmValue result;
+    result.type = BaseType();
+    result.is_signed = IsSigned();
+    result.imm_values[0] = imm_values[index.imm_values[0].imm_u32];
+    return result;
+}
+
+ImmValue ImmValue::Insert(const ImmValue& value, const ImmValue& index) const noexcept {
+    ASSERT(index.type == Type::U32 && !index.is_signed && index.imm_values[0].imm_u32 < Dimensions());
+    ASSERT(value.type == BaseType() && value.IsSigned() == IsSigned());
+    ImmValue result = *this;
+    result.imm_values[index.imm_values[0].imm_u32] = value.imm_values[0];
+    return result;
 }
 
 bool ImmValue::operator==(const ImmValue& other) const noexcept {
@@ -747,24 +880,24 @@ ImmValue ImmValue::operator^(const ImmValue& other) const noexcept {
 }
 
 ImmValue ImmValue::operator<<(const ImmValue& other) const noexcept {
-    ASSERT(type == other.type);
+    ASSERT(other.type == Type::U32 && other.Dimensions() == 1);
     switch (type) {
     case Type::U1:
         return ImmValue(imm_values[0].imm_u1 << other.imm_values[0].imm_u1);
     case Type::U8:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s8 << other.imm_values[0].imm_s8)
                    : ImmValue(imm_values[0].imm_u8 << other.imm_values[0].imm_u8);
     case Type::U16:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s16 << other.imm_values[0].imm_s16)
                    : ImmValue(imm_values[0].imm_u16 << other.imm_values[0].imm_u16);
     case Type::U32:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s32 << other.imm_values[0].imm_s32)
                    : ImmValue(imm_values[0].imm_u32 << other.imm_values[0].imm_u32);
     case Type::U64:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s64 << other.imm_values[0].imm_s64)
                    : ImmValue(imm_values[0].imm_u64 << other.imm_values[0].imm_u64);
     default:
@@ -773,24 +906,24 @@ ImmValue ImmValue::operator<<(const ImmValue& other) const noexcept {
 }
 
 ImmValue ImmValue::operator>>(const ImmValue& other) const noexcept {
-    ASSERT(type == other.type);
+    ASSERT(other.type == Type::U32 && other.Dimensions() == 1);
     switch (type) {
     case Type::U1:
         return ImmValue(imm_values[0].imm_u1 >> other.imm_values[0].imm_u1);
     case Type::U8:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s8 >> other.imm_values[0].imm_s8)
                    : ImmValue(imm_values[0].imm_u8 >> other.imm_values[0].imm_u8);
     case Type::U16:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s16 >> other.imm_values[0].imm_s16)
                    : ImmValue(imm_values[0].imm_u16 >> other.imm_values[0].imm_u16);
     case Type::U32:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s32 >> other.imm_values[0].imm_s32)
                    : ImmValue(imm_values[0].imm_u32 >> other.imm_values[0].imm_u32);
     case Type::U64:
-        return is_signed && other.is_signed
+        return is_signed
                    ? ImmValue(imm_values[0].imm_s64 >> other.imm_values[0].imm_s64)
                    : ImmValue(imm_values[0].imm_u64 >> other.imm_values[0].imm_u64);
     default:
@@ -1047,6 +1180,297 @@ ImmValue& ImmValue::operator>>=(const ImmValue& other) noexcept {
     ImmValue result = *this >> other;
     *this = result;
     return *this;
+}
+
+ImmValue ImmValue::abs() const noexcept {
+    switch (type) {
+    case Type::U8:
+        return is_signed ? ImmValue(std::abs(imm_values[0].imm_s8))
+                         : ImmValue(imm_values[0].imm_u8);
+    case Type::U16:
+        return is_signed ? ImmValue(std::abs(imm_values[0].imm_s16))
+                         : ImmValue(imm_values[0].imm_u16);
+    case Type::U32:
+        return is_signed ? ImmValue(std::abs(imm_values[0].imm_s32))
+                         : ImmValue(imm_values[0].imm_u32);
+    case Type::U64:
+        return is_signed ? ImmValue(std::abs(imm_values[0].imm_s64))
+                         : ImmValue(imm_values[0].imm_u64);
+    case Type::F32:
+        return ImmValue(std::abs(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::abs(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::recip() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(1.0f / imm_values[0].imm_f32);
+    case Type::F64:
+        return ImmValue(1.0 / imm_values[0].imm_f64);
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::sqrt() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::sqrt(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::sqrt(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::rsqrt() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(1.0f / std::sqrt(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(1.0 / std::sqrt(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::sin() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::sin(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::sin(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::cos() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::cos(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::cos(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::exp2() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::exp2(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::exp2(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::ldexp(const ImmValue& exp) const noexcept {
+    ASSERT(type == exp.type);
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::ldexp(imm_values[0].imm_f32, exp.imm_values[0].imm_s32));
+    case Type::F64:
+        return ImmValue(std::ldexp(imm_values[0].imm_f64, exp.imm_values[0].imm_s32));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::log2() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::log2(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::log2(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::clamp(const ImmValue& min, const ImmValue& max) const noexcept {
+    ASSERT(type == min.type && min.type == max.type);
+    switch (type) {
+    case Type::U8:
+        return is_signed && min.is_signed && max.is_signed
+                   ? ImmValue(std::clamp(imm_values[0].imm_s8, min.imm_values[0].imm_s8,
+                                         max.imm_values[0].imm_s8))
+                   : ImmValue(std::clamp(imm_values[0].imm_u8, min.imm_values[0].imm_u8,
+                                         max.imm_values[0].imm_u8));
+    case Type::U16:
+        return is_signed && min.is_signed && max.is_signed
+                   ? ImmValue(std::clamp(imm_values[0].imm_s16, min.imm_values[0].imm_s16,
+                                         max.imm_values[0].imm_s16))
+                   : ImmValue(std::clamp(imm_values[0].imm_u16, min.imm_values[0].imm_u16,
+                                         max.imm_values[0].imm_u16));
+    case Type::U32:
+        return is_signed && min.is_signed && max.is_signed
+                   ? ImmValue(std::clamp(imm_values[0].imm_s32, min.imm_values[0].imm_s32,
+                                         max.imm_values[0].imm_s32))
+                   : ImmValue(std::clamp(imm_values[0].imm_u32, min.imm_values[0].imm_u32,
+                                         max.imm_values[0].imm_u32));
+    case Type::U64:
+        return is_signed && min.is_signed && max.is_signed
+                   ? ImmValue(std::clamp(imm_values[0].imm_s64, min.imm_values[0].imm_s64,
+                                         max.imm_values[0].imm_s64))
+                   : ImmValue(std::clamp(imm_values[0].imm_u64, min.imm_values[0].imm_u64,
+                                         max.imm_values[0].imm_u64));
+    case Type::F32:
+        return ImmValue(std::clamp(imm_values[0].imm_f32, min.imm_values[0].imm_f32,
+                                   max.imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::clamp(imm_values[0].imm_f64, min.imm_values[0].imm_f64,
+                                   max.imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::floor() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::floor(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::floor(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::ceil() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::ceil(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::ceil(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::round() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::round(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::round(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::trunc() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(std::trunc(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(std::trunc(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::fract() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return ImmValue(imm_values[0].imm_f32 - std::floor(imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(imm_values[0].imm_f64 - std::floor(imm_values[0].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+bool ImmValue::isnan() const noexcept {
+    switch (type) {
+    case Type::F32:
+        return std::isnan(imm_values[0].imm_f32);
+    case Type::F64:
+        return std::isnan(imm_values[0].imm_f64);
+    case Type::F32x2:
+        return std::isnan(imm_values[0].imm_f32) || std::isnan(imm_values[1].imm_f32);
+    case Type::F64x2:
+        return std::isnan(imm_values[0].imm_f64) || std::isnan(imm_values[1].imm_f64);
+    case Type::F32x3:
+        return std::isnan(imm_values[0].imm_f32) || std::isnan(imm_values[1].imm_f32) ||
+               std::isnan(imm_values[2].imm_f32);
+    case Type::F64x3:
+        return std::isnan(imm_values[0].imm_f64) || std::isnan(imm_values[1].imm_f64) ||
+               std::isnan(imm_values[2].imm_f64);
+    case Type::F32x4:
+        return std::isnan(imm_values[0].imm_f32) || std::isnan(imm_values[1].imm_f32) ||
+               std::isnan(imm_values[2].imm_f32) || std::isnan(imm_values[3].imm_f32);
+    case Type::F64x4:
+        return std::isnan(imm_values[0].imm_f64) || std::isnan(imm_values[1].imm_f64) ||
+               std::isnan(imm_values[2].imm_f64) || std::isnan(imm_values[3].imm_f64);
+    default:
+        UNREACHABLE_MSG("Invalid type {}", type);
+    }
+}
+
+ImmValue ImmValue::fma(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    ASSERT(a.type == b.type && b.type == c.type);
+    switch (a.type) {
+    case Type::F32:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32, c.imm_values[0].imm_f32));
+    case Type::F64:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64, c.imm_values[0].imm_f64));
+    case Type::F32x2:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32, c.imm_values[0].imm_f32),
+            std::fma(a.imm_values[1].imm_f32, b.imm_values[1].imm_f32, c.imm_values[1].imm_f32));
+    case Type::F64x2:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64, c.imm_values[0].imm_f64),
+            std::fma(a.imm_values[1].imm_f64, b.imm_values[1].imm_f64, c.imm_values[1].imm_f64));
+    case Type::F32x3:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32, c.imm_values[0].imm_f32),
+            std::fma(a.imm_values[1].imm_f32, b.imm_values[1].imm_f32, c.imm_values[1].imm_f32),
+            std::fma(a.imm_values[2].imm_f32, b.imm_values[2].imm_f32, c.imm_values[2].imm_f32));
+    case Type::F64x3:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64, c.imm_values[0].imm_f64),
+            std::fma(a.imm_values[1].imm_f64, b.imm_values[1].imm_f64, c.imm_values[1].imm_f64),
+            std::fma(a.imm_values[2].imm_f64, b.imm_values[2].imm_f64, c.imm_values[2].imm_f64));
+    case Type::F32x4:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32, c.imm_values[0].imm_f32),
+            std::fma(a.imm_values[1].imm_f32, b.imm_values[1].imm_f32, c.imm_values[1].imm_f32),
+            std::fma(a.imm_values[2].imm_f32, b.imm_values[2].imm_f32, c.imm_values[2].imm_f32),
+            std::fma(a.imm_values[3].imm_f32, b.imm_values[3].imm_f32, c.imm_values[3].imm_f32));
+    case Type::F64x4:
+        return ImmValue(
+            std::fma(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64, c.imm_values[0].imm_f64),
+            std::fma(a.imm_values[1].imm_f64, b.imm_values[1].imm_f64, c.imm_values[1].imm_f64),
+            std::fma(a.imm_values[2].imm_f64, b.imm_values[2].imm_f64, c.imm_values[2].imm_f64),
+            std::fma(a.imm_values[3].imm_f64, b.imm_values[3].imm_f64, c.imm_values[3].imm_f64));
+    default:
+        UNREACHABLE_MSG("Invalid type {}", a.type);
+    }
+}
+
+bool ImmValue::IsSupportedValue(const IR::Value& value) noexcept {
+    switch (value.Type()) {
+    case IR::Type::U1:
+    case IR::Type::U8:
+    case IR::Type::U16:
+    case IR::Type::U32:
+    case IR::Type::U64:
+    case IR::Type::F32:
+    case IR::Type::F64:
+        return true;
+    default:
+        return false;
+    }
 }
 
 } // namespace Shader::IR
