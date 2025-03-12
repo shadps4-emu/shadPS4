@@ -549,6 +549,22 @@
       <source>Cannot bind axis values more than once</source>
       <translation>Impossible de lier les valeurs de l'axe plusieurs fois</translation>
     </message>
+    <message>
+      <source>Save</source>
+      <translation>Enregistrer</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Appliquer</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Réinitialiser par défaut</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annuler</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1174,6 +1190,22 @@
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
       <translation>La molette de la souris ne peut pas être affectée aux sorties de la manette</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Enregistrer</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Appliquer</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Réinitialiser par défaut</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annuler</translation>
     </message>
   </context>
   <context>

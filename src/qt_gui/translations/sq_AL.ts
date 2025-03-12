@@ -549,6 +549,22 @@
       <source>Cannot bind axis values more than once</source>
       <translation>Nuk mund të caktohen vlerat e boshtit më shumë se një herë</translation>
     </message>
+    <message>
+      <source>Save</source>
+      <translation>Ruaj</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Zbato</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1174,6 +1190,22 @@
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
       <translation>Rrota e miut nuk mund të caktohet për daljet e levës</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
     </message>
   </context>
   <context>

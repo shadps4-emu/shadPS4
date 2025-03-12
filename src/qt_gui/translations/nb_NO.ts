@@ -90,7 +90,7 @@
     </message>
     <message>
       <source>Patches</source>
-      <translation>Programrettelse</translation>
+      <translation>Programrettelser</translation>
     </message>
     <message>
       <source>Error</source>
@@ -146,11 +146,11 @@
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>Kunne ikke lagre fila:</translation>
+      <translation>Klarte ikke lagre fila:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>Kunne ikke laste ned fila:</translation>
+      <translation>Klarte ikke laste ned fila:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
@@ -170,11 +170,11 @@
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>Kunne ikke lagre:</translation>
+      <translation>Klarte ikke lagre:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>Kunne ikke laste ned:</translation>
+      <translation>Klarte ikke laste ned:</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -186,11 +186,11 @@
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
+      <translation>Klarte ikke analysere JSON-data fra HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>Kunne ikke hente HTML-side.</translation>
+      <translation>Klarte ikke hente HTML-siden.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
@@ -210,7 +210,7 @@
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>Kunne ikke åpne fila:</translation>
+      <translation>Klarte ikke åpne fila:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
@@ -230,7 +230,7 @@
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>Kunne ikke åpne files.json for lesing.</translation>
+      <translation>Klarte ikke åpne files.json for lesing.</translation>
     </message>
     <message>
       <source>Name:</source>
@@ -265,7 +265,7 @@
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>Kunne ikke analysere oppdaterings-informasjonen.</translation>
+      <translation>Klarte ikke analysere oppdateringsinformasjon.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
@@ -341,22 +341,22 @@
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>Kunne ikke lagre oppdateringsfila på</translation>
+      <translation>Klarte ikke lagre oppdateringsfila på</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Starter oppdatering...</translation>
+      <translation>Starter oppdatering …</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>Kunne ikke opprette oppdateringsskriptfila</translation>
+      <translation>Klarte ikke opprette oppdateringsskriptfila</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>Henter kompatibilitetsdata, vennligst vent</translation>
+      <translation>Henter kompatibilitetsdata, vent litt.</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -364,7 +364,7 @@
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Laster...</translation>
+      <translation>Laster …</translation>
     </message>
     <message>
       <source>Error</source>
@@ -547,18 +547,34 @@
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
-      <translation type="unfinished">Cannot bind axis values more than once</translation>
+      <translation>Kan ikke tildele akseverdier mer enn en gang</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Rediger oppsett for tastatur, mus og kontroller</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation type="unfinished">Use Per-Game configs</translation>
+      <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
       <source>Error</source>
@@ -566,11 +582,11 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation type="unfinished">Could not open the file for reading</translation>
+      <translation>Klarte ikke åpne fila for lesing</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
-      <translation type="unfinished">Could not open the file for writing</translation>
+      <translation>Klarte ikke åpne fila for skriving</translation>
     </message>
     <message>
       <source>Save Changes</source>
@@ -586,11 +602,11 @@
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
-      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+      <translation>Vil du tilbakestille alle dine tilpassede innstillinger til standarden?</translation>
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
-      <translation type="unfinished">Do you want to reset this config to your custom default config?</translation>
+      <translation>Vil du tilbakestille dette oppsettet til standard oppsett?</translation>
     </message>
     <message>
       <source>Reset to Default</source>
@@ -608,7 +624,7 @@
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation>Laster spilliste, vennligst vent :3</translation>
+      <translation>Laster spilliste, vent litt :3</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -616,7 +632,7 @@
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Laster...</translation>
+      <translation>Laster …</translation>
     </message>
   </context>
   <context>
@@ -706,7 +722,7 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>Spillet initialiseres ikke riktig / krasjer emulatoren</translation>
+      <translation>Spillet initialiseres ikke riktig eller krasjer emulatoren</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
@@ -726,7 +742,7 @@
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>Klikk for å se detaljer på GitHub</translation>
+      <translation>Trykk for å se detaljer på GitHub</translation>
     </message>
     <message>
       <source>Last updated</source>
@@ -768,7 +784,7 @@
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation>SFO viser</translation>
+      <translation>SFO-viser</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
@@ -776,7 +792,7 @@
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>Åpne mappe...</translation>
+      <translation>Åpne mappe …</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
@@ -792,7 +808,7 @@
     </message>
     <message>
       <source>Copy info...</source>
-      <translation>Kopier info...</translation>
+      <translation>Kopier info …</translation>
     </message>
     <message>
       <source>Copy Name</source>
@@ -816,7 +832,7 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation>Slett...</translation>
+      <translation>Slett …</translation>
     </message>
     <message>
       <source>Delete Game</source>
@@ -836,7 +852,7 @@
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation>Kompatibilitet...</translation>
+      <translation>Kompatibilitet …</translation>
     </message>
     <message>
       <source>Update database</source>
@@ -943,7 +959,7 @@
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>Hurtigstart</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -955,7 +971,7 @@
     </message>
     <message>
       <source>Special Bindings</source>
-      <translation type="unfinished">Special Bindings</translation>
+      <translation>Spesielle hurtigtaster</translation>
     </message>
     <message>
       <source>Keybindings</source>
@@ -1065,7 +1081,7 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation>Berøringsplate knapp</translation>
+      <translation>Berøringsplateknapp</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1137,23 +1153,23 @@
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation>Hurtighetsmultiplikator (def 1.0):</translation>
+      <translation>Hastighetsmultiplikator (def 1.0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation type="unfinished">Common Config Selected</translation>
+      <translation>Felles oppsett valgt</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>Denne knappen kopierer oppsettet fra felles oppsettet til den valgte profilen, og kan ikke brukes når den gjeldende brukte profilen er felles oppsettet.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation type="unfinished">Copy values from Common Config</translation>
+      <translation>Kopier verdier fra felles oppsettet</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>Vil du overskrive eksisterende valg av oppsett med felles oppsettet?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1161,26 +1177,42 @@
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
-      <translation type="unfinished">Cannot bind any unique input more than once</translation>
+      <translation>Kan ikke tildele unike oppsett mer enn en gang</translation>
     </message>
     <message>
       <source>Press a key</source>
-      <translation type="unfinished">Press a key</translation>
+      <translation>Trykk på en tast</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
-      <translation type="unfinished">Cannot set mapping</translation>
+      <translation>Klarte ikke tildele</translation>
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+      <translation>Musehjulet kan ikke tildeles analogstikkene</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation>Åpne/Legg til Elf-mappe</translation>
+      <translation>Åpne eller legg til Elf-mappe</translation>
     </message>
     <message>
       <source>Install Packages (PKG)</source>
@@ -1200,7 +1232,7 @@
     </message>
     <message>
       <source>Configure...</source>
-      <translation>Sett opp...</translation>
+      <translation>Sett opp …</translation>
     </message>
     <message>
       <source>Install application from a .pkg file</source>
@@ -1280,7 +1312,7 @@
     </message>
     <message>
       <source>Search...</source>
-      <translation>Søk...</translation>
+      <translation>Søk …</translation>
     </message>
     <message>
       <source>File</source>
@@ -1694,7 +1726,7 @@
     </message>
     <message>
       <source>Add...</source>
-      <translation>Legg til...</translation>
+      <translation>Legg til …</translation>
     </message>
     <message>
       <source>Remove</source>
@@ -1786,7 +1818,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Spill tittelmusikk</translation>
+      <translation>Spill av tittelmusikk</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1878,7 +1910,7 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>Deaktiver trofé hurtigmeny:\nDeaktiver trofévarsler i spillet. Trofé-fremgang kan fortsatt ved help av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
+      <translation>Slå av trofévarsler:\nFjerner trofévarsler i spillet. Troféfremgang kan fortsatt vises ved hjelp av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
@@ -1938,7 +1970,7 @@
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Bredde/Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
+      <translation>Bredde / Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er annerledes fra oppløsningen i spillet.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
@@ -2134,7 +2166,7 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>Klarte ikke opprette separat brukermappe</translation>
     </message>
     <message>
       <source>%1 already exists</source>
@@ -2142,7 +2174,7 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>Separat brukermappe opprettet</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
@@ -2150,7 +2182,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>Åpne mappa med tilpassede bilder og lyder for trofé:\nDu kan legge til tilpassede bilder til trofeer og en lyd.\nLegg filene til custom_trophy med følgende navn:\ntrophy.wav ELLER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nMerk: Lyden avspilles kun i Qt-versjonen.</translation>
     </message>
   </context>
   <context>
