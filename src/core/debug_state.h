@@ -158,6 +158,10 @@ public:
     float Framerate = 1.0f / 60.0f;
     float FrameDeltaTime;
 
+    std::pair<u32, u32> game_resolution{};
+    std::pair<u32, u32> output_resolution{};
+    bool is_using_fsr{};
+
     void ShowDebugMessage(std::string message) {
         if (message.empty()) {
             return;
