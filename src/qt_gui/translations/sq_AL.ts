@@ -1606,7 +1606,7 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
+      <translation>Skeda e paracaktuar kur hapen cilësimet</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
@@ -1850,7 +1850,7 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Rikthe paracaktimet</translation>
+      <translation>Rikthe Paracaktimet</translation>
     </message>
     <message>
       <source>Close</source>
