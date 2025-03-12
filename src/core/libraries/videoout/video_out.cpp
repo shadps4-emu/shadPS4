@@ -295,10 +295,16 @@ s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
     return driver->UnregisterBuffers(port, attributeIndex);
 }
 
-void sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
+s32 PS4_SYSV_ABI sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
+    if (label_addr == nullptr) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
     auto* port = driver->GetPort(handle);
-    ASSERT(port);
+    if (!port) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
     *label_addr = reinterpret_cast<uintptr_t>(port->buffer_labels.data());
+    return 16;
 }
 
 s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** unk) {
@@ -430,6 +436,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutIsFlipPending);
     LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutUnregisterBuffers);
+    LIB_FUNCTION("OcQybQejHEY", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
+                 sceVideoOutGetBufferLabelAddress);
     LIB_FUNCTION("uquVH4-Du78", "libSceVideoOut", 1, "libSceVideoOut", 0, 0, sceVideoOutClose);
     LIB_FUNCTION("1FZBKy8HeNU", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetVblankStatus);
@@ -460,6 +468,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutSetBufferAttribute);
     LIB_FUNCTION("w3BY+tAEiQY", "libSceVideoOut", 1, "libSceVideoOut", 1, 1,
                  sceVideoOutRegisterBuffers);
+    LIB_FUNCTION("OcQybQejHEY", "libSceVideoOut", 1, "libSceVideoOut", 1, 1,
+                 sceVideoOutGetBufferLabelAddress);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", 1, 1, sceVideoOutSubmitFlip);
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 1, 1,
                  sceVideoOutGetFlipStatus);
