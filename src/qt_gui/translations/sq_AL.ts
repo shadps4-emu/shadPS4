@@ -551,11 +551,11 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Ruaj</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Zbato</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
