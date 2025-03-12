@@ -37,18 +37,18 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
             "border-radius: 4px; padding: 5px; }"
             "QLineEdit:focus {"
             "border: 1px solid #2A82DA; }");
-        themePalette.setColor(QPalette::Window, QColor(240, 240, 240));   // Light gray
-        themePalette.setColor(QPalette::WindowText, Qt::black);           // Black
-        themePalette.setColor(QPalette::Base, QColor(230, 230, 230, 80)); // Grayish
+        themePalette.setColor(QPalette::Window, QColor(240, 240, 240));          // Light gray
+        themePalette.setColor(QPalette::WindowText, Qt::black);                  // Black
+        themePalette.setColor(QPalette::Base, QColor(230, 230, 230, 80));        // Grayish
         themePalette.setColor(QPalette::ToolTipBase, QColor(230, 230, 230, 80)); // Grayish
         themePalette.setColor(QPalette::ToolTipText, Qt::black);                 // Black
-        themePalette.setColor(QPalette::Text, Qt::black);                 // Black
-        themePalette.setColor(QPalette::Button, QColor(240, 240, 240));   // Light gray
-        themePalette.setColor(QPalette::ButtonText, Qt::black);           // Black
-        themePalette.setColor(QPalette::BrightText, Qt::red);             // Red
-        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));      // Blue
-        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218)); // Blue
-        themePalette.setColor(QPalette::HighlightedText, Qt::white);      // White
+        themePalette.setColor(QPalette::Text, Qt::black);                        // Black
+        themePalette.setColor(QPalette::Button, QColor(240, 240, 240));          // Light gray
+        themePalette.setColor(QPalette::ButtonText, Qt::black);                  // Black
+        themePalette.setColor(QPalette::BrightText, Qt::red);                    // Red
+        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));             // Blue
+        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));        // Blue
+        themePalette.setColor(QPalette::HighlightedText, Qt::white);             // White
         qApp->setPalette(themePalette);
         break;
     case Theme::Green:
@@ -62,7 +62,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::WindowText, Qt::white);      // White text
         themePalette.setColor(QPalette::Base, QColor(25, 40, 25));   // Darker green base
         themePalette.setColor(QPalette::AlternateBase,
-                              QColor(53, 69, 53));                   // Dark green alternate base
+                              QColor(53, 69, 53)); // Dark green alternate base
         themePalette.setColor(QPalette::ToolTipBase,
                               QColor(25, 40, 25));                   // White tooltip background
         themePalette.setColor(QPalette::ToolTipText, Qt::white);     // White tooltip text
@@ -86,7 +86,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::WindowText, Qt::white);      // White text
         themePalette.setColor(QPalette::Base, QColor(20, 40, 60));   // Darker blue base
         themePalette.setColor(QPalette::AlternateBase,
-                              QColor(40, 60, 90));                   // Dark blue alternate base
+                              QColor(40, 60, 90)); // Dark blue alternate base
         themePalette.setColor(QPalette::ToolTipBase,
                               QColor(20, 40, 60));                   // White tooltip background
         themePalette.setColor(QPalette::ToolTipText, Qt::white);     // White tooltip text
@@ -111,7 +111,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::WindowText, Qt::white);        // White text
         themePalette.setColor(QPalette::Base, QColor(80, 30, 90));     // Darker violet base
         themePalette.setColor(QPalette::AlternateBase,
-                              QColor(100, 50, 120));                   // Violet alternate base
+                              QColor(100, 50, 120)); // Violet alternate base
         themePalette.setColor(QPalette::ToolTipBase,
                               QColor(80, 30, 90));                     // White tooltip background
         themePalette.setColor(QPalette::ToolTipText, Qt::white);       // White tooltip text
