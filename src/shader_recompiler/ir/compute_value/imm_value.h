@@ -62,10 +62,10 @@ using ImmS32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U
 using ImmF32xAny = TypedImmValue<Type::F32 | Type::F32x2 | Type::F32x3 | Type::F32x4, true>;
 using ImmF64xAny = TypedImmValue<Type::F64 | Type::F64x2 | Type::F64x3 | Type::F64x4, true>;
 using ImmS32F32xAny = TypedImmValue<Type::U32 | Type::F32 | Type::U32x2 | Type::F32x2 |
-                                    Type::U32x3 | Type::F32x3 | Type::U32x4 | Type::F32x4,
+                                        Type::U32x3 | Type::F32x3 | Type::U32x4 | Type::F32x4,
                                     true>;
 using ImmF32F64xAny = TypedImmValue<Type::F32 | Type::F64 | Type::F32x2 | Type::F64x2 |
-                                    Type::F32x3 | Type::F64x3 | Type::F32x4 | Type::F64x4,
+                                        Type::F32x3 | Type::F64x3 | Type::F32x4 | Type::F64x4,
                                     true>;
 
 class ImmValue {
@@ -98,7 +98,8 @@ public:
     ImmValue(f64 value1, f64 value2, f64 value3, f64 value4) noexcept;
     ImmValue(const ImmValue& value1, const ImmValue& value2) noexcept;
     ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3) noexcept;
-    ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3, const ImmValue& value4) noexcept;
+    ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3,
+             const ImmValue& value4) noexcept;
 
     [[nodiscard]] bool IsEmpty() const noexcept;
     [[nodiscard]] IR::Type Type() const noexcept;
@@ -196,10 +197,12 @@ public:
     [[nodiscard]] ImmValue trunc() const noexcept;
     [[nodiscard]] ImmValue fract() const noexcept;
     [[nodiscard]] bool isnan() const noexcept;
-    
-    [[nodiscard]] static ImmValue fma(const ImmF32F64& a, const ImmF32F64& b, const ImmF32F64& c) noexcept;
-    
+
+    [[nodiscard]] static ImmValue fma(const ImmF32F64& a, const ImmF32F64& b,
+                                      const ImmF32F64& c) noexcept;
+
     static bool IsSupportedValue(const IR::Value& value) noexcept;
+
 private:
     union Value {
         bool imm_u1;

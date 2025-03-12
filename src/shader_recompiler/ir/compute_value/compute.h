@@ -3,10 +3,14 @@
 
 #pragma once
 
-#include <boost/container/flat_set.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include "shader_recompiler/ir/compute_value/imm_value.h"
 #include "shader_recompiler/ir/value.h"
+
+// Given a value (inmediate or not), compute all the possible inmediate values
+// that can represent. If the value can't be computed statically, the list will
+// be empty.
 
 namespace Shader::IR {
 
