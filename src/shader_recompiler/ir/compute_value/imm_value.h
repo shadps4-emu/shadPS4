@@ -13,7 +13,7 @@
 
 namespace Shader::IR {
 
-// Live IR::Value but can only hold immediate values. Additionally, can hold vectors of values.
+// Like IR::Value but can only hold immediate values. Additionally, can hold vectors of values.
 // Has arithmetic operations defined for it. Usefull for computing a value at shader compile time.
 
 template <IR::Type type_, bool is_signed_>
