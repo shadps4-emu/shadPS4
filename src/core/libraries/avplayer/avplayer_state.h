@@ -18,31 +18,35 @@ class AvDecoder;
 
 class AvPlayerState : public AvPlayerStateCallback {
 public:
-    AvPlayerState(const SceAvPlayerInitData& init_data);
+    AvPlayerState(const AvPlayerInitData& init_data);
     ~AvPlayerState();
 
-    void PostInit(const SceAvPlayerPostInitData& post_init_data);
-    bool AddSource(std::string_view filename, SceAvPlayerSourceType source_type);
+    void PostInit(const AvPlayerPostInitData& post_init_data);
+    bool AddSource(std::string_view filename, AvPlayerSourceType source_type);
     s32 GetStreamCount();
-    bool GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    bool GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
     bool Start();
     bool Stop();
-    bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
-    bool GetVideoData(SceAvPlayerFrameInfo& video_info);
-    bool GetVideoData(SceAvPlayerFrameInfoEx& video_info);
+    bool Pause();
+    bool Resume();
+    void SetAvSyncMode(AvPlayerAvSyncMode sync_mode);
+    bool GetAudioData(AvPlayerFrameInfo& audio_info);
+    bool GetVideoData(AvPlayerFrameInfo& video_info);
+    bool GetVideoData(AvPlayerFrameInfoEx& video_info);
     bool IsActive();
     u64 CurrentTime();
     bool SetLooping(bool is_looping);
 
 private:
     // Event Replacement
-    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, SceAvPlayerEvents event_id,
+    static void PS4_SYSV_ABI AutoPlayEventCallback(void* handle, AvPlayerEvents event_id,
                                                    s32 source_id, void* event_data);
 
-    static void PS4_SYSV_ABI DefaultEventCallback(void* handle, SceAvPlayerEvents event_id,
+    static void PS4_SYSV_ABI DefaultEventCallback(void* handle, AvPlayerEvents event_id,
                                                   s32 source_id, void* event_data);
 
+    AvPlayerAvSyncMode GetSyncMode() override;
     void OnWarning(u32 id) override;
     void OnError() override;
     void OnEOF() override;
@@ -50,7 +54,7 @@ private:
     void OnPlaybackStateChanged(AvState state);
     std::optional<bool> OnBufferingCheckEvent(u32 num_frames);
 
-    void EmitEvent(SceAvPlayerEvents event_id, void* event_data = nullptr);
+    void EmitEvent(AvPlayerEvents event_id, void* event_data = nullptr);
     bool SetState(AvState state);
 
     void AvControllerThread(std::stop_token stop);
@@ -65,11 +69,12 @@ private:
 
     std::unique_ptr<AvPlayerSource> m_up_source;
 
-    SceAvPlayerInitData m_init_data{};
-    SceAvPlayerPostInitData m_post_init_data{};
-    SceAvPlayerEventReplacement m_event_replacement{};
+    AvPlayerInitData m_init_data{};
+    AvPlayerPostInitData m_post_init_data{};
+    AvPlayerEventReplacement m_event_replacement{};
     bool m_auto_start{};
     char m_default_language[4]{};
+    AvPlayerAvSyncMode m_sync_mode = AvPlayerAvSyncMode::Default;
 
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
