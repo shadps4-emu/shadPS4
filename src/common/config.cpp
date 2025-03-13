@@ -436,7 +436,7 @@ void setVblankDiv(u32 value) {
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
-void setShowLabelsUnderIcons(bool enable) {
+static void setShowLabelsUnderIcons(bool enable) {
     showLabelsUnderIcons = enable;
 }
 

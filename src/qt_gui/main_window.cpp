@@ -145,91 +145,125 @@ void MainWindow::toggleLabelsUnderIcons() {
     bool showLabels = ui->toggleLabelsAct->isChecked();
     Config::setShowLabelsUnderIcons();
     UpdateToolbarLabels();
+    if (isGameRunning) {
+        UpdateToolbarButtons();
+    }
 }
 
 void MainWindow::toggleFullscreen() {
     SDL_Event event;
     SDL_memset(&event, 0, sizeof(event));
     event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
-
     SDL_PushEvent(&event);
+}
+
+QWidget* MainWindow::createButtonWithLabel(QPushButton* button, const QString& labelText,
+                                           bool showLabel) {
+    QWidget* container = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(container);
+    layout->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(button);
+
+    QLabel* label = nullptr;
+    if (showLabel && ui->toggleLabelsAct->isChecked()) {
+        label = new QLabel(labelText, this);
+        label->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
+        layout->addWidget(label);
+        button->setToolTip("");
+    } else {
+        button->setToolTip(labelText);
+    }
+
+    container->setLayout(layout);
+    container->setProperty("buttonLabel", QVariant::fromValue(label));
+    return container;
 }
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
-    ui->toolBar->setObjectName("mw_toolbar");
-
     ui->toolBar->clear();
 
     QWidget* toolbarContainer = new QWidget(this);
     QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
-    mainLayout->setContentsMargins(5, 5, 5, 5);
-    mainLayout->setSpacing(15);
-
+    mainLayout->setSpacing(2);
     bool showLabels = ui->toggleLabelsAct->isChecked();
-    QPalette palette = qApp->palette();
-
-    auto createButtonWithLabel = [&](QPushButton* button, const QString& labelText) {
-        QWidget* container = new QWidget(this);
-        QVBoxLayout* layout = new QVBoxLayout(container);
-        layout->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
-        layout->setContentsMargins(0, 0, 0, 0);
-        layout->addWidget(button);
-
-        if (showLabels) {
-            QLabel* label = new QLabel(labelText, this);
-            label->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
-            layout->addWidget(label);
-            button->setToolTip("");
-        } else {
-            button->setToolTip(labelText);
-        }
-
-        container->setLayout(layout);
-        return container;
-    };
-
-    auto createLine = [this]() {
-        QFrame* line = new QFrame(this);
-        line->setFrameShape(QFrame::VLine);
-        line->setFrameShadow(QFrame::Sunken);
-        line->setFixedWidth(2);
-        return line;
-    };
 
     QWidget* buttonGroup = new QWidget(this);
     QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
-    buttonLayout->setContentsMargins(0, 0, 0, 0);
-    buttonLayout->setSpacing(15);
+    buttonLayout->setSpacing(2);
 
-    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->fullscreenButton, tr("Full Screen")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->controllerButton, tr("Controllers")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard")));
-    buttonLayout->addWidget(createButtonWithLabel(ui->refreshButton, tr("Refresh List")));
+    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), false));
+    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
 
     QWidget* searchSliderContainer = new QWidget(this);
     QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
-    searchSliderLayout->setContentsMargins(0, 0, 0, 0);
-    searchSliderLayout->setSpacing(10);
-
     searchSliderLayout->addWidget(ui->sizeSliderContainer);
     searchSliderLayout->addWidget(ui->mw_searchbar);
     searchSliderContainer->setLayout(searchSliderLayout);
 
     buttonLayout->addWidget(searchSliderContainer);
-
     mainLayout->addWidget(buttonGroup);
-    toolbarContainer->setLayout(mainLayout);
     ui->toolBar->addWidget(toolbarContainer);
+
+    ui->playButton->setVisible(true);
+    ui->pauseButton->setVisible(false);
 }
 
 void MainWindow::UpdateToolbarLabels() {
     AddUiWidgets();
+}
+
+void MainWindow::UpdateToolbarButtons() {
+    // add toolbar widgets for when game is running
+    bool showLabels = ui->toggleLabelsAct->isChecked();
+
+    ui->toolBar->clear();
+
+    QWidget* toolbarContainer = new QWidget(this);
+    QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
+    mainLayout->setSpacing(2);
+
+    QWidget* buttonGroup = new QWidget(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
+    buttonLayout->setSpacing(2);
+
+    ui->playButton->setVisible(false);
+    ui->pauseButton->setVisible(true);
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), false));
+    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
+    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
+
+    QWidget* searchSliderContainer = new QWidget(this);
+    QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
+    searchSliderLayout->addWidget(ui->sizeSliderContainer);
+    searchSliderLayout->addWidget(ui->mw_searchbar);
+    searchSliderContainer->setLayout(searchSliderLayout);
+
+    buttonLayout->addWidget(searchSliderContainer);
+    mainLayout->addWidget(buttonGroup);
+    toolbarContainer->setLayout(mainLayout);
+
+    ui->toolBar->addWidget(toolbarContainer);
 }
 
 void MainWindow::CreateDockWindows() {
@@ -827,6 +861,8 @@ void MainWindow::StartGame() {
             return;
         }
         StartEmulator(path);
+
+        UpdateToolbarButtons();
     }
 }
 

@@ -5,6 +5,7 @@
 
 #include <QActionGroup>
 #include <QDragEnterEvent>
+#include <QProcess>
 #include <QTranslator>
 
 #include "background_music_player.h"
@@ -39,6 +40,7 @@ public:
     void InstallDirectory();
     void StartGame();
     void PauseGame();
+    bool showLabels;
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
@@ -54,6 +56,8 @@ private:
     Ui_MainWindow* ui;
     void AddUiWidgets();
     void UpdateToolbarLabels();
+    void UpdateToolbarButtons();
+    QWidget* createButtonWithLabel(QPushButton* button, const QString& labelText, bool showLabel);
     void CreateActions();
     void toggleFullscreen();
     void CreateRecentGameActions();
