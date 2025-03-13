@@ -27,6 +27,8 @@ struct RenderState {
     bool has_stencil{};
     u32 width = std::numeric_limits<u32>::max();
     u32 height = std::numeric_limits<u32>::max();
+    std::array<u32, 8> cb_slices{1};
+    u32 depth_slices{0};
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;

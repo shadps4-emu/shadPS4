@@ -365,6 +365,7 @@ bool Instance::CreateDevice() {
             .separateDepthStencilLayouts = vk12_features.separateDepthStencilLayouts,
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
+            .shaderOutputLayer = vk12_features.shaderOutputLayer,
         },
         // Vulkan 1.3 promoted extensions
         vk::PhysicalDeviceDynamicRenderingFeaturesKHR{
