@@ -160,11 +160,8 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 }
 
 void VideoOutDriver::Flip(const Request& req) {
-    // Whatever the game is rendering show splash if it is active
-    if (!presenter->ShowSplash(req.frame)) {
-        // Present the frame.
-        presenter->Present(req.frame);
-    }
+    // Present the frame.
+    presenter->Present(req.frame);
 
     // Update flip status.
     auto* port = req.port;
@@ -201,9 +198,6 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    if (presenter->ShowSplash(nullptr)) {
-        return;
-    }
     const auto empty_frame = presenter->PrepareBlankFrame(false);
     presenter->Present(empty_frame);
 }
