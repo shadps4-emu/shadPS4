@@ -24,7 +24,6 @@
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/file_format/psf.h"
-#include "core/file_format/splash.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
@@ -185,12 +184,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
     if (std::filesystem::exists(pic1_path)) {
-        auto* splash = Common::Singleton<Splash>::Instance();
-        if (!splash->IsLoaded()) {
-            if (!splash->Open(pic1_path)) {
-                LOG_ERROR(Loader, "Game splash: unable to open file");
-            }
-        }
+        game_info.splash_path = pic1_path;
     }
 
     game_info.initialized = true;

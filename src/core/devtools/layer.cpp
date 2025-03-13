@@ -21,8 +21,8 @@
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
-using namespace Core::Devtools;
-using L = Core::Devtools::Layer;
+using namespace ::Core::Devtools;
+using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;

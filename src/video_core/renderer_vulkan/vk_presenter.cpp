@@ -6,7 +6,6 @@
 #include "common/singleton.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
-#include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
@@ -21,6 +20,8 @@
 #include <vk_mem_alloc.h>
 
 #include <imgui.h>
+
+#include "common/elf_info.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
 
 namespace Vulkan {
@@ -269,115 +270,9 @@ Frame* Presenter::PrepareLastFrame() {
     return frame;
 }
 
-bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
-    const auto* splash = Common::Singleton<Splash>::Instance();
-    if (splash->GetImageData().empty()) {
-        return false;
-    }
-
-    if (!Libraries::SystemService::IsSplashVisible()) {
-        return false;
-    }
-
-    draw_scheduler.EndRendering();
-    const auto cmdbuf = draw_scheduler.CommandBuffer();
-
-    if (Config::getVkHostMarkersEnabled()) {
-        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
-            .pLabelName = "ShowSplash",
-        });
-    }
-
-    if (!frame) {
-        if (!splash_img.has_value()) {
-            VideoCore::ImageInfo info{};
-            info.pixel_format = vk::Format::eR8G8B8A8Unorm;
-            info.type = vk::ImageType::e2D;
-            info.size =
-                VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
-            info.pitch = splash->GetImageInfo().width;
-            info.guest_address = VAddr(splash->GetImageData().data());
-            info.guest_size = splash->GetImageData().size();
-            info.mips_layout.emplace_back(splash->GetImageData().size(),
-                                          splash->GetImageInfo().width,
-                                          splash->GetImageInfo().height, 0);
-            splash_img.emplace(instance, present_scheduler, info);
-            splash_img->flags &= ~VideoCore::GpuDirty;
-            texture_cache.RefreshImage(*splash_img);
-
-            splash_img->Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                vk::AccessFlagBits2::eTransferRead, {}, cmdbuf);
-        }
-
-        frame = GetRenderFrame();
-    }
-
-    const auto frame_subresources = vk::ImageSubresourceRange{
-        .aspectMask = vk::ImageAspectFlagBits::eColor,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-    };
-
-    const auto pre_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .oldLayout = vk::ImageLayout::eUndefined,
-                                .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                                .image = frame->image,
-                                .subresourceRange{frame_subresources}};
-
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &pre_barrier,
-    });
-
-    cmdbuf.blitImage(splash_img->image, vk::ImageLayout::eTransferSrcOptimal, frame->image,
-                     vk::ImageLayout::eTransferDstOptimal,
-                     MakeImageBlitFit(splash->GetImageInfo().width, splash->GetImageInfo().height,
-                                      frame->width, frame->height),
-                     vk::Filter::eLinear);
-
-    const auto post_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-                                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                                .newLayout = vk::ImageLayout::eGeneral,
-                                .image = frame->image,
-                                .subresourceRange{frame_subresources}};
-
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &post_barrier,
-    });
-
-    if (Config::getVkHostMarkersEnabled()) {
-        cmdbuf.endDebugUtilsLabelEXT();
-    }
-
-    // Flush frame creation commands.
-    frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
-    frame->ready_tick = draw_scheduler.CurrentTick();
-    SubmitInfo info{};
-    draw_scheduler.Flush(info);
-
-    Present(frame);
-    return true;
-}
-
 Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
-
-    if (frame->width != expected_frame_width || frame->height != expected_frame_height ||
-        frame->is_hdr != swapchain.GetHDR()) {
-        RecreateFrame(frame, expected_frame_width, expected_frame_height);
-    }
 
     // EOP flips are triggered from GPU thread so use the drawing scheduler to record
     // commands. Otherwise we are dealing with a CPU flip which could have arrived
@@ -420,6 +315,11 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
         vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
+        float ratio = (float)image_size.width / (float)image_size.height;
+        if (ratio != expected_ratio) {
+            expected_ratio = ratio;
+        }
+
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
                       cmdbuf);
 
@@ -625,18 +525,43 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
             ImGui::SetNextWindowDockID(dockId, ImGuiCond_Once);
             ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav);
 
+            auto game_texture = frame->imgui_texture;
+            auto game_width = frame->width;
+            auto game_height = frame->height;
+
+            if (Libraries::SystemService::IsSplashVisible()) { // draw splash
+                if (!splash_img.has_value()) {
+                    splash_img.emplace();
+                    auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
+                    if (!splash_path.empty()) {
+                        splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                    }
+                }
+                if (auto& splash_image = this->splash_img.value()) {
+                    auto [im_id, width, height] = splash_image.GetTexture();
+                    game_texture = im_id;
+                    game_width = width;
+                    game_height = height;
+                }
+            }
+
             ImVec2 contentArea = ImGui::GetContentRegionAvail();
-            const vk::Rect2D imgRect =
-                FitImage(frame->width, frame->height, (s32)contentArea.x, (s32)contentArea.y);
             SetExpectedGameSize((s32)contentArea.x, (s32)contentArea.y);
-            ImGui::SetCursorPos(ImGui::GetCursorStartPos() + ImVec2{
-                                                                 (float)imgRect.offset.x,
-                                                                 (float)imgRect.offset.y,
-                                                             });
-            ImGui::Image(frame->imgui_texture, {
-                                                   static_cast<float>(imgRect.extent.width),
-                                                   static_cast<float>(imgRect.extent.height),
-                                               });
+
+            const auto imgRect =
+                FitImage(game_width, game_height, (s32)contentArea.x, (s32)contentArea.y);
+            ImVec2 offset{
+                static_cast<float>(imgRect.offset.x),
+                static_cast<float>(imgRect.offset.y),
+            };
+            ImVec2 size{
+                static_cast<float>(imgRect.extent.width),
+                static_cast<float>(imgRect.extent.height),
+            };
+
+            ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
+            ImGui::Image(game_texture, size);
+
             ImGui::End();
             ImGui::PopStyleVar(3);
             ImGui::PopStyleColor();
@@ -707,19 +632,23 @@ Frame* Presenter::GetRenderFrame() {
         }
     }
 
+    if (frame->width != expected_frame_width || frame->height != expected_frame_height ||
+        frame->is_hdr != swapchain.GetHDR()) {
+        RecreateFrame(frame, expected_frame_width, expected_frame_height);
+    }
+
     return frame;
 }
 
 void Presenter::SetExpectedGameSize(s32 width, s32 height) {
-    constexpr float expectedRatio = 1920.0 / 1080.0f;
     const float ratio = (float)width / (float)height;
 
     expected_frame_height = height;
     expected_frame_width = width;
-    if (ratio > expectedRatio) {
-        expected_frame_width = static_cast<s32>(height * expectedRatio);
+    if (ratio > expected_ratio) {
+        expected_frame_width = static_cast<s32>(height * expected_ratio);
     } else {
-        expected_frame_height = static_cast<s32>(width / expectedRatio);
+        expected_frame_height = static_cast<s32>(width / expected_ratio);
     }
 }
 
