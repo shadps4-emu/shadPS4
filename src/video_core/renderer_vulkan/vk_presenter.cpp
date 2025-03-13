@@ -315,6 +315,11 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
         vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
+        float ratio = (float)image_size.width / (float)image_size.height;
+        if (ratio != expected_ratio) {
+            expected_ratio = ratio;
+        }
+
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
                       cmdbuf);
 
@@ -636,15 +641,14 @@ Frame* Presenter::GetRenderFrame() {
 }
 
 void Presenter::SetExpectedGameSize(s32 width, s32 height) {
-    constexpr float expectedRatio = 1920.0 / 1080.0f;
     const float ratio = (float)width / (float)height;
 
     expected_frame_height = height;
     expected_frame_width = width;
-    if (ratio > expectedRatio) {
-        expected_frame_width = static_cast<s32>(height * expectedRatio);
+    if (ratio > expected_ratio) {
+        expected_frame_width = static_cast<s32>(height * expected_ratio);
     } else {
-        expected_frame_height = static_cast<s32>(width / expectedRatio);
+        expected_frame_height = static_cast<s32>(width / expected_ratio);
     }
 }
 
