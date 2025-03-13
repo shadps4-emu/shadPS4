@@ -82,6 +82,9 @@ private:
     bool isIconBlack = false;
     bool isTableList = true;
     bool isGameRunning = false;
+    bool isWhite = false;
+    bool is_paused = false;
+
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
     QActionGroup* m_theme_act_group = nullptr;

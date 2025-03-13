@@ -138,6 +138,8 @@ void MainWindow::PauseGame() {
     SDL_Event event;
     SDL_memset(&event, 0, sizeof(event));
     event.type = SDL_EVENT_TOGGLE_PAUSE;
+    is_paused = !is_paused;
+    UpdateToolbarButtons();
     SDL_PushEvent(&event);
 }
 
@@ -220,10 +222,6 @@ void MainWindow::AddUiWidgets() {
     ui->pauseButton->setVisible(false);
 }
 
-void MainWindow::UpdateToolbarLabels() {
-    AddUiWidgets();
-}
-
 void MainWindow::UpdateToolbarButtons() {
     // add toolbar widgets for when game is running
     bool showLabels = ui->toggleLabelsAct->isChecked();
@@ -241,8 +239,17 @@ void MainWindow::UpdateToolbarButtons() {
     ui->playButton->setVisible(false);
     ui->pauseButton->setVisible(true);
 
+    if (is_paused) {
+        ui->pauseButton->setIcon(ui->playButton->icon());
+        ui->pauseButton->setToolTip(tr("Resume"));
+    } else {
+        ui->pauseButton->setIcon(RecolorIcon(QIcon(":images/pause_icon.png"), isWhite));
+        ui->pauseButton->setToolTip(tr("Pause"));
+    }
+
     buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), false));
-    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->pauseButton, is_paused ? tr("Resume") : tr("Pause"), showLabels));
     buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
     buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
     buttonLayout->addWidget(
@@ -264,6 +271,10 @@ void MainWindow::UpdateToolbarButtons() {
     toolbarContainer->setLayout(mainLayout);
 
     ui->toolBar->addWidget(toolbarContainer);
+}
+
+void MainWindow::UpdateToolbarLabels() {
+    AddUiWidgets();
 }
 
 void MainWindow::CreateDockWindows() {
