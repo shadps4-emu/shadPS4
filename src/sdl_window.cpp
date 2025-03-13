@@ -343,7 +343,6 @@ void WindowSDL::WaitEvent() {
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
-    bool is_game_running = true;
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
