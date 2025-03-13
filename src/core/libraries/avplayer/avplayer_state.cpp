@@ -289,6 +289,34 @@ u64 AvPlayerState::CurrentTime() {
     return m_up_source->CurrentTime();
 }
 
+bool AvPlayerState::Pause() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr) {
+        LOG_ERROR(Lib_AvPlayer, "Could not pause. No source.");
+        return false;
+    }
+    if (!m_up_source->Pause()) {
+        return false;
+    }
+    SetState(AvState::Pause);
+    OnPlaybackStateChanged(AvState::Pause);
+    return true;
+}
+
+bool AvPlayerState::Resume() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr) {
+        LOG_ERROR(Lib_AvPlayer, "Could not resume. No source.");
+        return false;
+    }
+    if (!m_up_source->Resume()) {
+        return false;
+    }
+    SetState(AvState::Play);
+    OnPlaybackStateChanged(AvState::Play);
+    return true;
+}
+
 bool AvPlayerState::SetLooping(bool is_looping) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
