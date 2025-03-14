@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-with import (fetchTarball "https://github.com/nixos/nixpkgs/archive/cfd19cdc54680956dc1816ac577abba6b58b901c.tar.gz") { };
+with import (fetchTarball "https://github.com/nixos/nixpkgs/archive/bd40c4ee221df5f3554d6f7b895a513be16f2e89.tar.gz") { };
 
-pkgs.mkShell {
+clangStdenv.mkDerivation {
   name = "shadps4-build-env";
 
   nativeBuildInputs = [
-    pkgs.llvmPackages_19.libcxxClang
+    pkgs.pkgs.clangStdenv
     pkgs.cmake
     pkgs.pkg-config
     pkgs.git
@@ -56,16 +56,6 @@ pkgs.mkShell {
     export QT_PLUGIN_PATH="${pkgs.qt6.qtwayland}/lib/qt-6/plugins:${pkgs.qt6.qtbase}/lib/qt-6/plugins"
     export QML2_IMPORT_PATH="${pkgs.qt6.qtbase}/lib/qt-6/qml"
     export CMAKE_PREFIX_PATH="${pkgs.vulkan-headers}:$CMAKE_PREFIX_PATH"
-
-    # OpenGL
-    export LD_LIBRARY_PATH="${
-      pkgs.lib.makeLibraryPath [
-        pkgs.libglvnd
-        pkgs.vulkan-tools
-      ]
-    }:$LD_LIBRARY_PATH"
-
-    export LDFLAGS="-L${pkgs.llvmPackages_18.libcxx}/lib -lc++"
     export LC_ALL="C.UTF-8"
     export XAUTHORITY=${builtins.getEnv "XAUTHORITY"}
   '';
