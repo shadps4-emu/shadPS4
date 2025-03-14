@@ -7,7 +7,7 @@ pkgs.mkShell {
   name = "shadps4-build-env";
 
   nativeBuildInputs = [
-    pkgs.llvmPackages_18.clang
+    pkgs.llvmPackages_19.libcxxClang
     pkgs.cmake
     pkgs.pkg-config
     pkgs.git
@@ -16,6 +16,7 @@ pkgs.mkShell {
   buildInputs = [
     pkgs.alsa-lib
     pkgs.libpulseaudio
+    pkgs.pipewire
     pkgs.openal
     pkgs.openssl
     pkgs.zlib
