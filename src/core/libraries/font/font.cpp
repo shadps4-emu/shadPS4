@@ -817,6 +817,7 @@ void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderS
 s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* renderSurface,
                                                    OrbisFontStyleFrame* styleFrame) {
     if (!renderSurface) {
+        LOG_ERROR(Lib_Font, "Invalid Parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
@@ -825,6 +826,7 @@ s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* rende
     } else {
         // Validate magic number
         if (styleFrame->magic != 0xF09) {
+            LOG_ERROR(Lib_Font, "Invalid magic");
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }
 
@@ -925,21 +927,24 @@ s32 PS4_SYSV_ABI sceFontStringRefersTextCharacters() {
 s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectSlant(OrbisFontStyleFrame* styleFrame,
                                                  float* slantRatio) {
     if (!styleFrame) {
-        printf("[ERROR] Style frame is NULL.\n");
+        LOG_ERROR(Lib_Font, "Invalid Parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
     // Validate the magic number
     if (styleFrame->magic != 0xF09) {
+        LOG_ERROR(Lib_Font, "Invalid Magic");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
     // Check if the slant effect is enabled (bit 1 in flags)
     if (!(styleFrame->flags & 0x02)) {
+        LOG_ERROR(Lib_Font, "Flag not set");
         return ORBIS_FONT_ERROR_UNSET_PARAMETER;
     }
 
     if (!slantRatio) {
+        LOG_ERROR(Lib_Font, "Invalid Parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
@@ -952,16 +957,19 @@ s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectWeight(OrbisFontStyleFrame* fontStyle
                                                   float* weightXScale, float* weightYScale,
                                                   uint32_t* mode) {
     if (!fontStyleFrame) {
+        LOG_ERROR(Lib_Font, "Invalid Parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
     // Validate the magic number
     if (fontStyleFrame->magic != 0xF09) {
+        LOG_ERROR(Lib_Font, "Magic not set");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
     // Check if the weight effect is enabled (bit 2 in flags)
     if (!(fontStyleFrame->flags & 0x04)) {
+        LOG_ERROR(Lib_Font, "Flag not set");
         return ORBIS_FONT_ERROR_UNSET_PARAMETER;
     }
 
@@ -985,8 +993,39 @@ s32 PS4_SYSV_ABI sceFontStyleFrameGetResolutionDpi() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel(OrbisFontStyleFrame* styleFrame, float* w,
+                                                float* h) {
+    if (!styleFrame) {
+        LOG_ERROR(Lib_Font, "Invalid Parameter");
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    if (styleFrame->magic != 0xF09) {
+        LOG_ERROR(Lib_Font, "Invalid magic");
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!(styleFrame->flags & 0x01)) {
+        LOG_ERROR(Lib_Font, "Scaling effect parameter not set");
+        return ORBIS_FONT_ERROR_UNSET_PARAMETER;
+    }
+
+    // Check if scaling is allowed
+    int isScalingEnabled = styleFrame->scalingFlag;
+    if (w) {
+        *w = styleFrame->scaleWidth;
+        if (isScalingEnabled && styleFrame->dpiX) {
+            *w *= ((float)styleFrame->dpiX / 72.0f);
+        }
+    }
+
+    if (h) {
+        *h = styleFrame->scaleHeight;
+        if (isScalingEnabled && styleFrame->dpiY) {
+            *h *= ((float)styleFrame->dpiY / 72.0f);
+        }
+    }
+
     return ORBIS_OK;
 }
 

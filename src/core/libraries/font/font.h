@@ -40,12 +40,17 @@ struct OrbisFontRenderSurface {
 };
 
 struct OrbisFontStyleFrame {
-    u16 magic; // Expected to be 0xF09
-    u16 flags;
-    //
-    float weightXScale; // 0x1c
-    float weightYScale; // 0x20
-    float slantRatio;   // 0x24
+    /*0x00*/ u16 magic; // Expected to be 0xF09
+    /*0x02*/ u16 flags;
+    /*0x04*/ s32 dpiX;          // DPI scaling factor for width
+    /*0x08*/ s32 dpiY;          // DPI scaling factor for height
+    /*0x0c*/ s32 scalingFlag;   // Indicates whether scaling is enabled
+                                /*0x10*/
+    /*0x14*/ float scaleWidth;  // Width scaling factor
+    /*0x18*/ float scaleHeight; // Height scaling factor
+    /*0x1c*/ float weightXScale;
+    /*0x20*/ float weightYScale;
+    /*0x24*/ float slantRatio;
 };
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer();
@@ -220,7 +225,8 @@ s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectWeight(OrbisFontStyleFrame* fontStyle
                                                   float* weightXScale, float* weightYScale,
                                                   uint32_t* mode);
 s32 PS4_SYSV_ABI sceFontStyleFrameGetResolutionDpi();
-s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel();
+s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel(OrbisFontStyleFrame* styleFrame, float* w,
+                                                float* h);
 s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePoint();
 s32 PS4_SYSV_ABI sceFontStyleFrameInit();
 s32 PS4_SYSV_ABI sceFontStyleFrameSetEffectSlant();
