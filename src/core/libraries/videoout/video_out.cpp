@@ -166,7 +166,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
+s32 PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
     if (ev == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
@@ -194,7 +194,7 @@ int PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev) {
     }
 }
 
-int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64_t* data) {
+s32 PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, s64* data) {
     if (ev == nullptr || data == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
@@ -202,11 +202,11 @@ int PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, int64
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
     }
 
-    auto event_data = ev->data >> 0x10;
+    const auto event_data = ev->data >> 16;
     if (ev->ident != static_cast<s32>(OrbisVideoOutInternalEventId::Flip) || ev->data == 0) {
         *data = event_data;
     } else {
-        *data = event_data | 0xFFFF000000000000;
+        *data = event_data | 0xffff000000000000;
     }
     return ORBIS_OK;
 }
