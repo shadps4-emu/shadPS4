@@ -196,17 +196,27 @@ void MainWindow::AddUiWidgets() {
     QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
     buttonLayout->setSpacing(2);
 
-    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
-    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
-    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
-    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
-    buttonLayout->addWidget(
-        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
-    buttonLayout->addWidget(
-        createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
-    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
     buttonLayout->addWidget(
         createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
+
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+
+    buttonLayout->addWidget(
+        createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
+
+    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
+
     if (showLabels) {
         QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
         if (pauseButtonLabel)
@@ -1331,6 +1341,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
     ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
+    ui->restartButton->setIcon(RecolorIcon(ui->restartButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
     ui->fullscreenButton->setIcon(RecolorIcon(ui->fullscreenButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
