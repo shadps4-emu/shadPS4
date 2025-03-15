@@ -1950,15 +1950,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Berøringsplate Venstre</translation>
+      <translation>Berøringsplate venstre</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Berøringsplate Høyre</translation>
+      <translation>Berøringsplate høyre</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Berøringsplate Midt</translation>
+      <translation>Berøringsplate midten</translation>
     </message>
     <message>
       <source>None</source>
@@ -2058,7 +2058,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>Bruk bevegelseskontroller</translation>
+      <translation>Bruk bevegelsesstyring</translation>
     </message>
     <message>
       <source>Save Data Path</source>
