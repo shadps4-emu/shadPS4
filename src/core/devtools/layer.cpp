@@ -94,10 +94,12 @@ void L::DrawMenuBar() {
                 {
                     Checkbox("RCAS", &fsr.use_rcas);
                     BeginDisabled(!fsr.use_rcas);
-                    { 
-                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0); 
+                    {
+                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
                     }
                     EndDisabled();
+                }
+                EndDisabled();
                 }
                 EndDisabled();
                 ImGui::EndMenu();
