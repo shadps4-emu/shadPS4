@@ -100,8 +100,6 @@ void L::DrawMenuBar() {
                     EndDisabled();
                 }
                 EndDisabled();
-                }
-                EndDisabled();
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
