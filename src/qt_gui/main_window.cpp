@@ -1459,10 +1459,6 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void MainWindow::StartEmulator(std::filesystem::path path) {
-    if (isGameRunning) {
-        QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
-        return;
-    }
     isGameRunning = true;
 #ifdef __APPLE__
     // SDL on macOS requires main thread.

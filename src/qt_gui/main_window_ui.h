@@ -241,7 +241,7 @@ public:
         keyboardButton->setIconSize(QSize(50, 50));
         restartButton = new QPushButton(centralWidget);
         restartButton->setFlat(true);
-        restartButton->setIcon(QIcon(":images/refresh_icon.png"));
+        restartButton->setIcon(QIcon(":images/restart_game_icon.png"));
         restartButton->setIconSize(QSize(40, 40));
 
         sizeSliderContainer = new QWidget(centralWidget);

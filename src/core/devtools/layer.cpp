@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "SDL3/SDL_log.h"
 #include "layer.h"
 
 #include <imgui.h>
@@ -93,9 +94,7 @@ void L::DrawMenuBar() {
                 {
                     Checkbox("RCAS", &fsr.use_rcas);
                     BeginDisabled(!fsr.use_rcas);
-                    {
-                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
-                    }
+                    { SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0); }
                     EndDisabled();
                 }
                 EndDisabled();
@@ -379,6 +378,28 @@ void L::Draw() {
             show_simple_fps = !show_simple_fps;
         }
         visibility_toggled = true;
+    }
+
+    if (IsKeyPressed(ImGuiKey_F9, false)) {
+        if (!io.KeyCtrl && !io.KeyAlt) {
+            if (DebugState.IsGuestThreadsPaused()) {
+                DebugState.ResumeGuestThreads();
+                SDL_Log("Game resumed from Keyboard");
+                show_pause_status = false;
+            } else {
+                DebugState.PauseGuestThreads();
+                SDL_Log("Game paused from Keyboard");
+                show_pause_status = true;
+            }
+            visibility_toggled = true;
+        }
+    }
+
+    if (show_pause_status) {
+        ImVec2 pos = ImVec2(10, 10);
+        ImU32 color = IM_COL32(255, 255, 255, 255);
+
+        ImGui::GetForegroundDrawList()->AddText(pos, color, "Game Paused Press F9 to Resume");
     }
 
     if (show_simple_fps) {
