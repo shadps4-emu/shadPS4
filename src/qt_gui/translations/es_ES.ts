@@ -788,7 +788,7 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Ver trofeos</translation>
+      <translation>Expositor de Trofeos</translation>
     </message>
     <message>
       <source>Open Folder...</source>
@@ -1085,7 +1085,7 @@
     </message>
     <message>
       <source>Mouse to Joystick</source>
-      <translation>Ratón A Joystick</translation>
+      <translation>Ratón a Joystick</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
@@ -1284,11 +1284,11 @@
     </message>
     <message>
       <source>List View</source>
-      <translation>Vista de lista</translation>
+      <translation>Vista de Lista</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>Vista de cuadrícula</translation>
+      <translation>Vista de Cuadrícula</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
@@ -1296,7 +1296,7 @@
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation>Carpeta de instalación de los juegos</translation>
+      <translation>Carpeta de Instalación de Juegos</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
@@ -1304,7 +1304,7 @@
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>Volcar lista de juegos</translation>
+      <translation>Volcar Lista de Juegos</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1324,11 +1324,11 @@
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation>Iconos de los juegos</translation>
+      <translation>Iconos de Juegos</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>Tipo de lista</translation>
+      <translation>Tipo de Lista</translation>
     </message>
     <message>
       <source>Settings</source>
@@ -1372,7 +1372,7 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>Lista de juegos</translation>
+      <translation>Lista de Juegos</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
@@ -1496,7 +1496,7 @@
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>El archivo PKG es un parche o un DLC, ¡debes instalar el juego primero!</translation>
+      <translation>El archivo PKG es un parche o DLC, ¡debes instalar el juego primero!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1511,7 +1511,7 @@
     <name>PKGViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>Abrir carpeta</translation>
+      <translation>Abrir Carpeta</translation>
     </message>
     <message>
       <source>PKG ERROR</source>
@@ -1523,7 +1523,7 @@
     </message>
     <message>
       <source>Serial</source>
-      <translation>Numero de serie</translation>
+      <translation>Número de Serie</translation>
     </message>
     <message>
       <source>Installed</source>
@@ -1543,7 +1543,7 @@
     </message>
     <message>
       <source>App Ver</source>
-      <translation>Versión de aplicación</translation>
+      <translation>Versión de la Aplicación</translation>
     </message>
     <message>
       <source>FW</source>
@@ -1590,7 +1590,7 @@
     </message>
     <message>
       <source>Console Language</source>
-      <translation>Idioma de la consola</translation>
+      <translation>Idioma de la Consola</translation>
     </message>
     <message>
       <source>Emulator Language</source>
@@ -1602,7 +1602,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>Habilitar carpeta independiente de actualizaciones</translation>
+      <translation>Habilitar Carpeta Independiente de Actualizaciones</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1614,7 +1614,7 @@
     </message>
     <message>
       <source>Show Splash</source>
-      <translation>Mostrar splash</translation>
+      <translation>Mostrar Pantalla de Bienvenida</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1622,11 +1622,11 @@
     </message>
     <message>
       <source>Username</source>
-      <translation>Nombre de usuario</translation>
+      <translation>Nombre de Usuario</translation>
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation>Clave de trofeos</translation>
+      <translation>Clave de Trofeos</translation>
     </message>
     <message>
       <source>Trophy</source>
@@ -1642,15 +1642,15 @@
     </message>
     <message>
       <source>Log Type</source>
-      <translation>Tipo de registro</translation>
+      <translation>Tipo de Registro</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>Filtro de registro</translation>
+      <translation>Filtro de Registro</translation>
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Abrir ubicación del registro</translation>
+      <translation>Abrir Ubicación del registro</translation>
     </message>
     <message>
       <source>Input</source>
@@ -1662,11 +1662,11 @@
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>Ocultar cursor</translation>
+      <translation>Ocultar Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>Tiempo de espera para ocultar cursor inactivo</translation>
+      <translation>Tiempo de Espera para Ocultar Cursor Inactivo</translation>
     </message>
     <message>
       <source>s</source>
@@ -1678,7 +1678,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Comportamiento del botón de retroceso</translation>
+      <translation>Comportamiento del Botón de Retroceso</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1694,7 +1694,7 @@
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>Dispositivo gráfico</translation>
+      <translation>Dispositivo Gráfico</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1706,7 +1706,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Habilitar volcado de shaders</translation>
+      <translation>Habilitar volcado de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1722,7 +1722,7 @@
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>Carpetas de juego</translation>
+      <translation>Carpetas de Juegos</translation>
     </message>
     <message>
       <source>Add...</source>
@@ -1738,27 +1738,27 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Habilitar volcado de depuración</translation>
+      <translation>Habilitar Volcado de Depuración</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Habilitar capas de validación de Vulkan</translation>
+      <translation>Habilitar Capas de Validación de Vulkan</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Habilitar validación de sincronización de Vulkan</translation>
+      <translation>Habilitar Validación de Sincronización de Vulkan</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>Habilitar depuración de RenderDoc</translation>
+      <translation>Habilitar Depuración de RenderDoc</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation>Habilitar diagnóstico de fallos</translation>
+      <translation>Habilitar Diagnóstico de Fallos</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>Recopilar shaders</translation>
+      <translation>Recopilar Shaders</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1778,11 +1778,11 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Buscar actualizaciones al iniciar</translation>
+      <translation>Buscar Actualizaciones al Iniciar</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Mostrar siempre el registro de cambios</translation>
+      <translation>Mostrar Siempre el Registro de Cambios</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1790,7 +1790,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verificar actualizaciones</translation>
+      <translation>Buscar Actualizaciones</translation>
     </message>
     <message>
       <source>GUI Settings</source>
@@ -1806,7 +1806,7 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation>Imagen de fondo</translation>
+      <translation>Imagen de Fondo</translation>
     </message>
     <message>
       <source>Show Background Image</source>
@@ -1858,7 +1858,7 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>Coloque el mouse sobre una opción para mostrar su descripción.</translation>
+      <translation>Coloque el ratón sobre una opción para mostrar su descripción.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
@@ -1914,11 +1914,11 @@
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Ocultar Cursor:\nElija cuándo desaparecerá el cursor:\nNunca: Siempre verá el mouse.\nInactivo: Establezca un tiempo para que desaparezca después de estar inactivo.\nSiempre: nunca verá el mouse.</translation>
+      <translation>Ocultar Cursor:\nElija cuándo desaparecerá el cursor:\nNunca: Siempre verá el ratón.\nInactivo: Establezca un tiempo para que desaparezca después de estar inactivo.\nSiempre: nunca verá el ratón.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Establezca un tiempo para que el mouse desaparezca después de estar inactivo.</translation>
+      <translation>Establezca un tiempo para que el ratón desaparezca después de estar inactivo.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
@@ -1978,7 +1978,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Habilitar la Volcadura de Sombras:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
+      <translation>Habilitar la Volcadura de Shaders:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
@@ -2058,7 +2058,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>Habilitar controles de movimiento</translation>
+      <translation>Habilitar Controles de Movimiento</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -2078,7 +2078,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation>Selección automática</translation>
+      <translation>Selección Automática</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -2094,7 +2094,7 @@
     </message>
     <message>
       <source>Display Mode</source>
-      <translation>Modo de imagen</translation>
+      <translation>Modo de Imagen</translation>
     </message>
     <message>
       <source>Windowed</source>
@@ -2102,15 +2102,15 @@
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation>Pantalla completa</translation>
+      <translation>Pantalla Completa</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation>Pantalla completa (sin bordes)</translation>
+      <translation>Pantalla Completa (sin bordes)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation>Tamaño de ventana</translation>
+      <translation>Tamaño de Ventana</translation>
     </message>
     <message>
       <source>W:</source>
@@ -2189,7 +2189,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Vista de trofeos</translation>
+      <translation>Expositor de Trofeos</translation>
     </message>
     <message>
       <source>Progress</source>
