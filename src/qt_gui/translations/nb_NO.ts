@@ -1734,11 +1734,11 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation>Feilretting</translation>
+      <translation>Feilsøking</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Bruk feilrettingsdumping</translation>
+      <translation>Bruk feilsøkingsdumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -2002,7 +2002,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Bruk feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
+      <translation>Bruk feilsøkingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
