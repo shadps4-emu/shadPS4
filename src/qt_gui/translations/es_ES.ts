@@ -559,7 +559,7 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Restaurar Valores Por Defecto</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -848,7 +848,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>Borrar Trofeo</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -928,7 +928,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>¡No se encontró un archivo de registro para este juego!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -1037,7 +1037,7 @@
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Stick Izquierdo</translation>
     </message>
     <message>
       <source>Config Selection</source>
@@ -1153,7 +1153,7 @@
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>Multiplicador de Velocidad (def 1.0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
