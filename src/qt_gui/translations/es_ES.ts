@@ -848,7 +848,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation>Borrar Trofeo</translation>
+      <translation>Eliminar Trofeo</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -948,7 +948,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Trofeo</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -967,7 +967,7 @@
     </message>
     <message>
       <source>Syntax</source>
-      <translation type="unfinished">Syntax</translation>
+      <translation>Sintaxis</translation>
     </message>
     <message>
       <source>Special Bindings</source>
@@ -1029,11 +1029,11 @@
     </message>
     <message>
       <source>Left Analog Halfmode</source>
-      <translation type="unfinished">Left Analog Halfmode</translation>
+      <translation>Modo Reducido del Stick Izquierdo</translation>
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation>manten para mover el stick izquierdo a la mitad de velocidad</translation>
+      <translation>manten para mover el stick izquierdo a la mitad de la velocidad</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -1105,7 +1105,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>nota: haga clic en Botón de ayuda/Asignación de Teclas Especiales para más información</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1129,11 +1129,11 @@
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation type="unfinished">Right Analog Halfmode</translation>
+      <translation>Modo Reducido del Stick Derecho</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation>manten para mover el stick derecho a la mitad de velocidad</translation>
+      <translation>manten para mover el stick derecho a la mitad de la velocidad</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -1141,7 +1141,7 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Compensación de Velocidad (def 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
@@ -1770,7 +1770,7 @@
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation>Marcadores de Depuración de Invitados</translation>
+      <translation>Marcadores de Depuración del Invitado</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1870,7 +1870,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
+      <translation>Habilitar Carpeta Independiente de Actualizaciónes:\nHabilita el instalar actualizaciones del juego en una carpeta separada para mas facilidad en la gestión.\nPuede crearse manualmente añadiendo la actualización extraída a la carpeta del juego con el nombre &quot;CUSA00000-UPDATE&quot; donde el CUSA ID coincide con el ID del juego.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1886,7 +1886,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Clave de Trofeos:\nClave utilizada para descifrar trofeos. Debe obtenerse de tu consola desbloqueada.\nSolo debe contener caracteres hexadecimales.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1910,7 +1910,7 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>Desactivar Notificaciones de trofeos:\nDesactiva las notificaciones de trofeos en el juego. El progreso de trofeos todavía puede ser rastreado usando el Expositor de Trofeos (haz clic derecho en el juego en la ventana principal).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
@@ -1926,15 +1926,15 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>Mostrar Datos de Compatibilidad:\nMuestra información de compatibilidad de juegos en vista de tabla. Habilite &quot;Actualizar Compatibilidad al Iniciar&quot; para obtener información actualizada.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>Actualizar Compatibilidad al Iniciar:\nActualiza automáticamente la base de datos de compatibilidad cuando shadPS4 se inicia.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>Actualizar Base de Datos de Compatibilidad:\nActualizar inmediatamente la base de datos de compatibilidad.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1986,7 +1986,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Habilitar HDR:\nHabilita HDR en juegos que lo soporten.\nTu monitor debe tener soporte para el espacio de color PQ BT2020 y el formato RGB10A2 de cadena de intercambio.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -2018,27 +2018,27 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Recopilar Shaders:\nNecesitas esto habilitado para editar shaders con el menú de depuración (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnóstico de cuelgues:\nCrea un archivo .yaml con información sobre el estado de Vulkan en el momento del cuelgue.\nÚtil para depurar errores de tipo &apos;Dispositivo perdido&apos; . Con esto activado, deberías habilitar los marcadores de depuración de Host E Invitado.\nNo funciona en GPUs de Intel.\nNecesitas activar las Capas de Validación de Vulkan y el SDK de Vulkan para que funcione.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Copiar Búferes de GPU:\nSortea condiciones de carrera que implican envíos de GPU.\nPuede o no ayudar con cuelgues del tipo 0 de PM4.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuración del Host:\n Inserta información del emulador como marcadores para comandos AMDGPU específicos, además de proporcionar nombres de depuración.\nCon esto activado, deberías habilitar el diagnóstico de fallos.\nUtil para programas como RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuración del Invitado:\n Inserta cualquier marcador que el propio juego ha añadido al búfer de comandos.\nCon esto activado, deberías habilitar el diagnóstico de fallos.\nUtil para programas como RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Ruta de Guardado de Datos:\nLa carpeta donde se guardarán los datos del juego.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -2122,11 +2122,11 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation>Archivos de Registro Separados</translation>
+      <translation>Archivos de Registro Independientes</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation>Archivos de Registro Separados:\nEscribe un archivo de registro separado para cada juego.</translation>
+      <translation>Archivos de Registro Independientes:\nEscribe un archivo de registro separado para cada juego.</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
