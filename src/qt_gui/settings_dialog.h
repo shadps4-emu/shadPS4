@@ -43,6 +43,8 @@ private:
     void OnLanguageChanged(int index);
     void OnCursorStateChanged(s16 index);
     void closeEvent(QCloseEvent* event) override;
+    void OnRcasAttenuationChanged(int value);
+    void OnRcasAttenuationSpinBoxChanged(double value);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 

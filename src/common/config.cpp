@@ -40,6 +40,7 @@ static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
+static float rcas_attenuation = 0.25f;
 static std::string logType = "async";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
@@ -212,6 +213,14 @@ u32 getScreenHeight() {
 
 s32 getGpuId() {
     return gpuId;
+}
+
+float getRcasAttenuation() {
+    return rcas_attenuation;
+}
+
+void setRcasAttenuation(float value) {
+    rcas_attenuation = value;
 }
 
 std::string getLogFilter() {
@@ -763,6 +772,7 @@ void load(const std::filesystem::path& path) {
 
         screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
         screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
+        rcas_attenuation = toml::find_or<float>(gpu, "rcas_attenuation", 0.25f);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
@@ -902,6 +912,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
+    data["GPU"]["rcas_attenuation"] = rcas_attenuation;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;

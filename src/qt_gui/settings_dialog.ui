@@ -1127,6 +1127,48 @@
               </layout>
              </widget>
             </item>
+			   <item>
+				   <widget class="QLabel" name="rcasAttenuationLabel">
+					   <property name="text">
+						   <string>RCAS Attenuation</string>
+					   </property>
+				   </widget>
+			   </item>
+			   <item>
+				   <widget class="QSlider" name="rcasAttenuationSlider">
+					   <property name="minimum">
+						   <number>0</number>
+					   </property>
+					   <property name="maximum">
+						   <number>3000</number>
+					   </property>
+					   <property name="singleStep">
+						   <number>1</number>
+					   </property>
+					   <property name="tickInterval">
+						   <number>100</number>
+					   </property>
+					   <property name="orientation">
+						   <enum>Qt::Horizontal</enum>
+					   </property>
+				   </widget>
+			   </item>
+			   <item>
+				   <widget class="QDoubleSpinBox" name="rcasAttenuationSpinBox">
+					   <property name="minimum">
+						   <double>0.000</double>
+					   </property>
+					   <property name="maximum">
+						   <double>3.000</double>
+					   </property>
+					   <property name="singleStep">
+						   <double>0.001</double>
+					   </property>
+					   <property name="decimals">
+						   <number>3</number>
+					   </property>
+				   </widget>
+			   </item>
             <item>
              <spacer name="verticalSpacer">
               <property name="orientation">

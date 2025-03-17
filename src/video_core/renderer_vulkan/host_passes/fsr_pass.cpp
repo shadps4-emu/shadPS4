@@ -273,7 +273,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
 
         { // rcas
             consts = {};
-            FsrRcasCon(reinterpret_cast<AU1*>(&consts.Const0), settings.rcas_attenuation);
+            FsrRcasCon(reinterpret_cast<AU1*>(&consts.Const0), Config::getRcasAttenuation());
             consts.Sample[0] = hdr ? 1 : 0;
 
             std::array<vk::DescriptorImageInfo, 3> img_info{{

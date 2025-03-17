@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "common/config.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image.h"
 
@@ -14,7 +15,7 @@ public:
     struct Settings {
         bool enable{true};
         bool use_rcas{true};
-        float rcas_attenuation{0.25f};
+        float rcas_attenuation{Config::getRcasAttenuation()}; 
     };
 
     void Create(vk::Device device, VmaAllocator allocator, u32 num_images);

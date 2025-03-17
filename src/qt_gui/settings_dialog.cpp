@@ -485,6 +485,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->checkCompatibilityOnStartupCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "checkCompatibilityOnStartup", false));
 
+    ui->rcasAttenuationSlider->setValue(static_cast<int>(Config::getRcasAttenuation() * 1000));
+    ui->rcasAttenuationSpinBox->setValue(Config::getRcasAttenuation());
+
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
     ui->changelogCheckBox->setChecked(
@@ -782,6 +785,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
     Config::setShowBackgroundImage(ui->showBackgroundImageCheckBox->isChecked());
+    Config::setRcasAttenuation(ui->rcasAttenuationSpinBox->value());
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
@@ -794,6 +798,18 @@ void SettingsDialog::UpdateSettings() {
 #endif
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
+}
+
+void SettingsDialog::OnRcasAttenuationChanged(int value) {
+    float attenuation = static_cast<float>(value) / 1000.0f;
+    ui->rcasAttenuationSpinBox->setValue(attenuation);
+    Config::setRcasAttenuation(attenuation);
+}
+
+void SettingsDialog::OnRcasAttenuationSpinBoxChanged(double value) {
+    int int_value = static_cast<int>(value * 1000);
+    ui->rcasAttenuationSlider->setValue(int_value);
+    Config::setRcasAttenuation(static_cast<float>(value));
 }
 
 void SettingsDialog::ResetInstallFolders() {
