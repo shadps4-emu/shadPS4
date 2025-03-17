@@ -79,6 +79,15 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
 
     ui->buttonBox->button(QDialogButtonBox::StandardButton::Close)->setFocus();
 
+    float rcas_value = Config::getRcasAttenuation();
+    ui->rcasAttenuationSlider->setValue(static_cast<int>(rcas_value * 1000));
+    ui->rcasAttenuationSpinBox->setValue(rcas_value);
+
+    connect(ui->rcasAttenuationSlider, &QSlider::valueChanged, this,
+            &SettingsDialog::OnRcasAttenuationChanged);
+    connect(ui->rcasAttenuationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            &SettingsDialog::OnRcasAttenuationSpinBoxChanged);
+
     channelMap = {{tr("Release"), "Release"}, {tr("Nightly"), "Nightly"}};
     logTypeMap = {{tr("async"), "async"}, {tr("sync"), "sync"}};
     screenModeMap = {{tr("Fullscreen (Borderless)"), "Fullscreen (Borderless)"},
