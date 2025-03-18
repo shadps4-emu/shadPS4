@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "layer.h"
 
 #include <imgui.h>
@@ -94,7 +95,10 @@ void L::DrawMenuBar() {
                     Checkbox("RCAS", &fsr.use_rcas);
                     BeginDisabled(!fsr.use_rcas);
                     {
-                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
+                        float attenuation = Config::getRcasAttenuation();
+                        if (SliderFloat("RCAS Attenuation", &attenuation, 0.0, 3.0)) {
+                            Config::setRcasAttenuation(attenuation);
+                        }
                     }
                     EndDisabled();
                 }
@@ -307,6 +311,10 @@ static void LoadSettings(const char* line) {
     }
     if (sscanf(line, "dump_frame_count=%d", &i) == 1) {
         dump_frame_count = i;
+        return;
+    }
+    if (sscanf(line, "rcas_attenuation=%f", &f) == 1) {
+        Config::setRcasAttenuation(f);
         return;
     }
 }

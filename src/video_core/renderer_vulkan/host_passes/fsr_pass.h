@@ -15,7 +15,7 @@ public:
     struct Settings {
         bool enable{true};
         bool use_rcas{true};
-        float rcas_attenuation{Config::getRcasAttenuation()};
+        float rcas_attenuation{0.25f};
     };
 
     void Create(vk::Device device, VmaAllocator allocator, u32 num_images);
