@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "common/config.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image.h"
