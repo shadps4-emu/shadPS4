@@ -523,7 +523,6 @@ public:
             query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
             query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
             query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
-            query.addQueryItem("emulator-version", QString(Common::VERSION));
             url.setQuery(query);
 
             QDesktopServices::openUrl(url);
