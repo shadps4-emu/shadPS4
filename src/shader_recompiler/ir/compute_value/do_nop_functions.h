@@ -3,7 +3,8 @@
 
 namespace Shader::IR::ComputeValue {
 
-#define NOP_FUNCTION(name) inline void Do##name(ImmValueList& inst_values) {}
+#define NOP_FUNCTION(name)                                                                         \
+    inline void Do##name(ImmValueList& inst_values) {}
 
 NOP_FUNCTION(Phi)
 NOP_FUNCTION(Identity)
