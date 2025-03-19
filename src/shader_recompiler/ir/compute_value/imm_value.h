@@ -11,62 +11,9 @@
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/ir/value.h"
 
-namespace Shader::IR {
+namespace Shader::IR::ComputeValue {
 
-// Like IR::Value but can only hold immediate values. Additionally, can hold vectors of values.
-// Has arithmetic operations defined for it. Usefull for computing a value at shader compile time.
-
-template <IR::Type type_, bool is_signed_>
-class TypedImmValue;
-
-using ImmU1 = TypedImmValue<Type::U1, false>;
-using ImmU8 = TypedImmValue<Type::U8, false>;
-using ImmS8 = TypedImmValue<Type::U8, true>;
-using ImmU16 = TypedImmValue<Type::U16, false>;
-using ImmS16 = TypedImmValue<Type::U16, true>;
-using ImmU32 = TypedImmValue<Type::U32, false>;
-using ImmS32 = TypedImmValue<Type::U32, true>;
-using ImmF32 = TypedImmValue<Type::F32, true>;
-using ImmU64 = TypedImmValue<Type::U64, false>;
-using ImmS64 = TypedImmValue<Type::U64, true>;
-using ImmF64 = TypedImmValue<Type::F64, true>;
-using ImmS32F32 = TypedImmValue<Type::U32 | Type::F32, true>;
-using ImmS64F64 = TypedImmValue<Type::U64 | Type::F64, true>;
-using ImmU32U64 = TypedImmValue<Type::U32 | Type::U64, false>;
-using ImmS32S64 = TypedImmValue<Type::U32 | Type::U64, true>;
-using ImmU16U32U64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, false>;
-using ImmS16S32S64 = TypedImmValue<Type::U16 | Type::U32 | Type::U64, true>;
-using ImmF32F64 = TypedImmValue<Type::F32 | Type::F64, true>;
-using ImmUAny = TypedImmValue<Type::U1 | Type::U8 | Type::U16 | Type::U32 | Type::U64, false>;
-using ImmSAny = TypedImmValue<Type::U8 | Type::U16 | Type::U32 | Type::U64, true>;
-using ImmU32x2 = TypedImmValue<Type::U32x2, false>;
-using ImmU32x3 = TypedImmValue<Type::U32x3, false>;
-using ImmU32x4 = TypedImmValue<Type::U32x4, false>;
-using ImmS32x2 = TypedImmValue<Type::U32x2, true>;
-using ImmS32x3 = TypedImmValue<Type::U32x3, true>;
-using ImmS32x4 = TypedImmValue<Type::U32x4, true>;
-using ImmF32x2 = TypedImmValue<Type::F32x2, true>;
-using ImmF32x3 = TypedImmValue<Type::F32x3, true>;
-using ImmF32x4 = TypedImmValue<Type::F32x4, true>;
-using ImmF64x2 = TypedImmValue<Type::F64x2, true>;
-using ImmF64x3 = TypedImmValue<Type::F64x3, true>;
-using ImmF64x4 = TypedImmValue<Type::F64x4, true>;
-using ImmS32F32x2 = TypedImmValue<Type::U32x2 | Type::F32x2, true>;
-using ImmS32F32x3 = TypedImmValue<Type::U32x3 | Type::F32x3, true>;
-using ImmS32F32x4 = TypedImmValue<Type::U32x4 | Type::F32x4, true>;
-using ImmF32F64x2 = TypedImmValue<Type::F32x2 | Type::F64x2, true>;
-using ImmF32F64x3 = TypedImmValue<Type::F32x3 | Type::F64x3, true>;
-using ImmF32F64x4 = TypedImmValue<Type::F32x4 | Type::F64x4, true>;
-using ImmU32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, false>;
-using ImmS32xAny = TypedImmValue<Type::U32 | Type::U32x2 | Type::U32x3 | Type::U32x4, true>;
-using ImmF32xAny = TypedImmValue<Type::F32 | Type::F32x2 | Type::F32x3 | Type::F32x4, true>;
-using ImmF64xAny = TypedImmValue<Type::F64 | Type::F64x2 | Type::F64x3 | Type::F64x4, true>;
-using ImmS32F32xAny = TypedImmValue<Type::U32 | Type::F32 | Type::U32x2 | Type::F32x2 |
-                                        Type::U32x3 | Type::F32x3 | Type::U32x4 | Type::F32x4,
-                                    true>;
-using ImmF32F64xAny = TypedImmValue<Type::F32 | Type::F64 | Type::F32x2 | Type::F64x2 |
-                                        Type::F32x3 | Type::F64x3 | Type::F32x4 | Type::F64x4,
-                                    true>;
+// Holds an immediate value and provides helper functions to do arithmetic operations on it.
 
 class ImmValue {
 public:
@@ -93,6 +40,12 @@ public:
     ImmValue(f32 value1, f32 value2) noexcept;
     ImmValue(f32 value1, f32 value2, f32 value3) noexcept;
     ImmValue(f32 value1, f32 value2, f32 value3, f32 value4) noexcept;
+    ImmValue(u64 value1, u64 value2) noexcept;
+    ImmValue(u64 value1, u64 value2, u64 value3) noexcept;
+    ImmValue(u64 value1, u64 value2, u64 value3, u64 value4) noexcept;
+    ImmValue(s64 value1, s64 value2) noexcept;
+    ImmValue(s64 value1, s64 value2, s64 value3) noexcept;
+    ImmValue(s64 value1, s64 value2, s64 value3, s64 value4) noexcept;
     ImmValue(f64 value1, f64 value2) noexcept;
     ImmValue(f64 value1, f64 value2, f64 value3) noexcept;
     ImmValue(f64 value1, f64 value2, f64 value3, f64 value4) noexcept;
@@ -101,107 +54,142 @@ public:
     ImmValue(const ImmValue& value1, const ImmValue& value2, const ImmValue& value3,
              const ImmValue& value4) noexcept;
 
-    [[nodiscard]] bool IsEmpty() const noexcept;
-    [[nodiscard]] IR::Type Type() const noexcept;
-    [[nodiscard]] IR::Type BaseType() const noexcept;
-    [[nodiscard]] u32 Dimensions() const noexcept;
+    [[nodiscard]] static ImmValue CompositeFrom2x2(const ImmValue& value1,
+                                                   const ImmValue& value2) noexcept;
 
-    [[nodiscard]] bool IsSigned() const noexcept;
-    void SetSigned(bool signed_) noexcept;
-    void SameSignAs(const ImmValue& other) noexcept;
+    [[nodiscard]] bool U1() const noexcept;
+    [[nodiscard]] u8 U8() const noexcept;
+    [[nodiscard]] s8 S8() const noexcept;
+    [[nodiscard]] u16 U16() const noexcept;
+    [[nodiscard]] s16 S16() const noexcept;
+    [[nodiscard]] u32 U32() const noexcept;
+    [[nodiscard]] s32 S32() const noexcept;
+    [[nodiscard]] f32 F32() const noexcept;
+    [[nodiscard]] u64 U64() const noexcept;
+    [[nodiscard]] s64 S64() const noexcept;
+    [[nodiscard]] f64 F64() const noexcept;
 
-    [[nodiscard]] ImmValue Convert(IR::Type new_type, bool new_signed) const noexcept;
-    [[nodiscard]] ImmValue Bitcast(IR::Type new_type, bool new_signed) const noexcept;
-    [[nodiscard]] ImmValue Extract(const ImmU32& index) const noexcept;
-    [[nodiscard]] ImmValue Insert(const ImmValue& value, const ImmU32& indndex) const noexcept;
-
-    [[nodiscard]] bool U1() const;
-    [[nodiscard]] u8 U8() const;
-    [[nodiscard]] s8 S8() const;
-    [[nodiscard]] u16 U16() const;
-    [[nodiscard]] s16 S16() const;
-    [[nodiscard]] u32 U32() const;
-    [[nodiscard]] s32 S32() const;
-    [[nodiscard]] f32 F32() const;
-    [[nodiscard]] u64 U64() const;
-    [[nodiscard]] s64 S64() const;
-    [[nodiscard]] f64 F64() const;
-
-    [[nodiscard]] std::tuple<u32, u32> U32x2() const;
-    [[nodiscard]] std::tuple<u32, u32, u32> U32x3() const;
-    [[nodiscard]] std::tuple<u32, u32, u32, u32> U32x4() const;
-    [[nodiscard]] std::tuple<s32, s32> S32x2() const;
-    [[nodiscard]] std::tuple<s32, s32, s32> S32x3() const;
-    [[nodiscard]] std::tuple<s32, s32, s32, s32> S32x4() const;
-    [[nodiscard]] std::tuple<f32, f32> F32x2() const;
-    [[nodiscard]] std::tuple<f32, f32, f32> F32x3() const;
-    [[nodiscard]] std::tuple<f32, f32, f32, f32> F32x4() const;
-    [[nodiscard]] std::tuple<f64, f64> F64x2() const;
-    [[nodiscard]] std::tuple<f64, f64, f64> F64x3() const;
-    [[nodiscard]] std::tuple<f64, f64, f64, f64> F64x4() const;
+    [[nodiscard]] std::tuple<u32, u32> U32x2() const noexcept;
+    [[nodiscard]] std::tuple<u32, u32, u32> U32x3() const noexcept;
+    [[nodiscard]] std::tuple<u32, u32, u32, u32> U32x4() const noexcept;
+    [[nodiscard]] std::tuple<s32, s32> S32x2() const noexcept;
+    [[nodiscard]] std::tuple<s32, s32, s32> S32x3() const noexcept;
+    [[nodiscard]] std::tuple<s32, s32, s32, s32> S32x4() const noexcept;
+    [[nodiscard]] std::tuple<f32, f32> F32x2() const noexcept;
+    [[nodiscard]] std::tuple<f32, f32, f32> F32x3() const noexcept;
+    [[nodiscard]] std::tuple<f32, f32, f32, f32> F32x4() const noexcept;
+    [[nodiscard]] std::tuple<f64, f64> F64x2() const noexcept;
+    [[nodiscard]] std::tuple<f64, f64, f64> F64x3() const noexcept;
+    [[nodiscard]] std::tuple<f64, f64, f64, f64> F64x4() const noexcept;
 
     ImmValue& operator=(const ImmValue& value) noexcept = default;
 
     [[nodiscard]] bool operator==(const ImmValue& other) const noexcept;
     [[nodiscard]] bool operator!=(const ImmValue& other) const noexcept;
-    [[nodiscard]] bool operator<(const ImmValue& other) const noexcept;
-    [[nodiscard]] bool operator>(const ImmValue& other) const noexcept;
-    [[nodiscard]] bool operator<=(const ImmValue& other) const noexcept;
-    [[nodiscard]] bool operator>=(const ImmValue& other) const noexcept;
 
-    [[nodiscard]] ImmValue operator+(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator-(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator*(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator/(const ImmValue& other) const;
-    [[nodiscard]] ImmValue operator%(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator&(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator|(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator^(const ImmValue& other) const noexcept;
-    [[nodiscard]] ImmValue operator<<(const ImmU32& other) const noexcept;
-    [[nodiscard]] ImmValue operator>>(const ImmU32& other) const noexcept;
-    [[nodiscard]] ImmValue operator~() const noexcept;
+    [[nodiscard]] static ImmValue Extract(const ImmValue& vec, const ImmValue& index) noexcept;
+    [[nodiscard]] static ImmValue Insert(const ImmValue& vec, const ImmValue& value,
+                                         const ImmValue& index) noexcept;
 
-    [[nodiscard]] ImmValue operator++(int) noexcept;
-    [[nodiscard]] ImmValue operator--(int) noexcept;
+    template <IR::Type NewType, bool NewSigned, IR::Type OldType, bool OldSigned>
+    [[nodiscard]] static ImmValue Convert(const ImmValue& in) noexcept;
 
-    ImmValue& operator++() noexcept;
-    ImmValue& operator--() noexcept;
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Add(const ImmValue& a, const ImmValue& b) noexcept;
 
-    [[nodiscard]] ImmValue operator-() const noexcept;
-    [[nodiscard]] ImmValue operator+() const noexcept;
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Sub(const ImmValue& a, const ImmValue& b) noexcept;
 
-    ImmValue& operator+=(const ImmValue& other) noexcept;
-    ImmValue& operator-=(const ImmValue& other) noexcept;
-    ImmValue& operator*=(const ImmValue& other) noexcept;
-    ImmValue& operator/=(const ImmValue& other);
-    ImmValue& operator%=(const ImmValue& other) noexcept;
-    ImmValue& operator&=(const ImmValue& other) noexcept;
-    ImmValue& operator|=(const ImmValue& other) noexcept;
-    ImmValue& operator^=(const ImmValue& other) noexcept;
-    ImmValue& operator<<=(const ImmU32& other) noexcept;
-    ImmValue& operator>>=(const ImmU32& other) noexcept;
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Mul(const ImmValue& a, const ImmValue& b) noexcept;
 
-    [[nodiscard]] ImmValue abs() const noexcept;
-    [[nodiscard]] ImmValue recip() const noexcept;
-    [[nodiscard]] ImmValue sqrt() const noexcept;
-    [[nodiscard]] ImmValue rsqrt() const noexcept;
-    [[nodiscard]] ImmValue sin() const noexcept;
-    [[nodiscard]] ImmValue cos() const noexcept;
-    [[nodiscard]] ImmValue exp2() const noexcept;
-    [[nodiscard]] ImmValue ldexp(const ImmU32& exp) const noexcept;
-    [[nodiscard]] ImmValue log2() const noexcept;
-    [[nodiscard]] ImmValue clamp(const ImmValue& min, const ImmValue& max) const noexcept;
-    [[nodiscard]] ImmValue floor() const noexcept;
-    [[nodiscard]] ImmValue ceil() const noexcept;
-    [[nodiscard]] ImmValue round() const noexcept;
-    [[nodiscard]] ImmValue trunc() const noexcept;
-    [[nodiscard]] ImmValue fract() const noexcept;
-    [[nodiscard]] bool isnan() const noexcept;
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Div(const ImmValue& a, const ImmValue& b);
 
-    [[nodiscard]] static ImmValue fma(const ImmF32F64& a, const ImmF32F64& b,
-                                      const ImmF32F64& c) noexcept;
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Mod(const ImmValue& a, const ImmValue& b) noexcept;
 
-    static bool IsSupportedValue(const IR::Value& value) noexcept;
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue And(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Or(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Xor(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue LShift(const ImmValue& a, const ImmValue& shift) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue RShift(const ImmValue& a, const ImmValue& shift) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Not(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Neg(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Abs(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Recip(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Sqrt(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Rsqrt(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Sin(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Cos(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Exp2(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Ldexp(const ImmValue& in, const ImmValue& exp) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Log2(const ImmValue& in) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Min(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Max(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue Clamp(const ImmValue& in, const ImmValue& min,
+                                        const ImmValue& max) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Floor(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Ceil(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Round(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Trunc(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Fract(const ImmValue& in) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static ImmValue Fma(const ImmValue& a, const ImmValue& b,
+                                      const ImmValue& c) noexcept;
+
+    template <IR::Type Type>
+    [[nodiscard]] static bool IsNan(const ImmValue& in) noexcept;
+
+    [[nodiscard]] static bool IsSupportedValue(const IR::Value& value) noexcept;
 
 private:
     union Value {
@@ -218,168 +206,113 @@ private:
         f64 imm_f64;
     };
 
-    IR::Type type{};
-    bool is_signed{};
     std::array<Value, 4> imm_values;
 
     friend class std::hash<ImmValue>;
 };
 static_assert(std::is_trivially_copyable_v<ImmValue>);
 
-template <IR::Type type_, bool is_signed_>
-class TypedImmValue : public ImmValue {
-public:
-    inline static constexpr IR::Type static_type = type_;
-    inline static constexpr bool static_is_signed = is_signed_;
-
-    TypedImmValue() = default;
-
-    template <IR::Type other_type, bool other_signed>
-        requires((other_type & type_) != IR::Type::Void && other_signed == is_signed_)
-    explicit(false) TypedImmValue(const TypedImmValue<other_type, other_signed>& other)
-        : ImmValue(other) {}
-
-    explicit TypedImmValue(const ImmValue& value) : ImmValue(value) {
-        if ((value.Type() & type_) == IR::Type::Void && value.IsSigned() == is_signed_) {
-            throw InvalidArgument("Incompatible types {} {} and {} {}",
-                                  is_signed_ ? "signed" : "unsigned", type_, value.Type(),
-                                  value.IsSigned() ? "signed" : "unsigned");
-        }
-    }
-};
-
-inline bool ImmValue::IsEmpty() const noexcept {
-    return type == Type::Void;
-}
-
-inline IR::Type ImmValue::Type() const noexcept {
-    return type;
-}
-
-inline bool ImmValue::U1() const {
-    ASSERT(type == Type::U1 && !is_signed);
+inline bool ImmValue::U1() const noexcept {
     return imm_values[0].imm_u1;
 }
 
-inline u8 ImmValue::U8() const {
-    ASSERT(type == Type::U8 && !is_signed);
+inline u8 ImmValue::U8() const noexcept {
     return imm_values[0].imm_u8;
 }
 
-inline s8 ImmValue::S8() const {
-    ASSERT(type == Type::U8 && is_signed);
+inline s8 ImmValue::S8() const noexcept {
     return imm_values[0].imm_s8;
 }
 
-inline u16 ImmValue::U16() const {
-    ASSERT(type == Type::U16 && !is_signed);
+inline u16 ImmValue::U16() const noexcept {
     return imm_values[0].imm_u16;
 }
 
-inline s16 ImmValue::S16() const {
-    ASSERT(type == Type::U16 && is_signed);
+inline s16 ImmValue::S16() const noexcept {
     return imm_values[0].imm_s16;
 }
 
-inline u32 ImmValue::U32() const {
-    ASSERT(type == Type::U32 && !is_signed);
+inline u32 ImmValue::U32() const noexcept {
     return imm_values[0].imm_u32;
 }
 
-inline s32 ImmValue::S32() const {
-    ASSERT(type == Type::U32 && is_signed);
+inline s32 ImmValue::S32() const noexcept {
     return imm_values[0].imm_s32;
 }
 
-inline f32 ImmValue::F32() const {
-    ASSERT(type == Type::F32 && is_signed);
+inline f32 ImmValue::F32() const noexcept {
     return imm_values[0].imm_f32;
 }
 
-inline u64 ImmValue::U64() const {
-    ASSERT(type == Type::U64 && !is_signed);
+inline u64 ImmValue::U64() const noexcept {
     return imm_values[0].imm_u64;
 }
 
-inline s64 ImmValue::S64() const {
-    ASSERT(type == Type::U64 && is_signed);
+inline s64 ImmValue::S64() const noexcept {
     return imm_values[0].imm_s64;
 }
 
-inline f64 ImmValue::F64() const {
-    ASSERT(type == Type::F64 && is_signed);
+inline f64 ImmValue::F64() const noexcept {
     return imm_values[0].imm_f64;
 }
 
-inline std::tuple<u32, u32> ImmValue::U32x2() const {
-    ASSERT(type == Type::U32x2 && !is_signed);
+inline std::tuple<u32, u32> ImmValue::U32x2() const noexcept {
     return {imm_values[0].imm_u32, imm_values[1].imm_u32};
 }
 
-inline std::tuple<u32, u32, u32> ImmValue::U32x3() const {
-    ASSERT(type == Type::U32x3 && !is_signed);
+inline std::tuple<u32, u32, u32> ImmValue::U32x3() const noexcept {
     return {imm_values[0].imm_u32, imm_values[1].imm_u32, imm_values[2].imm_u32};
 }
 
-inline std::tuple<u32, u32, u32, u32> ImmValue::U32x4() const {
-    ASSERT(type == Type::U32x4 && !is_signed);
+inline std::tuple<u32, u32, u32, u32> ImmValue::U32x4() const noexcept {
     return {imm_values[0].imm_u32, imm_values[1].imm_u32, imm_values[2].imm_u32,
             imm_values[3].imm_u32};
 }
 
-inline std::tuple<s32, s32> ImmValue::S32x2() const {
-    ASSERT(type == Type::U32x2 && is_signed);
+inline std::tuple<s32, s32> ImmValue::S32x2() const noexcept {
     return {imm_values[0].imm_s32, imm_values[1].imm_s32};
 }
 
-inline std::tuple<s32, s32, s32> ImmValue::S32x3() const {
-    ASSERT(type == Type::U32x3 && is_signed);
+inline std::tuple<s32, s32, s32> ImmValue::S32x3() const noexcept {
     return {imm_values[0].imm_s32, imm_values[1].imm_s32, imm_values[2].imm_s32};
 }
 
-inline std::tuple<s32, s32, s32, s32> ImmValue::S32x4() const {
-    ASSERT(type == Type::U32x4 && is_signed);
+inline std::tuple<s32, s32, s32, s32> ImmValue::S32x4() const noexcept {
     return {imm_values[0].imm_s32, imm_values[1].imm_s32, imm_values[2].imm_s32,
             imm_values[3].imm_s32};
 }
 
-inline std::tuple<f32, f32> ImmValue::F32x2() const {
-    ASSERT(type == Type::F32x2 && is_signed);
+inline std::tuple<f32, f32> ImmValue::F32x2() const noexcept {
     return {imm_values[0].imm_f32, imm_values[1].imm_f32};
 }
 
-inline std::tuple<f32, f32, f32> ImmValue::F32x3() const {
-    ASSERT(type == Type::F32x3 && is_signed);
+inline std::tuple<f32, f32, f32> ImmValue::F32x3() const noexcept {
     return {imm_values[0].imm_f32, imm_values[1].imm_f32, imm_values[2].imm_f32};
 }
 
-inline std::tuple<f32, f32, f32, f32> ImmValue::F32x4() const {
-    ASSERT(type == Type::F32x4 && is_signed);
+inline std::tuple<f32, f32, f32, f32> ImmValue::F32x4() const noexcept {
     return {imm_values[0].imm_f32, imm_values[1].imm_f32, imm_values[2].imm_f32,
             imm_values[3].imm_f32};
 }
 
-inline std::tuple<f64, f64> ImmValue::F64x2() const {
-    ASSERT(type == Type::F64x2 && is_signed);
+inline std::tuple<f64, f64> ImmValue::F64x2() const noexcept {
     return {imm_values[0].imm_f64, imm_values[1].imm_f64};
 }
 
-inline std::tuple<f64, f64, f64> ImmValue::F64x3() const {
-    ASSERT(type == Type::F64x3 && is_signed);
+inline std::tuple<f64, f64, f64> ImmValue::F64x3() const noexcept {
     return {imm_values[0].imm_f64, imm_values[1].imm_f64, imm_values[2].imm_f64};
 }
 
-inline std::tuple<f64, f64, f64, f64> ImmValue::F64x4() const {
-    ASSERT(type == Type::F64x4 && is_signed);
+inline std::tuple<f64, f64, f64, f64> ImmValue::F64x4() const noexcept {
     return {imm_values[0].imm_f64, imm_values[1].imm_f64, imm_values[2].imm_f64,
             imm_values[3].imm_f64};
 }
 
-} // namespace Shader::IR
+} // namespace Shader::IR::ComputeValue
 
 namespace std {
 template <>
-struct hash<Shader::IR::ImmValue> {
-    std::size_t operator()(const Shader::IR::ImmValue& value) const;
+struct hash<Shader::IR::ComputeValue::ImmValue> {
+    std::size_t operator()(const Shader::IR::ComputeValue::ImmValue& value) const;
 };
 } // namespace std

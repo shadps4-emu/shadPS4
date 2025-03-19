@@ -630,6 +630,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/assert.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
+           src/common/cartesian_invoke.h
            src/common/concepts.h
            src/common/config.cpp
            src/common/config.h
@@ -845,6 +846,21 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/compute_value/compute.cpp
                       src/shader_recompiler/ir/compute_value/compute.h
+                      src/shader_recompiler/ir/compute_value/do_bitcast.cpp
+                      src/shader_recompiler/ir/compute_value/do_bitcast.h
+                      src/shader_recompiler/ir/compute_value/do_composite.cpp
+                      src/shader_recompiler/ir/compute_value/do_composite.h
+                      src/shader_recompiler/ir/compute_value/do_convert.cpp
+                      src/shader_recompiler/ir/compute_value/do_convert.h
+                      src/shader_recompiler/ir/compute_value/do_float_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_float_operations.h
+                      src/shader_recompiler/ir/compute_value/do_integer_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_integer_operations.h
+                      src/shader_recompiler/ir/compute_value/do_logical_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_logical_operations.h
+                      src/shader_recompiler/ir/compute_value/do_nop_functions.h
+                      src/shader_recompiler/ir/compute_value/do_packing.cpp
+                      src/shader_recompiler/ir/compute_value/do_packing.h
                       src/shader_recompiler/ir/compute_value/imm_value.cpp
                       src/shader_recompiler/ir/compute_value/imm_value.h
                       src/shader_recompiler/ir/abstract_syntax_list.cpp
