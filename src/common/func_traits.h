@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <tuple>
 #include <cstddef>
+#include <tuple>
 
 namespace Common {
 
