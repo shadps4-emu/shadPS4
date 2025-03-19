@@ -521,7 +521,7 @@ public:
                 "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
                                                 QString::fromStdString(m_games[itemID].name)));
             query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
-            query.addQueryItem("game-code", QString::fromStdString(m_games[itemID].serial));
+            query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
             query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
             query.addQueryItem("emulator-version", QString(Common::VERSION));
             url.setQuery(query);
