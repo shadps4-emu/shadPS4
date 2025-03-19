@@ -522,6 +522,7 @@ public:
                                                 QString::fromStdString(m_games[itemID].name)));
             query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
             query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
+            query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
             query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
             url.setQuery(query);
 
