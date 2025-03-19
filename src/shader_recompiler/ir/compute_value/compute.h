@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
 #include "shader_recompiler/ir/compute_value/imm_value.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -12,11 +12,11 @@
 // that can represent. If the value can't be computed statically, the list will
 // be empty.
 
-namespace Shader::IR {
+namespace Shader::IR::ComputeValue {
 
-using ImmValueList = boost::container::flat_set<ImmValue>;
+using ImmValueList = std::unordered_set<ImmValue>;
 using ComputeImmValuesCache = boost::container::flat_map<Inst*, ImmValueList>;
 
-void ComputeImmValues(const Value& value, ImmValueList& values, ComputeImmValuesCache& cache);
+void Compute(const Value& value, ImmValueList& values, ComputeImmValuesCache& cache);
 
-} // namespace Shader::IR
+} // namespace Shader::IR::ComputeValue
