@@ -1105,7 +1105,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>注意：点击帮助按钮 -> Special Bindings 获取更多信息</translation>
+      <translation>注意：点击帮助按钮 -> 获取更多关于映射特殊键位的信息</translation>
     </message>
     <message>
       <source>Face Buttons</source>

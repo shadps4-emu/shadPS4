@@ -559,11 +559,11 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Rikthe Paracaktimet</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Anulo</translation>
     </message>
   </context>
   <context>
@@ -1193,19 +1193,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Ruaj</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Zbato</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Rikthe Paracaktimet</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Anulo</translation>
     </message>
   </context>
   <context>
@@ -1606,7 +1606,7 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>Skeda e parazgjedhur kur hapen cilësimet</translation>
+      <translation>Skeda e paracaktuar kur hapen cilësimet</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
@@ -1850,7 +1850,7 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Rikthe paracaktimet</translation>
+      <translation>Rikthe Paracaktimet</translation>
     </message>
     <message>
       <source>Close</source>
