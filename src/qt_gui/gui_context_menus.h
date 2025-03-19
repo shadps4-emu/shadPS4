@@ -116,7 +116,9 @@ public:
 
         compatibilityMenu->addAction(updateCompatibility);
         compatibilityMenu->addAction(viewCompatibilityReport);
-        compatibilityMenu->addAction(submitCompatibilityReport);
+        if (Common::isRelease) {
+            compatibilityMenu->addAction(submitCompatibilityReport);
+        }
 
         menu.addMenu(compatibilityMenu);
 
