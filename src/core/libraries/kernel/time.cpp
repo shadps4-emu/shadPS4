@@ -121,7 +121,7 @@ static u64 FileTimeTo100Ns(FILETIME& ft) {
     return *reinterpret_cast<u64*>(&ft);
 }
 
-static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
+static s32 clock_gettime(u32 clock_id, struct OrbisKernelTimespec* ts) {
     switch (clock_id) {
     case CLOCK_REALTIME:
     case CLOCK_REALTIME_COARSE: {
@@ -172,7 +172,7 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
 }
 #endif
 
-int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
+int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct OrbisKernelTimespec* ts) {
     if (ts == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
@@ -269,7 +269,7 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
 }
 
 int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
-    struct timespec ts;
+    struct OrbisKernelTimespec ts;
     const auto res = orbis_clock_gettime(clock_id, &ts);
     if (res < 0) {
         return ErrnoToSceKernelError(res);
