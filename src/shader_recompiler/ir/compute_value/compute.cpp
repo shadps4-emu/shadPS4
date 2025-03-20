@@ -23,7 +23,7 @@ static void Invoke(ImmValueList& inst_values, const std::array<ImmValueList, siz
 }
 
 template <auto func>
-static void Invoke(Inst* inst, ImmValueList& inst_values, ComputeImmValuesCache& cache) {
+static void Invoke(Inst* inst, ImmValueList& inst_values, Cache& cache) {
     using Traits = Common::FuncTraits<decltype(func)>;
     constexpr size_t num_args = Traits::NUM_ARGS - 1;
     ASSERT(inst->NumArgs() >= num_args);
@@ -34,8 +34,7 @@ static void Invoke(Inst* inst, ImmValueList& inst_values, ComputeImmValuesCache&
     Invoke<func>(inst_values, args, std::make_index_sequence<num_args>{});
 }
 
-static void DoInstructionOperation(Inst* inst, ImmValueList& inst_values,
-                                   ComputeImmValuesCache& cache) {
+static void DoInstructionOperation(Inst* inst, ImmValueList& inst_values, Cache& cache) {
     switch (inst->GetOpcode()) {
 #define OPCODE(name, result_type, ...)                                                             \
     case Opcode::name:                                                                             \
@@ -64,7 +63,7 @@ static bool IsSelectInst(Inst* inst) {
     }
 }
 
-void Compute(const Value& value, ImmValueList& values, ComputeImmValuesCache& cache) {
+void Compute(const Value& value, ImmValueList& values, Cache& cache) {
     Value resolved = value.Resolve();
     if (ImmValue::IsSupportedValue(resolved)) {
         values.insert(ImmValue(resolved));
