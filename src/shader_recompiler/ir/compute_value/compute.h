@@ -15,8 +15,8 @@
 namespace Shader::IR::ComputeValue {
 
 using ImmValueList = std::unordered_set<ImmValue>;
-using ComputeImmValuesCache = boost::container::flat_map<Inst*, ImmValueList>;
+using Cache = boost::container::flat_map<Inst*, ImmValueList>;
 
-void Compute(const Value& value, ImmValueList& values, ComputeImmValuesCache& cache);
+void Compute(const Value& value, ImmValueList& values, Cache& cache);
 
 } // namespace Shader::IR::ComputeValue
