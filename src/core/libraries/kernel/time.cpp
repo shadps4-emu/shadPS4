@@ -172,7 +172,7 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
 }
 #endif
 
-int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
+int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct OrbisKernelTimespec* ts) {
     if (ts == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
@@ -265,17 +265,18 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct timespec* ts) {
         return EINVAL;
     }
 
-    return clock_gettime(pclock_id, ts);
+    timespec t{};
+    int result = clock_gettime(pclock_id, &t);
+    ts->tv_sec = t.tv_sec;
+    ts->tv_nsec = t.tv_nsec;
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
-    struct timespec ts;
-    const auto res = orbis_clock_gettime(clock_id, &ts);
+    const auto res = orbis_clock_gettime(clock_id, tp);
     if (res < 0) {
         return ErrnoToSceKernelError(res);
     }
-    tp->tv_sec = ts.tv_sec;
-    tp->tv_nsec = ts.tv_nsec;
     return ORBIS_OK;
 }
 
