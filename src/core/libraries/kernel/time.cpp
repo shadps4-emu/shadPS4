@@ -265,7 +265,11 @@ int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct OrbisKernelTimespec* t
         return EINVAL;
     }
 
-    return clock_gettime(pclock_id, ts);
+    timespec t{};
+    int result = clock_gettime(pclock_id, &t);
+    ts->tv_sec = t.tv_sec;
+    ts->tv_nsec = t.tv_nsec;
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp) {
