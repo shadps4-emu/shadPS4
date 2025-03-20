@@ -897,6 +897,37 @@ void load(const std::filesystem::path& path) {
     }
 }
 
+void sortTomlSections(toml::ordered_value& data) {
+    toml::ordered_value ordered_data;
+    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
+                                              "Debug",   "Keys",  "GUI", "Settings"};
+
+    for (const auto& section : section_order) {
+        if (data.contains(section)) {
+            std::vector<std::string> keys;
+            for (const auto& item : data.at(section).as_table()) {
+                keys.push_back(item.first);
+            }
+
+            std::sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
+                return std::lexicographical_compare(
+                    a.begin(), a.end(), b.begin(), b.end(), [](char a_char, char b_char) {
+                        return std::tolower(a_char) < std::tolower(b_char);
+                    });
+            });
+
+            toml::ordered_value ordered_section;
+            for (const auto& key : keys) {
+                ordered_section[key] = data.at(section).at(key);
+            }
+
+            ordered_data[section] = ordered_section;
+        }
+    }
+
+    data = ordered_data;
+}
+
 void save(const std::filesystem::path& path) {
     toml::ordered_value data;
 
@@ -1007,37 +1038,11 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["showBackgroundImage"] = showBackgroundImage;
     data["Settings"]["consoleLanguage"] = m_language;
 
-    toml::ordered_value ordered_data;
-
-    // Set the order of main sections
-    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                              "Debug",   "Keys",  "GUI", "Settings"};
-
-    for (const auto& section : section_order) {
-        if (data.contains(section)) {
-            std::vector<std::string> keys;
-            for (const auto& item : data.at(section).as_table()) {
-                keys.push_back(item.first);
-            }
-
-            std::sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
-                return std::lexicographical_compare(
-                    a.begin(), a.end(), b.begin(), b.end(), [](char a_char, char b_char) {
-                        return std::tolower(a_char) < std::tolower(b_char);
-                    });
-            });
-
-            toml::ordered_value ordered_section;
-            for (const auto& key : keys) {
-                ordered_section[key] = data.at(section).at(key);
-            }
-
-            ordered_data[section] = ordered_section;
-        }
-    }
+    // Sorting of TOML sections
+    sortTomlSections(data);
 
     std::ofstream file(path, std::ios::binary);
-    file << ordered_data;
+    file << data;
     file.close();
 
     saveMainWindow(path);
@@ -1081,37 +1086,11 @@ void saveMainWindow(const std::filesystem::path& path) {
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 
-    toml::ordered_value ordered_data;
-
-    // Set the order of main sections
-    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                              "Debug",   "Keys",  "GUI", "Settings"};
-
-    for (const auto& section : section_order) {
-        if (data.contains(section)) {
-            std::vector<std::string> keys;
-            for (const auto& item : data.at(section).as_table()) {
-                keys.push_back(item.first);
-            }
-
-            std::sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
-                return std::lexicographical_compare(
-                    a.begin(), a.end(), b.begin(), b.end(), [](char a_char, char b_char) {
-                        return std::tolower(a_char) < std::tolower(b_char);
-                    });
-            });
-
-            toml::ordered_value ordered_section;
-            for (const auto& key : keys) {
-                ordered_section[key] = data.at(section).at(key);
-            }
-
-            ordered_data[section] = ordered_section;
-        }
-    }
+    // Sorting of TOML sections
+    sortTomlSections(data);
 
     std::ofstream file(path, std::ios::binary);
-    file << ordered_data;
+    file << data;
     file.close();
 }
 
