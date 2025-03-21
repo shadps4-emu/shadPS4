@@ -12,11 +12,11 @@
 
 namespace Libraries::AvPlayer {
 
-void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayerEvents event_id,
+void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, AvPlayerEvents event_id,
                                                        s32 source_id, void* event_data) {
     auto const self = reinterpret_cast<AvPlayerState*>(opaque);
 
-    if (event_id == SceAvPlayerEvents::StateReady) {
+    if (event_id == AvPlayerEvents::StateReady) {
         s32 video_stream_index = -1;
         s32 audio_stream_index = -1;
         s32 timedtext_stream_index = -1;
@@ -30,7 +30,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
             return;
         }
         for (u32 stream_index = 0; stream_index < stream_count; ++stream_index) {
-            SceAvPlayerStreamInfo info{};
+            AvPlayerStreamInfo info{};
             if (!self->GetStreamInfo(stream_index, info)) {
                 self->Stop();
                 return;
@@ -38,7 +38,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
 
             const std::string_view default_language{self->m_default_language};
             switch (info.type) {
-            case SceAvPlayerStreamType::Video:
+            case AvPlayerStreamType::Video:
                 if (video_stream_index == -1) {
                     video_stream_index = stream_index;
                 }
@@ -47,7 +47,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
                     video_stream_index = stream_index;
                 }
                 break;
-            case SceAvPlayerStreamType::Audio:
+            case AvPlayerStreamType::Audio:
                 if (audio_stream_index == -1) {
                     audio_stream_index = stream_index;
                 }
@@ -56,7 +56,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
                     audio_stream_index = stream_index;
                 }
                 break;
-            case SceAvPlayerStreamType::TimedText:
+            case AvPlayerStreamType::TimedText:
                 if (default_language.empty()) {
                     timedtext_stream_index = stream_index;
                     break;
@@ -86,7 +86,7 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, SceAvPlayer
     DefaultEventCallback(opaque, event_id, 0, event_data);
 }
 
-void AvPlayerState::DefaultEventCallback(void* opaque, SceAvPlayerEvents event_id, s32 source_id,
+void AvPlayerState::DefaultEventCallback(void* opaque, AvPlayerEvents event_id, s32 source_id,
                                          void* event_data) {
     auto const self = reinterpret_cast<AvPlayerState*>(opaque);
     const auto callback = self->m_event_replacement.event_callback;
@@ -97,7 +97,7 @@ void AvPlayerState::DefaultEventCallback(void* opaque, SceAvPlayerEvents event_i
 }
 
 // Called inside GAME thread
-AvPlayerState::AvPlayerState(const SceAvPlayerInitData& init_data)
+AvPlayerState::AvPlayerState(const AvPlayerInitData& init_data)
     : m_init_data(init_data), m_event_replacement(init_data.event_replacement) {
     if (m_event_replacement.event_callback == nullptr || init_data.auto_start) {
         m_auto_start = true;
@@ -122,12 +122,12 @@ AvPlayerState::~AvPlayerState() {
     m_event_queue.Clear();
 }
 
-void AvPlayerState::PostInit(const SceAvPlayerPostInitData& post_init_data) {
+void AvPlayerState::PostInit(const AvPlayerPostInitData& post_init_data) {
     m_post_init_data = post_init_data;
 }
 
 // Called inside GAME thread
-bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType source_type) {
+bool AvPlayerState::AddSource(std::string_view path, AvPlayerSourceType source_type) {
     if (path.empty()) {
         LOG_ERROR(Lib_AvPlayer, "File path is empty.");
         return false;
@@ -141,8 +141,8 @@ bool AvPlayerState::AddSource(std::string_view path, SceAvPlayerSourceType sourc
         }
 
         m_up_source = std::make_unique<AvPlayerSource>(
-            *this, m_post_init_data.video_decoder_init.decoderType.video_type ==
-                       SceAvPlayerVideoDecoderType::Software2);
+            *this, m_post_init_data.video_decoder_init.decoder_type.video_type ==
+                       AvPlayerVideoDecoderType::Software2);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -164,7 +164,7 @@ s32 AvPlayerState::GetStreamCount() {
 }
 
 // Called inside GAME thread
-bool AvPlayerState::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+bool AvPlayerState::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         LOG_ERROR(Lib_AvPlayer, "Could not get stream {} info. No source.", stream_index);
@@ -183,6 +183,42 @@ bool AvPlayerState::Start() {
     SetState(AvState::Play);
     OnPlaybackStateChanged(AvState::Play);
     return true;
+}
+
+// Called inside GAME thread
+bool AvPlayerState::Pause() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_current_state == AvState::EndOfFile) {
+        return true;
+    }
+    if (m_up_source == nullptr || m_current_state == AvState::Pause ||
+        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
+        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
+        LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
+        return false;
+    }
+    m_up_source->Pause();
+    SetState(AvState::Pause);
+    OnPlaybackStateChanged(AvState::Pause);
+    return true;
+}
+
+// Called inside GAME thread
+bool AvPlayerState::Resume() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr || m_current_state != AvState::Pause) {
+        LOG_ERROR(Lib_AvPlayer, "Could not resume playback.");
+        return false;
+    }
+    m_up_source->Resume();
+    const auto state = m_previous_state.load();
+    SetState(state);
+    OnPlaybackStateChanged(state);
+    return true;
+}
+
+void AvPlayerState::SetAvSyncMode(AvPlayerAvSyncMode sync_mode) {
+    m_sync_mode = sync_mode;
 }
 
 void AvPlayerState::AvControllerThread(std::stop_token stop) {
@@ -247,7 +283,7 @@ bool AvPlayerState::Stop() {
     return true;
 }
 
-bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfo& video_info) {
+bool AvPlayerState::GetVideoData(AvPlayerFrameInfo& video_info) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
@@ -255,7 +291,7 @@ bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfo& video_info) {
     return m_up_source->GetVideoData(video_info);
 }
 
-bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
+bool AvPlayerState::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
@@ -263,7 +299,7 @@ bool AvPlayerState::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
     return m_up_source->GetVideoData(video_info);
 }
 
-bool AvPlayerState::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
+bool AvPlayerState::GetAudioData(AvPlayerFrameInfo& audio_info) {
     std::shared_lock lock(m_source_mutex);
     if (m_up_source == nullptr) {
         return false;
@@ -305,6 +341,10 @@ void AvPlayerState::OnWarning(u32 id) {
     WarningEvent(id);
 }
 
+AvPlayerAvSyncMode AvPlayerState::GetSyncMode() {
+    return m_sync_mode;
+}
+
 void AvPlayerState::OnError() {
     SetState(AvState::Error);
     OnPlaybackStateChanged(AvState::Error);
@@ -318,23 +358,23 @@ void AvPlayerState::OnEOF() {
 void AvPlayerState::OnPlaybackStateChanged(AvState state) {
     switch (state) {
     case AvState::Ready: {
-        EmitEvent(SceAvPlayerEvents::StateReady);
+        EmitEvent(AvPlayerEvents::StateReady);
         break;
     }
     case AvState::Play: {
-        EmitEvent(SceAvPlayerEvents::StatePlay);
+        EmitEvent(AvPlayerEvents::StatePlay);
         break;
     }
     case AvState::Stop: {
-        EmitEvent(SceAvPlayerEvents::StateStop);
+        EmitEvent(AvPlayerEvents::StateStop);
         break;
     }
     case AvState::Pause: {
-        EmitEvent(SceAvPlayerEvents::StatePause);
+        EmitEvent(AvPlayerEvents::StatePause);
         break;
     }
     case AvState::Buffering: {
-        EmitEvent(SceAvPlayerEvents::StateBuffering);
+        EmitEvent(AvPlayerEvents::StateBuffering);
         break;
     }
     default:
@@ -366,7 +406,7 @@ std::optional<bool> AvPlayerState::OnBufferingCheckEvent(u32 num_frames) {
 }
 
 // Called inside CONTROLLER thread
-void AvPlayerState::EmitEvent(SceAvPlayerEvents event_id, void* event_data) {
+void AvPlayerState::EmitEvent(AvPlayerEvents event_id, void* event_data) {
     LOG_INFO(Lib_AvPlayer, "Sending event to the game: id = {}", magic_enum::enum_name(event_id));
     const auto callback = m_init_data.event_replacement.event_callback;
     if (callback) {
@@ -389,7 +429,7 @@ void AvPlayerState::ProcessEvent() {
     }
     switch (event->event) {
     case AvEventType::WarningId: {
-        OnWarning(event->payload.error);
+        EmitEvent(AvPlayerEvents::WarningId, &event->payload.error);
         break;
     }
     case AvEventType::RevertState: {
