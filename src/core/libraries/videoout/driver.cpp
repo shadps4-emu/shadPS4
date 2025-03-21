@@ -63,6 +63,7 @@ void VideoOutDriver::Close(s32 handle) {
 
     main_port.is_open = false;
     main_port.flip_rate = 0;
+    main_port.prev_index = -1;
     ASSERT(main_port.flip_events.empty());
 }
 
@@ -133,6 +134,10 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
             .address_right = 0,
         };
 
+        // Reset flip label also when registering buffer
+        port->buffer_labels[startIndex + i] = 0;
+        port->SignalVoLabel();
+
         presenter->RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
@@ -190,11 +195,13 @@ void VideoOutDriver::Flip(const Request& req) {
         }
     }
 
-    // Reset flip label
-    if (req.index != -1) {
-        port->buffer_labels[req.index] = 0;
+    // Reset prev flip label
+    if (port->prev_index != -1) {
+        port->buffer_labels[port->prev_index] = 0;
         port->SignalVoLabel();
     }
+    // save to prev buf index
+    port->prev_index = req.index;
 }
 
 void VideoOutDriver::DrawBlankFrame() {
