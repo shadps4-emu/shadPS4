@@ -134,6 +134,10 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
             .address_right = 0,
         };
 
+        // Reset flip label also when registering buffer
+        port->buffer_labels[startIndex + i] = 0;
+        port->SignalVoLabel();
+
         presenter->RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
