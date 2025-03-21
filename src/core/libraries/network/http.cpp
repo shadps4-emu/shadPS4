@@ -272,9 +272,99 @@ int PS4_SYSV_ABI sceHttpParseResponseHeader() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpParseStatusLine() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, size_t lineLen,
+                                        int32_t* httpMajorVer, int32_t* httpMinorVer,
+                                        int32_t* responseCode, const char** reasonPhrase,
+                                        size_t* phraseLen) {
+    if (!statusLine) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (!httpMajorVer || !httpMinorVer || !responseCode || !reasonPhrase || !phraseLen) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
+    }
+    *httpMajorVer = 0;
+    *httpMinorVer = 0;
+    if (lineLen < 8) {
+        LOG_ERROR(Lib_Http, "Linelen is smaller than 8");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (strncmp(statusLine, "HTTP/", 5) != 0) {
+        LOG_ERROR(Lib_Http, "statusLine doesn't start with HTTP/");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    size_t index = 5;
+
+    if (!isdigit(statusLine[index])) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    while (isdigit(statusLine[index])) {
+        *httpMajorVer = *httpMajorVer * 10 + (statusLine[index] - '0');
+        index++;
+    }
+
+    if (statusLine[index] != '.') {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    index++;
+
+    if (!isdigit(statusLine[index])) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    while (isdigit(statusLine[index])) {
+        *httpMinorVer = *httpMinorVer * 10 + (statusLine[index] - '0');
+        index++;
+    }
+
+    if (statusLine[index] != ' ') {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    index++;
+
+    // Validate and parse the 3-digit HTTP response code
+    if (lineLen - index < 3 || !isdigit(statusLine[index]) || !isdigit(statusLine[index + 1]) ||
+        !isdigit(statusLine[index + 2])) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    *responseCode = (statusLine[index] - '0') * 100 + (statusLine[index + 1] - '0') * 10 +
+                    (statusLine[index + 2] - '0');
+    index += 3;
+
+    if (statusLine[index] != ' ') {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    index++;
+
+    // Set the reason phrase start position
+    *reasonPhrase = &statusLine[index];
+    size_t phraseStart = index;
+
+    while (index < lineLen && statusLine[index] != '\n') {
+        index++;
+    }
+
+    // Determine the length of the reason phrase, excluding trailing \r if present
+    if (index == phraseStart) {
+        *phraseLen = 0;
+    } else {
+        *phraseLen =
+            (statusLine[index - 1] == '\r') ? (index - phraseStart - 1) : (index - phraseStart);
+    }
+
+    // Return the number of bytes processed
+    return index + 1;
 }
 
 int PS4_SYSV_ABI sceHttpReadData() {
