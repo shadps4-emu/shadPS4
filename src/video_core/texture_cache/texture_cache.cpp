@@ -436,9 +436,9 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    image.flags &= ~ImageFlagBits::Dirty;
     image.usage.depth_target = 1u;
     image.usage.stencil = image.info.HasStencil();
+    UpdateImage(image_id);
 
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
