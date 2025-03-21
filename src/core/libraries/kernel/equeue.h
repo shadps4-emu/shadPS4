@@ -61,6 +61,24 @@ struct SceKernelEvent {
     void* udata = nullptr; /* opaque user data identifier */
 };
 
+union DceHint {
+    u64 raw;
+    struct {
+        u64 event_id : 8;
+        u64 video_id : 8;
+        u64 flip_arg : 32;
+    };
+};
+
+union DceData {
+    u64 raw;
+    struct {
+        u64 time : 12;
+        u64 counter : 4;
+        u64 hint : 48;
+    };
+};
+
 struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
@@ -85,19 +103,22 @@ struct EqueueEvent {
     void TriggerDisplay(void* data) {
         is_triggered = true;
         auto hint = reinterpret_cast<u64>(data);
-        if (hint != 0) {
-            auto hint_h = static_cast<u32>(hint >> 8) & 0xFFFFFF;
-            auto ident_h = static_cast<u32>(event.ident >> 40);
-            if ((static_cast<u32>(hint) & 0xFF) == event.ident && event.ident != 0xFE &&
-                ((hint_h ^ ident_h) & 0xFF) == 0) {
-                auto time = Common::FencedRDTSC();
-                auto mask = 0xF000;
-                if ((static_cast<u32>(event.data) & 0xF000) != 0xF000) {
-                    mask = (static_cast<u32>(event.data) + 0x1000) & 0xF000;
-                }
-                event.data = (mask | static_cast<u64>(static_cast<u32>(time) & 0xFFF) |
-                              (hint & 0xFFFFFFFFFFFF0000));
+        if (hint == 0) {
+            return;
+        }
+
+        DceHint dce_hint = std::bit_cast<DceHint>(hint);
+        DceData dce_data = std::bit_cast<DceData>(event.data);
+
+        const auto video_id = static_cast<u8>(event.ident << 8);
+        if (dce_hint.event_id == event.ident && event.ident != 0xfe &&
+            dce_hint.video_id == video_id) {
+            dce_data.time = Common::FencedRDTSC();
+            if (dce_data.counter != 15) {
+                dce_data.counter++;
             }
+            dce_data.hint = dce_hint.raw;
+            event.data = dce_data.raw;
         }
     }
 

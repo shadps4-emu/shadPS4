@@ -153,8 +153,9 @@ int main(int argc, char* argv[]) {
 
     // If no game directory is set and no command line argument, prompt for it
     if (Config::getGameInstallDirs().empty()) {
-        std::cout << "Warning: No game folder set, please set it by calling shadps4"
-                     " with the --add-game-folder <folder_name> argument";
+        std::cout << "Warning: No game folder set, please set it by calling shadPS4"
+                     " with the --add-game-folder <folder_name> argument"
+                  << std::endl;
     }
 
     if (!has_game_argument) {
