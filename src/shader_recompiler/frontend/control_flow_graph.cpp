@@ -92,7 +92,8 @@ CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_l
             } else if (block.cond == IR::Condition::False) {
                 ASSERT(local_labels.contains(block.branch_false));
             } else {
-                ASSERT(local_labels.contains(block.branch_true) && local_labels.contains(block.branch_false));
+                ASSERT(local_labels.contains(block.branch_true) &&
+                       local_labels.contains(block.branch_false));
             }
         }
     }
@@ -165,7 +166,8 @@ void CFG::SplitDivergenceScopes() {
                     curr_begin = -1;
                     continue;
                 }
-                // If all instructions in the scope ignore exec masking, we shouldn't insert a scope.
+                // If all instructions in the scope ignore exec masking, we shouldn't insert a
+                // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
                 if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
                     // Determine the first instruction affected by the exec mask.
@@ -207,7 +209,8 @@ void CFG::SplitDivergenceScopes() {
                         block->branch_true = epi_block;
                         block->branch_false = nullptr;
 
-                        // If the parent block fails to enter divergence block make it jump to epilogue too
+                        // If the parent block fails to enter divergence block make it jump to
+                        // epilogue too
                         blk->branch_false = epi_block;
                     } else {
                         // No epilogue block is needed since the divergence block

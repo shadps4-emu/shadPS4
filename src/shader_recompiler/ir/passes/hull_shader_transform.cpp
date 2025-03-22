@@ -7,9 +7,9 @@
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/pattern_matching.h"
 #include "shader_recompiler/ir/program.h"
-#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Optimization {
