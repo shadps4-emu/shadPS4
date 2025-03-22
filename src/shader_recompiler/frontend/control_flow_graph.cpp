@@ -77,26 +77,6 @@ CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_l
     EmitBlocks();
     LinkBlocks();
     SplitDivergenceScopes();
-
-    std::unordered_map<Block*, u32> local_labels;
-    local_labels.reserve(blocks.size());
-
-    for (Block& block : blocks) {
-        local_labels.emplace(&block, 0);
-    }
-    for (Block& block : blocks) {
-        const u32 label{local_labels.at(&block)};
-        if (block.end_class == EndClass::Branch) {
-            if (block.cond == IR::Condition::True) {
-                ASSERT(local_labels.contains(block.branch_true));
-            } else if (block.cond == IR::Condition::False) {
-                ASSERT(local_labels.contains(block.branch_false));
-            } else {
-                ASSERT(local_labels.contains(block.branch_true) &&
-                       local_labels.contains(block.branch_false));
-            }
-        }
-    }
 }
 
 void CFG::EmitLabels() {
