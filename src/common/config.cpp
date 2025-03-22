@@ -605,7 +605,7 @@ void setEmulatorLanguage(std::string language) {
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
-        settings_install_dirs.push_back({dir, true}); // Assume enabled por padrão
+        settings_install_dirs.push_back({dir, true});
     }
 }
 
