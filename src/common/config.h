@@ -9,6 +9,11 @@
 
 namespace Config {
 
+struct GameInstallDir {
+    std::filesystem::path path;
+    bool enabled;
+};
+
 enum HideCursorState : s16 { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
@@ -98,7 +103,8 @@ void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setChooseHomeTab(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
+void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
@@ -133,8 +139,9 @@ void setVkGuestMarkersEnabled(bool enable);
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
-bool addGameInstallDir(const std::filesystem::path& dir);
+bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
+void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonInstallDir(const std::filesystem::path& dir);
 void setMainWindowTheme(u32 theme);
 void setIconSize(u32 size);
@@ -153,7 +160,8 @@ u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();
 u32 getMainWindowGeometryW();
 u32 getMainWindowGeometryH();
-const std::vector<std::filesystem::path>& getGameInstallDirs();
+const std::vector<std::filesystem::path> getGameInstallDirs();
+const std::vector<GameInstallDir>& getAllGameInstallDirs();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 u32 getIconSize();
