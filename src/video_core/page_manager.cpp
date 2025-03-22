@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/signal_context.h"
+#include "common/spin_lock.h"
 #include "core/memory.h"
 #include "core/signals.h"
 #include "video_core/page_manager.h"
