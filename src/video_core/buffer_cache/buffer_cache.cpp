@@ -288,13 +288,17 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         if (src_gds) {
             return gds_buffer;
         }
-        const auto [buffer, offset] = ObtainBuffer(src, num_bytes, false);
-        return *buffer;
+        // Avoid using ObtainBuffer here as that might give us the stream buffer.
+        const BufferId buffer_id = FindBuffer(src, num_bytes);
+        auto& buffer = slot_buffers[buffer_id];
+        SynchronizeBuffer(buffer, src, num_bytes, false);
+        return buffer;
     }();
     auto& dst_buffer = [&] -> const Buffer& {
         if (dst_gds) {
             return gds_buffer;
         }
+        // Prefer using ObtainBuffer here as that will auto-mark the region as GPU modified.
         const auto [buffer, offset] = ObtainBuffer(dst, num_bytes, true);
         return *buffer;
     }();
