@@ -5,8 +5,10 @@
 #include "common/alignment.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
+#include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
+#include "video_core/buffer_cache/memory_tracker.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -20,14 +22,13 @@ static constexpr size_t UboStreamBufferSize = 128_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
-                         PageManager& tracker_)
+                         PageManager& tracker)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
-      texture_cache{texture_cache_}, tracker{tracker_},
+      texture_cache{texture_cache_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
-      gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
-      memory_tracker{&tracker} {
-    Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
+      gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize} {
+    memory_tracker = std::make_unique<MemoryTracker>(tracker);
 
     // Ensure the first slot is used for the null buffer
     const auto null_id =
@@ -35,22 +36,29 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     ASSERT(null_id.index == 0);
     const vk::Buffer& null_buffer = slot_buffers[null_id].buffer;
     Vulkan::SetObjectName(instance.GetDevice(), null_buffer, "Null Buffer");
+    Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
 }
 
 BufferCache::~BufferCache() = default;
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
-    const bool is_tracked = IsRegionRegistered(device_addr, size);
-    if (is_tracked) {
-        // Mark the page as CPU modified to stop tracking writes.
-        memory_tracker.MarkRegionAsCpuModified(device_addr, size);
+    if (!IsRegionRegistered(device_addr, size)) {
+        return;
     }
+    if (memory_tracker->IsRegionGpuModified(device_addr, size)) {
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+    }
+    memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+}
+
+void BufferCache::ReadMemory(VAddr device_addr, u64 size) {
+    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
 }
 
 void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
-    memory_tracker.ForEachDownloadRange<true>(
+    memory_tracker->ForEachDownloadRange<true>(
         device_addr, size, [&](u64 device_addr_out, u64 range_size) {
             const VAddr buffer_addr = buffer.CpuAddr();
             const auto add_download = [&](VAddr start, VAddr end) {
@@ -61,7 +69,10 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
                     .dstOffset = total_size_bytes,
                     .size = new_size,
                 });
-                total_size_bytes += new_size;
+                // Align up to avoid cache conflicts
+                constexpr u64 align = 64ULL;
+                constexpr u64 mask = ~(align - 1ULL);
+                total_size_bytes += (new_size + align - 1) & mask;
             };
             gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, add_download);
             gpu_modified_ranges.Subtract(device_addr_out, range_size);
@@ -79,10 +90,12 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, staging_buffer.Handle(), copies);
     scheduler.Finish();
+    auto* memory = Core::Memory::Instance();
     for (const auto& copy : copies) {
         const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
         const u64 dst_offset = copy.dstOffset - offset;
-        std::memcpy(std::bit_cast<u8*>(copy_device_addr), staging + dst_offset, copy.size);
+        memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), staging + dst_offset,
+                                copy.size);
     }
 }
 
@@ -202,9 +215,11 @@ void BufferCache::BindIndexBuffer(u32 index_offset) {
 
 void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
     ASSERT_MSG(address % 4 == 0, "GDS offset must be dword aligned");
-    if (!is_gds && !IsRegionRegistered(address, num_bytes)) {
+    if (!is_gds) {
         memcpy(std::bit_cast<void*>(address), value, num_bytes);
-        return;
+        if (!IsRegionRegistered(address, num_bytes)) {
+            return;
+        }
     }
     scheduler.EndRendering();
     const Buffer* buffer = [&] {
@@ -250,20 +265,25 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
                                                   bool is_texel_buffer, BufferId buffer_id) {
     // For small uniform buffers that have not been modified by gpu
     // use device local stream buffer to reduce renderpass breaks.
-    static constexpr u64 StreamThreshold = CACHING_PAGESIZE;
-    const bool is_gpu_dirty = memory_tracker.IsRegionGpuModified(device_addr, size);
-    if (!is_written && size <= StreamThreshold && !is_gpu_dirty) {
+    static constexpr u64 StreamThreshold = CACHING_PAGESIZE * 2;
+    if (!is_written && size <= StreamThreshold && !IsRegionGpuModified(device_addr, size)) {
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
         return {&stream_buffer, offset};
     }
 
+    // Lookup buffer if needed, or if provided id was deleted by join operation.
     if (!buffer_id || slot_buffers[buffer_id].is_deleted) {
         buffer_id = FindBuffer(device_addr, size);
     }
+
     Buffer& buffer = slot_buffers[buffer_id];
     SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
-    if (is_written) {
-        memory_tracker.MarkRegionAsGpuModified(device_addr, size);
+
+    // Mark region as GPU modified to get additional tracking needed for readbacks.
+    // Somtimes huge buffers may be bound, so set a threshold here as well.
+    static constexpr u64 GpuMarkThreshold = 512_MB;
+    if (is_written && size <= GpuMarkThreshold) {
+        memory_tracker->MarkRegionAsGpuModified(device_addr, size);
         gpu_modified_ranges.Add(device_addr, size);
     }
     return {&buffer, buffer.Offset(device_addr)};
@@ -271,8 +291,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
 
 std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, bool prefer_gpu) {
     // Check if any buffer contains the full requested range.
-    const u64 page = gpu_addr >> CACHING_PAGEBITS;
-    const BufferId buffer_id = page_table[page];
+    const BufferId buffer_id = page_table[gpu_addr >> CACHING_PAGEBITS];
     if (buffer_id) {
         Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
@@ -283,7 +302,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, 
     // If no buffer contains the full requested range but some buffer within was GPU-modified,
     // fall back to ObtainBuffer to create a full buffer and avoid losing GPU modifications.
     // This is only done if the request prefers to use GPU memory, otherwise we can skip it.
-    if (prefer_gpu && memory_tracker.IsRegionGpuModified(gpu_addr, size)) {
+    if (prefer_gpu && memory_tracker->IsRegionGpuModified(gpu_addr, size)) {
         return ObtainBuffer(gpu_addr, size, false, false);
     }
     // In all other cases, just do a CPU copy to the staging buffer.
@@ -313,11 +332,16 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
 }
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
-    return memory_tracker.IsRegionCpuModified(addr, size);
+    return memory_tracker->IsRegionCpuModified(addr, size);
 }
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
-    return memory_tracker.IsRegionGpuModified(addr, size);
+    if (!memory_tracker->IsRegionGpuModified(addr, size)) {
+        return false;
+    }
+    bool modified = false;
+    gpu_modified_ranges.ForEachInRange(addr, size, [&](VAddr, size_t) { modified = true; });
+    return modified;
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
@@ -518,7 +542,7 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
-    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+    memory_tracker->ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
         copies.push_back(vk::BufferCopy{
             .srcOffset = total_size_bytes,
             .dstOffset = device_addr_out - buffer_start,
