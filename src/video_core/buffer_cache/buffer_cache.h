@@ -90,8 +90,11 @@ public:
     /// Bind host index buffer for the current draw.
     void BindIndexBuffer(u32 index_offset);
 
-    /// Writes a value to GPU buffer.
+    /// Writes a value from CPU to GPU buffer.
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+
+    /// Performs buffer to buffer data copy on the GPU.
+    void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
