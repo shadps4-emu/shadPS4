@@ -17,6 +17,7 @@ void IdentityRemovalPass(IR::BlockList& program);
 void DeadCodeEliminationPass(IR::Program& program);
 void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);
+void ReadLaneEliminationPass(IR::Program& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);
 void LowerBufferFormatToRaw(IR::Program& program);

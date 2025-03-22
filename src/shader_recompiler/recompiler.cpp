@@ -71,6 +71,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info);
+    Shader::Optimization::ReadLaneEliminationPass(program);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::LowerBufferFormatToRaw(program);
