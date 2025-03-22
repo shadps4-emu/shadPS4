@@ -46,12 +46,24 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
         return;
     }
     if (memory_tracker->IsRegionGpuModified(device_addr, size)) {
-        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+        ReadMemory(device_addr, size);
     }
     memory_tracker->MarkRegionAsCpuModified(device_addr, size);
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size) {
+    if (std::this_thread::get_id() != liverpool->gpu_id) {
+        std::binary_semaphore command_wait{0};
+        liverpool->SendCommand([this, &command_wait, device_addr, size] {
+            Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
+            DownloadBufferMemory(buffer, device_addr, size);
+            command_wait.release();
+        });
+        command_wait.acquire();
+    } else {
+        Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
+        DownloadBufferMemory(buffer, device_addr, size);
+    }
     memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
 }
 

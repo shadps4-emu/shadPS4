@@ -1502,6 +1502,7 @@ public:
         u32 pipe_id;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
+    std::thread::id gpu_id;
 
 private:
     struct Task {
