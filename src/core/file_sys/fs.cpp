@@ -70,7 +70,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     std::filesystem::path host_path = mount->host_path / rel_path;
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
-    if(!std::filesystem::exists(patch_path)) {
+    if (!std::filesystem::exists(patch_path)) {
         patch_path = mount->host_path;
         patch_path += "-patch";
     }
