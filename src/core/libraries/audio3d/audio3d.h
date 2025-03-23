@@ -64,7 +64,7 @@ struct OrbisAudio3dAttribute {
 
 struct Port {
     OrbisAudio3dOpenParameters parameters{};
-    std::queue<void*> queue; // Only stores PCM buffers for now
+    std::deque<void*> queue; // Only stores PCM buffers for now
 };
 
 struct Audio3dState {
@@ -76,7 +76,7 @@ int PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId port_id, OrbisUserSer
                                         s32 type, s32 index, u32 len, u32 freq,
                                         AudioOut::OrbisAudioOutParamExtendedInformation param);
 int PS4_SYSV_ABI sceAudio3dAudioOutOutput(s32 handle, void* ptr);
-int PS4_SYSV_ABI sceAudio3dAudioOutOutputs();
+int PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* param, u32 num);
 int PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId port_id, u32 num_channels,
                                     OrbisAudio3dFormat format, void* buffer, u32 num_samples);
 int PS4_SYSV_ABI sceAudio3dBedWrite2(OrbisAudio3dPortId port_id, u32 num_channels,
