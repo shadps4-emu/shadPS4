@@ -82,6 +82,7 @@ static std::string trophyKey;
 // Gui
 static bool load_game_size = true;
 static std::vector<GameInstallDir> settings_install_dirs = {};
+std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 u32 main_window_geometry_x = 400;
@@ -643,8 +644,8 @@ const std::vector<std::filesystem::path> getGameInstallDirs() {
     return enabled_dirs;
 }
 
-const std::vector<GameInstallDir>& getAllGameInstallDirs() {
-    return settings_install_dirs;
+const std::vector<bool> getGameInstallDirsEnabled() {
+    return install_dirs_enabled;
 }
 
 std::filesystem::path getAddonInstallDir() {
@@ -839,7 +840,6 @@ void load(const std::filesystem::path& path) {
         const auto install_dir_array =
             toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
 
-        std::vector<bool> install_dirs_enabled;
         try {
             install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
         } catch (...) {

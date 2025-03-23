@@ -161,7 +161,7 @@ u32 getMainWindowGeometryY();
 u32 getMainWindowGeometryW();
 u32 getMainWindowGeometryH();
 const std::vector<std::filesystem::path> getGameInstallDirs();
-const std::vector<GameInstallDir>& getAllGameInstallDirs();
+const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 u32 getIconSize();
