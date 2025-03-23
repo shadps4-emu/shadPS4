@@ -450,7 +450,7 @@ public:
             QString folder_path, game_update_path, dlc_path, save_data_path, trophy_data_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             game_update_path = folder_path + "-UPDATE";
-            if(!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))){
+            if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
                 game_update_path = folder_path + "-patch";
             }
             Common::FS::PathToQString(
