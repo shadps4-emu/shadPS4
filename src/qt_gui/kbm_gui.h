@@ -4,6 +4,7 @@
 #include <QDialog>
 #include "game_info.h"
 
+
 namespace Ui {
 class KBMSettings;
 }
@@ -37,6 +38,8 @@ private:
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
     QString mapping;
+    QStringList mappinglist;
+    QSet<QString> pressedKeys;
     QString modifier;
     int MappingTimer;
     QTimer* timer;
@@ -53,4 +56,22 @@ private:
 
         "pad_left",     "pad_right", "axis_left_x", "axis_left_y", "axis_right_x",
         "axis_right_y", "back"};
+
+#ifdef _WIN32
+    int lctrl = 29;
+    int rctrl = 57373;
+    int lalt = 56;
+    int ralt = 57400;
+    int lshift = 42;
+    int rshift = 54;
+#else
+    int lctrl = 29;
+    int rctrl = 97;
+    int lalt = 56;
+    int ralt = 100;
+    int lshift = 42;
+    int rshift = 54;
+#endif
+
 };
+
