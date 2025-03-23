@@ -821,7 +821,7 @@ void SettingsDialog::ResetInstallFolders() {
 
         std::vector<bool> install_dirs_enabled;
         try {
-            install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
+            install_dirs_enabled = Config::getGameInstallDirsEnabled();
         } catch (...) {
             // If it does not exist, assume that all are enabled.
             install_dirs_enabled.resize(install_dir_array.size(), true);
