@@ -244,16 +244,20 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
         }
         return std::nullopt;
     };
+    // We are not accounting for modifications to after the source.
     const auto result = IR::BreadthFirstSearch(inst, pred);
     ASSERT_MSG(result, "Unable to track sharp source");
     inst = result.value();
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<u32>(inst->Arg(0).ScalarReg());
-    } else {
-        ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst,
-                   "Sharp load not from constant memory");
-        return inst->Flags<u32>();
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+        // Sharp is stored in the offset argument.
+        // The vale is not inmediate if ReadConst is inside of a loop
+        // and the offset is different in each iteration. (we don't support this)
+        ASSERT(inst->Arg(1).IsImmediate());
+        return inst->Arg(1).U32();
     }
+    UNREACHABLE_MSG("Sharp load not from constant memory or user data");
 }
 
 s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
