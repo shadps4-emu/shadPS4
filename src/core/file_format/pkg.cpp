@@ -350,7 +350,7 @@ bool PKG::Extract(const std::filesystem::path& filepath, const std::filesystem::
                     auto title_id = GetTitleID();
 
                     if (parent_path.filename() != title_id &&
-                        !fmt::UTF(extract_path.u8string()).data.ends_with("-UPDATE")) {
+                        !fmt::UTF(extract_path.u8string()).data.ends_with("-patch")) {
                         extractPaths[ndinode_counter] = parent_path / title_id;
                     } else {
                         // DLCs path has different structure
