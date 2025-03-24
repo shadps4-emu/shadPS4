@@ -1308,7 +1308,7 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>Kupa Görüntüleyici</translation>
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
@@ -2201,7 +2201,7 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>Oyun Seç:</translation>
     </message>
     <message>
       <source>Progress</source>
