@@ -367,6 +367,10 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         origin = Common::FS::SeekOrigin::CurrentPosition;
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
+    } else if (whence == 3) {
+        origin = Common::FS::SeekOrigin::SeekHole;
+    } else if (whence == 4) {
+        origin = Common::FS::SeekOrigin::SeekData;
     } else {
         // whence parameter is invalid
         *__Error() = POSIX_EINVAL;
@@ -377,10 +381,9 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         if (errno != 0) {
             // Seek failed in platform-specific code, errno needs to be converted.
             SetPosixErrno(errno);
-        } else {
-            // Seek failed because offset is beyond the end of the file.
-            *__Error() = POSIX_ENXIO;
+            return -1;
         }
+        // Shouldn't be possible, but just in case.
         return -1;
     }
 

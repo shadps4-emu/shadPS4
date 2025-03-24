@@ -125,12 +125,14 @@ namespace {
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:
-    default:
         return SEEK_SET;
     case SeekOrigin::CurrentPosition:
         return SEEK_CUR;
     case SeekOrigin::End:
         return SEEK_END;
+    default:
+        LOG_ERROR(Core, "Unsupported origin {}, defaulting to SEEK_SET", origin);
+        return SEEK_SET;
     }
 }
 
