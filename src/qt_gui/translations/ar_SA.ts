@@ -411,19 +411,19 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>الأسهم+عصا التحكم</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>فوق</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>يسار</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>يمين</translation>
     </message>
     <message>
       <source>Down</source>
@@ -574,7 +574,7 @@
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation type="unfinished">Use Per-Game configs</translation>
+      <translation>استخدام إعدادات كل لُعْبَة</translation>
     </message>
     <message>
       <source>Error</source>
@@ -610,7 +610,7 @@
     </message>
     <message>
       <source>Reset to Default</source>
-      <translation type="unfinished">Reset to Default</translation>
+      <translation>إعادة تعيين إلى الافتراضي</translation>
     </message>
   </context>
   <context>
@@ -702,15 +702,15 @@
     </message>
     <message>
       <source>Never Played</source>
-      <translation type="unfinished">Never Played</translation>
+      <translation>لم تلعب أبداً</translation>
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>ا</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>ة</translation>
     </message>
     <message>
       <source>s</source>
@@ -718,27 +718,27 @@
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation type="unfinished">Compatibility is untested</translation>
+      <translation>التوافق غير مختبر</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>اللعبة لا تهيئ بشكل صحيح / تعطل المحاكي</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>اللعبة تبدأ بالعمل، ولكن فقط تعرض شاشة فارغة</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>اللعبة تعرض صورة ولكن لا تتجاوز القائمة</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
+      <translation>اللعبة بها قلتشات أو أداء غير قابل للتشغيل</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
+      <translation>يمكن الانتهاء من اللعبة مع الأداء القابل للتشغيل و لا توجد قلتشات كبيرة</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
@@ -820,11 +820,11 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>إصدار النسخة</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>حجم النسخة</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -832,39 +832,39 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>حذف...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>حذف اللعبة</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation type="unfinished">Delete Update</translation>
+      <translation>حذف التحديث</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation type="unfinished">Delete DLC</translation>
+      <translation>حذف DLC</translation>
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>حذف الكؤوس</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation type="unfinished">Compatibility...</translation>
+      <translation>التوافق...</translation>
     </message>
     <message>
       <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
+      <translation>تحديث قاعدة البيانات</translation>
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>عرض التقرير</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
+      <translation>إرسال بلاغ</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
@@ -888,78 +888,78 @@
     </message>
     <message>
       <source>Game</source>
-      <translation type="unfinished">Game</translation>
+      <translation>اللعبة</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>لا تحتوي اللعبة على تحديث لحذفه!</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>تحديث</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>لا تحتوي اللعبة على DLC لحذفه!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
-      <translation type="unfinished">Delete %1</translation>
+      <translation>حذف %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <translation>هل أنت متأكد من أنك تريد حذف دليل %1&apos;s %2؟</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>فتح مجلد التحديث</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>حذف التخزينه</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>لا تحتوي اللعبة على تحديث لفتحه!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>لم يتم العثور على ملف سجل لهذه اللعبة!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>فشل تحويل الأيقونة.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>هذه اللعبة لا تحتوي على أي تخزينات لحذفها!</translation>
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>هذه اللعبة ليس لديها كؤوس محفوظة للحذف!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>حفظ البيانات</translation>
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>الكؤوس</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>عارض SFO لـ </translation>
     </message>
   </context>
   <context>
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>التشغيل السريع</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -1037,15 +1037,15 @@
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>عصا التحكم اليسرى</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>تحديد الإعدادات</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>إعدادات عامة</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -1053,79 +1053,79 @@
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Text Editor</source>
-      <translation type="unfinished">Text Editor</translation>
+      <translation>محرر النص</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>المساعدة</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>النقر على لوحة اللمس</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
-      <translation type="unfinished">Mouse to Joystick</translation>
+      <translation>الفأرة إلى عصا التحكم</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
+      <translation>* اضغط على F7 للتفعيل</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
+      <translation>الخيارات</translation>
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>معطيات حركة الفأرة</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>ملاحظة: انقر فوق زر المساعدة/روابط المفاتيح الخاصة للحصول على مزيد من المعلومات</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>أزرار الوجه</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>مثلث</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>مربع</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>دائرة</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>اكس</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
@@ -1133,19 +1133,19 @@
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>الضغط باستمرار لتحريك العصا اليمنى بنصف السرعة</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>عصا التحكم اليمنى</translation>
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>إزاحة السرعة (تلقائي 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>نسخ من الإعدادات الشائعة</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1173,7 +1173,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>غير قادر على الحفظ</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
@@ -1638,7 +1638,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>الكؤوس</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
