@@ -289,6 +289,7 @@ size_t PS4_SYSV_ABI _writev(int fd, const SceKernelIovec* iov, int iovcn) {
 }
 
 s64 PS4_SYSV_ABI sceKernelLseek(int d, s64 offset, int whence) {
+    LOG_TRACE(Kernel_Fs, "called: offset {} whence {}", offset, whence);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(d);
     if (file == nullptr) {
