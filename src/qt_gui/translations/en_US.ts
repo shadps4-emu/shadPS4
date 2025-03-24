@@ -1307,6 +1307,14 @@
         <translation>Dump Game List</translation>
     </message>
     <message>
+        <source>Trophy Viewer</source>
+        <translation>Trophy Viewer</translation>
+    </message>
+    <message>
+        <source>No games found. Please add your games to your library first.</source>
+        <translation>No games found. Please add your games to your library first.</translation>
+    </message>
+    <message>
         <source>PKG Viewer</source>
         <translation>PKG Viewer</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
         <source>Trophy Viewer</source>
         <translation>Trophy Viewer</translation>
+    </message>
+    <message>
+        <source>Select Game:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Progress</source>

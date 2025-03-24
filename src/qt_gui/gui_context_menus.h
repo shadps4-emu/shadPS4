@@ -331,7 +331,33 @@ public:
                     Common::FS::PathToQString(gameTrpPath, game_update_path);
                 }
             }
-            TrophyViewer* trophyViewer = new TrophyViewer(trophyPath, gameTrpPath);
+
+            // Array with all games and their trophy information
+            QVector<TrophyGameInfo> allTrophyGames;
+            for (const auto& game : m_games) {
+                TrophyGameInfo gameInfo;
+                gameInfo.name = QString::fromStdString(game.name);
+                Common::FS::PathToQString(gameInfo.trophyPath, game.serial);
+                Common::FS::PathToQString(gameInfo.gameTrpPath, game.path);
+
+                auto update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+                update_path += "-UPDATE";
+                if (std::filesystem::exists(update_path)) {
+                    Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+                } else {
+                    update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+                    update_path += "-patch";
+                    if (std::filesystem::exists(update_path)) {
+                        Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+                    }
+                }
+
+                allTrophyGames.append(gameInfo);
+            }
+
+            QString gameName = QString::fromStdString(m_games[itemID].name);
+            TrophyViewer* trophyViewer =
+                new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
                     [trophyViewer]() { trophyViewer->deleteLater(); });
