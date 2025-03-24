@@ -757,12 +757,14 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                     compute_cutoff_end_to_prepend[vqid].size();
         PM4Header possible_next_command = std::bit_cast<PM4Header>(acb[remainder]);
         if (acb.size() == remainder || possible_next_command.type == 3) {
-            std::copy(acb.data(), acb.data() + remainder,
-                      std::back_inserter(compute_cutoff_end_to_prepend[vqid]));
+            if (acb.data()[0].type != 3) {
+                std::copy(acb.data(), acb.data() + remainder,
+                          std::back_inserter(compute_cutoff_end_to_prepend[vqid]));
 
-            use_split_instruction = true;
-            LOG_INFO(Render_Vulkan, "Start of buffer 2: {}", fmt::ptr(acb.data()));
-            LOG_INFO(Render_Vulkan, "Executing split command!");
+                use_split_instruction = true;
+                LOG_INFO(Render_Vulkan, "Start of buffer 2: {}", fmt::ptr(acb.data()));
+                LOG_INFO(Render_Vulkan, "Executing split command!");
+            }
         } else {
             LOG_INFO(Render_Vulkan,
                      "The buffer wasn't split, the next command would have been type: "
