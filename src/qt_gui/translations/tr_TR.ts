@@ -1312,7 +1312,7 @@
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
-      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
+      <translation>Oyun bulunamadı. Oyunlarınızı lütfen önce kütüphanenize ekleyin.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
