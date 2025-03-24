@@ -1308,11 +1308,11 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>Troféviser</translation>
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
-      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
+      <translation>Fant ingen spill. Legg til spillene dine i biblioteket først.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -2201,7 +2201,7 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>Velg spill:</translation>
     </message>
     <message>
       <source>Progress</source>
