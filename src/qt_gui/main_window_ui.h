@@ -27,6 +27,7 @@ public:
     QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
     QAction* pkgViewerAct;
+    QAction* trophyViewerAct;
 #ifdef ENABLE_UPDATER
     QAction* updaterAct;
 #endif
@@ -139,6 +140,10 @@ public:
         pkgViewerAct = new QAction(MainWindow);
         pkgViewerAct->setObjectName("pkgViewer");
         pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
+        trophyViewerAct = new QAction(MainWindow);
+        trophyViewerAct->setObjectName("trophyViewer");
+        trophyViewerAct->setIcon(QIcon(":images/trophy_icon.png"));
+
 #ifdef ENABLE_UPDATER
         updaterAct = new QAction(MainWindow);
         updaterAct->setObjectName("updaterAct");
@@ -321,6 +326,7 @@ public:
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
         menuUtils->addAction(pkgViewerAct);
+        menuUtils->addAction(trophyViewerAct);
 #ifdef ENABLE_UPDATER
         menuHelp->addAction(updaterAct);
 #endif
@@ -379,6 +385,8 @@ public:
         dumpGameListAct->setText(
             QCoreApplication::translate("MainWindow", "Dump Game List", nullptr));
         pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
+        trophyViewerAct->setText(
+            QCoreApplication::translate("MainWindow", "Trophy Viewer", nullptr));
         mw_searchbar->setPlaceholderText(
             QCoreApplication::translate("MainWindow", "Search...", nullptr));
         menuFile->setTitle(QCoreApplication::translate("MainWindow", "File", nullptr));

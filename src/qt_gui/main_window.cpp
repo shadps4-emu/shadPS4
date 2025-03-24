@@ -593,6 +593,60 @@ void MainWindow::CreateConnects() {
         pkgViewer->show();
     });
 
+    // Trophy Viewer
+    connect(ui->trophyViewerAct, &QAction::triggered, this, [this]() {
+        if (m_game_info->m_games.empty()) {
+            QMessageBox::information(
+                this, tr("Trophy Viewer"),
+                tr("No games found. Please add your games to your library first."));
+            return;
+        }
+
+        const auto& firstGame = m_game_info->m_games[0];
+        QString trophyPath, gameTrpPath;
+        Common::FS::PathToQString(trophyPath, firstGame.serial);
+        Common::FS::PathToQString(gameTrpPath, firstGame.path);
+
+        auto game_update_path = Common::FS::PathFromQString(gameTrpPath);
+        game_update_path += "-UPDATE";
+        if (std::filesystem::exists(game_update_path)) {
+            Common::FS::PathToQString(gameTrpPath, game_update_path);
+        } else {
+            game_update_path = Common::FS::PathFromQString(gameTrpPath);
+            game_update_path += "-patch";
+            if (std::filesystem::exists(game_update_path)) {
+                Common::FS::PathToQString(gameTrpPath, game_update_path);
+            }
+        }
+
+        QVector<TrophyGameInfo> allTrophyGames;
+        for (const auto& game : m_game_info->m_games) {
+            TrophyGameInfo gameInfo;
+            gameInfo.name = QString::fromStdString(game.name);
+            Common::FS::PathToQString(gameInfo.trophyPath, game.serial);
+            Common::FS::PathToQString(gameInfo.gameTrpPath, game.path);
+
+            auto update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+            update_path += "-UPDATE";
+            if (std::filesystem::exists(update_path)) {
+                Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+            } else {
+                update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+                update_path += "-patch";
+                if (std::filesystem::exists(update_path)) {
+                    Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+                }
+            }
+
+            allTrophyGames.append(gameInfo);
+        }
+
+        QString gameName = QString::fromStdString(firstGame.name);
+        TrophyViewer* trophyViewer =
+            new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
+        trophyViewer->show();
+    });
+
     // Themes
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
@@ -1169,6 +1223,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
+    ui->trophyViewerAct->setIcon(RecolorIcon(ui->trophyViewerAct->icon(), isWhite));
     ui->configureAct->setIcon(RecolorIcon(ui->configureAct->icon(), isWhite));
     ui->addElfFolderAct->setIcon(RecolorIcon(ui->addElfFolderAct->icon(), isWhite));
 }

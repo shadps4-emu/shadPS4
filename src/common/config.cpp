@@ -645,7 +645,11 @@ const std::vector<std::filesystem::path> getGameInstallDirs() {
 }
 
 const std::vector<bool> getGameInstallDirsEnabled() {
-    return install_dirs_enabled;
+    std::vector<bool> enabled_dirs;
+    for (const auto& dir : settings_install_dirs) {
+        enabled_dirs.push_back(dir.enabled);
+    }
+    return enabled_dirs;
 }
 
 std::filesystem::path getAddonInstallDir() {
