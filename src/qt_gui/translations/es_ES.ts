@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Botones de dirección</translation>
     </message>
     <message>
       <source>Up</source>
@@ -419,67 +419,67 @@
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Izquierda</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Derecha</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Abajo</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Zona muerta del stick izquierdo (defecto: 2, máx.: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Zona muerta del stick izquierdo</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Stick izquierdo</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Selección de Configuraciones</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Configuración Estándar</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Usar configuraciones por juego</translation>
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1/LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2/LT</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Back</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1/RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2/RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Options/Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -487,19 +487,19 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Botones de acción</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Triángulo/Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Cuadrado/X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Círculo/B</translation>
     </message>
     <message>
       <source>Cross / A</source>
@@ -507,39 +507,110 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Zona muerta del stick derecho (defecto: 2, máx.: 127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Zona muerta del stick derecho</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Stick derecho</translation>
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Calibración de color</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>V:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>A:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Reemplazar el Color de la Barra de Luz</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Reemplazar Color</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No se Pudo Guardar</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>No se pueden vincular valores del eje más de una vez</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Guardar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Valores Por Defecto</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Editar Asignaciones de Teclado + Ratón y Mando</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Usar Configuraciones por Juego</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Error</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>No se pudo abrir el archivo para la lectura</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>No se pudo abrir el archivo para escritura</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Guardar Cambios</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>¿Quieres guardar los cambios?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Ayuda</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>¿Desea restablecer su configuración predeterminada personalizada a la configuración por defecto original?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>¿Quieres restablecer esta configuración a tu configuración por defecto personalizada?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Resetear A Valores Originales</translation>
     </message>
   </context>
   <context>
@@ -580,11 +651,11 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Carpeta para instalar DLC</translation>
     </message>
   </context>
   <context>
@@ -603,7 +674,7 @@
     </message>
     <message>
       <source>Compatibility</source>
-      <translation type="unfinished">Compatibility</translation>
+      <translation>Compatibilidad</translation>
     </message>
     <message>
       <source>Region</source>
@@ -611,7 +682,7 @@
     </message>
     <message>
       <source>Firmware</source>
-      <translation type="unfinished">Firmware</translation>
+      <translation>Firmware</translation>
     </message>
     <message>
       <source>Size</source>
@@ -631,35 +702,35 @@
     </message>
     <message>
       <source>Never Played</source>
-      <translation type="unfinished">Never Played</translation>
+      <translation>Nunca Jugado</translation>
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation type="unfinished">Compatibility is untested</translation>
+      <translation>Compatibilidad no comprobada</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>El juego no se inicia correctamente o cuelga el emulador</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>El juego arranca, pero se queda en blanco</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>El juego muestra imágenes, pero no va más allá de los menús</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
@@ -667,7 +738,7 @@
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
+      <translation>El juego puede completarse con un rendimiento jugable y sin errores de importancia</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
@@ -682,19 +753,19 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
@@ -717,7 +788,7 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Ver trofeos</translation>
+      <translation>Expositor de Trofeos</translation>
     </message>
     <message>
       <source>Open Folder...</source>
@@ -749,7 +820,7 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>Copiar versión</translation>
     </message>
     <message>
       <source>Copy Size</source>
@@ -761,11 +832,11 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>Eliminar...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>Eliminar juego</translation>
     </message>
     <message>
       <source>Delete Update</source>
@@ -773,23 +844,27 @@
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation type="unfinished">Delete DLC</translation>
+      <translation>Eliminar DLC</translation>
+    </message>
+    <message>
+      <source>Delete Trophy</source>
+      <translation>Eliminar Trofeo</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation type="unfinished">Compatibility...</translation>
+      <translation>Compatibilidad...</translation>
     </message>
     <message>
       <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
+      <translation>Actualizar base de datos</translation>
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>Ver informe</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
+      <translation>Enviar un informe</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
@@ -801,7 +876,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Error</translation>
     </message>
     <message>
       <source>Error creating shortcut!</source>
@@ -813,59 +888,94 @@
     </message>
     <message>
       <source>Game</source>
-      <translation type="unfinished">Game</translation>
+      <translation>Juego</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>¡Este juego no tiene actualizaciones!</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>Actualización</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>¡Este juego no tiene DLCs!</translation>
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
-      <translation type="unfinished">Delete %1</translation>
+      <translation>Eliminar %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <translation>¿Seguro que quieres eliminar el directorio %2 de %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>Abrir carpeta de actualizaciones</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>Eliminar datos guardados</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>¡Este juego no tiene carpeta de actualizaciones!</translation>
+    </message>
+    <message>
+      <source>No log file found for this game!</source>
+      <translation>¡No se encontró un archivo de registro para este juego!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Error al convertir el icono.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>¡Este juego no tiene datos guardados!</translation>
+    </message>
+    <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>¡Este juego no tiene trofeos guardados para eliminar!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Datos guardados</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofeo</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>Visualizador de SFO para </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Inicio Rápido</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>Preguntas Frecuentes (FAQ)</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Sintaxis</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Asignación de Teclas Especiales</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Asignación de Teclas</translation>
     </message>
   </context>
   <context>
@@ -876,15 +986,226 @@
     </message>
     <message>
       <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
+      <translation>Selecciona el directorio de instalación.</translation>
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Instalar toda la cola en la carpeta seleccionada</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>Eliminar archivo PKG tras la instalación</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Configurar Controles</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Cruceta</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Arriba</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sin vincular</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Izquierda</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Derecha</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Abajo</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Modo Reducido del Stick Izquierdo</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>manten para mover el stick izquierdo a la mitad de la velocidad</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Stick Izquierdo</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Selección de Configuraciones</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Configuración Estándar</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Usar configuraciones por juego</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Editor de Texto</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Ayuda</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Clic de pantalla táctil</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Ratón a Joystick</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>* presiona F7 en el juego para activar</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opciones</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Parámetros Movimiento del Ratón</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>nota: haga clic en Botón de ayuda/Asignación de Teclas Especiales para más información</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Botones de Acción</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triángulo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Cuadrado</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Círculo</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Equis</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Modo Reducido del Stick Derecho</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>manten para mover el stick derecho a la mitad de la velocidad</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Stick Derecho</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Compensación de Velocidad (def 0.125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Copiar desde la Configuración Estándar</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Zona Muerta (def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Multiplicador de Velocidad (def 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configuración Estándar Seleccionada</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Este botón copia mapeos de la Configuración Estándar al perfil seleccionado actualmente, y no se puede utilizar cuando el perfil seleccionado es la Configuración Estándar.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copiar valores de la Configuración Estándar</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>¿Quiere sobrescribir los mapeos existentes con los mapeos de la Configuración Estándar?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No se Pudo Guardar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>No se puede vincular ninguna entrada única más de una vez</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Pulsa una tecla</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>No se pudo asignar el mapeo</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>La rueda del ratón no puede ser mapeada al stick</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Guardar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Valores Por Defecto</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
     </message>
   </context>
   <context>
@@ -923,7 +1244,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Abrir carpeta de shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -963,11 +1284,11 @@
     </message>
     <message>
       <source>List View</source>
-      <translation>Vista de lista</translation>
+      <translation>Vista de Lista</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>Vista de cuadrícula</translation>
+      <translation>Vista de Cuadrícula</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
@@ -975,7 +1296,7 @@
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation>Carpeta de instalación de los juegos</translation>
+      <translation>Carpeta de Instalación de Juegos</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
@@ -983,7 +1304,7 @@
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>Volcar lista de juegos</translation>
+      <translation>Volcar Lista de Juegos</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1003,11 +1324,11 @@
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation>Iconos de los juegos</translation>
+      <translation>Iconos de Juegos</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>Tipo de lista</translation>
+      <translation>Tipo de Lista</translation>
     </message>
     <message>
       <source>Settings</source>
@@ -1051,7 +1372,7 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>Lista de juegos</translation>
+      <translation>Lista de Juegos</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
@@ -1163,7 +1484,7 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Ejecutar juego</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
@@ -1171,26 +1492,26 @@
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>Archivo PKG (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>El archivo PKG es un parche o DLC, ¡debes instalar el juego primero!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>¡El juego ya se está ejecutando!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
     <name>PKGViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>Abrir carpeta</translation>
+      <translation>Abrir Carpeta</translation>
     </message>
     <message>
       <source>PKG ERROR</source>
@@ -1202,7 +1523,7 @@
     </message>
     <message>
       <source>Serial</source>
-      <translation>Numero de serie</translation>
+      <translation>Número de Serie</translation>
     </message>
     <message>
       <source>Installed</source>
@@ -1214,19 +1535,19 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Categoría</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Tipo</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>Versión de la Aplicación</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FW</translation>
     </message>
     <message>
       <source>Region</source>
@@ -1234,7 +1555,7 @@
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Etiquetas</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1250,7 +1571,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Paquete</translation>
     </message>
   </context>
   <context>
@@ -1261,7 +1582,7 @@
     </message>
     <message>
       <source>General</source>
-      <translation type="unfinished">General</translation>
+      <translation>General</translation>
     </message>
     <message>
       <source>System</source>
@@ -1269,7 +1590,7 @@
     </message>
     <message>
       <source>Console Language</source>
-      <translation>Idioma de la consola</translation>
+      <translation>Idioma de la Consola</translation>
     </message>
     <message>
       <source>Emulator Language</source>
@@ -1281,7 +1602,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation type="unfinished">Enable Separate Update Folder</translation>
+      <translation>Habilitar Carpeta Independiente de Actualizaciones</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1293,7 +1614,7 @@
     </message>
     <message>
       <source>Show Splash</source>
-      <translation>Mostrar splash</translation>
+      <translation>Mostrar Pantalla de Bienvenida</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1301,15 +1622,19 @@
     </message>
     <message>
       <source>Username</source>
-      <translation>Nombre de usuario</translation>
+      <translation>Nombre de Usuario</translation>
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation type="unfinished">Trophy Key</translation>
+      <translation>Clave de Trofeos</translation>
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>Trofeo</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Abrir la carpeta de trofeos/sonidos personalizados</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1317,15 +1642,15 @@
     </message>
     <message>
       <source>Log Type</source>
-      <translation>Tipo de registro</translation>
+      <translation>Tipo de Registro</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>Filtro de registro</translation>
+      <translation>Filtro de Registro</translation>
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Abrir ubicación del registro</translation>
+      <translation>Abrir Ubicación del registro</translation>
     </message>
     <message>
       <source>Input</source>
@@ -1333,19 +1658,19 @@
     </message>
     <message>
       <source>Cursor</source>
-      <translation type="unfinished">Cursor</translation>
+      <translation>Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>Ocultar cursor</translation>
+      <translation>Ocultar Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>Tiempo de espera para ocultar cursor inactivo</translation>
+      <translation>Tiempo de Espera para Ocultar Cursor Inactivo</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1353,7 +1678,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Comportamiento del botón de retroceso</translation>
+      <translation>Comportamiento del Botón de Retroceso</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1369,7 +1694,7 @@
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>Dispositivo gráfico</translation>
+      <translation>Dispositivo Gráfico</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1381,7 +1706,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Habilitar volcado de shaders</translation>
+      <translation>Habilitar volcado de Shaders</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1389,7 +1714,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>Habilitar HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1397,7 +1722,7 @@
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>Carpetas de juego</translation>
+      <translation>Carpetas de Juegos</translation>
     </message>
     <message>
       <source>Add...</source>
@@ -1413,39 +1738,39 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Habilitar volcado de depuración</translation>
+      <translation>Habilitar Volcado de Depuración</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Habilitar capas de validación de Vulkan</translation>
+      <translation>Habilitar Capas de Validación de Vulkan</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Habilitar validación de sincronización de Vulkan</translation>
+      <translation>Habilitar Validación de Sincronización de Vulkan</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>Habilitar depuración de RenderDoc</translation>
+      <translation>Habilitar Depuración de RenderDoc</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>Habilitar Diagnóstico de Fallos</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>Recopilar Shaders</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>Copiar búferes de GPU</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation type="unfinished">Host Debug Markers</translation>
+      <translation>Marcadores de Depuración del Host</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation type="unfinished">Guest Debug Markers</translation>
+      <translation>Marcadores de Depuración del Invitado</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1453,11 +1778,11 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Buscar actualizaciones al iniciar</translation>
+      <translation>Buscar Actualizaciones al Iniciar</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Mostrar siempre el registro de cambios</translation>
+      <translation>Mostrar Siempre el Registro de Cambios</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1465,7 +1790,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verificar actualizaciones</translation>
+      <translation>Buscar Actualizaciones</translation>
     </message>
     <message>
       <source>GUI Settings</source>
@@ -1473,15 +1798,15 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>Música de título</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation type="unfinished">Disable Trophy Pop-ups</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Desactivar Notificaciones de Trofeos</translation>
     </message>
     <message>
       <source>Background Image</source>
-      <translation>Imagen de fondo</translation>
+      <translation>Imagen de Fondo</translation>
     </message>
     <message>
       <source>Show Background Image</source>
@@ -1497,19 +1822,19 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation type="unfinished">Update Compatibility Database On Startup</translation>
+      <translation>Actualizar base de datos de compatibilidad al iniciar</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
-      <translation type="unfinished">Game Compatibility</translation>
+      <translation>Compatibilidad</translation>
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation type="unfinished">Display Compatibility Data</translation>
+      <translation>Mostrar datos de compatibilidad</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation type="unfinished">Update Compatibility Database</translation>
+      <translation>Actualizar base de datos de compatibilidad</translation>
     </message>
     <message>
       <source>Volume</source>
@@ -1533,7 +1858,7 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>Coloque el mouse sobre una opción para mostrar su descripción.</translation>
+      <translation>Coloque el ratón sobre una opción para mostrar su descripción.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
@@ -1545,7 +1870,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
+      <translation>Habilitar Carpeta Independiente de Actualizaciónes:\nHabilita el instalar actualizaciones del juego en una carpeta separada para mas facilidad en la gestión.\nPuede crearse manualmente añadiendo la actualización extraída a la carpeta del juego con el nombre &quot;CUSA00000-UPDATE&quot; donde el CUSA ID coincide con el ID del juego.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -1561,7 +1886,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Clave de Trofeos:\nClave utilizada para descifrar trofeos. Debe obtenerse de tu consola desbloqueada.\nSolo debe contener caracteres hexadecimales.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1585,15 +1910,15 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>Desactivar Notificaciones de trofeos:\nDesactiva las notificaciones de trofeos en el juego. El progreso de trofeos todavía puede ser rastreado usando el Expositor de Trofeos (haz clic derecho en el juego en la ventana principal).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Ocultar Cursor:\nElija cuándo desaparecerá el cursor:\nNunca: Siempre verá el mouse.\nInactivo: Establezca un tiempo para que desaparezca después de estar inactivo.\nSiempre: nunca verá el mouse.</translation>
+      <translation>Ocultar Cursor:\nElija cuándo desaparecerá el cursor:\nNunca: Siempre verá el ratón.\nInactivo: Establezca un tiempo para que desaparezca después de estar inactivo.\nSiempre: nunca verá el ratón.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Establezca un tiempo para que el mouse desaparezca después de estar inactivo.</translation>
+      <translation>Establezca un tiempo para que el ratón desaparezca después de estar inactivo.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
@@ -1601,15 +1926,15 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>Mostrar Datos de Compatibilidad:\nMuestra información de compatibilidad de juegos en vista de tabla. Habilite &quot;Actualizar Compatibilidad al Iniciar&quot; para obtener información actualizada.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>Actualizar Compatibilidad al Iniciar:\nActualiza automáticamente la base de datos de compatibilidad cuando shadPS4 se inicia.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>Actualizar Base de Datos de Compatibilidad:\nActualizar inmediatamente la base de datos de compatibilidad.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1653,7 +1978,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Habilitar la Volcadura de Sombras:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
+      <translation>Habilitar la Volcadura de Shaders:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
@@ -1661,7 +1986,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Habilitar HDR:\nHabilita HDR en juegos que lo soporten.\nTu monitor debe tener soporte para el espacio de color PQ BT2020 y el formato RGB10A2 de cadena de intercambio.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1693,51 +2018,51 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Recopilar Shaders:\nNecesitas esto habilitado para editar shaders con el menú de depuración (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnóstico de cuelgues:\nCrea un archivo .yaml con información sobre el estado de Vulkan en el momento del cuelgue.\nÚtil para depurar errores de tipo &apos;Dispositivo perdido&apos; . Con esto activado, deberías habilitar los marcadores de depuración de Host E Invitado.\nNo funciona en GPUs de Intel.\nNecesitas activar las Capas de Validación de Vulkan y el SDK de Vulkan para que funcione.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Copiar Búferes de GPU:\nSortea condiciones de carrera que implican envíos de GPU.\nPuede o no ayudar con cuelgues del tipo 0 de PM4.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuración del Host:\n Inserta información del emulador como marcadores para comandos AMDGPU específicos, además de proporcionar nombres de depuración.\nCon esto activado, deberías habilitar el diagnóstico de fallos.\nUtil para programas como RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadores de Depuración del Invitado:\n Inserta cualquier marcador que el propio juego ha añadido al búfer de comandos.\nCon esto activado, deberías habilitar el diagnóstico de fallos.\nUtil para programas como RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Ruta de Guardado de Datos:\nLa carpeta donde se guardarán los datos del juego.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Buscar:\nBusque una carpeta para establecer como ruta de datos guardados.</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Principal</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Establece el volumen de la música de fondo.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>Habilitar Controles de Movimiento</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Ruta de datos guardados</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1745,15 +2070,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asíncrono</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>síncrono</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Selección Automática</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1761,54 +2086,126 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Directorio para guardar datos</translation>
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Vídeo</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Modo de Imagen</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Ventana</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Pantalla Completa</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Pantalla Completa (sin bordes)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Tamaño de Ventana</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>Ancho:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>Alto:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Archivos de Registro Independientes</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Archivos de Registro Independientes:\nEscribe un archivo de registro separado para cada juego.</translation>
+    </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Posición de Notificación de Trofeos</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Izquierda</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Derecha</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Arriba</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Abajo</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Duración de Notificaciones</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Carpeta Portable de Usuario</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Crear Carpeta Portable de Usuario a partir de la Carpeta de Usuario Estándar</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Carpeta portable de usuario:\nAlmacena la configuración de shadPS4 y los datos que se aplicarán sólo a la compilación shadPS4 ubicada en la carpeta actual. Reinicia la aplicación después de crear la carpeta portable de usuario para empezar a usarla.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>No se pudo crear la carpeta portable de usuario</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 ya existe</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Carpeta Portable de Usuario Creada</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 creado correctamente.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Abre la carpeta de trofeos/sonidos personalizados:\nPuedes añadir imágenes y un audio personalizados a los trofeos.\nAñade los archivos a custom_trophy con los siguientes nombres:\ntrophy.wav o trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: El sonido sólo funcionará en versiones QT.</translation>
     </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>Vista de trofeos</translation>
+      <translation>Expositor de Trofeos</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Progreso</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Mostrar Trofeos Obtenidos</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Mostrar Trofeos No Obtenidos</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Mostrar Trofeos Ocultos</translation>
     </message>
   </context>
 </TS>

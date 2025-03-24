@@ -6,10 +6,6 @@
 	path = externals/cryptopp
 	url = https://github.com/shadps4-emu/ext-cryptopp.git
 	shallow = true
-[submodule "externals/cryptoppwin"]
-	path = externals/cryptoppwin
-	url = https://github.com/shadps4-emu/ext-cryptoppwin.git
-	shallow = true
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git

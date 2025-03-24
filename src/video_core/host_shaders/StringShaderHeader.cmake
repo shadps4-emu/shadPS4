@@ -9,28 +9,31 @@ get_filename_component(CONTENTS_NAME ${SOURCE_FILE} NAME)
 string(REPLACE "." "_" CONTENTS_NAME ${CONTENTS_NAME})
 string(TOUPPER ${CONTENTS_NAME} CONTENTS_NAME)
 
-FILE(READ ${SOURCE_FILE} line_contents)
+# Function to recursively parse #include directives and replace them with file contents
+function(parse_includes file_path output_content)
+    file(READ ${file_path} file_content)
+    # This regex includes \n at the begin to (hackish) avoid including comments
+    string(REGEX MATCHALL "\n#include +\"[^\"]+\"" includes "${file_content}")
 
-# Replace double quotes with single quotes,
-# as double quotes will be used to wrap the lines
-STRING(REGEX REPLACE "\"" "'" line_contents "${line_contents}")
+    set(parsed_content "${file_content}")
+    foreach (include_match ${includes})
+        string(REGEX MATCH "\"([^\"]+)\"" _ "${include_match}")
+        set(include_file ${CMAKE_MATCH_1})
+        get_filename_component(include_full_path "${file_path}" DIRECTORY)
+        set(include_full_path "${include_full_path}/${include_file}")
 
-# CMake separates list elements with semicolons, but semicolons
-# are used extensively in the shader code.
-# Replace with a temporary marker, to be reverted later.
-STRING(REGEX REPLACE ";" "{{SEMICOLON}}" line_contents "${line_contents}")
+        if (NOT EXISTS "${include_full_path}")
+            message(FATAL_ERROR "Included file not found: ${include_full_path} from ${file_path}")
+        endif ()
 
-# Make every line an individual element in the CMake list.
-STRING(REGEX REPLACE "\n" ";" line_contents "${line_contents}")
+        parse_includes("${include_full_path}" sub_content)
+        string(REPLACE "${include_match}" "\n${sub_content}" parsed_content "${parsed_content}")
+    endforeach ()
+    set(${output_content} "${parsed_content}" PARENT_SCOPE)
+endfunction()
 
-# Build the shader string, wrapping each line in double quotes.
-foreach(line IN LISTS line_contents)
-    string(CONCAT CONTENTS "${CONTENTS}" \"${line}\\n\"\n)
-endforeach()
-
-# Revert the original semicolons in the source.
-STRING(REGEX REPLACE "{{SEMICOLON}}" ";" CONTENTS "${CONTENTS}")
+parse_includes("${SOURCE_FILE}" CONTENTS)
 
 get_filename_component(OUTPUT_DIR ${HEADER_FILE} DIRECTORY)
-make_directory(${OUTPUT_DIR})
+file(MAKE_DIRECTORY ${OUTPUT_DIR})
 configure_file(${INPUT_FILE} ${HEADER_FILE} @ONLY)

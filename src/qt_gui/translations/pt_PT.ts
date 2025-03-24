@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Substituir Cor</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation type="unfinished">Cannot bind axis values more than once</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation type="unfinished">Use Per-Game configs</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation type="unfinished">Could not open the file for reading</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation type="unfinished">Could not open the file for writing</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation type="unfinished">Save Changes</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation type="unfinished">Do you want to save changes?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation type="unfinished">Do you want to reset this config to your custom default config?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation type="unfinished">Reset to Default</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -776,6 +847,10 @@
       <translation>Eliminar DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Eliminar Troféu</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Compatibilidade...</translation>
     </message>
@@ -852,6 +927,10 @@
       <translation>Este jogo não tem nenhuma pasta de atualização para abrir!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Não foi encontrado nenhum ficheiro de registo para este jogo!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Falha ao converter ícone.</translation>
     </message>
@@ -860,12 +939,43 @@
       <translation>Este jogo não tem dados guardados para eliminar!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Este jogo não tem troféus guardados para eliminar!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Dados Guardados</translation>
     </message>
     <message>
+      <source>Trophy</source>
+      <translation>Troféus</translation>
+    </message>
+    <message>
       <source>SFO Viewer for </source>
       <translation>Visualizador SFO para </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation type="unfinished">Quickstart</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation type="unfinished">FAQ</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation type="unfinished">Syntax</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation type="unfinished">Special Bindings</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation type="unfinished">Keybindings</translation>
     </message>
   </context>
   <context>
@@ -885,6 +995,217 @@
     <message>
       <source>Delete PKG File on Install</source>
       <translation>Eliminar Ficheiro PKG após Instalação</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Configurar Comandos</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Botões de Direção</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Cima</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>não mapeado</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Esquerda</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Direita</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Baixo</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Meio Modo do Manípulo Esquerdo</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>mantenha pressionado para mover o manípulo esquerdo à metade da velocidade</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Manípulo Esquerdo</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Seleção de Configuração</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Configuração Comum</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Utilizar configurações por jogo</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Editor de Texto</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Ajuda</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Clique do Touchpad</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Rato para Manípulo</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>*pressione F7 em jogo para ativar</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opções</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Parâmetros de Movimento do Rato</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>nota: clique no Botão de Ajuda/Special Keybindings para obter mais informações</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Botões Frontais</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triângulo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Quadrado</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Círculo</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Cruz</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Meio Modo do Manípulo Direito</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>mantenha pressionado para mover o manípulo direito à metade da velocidade</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Manípulo Direito</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Deslocamento de Velocidade (def 0,125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation type="unfinished">Copy from Common Config</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation type="unfinished">Common Config Selected</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation type="unfinished">Copy values from Common Config</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation type="unfinished">Cannot bind any unique input more than once</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation type="unfinished">Press a key</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation type="unfinished">Cannot set mapping</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
     </message>
   </context>
   <context>
@@ -1312,6 +1633,10 @@
       <translation>Troféus</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Abrir a pasta de imagens/sons de troféus personalizados</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Registos</translation>
     </message>
@@ -1476,8 +1801,8 @@
       <translation>Música de Título</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Desativar Pop-ups dos Troféus</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Desativar Notificações de Troféus</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1803,12 +2128,84 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Separar Ficheiros de Registo:\nEscreve um ficheiro de registo para cada jogo.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Posição da Notificação do Troféu</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Esquerda</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Direita</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Acima</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Abaixo</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Duração da Notificação</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Pasta de Utilizador Portátil</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Criar Pasta de Utilizador Portátil a partir da Pasta de Utilizador Comum</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Pasta de utilizador portátil:\nArmazena as definições e dados do shadPS4 que serão aplicados apenas na compilação do shadPS4 localizada na pasta atual. Reinicie a aplicação após criar a pasta de utilizador portátil para começar a usá-la.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation type="unfinished">Cannot create portable user folder</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation type="unfinished">%1 already exists</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation type="unfinished">Portable user folder created</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation type="unfinished">%1 successfully created.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Progresso</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Mostrar Troféus Conquistados</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Mostrar Troféus Não Conquistados</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Mostrar Troféus Ocultos</translation>
     </message>
   </context>
 </TS>

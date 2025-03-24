@@ -139,6 +139,35 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     return m_modules.size() - 1;
 }
 
+s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
+                               int* pRes) {
+    u32 handle = FindByName(path);
+    if (handle != -1) {
+        return handle;
+    }
+    handle = LoadModule(path, true);
+    if (handle == -1) {
+        return -1;
+    }
+    auto* module = GetModule(handle);
+    RelocateAnyImports(module);
+
+    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
+    if (module->tls.image_size != 0) {
+        AdvanceGenerationCounter();
+    }
+
+    // Retrieve and verify proc param according to libkernel.
+    u64* param = module->GetProcParam<u64*>();
+    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    s32 ret = module->Start(args, argp, param);
+    if (pRes) {
+        *pRes = ret;
+    }
+
+    return handle;
+}
+
 Module* Linker::FindByAddress(VAddr address) {
     for (auto& module : m_modules) {
         const VAddr base = module->GetBaseAddress();

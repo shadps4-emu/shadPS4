@@ -5,6 +5,7 @@
 #include <QDirIterator>
 #include <QFileDialog>
 #include <QHoverEvent>
+#include <QMessageBox>
 #include <fmt/format.h>
 
 #include "common/config.h"
@@ -225,6 +226,17 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
             Config::setShowBackgroundImage(state == Qt::Checked);
         });
     }
+
+    // User TAB
+    {
+        connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
+            QString userPath;
+            Common::FS::PathToQString(userPath,
+                                      Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+        });
+    }
+
     // Input TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -234,12 +246,13 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
     // PATH TAB
     {
         connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
-            const auto config_dir = Config::getGameInstallDirs();
             QString file_path_string =
                 QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
-            if (!file_path.empty() && Config::addGameInstallDir(file_path)) {
+            if (!file_path.empty() && Config::addGameInstallDir(file_path, true)) {
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
+                item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+                item->setCheckState(Qt::Checked);
                 ui->gameFoldersListWidget->addItem(item);
             }
         });
@@ -273,6 +286,21 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                 ui->currentSaveDataPath->setText(save_data_path_string);
             }
         });
+
+        connect(ui->PortableUserButton, &QPushButton::clicked, this, []() {
+            QString userDir;
+            Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
+            if (std::filesystem::exists(std::filesystem::current_path() / "user")) {
+                QMessageBox::information(NULL, tr("Cannot create portable user folder"),
+                                         tr("%1 already exists").arg(userDir));
+            } else {
+                std::filesystem::copy(Common::FS::GetUserPath(Common::FS::PathType::UserDir),
+                                      std::filesystem::current_path() / "user",
+                                      std::filesystem::copy_options::recursive);
+                QMessageBox::information(NULL, tr("Portable user folder created"),
+                                         tr("%1 successfully created.").arg(userDir));
+            }
+        });
     }
 
     // DEBUG TAB
@@ -280,8 +308,8 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         connect(ui->OpenLogLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
             Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath + "/log"));
+                                      Common::FS::GetUserPath(Common::FS::PathType::LogDir));
+            QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
     }
 
@@ -308,6 +336,9 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
 
+        // User
+        ui->OpenCustomTrophyLocationButton->installEventFilter(this);
+
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
@@ -330,6 +361,7 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         ui->saveDataGroupBox->installEventFilter(this);
         ui->currentSaveDataPath->installEventFilter(this);
         ui->browseButton->installEventFilter(this);
+        ui->PortableUserFolderGroupBox->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -399,10 +431,19 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
-    ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "General", "allowHDR", false));
+    ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
     ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
+    ui->popUpDurationSpinBox->setValue(Config::getTrophyNotificationDuration());
+
+    QString side = QString::fromStdString(Config::sideTrophy());
+
+    ui->radioButton_Left->setChecked(side == "left");
+    ui->radioButton_Right->setChecked(side == "right");
+    ui->radioButton_Top->setChecked(side == "top");
+    ui->radioButton_Bottom->setChecked(side == "bottom");
+
     ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
@@ -593,6 +634,11 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Update Compatibility Database:\\nImmediately update the compatibility database.");
     }
 
+    //User
+    if (elementName == "OpenCustomTrophyLocationButton") {
+        text = tr("Open the custom trophy images/sounds folder:\\nYou can add custom images to the trophies and an audio.\\nAdd the files to custom_trophy with the following names:\\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\\nNote: The sound will only work in QT versions.");
+    }
+
     // Input
     if (elementName == "hideCursorGroupBox") {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
@@ -622,6 +668,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Add:\\nAdd a folder to the list.");
     } else if (elementName == "removeFolderButton") {
         text = tr("Remove:\\nRemove a folder from the list.");
+    } else if (elementName == "PortableUserFolderGroupBox") {
+        text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.");
     }
 
     // Save Data
@@ -683,6 +731,18 @@ void SettingsDialog::UpdateSettings() {
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
+    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value());
+
+    if (ui->radioButton_Top->isChecked()) {
+        Config::setSideTrophy("top");
+    } else if (ui->radioButton_Left->isChecked()) {
+        Config::setSideTrophy("left");
+    } else if (ui->radioButton_Right->isChecked()) {
+        Config::setSideTrophy("right");
+    } else if (ui->radioButton_Bottom->isChecked()) {
+        Config::setSideTrophy("bottom");
+    }
+
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
@@ -724,6 +784,17 @@ void SettingsDialog::UpdateSettings() {
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
     Config::setShowBackgroundImage(ui->showBackgroundImageCheckBox->isChecked());
 
+    std::vector<Config::GameInstallDir> dirs_with_states;
+    for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
+        QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
+        QString path_string = item->text();
+        auto path = Common::FS::PathFromQString(path_string);
+        bool enabled = (item->checkState() == Qt::Checked);
+
+        dirs_with_states.push_back({path, enabled});
+    }
+    Config::setAllGameInstallDirs(dirs_with_states);
+
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
     if (Config::getEnableDiscordRPC()) {
@@ -738,6 +809,7 @@ void SettingsDialog::UpdateSettings() {
 }
 
 void SettingsDialog::ResetInstallFolders() {
+    ui->gameFoldersListWidget->clear();
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const toml::value data = toml::parse(userdir / "config.toml");
@@ -746,21 +818,36 @@ void SettingsDialog::ResetInstallFolders() {
         const toml::value& gui = data.at("GUI");
         const auto install_dir_array =
             toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
-        std::vector<std::filesystem::path> settings_install_dirs_config = {};
 
-        for (const auto& dir : install_dir_array) {
-            if (std::find(settings_install_dirs_config.begin(), settings_install_dirs_config.end(),
-                          dir) == settings_install_dirs_config.end()) {
-                settings_install_dirs_config.push_back(dir);
-            }
+        std::vector<bool> install_dirs_enabled;
+        try {
+            install_dirs_enabled = Config::getGameInstallDirsEnabled();
+        } catch (...) {
+            // If it does not exist, assume that all are enabled.
+            install_dirs_enabled.resize(install_dir_array.size(), true);
         }
 
-        for (const auto& dir : settings_install_dirs_config) {
+        if (install_dirs_enabled.size() < install_dir_array.size()) {
+            install_dirs_enabled.resize(install_dir_array.size(), true);
+        }
+
+        std::vector<Config::GameInstallDir> settings_install_dirs_config;
+
+        for (size_t i = 0; i < install_dir_array.size(); i++) {
+            std::filesystem::path dir = install_dir_array[i];
+            bool enabled = install_dirs_enabled[i];
+
+            settings_install_dirs_config.push_back({dir, enabled});
+
             QString path_string;
             Common::FS::PathToQString(path_string, dir);
+
             QListWidgetItem* item = new QListWidgetItem(path_string);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
             ui->gameFoldersListWidget->addItem(item);
         }
-        Config::setGameInstallDirs(settings_install_dirs_config);
+
+        Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
 }

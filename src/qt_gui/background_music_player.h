@@ -17,7 +17,7 @@ public:
     }
 
     void setVolume(int volume);
-    void playMusic(const QString& snd0path);
+    void playMusic(const QString& snd0path, bool loops = true);
     void stopMusic();
 
 private:
