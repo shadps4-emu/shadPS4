@@ -1307,6 +1307,14 @@
       <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>Visualizador de PKG</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation type="unfinished">Select Game:</translation>
     </message>
     <message>
       <source>Progress</source>
