@@ -1602,7 +1602,7 @@
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
-      <translation>Bruk seperat oppdateringsmappe</translation>
+      <translation>Bruk separat oppdateringsmappe</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>

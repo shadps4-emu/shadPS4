@@ -26,11 +26,11 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches deneysel niteliktedir.\nDikkatli kullanın.\n\nCheat&apos;leri ayrı ayrı indirerek, depo seçerek ve indirme düğmesine tıklayarak indirin.\nPatches sekmesinde tüm patch&apos;leri bir kerede indirebilir, hangi patch&apos;leri kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nCheats/Patches&apos;i geliştirmediğimiz için,\nproblemleri cheat yazarına bildirin.\n\nYeni bir cheat mi oluşturduğunuz? Şu adresi ziyaret edin:\n</translation>
+      <translation>Hileler/Yamalar deneysel özelliklerdir.\nDikkatli kullanın.\n\nHileleri depo seçerek ve indirme düğmesine tıklayarak ayrı ayrı indirin.\nYamalar sekmesinde tüm yamaları tek seferde indirebilir, hangi yamaları kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nHileleri ve yamaları biz geliştirmediğimiz için\nsorunlarınızı hile geliştiricisine bildirin.\n\nYeni bir hile oluşturduysanız şu adresi ziyaret edin:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Görüntü Mevcut Değil</translation>
+      <translation>Kaynak Mevcut Değil</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -70,7 +70,7 @@
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>Seçilen dosyayı silmek istiyor musunuz?\n%1</translation>
+      <translation>Seçili dosyayı silmek istiyor musunuz?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
@@ -122,7 +122,7 @@
     </message>
     <message>
       <source>Success</source>
-      <translation>Başarı</translation>
+      <translation>Başarılı</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
@@ -138,11 +138,11 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Dosya Var</translation>
+      <translation>Dosya mevcut</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>Dosya zaten var. Üzerine yazmak ister misiniz?</translation>
+      <translation>Dosya zaten mevcut. Var olan dosyayı değiştirmek istiyor musunuz?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -313,7 +313,7 @@
     </message>
     <message>
       <source>Update</source>
-      <translation>Güncelleme</translation>
+      <translation>Güncelle</translation>
     </message>
     <message>
       <source>No</source>
@@ -551,26 +551,26 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Kaydet</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Uygula</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Varsayılanlara Sıfırla</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>İptal</translation>
     </message>
   </context>
   <context>
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Klavye + Fare ve Kontrolcü tuş atamalarını düzenle</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -1141,7 +1141,7 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Hız Sapması (varsayılan 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
@@ -1149,7 +1149,7 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>Ölü Bölge Sapması (varsayılan 0.50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
@@ -1161,7 +1161,7 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>Bu tuş, Ortak Yapılandırma'daki atamaları seçili profile kopyalar ve seçili profil Ortak Yapılandırma ise kullanılamaz.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
@@ -1193,19 +1193,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Kaydet</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Uygula</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Varsayılanlara Sıfırla</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>İptal</translation>
     </message>
   </context>
   <context>
@@ -2030,7 +2030,7 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Ana Bilgisayar Hata Ayıklama Göstergeleri:\nVulkan komutlarının etrafına belirli AMDGPU komutları için göstergeler gibi emülatör tarafı bilgileri ekler ve kaynaklara hata ayıklama adları verir.\nBunu etkinleştirdiyseniz, Çökme Tanılamaları'nı etkinleştirmelisiniz.\nRenderDoc gibi programlar için faydalıdır.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
