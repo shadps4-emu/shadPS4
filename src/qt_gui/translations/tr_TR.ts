@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Görüntü Mevcut Değil</translation>
+      <translation>Kaynak Mevcut Değil</translation>
     </message>
     <message>
       <source>Serial: </source>
