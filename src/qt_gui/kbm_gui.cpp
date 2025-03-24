@@ -795,29 +795,29 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 break;
             case Qt::Key_Shift:
                 if (keyEvent->nativeScanCode() == lshift) {
-                     keyText = "lshift";
+                    keyText = "lshift";
                 } else if (keyEvent->nativeScanCode() == rshift) {
-                     keyText = "rshift";
+                    keyText = "rshift";
                 } else {
-                     keyText = "shift";
+                    keyText = "shift";
                 }
                 break;
             case Qt::Key_Alt:
                 if (keyEvent->nativeScanCode() == lalt) {
-                     keyText = "lalt";
+                    keyText = "lalt";
                 } else if (keyEvent->nativeScanCode() == ralt) {
-                     keyText = "ralt";
+                    keyText = "ralt";
                 } else {
-                     keyText = "alt";
+                    keyText = "alt";
                 }
                 break;
             case Qt::Key_Control:
                 if (keyEvent->nativeScanCode() == lctrl) {
-                     keyText = "lctrl";
+                    keyText = "lctrl";
                 } else if (keyEvent->nativeScanCode() == rctrl) {
-                     keyText = "rctrl";
+                    keyText = "rctrl";
                 } else {
-                     keyText = "ctrl";
+                    keyText = "ctrl";
                 }
                 break;
             case Qt::Key_Meta:
