@@ -118,7 +118,7 @@ void SetPosixErrno(int e) {
         g_posix_errno = POSIX_ETIMEDOUT;
         break;
     default:
-        UNREACHABLE_MSG("errno = {}", e);
+        LOG_WARNING(Kernel, "Unhandled errno {}", e);
         g_posix_errno = e;
     }
 }
