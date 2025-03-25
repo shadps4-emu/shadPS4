@@ -58,7 +58,6 @@
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
 #include "jpeg/jpegenc.h"
-#include "core/libraries/disc_map/disc_map.h
 
 namespace Libraries {
 
