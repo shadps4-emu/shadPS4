@@ -2102,7 +2102,7 @@
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>طريقة العرض</translation>
     </message>
     <message>
       <source>Windowed</source>
@@ -2213,11 +2213,11 @@
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>عرض الكؤوس غير المكتسبة</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>عرض الكؤوس المخفية</translation>
     </message>
   </context>
 </TS>
