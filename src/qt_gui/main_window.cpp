@@ -182,26 +182,36 @@ QWidget* MainWindow::createButtonWithLabel(QPushButton* button, const QString& l
     return container;
 }
 
+QWidget* createSpacer(QWidget* parent) {
+    QWidget* spacer = new QWidget(parent);
+    spacer->setFixedWidth(15);
+    spacer->setFixedHeight(15);
+    return spacer;
+}
+
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
-    ui->toolBar->clear();
+
     bool showLabels = ui->toggleLabelsAct->isChecked();
+    ui->toolBar->clear();
+
+    ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(
         createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
     ui->toolBar->addWidget(
         createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(
         createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
-
-    ui->toolBar->addWidget(ui->sizeSliderContainer);
-    ui->toolBar->addWidget(ui->mw_searchbar);
+    ui->toolBar->addWidget(createSpacer(this));
 
     if (showLabels) {
         QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
@@ -209,6 +219,29 @@ void MainWindow::AddUiWidgets() {
             pauseButtonLabel->setVisible(false);
         }
     }
+
+    QBoxLayout* toolbarLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+    toolbarLayout->setSpacing(2);
+    toolbarLayout->setContentsMargins(2, 2, 2, 2);
+    ui->sizeSliderContainer->setFixedWidth(150);
+
+    QWidget* searchSliderContainer = new QWidget(this);
+    QBoxLayout* searchSliderLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+    searchSliderLayout->setContentsMargins(0, 0, 6, 6);
+    searchSliderLayout->setSpacing(2);
+    ui->mw_searchbar->setFixedWidth(150);
+
+    searchSliderLayout->addWidget(ui->sizeSliderContainer);
+    searchSliderLayout->addWidget(ui->mw_searchbar);
+
+    searchSliderContainer->setLayout(searchSliderLayout);
+
+    ui->toolBar->addWidget(searchSliderContainer);
+
+    if (!showLabels) {
+        toolbarLayout->addWidget(searchSliderContainer);
+    }
+
     ui->playButton->setVisible(true);
     ui->pauseButton->setVisible(false);
 }
