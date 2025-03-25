@@ -32,6 +32,7 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 namespace Config {
 
 static bool isNeo = false;
+static bool isDevKit = false;
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -165,6 +166,10 @@ void setLoadGameSizeEnabled(bool enable) {
 
 bool isNeoModeConsole() {
     return isNeo;
+}
+
+bool isDevKitConsole() {
+    return isDevKit;
 }
 
 bool getIsFullscreen() {
@@ -755,6 +760,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& general = data.at("General");
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        isDevKit = toml::find_or<bool>(general, "isDevKit", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         trophyNotificationDuration =
@@ -955,6 +961,7 @@ void save(const std::filesystem::path& path) {
     }
 
     data["General"]["isPS4Pro"] = isNeo;
+    data["General"]["isDevKit"] = isDevKit;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
     data["General"]["playBGM"] = playBGM;
@@ -1101,6 +1108,7 @@ void saveMainWindow(const std::filesystem::path& path) {
 void setDefaultValues() {
     isHDRAllowed = false;
     isNeo = false;
+    isDevKit = false;
     isFullscreen = false;
     isTrophyPopupDisabled = false;
     playBGM = false;
