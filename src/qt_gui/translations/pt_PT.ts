@@ -2190,7 +2190,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Abra a pasta de imagens/sons de troféus personalizados:\nPoderá adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas nas versões Qt.</translation>
+      <translation>Abra a pasta de imagens/sons de troféus personalizados:\nPoderá adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3 ou trophy.wav, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas nas versões Qt.</translation>
     </message>
   </context>
   <context>
