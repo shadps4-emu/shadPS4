@@ -736,7 +736,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         u32 next_dw_off = header->type3.NumWords() + 1;
 
         // If we have a buffered packet, use it.
-        if (queue.tmp_dwords > 0) {
+        if (queue.tmp_dwords > 0) [[unlikely]] {
             header = reinterpret_cast<const PM4Header*>(queue.tmp_packet.data());
             next_dw_off = header->type3.NumWords() + 1 - queue.tmp_dwords;
             std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb, next_dw_off * sizeof(u32));
@@ -744,7 +744,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         }
 
         // If the packet is split across ring boundary, buffer until next submission
-        if (next_dw_off > acb_dwords) {
+        if (next_dw_off > acb_dwords) [[unlikely]] {
             std::memcpy(queue.tmp_packet.data(), acb, acb_dwords * sizeof(u32));
             queue.tmp_dwords = acb_dwords;
             if constexpr (!is_indirect) {
