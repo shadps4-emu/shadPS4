@@ -186,52 +186,29 @@ void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
     ui->toolBar->clear();
-
-    QWidget* toolbarContainer = new QWidget(this);
-    QHBoxLayout* mainLayout = new QHBoxLayout(toolbarContainer);
-    mainLayout->setSpacing(2);
     bool showLabels = ui->toggleLabelsAct->isChecked();
-
-    QWidget* buttonGroup = new QWidget(this);
-    QHBoxLayout* buttonLayout = new QHBoxLayout(buttonGroup);
-    buttonLayout->setSpacing(2);
-
-    buttonLayout->addWidget(
+    ui->toolBar->addWidget(
         createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
-
-    buttonLayout->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
-
-    buttonLayout->addWidget(
+    ui->toolBar->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
+    ui->toolBar->addWidget(
         createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
-
-    buttonLayout->addWidget(
+    ui->toolBar->addWidget(
         createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
 
-    buttonLayout->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
+    ui->toolBar->addWidget(ui->sizeSliderContainer);
+    ui->toolBar->addWidget(ui->mw_searchbar);
 
     if (showLabels) {
         QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
-        if (pauseButtonLabel)
+        if (pauseButtonLabel) {
             pauseButtonLabel->setVisible(false);
+        }
     }
-    QWidget* searchSliderContainer = new QWidget(this);
-    QHBoxLayout* searchSliderLayout = new QHBoxLayout(searchSliderContainer);
-    searchSliderLayout->addWidget(ui->sizeSliderContainer);
-    searchSliderLayout->addWidget(ui->mw_searchbar);
-    searchSliderContainer->setLayout(searchSliderLayout);
-
-    buttonLayout->addWidget(searchSliderContainer);
-    mainLayout->addWidget(buttonGroup);
-    ui->toolBar->addWidget(toolbarContainer);
-
     ui->playButton->setVisible(true);
     ui->pauseButton->setVisible(false);
 }
