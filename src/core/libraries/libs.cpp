@@ -58,6 +58,7 @@
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
 #include "jpeg/jpegenc.h"
+#include "core/libraries/disc_map/disc_map.h
 
 namespace Libraries {
 
@@ -115,6 +116,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpParty::RegisterlibSceNpParty(sym);
     Libraries::Zlib::RegisterlibSceZlib(sym);
     Libraries::Hmd::RegisterlibSceHmd(sym);
+    Libraries::DiscMap::RegisterlibSceDiscMap(sym);
 }
 
 } // namespace Libraries
