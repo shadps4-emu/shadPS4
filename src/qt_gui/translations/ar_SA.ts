@@ -2106,19 +2106,19 @@
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>نافذة</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>شاشة كاملة</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>شاشة كاملة (دون حدود)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>حجم النافذة</translation>
     </message>
     <message>
       <source>W:</source>
@@ -2130,7 +2130,7 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>ملفات السجل المنفصل</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
@@ -2138,35 +2138,35 @@
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>موقع إشعار الكأس</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>يسار</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>يمين</translation>
     </message>
     <message>
       <source>Top</source>
-      <translation type="unfinished">Top</translation>
+      <translation>في الأعلى</translation>
     </message>
     <message>
       <source>Bottom</source>
-      <translation type="unfinished">Bottom</translation>
+      <translation>الأسفل</translation>
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>مدة الإشعار</translation>
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>مجلد المستخدم المتنقل</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+      <translation>إنشاء مجلد مستخدم المتنقل من مجلد المستخدم الشائع</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
@@ -2174,11 +2174,11 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>لا يمكن إنشاء مجلد المستخدم المتنقل</translation>
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation type="unfinished">%1 already exists</translation>
+      <translation>%1 موجود مسبقاً</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
@@ -2186,7 +2186,7 @@
     </message>
     <message>
       <source>%1 successfully created.</source>
-      <translation type="unfinished">%1 successfully created.</translation>
+      <translation>تم إنشاء %1 بنجاح.</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
@@ -2201,15 +2201,15 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>اختر الُعْبَه:</translation>
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>مقدار التقدُّم</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>عرض الكؤوس المكتسبة</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
