@@ -26,6 +26,8 @@ bool GetLoadGameSizeEnabled();
 std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
+bool getShowLabelsUnderIcons();
+bool setShowLabelsUnderIcons();
 std::string getFullscreenMode();
 bool isNeoModeConsole();
 bool isDevKitConsole();

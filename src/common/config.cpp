@@ -107,6 +107,7 @@ static bool showBackgroundImage = true;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
+static bool showLabelsUnderIcons = true;
 
 // Language
 u32 m_language = 1; // english
@@ -174,6 +175,14 @@ bool isDevKitConsole() {
 
 bool getIsFullscreen() {
     return isFullscreen;
+}
+
+bool getShowLabelsUnderIcons() {
+    return showLabelsUnderIcons;
+}
+
+bool setShowLabelsUnderIcons() {
+    return false;
 }
 
 std::string getFullscreenMode() {
@@ -426,6 +435,9 @@ void setVblankDiv(u32 value) {
 
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
+}
+static void setShowLabelsUnderIcons(bool enable) {
+    showLabelsUnderIcons = enable;
 }
 
 void setFullscreenMode(std::string mode) {
