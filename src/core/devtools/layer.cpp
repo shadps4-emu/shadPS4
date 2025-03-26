@@ -118,22 +118,6 @@ void L::DrawMenuBar() {
 
         EndMainMenuBar();
     }
-
-    if (IsKeyPressed(ImGuiKey_F9, false)) {
-        if (io.KeyCtrl && io.KeyAlt) {
-            if (!DebugState.ShouldPauseInSubmit()) {
-                DebugState.RequestFrameDump(dump_frame_count);
-            }
-        }
-        if (!io.KeyCtrl && !io.KeyAlt) {
-            if (isSystemPaused) {
-                DebugState.ResumeGuestThreads();
-            } else {
-                DebugState.PauseGuestThreads();
-            }
-        }
-    }
-
     if (open_popup_options) {
         OpenPopup("GPU Tools Options");
         just_opened_options = true;
@@ -383,7 +367,11 @@ void L::Draw() {
     }
 
     if (IsKeyPressed(ImGuiKey_F9, false)) {
-        if (!io.KeyCtrl && !io.KeyAlt) {
+        if (io.KeyCtrl && io.KeyAlt) {
+            if (!DebugState.ShouldPauseInSubmit()) {
+                DebugState.RequestFrameDump(dump_frame_count);
+            }
+        } else {
             if (DebugState.IsGuestThreadsPaused()) {
                 DebugState.ResumeGuestThreads();
                 SDL_Log("Game resumed from Keyboard");

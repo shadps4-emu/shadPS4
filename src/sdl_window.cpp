@@ -334,6 +334,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
 WindowSDL::~WindowSDL() = default;
 
 void WindowSDL::WaitEvent() {
+    // Called on main thread
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
@@ -343,6 +344,7 @@ void WindowSDL::WaitEvent() {
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
+
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
@@ -378,6 +380,8 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         OnGamepadEvent(&event);
         break;
+    // i really would have appreciated ANY KIND OF DOCUMENTATION ON THIS
+    // AND IT DOESN'T EVEN USE PROPER ENUMS
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
         switch ((SDL_SensorType)event.gsensor.sensor) {
         case SDL_SENSOR_GYRO:
@@ -411,6 +415,8 @@ void WindowSDL::WaitEvent() {
             SDL_Log("Game Paused");
             DebugState.PauseGuestThreads();
         }
+        break;
+    default:
         break;
     }
 }

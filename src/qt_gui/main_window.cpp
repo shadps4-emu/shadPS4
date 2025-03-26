@@ -197,8 +197,6 @@ void MainWindow::AddUiWidgets() {
     ui->toolBar->clear();
 
     ui->toolBar->addWidget(createSpacer(this));
-    ui->toolBar->addWidget(
-        createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
@@ -212,7 +210,15 @@ void MainWindow::AddUiWidgets() {
         createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
     ui->toolBar->addWidget(createSpacer(this));
-
+    ui->toolBar->addWidget(
+        createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
+    QFrame* line = new QFrame(this);
+    line->setFrameShape(QFrame::VLine);
+    line->setFrameShadow(QFrame::Sunken);
+    line->setMinimumWidth(2);
+    ui->toolBar->addWidget(line);
+    ui->toolBar->addWidget(createSpacer(this));
     if (showLabels) {
         QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
         if (pauseButtonLabel) {
@@ -1473,6 +1479,10 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void MainWindow::StartEmulator(std::filesystem::path path) {
+    if (isGameRunning) {
+        QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
+        return;
+    }
     isGameRunning = true;
 #ifdef __APPLE__
     // SDL on macOS requires main thread.
