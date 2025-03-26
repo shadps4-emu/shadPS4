@@ -1307,6 +1307,14 @@
       <translation>Dump spilliste</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Fant ingen spill. Legg til spillene dine i biblioteket først.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>PKG-viser</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Velg spill:</translation>
     </message>
     <message>
       <source>Progress</source>

@@ -1307,6 +1307,14 @@
       <translation>Oyun Listesini Kaydet</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Kupa Görüntüleyici</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Oyun bulunamadı. Oyunlarınızı lütfen önce kütüphanenize ekleyin.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>PKG Görüntüleyici</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Kupa Görüntüleyici</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Oyun Seç:</translation>
     </message>
     <message>
       <source>Progress</source>

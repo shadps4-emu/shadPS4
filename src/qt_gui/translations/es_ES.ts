@@ -1307,6 +1307,14 @@
       <translation>Volcar Lista de Juegos</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Expositor de Trofeos</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>No se encontraron juegos. Por favor, añade tus juegos a tu biblioteca primero.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>Vista PKG</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Expositor de Trofeos</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Selecciona un Juego:</translation>
     </message>
     <message>
       <source>Progress</source>

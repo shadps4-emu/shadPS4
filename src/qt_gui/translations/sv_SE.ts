@@ -1307,6 +1307,14 @@
       <translation>Dumpa spellista</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Trofévisare</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Inga spel hittades. Lägg till dina spel till biblioteket först.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>PKG-visare</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Trofé-visare</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Välj spel:</translation>
     </message>
     <message>
       <source>Progress</source>
