@@ -158,8 +158,7 @@ int main(int argc, char* argv[]) {
     }
 
     // If no game directories are set and no command line argument, prompt for it
-    if (Config::getGameInstallDirsEnabled().empty() &&
-        !has_command_line_argument) {
+    if (Config::getGameInstallDirsEnabled().empty() && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }
