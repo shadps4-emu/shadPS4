@@ -157,12 +157,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    bool allInstallDirsDisabled =
-        std::ranges::all_of(Config::getGameInstallDirsEnabled(), [](bool val) { return !val; });
-
-    // If no game directory is set and no command line argument, prompt for it
-    if (Config::getGameInstallDirs().empty() && allInstallDirsDisabled &&
-        !has_command_line_argument) {
+    // If no game directories are set and no command line argument, prompt for it
+    if (Config::getGameInstallDirsEnabled().empty() && !has_command_line_argument) {
         GameInstallDialog dlg;
         dlg.exec();
     }
