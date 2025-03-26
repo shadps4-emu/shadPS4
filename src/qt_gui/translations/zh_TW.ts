@@ -407,7 +407,7 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>操控設定</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -519,7 +519,7 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>色彩調整</translation>
     </message>
     <message>
       <source>R:</source>
@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>無法保存</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -551,11 +551,11 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>保存</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>套用</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
@@ -563,7 +563,7 @@
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>取消</translation>
     </message>
   </context>
   <context>
@@ -578,7 +578,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>錯誤</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -590,7 +590,7 @@
     </message>
     <message>
       <source>Save Changes</source>
-      <translation type="unfinished">Save Changes</translation>
+      <translation>儲存變更</translation>
     </message>
     <message>
       <source>Do you want to save changes?</source>
