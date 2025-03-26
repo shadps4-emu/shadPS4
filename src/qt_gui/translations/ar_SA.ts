@@ -1149,7 +1149,7 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation/>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
