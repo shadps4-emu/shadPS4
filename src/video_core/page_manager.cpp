@@ -3,10 +3,10 @@
 
 #include <thread>
 #include <boost/icl/interval_set.hpp>
-#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/signal_context.h"
+#include "common/spin_lock.h"
 #include "core/memory.h"
 #include "core/signals.h"
 #include "video_core/page_manager.h"
@@ -14,6 +14,7 @@
 
 #ifndef _WIN64
 #include <sys/mman.h>
+#include "common/adaptive_mutex.h"
 #ifdef ENABLE_USERFAULTFD
 #include <fcntl.h>
 #include <linux/userfaultfd.h>
@@ -22,16 +23,19 @@
 #endif
 #else
 #include <windows.h>
+#include "common/spin_lock.h"
 #endif
 
 namespace VideoCore {
 
-constexpr size_t PAGESIZE = 4_KB;
-constexpr size_t PAGEBITS = 12;
+struct PageManager::Impl {
+    static constexpr size_t ADDRESS_BITS = 40;
+    static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PAGE_BITS);
+    inline static Vulkan::Rasterizer* rasterizer;
 
 #ifdef ENABLE_USERFAULTFD
-struct PageManager::Impl {
-    Impl(Vulkan::Rasterizer* rasterizer_) : rasterizer{rasterizer_} {
+    Impl(Vulkan::Rasterizer* rasterizer_) {
+        rasterizer = rasterizer_;
         uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY);
         ASSERT_MSG(uffd != -1, "{}", Common::GetLastErrorMsg());
 
@@ -118,12 +122,9 @@ struct PageManager::Impl {
         }
     }
 
-    Vulkan::Rasterizer* rasterizer;
     std::jthread ufd_thread;
     int uffd;
-};
 #else
-struct PageManager::Impl {
     Impl(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
 
@@ -141,38 +142,116 @@ struct PageManager::Impl {
         // No-op
     }
 
-    void Protect(VAddr address, size_t size, bool allow_write) {
+    void Protect(VAddr address, size_t size, Core::MemoryPermission perms) {
         auto* memory = Core::Memory::Instance();
         auto& impl = memory->GetAddressSpace();
-        impl.Protect(address, size,
-                     allow_write ? Core::MemoryPermission::ReadWrite
-                                 : Core::MemoryPermission::Read);
+        impl.Protect(address, size, perms);
     }
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
         if (Common::IsWriteError(context)) {
             return rasterizer->InvalidateMemory(addr, 1);
+        } else {
+            return rasterizer->ReadMemory(addr, 1);
         }
         return false;
     }
-
-    inline static Vulkan::Rasterizer* rasterizer;
-};
 #endif
 
+    template <s32 delta, bool is_read>
+    void UpdatePageWatchers(VAddr addr, u64 size) {
+        std::scoped_lock lk{lock};
+        std::atomic_thread_fence(std::memory_order_acquire);
+
+        size_t page = addr >> PAGE_BITS;
+        auto perms = cached_pages[page].Perms();
+        u64 range_begin = 0;
+        u64 range_bytes = 0;
+
+        const auto release_pending = [&] {
+            if (range_bytes > 0) {
+                Protect(range_begin << PAGE_BITS, range_bytes, perms);
+                range_bytes = 0;
+            }
+        };
+        // Iterate requested pages.
+        const size_t page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+        for (; page != page_end; ++page) {
+            PageState& state = cached_pages[page];
+
+            // Apply the change to the page state.
+            const auto new_count = state.AddDelta<is_read, delta>();
+
+            // If the protection changed flush pending (un)protect action.
+            if (auto new_perms = state.Perms(); new_perms != perms) [[unlikely]] {
+                release_pending();
+                perms = new_perms;
+            }
+
+            // If the page must be (un)protected add it to pending range.
+            if ((new_count == 0 && delta < 0) || (new_count == 1 && delta > 0)) {
+                if (range_bytes == 0) {
+                    range_begin = page;
+                }
+                range_bytes += PAGE_SIZE;
+            } else {
+                release_pending();
+            }
+        }
+        release_pending();
+    }
+
+    struct PageState {
+        u8 num_write_watchers : 7;
+        // At the moment only buffer cache can request read watchers.
+        // And buffers cannot overlap, thus only 1 can exist per page.
+        u8 num_read_watchers : 1;
+
+        Core::MemoryPermission WritePerm() const noexcept {
+            return num_write_watchers == 0 ? Core::MemoryPermission::Write
+                                           : Core::MemoryPermission::None;
+        }
+
+        Core::MemoryPermission ReadPerm() const noexcept {
+            return num_read_watchers == 0 ? Core::MemoryPermission::Read
+                                          : Core::MemoryPermission::None;
+        }
+
+        Core::MemoryPermission Perms() const noexcept {
+            return ReadPerm() | WritePerm();
+        }
+
+        template <bool is_read, s32 delta>
+        u8 AddDelta() {
+            if constexpr (is_read) {
+                if constexpr (delta == 1) {
+                    return ++num_read_watchers;
+                } else {
+                    return --num_read_watchers;
+                }
+            } else {
+                if constexpr (delta == 1) {
+                    return ++num_write_watchers;
+                } else {
+                    return --num_write_watchers;
+                }
+            }
+        }
+    };
+
+    std::array<PageState, NUM_ADDRESS_PAGES> cached_pages{};
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+    Common::AdaptiveMutex lock;
+#else
+    Common::SpinLock lock;
+#endif
+};
+
 PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
-    : impl{std::make_unique<Impl>(rasterizer_)}, rasterizer{rasterizer_} {}
+    : impl{std::make_unique<Impl>(rasterizer_)} {}
 
 PageManager::~PageManager() = default;
-
-VAddr PageManager::GetPageAddr(VAddr addr) {
-    return Common::AlignDown(addr, PAGESIZE);
-}
-
-VAddr PageManager::GetNextPageAddr(VAddr addr) {
-    return Common::AlignUp(addr + 1, PAGESIZE);
-}
 
 void PageManager::OnGpuMap(VAddr address, size_t size) {
     impl->OnMap(address, size);
@@ -182,41 +261,14 @@ void PageManager::OnGpuUnmap(VAddr address, size_t size) {
     impl->OnUnmap(address, size);
 }
 
-void PageManager::UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta) {
-    static constexpr u64 PageShift = 12;
-
-    std::scoped_lock lk{lock};
-    const u64 num_pages = ((addr + size - 1) >> PageShift) - (addr >> PageShift) + 1;
-    const u64 page_start = addr >> PageShift;
-    const u64 page_end = page_start + num_pages;
-
-    const auto pages_interval =
-        decltype(cached_pages)::interval_type::right_open(page_start, page_end);
-    if (delta > 0) {
-        cached_pages.add({pages_interval, delta});
-    }
-
-    const auto& range = cached_pages.equal_range(pages_interval);
-    for (const auto& [range, count] : boost::make_iterator_range(range)) {
-        const auto interval = range & pages_interval;
-        const VAddr interval_start_addr = boost::icl::first(interval) << PageShift;
-        const VAddr interval_end_addr = boost::icl::last_next(interval) << PageShift;
-        const u32 interval_size = interval_end_addr - interval_start_addr;
-        ASSERT_MSG(rasterizer->IsMapped(interval_start_addr, interval_size),
-                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
-                   interval_start_addr, interval_size);
-        if (delta > 0 && count == delta) {
-            impl->Protect(interval_start_addr, interval_size, false);
-        } else if (delta < 0 && count == -delta) {
-            impl->Protect(interval_start_addr, interval_size, true);
-        } else {
-            ASSERT(count >= 0);
-        }
-    }
-
-    if (delta < 0) {
-        cached_pages.add({pages_interval, delta});
-    }
+template <s32 delta, bool is_read>
+void PageManager::UpdatePageWatchers(VAddr addr, u64 size) const {
+    impl->UpdatePageWatchers<delta, is_read>(addr, size);
 }
+
+template void PageManager::UpdatePageWatchers<1, true>(VAddr addr, u64 size) const;
+template void PageManager::UpdatePageWatchers<1, false>(VAddr addr, u64 size) const;
+template void PageManager::UpdatePageWatchers<-1, true>(VAddr addr, u64 size) const;
+template void PageManager::UpdatePageWatchers<-1, false>(VAddr addr, u64 size) const;
 
 } // namespace VideoCore

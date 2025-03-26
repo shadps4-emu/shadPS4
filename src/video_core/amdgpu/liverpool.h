@@ -1505,6 +1505,7 @@ public:
         u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
+    std::thread::id gpu_id;
 
 private:
     struct Task {
