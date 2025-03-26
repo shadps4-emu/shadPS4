@@ -842,9 +842,15 @@ int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, 
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpWaitRequest() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle *eh, OrbisHttpNBEvent* nbev, int maxevents, int timeout) {
+    LOG_INFO(Lib_Http, "waitRequest");
+    if (!nbev) {
+        LOG_ERROR(Lib_Http, "invalid values");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    nbev->events = ORBIS_HTTP_NB_EVENT_SOCK_ERR;
+    nbev->id = 3;
+    return 1;
 }
 
 void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym) {

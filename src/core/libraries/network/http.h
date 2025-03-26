@@ -24,6 +24,15 @@ struct OrbisHttpUriElement {
     u8 reserved[10];
 };
 
+typedef void* OrbisHttpEpollHandle;
+
+struct OrbisHttpNBEvent {
+    u32 events;
+    u32 eventDetail;
+    int id;
+    void* userArg;
+};
+
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
 int PS4_SYSV_ABI sceHttpAbortWaitRequest();
@@ -139,7 +148,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
                                  size_t* require, size_t prepare);
 int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize);
 int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in);
-int PS4_SYSV_ABI sceHttpWaitRequest();
+int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle *eh, OrbisHttpNBEvent* nbev, int maxevents, int timeout);
 
 void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http
