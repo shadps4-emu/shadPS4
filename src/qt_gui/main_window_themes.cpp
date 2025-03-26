@@ -179,7 +179,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::ToolTipBase, Qt::black);
         themePalette.setColor(QPalette::ToolTipText, Qt::white);
         themePalette.setColor(QPalette::Text, Qt::white);
-        themePalette.setColor(QPalette::Button, Qt::black);
+        themePalette.setColor(QPalette::Button, QColor(5, 5, 5));
         themePalette.setColor(QPalette::ButtonText, Qt::white);
         themePalette.setColor(QPalette::BrightText, Qt::red);
         themePalette.setColor(QPalette::Link, QColor(42, 130, 218));
@@ -187,8 +187,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::HighlightedText, Qt::black);
         qApp->setPalette(themePalette);
         qApp->setStyleSheet("QLineEdit {"
-                            "background-color: QColor(0, 0, 0, 0); color: QColor(0, 0, 0, 0); "
-                            "border: 1px solid #a0a0a0; "
+                            "background-color: #000000; color: #ffffff; border: 1px solid #a0a0a0; "
                             "border-radius: 4px; padding: 5px; }"
 
                             "QCheckBox::indicator:unchecked {"
