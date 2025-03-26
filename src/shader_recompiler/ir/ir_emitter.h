@@ -18,7 +18,7 @@ namespace Shader::IR {
 class IREmitter {
 public:
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
-    explicit IREmitter(Inst& inst)
+    explicit IREmitter(IR::Inst& inst)
         : block{inst.GetParent()}, insertion_point{Block::InstructionList::s_iterator_to(inst)} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
