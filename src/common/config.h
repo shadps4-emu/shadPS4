@@ -28,6 +28,7 @@ void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
 std::string getFullscreenMode();
 bool isNeoModeConsole();
+bool isDevKitConsole();
 bool getPlayBGM();
 int getBGMvolume();
 bool getisTrophyPopupDisabled();
