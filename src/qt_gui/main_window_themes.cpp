@@ -187,7 +187,7 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::BrightText, Qt::red);
         themePalette.setColor(QPalette::Link, QColor(42, 130, 218));
         themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-        themePalette.setColor(QPalette::HighlightedText, Qt::black);
+        themePalette.setColor(QPalette::HighlightedText, Qt::white);
         qApp->setPalette(themePalette);
         break;
     }
