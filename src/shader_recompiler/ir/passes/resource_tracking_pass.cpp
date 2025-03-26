@@ -253,7 +253,7 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
     } else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
         // Sharp is stored in the offset argument.
         // The vale is not inmediate if ReadConst is inside of a loop
-        // and the offset is different in each iteration. (we don't support this)
+        // and the base or offset is different in each iteration. (we don't support this)
         ASSERT(inst->Arg(1).IsImmediate());
         return inst->Arg(1).U32();
     }
