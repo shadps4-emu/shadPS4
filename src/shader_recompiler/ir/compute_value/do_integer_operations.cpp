@@ -221,13 +221,15 @@ void DoUMax32(ImmValueList& inst_values, const ImmValueList& args0, const ImmVal
 void DoSClamp32(ImmValueList& inst_values, const ImmValueList& value, const ImmValueList& min,
                 const ImmValueList& max) {
     Common::CartesianInvoke(ImmValue::Clamp<Type::U32, true>,
-                            std::insert_iterator(inst_values, inst_values.begin()), value, min, max);
+                            std::insert_iterator(inst_values, inst_values.begin()), value, min,
+                            max);
 }
 
 void DoUClamp32(ImmValueList& inst_values, const ImmValueList& value, const ImmValueList& min,
                 const ImmValueList& max) {
     Common::CartesianInvoke(ImmValue::Clamp<Type::U32, false>,
-                            std::insert_iterator(inst_values, inst_values.begin()), value, min, max);
+                            std::insert_iterator(inst_values, inst_values.begin()), value, min,
+                            max);
 }
 
 } // namespace Shader::IR::ComputeValue

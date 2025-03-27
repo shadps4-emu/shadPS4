@@ -56,8 +56,8 @@ void DoFPMax32(ImmValueList& inst_values, const ImmValueList& args0, const ImmVa
         }
         return ImmValue::Max<Type::F32, true>(a, b);
     };
-    Common::CartesianInvoke(op, std::insert_iterator(inst_values, inst_values.begin()), args0, args1,
-                            args_legacy);
+    Common::CartesianInvoke(op, std::insert_iterator(inst_values, inst_values.begin()), args0,
+                            args1, args_legacy);
 }
 
 void DoFPMax64(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1) {
@@ -76,8 +76,8 @@ void DoFPMin32(ImmValueList& inst_values, const ImmValueList& args0, const ImmVa
         }
         return ImmValue::Min<Type::F32, true>(a, b);
     };
-    Common::CartesianInvoke(op, std::insert_iterator(inst_values, inst_values.begin()), args0, args1,
-                            args_legacy);
+    Common::CartesianInvoke(op, std::insert_iterator(inst_values, inst_values.begin()), args0,
+                            args1, args_legacy);
 }
 
 void DoFPMin64(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1) {
@@ -152,7 +152,8 @@ void DoFPExp2(ImmValueList& inst_values, const ImmValueList& args) {
 
 void DoFPLdexp(ImmValueList& inst_values, const ImmValueList& args, const ImmValueList& exponents) {
     Common::CartesianInvoke(ImmValue::Ldexp<Type::F32>,
-                            std::insert_iterator(inst_values, inst_values.begin()), args, exponents);
+                            std::insert_iterator(inst_values, inst_values.begin()), args,
+                            exponents);
 }
 
 void DoFPCos(ImmValueList& inst_values, const ImmValueList& args) {
@@ -176,13 +177,15 @@ void DoFPSaturate64(ImmValueList& inst_values, const ImmValueList& args) {
 void DoFPClamp32(ImmValueList& inst_values, const ImmValueList& args, const ImmValueList& mins,
                  const ImmValueList& maxs) {
     Common::CartesianInvoke(ImmValue::Clamp<Type::F32, true>,
-                            std::insert_iterator(inst_values, inst_values.begin()), args, mins, maxs);
+                            std::insert_iterator(inst_values, inst_values.begin()), args, mins,
+                            maxs);
 }
 
 void DoFPClamp64(ImmValueList& inst_values, const ImmValueList& args, const ImmValueList& mins,
                  const ImmValueList& maxs) {
     Common::CartesianInvoke(ImmValue::Clamp<Type::F64, true>,
-                            std::insert_iterator(inst_values, inst_values.begin()), args, mins, maxs);
+                            std::insert_iterator(inst_values, inst_values.begin()), args, mins,
+                            maxs);
 }
 
 void DoFPRoundEven32(ImmValueList& inst_values, const ImmValueList& args) {
