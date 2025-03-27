@@ -372,6 +372,7 @@ void ImeDialogUi::DrawKeyboard() {
         ImGui::NewLine();
     };
 
+    // SHIFT status label
     if (shift_enabled) {
         SetCursorPosX(20.0f);
         TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "SHIFT ENABLED");
@@ -383,14 +384,16 @@ void ImeDialogUi::DrawKeyboard() {
 
     SetCursorPosX(20.0f);
 
-    if (shift_enabled)
+    // Fix: safely push/pop style only if shift was enabled before clicking
+    bool highlight = shift_enabled;
+    if (highlight)
         PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
 
     if (Button("SHIFT", ImVec2(75, 35))) {
         shift_enabled = !shift_enabled;
     }
 
-    if (shift_enabled)
+    if (highlight)
         PopStyleColor();
 
     SameLine();
@@ -423,6 +426,7 @@ void ImeDialogUi::DrawKeyboard() {
             (kb_mode == KeyboardMode::Letters) ? KeyboardMode::Symbols : KeyboardMode::Letters;
     }
 }
+
 
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
