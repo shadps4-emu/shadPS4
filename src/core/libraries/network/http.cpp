@@ -279,7 +279,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, std::u64 poolSize) {
+int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     LOG_ERROR(Lib_Http, "(DUMMY) called libnetMemId = {} libsslCtxId = {} poolSize = {}",
               libnetMemId, libsslCtxId, poolSize);
     // return a value >1
