@@ -120,7 +120,7 @@ execute_process(
   COMMAND git rev-parse --abbrev-ref --symbolic-full-name @{u}
   OUTPUT_VARIABLE GIT_REMOTE_NAME
   RESULT_VARIABLE GIT_REMOTE_RESULT
-  #ERROR_QUIET
+  ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 # If there's no upstream set or the command failed, check remote.pushDefault
@@ -130,7 +130,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     COMMAND git config --get remote.pushDefault
     OUTPUT_VARIABLE GIT_REMOTE_NAME
     RESULT_VARIABLE GIT_REMOTE_RESULT
-    #ERROR_QUIET
+    ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 endif()
@@ -158,7 +158,8 @@ else()
   endif()
 endif()
 
-# Get remote linkmessage("getting remote link")
+# Get remote link
+message("getting remote link")
 execute_process(
   COMMAND git config --get remote.${GIT_REMOTE_NAME}.url
   OUTPUT_VARIABLE GIT_REMOTE_URL
