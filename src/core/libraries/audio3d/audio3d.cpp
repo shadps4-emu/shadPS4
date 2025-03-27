@@ -64,7 +64,8 @@ int PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    return sceAudioOutOutputs(param, num);
+    // return sceAudioOutOutputs(param, num);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAudio3dBedWrite(const OrbisAudio3dPortId port_id, const u32 num_channels,
@@ -373,7 +374,7 @@ int PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
     }
 
     for (const auto ptr : queue) {
-        AudioOut::sceAudioOutOutput(1, ptr);
+        // AudioOut::sceAudioOutOutput(1, ptr);
     }
 
     queue.clear();
