@@ -234,10 +234,12 @@ void ImeDialogUi::Draw() {
 
     ImVec2 window_size;
 
+    const float keyboard_height = 200.0f;
+
     if (state->is_multi_line) {
-        window_size = {500.0f, 300.0f};
+        window_size = {500.0f, 300.0f + keyboard_height};
     } else {
-        window_size = {500.0f, 150.0f};
+        window_size = {500.0f, 150.0f + keyboard_height};
     }
 
     CentralizeNextWindow();
@@ -263,6 +265,7 @@ void ImeDialogUi::Draw() {
         } else {
             DrawInputText();
         }
+        DrawKeyboard();
 
         SetCursorPosY(GetCursorPosY() + 10.0f);
 
@@ -336,6 +339,91 @@ void ImeDialogUi::DrawMultiLineInputText() {
         state->input_changed = true;
     }
 }
+
+void ImeDialogUi::DrawKeyboard() {
+    static bool shift_enabled = false;
+    enum class KeyboardMode { Letters, Symbols };
+    static KeyboardMode kb_mode = KeyboardMode::Letters;
+
+    const char* row1_letters = "QWERTYUIOP";
+    const char* row2_letters = "ASDFGHJKL";
+    const char* row3_letters = "ZXCVBNM";
+
+    const char* row1_symbols = "1234567890";
+    const char* row2_symbols = "!@#$%^&*()";
+    const char* row3_symbols = "-_=+[]{}";
+
+    auto draw_row = [&](const char* row, float offset_x) {
+        SetCursorPosX(offset_x);
+        for (int i = 0; row[i]; ++i) {
+            char ch = shift_enabled ? row[i] : (char)tolower(row[i]);
+            std::string key(1, ch);
+            if (ImGui::Button(key.c_str(), ImVec2(35, 35))) {
+                char* buffer = state->current_text.begin();
+                size_t len = strlen(buffer);
+                if (len + 1 < state->max_text_length * 4) {
+                    buffer[len] = ch;
+                    buffer[len + 1] = '\0';
+                    state->input_changed = true;
+                }
+            }
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
+    };
+
+    if (shift_enabled) {
+        SetCursorPosX(20.0f);
+        TextColored(ImVec4(0.2f, 0.6f, 1.0f, 1.0f), "SHIFT ENABLED");
+    }
+
+    draw_row(kb_mode == KeyboardMode::Letters ? row1_letters : row1_symbols, 20.0f);
+    draw_row(kb_mode == KeyboardMode::Letters ? row2_letters : row2_symbols, 35.0f);
+    draw_row(kb_mode == KeyboardMode::Letters ? row3_letters : row3_symbols, 80.0f);
+
+    SetCursorPosX(20.0f);
+
+    if (shift_enabled)
+        PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
+
+    if (Button("SHIFT", ImVec2(75, 35))) {
+        shift_enabled = !shift_enabled;
+    }
+
+    if (shift_enabled)
+        PopStyleColor();
+
+    SameLine();
+
+    if (Button("SPACE", ImVec2(100, 35))) {
+        char* buffer = state->current_text.begin();
+        size_t len = strlen(buffer);
+        if (len + 1 < state->max_text_length * 4) {
+            buffer[len] = ' ';
+            buffer[len + 1] = '\0';
+            state->input_changed = true;
+        }
+    }
+
+    SameLine();
+
+    if (Button("DELETE", ImVec2(75, 35))) {
+        char* buffer = state->current_text.begin();
+        size_t len = strlen(buffer);
+        if (len > 0) {
+            buffer[len - 1] = '\0';
+            state->input_changed = true;
+        }
+    }
+
+    SameLine();
+
+    if (Button(kb_mode == KeyboardMode::Letters ? "123" : "ABC", ImVec2(60, 35))) {
+        kb_mode =
+            (kb_mode == KeyboardMode::Letters) ? KeyboardMode::Symbols : KeyboardMode::Letters;
+    }
+}
+
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeDialogUi* ui = static_cast<ImeDialogUi*>(data->UserData);

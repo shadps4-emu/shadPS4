@@ -78,6 +78,8 @@ private:
     void DrawInputText();
     void DrawMultiLineInputText();
 
+    void DrawKeyboard();
+
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };
 
