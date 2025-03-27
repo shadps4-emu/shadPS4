@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Åsidosätt färg</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Kan inte binda axelvärden fler än en gång</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Redigera inmatningsbindningar för tangentbord + mus och kontroller</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Använd konfigurationer per-spel</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Fel</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Kunde inte öppna filen för läsning</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Kunde inte öppna filen för skrivning</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Spara ändringar</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Vill du spara ändringarna?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hjälp</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Vill du återställa din anpassade standardkonfiguration till ursprungliga standardkonfigurationen?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Vill du återställa denna konfiguration till din anpassade standardkonfiguration?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Återställ till standard</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -776,6 +847,10 @@
       <translation>Ta bort DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Ta bort trofé</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Kompatibilitet...</translation>
     </message>
@@ -852,6 +927,10 @@
       <translation>Detta spel har ingen uppdateringsmapp att öppna!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Ingen loggfil hittades för detta spel!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Misslyckades med att konvertera ikon.</translation>
     </message>
@@ -860,12 +939,43 @@
       <translation>Detta spel har inget sparat data att ta bort!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Detta spel har inga sparade troféer att ta bort!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Sparat data</translation>
     </message>
     <message>
+      <source>Trophy</source>
+      <translation>Trofé</translation>
+    </message>
+    <message>
       <source>SFO Viewer for </source>
       <translation>SFO-visare för </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Snabbstart</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>Frågor och svar</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Syntax</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Speciella bindningar</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Tangentbindningar</translation>
     </message>
   </context>
   <context>
@@ -885,6 +995,217 @@
     <message>
       <source>Delete PKG File on Install</source>
       <translation>Ta bort PKG-fil efter installation</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Konfigurera kontroller</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Riktningsknappar</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Upp</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>inte mappad</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Vänster</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Höger</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Ner</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Halvläge för vänster analog</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>håll ner för att flytta vänster spak i halvfart</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Vänster spak</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Konfigurationsval</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Gemensam konfiguration</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Använd konfiguration per-spel</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Textredigerare</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hjälp</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Klick på styrplatta</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Mus till styrspak</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>*tryck F7 i spelet för att aktivera</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Alternativ</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Parametrar för musrörelse</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>observera: klicka på Hjälp-knapp/Speciella tangentbindningar för mer information</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Handlingsknappar</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangel</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Fyrkant</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Cirkel</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kryss</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Halvläge för höger analog</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>håll ner för att flytta höger spak i halvfart</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Höger spak</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Offset för hastighet (standard 0.125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Kopiera från gemensam konfiguration</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Offset för dödläge (standard 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Hastighetsmultiplikator (standard 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Gemensam konfiguration valdes</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Den här knappen kopierar mappningar från gemensam konfiguration till den aktuella valda profilen och kan inte användas när den aktuella valda profilen är gemensam konfiguration.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Kopiera värden från gemensam konfiguration</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Vill du skriva över befintliga mappningar med mappningarna från gemensam konfiguration?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Kan inte binda någon unik inmatning fler än en gång</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Tryck på en tangent</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Kan inte ställa in mappning</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>Mushjulet kan inte mappas till spakutmatningar</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
@@ -984,6 +1305,14 @@
     <message>
       <source>Dump Game List</source>
       <translation>Dumpa spellista</translation>
+    </message>
+    <message>
+      <source>Trophy Viewer</source>
+      <translation>Trofévisare</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Inga spel hittades. Lägg till dina spel till biblioteket först.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1312,6 +1641,10 @@
       <translation>Troféer</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Öppna mappen för anpassade trofébilder/ljud</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Loggning</translation>
     </message>
@@ -1476,8 +1809,8 @@
       <translation>Titelmusik</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Inaktivera popup för troféer</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Inaktivera troféaviseringar</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1765,43 +2098,99 @@
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Video</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Visningsläge</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Fönster</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Helskärm</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Helskärm (kantlöst)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Fönsterstorlek</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>H:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Separata loggfiler</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Separata loggfiler:\nSkriver en separat loggfil för varje spel.</translation>
+    </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Aviseringsposition för trofé</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Vänster</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Höger</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Överst</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Nederst</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Varaktighet för avisering</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Portabel användarmapp</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Skapa portabel användarmapp från gemensam användarmapp</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Portabel användarmapp:\nLagrar shadPS4-inställningar och data som endast tillämpas på den shadPS4-version som finns i den aktuella mappen. Starta om appen efter att du har skapat den portabla användarmappen för att börja använda den.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Kan inte skapa portabel användarmapp</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 finns redan</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Portabel användarmapp skapad</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 skapades.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Öppna mappen för anpassade trofébilder/ljud:\nDu kan lägga till egna bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\ntrophy.wav ELLER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservera: Ljudet fungerar endast i QT-versioner.</translation>
     </message>
   </context>
   <context>
@@ -1809,6 +2198,26 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Trofé-visare</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Välj spel:</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Förlopp</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Visa förtjänade troféer</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Visa icke-förtjänade troféer</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Visa dolda troféer</translation>
     </message>
   </context>
 </TS>

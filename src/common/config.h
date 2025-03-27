@@ -9,6 +9,11 @@
 
 namespace Config {
 
+struct GameInstallDir {
+    std::filesystem::path path;
+    bool enabled;
+};
+
 enum HideCursorState : s16 { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
@@ -21,8 +26,11 @@ bool GetLoadGameSizeEnabled();
 std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
+bool getShowLabelsUnderIcons();
+bool setShowLabelsUnderIcons();
 std::string getFullscreenMode();
 bool isNeoModeConsole();
+bool isDevKitConsole();
 bool getPlayBGM();
 int getBGMvolume();
 bool getisTrophyPopupDisabled();
@@ -41,6 +49,7 @@ std::string getChooseHomeTab();
 
 s16 getCursorState();
 int getCursorHideTimeout();
+double getTrophyNotificationDuration();
 std::string getBackButtonBehavior();
 bool getUseSpecialPad();
 int getSpecialPadClass();
@@ -62,6 +71,7 @@ bool collectShadersForDebug();
 bool showSplash();
 bool autoUpdate();
 bool alwaysShowChangelog();
+std::string sideTrophy();
 bool nullGpu();
 bool copyGPUCmdBuffers();
 bool dumpShaders();
@@ -75,6 +85,7 @@ void setCollectShaderForDebug(bool enable);
 void setShowSplash(bool enable);
 void setAutoUpdate(bool enable);
 void setAlwaysShowChangelog(bool enable);
+void setSideTrophy(std::string side);
 void setNullGpu(bool enable);
 void setAllowHDR(bool enable);
 void setCopyGPUCmdBuffers(bool enable);
@@ -95,7 +106,8 @@ void setUserName(const std::string& type);
 void setUpdateChannel(const std::string& type);
 void setChooseHomeTab(const std::string& type);
 void setSeparateUpdateEnabled(bool use);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
+void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
@@ -104,6 +116,7 @@ void setShowBackgroundImage(bool show);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
+void setTrophyNotificationDuration(double newTrophyNotificationDuration);
 void setBackButtonBehavior(const std::string& type);
 void setUseSpecialPad(bool use);
 void setSpecialPadClass(int type);
@@ -129,8 +142,9 @@ void setVkGuestMarkersEnabled(bool enable);
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
-bool addGameInstallDir(const std::filesystem::path& dir);
+bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
+void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonInstallDir(const std::filesystem::path& dir);
 void setMainWindowTheme(u32 theme);
 void setIconSize(u32 size);
@@ -149,7 +163,8 @@ u32 getMainWindowGeometryX();
 u32 getMainWindowGeometryY();
 u32 getMainWindowGeometryW();
 u32 getMainWindowGeometryH();
-const std::vector<std::filesystem::path>& getGameInstallDirs();
+const std::vector<std::filesystem::path> getGameInstallDirs();
+const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 u32 getIconSize();

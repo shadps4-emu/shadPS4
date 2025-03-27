@@ -6,7 +6,10 @@
 #include <condition_variable>
 
 #include "imgui/imgui_config.h"
+#include "imgui/imgui_texture.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
+#include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -32,6 +35,7 @@ struct Frame {
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
     bool is_hdr{false};
+    u8 id{};
 
     ImTextureID imgui_texture;
 };
@@ -45,17 +49,16 @@ enum SchedulerType {
 class Rasterizer;
 
 class Presenter {
-    struct PostProcessSettings {
-        float gamma = 1.0f;
-        u32 hdr = 0;
-    };
-
 public:
     Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
     ~Presenter();
 
-    float& GetGammaRef() {
-        return pp_settings.gamma;
+    HostPasses::PostProcessingPass::Settings& GetPPSettingsRef() {
+        return pp_settings;
+    }
+
+    HostPasses::FsrPass::Settings& GetFsrSettingsRef() {
+        return fsr_settings;
     }
 
     Frontend::WindowSDL& GetWindow() const {
@@ -90,7 +93,6 @@ public:
                }) != vo_buffers_addr.cend();
     }
 
-    bool ShowSplash(Frame* frame = nullptr);
     void Present(Frame* frame, bool is_reusing_frame = false);
     void RecreateFrame(Frame* frame, u32 width, u32 height);
     Frame* PrepareLastFrame();
@@ -117,16 +119,20 @@ public:
     }
 
 private:
-    void CreatePostProcessPipeline();
     Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
     Frame* GetRenderFrame();
 
+    void SetExpectedGameSize(s32 width, s32 height);
+
 private:
-    PostProcessSettings pp_settings{};
-    vk::UniquePipeline pp_pipeline{};
-    vk::UniquePipelineLayout pp_pipeline_layout{};
-    vk::UniqueDescriptorSetLayout pp_desc_set_layout{};
-    vk::UniqueSampler pp_sampler{};
+    float expected_ratio{1920.0 / 1080.0f};
+    u32 expected_frame_width{1920};
+    u32 expected_frame_height{1080};
+
+    HostPasses::FsrPass fsr_pass;
+    HostPasses::FsrPass::Settings fsr_settings{};
+    HostPasses::PostProcessingPass::Settings pp_settings{};
+    HostPasses::PostProcessingPass pp_pass;
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;
@@ -143,7 +149,7 @@ private:
     std::mutex free_mutex;
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;
-    std::optional<VideoCore::Image> splash_img;
+    std::optional<ImGui::RefCountedTexture> splash_img;
     std::vector<VAddr> vo_buffers_addr;
 };
 

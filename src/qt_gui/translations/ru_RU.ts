@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Заменить цвет</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Не удаётся сохранить</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Невозможно привязать значения оси более одного раза</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>По умолчанию</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Редактировать бинды клавиатуры + мыши и контроллера</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Использовать настройки для каждой игры</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Ошибка</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Не удалось открыть файл для чтения</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Не удалось открыть файл для записи</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Сохранить изменения</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Хотите сохранить изменения?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Помощь</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Хотите ли вы сбросить ваш пользовательский конфиг по умолчанию к первоначальному конфигу по умолчанию?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Хотите ли вы сбросить этот конфиг к вашему пользовательскому конфигу по умолчанию?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Сбросить по умолчанию</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -776,6 +847,10 @@
       <translation>Удалить DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Удалить трофей</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Совместимость...</translation>
     </message>
@@ -852,6 +927,10 @@
       <translation>У этой игры нет папки обновлений, которую можно открыть!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Не найден файл логов для этой игры!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Не удалось преобразовать иконку.</translation>
     </message>
@@ -860,12 +939,43 @@
       <translation>У этой игры нет сохранений, которые можно удалить!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>У этой игры нет сохраненных трофеев для удаления!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Сохранения</translation>
     </message>
     <message>
+      <source>Trophy</source>
+      <translation>Трофей</translation>
+    </message>
+    <message>
       <source>SFO Viewer for </source>
       <translation>Просмотр SFO для</translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Быстрый старт</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>ЧАВО</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Синтаксис</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Специальные бинды</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Бинды клавиш</translation>
     </message>
   </context>
   <context>
@@ -885,6 +995,217 @@
     <message>
       <source>Delete PKG File on Install</source>
       <translation>Удалить файл PKG при установке</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Настроить управление</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Крестовина</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Вверх</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Влево</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Вправо</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Вниз</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Левый стик вполовину</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>удерживайте для перемещения левого стика вполовину меньше</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Левый стик</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Выбор конфига</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Общий конфиг</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Использовать настройки для каждой игры</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Текстовый редактор</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Помощь</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Нажатие на тачпад</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Мышь в джойстик</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>*нажмите F7 в игре для активации</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Параметры движения мыши</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>примечание: нажмите кнопку Помощь/Специальные бинды для получения дополнительной информации</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Кнопки действий</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Треугольник</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Квадрат</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Круг</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Крест</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Правый стик вполовину</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>удерживайте для перемещения правого стика вполовину меньше</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Правый стик</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Смещение скорости (по умолч 0.125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Копировать из общего конфига</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Смещение мёртвой зоны (по умолч 0.50)</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Множитель скорости (по умолч 1.0)</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Выбран общий конфиг</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Эта кнопка копирует настройки из общего конфига в текущий выбранный профиль, и не может быть использован, когда выбранный профиль это общий конфиг.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Копировать значения из общего конфига</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Вы хотите перезаписать существующие настройки настройками из общего конфига?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Не удаётся сохранить</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Невозможно привязать уникальный ввод более одного раза</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Нажмите кнопку</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Не удаётся задать настройки</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>Колесо не может быть назначено для вывода стиков</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>По умолчанию</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
     </message>
   </context>
   <context>
@@ -984,6 +1305,14 @@
     <message>
       <source>Dump Game List</source>
       <translation>Дамп списка игр</translation>
+    </message>
+    <message>
+      <source>Trophy Viewer</source>
+      <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Не найдено ни одной игры. Пожалуйста, сначала добавьте игры в библиотеку.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1312,6 +1641,10 @@
       <translation>Трофеи</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Открыть папку с пользовательскими изображениями/звуками трофеев</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>Логирование</translation>
     </message>
@@ -1476,8 +1809,8 @@
       <translation>Заглавная музыка</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Отключить уведомления о трофеях</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Отключить уведомления о трофее</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1803,12 +2136,88 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Отдельные файлы логов:\nПишет отдельный файл логов для каждой игры.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Местоположение уведомления о трофее</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Слева</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Справа</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Сверху</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Снизу</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Продолжительность уведомления</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Портативная папка пользователя</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Создать портативную папку пользователя из общей папки пользователя</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Портативная папка пользователя:\nХранит настройки и данные shadPS4, которые будут применяться только к билду shadPS4, расположенному в этой папке. Перезагрузите приложение после создания портативной папки пользователя чтобы начать использовать её.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Невозможно создать папку для портативной папки пользователя</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 уже существует</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Портативная папка пользователя создана</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 успешно создано.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Открыть папку с пользовательскими изображениями/звуками трофеев:\nВы можете добавить пользовательские изображения к трофеям и аудио.\nДобавьте файлы в custom_trophy со следующими именами:\ntrophy.wav ИЛИ trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nПримечание: звук будет работать только в QT-версии.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Выберите игру:</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Прогресс</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Показать заработанные трофеи</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Показать не заработанные трофеи</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Показать скрытые трофеи</translation>
     </message>
   </context>
 </TS>

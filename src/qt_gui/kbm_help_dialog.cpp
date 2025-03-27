@@ -77,11 +77,11 @@ HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
     QVBoxLayout* containerLayout = new QVBoxLayout(containerWidget);
 
     // Add expandable sections to container layout
-    auto* quickstartSection = new ExpandableSection("Quickstart", quickstart());
-    auto* faqSection = new ExpandableSection("FAQ", faq());
-    auto* syntaxSection = new ExpandableSection("Syntax", syntax());
-    auto* specialSection = new ExpandableSection("Special Bindings", special());
-    auto* bindingsSection = new ExpandableSection("Keybindings", bindings());
+    auto* quickstartSection = new ExpandableSection(tr("Quickstart"), quickstart());
+    auto* faqSection = new ExpandableSection(tr("FAQ"), faq());
+    auto* syntaxSection = new ExpandableSection(tr("Syntax"), syntax());
+    auto* specialSection = new ExpandableSection(tr("Special Bindings"), special());
+    auto* bindingsSection = new ExpandableSection(tr("Keybindings"), bindings());
 
     containerLayout->addWidget(quickstartSection);
     containerLayout->addWidget(faqSection);

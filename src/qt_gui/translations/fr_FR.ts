@@ -487,7 +487,7 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Touches d'action</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
@@ -519,27 +519,98 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Ajustement des couleurs</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Remplacer la couleur de la barre de lumière</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Remplacer la couleur</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossible de sauvegarder</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Impossible de lier les valeurs de l'axe plusieurs fois</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Enregistrer</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Appliquer</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Réinitialiser par défaut</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annuler</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Modifier les raccourcis d'entrée clavier + souris et contrôleur</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Utiliser les configurations pour chaque jeu</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Erreur</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Impossible d'ouvrir le fichier pour la lecture</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Impossible d'ouvrir le fichier pour l'écriture</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Enregistrer les Modifications</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Voulez-vous sauvegarder les modifications?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Aide</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Voulez-vous réinitialiser votre configuration par défaut personnalisée à la configuration par défaut d'origine ?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Voulez-vous réinitialiser cette configuration à votre configuration personnalisée par défaut ?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Rétablir par défaut</translation>
     </message>
   </context>
   <context>
@@ -776,6 +847,10 @@
       <translation>Supprimer DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Supprimer Trophée</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Compatibilité...</translation>
     </message>
@@ -852,6 +927,10 @@
       <translation>Ce jeu n'a pas de dossier de mise à jour à ouvrir!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Aucun fichier journal trouvé pour ce jeu!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Échec de la conversion de l'icône.</translation>
     </message>
@@ -860,12 +939,43 @@
       <translation>Ce jeu n'a pas de mise à jour à supprimer!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Ce jeu n'a aucun trophée sauvegardé à supprimer!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Enregistrer les Données</translation>
     </message>
     <message>
+      <source>Trophy</source>
+      <translation>Trophée</translation>
+    </message>
+    <message>
       <source>SFO Viewer for </source>
       <translation>Visionneuse SFO pour </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Démarrage rapide</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>FAQ</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Syntaxe</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Special bindings</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Raccourcis</translation>
     </message>
   </context>
   <context>
@@ -885,6 +995,217 @@
     <message>
       <source>Delete PKG File on Install</source>
       <translation>Supprimer le fichier PKG à l'installation</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Configurer les Commandes</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Croix directionnelle</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Haut</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>non mappé</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Gauche</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Droite</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Bas</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Demi-mode analogique gauche</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>maintenez pour déplacer le joystick gauche à mi-vitesse</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Joystick gauche</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Sélection de la Configuration</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Configuration Commune</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Utiliser les configurations par jeu</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Éditeur de Texte</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Aide</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Clic tactile</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Souris vers Joystick</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>*Appuyez sur F7 en jeu pour activer</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Paramètres du mouvement de la souris</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>remarque: cliquez sur le bouton Aide / Raccourcis spéciaux pour plus d'informations</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Touches d'action</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Carré</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Rond</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Croix</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Demi-mode analogique droit</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>maintenez pour déplacer le joystick droit à mi-vitesse</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Joystick Droit</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Décalage de vitesse (def 0,125) :</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Copier à partir de la configuration commune</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Deadzone Offset (def 0,50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Multiplicateur de vitesse (def 1,0) :</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configuration courante sélectionnée</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Ce bouton copie les mappings de la configuration commune vers le profil actuellement sélectionné, et ne peut pas être utilisé lorsque le profil actuellement sélectionné est la configuration commune.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copier à partir de la configuration commune</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Voulez-vous remplacer les mappings existants par les mappings de la configuration commune ?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossible de sauvegarder</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Impossible de lier une entrée unique plus d'une fois</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Appuyez sur un bouton</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Impossible de définir le mapping</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>La molette de la souris ne peut pas être affectée aux sorties de la manette</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Enregistrer</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Appliquer</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Réinitialiser par défaut</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annuler</translation>
     </message>
   </context>
   <context>
@@ -984,6 +1305,14 @@
     <message>
       <source>Dump Game List</source>
       <translation>Dumper la liste des jeux</translation>
+    </message>
+    <message>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1234,7 +1563,7 @@
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Les indicateurs</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1310,6 +1639,10 @@
     <message>
       <source>Trophy</source>
       <translation>Trophée</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Ouvrir le dossier des images/sons de trophée personnalisé</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1476,8 +1809,8 @@
       <translation>Musique du titre</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Désactiver les notifications de trophées</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Désactiver la notification de trophée</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1577,7 +1910,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Image de fond :\nContrôle l'opacité de l'image de fond du jeu.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1661,7 +1994,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Activer HDR:\nActive le HDR dans les jeux qui le supportent.\nVotre moniteur doit avoir la prise en charge de l'espace couleur PQ BT2020 et du format swapchain RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1717,15 +2050,15 @@
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Parcourir:\nNaviguez pour trouver un dossier pour définir le chemin des données de sauvegarde.</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Sortie</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nocturne</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1737,7 +2070,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>Enregistrer le chemin vers les données</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1745,15 +2078,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asynchrone</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>synchrone</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Sélection automatique</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1761,47 +2094,103 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Répertoire d'enregistrement des données</translation>
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Vidéo</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Mode d'affichage</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Fenêtré</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Plein écran</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Plein écran (sans bordure)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Taille de fenêtre</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>W:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>H:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Séparer les fichiers de log</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Fichiers journaux séparés :\nÉcrit un fichier journal séparé pour chaque jeu.</translation>
+    </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Position de notification du trophée</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Gauche</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Droite</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Haut</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Bas</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Durée de la notification</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Dossier d'utilisateur portable</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Créer un dossier utilisateur portable à partir du dossier utilisateur commun</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Dossier utilisateur portable :\nStocke les paramètres et données shadPS4 qui seront appliqués uniquement à la version shadPS4 située dans le dossier actuel. Redémarrez l'application après avoir créé le dossier utilisateur portable pour commencer à l'utiliser.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Impossible de créer le dossier utilisateur portable</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 existe déjà</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Dossier utilisateur portable créé</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 a été créé avec succès.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Ouvrez le dossier des images/sons des trophées personnalisés:\nVous pouvez ajouter des images personnalisées aux trophées et aux sons.\nAjoutez les fichiers à custom_trophy avec les noms suivants:\ntrophy.wav OU trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote : Le son ne fonctionnera que dans les versions QT.</translation>
     </message>
   </context>
   <context>
@@ -1809,6 +2198,26 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visionneuse de trophées</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation type="unfinished">Select Game:</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Progression</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Afficher les trophées gagnés</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Afficher les trophées non gagnés</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Afficher les trophées cachés</translation>
     </message>
   </context>
 </TS>

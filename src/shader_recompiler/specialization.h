@@ -13,7 +13,9 @@
 namespace Shader {
 
 struct VsAttribSpecialization {
+    s32 num_components{};
     AmdGpu::NumberClass num_class{};
+    AmdGpu::CompMapping dst_select{};
 
     auto operator<=>(const VsAttribSpecialization&) const = default;
 };
@@ -89,12 +91,17 @@ struct StageSpecialization {
                         Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         fetch_shader_data = Gcn::ParseFetchShader(info_);
-        if (info_.stage == Stage::Vertex && fetch_shader_data &&
-            !profile_.support_legacy_vertex_attributes) {
+        if (info_.stage == Stage::Vertex && fetch_shader_data) {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
-                         [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
-                             spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                         [&profile_](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                             spec.num_components = desc.UsesStepRates()
+                                                       ? AmdGpu::NumComponents(sharp.GetDataFmt())
+                                                       : 0;
+                             spec.num_class = profile_.support_legacy_vertex_attributes
+                                                  ? AmdGpu::NumberClass{}
+                                                  : AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                             spec.dst_select = sharp.DstSelect();
                          });
         }
         u32 binding{};

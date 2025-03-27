@@ -24,7 +24,6 @@
 #include "common/singleton.h"
 #include "common/version.h"
 #include "core/file_format/psf.h"
-#include "core/file_format/splash.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
@@ -81,7 +80,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     const auto eboot_name = file.filename().string();
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
-        game_folder_name.ends_with("-UPDATE")) {
+        game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
         // If an executable was launched from a separate update directory,
         // use the base game directory as the game folder.
         const auto base_name = game_folder_name.substr(0, game_folder_name.size() - 7);
@@ -107,6 +106,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     Common::PSFAttributes psf_attributes{};
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    if (!std::filesystem::exists(param_sfo_path) || !Config::getSeparateLogFilesEnabled()) {
+        Common::Log::Initialize();
+        Common::Log::Start();
+    }
+
     if (std::filesystem::exists(param_sfo_path)) {
         auto* param_sfo = Common::Singleton<PSF>::Instance();
         const bool success = param_sfo->Open(param_sfo_path);
@@ -117,10 +121,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
         if (Config::getSeparateLogFilesEnabled()) {
             Common::Log::Initialize(id + ".log");
-        } else {
-            Common::Log::Initialize();
+            Common::Log::Start();
         }
-        Common::Log::Start();
         LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
         LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
         LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
@@ -182,12 +184,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
     if (std::filesystem::exists(pic1_path)) {
-        auto* splash = Common::Singleton<Splash>::Instance();
-        if (!splash->IsLoaded()) {
-            if (!splash->Open(pic1_path)) {
-                LOG_ERROR(Loader, "Game splash: unable to open file");
-            }
-        }
+        game_info.splash_path = pic1_path;
     }
 
     game_info.initialized = true;
@@ -292,13 +289,12 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
-    constexpr std::array<SysModules, 11> ModulesToLoad{
+    constexpr std::array<SysModules, 10> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
-         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", nullptr},

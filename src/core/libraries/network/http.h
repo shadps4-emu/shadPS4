@@ -11,6 +11,19 @@ class SymbolsResolver;
 
 namespace Libraries::Http {
 
+struct OrbisHttpUriElement {
+    bool opaque;
+    char* scheme;
+    char* username;
+    char* password;
+    char* hostname;
+    char* path;
+    char* query;
+    char* fragment;
+    u16 port;
+    u8 reserved[10];
+};
+
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
 int PS4_SYSV_ABI sceHttpAbortWaitRequest();
@@ -122,9 +135,10 @@ int PS4_SYSV_ABI sceHttpUriBuild();
 int PS4_SYSV_ABI sceHttpUriCopy();
 int PS4_SYSV_ABI sceHttpUriEscape();
 int PS4_SYSV_ABI sceHttpUriMerge();
-int PS4_SYSV_ABI sceHttpUriParse();
-int PS4_SYSV_ABI sceHttpUriSweepPath();
-int PS4_SYSV_ABI sceHttpUriUnescape();
+int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
+                                 size_t* require, size_t prepare);
+int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize);
+int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in);
 int PS4_SYSV_ABI sceHttpWaitRequest();
 
 void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym);

@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>十字键</translation>
     </message>
     <message>
       <source>Up</source>
@@ -487,23 +487,23 @@
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>正面按钮</translation>
+      <translation>功能键（动作键）</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation>Triangle / Y</translation>
+      <translation>三角 / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation>Square / X</translation>
+      <translation>方框 / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation>Circle / B</translation>
+      <translation>圈 / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation>Cross / A</translation>
+      <translation>叉 / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -540,6 +540,77 @@
     <message>
       <source>Override Color</source>
       <translation>覆盖颜色</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>无法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>摇杆 X/Y 轴的操作绑定不在同一直线</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>应用</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>恢复默认设置</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>编辑键盘鼠标和手柄按键绑定</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>每个游戏使用单独的配置</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>错误</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>无法打开文件进行读取</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>无法打开文件进行读取</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>保存更改</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>您要保存更改吗？</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>帮助</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>您要将自定义默认配置重置为默认配置吗？</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>您想要将此配置重置为自定义默认配置吗？</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>重置为默认</translation>
     </message>
   </context>
   <context>
@@ -776,6 +847,10 @@
       <translation>删除 DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>删除奖杯</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>兼容性...</translation>
     </message>
@@ -852,6 +927,10 @@
       <translation>这个游戏没有可打开的更新文件夹！</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>没有找到这个游戏的日志文件！</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>转换图标失败。</translation>
     </message>
@@ -860,12 +939,43 @@
       <translation>这个游戏没有更新可以删除！</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>这个游戏没有保存的奖杯可删除！</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>存档数据</translation>
     </message>
     <message>
+      <source>Trophy</source>
+      <translation>奖杯</translation>
+    </message>
+    <message>
       <source>SFO Viewer for </source>
       <translation>SFO 查看器 - </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>快速入门</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>常见问题</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>语法</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>特殊绑定</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>按键绑定</translation>
     </message>
   </context>
   <context>
@@ -885,6 +995,217 @@
     <message>
       <source>Delete PKG File on Install</source>
       <translation>安装后删除 PKG 文件</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>配置键鼠</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>十字键</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>上</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>未映射</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>左</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>右</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>下</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>左摇杆半速模式</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>按住以半速移动左摇杆</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>左摇杆</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>配置选择</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>通用配置</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>每个游戏使用单独的配置</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>文本编辑器</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>帮助</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>触摸板点击</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>鼠标控制摇杆</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>* 按 F7 键激活</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>选项设置</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>鼠标移动参数</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>注意：点击帮助按钮 -> 获取更多关于映射特殊键位的信息</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>功能键（动作键）</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>三角</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>方框</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>圈</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>叉</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>右摇杆半速模式</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>按住以半速移动右摇杆</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>右摇杆</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>速度偏移量（默认 0.125）：</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>从通用配置中复制</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>死区偏移量（默认 0.50）：</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>速度系数（默认 1.0）：</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>已选中通用配置</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>此按钮用于将通用配置中的映射复制到当前选定的配置文件，当前选定的配置文件为通用配置时无法使用。</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>从通用配置中复制配置</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>您想要用通用配置的映射覆盖现有映射吗？</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>无法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>不能绑定重复的按键</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>按下按键</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>无法设置映射</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>鼠标滚轮无法映射到摇杆</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>应用</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>恢复默认设置</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
     </message>
   </context>
   <context>
@@ -984,6 +1305,14 @@
     <message>
       <source>Dump Game List</source>
       <translation>导出游戏列表</translation>
+    </message>
+    <message>
+      <source>Trophy Viewer</source>
+      <translation>奖杯查看器</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>未找到游戏。请先将您的游戏添加到您的资料库。</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1312,6 +1641,10 @@
       <translation>奖杯</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>打开自定义奖杯图像/声音文件夹</translation>
+    </message>
+    <message>
       <source>Logger</source>
       <translation>日志</translation>
     </message>
@@ -1476,8 +1809,8 @@
       <translation>标题音乐</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>禁止弹出奖杯</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>禁用奖杯通知</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1803,12 +2136,88 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>独立日志文件：\n每个游戏使用单独的日志文件。</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>奖杯通知位置</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>左边</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>右边</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>顶部</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>底部</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>通知显示持续时间</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>从公共用户文件夹创建本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>本地用户文件夹：\n存储 shadPS4 设置和数据，这些设置和数据仅应用于当前运行的 shadPS4。创建本地用户文件夹后，重启应用即可开始使用。</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>无法创建本地用户文件夹</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 已存在</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>本地用户文件夹已创建</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 创建成功。</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>打开自定义奖杯图像/声音文件夹：\n您可以自定义奖杯图像和声音。\n将文件添加到 custom_trophy 文件夹中，文件名如下：\ntrophy.wav 或 trophy.mp3、bronze.png、gold.png、platinum.png、silver.png。\n注意：自定义声音只能在 QT 版本中生效。</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>奖杯查看器</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>选择游戏：</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>进度</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>显示获得的奖杯</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>显示未获得的奖杯</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>显示隐藏奖杯</translation>
     </message>
   </context>
 </TS>

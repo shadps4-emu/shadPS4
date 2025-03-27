@@ -38,7 +38,7 @@
     </message>
     <message>
       <source>Version: </source>
-      <translation type="unfinished">Version: </translation>
+      <translation>Version: </translation>
     </message>
     <message>
       <source>Size: </source>
@@ -50,7 +50,7 @@
     </message>
     <message>
       <source>Repository:</source>
-      <translation type="unfinished">Repository:</translation>
+      <translation>Quellen:</translation>
     </message>
     <message>
       <source>Download Cheats</source>
@@ -86,11 +86,11 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>Cheats</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation type="unfinished">Patches</translation>
+      <translation>Patches</translation>
     </message>
     <message>
       <source>Error</source>
@@ -234,7 +234,7 @@
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>Name:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
@@ -407,139 +407,210 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Steuerung einrichten</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Steuerkreuz</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Oben</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Links</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Rechts</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Runter</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Linker Stick tote Zone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>Linke Deadzone</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Linker Analogstick</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Konfigurationsauswahl</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Standard Konfiguration</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>Benutze Per-Game Einstellungen</translation>
     </message>
     <message>
       <source>L1 / LB</source>
-      <translation type="unfinished">L1 / LB</translation>
+      <translation>L1 / LB</translation>
     </message>
     <message>
       <source>L2 / LT</source>
-      <translation type="unfinished">L2 / LT</translation>
+      <translation>L2 / LT</translation>
     </message>
     <message>
       <source>Back</source>
-      <translation type="unfinished">Back</translation>
+      <translation>Zurück</translation>
     </message>
     <message>
       <source>R1 / RB</source>
-      <translation type="unfinished">R1 / RB</translation>
+      <translation>R1 / RB</translation>
     </message>
     <message>
       <source>R2 / RT</source>
-      <translation type="unfinished">R2 / RT</translation>
+      <translation>R2 / RT</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Options / Start</source>
-      <translation type="unfinished">Options / Start</translation>
+      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Aktionstasten</translation>
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>Dreieck / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
-      <translation type="unfinished">Square / X</translation>
+      <translation>Quadrat / X</translation>
     </message>
     <message>
       <source>Circle / B</source>
-      <translation type="unfinished">Circle / B</translation>
+      <translation>Kreis / B</translation>
     </message>
     <message>
       <source>Cross / A</source>
-      <translation type="unfinished">Cross / A</translation>
+      <translation>Kreuz / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Rechter Stick tote Zone (def:2, max:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>Rechte tote Zone</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>Rechter Analogstick</translation>
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>Farbanpassung</translation>
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Farbe der Leuchtleiste überschreiben</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>Farbe überschreiben</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Speichern nicht möglich</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Achsenwerte können nicht mehr als einmal gebunden werden</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Speichern</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Übernehmen</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Werkseinstellungen wiederherstellen</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Abbrechen</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Tastatur + Maus und Controller Eingabezuordnungen bearbeiten</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Benutze Per-Game Einstellungen</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Fehler</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Datei konnte nicht zum Lesen geöffnet werden</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Datei konnte nicht zum Schreiben geöffnet werden</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Änderungen Speichern</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Sollen die Änderungen gespeichert werden?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hilfe</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Möchten Sie Ihre eigene Standardkonfiguration auf die ursprüngliche Standardkonfiguration zurücksetzen?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Möchten Sie diese Konfiguration auf Ihre eigene Standardkonfiguration zurücksetzen?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Auf Standard zurücksetzen</translation>
     </message>
   </context>
   <context>
@@ -584,7 +655,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Verzeichnis zum Installieren von DLC</translation>
     </message>
   </context>
   <context>
@@ -595,7 +666,7 @@
     </message>
     <message>
       <source>Name</source>
-      <translation type="unfinished">Name</translation>
+      <translation>Name</translation>
     </message>
     <message>
       <source>Serial</source>
@@ -607,11 +678,11 @@
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Firmware</source>
-      <translation type="unfinished">Firmware</translation>
+      <translation>Firmware</translation>
     </message>
     <message>
       <source>Size</source>
@@ -619,7 +690,7 @@
     </message>
     <message>
       <source>Version</source>
-      <translation type="unfinished">Version</translation>
+      <translation>Version</translation>
     </message>
     <message>
       <source>Path</source>
@@ -635,15 +706,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>h</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>m</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -682,23 +753,23 @@
     <name>GameListUtils</name>
     <message>
       <source>B</source>
-      <translation type="unfinished">B</translation>
+      <translation>B</translation>
     </message>
     <message>
       <source>KB</source>
-      <translation type="unfinished">KB</translation>
+      <translation>KB</translation>
     </message>
     <message>
       <source>MB</source>
-      <translation type="unfinished">MB</translation>
+      <translation>MB</translation>
     </message>
     <message>
       <source>GB</source>
-      <translation type="unfinished">GB</translation>
+      <translation>GB</translation>
     </message>
     <message>
       <source>TB</source>
-      <translation type="unfinished">TB</translation>
+      <translation>TB</translation>
     </message>
   </context>
   <context>
@@ -709,7 +780,7 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation type="unfinished">Cheats / Patches</translation>
+      <translation>Cheats / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
@@ -776,6 +847,10 @@
       <translation>Lösche DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Trophäe löschen</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
       <translation>Kompatibilität...</translation>
     </message>
@@ -829,7 +904,7 @@
     </message>
     <message>
       <source>DLC</source>
-      <translation type="unfinished">DLC</translation>
+      <translation>DLC</translation>
     </message>
     <message>
       <source>Delete %1</source>
@@ -849,23 +924,58 @@
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Dieses Spiel hat keinen Update-Ordner zum öffnen!</translation>
+    </message>
+    <message>
+      <source>No log file found for this game!</source>
+      <translation>Keine Protokolldatei für dieses Spiel gefunden!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Fehler beim Konvertieren des Symbols.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Dieses Spiel hat keine Speicherdaten zum Löschen!</translation>
+    </message>
+    <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Dieses Spiel hat keine gespeicherten Trophäen zum Löschen!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>Gespeicherte Daten</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trophäe</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO-Betrachter für </translation>
+    </message>
+  </context>
+  <context>
+    <name>HelpDialog</name>
+    <message>
+      <source>Quickstart</source>
+      <translation>Schnellstart</translation>
+    </message>
+    <message>
+      <source>FAQ</source>
+      <translation>Häufig gestellte Fragen</translation>
+    </message>
+    <message>
+      <source>Syntax</source>
+      <translation>Syntax</translation>
+    </message>
+    <message>
+      <source>Special Bindings</source>
+      <translation>Spezielle Zuordnungen</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Tastenbelegung</translation>
     </message>
   </context>
   <context>
@@ -880,11 +990,222 @@
     </message>
     <message>
       <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <translation>Installieren Sie alles aus der Warteschlange in den ausgewählten Ordner</translation>
     </message>
     <message>
       <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <translation>PKG-Datei beim Installieren löschen</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Steuerung konfigurieren</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Steuerkreuz</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Oben</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>nicht zugeordnet</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Links</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Rechts</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Runter</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Linker Analog-Halbmodus</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>Halten um den linken Analogstick mit Halbgeschwindigkeit zu bewegen</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Linker Analogstick</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Konfigurationsauswahl</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Allgemeine Konfiguration</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Benutze Per-Game Einstellungen</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Textbearbeiter</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hilfe</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Touchpad-Klick</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Maus zu Joystick</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>*Zum Aktivieren F7 ingame drücken</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Mausbewegungsparameter</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>Hinweis: Klicken Sie auf Hilfe-Button/Special Tastaturbelegungen für weitere Informationen</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Aktionstasten</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Dreieck</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Quadrat</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Kreis</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kreuz</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Rechter Analog-Halbmodus</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>Halten um den rechten Analogstick mit Halbgeschwindigkeit zu bewegen</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Rechter Analogstick</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Geschwindigkeitsversatz (Def 0.125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Von allgemeiner Konfiguration kopieren</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Tote Zone Versatz (Def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Geschwindigkeit Multiplikator (def 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Allgemeine Konfiguration ausgewählt</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Diese Schaltfläche kopiert Zuordnungen aus der allgemeinen Konfiguration in das aktuell ausgewählte Profil, und kann nicht verwendet werden, wenn das aktuell ausgewählte Profil die allgemeine Konfiguration ist.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Werte von allgemeiner Konfiguration kopieren</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Möchten Sie die vorhandenen Zuordnungen mit den Zuordnungen der allgemeinen Konfigurationen überschreiben?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Speichern nicht möglich</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Kann keine eindeutige Eingabe mehr als einmal zuordnen</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Drücken Sie eine Taste</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Kann Zuordnung nicht festlegen</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>Mausrad kann nicht zu Analogstick Ausgabe zugeordnet werden</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Speichern</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Übernehmen</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Werkseinstellungen wiederherstellen</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Abbrechen</translation>
     </message>
   </context>
   <context>
@@ -984,6 +1305,14 @@
     <message>
       <source>Dump Game List</source>
       <translation>Spielliste ausgeben</translation>
+    </message>
+    <message>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
     </message>
     <message>
       <source>PKG Viewer</source>
@@ -1163,27 +1492,27 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>Spiel ausführen</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>Eboot.bin Datei nicht gefunden</translation>
     </message>
     <message>
       <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
+      <translation>PKG-Datei (*.PKG *.pkg)</translation>
     </message>
     <message>
       <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
+      <translation>PKG ist ein Patch oder DLC, bitte installieren Sie zuerst das Spiel!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>Spiel läuft bereits!</translation>
     </message>
     <message>
       <source>shadPS4</source>
-      <translation type="unfinished">shadPS4</translation>
+      <translation>shadPS4</translation>
     </message>
   </context>
   <context>
@@ -1198,7 +1527,7 @@
     </message>
     <message>
       <source>Name</source>
-      <translation type="unfinished">Name</translation>
+      <translation>Name</translation>
     </message>
     <message>
       <source>Serial</source>
@@ -1206,7 +1535,7 @@
     </message>
     <message>
       <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <translation>Installiert</translation>
     </message>
     <message>
       <source>Size</source>
@@ -1214,27 +1543,27 @@
     </message>
     <message>
       <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <translation>Kategorie</translation>
     </message>
     <message>
       <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <translation>Typ</translation>
     </message>
     <message>
       <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <translation>App Ver</translation>
     </message>
     <message>
       <source>FW</source>
-      <translation type="unfinished">FW</translation>
+      <translation>FW</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation type="unfinished">Region</translation>
+      <translation>Region</translation>
     </message>
     <message>
       <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
+      <translation>Markierungen</translation>
     </message>
     <message>
       <source>Path</source>
@@ -1250,7 +1579,7 @@
     </message>
     <message>
       <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <translation>Paket</translation>
     </message>
   </context>
   <context>
@@ -1265,7 +1594,7 @@
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>System</translation>
     </message>
     <message>
       <source>Console Language</source>
@@ -1277,7 +1606,7 @@
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>Emulator</translation>
     </message>
     <message>
       <source>Enable Separate Update Folder</source>
@@ -1312,8 +1641,12 @@
       <translation>Trophäe</translation>
     </message>
     <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Öffne den benutzerdefinierten Ordner für Trophäenbilder/Sounds</translation>
+    </message>
+    <message>
       <source>Logger</source>
-      <translation type="unfinished">Logger</translation>
+      <translation>Protokollführer</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1333,7 +1666,7 @@
     </message>
     <message>
       <source>Cursor</source>
-      <translation type="unfinished">Cursor</translation>
+      <translation>Mauszeiger</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
@@ -1345,11 +1678,11 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
-      <translation type="unfinished">Controller</translation>
+      <translation>Kontroller</translation>
     </message>
     <message>
       <source>Back Button Behavior</source>
@@ -1389,7 +1722,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>HDR aktivieren</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1409,7 +1742,7 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation type="unfinished">Debug</translation>
+      <translation>Debug</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
@@ -1476,20 +1809,20 @@
       <translation>Titelmusik</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Deaktiviere Trophäen Pop-ups</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Trophäen-Benachrichtigung deaktivieren</translation>
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>Hintergrundbild</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>Hintergrundbild anzeigen</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>Transparenz</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1577,7 +1910,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Hintergrundbild:\nSteuere die Deckkraft des Spiel-Hintergrundbilds.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1661,7 +1994,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>HDR:\nAktiviert HDR in Spielen, die es unterstützen.\nIhr Monitor muss Unterstützung für den BT2020 PQ Farbraum und das RGB10A2 Swapchain Format haben.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1713,23 +2046,23 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Datenpfad speichern:\nDer Ordner, in dem Spieldaten gespeichert werden.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Durchsuchen:\nDurchsuchen eines Ordners, um den Speicherdatenpfad festzulegen.</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>Veröffentlichung</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Legen Sie die Lautstärke der Hintergrundmusik fest.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
@@ -1745,15 +2078,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>asynchron</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>syncron</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>Auto-Wählen</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1761,47 +2094,103 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Verzeichnis um Daten zu speichern</translation>
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>Video</translation>
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>Anzeigemodus</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>Fenster</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>Vollbild</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Vollbild (randlos)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>Fenstergröße</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>W:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>H:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>Separate Protokolldateien</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Separate Protokolldateien:\nSchreibt für jedes Spiel eine separate Logdatei.</translation>
+    </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Trophäen-Benachrichtigungsposition</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Links</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Rechts</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Zuoberst</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Zuunterst</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Benachrichtigungsdauer</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Portable Benutzerordner</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Erstellen eines portablen Benutzerordners aus dem allgemeinen Benutzer Ordner</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Portablen Benutzerordner:\nspeichert ShadPS4 Einstellungen und Daten, die nur auf den ShadPS4 Build im aktuellen Ordner angewendet werden. Starten Sie die App nach dem Erstellen des tragbaren Benutzerordners neu, um sie zu verwenden.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Kann keinen portablen Benutzerordner erstellen</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 existiert bereits</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Portablen Benutzerordner erstellt</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 erfolgreich erstellt.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
     </message>
   </context>
   <context>
@@ -1809,6 +2198,26 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Trophäenansicht</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation type="unfinished">Select Game:</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation type="unfinished">Progress</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation type="unfinished">Show Earned Trophies</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation type="unfinished">Show Not Earned Trophies</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation type="unfinished">Show Hidden Trophies</translation>
     </message>
   </context>
 </TS>

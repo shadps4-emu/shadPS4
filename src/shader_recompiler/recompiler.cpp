@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
-#include "common/io_file.h"
-#include "common/path_util.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
@@ -63,26 +60,18 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
     // Run optimization passes
-    const auto stage = program.info.stage;
-
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     if (info.l_stage == LogicalStage::TessellationControl) {
-        // Tess passes require previous const prop passes for now (for simplicity). TODO allow
-        // fine grained folding or opportunistic folding we set an operand to an immediate
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::HullShaderTransform(program, runtime_info);
     } else if (info.l_stage == LogicalStage::TessellationEval) {
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
     }
-    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
-    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    Shader::Optimization::RingAccessElimination(program, runtime_info);
+    Shader::Optimization::ReadLaneEliminationPass(program);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::LowerBufferFormatToRaw(program);
