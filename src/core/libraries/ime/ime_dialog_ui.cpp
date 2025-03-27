@@ -342,7 +342,6 @@ void ImeDialogUi::DrawMultiLineInputText() {
 
 void ImeDialogUi::DrawKeyboard() {
     static bool shift_enabled = false;
-    enum class KeyboardMode { Letters, Symbols };
     static KeyboardMode kb_mode = KeyboardMode::Letters;
 
     const char* row1_letters = "QWERTYUIOP";
@@ -355,7 +354,7 @@ void ImeDialogUi::DrawKeyboard() {
 
     auto draw_row = [&](const char* row, float offset_x) {
         SetCursorPosX(offset_x);
-        for (int i = 0; row[i]; ++i) {
+        for (int i = 0; row[i] != '\0'; ++i) {
             char ch = shift_enabled ? row[i] : (char)tolower(row[i]);
             std::string key(1, ch);
             if (ImGui::Button(key.c_str(), ImVec2(35, 35))) {
@@ -386,15 +385,17 @@ void ImeDialogUi::DrawKeyboard() {
 
     // Fix: safely push/pop style only if shift was enabled before clicking
     bool highlight = shift_enabled;
-    if (highlight)
+    if (highlight) {
         PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 1.0f, 1.0f));
+    }
 
     if (Button("SHIFT", ImVec2(75, 35))) {
         shift_enabled = !shift_enabled;
     }
 
-    if (highlight)
+    if (highlight) {
         PopStyleColor();
+    }
 
     SameLine();
 

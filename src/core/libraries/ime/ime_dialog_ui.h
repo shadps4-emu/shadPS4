@@ -62,6 +62,8 @@ class ImeDialogUi final : public ImGui::Layer {
     bool first_render = true;
     std::mutex draw_mutex;
 
+    enum class KeyboardMode { Letters, Symbols };
+
 public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
                          OrbisImeDialogResult* result = nullptr);
