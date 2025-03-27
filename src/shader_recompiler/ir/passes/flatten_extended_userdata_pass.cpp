@@ -4,13 +4,15 @@
 
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
-#include <xbyak/xbyak.h>
-#include <xbyak/xbyak_util.h>
+#include "common/arch.h"
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "shader_recompiler/info.h"
+#ifdef ARCH_X86_64
+#include "shader_recompiler/backend/asm_x64/emit_x64.h"
+#endif
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/num_executions.h"
@@ -125,7 +127,7 @@ static IR::U32 WrapInstWithCounter(IR::Inst* inst, u32 inital_value, IR::Block* 
     return IR::U32(phi);
 }
 
-static void GenerateSrtReadConsts(IR::Program& program, PassInfo& pass_info, Pools& pools) {
+static IR::Program GenerateSrtReadConstsSubProgram(IR::Program& program, PassInfo& pass_info, Pools& pools) {
     IR::SubProgram sub_gen(&program, pools);
     for (auto& [inst, sub_inst] : pass_info.all_readconsts) {
         sub_inst = sub_gen.AddInst(inst);
@@ -173,9 +175,11 @@ static void GenerateSrtReadConsts(IR::Program& program, PassInfo& pass_info, Poo
     }
     DeadCodeEliminationPass(sub_program);
     IR::DumpProgram(sub_program, sub_program.info, "srt");
+    return sub_program;
 }
 
 static void GenerateSrtProgram(IR::Program& program, PassInfo& pass_info, Pools& pools) {
+#ifdef ARCH_X86_64
     Xbyak::CodeGenerator& c = g_srt_codegen;
     Shader::Info& info = program.info;
 
@@ -210,7 +214,7 @@ static void GenerateSrtProgram(IR::Program& program, PassInfo& pass_info, Pools&
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     if (!pass_info.all_readconsts.empty()) {
-        GenerateSrtReadConsts(program, pass_info, pools);
+        GenerateSrtReadConstsSubProgram(program, pass_info, pools);
     }
 
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
@@ -222,6 +226,11 @@ static void GenerateSrtProgram(IR::Program& program, PassInfo& pass_info, Pools&
         size_t codesize = c.getCurr() - reinterpret_cast<const u8*>(info.srt_info.walker_func);
         DumpSrtProgram(info, reinterpret_cast<const u8*>(info.srt_info.walker_func), codesize);
     }
+#elif
+    if (info.srt_info.srt_reservations.empty() && pass_info.all_readconsts.empty()) {
+        UNREACHABLE_MSG("SRT program generation only supported on x86_64");
+    }
+#endif
 }
 
 }; // namespace

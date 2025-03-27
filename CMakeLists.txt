@@ -897,6 +897,12 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/value.h
 )
 
+if (ARCHITECTURE STREQUAL "x86_64")
+    set(SHADER_RECOMPILER ${SHADER_RECOMPILER}
+                          src/shader_recompiler/backend/asm_x64/emit_x64.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64.h)
+endif()
+
 set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
