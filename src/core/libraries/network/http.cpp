@@ -9,6 +9,26 @@
 
 namespace Libraries::Http {
 
+void NormalizeAndAppendPath(char* dest, char* src) {
+    char* lastSlash;
+    size_t length;
+
+    lastSlash = strrchr(dest, 0x2f);
+    if (lastSlash == NULL) {
+        length = strlen(dest);
+        dest[length] = '/';
+        dest[length + 1] = '\0';
+    } else {
+        lastSlash[1] = '\0';
+    }
+    if (*src == '/') {
+        dest[0] = '\0';
+    }
+    length = strnlen(dest, 0x3fff);
+    strncat(dest, src, 0x3fff - length);
+    return;
+}
+
 int PS4_SYSV_ABI sceHttpAbortRequest() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -267,7 +287,9 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, std::size_t poolS
     return ++id;
 }
 
-int PS4_SYSV_ABI sceHttpParseResponseHeader() {
+int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, size_t headerLen,
+                                            const char* fieldStr, const char** fieldValue,
+                                            size_t* valueLen) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -637,7 +659,8 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriBuild() {
+int PS4_SYSV_ABI sceHttpUriBuild(char* out, size_t* require, size_t prepare,
+                                 const OrbisHttpUriElement* srcElement, u32 option) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -652,9 +675,93 @@ int PS4_SYSV_ABI sceHttpUriEscape() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriMerge() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, size_t* require,
+                                 size_t prepare, u32 option) {
+    u64 requiredLength;
+    int returnValue;
+    u64 baseUrlLength;
+    u64 relativeUriLength;
+    u64 totalLength;
+    u64 combinedLength;
+    int parseResult;
+    u64 localSizeRelativeUri;
+    u64 localSizeBaseUrl;
+    OrbisHttpUriElement parsedUriElement;
+
+    if (option != 0 || url == NULL || relativeUri == NULL) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    returnValue = sceHttpUriParse(NULL, url, NULL, &localSizeBaseUrl, 0);
+    if (returnValue < 0) {
+        LOG_ERROR(Lib_Http, "returning {:#x}", returnValue);
+        return returnValue;
+    }
+
+    returnValue = sceHttpUriParse(NULL, relativeUri, NULL, &localSizeRelativeUri, 0);
+    if (returnValue < 0) {
+        LOG_ERROR(Lib_Http, "returning {:#x}", returnValue);
+        return returnValue;
+    }
+
+    baseUrlLength = strnlen(url, 0x3fff);
+    relativeUriLength = strnlen(relativeUri, 0x3fff);
+    requiredLength = localSizeBaseUrl + 2 + (relativeUriLength + baseUrlLength) * 2;
+
+    if (require) {
+        *require = requiredLength;
+    }
+
+    if (mergedUrl == NULL) {
+        return ORBIS_OK;
+    }
+
+    if (prepare < requiredLength) {
+        LOG_ERROR(Lib_Http, "Error Out of memory");
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    totalLength = strnlen(url, 0x3fff);
+    baseUrlLength = strnlen(relativeUri, 0x3fff);
+    combinedLength = totalLength + 1 + baseUrlLength;
+    relativeUriLength = prepare - combinedLength;
+
+    returnValue =
+        sceHttpUriParse(&parsedUriElement, relativeUri, mergedUrl + totalLength + baseUrlLength + 1,
+                        &localSizeRelativeUri, relativeUriLength);
+    if (returnValue < 0) {
+        LOG_ERROR(Lib_Http, "returning {:#x}", returnValue);
+        return returnValue;
+    }
+    if (parsedUriElement.scheme == NULL) {
+        strncpy(mergedUrl, relativeUri, requiredLength);
+        if (require) {
+            *require = strnlen(relativeUri, 0x3fff) + 1;
+        }
+        return ORBIS_OK;
+    }
+
+    returnValue =
+        sceHttpUriParse(&parsedUriElement, url, mergedUrl + totalLength + baseUrlLength + 1,
+                        &localSizeBaseUrl, relativeUriLength);
+    if (returnValue < 0) {
+        LOG_ERROR(Lib_Http, "returning {:#x}", returnValue);
+        return returnValue;
+    }
+
+    combinedLength += localSizeBaseUrl;
+    strncpy(mergedUrl + combinedLength, parsedUriElement.path, prepare - combinedLength);
+    NormalizeAndAppendPath(mergedUrl + combinedLength, relativeUri);
+
+    returnValue = sceHttpUriBuild(mergedUrl, 0, ~(baseUrlLength + totalLength) + prepare,
+                                  &parsedUriElement, 0x3f);
+    if (returnValue >= 0) {
+        return ORBIS_OK;
+    } else {
+        LOG_ERROR(Lib_Http, "returning {:#x}", returnValue);
+        return returnValue;
+    }
 }
 
 int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
