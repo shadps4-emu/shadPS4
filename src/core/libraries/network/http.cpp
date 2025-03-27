@@ -675,8 +675,8 @@ int PS4_SYSV_ABI sceHttpUriEscape() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, size_t* require,
-                                 size_t prepare, u32 option) {
+int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, u64* require,
+                                 u64 prepare, u32 option) {
     u64 requiredLength;
     int returnValue;
     u64 baseUrlLength;

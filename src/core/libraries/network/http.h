@@ -140,8 +140,8 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, size_t* require, size_t prepare,
                                  const OrbisHttpUriElement* srcElement, u32 option);
 int PS4_SYSV_ABI sceHttpUriCopy();
 int PS4_SYSV_ABI sceHttpUriEscape();
-int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, size_t* require,
-                                 size_t prepare, u32 option);
+int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, u64* require,
+                                 u64 prepare, u32 option);
 int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
                                  size_t* require, size_t prepare);
 int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize);
