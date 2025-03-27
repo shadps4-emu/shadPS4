@@ -50,8 +50,11 @@ u64 GetNumExecutions(const Inst* inst) {
                                         std::insert_iterator(distances, distances.end()), cond_arg0,
                                         cond_arg1);
             }
-            num_executions *=
-                std::max<u64>(1, *std::max_element(distances.begin(), distances.end()));
+            if (!distances.empty()) {
+                // We assume that the iterator changes by 1 each loop iteration.
+                num_executions *=
+                    std::max<u64>(1, *std::max_element(distances.begin(), distances.end())) + 1;
+            }
         }
         cond_data = cond_data->parent;
     }

@@ -43,9 +43,8 @@ static void DoInstructionOperation(Inst* inst, ImmValueList& inst_values, Cache&
 #include "shader_recompiler/ir/opcodes.inc"
 #undef OPCODE
     default:
-        break;
+        UNREACHABLE_MSG("Invalid opcode: {}", inst->GetOpcode());
     }
-    UNREACHABLE_MSG("Invalid opcode: {}", inst->GetOpcode());
 }
 
 static bool IsSelectInst(Inst* inst) {
@@ -69,7 +68,7 @@ void Compute(const Value& value, ImmValueList& values, Cache& cache) {
         values.insert(ImmValue(resolved));
         return;
     }
-    if (resolved.Type() != Type::Opaque) {
+    if (resolved.IsImmediate()) {
         return;
     }
     Inst* inst = resolved.InstRecursive();
@@ -83,8 +82,7 @@ void Compute(const Value& value, ImmValueList& values, Cache& cache) {
         for (size_t i = 0; i < inst->NumArgs(); ++i) {
             Compute(inst->Arg(i), inst_values, cache);
         }
-    }
-    if (IsSelectInst(inst)) {
+    } else if (IsSelectInst(inst)) {
         Compute(inst->Arg(1), inst_values, cache);
         Compute(inst->Arg(2), inst_values, cache);
     } else {
