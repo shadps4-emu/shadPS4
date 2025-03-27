@@ -164,6 +164,7 @@ using BufferAlias = EmitContext::BufferAlias;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
     const auto& srt_flatbuf = ctx.buffers.back();
+    ASSERT_MSG(inst->Flags<u32>() == 1, "ReadConst was not processed by the flattening pass");
     ASSERT(srt_flatbuf.binding >= 0 && srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
     const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.Def(inst->Arg(1)))};
