@@ -115,6 +115,7 @@ string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 message("start git things")
 # Try to get the upstream remote and branch
+message("check for remote and branch")
 execute_process(
   COMMAND git rev-parse --abbrev-ref --symbolic-full-name @{u}
   OUTPUT_VARIABLE GIT_REMOTE_NAME
@@ -124,6 +125,7 @@ execute_process(
 )
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+  message("check default push")
   execute_process(
     COMMAND git config --get remote.pushDefault
     OUTPUT_VARIABLE GIT_REMOTE_NAME
@@ -141,17 +143,9 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
   elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
     string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
-  elseif (DEFINED ENV{GITHUB_EVENT_PATH})
-    # Extract PR number from GitHub event JSON
-    file(READ "$ENV{GITHUB_EVENT_PATH}" GITHUB_EVENT_JSON)
-    string(JSON PR_NUMBER GET ${GITHUB_EVENT_JSON} "number")
-    if (PR_NUMBER)
-      set(GIT_BRANCH "pr-${PR_NUMBER}")
-    else()
-      set(GIT_BRANCH "detached-head1")
-    endif()
   else()
-    set(GIT_BRANCH "detached-head2")
+    message("couldn't find branch")
+    set(GIT_BRANCH "detached-head")
   endif()
 else()
   # Extract remote name if the output contains a remote/branch format
@@ -164,7 +158,7 @@ else()
   endif()
 endif()
 
-# Get remote link
+# Get remote linkmessage("getting remote link")
 execute_process(
   COMMAND git config --get remote.${GIT_REMOTE_NAME}.url
   OUTPUT_VARIABLE GIT_REMOTE_URL
