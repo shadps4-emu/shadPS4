@@ -16,7 +16,7 @@ void CartesianInvokeImpl(Func func, OutputIt out_it,
         auto get_tuple = [&]<std::size_t... I>(std::index_sequence<I...>) {
             return std::forward_as_tuple(*std::get<I>(arglists_its)...);
         };
-        *out_it++ = std::move(std::apply(func, get_tuple(std::make_index_sequence<N>{})));
+        out_it = std::move(std::apply(func, get_tuple(std::make_index_sequence<N>{})));
         return;
     } else {
         const auto& arglist = std::get<Level>(arglists_tuple);

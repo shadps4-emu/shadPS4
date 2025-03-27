@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <unordered_set>
-#include <boost/container/flat_map.hpp>
 #include "shader_recompiler/ir/compute_value/imm_value.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -15,7 +15,7 @@
 namespace Shader::IR::ComputeValue {
 
 using ImmValueList = std::unordered_set<ImmValue>;
-using Cache = boost::container::flat_map<Inst*, ImmValueList>;
+using Cache = std::unordered_map<Inst*, ImmValueList>;
 
 void Compute(const Value& value, ImmValueList& values, Cache& cache);
 

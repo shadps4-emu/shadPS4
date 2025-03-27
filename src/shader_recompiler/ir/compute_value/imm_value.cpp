@@ -7,6 +7,7 @@
 namespace Shader::IR::ComputeValue {
 
 ImmValue::ImmValue(const IR::Value& value) noexcept {
+    ASSERT(value.IsImmediate());
     switch (value.Type()) {
     case Type::U1:
         imm_values[0].imm_u1 = value.U1();
@@ -1223,6 +1224,9 @@ bool ImmValue::IsNan<Type::F64>(const ImmValue& in) noexcept {
 }
 
 bool ImmValue::IsSupportedValue(const IR::Value& value) noexcept {
+    if (!value.IsImmediate()) {
+        return false;
+    }
     switch (value.Type()) {
     case IR::Type::U1:
     case IR::Type::U8:
