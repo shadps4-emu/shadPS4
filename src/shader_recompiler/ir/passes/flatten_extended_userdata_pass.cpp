@@ -159,14 +159,17 @@ static void GenerateSrtReadConsts(IR::Program& program, PassInfo& pass_info, Poo
                              ++IR::Block::InstructionList::s_iterator_to(*inst));
             ir.StoreFlatbuf(IR::U32(inst), save_offset);
         }
+        data.original_inst->SetFlags<u32>(1);
+        IR::IREmitter ir(*data.original_inst);
+        data.original_inst->SetArg(0, ir.Imm32(0));
         if (data.count_dw > 1) {
             IR::U32 counter =
                 WrapInstWithCounter(data.original_inst, data.offset_dw, original_first_block);
             data.original_inst->SetArg(1, counter);
         } else {
-            IR::IREmitter ir(*data.original_inst);
             data.original_inst->SetArg(1, ir.Imm32(data.offset_dw));
         }
+        
     }
     DeadCodeEliminationPass(sub_program);
     IR::DumpProgram(sub_program, sub_program.info, "srt");
