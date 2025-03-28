@@ -185,7 +185,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 
     // Recompute if opacity changed or we switched to a different game
     if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
-        QImage original_image(QString::fromStdString(game.pic_path.string()));
+        auto image_path = game.pic_path.u8string();
+        QImage original_image(QString::fromStdString({image_path.begin(), image_path.end()}));
         if (!original_image.isNull()) {
             backgroundImage = m_game_list_utils.ChangeImageOpacity(
                 original_image, original_image.rect(), opacity / 100.0f);
