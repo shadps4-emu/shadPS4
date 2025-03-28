@@ -883,10 +883,6 @@
       <translation>创建快捷方式出错！</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>安装 PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>游戏</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>按键绑定</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - 选择文件目录</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>选择您想要安装到的目录。</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>安装所有 PKG 到选定的文件夹</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>安装后删除 PKG 文件</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>打开/添加 Elf 文件夹</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>安装 Packages (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>启动游戏</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>设置...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>从 .pkg 文件安装应用程序</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>未找到游戏。请先将您的游戏添加到您的资料库。</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKG 查看器</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>只能选择一个文件！</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG 解压</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>检测到补丁！</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG 和游戏版本匹配：</translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>您想要覆盖吗？</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG 版本 %1 比已安装版本更旧：</translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>游戏已安装：</translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>您想安装补丁吗：</translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC 安装</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>您想安装 DLC：%1 吗？</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC 已经安装：</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>游戏已经安装</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 错误</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>正在解压 PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>解压完成</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>游戏成功安装在 %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>文件似乎不是有效的 PKG 文件</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>运行游戏</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>找不到 Eboot.bin 文件</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG 文件（*.PKG *.pkg）</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG是一个补丁或 DLC，请先安装游戏！</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation>显示图标下的标签</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>打开文件夹</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 错误</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>名称</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>序列号</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>已安装</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>大小</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>分类</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>类型</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>版本</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>固件</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>区域</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>标志</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>路径</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>文件</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>未知</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Package</translation>
     </message>
   </context>
   <context>
