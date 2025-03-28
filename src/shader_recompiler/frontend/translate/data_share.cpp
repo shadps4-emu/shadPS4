@@ -61,6 +61,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_WRITE(64, false, false, false, inst);
     case Opcode::DS_WRITE2_B64:
         return DS_WRITE(64, false, true, false, inst);
+    case Opcode::DS_WRITE2ST64_B64:
+        return DS_WRITE(64, false, true, true, inst);
     case Opcode::DS_READ_B64:
         return DS_READ(64, false, false, false, inst);
     case Opcode::DS_READ2_B64:

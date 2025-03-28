@@ -32,44 +32,44 @@ void* PS4_SYSV_ABI sceKernelGetProcParam() {
     return linker->GetProcParam();
 }
 
-s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, size_t args, const void* argp,
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
                                           u32 flags, const void* pOpt, int* pRes) {
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
-
-    if (flags != 0) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
+    ASSERT(flags == 0);
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path = mnt->GetHostPath(moduleFileName);
-
-    // Load PRX module and relocate any modules that import it.
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    u32 handle = linker->FindByName(path);
-    if (handle != -1) {
-        return handle;
-    }
-    handle = linker->LoadModule(path, true);
-    if (handle == -1) {
-        return ORBIS_KERNEL_ERROR_ESRCH;
-    }
-    auto* module = linker->GetModule(handle);
-    linker->RelocateAnyImports(module);
 
-    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
-    if (module->tls.image_size != 0) {
-        linker->AdvanceGenerationCounter();
+    std::filesystem::path path;
+    std::string guest_path(moduleFileName);
+
+    s32 handle = -1;
+
+    if (guest_path[0] == '/') {
+        // try load /system/common/lib/ +path
+        // try load /system/priv/lib/   +path
+        path = mnt->GetHostPath(guest_path);
+        handle = linker->LoadAndStartModule(path, args, argp, pRes);
+        if (handle != -1)
+            return handle;
+    } else {
+        if (!guest_path.contains('/')) {
+            path = mnt->GetHostPath("/app0/" + guest_path);
+            handle = linker->LoadAndStartModule(path, args, argp, pRes);
+            if (handle != -1)
+                return handle;
+            // if ((flags & 0x10000) != 0)
+            //  try load /system/priv/lib/   +basename
+            //  try load /system/common/lib/ +basename
+        } else {
+            path = mnt->GetHostPath(guest_path);
+            handle = linker->LoadAndStartModule(path, args, argp, pRes);
+            if (handle != -1)
+                return handle;
+        }
     }
 
-    // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
-    s32 ret = module->Start(args, argp, param);
-    if (pRes) {
-        *pRes = ret;
-    }
-
-    return handle;
+    return ORBIS_KERNEL_ERROR_ENOENT;
 }
 
 s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
@@ -85,19 +85,7 @@ s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
     return ORBIS_OK;
 }
 
-static constexpr size_t ORBIS_DBG_MAX_NAME_LENGTH = 256;
-
-struct OrbisModuleInfoForUnwind {
-    u64 st_size;
-    std::array<char, ORBIS_DBG_MAX_NAME_LENGTH> name;
-    VAddr eh_frame_hdr_addr;
-    VAddr eh_frame_addr;
-    u64 eh_frame_size;
-    VAddr seg0_addr;
-    u64 seg0_size;
-};
-
-s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, int flags,
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info) {
     if (flags >= 3) {
         std::memset(info, 0, sizeof(OrbisModuleInfoForUnwind));

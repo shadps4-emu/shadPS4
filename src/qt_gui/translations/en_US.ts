@@ -541,6 +541,77 @@
         <source>Override Color</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind axis values more than once</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+        <source>Restore Defaults</source>
+        <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancel</translation>
+    </message>
+</context>
+<context>
+    <name>EditorDialog</name>
+    <message>
+        <source>Edit Keyboard + Mouse and Controller input bindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use Per-Game configs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Error</source>
+        <translation type="unfinished">Error</translation>
+    </message>
+    <message>
+        <source>Could not open the file for reading</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not open the file for writing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save Changes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to save changes?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+        <source>Do you want to reset your custom default config to the original default config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to reset this config to your custom default config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset to Default</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ElfViewer</name>
@@ -812,10 +883,6 @@
         <translation>Error creating shortcut!</translation>
     </message>
     <message>
-        <source>Install PKG</source>
-        <translation>Install PKG</translation>
-    </message>
-    <message>
         <source>Game</source>
         <translation>Game</translation>
     </message>
@@ -885,22 +952,237 @@
     </message>
 </context>
 <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-        <source>Select which directory you want to install to.</source>
-        <translation>Select which directory you want to install to.</translation>
-    </message>
-    <message>
-        <source>Install All Queued to Selected Folder</source>
+        <source>Quickstart</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Delete PKG File on Install</source>
+        <source>FAQ</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Syntax</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Special Bindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keybindings</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>KBMSettings</name>
+    <message>
+        <source>Configure Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>D-Pad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>unmapped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation type="unfinished">Left</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation type="unfinished">Right</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Left Analog Halfmode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>hold to move left stick at half-speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Left Stick</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Config Selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Common Config</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use per-game configs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Text Editor</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+        <source>R1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Touchpad Click</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mouse to Joystick</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>*press F7 ingame to activate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mouse Movement Parameters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>note: click Help Button/Special Keybindings for more information</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Face Buttons</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Triangle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Circle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cross</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Right Analog Halfmode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>hold to move right stick at half-speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Right Stick</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed Offset (def 0.125):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy from Common Config</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deadzone Offset (def 0.50):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Speed Multiplier (def 1.0):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Common Config Selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy values from Common Config</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Press a key</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot set mapping</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mousewheel cannot be mapped to stick outputs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+        <source>Restore Defaults</source>
+        <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancel</translation>
     </message>
 </context>
 <context>
@@ -908,10 +1190,6 @@
     <message>
         <source>Open/Add Elf Folder</source>
         <translation>Open/Add Elf Folder</translation>
-    </message>
-    <message>
-        <source>Install Packages (PKG)</source>
-        <translation>Install Packages (PKG)</translation>
     </message>
     <message>
         <source>Boot Game</source>
@@ -928,10 +1206,6 @@
     <message>
         <source>Configure...</source>
         <translation>Configure...</translation>
-    </message>
-    <message>
-        <source>Install application from a .pkg file</source>
-        <translation>Install application from a .pkg file</translation>
     </message>
     <message>
         <source>Recent Games</source>
@@ -1002,8 +1276,12 @@
         <translation>Dump Game List</translation>
     </message>
     <message>
-        <source>PKG Viewer</source>
-        <translation>PKG Viewer</translation>
+        <source>Trophy Viewer</source>
+        <translation>Trophy Viewer</translation>
+    </message>
+    <message>
+        <source>No games found. Please add your games to your library first.</source>
+        <translation>No games found. Please add your games to your library first.</translation>
     </message>
     <message>
         <source>Search...</source>
@@ -1114,83 +1392,11 @@
         <translation>Only one file can be selected!</translation>
     </message>
     <message>
-        <source>PKG Extraction</source>
-        <translation>PKG Extraction</translation>
-    </message>
-    <message>
-        <source>Patch detected!</source>
-        <translation>Patch detected!</translation>
-    </message>
-    <message>
-        <source>PKG and Game versions match: </source>
-        <translation>PKG and Game versions match: </translation>
-    </message>
-    <message>
-        <source>Would you like to overwrite?</source>
-        <translation>Would you like to overwrite?</translation>
-    </message>
-    <message>
-        <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG Version %1 is older than installed version: </translation>
-    </message>
-    <message>
-        <source>Game is installed: </source>
-        <translation>Game is installed: </translation>
-    </message>
-    <message>
-        <source>Would you like to install Patch: </source>
-        <translation>Would you like to install Patch: </translation>
-    </message>
-    <message>
-        <source>DLC Installation</source>
-        <translation>DLC Installation</translation>
-    </message>
-    <message>
-        <source>Would you like to install DLC: %1?</source>
-        <translation>Would you like to install DLC: %1?</translation>
-    </message>
-    <message>
-        <source>DLC already installed:</source>
-        <translation>DLC already installed:</translation>
-    </message>
-    <message>
-        <source>Game already installed</source>
-        <translation>Game already installed</translation>
-    </message>
-    <message>
-        <source>PKG ERROR</source>
-        <translation>PKG ERROR</translation>
-    </message>
-    <message>
-        <source>Extracting PKG %1/%2</source>
-        <translation>Extracting PKG %1/%2</translation>
-    </message>
-    <message>
-        <source>Extraction Finished</source>
-        <translation>Extraction Finished</translation>
-    </message>
-    <message>
-        <source>Game successfully installed at %1</source>
-        <translation>Game successfully installed at %1</translation>
-    </message>
-    <message>
-        <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>File doesn&apos;t appear to be a valid PKG file</translation>
-    </message>
-    <message>
         <source>Run Game</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Eboot.bin file not found</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PKG File (*.PKG *.pkg)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PKG is a patch or DLC, please install the game first!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1201,71 +1407,44 @@
         <source>shadPS4</source>
         <translation type="unfinished">shadPS4</translation>
     </message>
-</context>
-<context>
-    <name>PKGViewer</name>
     <message>
-        <source>Open Folder</source>
-        <translation>Open Folder</translation>
-    </message>
-    <message>
-        <source>PKG ERROR</source>
-        <translation type="unfinished">PKG ERROR</translation>
-    </message>
-    <message>
-        <source>Name</source>
-        <translation type="unfinished">Name</translation>
-    </message>
-    <message>
-        <source>Serial</source>
-        <translation type="unfinished">Serial</translation>
-    </message>
-    <message>
-        <source>Installed</source>
+        <source>Play</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Size</source>
-        <translation type="unfinished">Size</translation>
-    </message>
-    <message>
-        <source>Category</source>
+        <source>Pause</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Type</source>
+        <source>Stop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>App Ver</source>
+        <source>Restart</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>FW</source>
+        <source>Full Screen</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Region</source>
-        <translation type="unfinished">Region</translation>
-    </message>
-    <message>
-        <source>Flags</source>
+        <source>Controllers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Path</source>
-        <translation type="unfinished">Path</translation>
+        <source>Keyboard</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>File</source>
-        <translation type="unfinished">File</translation>
+        <source>Refresh List</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Unknown</source>
-        <translation type="unfinished">Unknown</translation>
+        <source>Resume</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Package</source>
+        <source>Show Labels Under Icons</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1632,10 +1811,6 @@
         <translation>Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
-        <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</source>
-        <translation>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\nthophy.mp3, bronze.png, gold.png, platinum.png, silver.png</translation>
-    </message>
-    <message>
         <source>Never</source>
         <translation>Never</translation>
     </message>
@@ -1840,8 +2015,48 @@
         <translation>Right</translation>
     </message>
     <message>
+        <source>Top</source>
+        <translation>Top</translation>
+    </message>
+    <message>
+        <source>Bottom</source>
+        <translation>Bottom</translation>
+    </message>
+    <message>
         <source>Notification Duration</source>
         <translation>Notification Duration</translation>
+    </message>
+    <message>
+        <source>Portable User Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Portable User Folder from Common User Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot create portable user folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 already exists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Portable user folder created</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 successfully created.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1849,6 +2064,10 @@
     <message>
         <source>Trophy Viewer</source>
         <translation>Trophy Viewer</translation>
+    </message>
+    <message>
+        <source>Select Game:</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Progress</source>

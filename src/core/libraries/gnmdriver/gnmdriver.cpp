@@ -1087,7 +1087,8 @@ s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, 
     }
 
     uintptr_t label_addr{};
-    VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr);
+    ASSERT_MSG(VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr) == 16,
+               "sceVideoOutGetBufferLabelAddress call failed");
 
     auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
     wait_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
@@ -2041,7 +2042,8 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     }
 
     uintptr_t label_addr{};
-    VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr);
+    ASSERT_MSG(VideoOut::sceVideoOutGetBufferLabelAddress(vo_handle, &label_addr) == 16,
+               "sceVideoOutGetBufferLabelAddress call failed");
 
     // Write event to lock the VO surface
     auto* write_lock = reinterpret_cast<PM4CmdWriteData*>(cmdbuf);

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <fmt/core.h>
+#include "common/string_literal.h"
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
 
@@ -17,15 +18,6 @@ namespace Libraries::Kernel {
 void ErrSceToPosix(int result);
 int ErrnoToSceKernelError(int e);
 void SetPosixErrno(int e);
-
-template <size_t N>
-struct StringLiteral {
-    constexpr StringLiteral(const char (&str)[N]) {
-        std::copy_n(str, N, value);
-    }
-
-    char value[N];
-};
 
 template <StringLiteral name, class F, F f>
 struct WrapperImpl;

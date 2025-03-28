@@ -74,7 +74,7 @@ void FrameGraph::Draw() {
     if (!is_open) {
         return;
     }
-    SetNextWindowSize({340.0, 185.0f}, ImGuiCond_FirstUseEver);
+    SetNextWindowSize({308.0, 270.0f}, ImGuiCond_FirstUseEver);
     if (Begin("Video debug info", &is_open)) {
         const auto& ctx = *GImGui;
         const auto& io = ctx.IO;
@@ -88,13 +88,20 @@ void FrameGraph::Draw() {
             frameRate = 1000.0f / deltaTime;
         }
 
+        SeparatorText("Frame graph");
+        DrawFrameGraph();
+
+        SeparatorText("Renderer info");
+
         Text("Frame time: %.3f ms (%.1f FPS)", deltaTime, frameRate);
         Text("Presenter time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, 1.0f / io.DeltaTime);
         Text("Flip frame: %d Gnm submit frame: %d", DebugState.flip_frame_count.load(),
              DebugState.gnm_frame_count.load());
-
-        SeparatorText("Frame graph");
-        DrawFrameGraph();
+        Text("Game Res: %dx%d", DebugState.game_resolution.first,
+             DebugState.game_resolution.second);
+        Text("Output Res: %dx%d", DebugState.output_resolution.first,
+             DebugState.output_resolution.second);
+        Text("FSR: %s", DebugState.is_using_fsr ? "on" : "off");
     }
     End();
 }

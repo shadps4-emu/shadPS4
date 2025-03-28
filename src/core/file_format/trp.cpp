@@ -1,10 +1,36 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cryptopp/aes.h>
+#include <cryptopp/modes.h>
+
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
-#include "trp.h"
+#include "core/file_format/trp.h"
+
+static void DecryptEFSM(std::span<CryptoPP::byte, 16> trophyKey,
+                        std::span<CryptoPP::byte, 16> NPcommID,
+                        std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
+                        std::span<CryptoPP::byte> decrypted) {
+
+    // step 1: Encrypt NPcommID
+    CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
+
+    std::vector<CryptoPP::byte> trophyIv(16, 0);
+    std::vector<CryptoPP::byte> trpKey(16);
+
+    encrypt.SetKeyWithIV(trophyKey.data(), trophyKey.size(), trophyIv.data());
+    encrypt.ProcessData(trpKey.data(), NPcommID.data(), 16);
+
+    // step 2: decrypt efsm.
+    CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decrypt;
+    decrypt.SetKeyWithIV(trpKey.data(), trpKey.size(), efsmIv.data());
+
+    for (size_t i = 0; i < decrypted.size(); i += CryptoPP::AES::BLOCKSIZE) {
+        decrypt.ProcessData(decrypted.data() + i, ciphertext.data() + i, CryptoPP::AES::BLOCKSIZE);
+    }
+}
 
 TRP::TRP() = default;
 TRP::~TRP() = default;
@@ -115,7 +141,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                         return false;
                     }
                     file.Read(ESFM);
-                    crypto.decryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
+                    DecryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
                     removePadding(XML);
                     std::string xml_name = entry.entry_name;
                     size_t pos = xml_name.find("ESFM");
