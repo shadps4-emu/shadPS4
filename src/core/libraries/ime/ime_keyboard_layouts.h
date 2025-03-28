@@ -7,14 +7,14 @@
 #include <vector>
 
 enum class KeyType {
-    Text,      // Inserts character(s) into input buffer
-    Backspace, // Deletes last character
-    Space,     // Adds space
-    Enter,     // Submits input
-    Shift,     // Toggle uppercase/lowercase
-    SymbolsLayout,   // Switch to symbols layout
-    TextLayout, // Switch to text layout
-    Done,      // Finish and close keyboard
+    Text,          // Inserts character(s) into input buffer
+    Backspace,     // Deletes last character
+    Space,         // Adds space
+    Enter,         // Submits input
+    Shift,         // Toggle uppercase/lowercase
+    SymbolsLayout, // Switch to symbols layout
+    TextLayout,    // Switch to text layout
+    Done,          // Finish and close keyboard
     CursorLeft,
     CursorRight,
     CursorUp,
