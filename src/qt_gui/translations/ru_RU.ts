@@ -1514,6 +1514,46 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
+    <message>
+      <source>Play</source>
+      <translation>Играть</translation>
+    </message>
+    <message>
+      <source>Pause</source>
+      <translation>Пауза</translation>
+    </message>
+    <message>
+      <source>Stop</source>
+      <translation>Остановить</translation>
+    </message>
+    <message>
+      <source>Restart</source>
+      <translation>Перезапустить</translation>
+    </message>
+    <message>
+      <source>Full Screen</source>
+      <translation>Полный экран</translation>
+    </message>
+    <message>
+      <source>Controllers</source>
+      <translation>Контроллеры</translation>
+    </message>
+    <message>
+      <source>Keyboard</source>
+      <translation>Клавиатура</translation>
+    </message>
+    <message>
+      <source>Refresh List</source>
+      <translation>Обновить список</translation>
+    </message>
+    <message>
+      <source>Resume</source>
+      <translation>Продолжить</translation>
+    </message>
+    <message>
+      <source>Show Labels Under Icons</source>
+      <translation>Показывать метки под значками</translation>
+    </message>
   </context>
   <context>
     <name>PKGViewer</name>

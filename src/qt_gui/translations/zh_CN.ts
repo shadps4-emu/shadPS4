@@ -1514,6 +1514,46 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
+    <message>
+      <source>Play</source>
+      <translation>开始游戏</translation>
+    </message>
+    <message>
+      <source>Pause</source>
+      <translation>暂停</translation>
+    </message>
+    <message>
+      <source>Stop</source>
+      <translation>关闭</translation>
+    </message>
+    <message>
+      <source>Restart</source>
+      <translation>重新启动</translation>
+    </message>
+    <message>
+      <source>Full Screen</source>
+      <translation>全屏</translation>
+    </message>
+    <message>
+      <source>Controllers</source>
+      <translation>控制器</translation>
+    </message>
+    <message>
+      <source>Keyboard</source>
+      <translation>键盘</translation>
+    </message>
+    <message>
+      <source>Refresh List</source>
+      <translation>刷新列表</translation>
+    </message>
+    <message>
+      <source>Resume</source>
+      <translation>继续游戏</translation>
+    </message>
+    <message>
+      <source>Show Labels Under Icons</source>
+      <translation>显示图标下的标签</translation>
+    </message>
   </context>
   <context>
     <name>PKGViewer</name>

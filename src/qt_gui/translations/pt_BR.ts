@@ -912,7 +912,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório do %2 %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -1513,6 +1513,46 @@
     <message>
       <source>shadPS4</source>
       <translation>shadPS4</translation>
+    </message>
+    <message>
+      <source>Play</source>
+      <translation>Jogar</translation>
+    </message>
+    <message>
+      <source>Pause</source>
+      <translation>Pausar</translation>
+    </message>
+    <message>
+      <source>Stop</source>
+      <translation>Parar</translation>
+    </message>
+    <message>
+      <source>Restart</source>
+      <translation>Reiniciar</translation>
+    </message>
+    <message>
+      <source>Full Screen</source>
+      <translation>Tela Cheia</translation>
+    </message>
+    <message>
+      <source>Controllers</source>
+      <translation>Controles</translation>
+    </message>
+    <message>
+      <source>Keyboard</source>
+      <translation>Teclado</translation>
+    </message>
+    <message>
+      <source>Refresh List</source>
+      <translation>Atualizar Lista</translation>
+    </message>
+    <message>
+      <source>Resume</source>
+      <translation>Continuar</translation>
+    </message>
+    <message>
+      <source>Show Labels Under Icons</source>
+      <translation>Mostrar Rótulos Sob Ícones</translation>
     </message>
   </context>
   <context>
