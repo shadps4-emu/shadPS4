@@ -912,7 +912,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório do %2 %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
