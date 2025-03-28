@@ -446,6 +446,8 @@ set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/ime_dialog.h
             src/core/libraries/ime/ime_ui.cpp
             src/core/libraries/ime/ime_ui.h
+            src/core/libraries/ime/ime_keyboard_layouts.cpp
+            src/core/libraries/ime/ime_keyboard_layouts.h
             src/core/libraries/ime/ime_keyboard_ui.cpp
             src/core/libraries/ime/ime_keyboard_ui.h
             src/core/libraries/ime/ime.cpp

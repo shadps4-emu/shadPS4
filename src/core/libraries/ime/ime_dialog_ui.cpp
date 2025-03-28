@@ -351,8 +351,15 @@ void ImeDialogUi::DrawKeyboard() {
         has_logged = true;
     }
 
+    bool done_pressed = false;
+
     DrawVirtualKeyboard(state->current_text.begin(), state->max_text_length * 4,
-                        &state->input_changed, kb_mode, shift_enabled);
+                        &state->input_changed, kb_mode, shift_enabled, &done_pressed);
+
+    if (done_pressed) {
+        *status = OrbisImeDialogStatus::Finished;
+        result->endstatus = OrbisImeDialogEndStatus::Ok;
+    }
 }
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {

@@ -195,12 +195,19 @@ void ImeUi::DrawKeyboard() {
 
     static bool has_logged = false;
     if (!has_logged) {
-        LOG_INFO(Lib_ImeDialog, "Virtual keyboard used from Ime");
+        LOG_INFO(Lib_Ime, "Virtual keyboard used from ImeUi");
         has_logged = true;
     }
 
-    DrawVirtualKeyboard(state->current_text.begin(), ime_param->maxTextLength * 4, nullptr, kb_mode,
-                        shift_enabled);
+    bool input_changed = false;
+    bool done_pressed = false;
+
+    DrawVirtualKeyboard(state->current_text.begin(), state->current_text.capacity(), &input_changed,
+                        kb_mode, shift_enabled, &done_pressed);
+
+    if (done_pressed) {
+        state->SendEnterEvent(); // Submit action
+    }
 }
 
 int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
