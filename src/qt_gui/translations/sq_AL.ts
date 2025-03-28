@@ -883,10 +883,6 @@
       <translation>Gabim në krijimin e shkurtores!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Instalo PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Loja</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Caktimet e Tasteve</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Përzgjidh dosjen</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Përzgjidh në cilën dosje do që të instalosh.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Instalo të gjitha të radhiturat në dosjen e zgjedhur</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Fshi skedarin PKG pas instalimit</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Hap/Shto Dosje ELF</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Instalo Paketat (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Nis Lojën</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfiguro...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Instalo aplikacionin nga një skedar .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>Nuk u gjetën lojëra. Shto lojërat në librarinë tënde fillimisht.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>Shikuesi i PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Mund të përzgjidhet vetëm një skedar!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Nxjerrja e PKG-së</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>U zbulua një arnë!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG-ja dhe versioni i Lojës përputhen: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Dëshiron të mbishkruash?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Versioni %1 i PKG-së është më i vjetër se versioni i instaluar: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Loja është instaluar: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Dëshiron të instalosh Arnën: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalimi i DLC-ve</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Dëshiron të instalosh DLC-në: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC-ja është instaluar tashmë:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Loja është instaluar tashmë</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>GABIM PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Po nxirret PKG-ja %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Nxjerrja Përfundoi</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Loja u instalua me sukses në %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Skedari nuk duket si skedar PKG i vlefshëm</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Ekzekuto lojën</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Skedari Eboot.bin nuk u gjet</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Skedar PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG-ja është një arnë ose DLC, të lutem instalo lojën fillimisht!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Hap Dosjen</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>GABIM PKG</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Emri</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Seriku</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>Instaluar</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Madhësia</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>Kategoria</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>Lloji</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>Versioni i aplikacionit</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>Firmueri</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Rajoni</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flamurët</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Shtegu</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Skedari</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>E panjohur</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paketa</translation>
     </message>
   </context>
   <context>
