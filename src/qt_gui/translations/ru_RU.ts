@@ -1307,6 +1307,14 @@
       <translation>Дамп списка игр</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Не найдено ни одной игры. Пожалуйста, сначала добавьте игры в библиотеку.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>Просмотр PKG</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Выберите игру:</translation>
     </message>
     <message>
       <source>Progress</source>

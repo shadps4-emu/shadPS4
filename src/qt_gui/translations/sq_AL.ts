@@ -1307,6 +1307,14 @@
       <translation>Zbraz Listën e Lojërave</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Shikuesi i Trofeve</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Nuk u gjetën lojëra. Shto lojërat në librarinë tënde fillimisht.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>Shikuesi i PKG</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Shikuesi i Trofeve</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Zgjidh Lojën:</translation>
     </message>
     <message>
       <source>Progress</source>
