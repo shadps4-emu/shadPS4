@@ -9,6 +9,7 @@
 #include "common/cstring.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/ime/ime_keyboard_ui.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -61,8 +62,6 @@ class ImeDialogUi final : public ImGui::Layer {
 
     bool first_render = true;
     std::mutex draw_mutex;
-
-    enum class KeyboardMode { Letters, Symbols };
 
 public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
