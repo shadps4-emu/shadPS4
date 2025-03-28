@@ -125,12 +125,15 @@ namespace {
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:
-    default:
         return SEEK_SET;
     case SeekOrigin::CurrentPosition:
         return SEEK_CUR;
     case SeekOrigin::End:
         return SEEK_END;
+    default:
+        LOG_ERROR(Common_Filesystem, "Unsupported origin {}, defaulting to SEEK_SET",
+                  static_cast<u32>(origin));
+        return SEEK_SET;
     }
 }
 
@@ -375,20 +378,6 @@ u64 IOFile::GetSize() const {
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     if (!IsOpen()) {
         return false;
-    }
-
-    if (False(file_access_mode & (FileAccessMode::Write | FileAccessMode::Append))) {
-        u64 size = GetSize();
-        if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        } else if (origin == SeekOrigin::End && offset > 0) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        }
     }
 
     errno = 0;

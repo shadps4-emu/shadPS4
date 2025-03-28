@@ -7,7 +7,6 @@
 #include <QDesktopServices>
 #include <QMenu>
 #include <QMessageBox>
-#include <QTreeWidget>
 #include <QTreeWidgetItem>
 
 #include <qt_gui/background_music_player.h>
@@ -597,30 +596,6 @@ public:
             }
         }
         return -1;
-    }
-
-    void RequestGameMenuPKGViewer(
-        const QPoint& pos, QStringList m_pkg_app_list, QTreeWidget* treeWidget,
-        std::function<void(std::filesystem::path, int, int)> InstallDragDropPkg) {
-        QPoint global_pos = treeWidget->viewport()->mapToGlobal(pos); // context menu position
-        QTreeWidgetItem* currentItem = treeWidget->currentItem();     // current clicked item
-        int itemIndex = GetRowIndex(treeWidget, currentItem);         // row
-
-        QMenu menu(treeWidget);
-        QAction installPackage(tr("Install PKG"), treeWidget);
-
-        menu.addAction(&installPackage);
-
-        auto selected = menu.exec(global_pos);
-        if (!selected) {
-            return;
-        }
-
-        if (selected == &installPackage) {
-            QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
-            std::filesystem::path path = Common::FS::PathFromQString(pkg_app_[9]);
-            InstallDragDropPkg(path, 1, 1);
-        }
     }
 
 private:

@@ -1307,6 +1307,14 @@
       <translation>Дамп списка игр</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Не найдено ни одной игры. Пожалуйста, сначала добавьте игры в библиотеку.</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>Просмотр PKG</translation>
     </message>
@@ -1505,6 +1513,46 @@
     <message>
       <source>shadPS4</source>
       <translation>shadPS4</translation>
+    </message>
+    <message>
+      <source>Play</source>
+      <translation>Играть</translation>
+    </message>
+    <message>
+      <source>Pause</source>
+      <translation>Пауза</translation>
+    </message>
+    <message>
+      <source>Stop</source>
+      <translation>Остановить</translation>
+    </message>
+    <message>
+      <source>Restart</source>
+      <translation>Перезапустить</translation>
+    </message>
+    <message>
+      <source>Full Screen</source>
+      <translation>Полный экран</translation>
+    </message>
+    <message>
+      <source>Controllers</source>
+      <translation>Контроллеры</translation>
+    </message>
+    <message>
+      <source>Keyboard</source>
+      <translation>Клавиатура</translation>
+    </message>
+    <message>
+      <source>Refresh List</source>
+      <translation>Обновить список</translation>
+    </message>
+    <message>
+      <source>Resume</source>
+      <translation>Продолжить</translation>
+    </message>
+    <message>
+      <source>Show Labels Under Icons</source>
+      <translation>Показывать метки под значками</translation>
     </message>
   </context>
   <context>
@@ -2190,6 +2238,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Просмотр трофеев</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Выберите игру:</translation>
     </message>
     <message>
       <source>Progress</source>

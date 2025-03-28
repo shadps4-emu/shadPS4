@@ -377,12 +377,14 @@ struct PM4CmdAcquireMem {
 enum class DmaDataDst : u32 {
     Memory = 0,
     Gds = 1,
+    MemoryUsingL2 = 3,
 };
 
 enum class DmaDataSrc : u32 {
     Memory = 0,
     Gds = 1,
     Data = 2,
+    MemoryUsingL2 = 3,
 };
 
 struct PM4DmaData {
