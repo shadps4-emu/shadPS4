@@ -1532,7 +1532,7 @@
     </message>
     <message>
       <source>Full Screen</source>
-      <translation>Tela cheia</translation>
+      <translation>Tela Cheia</translation>
     </message>
     <message>
       <source>Controllers</source>
@@ -1552,7 +1552,7 @@
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation>Exibir Rótulos Sob Ícones</translation>
+      <translation>Mostrar Rótulos Sob Ícones</translation>
     </message>
   </context>
   <context>
