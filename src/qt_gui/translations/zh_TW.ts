@@ -883,10 +883,6 @@
       <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation type="unfinished">Game</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation type="unfinished">Boot Game</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation type="unfinished">Configure...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>只能選擇一個檔案！</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG 解壓縮</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>檢測到補丁！</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG 和遊戲版本匹配: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>您想要覆蓋嗎？</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG 版本 %1 比已安裝版本更舊: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>遊戲已安裝: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>您想要安裝補丁嗎: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC 安裝</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>您想要安裝 DLC: %1 嗎？</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC 已經安裝:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>遊戲已經安裝</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 錯誤</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>正在解壓縮 PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>解壓縮完成</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>遊戲成功安裝於 %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>檔案似乎不是有效的 PKG 檔案</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 錯誤</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>名稱</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>序號</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>大小</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>區域</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>路徑</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation type="unfinished">File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>未知</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>
