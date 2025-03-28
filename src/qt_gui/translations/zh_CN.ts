@@ -1307,6 +1307,14 @@
       <translation>导出游戏列表</translation>
     </message>
     <message>
+      <source>Trophy Viewer</source>
+      <translation>奖杯查看器</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>未找到游戏。请先将您的游戏添加到您的资料库。</translation>
+    </message>
+    <message>
       <source>PKG Viewer</source>
       <translation>PKG 查看器</translation>
     </message>
@@ -2190,6 +2198,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>奖杯查看器</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>选择游戏：</translation>
     </message>
     <message>
       <source>Progress</source>
