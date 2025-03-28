@@ -850,7 +850,7 @@ void load(const std::filesystem::path& path) {
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
         const auto install_dir_array =
-            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
 
         try {
             install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
