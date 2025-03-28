@@ -1149,7 +1149,7 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation/>
+      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
@@ -1513,6 +1513,46 @@
     <message>
       <source>shadPS4</source>
       <translation>shadPS4</translation>
+    </message>
+    <message>
+      <source>Play</source>
+      <translation>أبدأ اللعب</translation>
+    </message>
+    <message>
+      <source>Pause</source>
+      <translation>توقف مؤقت</translation>
+    </message>
+    <message>
+      <source>Stop</source>
+      <translation>إيقاف</translation>
+    </message>
+    <message>
+      <source>Restart</source>
+      <translation>إعادة تشغيل</translation>
+    </message>
+    <message>
+      <source>Full Screen</source>
+      <translation>وضع ملء الشاشة</translation>
+    </message>
+    <message>
+      <source>Controllers</source>
+      <translation>أذرعة التحكم</translation>
+    </message>
+    <message>
+      <source>Keyboard</source>
+      <translation>لوحة المفاتيح</translation>
+    </message>
+    <message>
+      <source>Refresh List</source>
+      <translation>تحديث القائمة</translation>
+    </message>
+    <message>
+      <source>Resume</source>
+      <translation>استئناف</translation>
+    </message>
+    <message>
+      <source>Show Labels Under Icons</source>
+      <translation>إظهار العلامات أسفل الأيقونات</translation>
     </message>
   </context>
   <context>

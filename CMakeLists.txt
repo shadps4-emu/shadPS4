@@ -113,28 +113,39 @@ git_describe(GIT_DESC --always --long --dirty)
 git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
+message("start git things")
 # Try to get the upstream remote and branch
+message("check for remote and branch")
 execute_process(
   COMMAND git rev-parse --abbrev-ref --symbolic-full-name @{u}
   OUTPUT_VARIABLE GIT_REMOTE_NAME
-  RESULT_VARIABLE GIT_BRANCH_RESULT
+  RESULT_VARIABLE GIT_REMOTE_RESULT
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-
 # If there's no upstream set or the command failed, check remote.pushDefault
-if (GIT_BRANCH_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+  message("check default push")
   execute_process(
     COMMAND git config --get remote.pushDefault
     OUTPUT_VARIABLE GIT_REMOTE_NAME
-    RESULT_VARIABLE GIT_PUSH_DEFAULT_RESULT
+    RESULT_VARIABLE GIT_REMOTE_RESULT
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  
-  # If remote.pushDefault is not set or fails, default to origin
-  if (GIT_PUSH_DEFAULT_RESULT OR GIT_REMOTE_NAME STREQUAL "")
-    set(GIT_REMOTE_NAME "origin")
+endif()
+# If running in GitHub Actions and the above fails
+if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
+  message("check github")
+  set(GIT_REMOTE_NAME "origin")
+
+  if (DEFINED ENV{GITHUB_HEAD_REF})  # PR branch name
+    set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
+  elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
+    string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
+  else()
+    message("couldn't find branch")
+    set(GIT_BRANCH "detached-head")
   endif()
 else()
   # Extract remote name if the output contains a remote/branch format
@@ -148,6 +159,7 @@ else()
 endif()
 
 # Get remote link
+message("getting remote link")
 execute_process(
   COMMAND git config --get remote.${GIT_REMOTE_NAME}.url
   OUTPUT_VARIABLE GIT_REMOTE_URL
@@ -155,6 +167,8 @@ execute_process(
 )
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
+
+message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
@@ -637,9 +651,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/crypto/crypto.cpp
-         src/core/crypto/crypto.h
-         src/core/crypto/keys.h
          src/core/devices/base_device.cpp
          src/core/devices/base_device.h
          src/core/devices/ioccom.h
@@ -657,10 +668,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/srandom_device.cpp
          src/core/devices/srandom_device.h
          src/core/file_format/pfs.h
-         src/core/file_format/pkg.cpp
-         src/core/file_format/pkg.h
-         src/core/file_format/pkg_type.cpp
-         src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
          src/core/file_format/playgo_chunk.cpp
@@ -669,8 +676,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
-         src/core/loader.cpp
-         src/core/loader.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -960,10 +965,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
-           src/qt_gui/install_dir_select.cpp
-           src/qt_gui/install_dir_select.h
-           src/qt_gui/pkg_viewer.cpp
-           src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
            src/qt_gui/trophy_viewer.h
            src/qt_gui/elf_viewer.cpp
