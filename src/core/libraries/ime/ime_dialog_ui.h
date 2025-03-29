@@ -9,6 +9,7 @@
 #include "common/cstring.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/ime/ime_keyboard_ui.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -77,6 +78,8 @@ private:
 
     void DrawInputText();
     void DrawMultiLineInputText();
+
+    void DrawKeyboard();
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };

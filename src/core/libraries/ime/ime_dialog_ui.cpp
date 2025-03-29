@@ -10,6 +10,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_dialog_ui.h"
+#include "core/libraries/ime/ime_keyboard_ui.h"
 #include "core/tls.h"
 #include "imgui/imgui_std.h"
 
@@ -234,10 +235,12 @@ void ImeDialogUi::Draw() {
 
     ImVec2 window_size;
 
+    const float keyboard_height = 200.0f;
+
     if (state->is_multi_line) {
-        window_size = {500.0f, 300.0f};
+        window_size = {500.0f, 300.0f + keyboard_height};
     } else {
-        window_size = {500.0f, 150.0f};
+        window_size = {500.0f, 150.0f + keyboard_height};
     }
 
     CentralizeNextWindow();
@@ -263,6 +266,7 @@ void ImeDialogUi::Draw() {
         } else {
             DrawInputText();
         }
+        DrawKeyboard();
 
         SetCursorPosY(GetCursorPosY() + 10.0f);
 
@@ -334,6 +338,27 @@ void ImeDialogUi::DrawMultiLineInputText() {
     if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
                     state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
+    }
+}
+
+void ImeDialogUi::DrawKeyboard() {
+    static KeyboardMode kb_mode = KeyboardMode::Letters;
+    static bool shift_enabled = false;
+
+    static bool has_logged = false;
+    if (!has_logged) {
+        LOG_INFO(Lib_ImeDialog, "Virtual keyboard used from ImeDialog");
+        has_logged = true;
+    }
+
+    bool done_pressed = false;
+
+    DrawVirtualKeyboard(state->current_text.begin(), state->max_text_length * 4,
+                        &state->input_changed, kb_mode, shift_enabled, &done_pressed);
+
+    if (done_pressed) {
+        *status = OrbisImeDialogStatus::Finished;
+        result->endstatus = OrbisImeDialogEndStatus::Ok;
     }
 }
 
