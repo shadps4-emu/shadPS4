@@ -124,7 +124,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
         event->userId = temp.userId;
         user_service_event_queue.pop();
         LOG_INFO(Lib_UserService, "Event processed by the game: {} {}", (u8)temp.event,
-                  temp.userId);
+                 temp.userId);
         return ORBIS_OK;
     }
 
