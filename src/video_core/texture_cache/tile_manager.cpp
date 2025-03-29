@@ -76,7 +76,7 @@ struct DetilerParams {
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler} {
-    static const std::array detiler_shaders{
+    static constexpr std::array detiler_shaders{
         HostShaders::MICRO_8BPP_COMP,          HostShaders::MICRO_16BPP_COMP,
         HostShaders::MICRO_32BPP_COMP,         HostShaders::MICRO_64BPP_COMP,
         HostShaders::MICRO_128BPP_COMP,        HostShaders::MACRO_8BPP_COMP,
@@ -110,7 +110,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
                vk::to_string(desc_layout_result.result));
     desc_layout = std::move(desc_layout_result.value);
 
-    const vk::PushConstantRange push_constants = {
+    constexpr vk::PushConstantRange push_constants = {
         .stageFlags = vk::ShaderStageFlagBits::eCompute,
         .offset = 0,
         .size = sizeof(DetilerParams),

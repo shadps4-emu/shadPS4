@@ -125,7 +125,7 @@ int NumComponents(DataFormat format) {
 }
 
 int NumBits(DataFormat format) {
-    const std::array num_bits_per_element = {
+    constexpr std::array num_bits_per_element = {
         0,  8,  16, 16, 32, 32, 32, 32, 32, 32, 32, 64, 64, 96, 128, -1, 16, 16, 16, 16, 32,
         32, 64, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, 16, 32, 4,   8,  8,  4,  8,  8,  8,
         -1, -1, 8,  8,  8,  8,  8,  8,  16, 16, 32, 32, 32, 64, 64,  8,  16, 1,  1};

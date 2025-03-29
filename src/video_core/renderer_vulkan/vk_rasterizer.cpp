@@ -51,7 +51,7 @@ void Rasterizer::CpSync() {
     scheduler.EndRendering();
     auto cmdbuf = scheduler.CommandBuffer();
 
-    const vk::MemoryBarrier ib_barrier{
+    constexpr vk::MemoryBarrier ib_barrier{
         .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
         .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
     };
@@ -1024,10 +1024,10 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
 void Rasterizer::UpdateViewportScissorState(const GraphicsPipeline& pipeline) {
     const auto& regs = liverpool->regs;
 
-    const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+    constexpr auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
         return std::max({scr, s16(win + win_offset), s16(gen + win_offset)});
     };
-    const auto combined_scissor_value_br = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
+    constexpr auto combined_scissor_value_br = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
         return std::min({scr, s16(win + win_offset), s16(gen + win_offset)});
     };
     const bool enable_offset = !regs.window_scissor.window_offset_disable.Value();

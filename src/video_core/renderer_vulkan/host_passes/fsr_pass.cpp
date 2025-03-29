@@ -70,7 +70,7 @@ void FsrPass::Create(vk::Device device, VmaAllocator allocator, u32 num_images) 
             .pBindings = layoutBindings.data(),
         }));
 
-    const vk::PushConstantRange push_constants{
+    constexpr vk::PushConstantRange push_constants{
         .stageFlags = vk::ShaderStageFlagBits::eCompute,
         .offset = 0,
         .size = sizeof(FSRConstants),
@@ -164,7 +164,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         CreateImages(img);
     }
 
-    static const int thread_group_work_region_dim = 16;
+    static constexpr int thread_group_work_region_dim = 16;
     int dispatch_x = (width + (thread_group_work_region_dim - 1)) / thread_group_work_region_dim;
     int dispatch_y = (height + (thread_group_work_region_dim - 1)) / thread_group_work_region_dim;
 

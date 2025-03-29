@@ -74,7 +74,7 @@ public:
         bytes_written += file.WriteString(FormatLogMessage(entry).append(1, '\n'));
 
         // Prevent logs from exceeding a set maximum size in the event that log entries are spammed.
-        const auto write_limit = 100_MB;
+        constexpr auto write_limit = 100_MB;
         const bool write_limit_exceeded = bytes_written > write_limit;
         if (entry.log_level >= Level::Error || write_limit_exceeded) {
             if (write_limit_exceeded) {

@@ -8,7 +8,7 @@
 #include "game_info.h"
 
 // Maximum depth to search for games in subdirectories
-const int max_recursion_depth = 5;
+constexpr int max_recursion_depth = 5;
 
 void ScanDirectoryRecursively(const QString& dir, QStringList& filePaths, int current_depth = 0) {
     // Stop recursion if we've reached the maximum depth

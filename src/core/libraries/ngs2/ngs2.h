@@ -26,9 +26,9 @@ enum class OrbisNgs2HandleType : u32 {
     VoiceControl = 6
 };
 
-static const int ORBIS_NGS2_MAX_VOICE_CHANNELS = 8;
-static const int ORBIS_NGS2_WAVEFORM_INFO_MAX_BLOCKS = 4;
-static const int ORBIS_NGS2_MAX_MATRIX_LEVELS =
+static constexpr int ORBIS_NGS2_MAX_VOICE_CHANNELS = 8;
+static constexpr int ORBIS_NGS2_WAVEFORM_INFO_MAX_BLOCKS = 4;
+static constexpr int ORBIS_NGS2_MAX_MATRIX_LEVELS =
     (ORBIS_NGS2_MAX_VOICE_CHANNELS * ORBIS_NGS2_MAX_VOICE_CHANNELS);
 
 struct OrbisNgs2WaveformFormat {

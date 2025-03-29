@@ -7,7 +7,7 @@
 namespace Shader::Backend::SPIRV {
 namespace {
 void MemoryBarrier(EmitContext& ctx, spv::Scope scope) {
-    const auto semantics{
+    constexpr auto semantics{
         spv::MemorySemanticsMask::AcquireRelease | spv::MemorySemanticsMask::UniformMemory |
         spv::MemorySemanticsMask::WorkgroupMemory | spv::MemorySemanticsMask::AtomicCounterMemory |
         spv::MemorySemanticsMask::ImageMemory};

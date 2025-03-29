@@ -15,7 +15,7 @@ DecoderImpl::~DecoderImpl() = default;
 
 std::string DecoderImpl::disassembleInst(ZydisDecodedInstruction& inst,
                                          ZydisDecodedOperand* operands, u64 address) {
-    const int bufLen = 256;
+    constexpr int bufLen = 256;
     char szBuffer[bufLen];
     ZydisFormatterFormatInstruction(&m_formatter, &inst, operands, inst.operand_count_visible,
                                     szBuffer, sizeof(szBuffer), address, ZYAN_NULL);

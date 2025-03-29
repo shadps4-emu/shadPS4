@@ -88,7 +88,7 @@ void Scheduler::Wait(u64 tick) {
 }
 
 void Scheduler::AllocateWorkerCommandBuffers() {
-    const vk::CommandBufferBeginInfo begin_info = {
+    constexpr vk::CommandBufferBeginInfo begin_info = {
         .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
     };
 

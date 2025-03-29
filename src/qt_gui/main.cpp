@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
         if (!std::filesystem::exists(game_file_path)) {
             // If not a file, treat it as a game ID and search in install directories recursively
             bool game_found = false;
-            const int max_depth = 5;
+            constexpr int max_depth = 5;
             for (const auto& install_dir : Config::getGameInstallDirs()) {
                 if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
                     game_file_path = *found_path;

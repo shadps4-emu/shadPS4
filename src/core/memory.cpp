@@ -280,7 +280,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
 int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
 
-    const u64 alignment = 64_KB;
+    constexpr u64 alignment = 64_KB;
 
     // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
     // flag so we will take the branch that searches for free (or reserved) mappings.

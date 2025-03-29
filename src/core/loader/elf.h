@@ -243,7 +243,7 @@ struct elf_ident {
 };
 
 struct elf_header {
-    static const u32 signature = 0x7F454C46u;
+    static constexpr u32 signature = 0x7F454C46u;
 
     elf_ident e_ident;      /* ELF identification */
     e_type_s e_type;        /* Object file type */

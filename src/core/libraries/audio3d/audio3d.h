@@ -68,20 +68,20 @@ enum class OrbisAudio3dAmbisonics : u32 {
     Q = 15
 };
 
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributePcm = 0x00000001;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributePriority = 0x00000002;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributePosition = 0x00000003;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeSpread = 0x00000004;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeGain = 0x00000005;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributePassthrough = 0x00000006;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeResetState = 0x00000007;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeApplicationSpecific = 0x00000008;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeAmbisonics = 0x00000009;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeRestricted = 0x0000000A;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeOutputRoute = 0x0000000B;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeLateReverbLevel = 0x00010001;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeDownmixSpreadRadius = 0x00010002;
-static const OrbisAudio3dAttributeId s_sceAudio3dAttributeDownmixSpreadHeightAware = 0x00010003;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributePcm = 0x00000001;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributePriority = 0x00000002;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributePosition = 0x00000003;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeSpread = 0x00000004;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeGain = 0x00000005;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributePassthrough = 0x00000006;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeResetState = 0x00000007;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeApplicationSpecific = 0x00000008;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeAmbisonics = 0x00000009;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeRestricted = 0x0000000A;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeOutputRoute = 0x0000000B;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeLateReverbLevel = 0x00010001;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeDownmixSpreadRadius = 0x00010002;
+static constexpr OrbisAudio3dAttributeId s_sceAudio3dAttributeDownmixSpreadHeightAware = 0x00010003;
 
 struct OrbisAudio3dSpeakerArray;
 using OrbisAudio3dSpeakerArrayHandle = OrbisAudio3dSpeakerArray*; // head

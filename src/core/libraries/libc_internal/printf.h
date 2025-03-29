@@ -280,11 +280,11 @@ static inline size_t _ftoa(out_fct_type out, char* buffer, size_t idx, size_t ma
     double diff = 0.0;
 
     // if input is larger than thres_max, revert to exponential
-    const double thres_max = (double)0x7FFFFFFF;
+    constexpr double thres_max = (double)0x7FFFFFFF;
 
     // powers of 10
-    static const double pow10[] = {1,      10,      100,      1000,      10000,
-                                   100000, 1000000, 10000000, 100000000, 1000000000};
+    static constexpr double pow10[] = {1,      10,      100,      1000,      10000,
+                                       100000, 1000000, 10000000, 100000000, 1000000000};
 
     // test for negative
     bool negative = false;

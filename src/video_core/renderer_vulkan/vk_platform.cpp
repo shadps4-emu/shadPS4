@@ -394,7 +394,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
 }
 
 vk::UniqueDebugUtilsMessengerEXT CreateDebugCallback(vk::Instance instance) {
-    const vk::DebugUtilsMessengerCreateInfoEXT msg_ci = {
+    constexpr vk::DebugUtilsMessengerCreateInfoEXT msg_ci = {
         .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
                            vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
                            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |

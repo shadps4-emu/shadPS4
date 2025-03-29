@@ -709,7 +709,7 @@ struct MemoryEditor {
     }
 
     size_t DataTypeGetSize(ImGuiDataType data_type) const {
-        const size_t sizes[] = {1, 1, 2, 2, 4, 4, 8, 8, sizeof(float), sizeof(double)};
+        constexpr size_t sizes[] = {1, 1, 2, 2, 4, 4, 8, 8, sizeof(float), sizeof(double)};
         IM_ASSERT(data_type >= 0 && data_type < IM_ARRAYSIZE(sizes));
         return sizes[data_type];
     }

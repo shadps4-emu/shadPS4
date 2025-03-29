@@ -119,7 +119,7 @@ static void AccurateSleep(std::chrono::nanoseconds duration) {
 void SetCurrentThreadPriority(ThreadPriority new_priority) {
     pthread_t this_thread = pthread_self();
 
-    const auto scheduling_type = SCHED_OTHER;
+    constexpr auto scheduling_type = SCHED_OTHER;
     s32 max_prio = sched_get_priority_max(scheduling_type);
     s32 min_prio = sched_get_priority_min(scheduling_type);
     u32 level = std::max(static_cast<u32>(new_priority) + 1, 4U);

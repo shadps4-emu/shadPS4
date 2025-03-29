@@ -664,8 +664,8 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
 }
 
 // Table 8.13 Data and Image Formats [Sea Islands Series Instruction Set Architecture]
-static const size_t amd_gpu_data_format_bit_size = 6;   // All values are under 64
-static const size_t amd_gpu_number_format_bit_size = 4; // All values are under 16
+static constexpr size_t amd_gpu_data_format_bit_size = 6;   // All values are under 64
+static constexpr size_t amd_gpu_number_format_bit_size = 4; // All values are under 16
 
 static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
                                          AmdGpu::NumberFormat num_format) {

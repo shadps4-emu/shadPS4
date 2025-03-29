@@ -10,9 +10,9 @@ namespace Libraries::Ngs2 {
 
 class Ngs2Custom;
 
-static const int ORBIS_NGS2_CUSTOM_MAX_MODULES = 24;
-static const int ORBIS_NGS2_CUSTOM_MAX_PORTS = 16;
-static const int ORBIS_NGS2_CUSTOM_DELAY_MAX_TAPS = 8;
+static constexpr int ORBIS_NGS2_CUSTOM_MAX_MODULES = 24;
+static constexpr int ORBIS_NGS2_CUSTOM_MAX_PORTS = 16;
+static constexpr int ORBIS_NGS2_CUSTOM_DELAY_MAX_TAPS = 8;
 
 struct OrbisNgs2CustomModuleOption {
     u32 size;

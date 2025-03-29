@@ -31,7 +31,7 @@ float Uf11ToF32(u16 val) {
 
     if (exponent == 0) {
         if (mantissa != 0) {
-            const float scale = 1.0 / (1 << 20);
+            constexpr float scale = 1.0 / (1 << 20);
             f32.f = scale * mantissa;
         }
     } else if (exponent == 31) {
@@ -64,7 +64,7 @@ float Uf10ToF32(u16 val) {
 
     if (exponent == 0) {
         if (mantissa != 0) {
-            const float scale = 1.0 / (1 << 19);
+            constexpr float scale = 1.0 / (1 << 19);
             f32.f = scale * mantissa;
         }
     } else if (exponent == 31) {

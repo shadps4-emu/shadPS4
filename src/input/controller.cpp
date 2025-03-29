@@ -168,8 +168,8 @@ void GameController::Acceleration(int id, const float acceleration[3]) {
 // Stolen from
 // https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU/blob/master/x-IMU%20IMU%20and%20AHRS%20Algorithms/x-IMU%20IMU%20and%20AHRS%20Algorithms/AHRS/MahonyAHRS.cs
 float eInt[3] = {0.0f, 0.0f, 0.0f}; // Integral error terms
-const float Kp = 50.0f;             // Proportional gain
-const float Ki = 1.0f;              // Integral gain
+constexpr float Kp = 50.0f;         // Proportional gain
+constexpr float Ki = 1.0f;          // Integral gain
 Libraries::Pad::OrbisFQuaternion o = {1, 0, 0, 0};
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                           Libraries::Pad::OrbisFVector3& angularVelocity,

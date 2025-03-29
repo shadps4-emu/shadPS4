@@ -753,7 +753,7 @@ static void UpdateGamepads() {
     io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
 
     // Update gamepad inputs
-    const int thumb_dead_zone = 8000; // SDL_gamepad.h suggests using this value.
+    constexpr int thumb_dead_zone = 8000; // SDL_gamepad.h suggests using this value.
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadStart, SDL_GAMEPAD_BUTTON_START);
     UpdateGamepadButton(bd, io, ImGuiKey_GamepadBack, SDL_GAMEPAD_BUTTON_BACK);
     /*UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceLeft,

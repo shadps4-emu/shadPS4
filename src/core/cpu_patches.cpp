@@ -687,8 +687,8 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 
         LOG_DEBUG(Core, "Patching immediate form EXTRQ, length: {}, index: {}", length, index);
 
-        const Xbyak::Reg64 scratch1 = rax;
-        const Xbyak::Reg64 scratch2 = rcx;
+        constexpr Xbyak::Reg64 scratch1 = rax;
+        constexpr Xbyak::Reg64 scratch2 = rcx;
 
         // Set rsp to before red zone and save scratch registers
         c.lea(rsp, ptr[rsp - 128]);
@@ -741,9 +741,9 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
 
         Xbyak::Xmm xmm_src = *reinterpret_cast<const Xbyak::Xmm*>(&src);
 
-        const Xbyak::Reg64 scratch1 = rax;
-        const Xbyak::Reg64 scratch2 = rcx;
-        const Xbyak::Reg64 mask = rdx;
+        constexpr Xbyak::Reg64 scratch1 = rax;
+        constexpr Xbyak::Reg64 scratch2 = rcx;
+        constexpr Xbyak::Reg64 mask = rdx;
 
         Xbyak::Label length_zero, end;
 
@@ -808,9 +808,9 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         u8 length = operands[2].imm.value.u & 0x3F;
         u8 index = operands[3].imm.value.u & 0x3F;
 
-        const Xbyak::Reg64 scratch1 = rax;
-        const Xbyak::Reg64 scratch2 = rcx;
-        const Xbyak::Reg64 mask = rdx;
+        constexpr Xbyak::Reg64 scratch1 = rax;
+        constexpr Xbyak::Reg64 scratch2 = rcx;
+        constexpr Xbyak::Reg64 mask = rdx;
 
         // Set rsp to before red zone and save scratch registers
         c.lea(rsp, ptr[rsp - 128]);
@@ -860,10 +860,10 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
                        operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
                    "operands 2 and 3 must be unused for register form.");
 
-        const Xbyak::Reg64 scratch1 = rax;
-        const Xbyak::Reg64 scratch2 = rcx;
-        const Xbyak::Reg64 index = rdx;
-        const Xbyak::Reg64 mask = rbx;
+        constexpr Xbyak::Reg64 scratch1 = rax;
+        constexpr Xbyak::Reg64 scratch2 = rcx;
+        constexpr Xbyak::Reg64 index = rdx;
+        constexpr Xbyak::Reg64 mask = rbx;
 
         Xbyak::Label length_zero, end;
 

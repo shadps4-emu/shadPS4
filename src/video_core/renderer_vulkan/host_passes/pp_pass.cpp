@@ -15,7 +15,7 @@
 namespace Vulkan::HostPasses {
 
 void PostProcessingPass::Create(vk::Device device) {
-    static const std::array pp_shaders{
+    static constexpr std::array pp_shaders{
         HostShaders::FS_TRI_VERT,
         HostShaders::POST_PROCESS_FRAG,
     };
@@ -38,7 +38,7 @@ void PostProcessingPass::Create(vk::Device device) {
     desc_set_layout = Check<"create pp descriptor set layout">(
         device.createDescriptorSetLayoutUnique(desc_layout_ci));
 
-    const vk::PushConstantRange push_constants{
+    constexpr vk::PushConstantRange push_constants{
         .stageFlags = vk::ShaderStageFlagBits::eFragment,
         .offset = 0,
         .size = sizeof(Settings),
@@ -75,7 +75,7 @@ void PostProcessingPass::Create(vk::Device device) {
     pipeline_layout =
         Check<"create pp pipeline layout">(device.createPipelineLayoutUnique(layout_info));
 
-    const std::array pp_color_formats{
+    constexpr std::array pp_color_formats{
         vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
     };
     const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci{
@@ -83,7 +83,7 @@ void PostProcessingPass::Create(vk::Device device) {
         .pColorAttachmentFormats = pp_color_formats.data(),
     };
 
-    const vk::PipelineVertexInputStateCreateInfo vertex_input_info{
+    constexpr vk::PipelineVertexInputStateCreateInfo vertex_input_info{
         .vertexBindingDescriptionCount = 0u,
         .vertexAttributeDescriptionCount = 0u,
     };
@@ -92,7 +92,7 @@ void PostProcessingPass::Create(vk::Device device) {
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
 
-    const vk::Viewport viewport{
+    constexpr vk::Viewport viewport{
         .x = 0.0f,
         .y = 0.0f,
         .width = 1.0f,
@@ -101,7 +101,7 @@ void PostProcessingPass::Create(vk::Device device) {
         .maxDepth = 1.0f,
     };
 
-    const vk::Rect2D scissor = {
+    constexpr vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {1, 1},
     };
@@ -113,7 +113,7 @@ void PostProcessingPass::Create(vk::Device device) {
         .pScissors = &scissor,
     };
 
-    const vk::PipelineRasterizationStateCreateInfo raster_state{
+    constexpr vk::PipelineRasterizationStateCreateInfo raster_state{
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = vk::PolygonMode::eFill,
@@ -123,11 +123,11 @@ void PostProcessingPass::Create(vk::Device device) {
         .lineWidth = 1.0f,
     };
 
-    const vk::PipelineMultisampleStateCreateInfo multisampling{
+    constexpr vk::PipelineMultisampleStateCreateInfo multisampling{
         .rasterizationSamples = vk::SampleCountFlagBits::e1,
     };
 
-    const std::array attachments{
+    constexpr std::array attachments{
         vk::PipelineColorBlendAttachmentState{
             .blendEnable = false,
             .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
@@ -143,7 +143,7 @@ void PostProcessingPass::Create(vk::Device device) {
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };
 
-    const std::array dynamic_states{
+    constexpr std::array dynamic_states{
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
     };
@@ -175,7 +175,7 @@ void PostProcessingPass::Create(vk::Device device) {
     device.destroyShaderModule(fs_module);
 
     // Create sampler resource
-    const vk::SamplerCreateInfo sampler_ci{
+    constexpr vk::SamplerCreateInfo sampler_ci{
         .magFilter = vk::Filter::eLinear,
         .minFilter = vk::Filter::eLinear,
         .mipmapMode = vk::SamplerMipmapMode::eNearest,

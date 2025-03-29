@@ -7,8 +7,8 @@
 
 namespace Libraries::Ngs2 {
 
-static const int ORBIS_NGS2_SYSTEM_NAME_LENGTH = 16;
-static const int ORBIS_NGS2_RACK_NAME_LENGTH = 16;
+static constexpr int ORBIS_NGS2_SYSTEM_NAME_LENGTH = 16;
+static constexpr int ORBIS_NGS2_RACK_NAME_LENGTH = 16;
 
 typedef uintptr_t OrbisNgs2Handle;
 

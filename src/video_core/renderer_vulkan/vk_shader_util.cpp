@@ -170,7 +170,7 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
         static_cast<EShMessages>(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
     EShLanguage lang = ToEshShaderStage(stage);
 
-    const int default_version = 450;
+    constexpr int default_version = 450;
     const char* pass_source_code = code.data();
     int pass_source_code_length = static_cast<int>(code.size());
 

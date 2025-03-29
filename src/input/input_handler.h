@@ -43,7 +43,7 @@ struct AxisMapping {
 };
 
 enum class InputType { Axis, KeyboardMouse, Controller, Count };
-const std::array<std::string, 4> input_type_names = {"Axis", "KBM", "Controller", "Unknown"};
+constexpr std::array<std::string, 4> input_type_names = {"Axis", "KBM", "Controller", "Unknown"};
 
 class InputID {
 public:

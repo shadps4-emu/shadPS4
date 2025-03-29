@@ -112,7 +112,7 @@ enum class FORMAT_COMPATIBILITY_CLASS {
  * @note This is copied directly from Vulkan Validation Layers and doesn't follow the Skyline naming
  * conventions
  */
-static const std::unordered_map<VkFormat, FORMAT_COMPATIBILITY_CLASS> vkFormatClassTable{
+static const std::unordered_map<VkFormat, const FORMAT_COMPATIBILITY_CLASS> vkFormatClassTable{
     {VK_FORMAT_A1R5G5B5_UNORM_PACK16, FORMAT_COMPATIBILITY_CLASS::_16BIT},
     {VK_FORMAT_A2B10G10R10_SINT_PACK32, FORMAT_COMPATIBILITY_CLASS::_32BIT},
     {VK_FORMAT_A2B10G10R10_SNORM_PACK32, FORMAT_COMPATIBILITY_CLASS::_32BIT},

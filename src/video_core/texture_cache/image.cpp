@@ -128,7 +128,7 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     if (image) {
         vmaDestroyImage(allocator, image, allocation);
     }
-    const VmaAllocationCreateInfo alloc_info = {
+    constexpr VmaAllocationCreateInfo alloc_info = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         .requiredFlags = 0,
