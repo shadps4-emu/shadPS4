@@ -883,10 +883,6 @@
       <translation>Помилка при створенні ярлика!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Встановити PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>гри</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Призначення клавіш</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Виберіть папку</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Виберіть папку, до якої ви хочете встановити.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Встановити все з черги до вибраної папки</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Видалити файл PKG під час встановлення</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Відкрити/Додати папку Elf</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Встановити пакети (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Запустити гру</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Налаштувати...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Встановити додаток з файлу .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>Перегляд PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Можна вибрати лише один файл!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Розпакування PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Виявлено патч!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Версії PKG та гри збігаються: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Бажаєте перезаписати?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Версія PKG %1 старіша за встановлену версію: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Встановлена гра: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Бажаєте встановити патч: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Встановлення DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Ви бажаєте встановити DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC вже встановлено:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Гра вже встановлена</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ПОМИЛКА PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Витягування PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Розпакування завершено</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Гру успішно встановлено у %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Файл не є дійсним PKG-файлом</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Запустити гру</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Файл Boot.bin не знайдено</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Файл PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG - це патч або DLC, будь ласка, спочатку встановіть гру!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Відкрити папку</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ПОМИЛКА PKG</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Назва</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Серійний номер</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>Встановлені</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Розмір</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>Категорія</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>Тип</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>Версія додатку</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>ПЗ</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Регіон</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Мітки</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Шлях</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Файл</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Невідомо</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Пакет</translation>
     </message>
   </context>
   <context>

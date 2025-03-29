@@ -883,10 +883,6 @@
       <translation>Utworzenie skrótu zakończone niepowodzeniem!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Zainstaluj PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Gra</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Przypisanie klawiszy</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Wybierz katalog</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Wybierz katalog, do którego chcesz zainstalować.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Zainstaluj wszystkie oczekujące do wybranego folderu</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Usuń plik PKG po instalacji</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Otwórz/Dodaj folder Elf</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Zainstaluj paczkę (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Uruchom grę</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfiguruj...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Zainstaluj aplikacje z pliku .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>Nie znaleziono gier. Najpierw dodaj swoje gry do swojej biblioteki.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>Menedżer plików PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Można wybrać tylko jeden plik!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Wypakowywanie PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Wykryto łatkę!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Wersje PKG i gry są zgodne: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Czy chcesz nadpisać?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Wersja PKG %1 jest starsza niż zainstalowana wersja: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Gra jest zainstalowana: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Czy chcesz zainstalować łatkę: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalacja dodatkowej zawartości (DLC)</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Czy chcesz zainstalować dodatkową zawartość (DLC): %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>Dodatkowa zawartość (DLC) już zainstalowana:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Gra już zainstalowana</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>BŁĄD PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Wypakowywanie PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Wypakowywanie zakończone</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Gra pomyślnie zainstalowana w %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Plik nie wydaje się być prawidłowym plikiem PKG</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Uruchom grę</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Nie znaleziono pliku EBOOT.BIN</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Plik PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG jest aktualizacją lub dodatkową zawartością (DLC), najpierw zainstaluj grę!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Otwórz folder</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>BŁĄD PKG</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Nazwa</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Numer seryjny</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>Zainstalowano</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Rozmiar</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>Kategoria</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>Typ</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>Wersja aplikacji</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>Oprogramowanie</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flagi</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Ścieżka</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Plik</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Nieznany</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paczka</translation>
     </message>
   </context>
   <context>
