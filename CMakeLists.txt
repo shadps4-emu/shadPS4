@@ -114,6 +114,7 @@ git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 message("start git things")
+
 # Try to get the upstream remote and branch
 message("check for remote and branch")
 execute_process(
@@ -123,6 +124,7 @@ execute_process(
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check default push")
@@ -134,15 +136,38 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 endif()
+
 # If running in GitHub Actions and the above fails
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check github")
   set(GIT_REMOTE_NAME "origin")
 
-  if (DEFINED ENV{GITHUB_HEAD_REF})  # PR branch name
-    set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
-  elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
-    string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
+  # Retrieve environment variables
+  if (DEFINED ENV{GITHUB_HEAD_REF})
+    set(GITHUB_HEAD_REF "$ENV{GITHUB_HEAD_REF}")
+  else()
+    set(GITHUB_HEAD_REF "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_REF})
+    string(REGEX REPLACE "^refs/[^/]*/" "" GITHUB_BRANCH "$ENV{GITHUB_REF}")
+  else()
+    set(GITHUB_BRANCH "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_EVENT_PATH})
+    file(READ "$ENV{GITHUB_EVENT_PATH}" GITHUB_EVENT_JSON)
+    string(JSON PR_NUMBER GET ${GITHUB_EVENT_JSON} "number")
+  else()
+    set(PR_NUMBER "")
+  endif()
+
+  if (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_HEAD_REF}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_BRANCH}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}")
   else()
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
