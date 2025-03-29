@@ -58,6 +58,8 @@ public:
     explicit Translator(IR::Block* block_, Info& info, const RuntimeInfo& runtime_info,
                         const Profile& profile);
 
+    void TranslateInstruction(const GcnInst& inst, u32 pc);
+
     // Instruction categories
     void EmitPrologue();
     void EmitFetch(const GcnInst& inst);
@@ -79,6 +81,7 @@ public:
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
+    void S_SUB_I32(const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
     void S_MIN_U32(bool is_signed, const GcnInst& inst);
     void S_MAX_U32(bool is_signed, const GcnInst& inst);
@@ -90,8 +93,10 @@ public:
     void S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst);
     void S_XOR_B32(const GcnInst& inst);
     void S_LSHL_B32(const GcnInst& inst);
+    void S_LSHL_B64(const GcnInst& inst);
     void S_LSHR_B32(const GcnInst& inst);
     void S_ASHR_I32(const GcnInst& inst);
+    void S_ASHR_I64(const GcnInst& inst);
     void S_BFM_B32(const GcnInst& inst);
     void S_MUL_I32(const GcnInst& inst);
     void S_BFE(const GcnInst& inst, bool is_signed);
@@ -114,6 +119,7 @@ public:
     void S_BCNT1_I32_B64(const GcnInst& inst);
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B64(const GcnInst& inst);
+    void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
@@ -167,6 +173,7 @@ public:
     void V_SUBBREV_U32(const GcnInst& inst);
     void V_LDEXP_F32(const GcnInst& inst);
     void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
+    void V_CVT_PKNORM_I16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
 
     // VOP1
@@ -241,6 +248,7 @@ public:
     void V_SAD(const GcnInst& inst);
     void V_SAD_U32(const GcnInst& inst);
     void V_CVT_PK_U16_U32(const GcnInst& inst);
+    void V_CVT_PK_I16_I32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
@@ -270,10 +278,9 @@ public:
 
     // Buffer Memory
     // MUBUF / MTBUF
-    void BUFFER_LOAD(u32 num_dwords, bool is_typed, const GcnInst& inst);
-    void BUFFER_LOAD_FORMAT(u32 num_dwords, const GcnInst& inst);
-    void BUFFER_STORE(u32 num_dwords, bool is_typed, const GcnInst& inst);
-    void BUFFER_STORE_FORMAT(u32 num_dwords, const GcnInst& inst);
+    void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst);
+    void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
+                      const GcnInst& inst);
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Image Memory
@@ -300,7 +307,19 @@ private:
     IR::U32 VMovRelSHelper(u32 src_vgprno, const IR::U32 m0);
     void VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0);
 
+    IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
+                             const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
+
+    void ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
+                        const PsColorBuffer& color_buffer);
+    void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
+    void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
+    void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
+    void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
+
     void LogMissingOpcode(const GcnInst& inst);
+
+    IR::VectorReg GetScratchVgpr(u32 offset);
 
 private:
     IR::IREmitter ir;

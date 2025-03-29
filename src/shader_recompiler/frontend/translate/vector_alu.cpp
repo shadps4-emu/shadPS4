@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
 
@@ -95,6 +96,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LDEXP_F32(inst);
     case Opcode::V_CVT_PKNORM_U16_F32:
         return V_CVT_PKNORM_U16_F32(inst);
+    case Opcode::V_CVT_PKNORM_I16_F32:
+        return V_CVT_PKNORM_I16_F32(inst);
     case Opcode::V_CVT_PKRTZ_F16_F32:
         return V_CVT_PKRTZ_F16_F32(inst);
 
@@ -375,6 +378,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_SAD_U32(inst);
     case Opcode::V_CVT_PK_U16_U32:
         return V_CVT_PK_U16_U32(inst);
+    case Opcode::V_CVT_PK_I16_I32:
+        return V_CVT_PK_I16_I32(inst);
     case Opcode::V_CVT_PK_U8_F32:
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
@@ -644,18 +649,21 @@ void Translator::V_LDEXP_F32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_PKNORM_U16_F32(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
-    const IR::U32 dst0 = ir.ConvertFToU(32, ir.FPMul(src0, ir.Imm32(65535.f)));
-    const IR::U32 dst1 = ir.ConvertFToU(32, ir.FPMul(src1, ir.Imm32(65535.f)));
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    ir.SetVectorReg(dst_reg, ir.BitFieldInsert(dst0, dst1, ir.Imm32(16), ir.Imm32(16)));
+    const IR::Value vec_f32 =
+        ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Unorm, vec_f32));
+}
+
+void Translator::V_CVT_PKNORM_I16_F32(const GcnInst& inst) {
+    const IR::Value vec_f32 =
+        ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Snorm, vec_f32));
 }
 
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.PackHalf2x16(vec_f32));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Float, vec_f32));
 }
 
 // VOP1
@@ -843,7 +851,7 @@ void Translator::V_FREXP_MANT_F64(const GcnInst& inst) {
 }
 
 void Translator::V_FRACT_F64(const GcnInst& inst) {
-    const IR::F32 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
     SetDst64(inst.dst[0], ir.FPFract(src0));
 }
 
@@ -904,7 +912,7 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         case ConditionOp::GE:
             return ir.FPGreaterThanEqual(src0, src1);
         case ConditionOp::U:
-            return ir.LogicalNot(ir.LogicalAnd(ir.FPIsNan(src0), ir.FPIsNan(src1)));
+            return ir.LogicalOr(ir.FPIsNan(src0), ir.FPIsNan(src1));
         default:
             UNREACHABLE();
         }
@@ -1042,20 +1050,81 @@ void Translator::V_MAD_U32_U24(const GcnInst& inst) {
     V_MAD_I32_I24(inst, false);
 }
 
+IR::F32 Translator::SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
+                                     const IR::F32& x_res, const IR::F32& y_res,
+                                     const IR::F32& z_res) {
+    const auto abs_x = ir.FPAbs(x);
+    const auto abs_y = ir.FPAbs(y);
+    const auto abs_z = ir.FPAbs(z);
+
+    const auto z_face_cond{
+        ir.LogicalAnd(ir.FPGreaterThanEqual(abs_z, abs_x), ir.FPGreaterThanEqual(abs_z, abs_y))};
+    const auto y_face_cond{ir.FPGreaterThanEqual(abs_y, abs_x)};
+
+    return IR::F32{ir.Select(z_face_cond, z_res, ir.Select(y_face_cond, y_res, x_res))};
+}
+
 void Translator::V_CUBEID_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[2]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    IR::F32 result;
+    if (profile.supports_native_cube_calc) {
+        result = ir.CubeFaceIndex(ir.CompositeConstruct(x, y, z));
+    } else {
+        const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+        const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+        const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+        const IR::F32 x_face{ir.Select(x_neg_cond, ir.Imm32(1.f), ir.Imm32(0.f))};
+        const IR::F32 y_face{ir.Select(y_neg_cond, ir.Imm32(3.f), ir.Imm32(2.f))};
+        const IR::F32 z_face{ir.Select(z_neg_cond, ir.Imm32(5.f), ir.Imm32(4.f))};
+
+        result = SelectCubeResult(x, y, z, x_face, y_face, z_face);
+    }
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBESC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    const auto x_neg_cond{ir.FPLessThan(x, ir.Imm32(0.f))};
+    const auto z_neg_cond{ir.FPLessThan(z, ir.Imm32(0.f))};
+    const IR::F32 x_sc{ir.Select(x_neg_cond, z, ir.FPNeg(z))};
+    const IR::F32 y_sc{x};
+    const IR::F32 z_sc{ir.Select(z_neg_cond, ir.FPNeg(x), x)};
+
+    const auto result{SelectCubeResult(x, y, z, x_sc, y_sc, z_sc)};
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBETC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[1]));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    const auto y_neg_cond{ir.FPLessThan(y, ir.Imm32(0.f))};
+    const IR::F32 x_z_tc{ir.FPNeg(y)};
+    const IR::F32 y_tc{ir.Select(y_neg_cond, ir.FPNeg(z), z)};
+
+    const auto result{SelectCubeResult(x, y, z, x_z_tc, y_tc, x_z_tc)};
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_CUBEMA_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.Imm32(1.f));
+    const auto x = GetSrc<IR::F32>(inst.src[0]);
+    const auto y = GetSrc<IR::F32>(inst.src[1]);
+    const auto z = GetSrc<IR::F32>(inst.src[2]);
+
+    const auto two{ir.Imm32(2.f)};
+    const IR::F32 x_major_axis{ir.FPMul(x, two)};
+    const IR::F32 y_major_axis{ir.FPMul(y, two)};
+    const IR::F32 z_major_axis{ir.FPMul(z, two)};
+
+    const auto result{SelectCubeResult(x, y, z, x_major_axis, y_major_axis, z_major_axis)};
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_BFE_U32(bool is_signed, const GcnInst& inst) {
@@ -1175,11 +1244,17 @@ void Translator::V_SAD_U32(const GcnInst& inst) {
 }
 
 void Translator::V_CVT_PK_U16_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 lo = ir.IMin(src0, ir.Imm32(0xFFFF), false);
-    const IR::U32 hi = ir.IMin(src1, ir.Imm32(0xFFFF), false);
-    SetDst(inst.dst[0], ir.BitFieldInsert(lo, hi, ir.Imm32(16), ir.Imm32(16)));
+    const IR::Value vec_u32 =
+        ir.CompositeConstruct(ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[0])),
+                              ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[1])));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Uint, vec_u32));
+}
+
+void Translator::V_CVT_PK_I16_I32(const GcnInst& inst) {
+    const IR::Value vec_u32 =
+        ir.CompositeConstruct(ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[0])),
+                              ir.BitCast<IR::F32>(GetSrc<IR::U32>(inst.src[1])));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Sint, vec_u32));
 }
 
 void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
@@ -1195,24 +1270,7 @@ void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
 void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
-    const IR::VectorReg dst_reg{inst.dst[0].code};
-    if (src0.IsImmediate()) {
-        if (src0.U64() == -1) {
-            // If src0 is a fixed -1, the result will always be -1.
-            ir.SetVectorReg(dst_reg, ir.Imm32(0xFFFFFFFF));
-            ir.SetVectorReg(dst_reg + 1, ir.Imm32(0xFFFFFFFF));
-            return;
-        }
-        if (src1.IsImmediate()) {
-            // If both src0 and src1 are immediates, we can calculate the result now.
-            // Note that according to the manual, only bits 4:0 are used from src1.
-            const u64 result = src0.U64() << (src1.U64() & 0x1F);
-            ir.SetVectorReg(dst_reg, ir.Imm32(static_cast<u32>(result)));
-            ir.SetVectorReg(dst_reg + 1, ir.Imm32(static_cast<u32>(result >> 32)));
-            return;
-        }
-    }
-    UNREACHABLE_MSG("Unimplemented V_LSHL_B64 arguments");
+    SetDst64(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
 }
 
 void Translator::V_MUL_F64(const GcnInst& inst) {

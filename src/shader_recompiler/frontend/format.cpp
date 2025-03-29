@@ -1836,7 +1836,9 @@ constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64, ScalarType::Uint32},
     // 22 = V_CVT_F64_U32
     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32, ScalarType::Float64},
-    {},
+    // 23 = V_TRUNC_F64
+    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+     ScalarType::Float64},
     {},
     {},
     {},
@@ -3420,8 +3422,8 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgUt, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Uint32},
     // 15 = IMAGE_ATOMIC_SWAP
-    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 16 = IMAGE_ATOMIC_CMPSWAP
     {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},

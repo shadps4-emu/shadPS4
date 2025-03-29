@@ -3,16 +3,37 @@
 
 #pragma once
 
-#include <string>
 #include "common/types.h"
+#include "core/libraries/pad/pad.h"
+#include "input/controller.h"
+#include "string"
+#define SDL_EVENT_TOGGLE_FULLSCREEN (SDL_EVENT_USER + 1)
+#define SDL_EVENT_TOGGLE_PAUSE (SDL_EVENT_USER + 2)
 
 struct SDL_Window;
 struct SDL_Gamepad;
 union SDL_Event;
 
 namespace Input {
-class GameController;
-}
+
+class SDLInputEngine : public Engine {
+public:
+    ~SDLInputEngine() override;
+    void Init() override;
+    void SetLightBarRGB(u8 r, u8 g, u8 b) override;
+    void SetVibration(u8 smallMotor, u8 largeMotor) override;
+    float GetGyroPollRate() const override;
+    float GetAccelPollRate() const override;
+    State ReadState() override;
+
+private:
+    SDL_Gamepad* m_gamepad = nullptr;
+
+    float m_gyro_poll_rate = 0.0f;
+    float m_accel_poll_rate = 0.0f;
+};
+
+} // namespace Input
 
 namespace Frontend {
 
@@ -76,7 +97,7 @@ public:
 
 private:
     void OnResize();
-    void OnKeyPress(const SDL_Event* event);
+    void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
 
 private:

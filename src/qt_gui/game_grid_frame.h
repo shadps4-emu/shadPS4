@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <QPainter>
 #include <QScrollBar>
 
 #include "background_music_player.h"
@@ -21,6 +22,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void SetGridBackgroundImage(int row, int column);
     void RefreshGridBackgroundImage();
+    void resizeEvent(QResizeEvent* event);
     void PlayBackgroundMusic(QString path);
     void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                               int previousColumn);
@@ -33,6 +35,8 @@ private:
     std::shared_ptr<CompatibilityInfoClass> m_compat_info;
     std::shared_ptr<QVector<GameInfo>> m_games_shared;
     bool validCellSelected = false;
+    int m_last_opacity = -1; // Track last opacity to avoid unnecessary recomputation
+    std::filesystem::path m_current_game_path; // Track current game path to detect changes
 
 public:
     explicit GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,

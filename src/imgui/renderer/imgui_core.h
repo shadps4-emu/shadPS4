@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <imgui.h>
+
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "vulkan/vulkan_handles.hpp"
 
@@ -20,12 +22,17 @@ void Initialize(const Vulkan::Instance& instance, const Frontend::WindowSDL& win
 
 void OnResize();
 
+void OnSurfaceFormatChange(vk::Format surface_format);
+
 void Shutdown(const vk::Device& device);
 
 bool ProcessEvent(SDL_Event* event);
 
-void NewFrame();
+ImGuiID NewFrame(bool is_reusing_frame = false);
 
-void Render(const vk::CommandBuffer& cmdbuf, Vulkan::Frame* frame);
+void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
+            const vk::Extent2D& extent);
+
+bool MustKeepDrawing(); // Force the emulator redraw
 
 } // namespace ImGui::Core

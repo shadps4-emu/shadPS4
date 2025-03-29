@@ -35,6 +35,7 @@ enum ImageFlagBits : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
 struct UniqueImage {
+    explicit UniqueImage();
     explicit UniqueImage(vk::Device device, VmaAllocator allocator);
     ~UniqueImage();
 
@@ -80,7 +81,7 @@ struct Image {
     [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
         const VAddr overlap_end = overlap_cpu_addr + overlap_size;
         const auto image_addr = info.guest_address;
-        const auto image_end = info.guest_address + info.guest_size_bytes;
+        const auto image_end = info.guest_address + info.guest_size;
         return image_addr < overlap_end && overlap_cpu_addr < image_end;
     }
 
@@ -104,7 +105,7 @@ struct Image {
     void Upload(vk::Buffer buffer, u64 offset);
 
     void CopyImage(const Image& image);
-    void CopyMip(const Image& image, u32 mip);
+    void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
     bool IsTracked() {
         return track_addr != 0 && track_addr_end != 0;

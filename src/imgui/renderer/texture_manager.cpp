@@ -4,6 +4,7 @@
 #include <deque>
 #include <utility>
 
+#include <imgui.h>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/io_file.h"
@@ -123,7 +124,7 @@ static std::deque<UploadJob> g_upload_list;
 namespace Core::TextureManager {
 
 Inner::~Inner() {
-    if (upload_data.descriptor_set != nullptr) {
+    if (upload_data.im_texture != nullptr) {
         std::unique_lock lk{g_upload_mtx};
         g_upload_list.emplace_back(UploadJob{
             .data = this->upload_data,
@@ -151,7 +152,7 @@ void WorkerLoop() {
             g_job_list.pop_front();
             g_job_list_mtx.unlock();
 
-            if (Config::vkCrashDiagnosticEnabled()) {
+            if (Config::getVkCrashDiagnosticEnabled()) {
                 // FIXME: Crash diagnostic hangs when building the command buffer here
                 continue;
             }
@@ -174,6 +175,7 @@ void WorkerLoop() {
 
             auto texture = Vulkan::UploadTexture(pixels, vk::Format::eR8G8B8A8Unorm, width, height,
                                                  width * height * 4 * sizeof(stbi_uc));
+            stbi_image_free((void*)pixels);
 
             core->upload_data = texture;
             core->width = width;
@@ -239,7 +241,7 @@ void Submit() {
     }
     if (upload.core != nullptr) {
         upload.core->upload_data.Upload();
-        upload.core->texture_id = upload.core->upload_data.descriptor_set;
+        upload.core->texture_id = upload.core->upload_data.im_texture;
         if (upload.core->count.fetch_sub(1) == 1) {
             delete upload.core;
         }

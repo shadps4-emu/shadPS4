@@ -84,6 +84,7 @@ struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
+    bool clip_disable{};
     // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
@@ -92,7 +93,8 @@ struct VertexRuntimeInfo {
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
         return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
-               tess_type == other.tess_type && tess_topology == other.tess_topology &&
+               clip_disable == other.clip_disable && tess_type == other.tess_type &&
+               tess_topology == other.tess_topology &&
                tess_partitioning == other.tess_partitioning &&
                hs_output_cp_stride == other.hs_output_cp_stride;
     }
@@ -165,6 +167,17 @@ enum class MrtSwizzle : u8 {
 };
 static constexpr u32 MaxColorBuffers = 8;
 
+struct PsColorBuffer {
+    AmdGpu::NumberFormat num_format : 4;
+    AmdGpu::NumberConversion num_conversion : 2;
+    AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
+    u32 needs_unorm_fixup : 1;
+    u32 pad : 21;
+    AmdGpu::CompMapping swizzle;
+
+    auto operator<=>(const PsColorBuffer&) const noexcept = default;
+};
+
 struct FragmentRuntimeInfo {
     struct PsInput {
         u8 param_index;
@@ -172,18 +185,16 @@ struct FragmentRuntimeInfo {
         bool is_flat;
         u8 default_value;
 
+        [[nodiscard]] bool IsDefault() const {
+            return is_default && !is_flat;
+        }
+
         auto operator<=>(const PsInput&) const noexcept = default;
     };
     AmdGpu::Liverpool::PsInput en_flags;
     AmdGpu::Liverpool::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
-    struct PsColorBuffer {
-        AmdGpu::NumberFormat num_format;
-        AmdGpu::CompMapping swizzle;
-
-        auto operator<=>(const PsColorBuffer&) const noexcept = default;
-    };
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
@@ -255,3 +266,14 @@ struct RuntimeInfo {
 };
 
 } // namespace Shader
+
+template <>
+struct fmt::formatter<Shader::Stage> {
+    constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+    auto format(const Shader::Stage stage, format_context& ctx) const {
+        constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
+        return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
+    }
+};

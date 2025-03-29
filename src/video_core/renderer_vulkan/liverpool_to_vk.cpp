@@ -121,7 +121,7 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     case AmdGpu::PrimitiveType::RectList:
         return vk::PrimitiveTopology::ePatchList;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unimplemented primitive type: {}", static_cast<u32>(type));
         return vk::PrimitiveTopology::eTriangleList;
     }
 }
@@ -352,12 +352,9 @@ vk::ComponentMapping ComponentMapping(AmdGpu::CompMapping comp_mapping) {
     };
 }
 
-static constexpr vk::FormatFeatureFlags2 BufferRead =
-    vk::FormatFeatureFlagBits2::eUniformTexelBuffer | vk::FormatFeatureFlagBits2::eVertexBuffer;
-static constexpr vk::FormatFeatureFlags2 BufferWrite =
-    vk::FormatFeatureFlagBits2::eStorageTexelBuffer |
-    vk::FormatFeatureFlagBits2::eStorageReadWithoutFormat |
-    vk::FormatFeatureFlagBits2::eStorageWriteWithoutFormat;
+// Texel buffer feature flags are not needed as format is interpreted in-shader.
+static constexpr vk::FormatFeatureFlags2 BufferRead = vk::FormatFeatureFlagBits2::eVertexBuffer;
+static constexpr vk::FormatFeatureFlags2 BufferWrite = static_cast<vk::FormatFeatureFlags2>(0);
 static constexpr vk::FormatFeatureFlags2 ImageRead = vk::FormatFeatureFlagBits2::eTransferSrc |
                                                      vk::FormatFeatureFlagBits2::eTransferDst |
                                                      vk::FormatFeatureFlagBits2::eSampledImage;
@@ -447,7 +444,7 @@ static constexpr vk::FormatFeatureFlags2 GetNumberFormatFeatureFlags(
     case AmdGpu::NumberFormat::Srgb:
         return ImageRead | Mrt;
     case AmdGpu::NumberFormat::Ubnorm:
-    case AmdGpu::NumberFormat::UbnromNz:
+    case AmdGpu::NumberFormat::UbnormNz:
     case AmdGpu::NumberFormat::Ubint:
     case AmdGpu::NumberFormat::Ubscaled:
         return ImageRead;
@@ -468,6 +465,7 @@ static constexpr SurfaceFormatInfo CreateSurfaceFormatInfo(const AmdGpu::DataFor
 }
 
 std::span<const SurfaceFormatInfo> SurfaceFormats() {
+    // Uscaled, Sscaled, and Ubnorm formats are automatically remapped and handled in shader.
     static constexpr std::array formats{
         // Invalid
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatInvalid, AmdGpu::NumberFormat::Unorm,
@@ -490,7 +488,7 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eUndefined),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatInvalid, AmdGpu::NumberFormat::Ubnorm,
                                 vk::Format::eUndefined),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatInvalid, AmdGpu::NumberFormat::UbnromNz,
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatInvalid, AmdGpu::NumberFormat::UbnormNz,
                                 vk::Format::eUndefined),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatInvalid, AmdGpu::NumberFormat::Ubint,
                                 vk::Format::eUndefined),
@@ -501,10 +499,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR8Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR8Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eR8Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eR8Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR8Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8, AmdGpu::NumberFormat::Sint,
@@ -516,10 +510,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR16Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR16Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eR16Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eR16Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR16Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16, AmdGpu::NumberFormat::Sint,
@@ -531,10 +521,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR8G8Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR8G8Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eR8G8Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eR8G8Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR8G8Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8, AmdGpu::NumberFormat::Sint,
@@ -553,10 +539,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR16G16Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR16G16Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eR16G16Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eR16G16Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR16G16Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16, AmdGpu::NumberFormat::Sint,
@@ -573,10 +555,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eA2B10G10R10UnormPack32),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eA2B10G10R10SnormPack32),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eA2B10G10R10UscaledPack32),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eA2B10G10R10SscaledPack32),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eA2B10G10R10UintPack32),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format2_10_10_10, AmdGpu::NumberFormat::Sint,
@@ -586,10 +564,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR8G8B8A8Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8_8_8, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR8G8B8A8Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8_8_8, AmdGpu::NumberFormat::Uscaled,
-                                vk::Format::eR8G8B8A8Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8_8_8, AmdGpu::NumberFormat::Sscaled,
-                                vk::Format::eR8G8B8A8Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8_8_8, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR8G8B8A8Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format8_8_8_8, AmdGpu::NumberFormat::Sint,
@@ -608,10 +582,6 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR16G16B16A16Unorm),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16_16_16, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eR16G16B16A16Snorm),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16_16_16,
-                                AmdGpu::NumberFormat::Uscaled, vk::Format::eR16G16B16A16Uscaled),
-        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16_16_16,
-                                AmdGpu::NumberFormat::Sscaled, vk::Format::eR16G16B16A16Sscaled),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16_16_16, AmdGpu::NumberFormat::Uint,
                                 vk::Format::eR16G16B16A16Uint),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format16_16_16_16, AmdGpu::NumberFormat::Sint,
@@ -639,11 +609,13 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eB5G6R5UnormPack16),
         // 1_5_5_5
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format1_5_5_5, AmdGpu::NumberFormat::Unorm,
+                                vk::Format::eA1R5G5B5UnormPack16),
+        // 5_5_5_1
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format5_5_5_1, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eR5G5B5A1UnormPack16),
-        // 5_5_5_1 - Remapped to 1_5_5_5.
         // 4_4_4_4
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format4_4_4_4, AmdGpu::NumberFormat::Unorm,
-                                vk::Format::eR4G4B4A4UnormPack16),
+                                vk::Format::eB4G4R4A4UnormPack16),
         // 8_24
         // 24_8
         // X24_8_32

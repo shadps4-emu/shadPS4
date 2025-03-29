@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
 #include <unordered_map>
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -16,6 +17,8 @@
 #ifdef _WIN32
 // This is the maximum number of UTF-16 code units permissible in Windows file paths
 #define MAX_PATH 260
+#include <Shlobj.h>
+#include <windows.h>
 #else
 // This is the maximum number of UTF-8 code units permissible in all other OSes' file paths
 #define MAX_PATH 1024
@@ -105,6 +108,10 @@ static auto UserPaths = [] {
         } else {
             user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
         }
+#elif _WIN32
+        TCHAR appdata[MAX_PATH] = {0};
+        SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, appdata);
+        user_dir = std::filesystem::path(appdata) / "shadPS4";
 #endif
     }
 
@@ -128,6 +135,22 @@ static auto UserPaths = [] {
     create_path(PathType::CheatsDir, user_dir / CHEATS_DIR);
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
+    create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
+
+    std::ofstream notice_file(user_dir / CUSTOM_TROPHY / "Notice.txt");
+    if (notice_file.is_open()) {
+        notice_file
+            << "++++++++++++++++++++++++++++++++\n+ Custom Trophy Images / Sound "
+               "+\n++++++++++++++++++++++++++++++++\n\nYou can add custom images to the "
+               "trophies.\n*We recommend a square resolution image, for example 200x200, 500x500, "
+               "the same size as the height and width.\nIn this folder ('user\\custom_trophy'), "
+               "add the files with the following "
+               "names:\n\nbronze.png\nsilver.png\ngold.png\nplatinum.png\n\nYou can add a custom "
+               "sound for trophy notifications.\n*By default, no audio is played unless it is in "
+               "this folder and you are using the QT version.\nIn this folder "
+               "('user\\custom_trophy'), add the files with the following names:\n\ntrophy.mp3";
+        notice_file.close();
+    }
 
     return paths;
 }();
@@ -174,6 +197,34 @@ void SetUserPath(PathType shad_path, const fs::path& new_path) {
     }
 
     UserPaths.insert_or_assign(shad_path, new_path);
+}
+
+std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& game_id,
+                                     int max_depth) {
+    if (max_depth < 0) {
+        return std::nullopt;
+    }
+
+    // Check if this is the game we're looking for
+    if (dir.filename() == game_id && fs::exists(dir / "sce_sys" / "param.sfo")) {
+        auto eboot_path = dir / "eboot.bin";
+        if (fs::exists(eboot_path)) {
+            return eboot_path;
+        }
+    }
+
+    // Recursively search subdirectories
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(dir, ec)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        if (auto found = FindGameByID(entry.path(), game_id, max_depth - 1)) {
+            return found;
+        }
+    }
+
+    return std::nullopt;
 }
 
 #ifdef ENABLE_QT_GUI

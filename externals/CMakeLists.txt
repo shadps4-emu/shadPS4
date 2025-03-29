@@ -18,8 +18,6 @@ endif()
 
 # Boost
 if (NOT TARGET Boost::headers)
-    set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
-    set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "")
     add_subdirectory(ext-boost)
 endif()
 
@@ -28,24 +26,7 @@ if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
-    # If it is clang and MSVC we will add a static lib
-    # CryptoPP
-    add_subdirectory(cryptoppwin)
-    target_include_directories(cryptoppwin INTERFACE cryptoppwin/include)
-else()
-    # CryptoPP
-    if (NOT TARGET cryptopp::cryptopp)
-        set(CRYPTOPP_INSTALL OFF)
-        set(CRYPTOPP_BUILD_TESTING OFF)
-        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp)
-        add_subdirectory(cryptopp-cmake)
-        file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
-        # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
-        set_target_properties(cryptopp PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
-    endif()
-endif()
-
+# FFmpeg
 if (NOT TARGET FFmpeg::ffmpeg)
     add_subdirectory(ffmpeg-core)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
@@ -77,6 +58,7 @@ endif()
 
 # SDL3
 if (NOT TARGET SDL3::SDL3)
+    set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
     add_subdirectory(sdl3)
 endif()
@@ -131,6 +113,14 @@ endif()
 # Toml11
 if (NOT TARGET toml11::toml11)
     add_subdirectory(toml11)
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        get_target_property(_toml11_compile_options toml11 INTERFACE_COMPILE_OPTIONS)
+        list(REMOVE_ITEM _toml11_compile_options "/Zc:preprocessor")
+        set_target_properties(toml11 PROPERTIES INTERFACE_COMPILE_OPTIONS ${_toml11_compile_options})
+      endif()
+    endif()
 endif()
 
 # xxHash
@@ -213,9 +203,7 @@ endif()
 
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
-    set(BUILD_EXAMPLES OFF)
     add_subdirectory(discord-rpc)
-    target_include_directories(discord-rpc INTERFACE discord-rpc/include)
 endif()
 
 # GCN Headers

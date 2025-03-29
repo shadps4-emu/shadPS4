@@ -20,9 +20,9 @@
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
-#include "types.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/types.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -83,8 +83,7 @@ struct Liverpool {
         u32 crc32;
 
         bool Valid() const {
-            return shader_hash && crc32 &&
-                   (std::memcmp(signature.data(), signature_ref, sizeof(signature_ref)) == 0);
+            return std::memcmp(signature.data(), signature_ref, sizeof(signature_ref)) == 0;
         }
     };
 
@@ -143,6 +142,11 @@ struct Liverpool {
             const u32 num_dwords = bininfo.length / sizeof(u32);
             return std::span{code, num_dwords};
         }
+
+        [[nodiscard]] u32 NumVgprs() const {
+            // Each increment allocates 4 registers, where 0 = 4 registers.
+            return (settings.num_vgprs + 1) * 4;
+        }
     };
 
     struct HsTessFactorClamp {
@@ -190,6 +194,10 @@ struct Liverpool {
         u32 SharedMemSize() const noexcept {
             // lds_dwords is in units of 128 dwords. We return bytes.
             return settings.lds_dwords.Value() * 128 * 4;
+        }
+
+        u32 NumWorkgroups() const noexcept {
+            return dim_x * dim_y * dim_z;
         }
 
         bool IsTgidEnabled(u32 i) const noexcept {
@@ -266,6 +274,10 @@ struct Liverpool {
         BitField<20, 4, ShaderExportFormat> col5;
         BitField<24, 4, ShaderExportFormat> col6;
         BitField<28, 4, ShaderExportFormat> col7;
+
+        [[nodiscard]] ShaderExportFormat GetFormat(const u32 buf_idx) const {
+            return static_cast<ShaderExportFormat>((raw >> (buf_idx * 4)) & 0xfu);
+        }
     };
 
     union VsOutputControl {
@@ -429,11 +441,19 @@ struct Liverpool {
         } depth_slice;
 
         bool DepthValid() const {
-            return Address() != 0 && z_info.format != ZFormat::Invalid;
+            return DepthAddress() != 0 && z_info.format != ZFormat::Invalid;
         }
 
         bool StencilValid() const {
-            return Address() != 0 && stencil_info.format != StencilFormat::Invalid;
+            return StencilAddress() != 0 && stencil_info.format != StencilFormat::Invalid;
+        }
+
+        bool DepthWriteValid() const {
+            return DepthWriteAddress() != 0 && z_info.format != ZFormat::Invalid;
+        }
+
+        bool StencilWriteValid() const {
+            return StencilWriteAddress() != 0 && stencil_info.format != StencilFormat::Invalid;
         }
 
         u32 Pitch() const {
@@ -444,12 +464,20 @@ struct Liverpool {
             return (depth_size.height_tile_max + 1) << 3;
         }
 
-        u64 Address() const {
+        u64 DepthAddress() const {
             return u64(z_read_base) << 8;
         }
 
         u64 StencilAddress() const {
             return u64(stencil_read_base) << 8;
+        }
+
+        u64 DepthWriteAddress() const {
+            return u64(z_write_base) << 8;
+        }
+
+        u64 StencilWriteAddress() const {
+            return u64(stencil_write_base) << 8;
         }
 
         u32 NumSamples() const {
@@ -814,7 +842,9 @@ struct Liverpool {
             BitField<26, 1, u32> fmask_compression_disable_ci;
             BitField<27, 1, u32> fmask_compress_1frag_only;
             BitField<28, 1, u32> dcc_enable;
-            BitField<29, 1, u32> cmask_addr_type;
+            BitField<29, 2, u32> cmask_addr_type;
+            /// Neo-mode only
+            BitField<31, 1, u32> alt_tile_mode;
 
             u32 u32all;
         } info;
@@ -886,7 +916,7 @@ struct Liverpool {
         }
 
         bool IsTiled() const {
-            return !info.linear_general;
+            return GetTilingMode() != TilingMode::Display_Linear;
         }
 
         [[nodiscard]] DataFormat GetDataFmt() const {
@@ -897,7 +927,12 @@ struct Liverpool {
             // There is a small difference between T# and CB number types, account for it.
             return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
                                          ? NumberFormat::Srgb
-                                         : info.number_type.Value());
+                                         : info.number_type.Value(),
+                                     info.format);
+        }
+
+        [[nodiscard]] NumberConversion GetNumberConversion() const {
+            return MapNumberConversion(info.number_type);
         }
 
         [[nodiscard]] CompMapping Swizzle() const {
@@ -936,7 +971,7 @@ struct Liverpool {
             const auto swap_idx = static_cast<u32>(info.comp_swap.Value());
             const auto components_idx = NumComponents(info.format) - 1;
             const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
-            return RemapComponents(info.format, mrt_swizzle);
+            return RemapSwizzle(info.format, mrt_swizzle);
         }
     };
 
@@ -999,6 +1034,46 @@ struct Liverpool {
         u32 NumSlices() const {
             return slice_max + 1u;
         }
+    };
+
+    enum class ForceEnable : u32 {
+        Off = 0,
+        Enable = 1,
+        Disable = 2,
+    };
+
+    enum class ForceSumm : u32 {
+        Off = 0,
+        MinZ = 1,
+        MaxZ = 2,
+        Both = 3,
+    };
+
+    union DepthRenderOverride {
+        u32 raw;
+        BitField<0, 2, ForceEnable> force_hiz_enable;
+        BitField<2, 2, ForceEnable> force_his_enable0;
+        BitField<4, 2, ForceEnable> force_his_enable1;
+        BitField<6, 1, u32> force_shader_z_order;
+        BitField<7, 1, u32> fast_z_disable;
+        BitField<8, 1, u32> fast_stencil_disable;
+        BitField<9, 1, u32> noop_cull_disable;
+        BitField<10, 1, u32> force_color_kill;
+        BitField<11, 1, u32> force_z_read;
+        BitField<12, 1, u32> force_stencil_read;
+        BitField<13, 2, ForceEnable> force_full_z_range;
+        BitField<15, 1, u32> force_qc_smask_conflict;
+        BitField<16, 1, u32> disable_viewport_clamp;
+        BitField<17, 1, u32> ignore_sc_zrange;
+        BitField<18, 1, u32> disable_fully_covered;
+        BitField<19, 2, ForceSumm> force_z_limit_summ;
+        BitField<21, 5, u32> max_tiles_in_dtt;
+        BitField<26, 1, u32> disable_tile_rate_tiles;
+        BitField<27, 1, u32> force_z_dirty;
+        BitField<28, 1, u32> force_stencil_dirty;
+        BitField<29, 1, u32> force_z_valid;
+        BitField<30, 1, u32> force_stencil_valid;
+        BitField<31, 1, u32> preserve_compression;
     };
 
     union AaConfig {
@@ -1202,7 +1277,8 @@ struct Liverpool {
             DepthRenderControl depth_render_control;
             INSERT_PADDING_WORDS(1);
             DepthView depth_view;
-            INSERT_PADDING_WORDS(2);
+            DepthRenderOverride depth_render_override;
+            INSERT_PADDING_WORDS(1);
             Address depth_htile_data_base;
             INSERT_PADDING_WORDS(2);
             float depth_bounds_min;
@@ -1420,10 +1496,13 @@ public:
     }
 
     struct AscQueueInfo {
+        static constexpr size_t Pm4BufferSize = 1024;
         VAddr map_addr;
         u32* read_addr;
         u32 ring_size_dw;
         u32 pipe_id;
+        std::array<u32, Pm4BufferSize> tmp_packet;
+        u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
 
@@ -1465,7 +1544,7 @@ private:
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     template <bool is_indirect = false>
-    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
+    Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
 
     void Process(std::stop_token stoken);
 
@@ -1477,10 +1556,11 @@ private:
         std::vector<u32> ccb_buffer;
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
-        VAddr indirect_args_addr{};
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    VAddr indirect_args_addr{};
 
     struct ConstantEngine {
         void Reset() {

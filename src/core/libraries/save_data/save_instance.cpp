@@ -10,6 +10,7 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
+#include "save_backup.h"
 #include "save_instance.h"
 
 constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
@@ -23,17 +24,17 @@ namespace fs = std::filesystem;
 // clang-format off
 static const std::unordered_map<std::string, std::string> default_title = {
     {"ja_JP", "セーブデータ"},
-    {"en", "Saved Data"},
-    {"fr", "Données sauvegardées"},
+    {"en_US", "Saved Data"},
+    {"fr_FR", "Données sauvegardées"},
     {"es_ES", "Datos guardados"},
-    {"de", "Gespeicherte Daten"},
-    {"it", "Dati salvati"},
-    {"nl", "Opgeslagen data"},
+    {"de_DE", "Gespeicherte Daten"},
+    {"it_IT", "Dati salvati"},
+    {"nl_NL", "Opgeslagen data"},
     {"pt_PT", "Dados guardados"},
-    {"ru", "Сохраненные данные"},
+    {"ru_RU", "Сохраненные данные"},
     {"ko_KR", "저장 데이터"},
     {"zh_CN", "保存数据"},
-    {"fi", "Tallennetut tiedot"},
+    {"fi_FI", "Tallennetut tiedot"},
     {"sv_SE", "Sparade data"},
     {"da_DK", "Gemte data"},
     {"no_NO", "Lagrede data"},
@@ -45,17 +46,14 @@ static const std::unordered_map<std::string, std::string> default_title = {
 
 namespace Libraries::SaveData {
 
-std::filesystem::path SaveInstance::MakeTitleSavePath(OrbisUserServiceUserId user_id,
-                                                      std::string_view game_serial) {
-    return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / std::to_string(user_id) /
-           game_serial;
+fs::path SaveInstance::MakeTitleSavePath(OrbisUserServiceUserId user_id,
+                                         std::string_view game_serial) {
+    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial;
 }
 
-std::filesystem::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_id,
-                                                    std::string_view game_serial,
-                                                    std::string_view dir_name) {
-    return Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir) / std::to_string(user_id) /
-           game_serial / dir_name;
+fs::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_id, std::string_view game_serial,
+                                       std::string_view dir_name) {
+    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial / dir_name;
 }
 
 uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {
@@ -67,7 +65,7 @@ uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {
     return *(uint64_t*)value.data();
 }
 
-std::filesystem::path SaveInstance::GetParamSFOPath(const std::filesystem::path& dir_path) {
+fs::path SaveInstance::GetParamSFOPath(const fs::path& dir_path) {
     return dir_path / sce_sys / "param.sfo";
 }
 
@@ -75,7 +73,7 @@ void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
                                         std::string game_serial) {
     std::string locale = Config::getEmulatorLanguage();
     if (!default_title.contains(locale)) {
-        locale = "en";
+        locale = "en_US";
     }
 
 #define P(type, key, ...) param_sfo.Add##type(std::string{key}, __VA_ARGS__)
@@ -131,7 +129,6 @@ SaveInstance& SaveInstance::operator=(SaveInstance&& other) noexcept {
     save_path = std::move(other.save_path);
     param_sfo_path = std::move(other.param_sfo_path);
     corrupt_file_path = std::move(other.corrupt_file_path);
-    corrupt_file = std::move(other.corrupt_file);
     param_sfo = std::move(other.param_sfo);
     mount_point = std::move(other.mount_point);
     max_blocks = other.max_blocks;
@@ -144,7 +141,8 @@ SaveInstance& SaveInstance::operator=(SaveInstance&& other) noexcept {
     return *this;
 }
 
-void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_corrupt) {
+void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_corrupt,
+                                 bool dont_restore_backup) {
     if (mounted) {
         UNREACHABLE_MSG("Save instance is already mounted");
     }
@@ -163,25 +161,27 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         }
         exists = true;
     } else {
+        std::optional<fs::filesystem_error> err;
         if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
-            throw std::filesystem::filesystem_error(
-                "Corrupted save data", corrupt_file_path,
-                std::make_error_code(std::errc::illegal_byte_sequence));
+            err = fs::filesystem_error("Corrupted save data", corrupt_file_path,
+                                       std::make_error_code(std::errc::illegal_byte_sequence));
+        } else if (!param_sfo.Open(param_sfo_path)) {
+            err = fs::filesystem_error("Failed to read param.sfo", param_sfo_path,
+                                       std::make_error_code(std::errc::illegal_byte_sequence));
         }
-        if (!param_sfo.Open(param_sfo_path)) {
-            throw std::filesystem::filesystem_error(
-                "Failed to read param.sfo", param_sfo_path,
-                std::make_error_code(std::errc::illegal_byte_sequence));
+        if (err.has_value()) {
+            if (dont_restore_backup) {
+                throw err.value();
+            }
+            if (Backup::Restore(save_path)) {
+                return SetupAndMount(read_only, copy_icon, ignore_corrupt, true);
+            }
         }
     }
 
     if (!ignore_corrupt && !read_only) {
-        int err = corrupt_file.Open(corrupt_file_path, Common::FS::FileAccessMode::Write);
-        if (err != 0) {
-            throw std::filesystem::filesystem_error(
-                "Failed to open corrupted file", corrupt_file_path,
-                std::make_error_code(std::errc::illegal_byte_sequence));
-        }
+        Common::FS::IOFile f(corrupt_file_path, Common::FS::FileAccessMode::Write);
+        f.Close();
     }
 
     max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
@@ -199,12 +199,11 @@ void SaveInstance::Umount() {
     mounted = false;
     const bool ok = param_sfo.Encode(param_sfo_path);
     if (!ok) {
-        throw std::filesystem::filesystem_error("Failed to write param.sfo", param_sfo_path,
-                                                std::make_error_code(std::errc::permission_denied));
+        throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
+                                   std::make_error_code(std::errc::permission_denied));
     }
     param_sfo = PSF();
 
-    corrupt_file.Close();
     fs::remove(corrupt_file_path);
     g_mnt->Unmount(save_path, mount_point);
 }
@@ -218,8 +217,8 @@ void SaveInstance::CreateFiles() {
 
     const bool ok = param_sfo.Encode(param_sfo_path);
     if (!ok) {
-        throw std::filesystem::filesystem_error("Failed to write param.sfo", param_sfo_path,
-                                                std::make_error_code(std::errc::permission_denied));
+        throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
+                                   std::make_error_code(std::errc::permission_denied));
     }
 }
 

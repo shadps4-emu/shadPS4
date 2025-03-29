@@ -69,7 +69,7 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                 ListSortedAsc = true;
             }
             this->clearContents();
-            PopulateGameList();
+            PopulateGameList(false);
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
@@ -77,8 +77,10 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
-        if (column == 2 && !m_game_info->m_games[row].compatibility.url.isEmpty()) {
-            QDesktopServices::openUrl(QUrl(m_game_info->m_games[row].compatibility.url));
+        if (column == 2 && m_game_info->m_games[row].compatibility.issue_number != "") {
+            auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+            QDesktopServices::openUrl(
+                QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         }
     });
 }
@@ -89,6 +91,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
     if (!item) {
         return;
     }
+    m_current_item = item; // Store current item
     SetListBackgroundImage(item);
     PlayBackgroundMusic(item);
 }
@@ -103,11 +106,19 @@ void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
     BackgroundMusicPlayer::getInstance().playMusic(snd0path);
 }
 
-void GameListFrame::PopulateGameList() {
+void GameListFrame::PopulateGameList(bool isInitialPopulation) {
+    this->m_current_item = nullptr;
     // Do not show status column if it is not enabled
     this->setColumnHidden(2, !Config::getCompatibilityEnabled());
+    this->setColumnHidden(6, !Config::GetLoadGameSizeEnabled());
+
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
+
+    if (isInitialPopulation) {
+        SortNameAscending(1); // Column 1 = Name
+        ResizeIcons(icon_size);
+    }
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
@@ -160,38 +171,56 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
         return;
     }
 
-    QString pic1Path;
-    Common::FS::PathToQString(pic1Path, m_game_info->m_games[item->row()].pic_path);
-    const auto blurredPic1Path = Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-                                 m_game_info->m_games[item->row()].serial / "pic1.png";
-    QString blurredPic1PathQt;
-    Common::FS::PathToQString(blurredPic1PathQt, blurredPic1Path);
+    // If background images are hidden, clear the background image
+    if (!Config::getShowBackgroundImage()) {
+        backgroundImage = QImage();
+        m_last_opacity = -1;         // Reset opacity tracking when disabled
+        m_current_game_path.clear(); // Reset current game path
+        RefreshListBackgroundImage();
+        return;
+    }
 
-    backgroundImage = QImage(blurredPic1PathQt);
-    if (backgroundImage.isNull()) {
-        QImage image(pic1Path);
-        backgroundImage = m_game_list_utils.BlurImage(image, image.rect(), 16);
+    const auto& game = m_game_info->m_games[item->row()];
+    const int opacity = Config::getBackgroundImageOpacity();
 
-        std::filesystem::path img_path =
-            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /
-            m_game_info->m_games[item->row()].serial;
-        std::filesystem::create_directories(img_path);
-        if (!backgroundImage.save(blurredPic1PathQt, "PNG")) {
-            // qDebug() << "Error: Unable to save image.";
+    // Recompute if opacity changed or we switched to a different game
+    if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
+        auto image_path = game.pic_path.u8string();
+        QImage original_image(QString::fromStdString({image_path.begin(), image_path.end()}));
+        if (!original_image.isNull()) {
+            backgroundImage = m_game_list_utils.ChangeImageOpacity(
+                original_image, original_image.rect(), opacity / 100.0f);
+            m_last_opacity = opacity;
+            m_current_game_path = game.pic_path;
         }
     }
+
     RefreshListBackgroundImage();
 }
 
 void GameListFrame::RefreshListBackgroundImage() {
-    if (!backgroundImage.isNull()) {
-        QPalette palette;
-        palette.setBrush(QPalette::Base,
-                         QBrush(backgroundImage.scaled(size(), Qt::IgnoreAspectRatio)));
-        QColor transparentColor = QColor(135, 206, 235, 40);
-        palette.setColor(QPalette::Highlight, transparentColor);
-        this->setPalette(palette);
+    QPalette palette;
+    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
+        QSize widgetSize = size();
+        QPixmap scaledPixmap =
+            QPixmap::fromImage(backgroundImage)
+                .scaled(widgetSize, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        int x = (widgetSize.width() - scaledPixmap.width()) / 2;
+        int y = (widgetSize.height() - scaledPixmap.height()) / 2;
+        QPixmap finalPixmap(widgetSize);
+        finalPixmap.fill(Qt::transparent);
+        QPainter painter(&finalPixmap);
+        painter.drawPixmap(x, y, scaledPixmap);
+        palette.setBrush(QPalette::Base, QBrush(finalPixmap));
     }
+    QColor transparentColor = QColor(135, 206, 235, 40);
+    palette.setColor(QPalette::Highlight, transparentColor);
+    this->setPalette(palette);
+}
+
+void GameListFrame::resizeEvent(QResizeEvent* event) {
+    QTableWidget::resizeEvent(event);
+    RefreshListBackgroundImage();
 }
 
 void GameListFrame::SortNameAscending(int columnIndex) {
@@ -266,7 +295,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
         tooltip_string = status_explanation;
     } else {
         tooltip_string =
-            "<p> <i>" + tr("Click to go to issue") + "</i>" + "<br>" + tr("Last updated") +
+            "<p> <i>" + tr("Click to see details on github") + "</i>" + "<br>" +
+            tr("Last updated") +
             QString(": %1 (%2)").arg(entry.last_tested.toString("yyyy-MM-dd"), entry.version) +
             "<br>" + status_explanation + "</p>";
     }
@@ -282,7 +312,8 @@ void GameListFrame::SetCompatibilityItem(int row, int column, CompatibilityEntry
     QLabel* dotLabel = new QLabel("", widget);
     dotLabel->setPixmap(circle_pixmap);
 
-    QLabel* label = new QLabel(m_compat_info->CompatStatusToString.at(entry.status), widget);
+    QLabel* label = new QLabel(m_compat_info->GetCompatStatusString(entry.status), widget);
+    this->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
 
     label->setStyleSheet("color: white; font-size: 16px; font-weight: bold;");
 
@@ -384,4 +415,8 @@ QString GameListFrame::GetPlayTime(const std::string& serial) {
 
     file.close();
     return playTime;
+}
+
+QTableWidgetItem* GameListFrame::GetCurrentItem() {
+    return m_current_item;
 }

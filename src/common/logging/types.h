@@ -47,6 +47,7 @@ enum class Class : u8 {
     Lib,                   ///< HLE implementation of system library. Each major library
                            ///< should have its own subclass.
     Lib_LibC,              ///< The LibC implementation.
+    Lib_LibcInternal,      ///< The LibcInternal implementation.
     Lib_Kernel,            ///< The LibKernel implementation.
     Lib_Pad,               ///< The LibScePad implementation.
     Lib_GnmDriver,         ///< The LibSceGnmDriver implementation.
@@ -63,11 +64,15 @@ enum class Class : u8 {
     Lib_SaveData,          ///< The LibSceSaveData implementation.
     Lib_SaveDataDialog,    ///< The LibSceSaveDataDialog implementation.
     Lib_Ssl,               ///< The LibSceSsl implementation.
+    Lib_Ssl2,              ///< The LibSceSsl2 implementation.
     Lib_Http,              ///< The LibSceHttp implementation.
+    Lib_Http2,             ///< The LibSceHttp2 implementation.
     Lib_SysModule,         ///< The LibSceSysModule implementation
+    Lib_NpCommon,          ///< The LibSceNpCommon implementation
     Lib_NpManager,         ///< The LibSceNpManager implementation
     Lib_NpScore,           ///< The LibSceNpScore implementation
     Lib_NpTrophy,          ///< The LibSceNpTrophy implementation
+    Lib_NpWebApi,          ///< The LibSceWebApi implementation
     Lib_Screenshot,        ///< The LibSceScreenshot implementation
     Lib_LibCInternal,      ///< The LibCInternal implementation.
     Lib_AppContent,        ///< The LibSceAppContent implementation.
@@ -93,6 +98,11 @@ enum class Class : u8 {
     Lib_Vdec2,             ///< The LibSceVideodec2 implementation.
     Lib_Videodec,          ///< The LibSceVideodec implementation.
     Lib_RazorCpu,          ///< The LibRazorCpu implementation.
+    Lib_Mouse,             ///< The LibSceMouse implementation
+    Lib_WebBrowserDialog,  ///< The LibSceWebBrowserDialog implementation
+    Lib_NpParty,           ///< The LibSceNpParty implementation
+    Lib_Zlib,              ///< The LibSceZlib implementation.
+    Lib_Hmd,               ///< The LibSceHmd implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

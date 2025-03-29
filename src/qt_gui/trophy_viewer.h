@@ -4,24 +4,46 @@
 #pragma once
 
 #include <QApplication>
+#include <QCheckBox>
+#include <QComboBox>
 #include <QDir>
+#include <QDockWidget>
 #include <QFileInfoList>
 #include <QGraphicsBlurEffect>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMainWindow>
+#include <QPair>
+#include <QPushButton>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QVBoxLayout>
+#include <QVector>
 #include <QXmlStreamReader>
 
 #include "common/types.h"
 #include "core/file_format/trp.h"
 
+struct TrophyGameInfo {
+    QString name;
+    QString trophyPath;
+    QString gameTrpPath;
+};
+
 class TrophyViewer : public QMainWindow {
     Q_OBJECT
 public:
-    explicit TrophyViewer(QString trophyPath, QString gameTrpPath);
+    explicit TrophyViewer(
+        QString trophyPath, QString gameTrpPath, QString gameName = "",
+        const QVector<TrophyGameInfo>& allTrophyGames = QVector<TrophyGameInfo>());
+
+    void updateTrophyInfo();
+    void updateTableFilters();
+    void onDockClosed();
+    void reopenLeftDock();
+
+private slots:
+    void onGameSelectionChanged(int index);
 
 private:
     void PopulateTrophyWidget(QString title);
@@ -30,18 +52,28 @@ private:
     QTabWidget* tabWidget = nullptr;
     QStringList headers;
     QString gameTrpPath_;
+    QString currentGameName_;
     TRP trp;
+    QLabel* trophyInfoLabel;
+    QCheckBox* showEarnedCheck;
+    QCheckBox* showNotEarnedCheck;
+    QCheckBox* showHiddenCheck;
+    QComboBox* gameSelectionComboBox;
+    QPushButton* expandButton;
+    QDockWidget* trophyInfoDock;
+    QPushButton* reopenButton;
+    QVector<TrophyGameInfo> allTrophyGames_;
 
-    QString GetTrpType(const QChar trp_) {
+    std::string GetTrpType(const QChar trp_) {
         switch (trp_.toLatin1()) {
         case 'B':
-            return "Bronze";
+            return "bronze.png";
         case 'S':
-            return "Silver";
+            return "silver.png";
         case 'G':
-            return "Gold";
+            return "gold.png";
         case 'P':
-            return "Platinum";
+            return "platinum.png";
         }
         return "Unknown";
     }

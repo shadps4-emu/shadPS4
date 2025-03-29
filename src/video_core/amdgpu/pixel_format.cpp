@@ -100,7 +100,7 @@ std::string_view NameOf(NumberFormat fmt) {
         return "Srgb";
     case NumberFormat::Ubnorm:
         return "Ubnorm";
-    case NumberFormat::UbnromNz:
+    case NumberFormat::UbnormNz:
         return "UbnormNz";
     case NumberFormat::Ubint:
         return "Ubint";

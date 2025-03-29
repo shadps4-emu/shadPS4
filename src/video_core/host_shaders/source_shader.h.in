@@ -7,8 +7,8 @@
 
 namespace HostShaders {
 
-constexpr std::string_view @CONTENTS_NAME@ = {
+constexpr std::string_view @CONTENTS_NAME@ = R"shader_src(
 @CONTENTS@
-};
+)shader_src";
 
 } // namespace HostShaders

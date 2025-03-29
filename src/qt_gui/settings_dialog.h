@@ -33,6 +33,7 @@ public:
 signals:
     void LanguageChanged(const std::string& locale);
     void CompatibilityChanged();
+    void BackgroundOpacityChanged(int opacity);
 
 private:
     void LoadValuesFromConfig();
@@ -41,6 +42,7 @@ private:
     void InitializeEmulatorLanguages();
     void OnLanguageChanged(int index);
     void OnCursorStateChanged(s16 index);
+    void closeEvent(QCloseEvent* event) override;
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 
@@ -49,4 +51,6 @@ private:
     QString defaultTextEdit;
 
     int initialHeight;
+
+    bool is_saving = false;
 };

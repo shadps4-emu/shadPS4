@@ -8,37 +8,50 @@
 
 namespace Shader::Optimization {
 
+static bool IsLoadShared(const IR::Inst& inst) {
+    return inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
+           inst.GetOpcode() == IR::Opcode::LoadSharedU64;
+}
+
+static bool IsWriteShared(const IR::Inst& inst) {
+    return inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
+           inst.GetOpcode() == IR::Opcode::WriteSharedU64;
+}
+
+// Inserts barriers when a shared memory write and read occur in the same basic block.
 static void EmitBarrierInBlock(IR::Block* block) {
-    // This is inteded to insert a barrier when shared memory write and read
-    // occur in the same basic block. Also checks if branch depth is zero as
-    // we don't want to insert barrier in potentially divergent code.
-    bool emit_barrier_on_write = false;
-    bool emit_barrier_on_read = false;
-    const auto emit_barrier = [block](bool& emit_cond, IR::Inst& inst) {
-        if (emit_cond) {
-            IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
-            ir.Barrier();
-            emit_cond = false;
-        }
+    enum class BarrierAction : u32 {
+        None,
+        BarrierOnWrite,
+        BarrierOnRead,
     };
+    BarrierAction action{};
     for (IR::Inst& inst : block->Instructions()) {
-        if (inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
-            inst.GetOpcode() == IR::Opcode::LoadSharedU64) {
-            emit_barrier(emit_barrier_on_read, inst);
-            emit_barrier_on_write = true;
+        if (IsLoadShared(inst)) {
+            if (action == BarrierAction::BarrierOnRead) {
+                IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+                ir.Barrier();
+            }
+            action = BarrierAction::BarrierOnWrite;
+            continue;
         }
-        if (inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
-            inst.GetOpcode() == IR::Opcode::WriteSharedU64) {
-            emit_barrier(emit_barrier_on_write, inst);
-            emit_barrier_on_read = true;
+        if (IsWriteShared(inst)) {
+            if (action == BarrierAction::BarrierOnWrite) {
+                IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+                ir.Barrier();
+            }
+            action = BarrierAction::BarrierOnRead;
         }
+    }
+    if (action != BarrierAction::None) {
+        IR::IREmitter ir{*block, --block->end()};
+        ir.Barrier();
     }
 }
 
+// Inserts a barrier after divergent conditional blocks to avoid undefined
+// behavior when some threads write and others read from shared memory.
 static void EmitBarrierInMergeBlock(const IR::AbstractSyntaxNode::Data& data) {
-    // Insert a barrier after divergent conditional blocks.
-    // This avoids potential softlocks and crashes when some threads
-    // initialize shared memory and others read from it.
     const IR::U1 cond = data.if_node.cond;
     const auto insert_barrier =
         IR::BreadthFirstSearch(cond, [](IR::Inst* inst) -> std::optional<bool> {
@@ -56,8 +69,21 @@ static void EmitBarrierInMergeBlock(const IR::AbstractSyntaxNode::Data& data) {
     }
 }
 
-void SharedMemoryBarrierPass(IR::Program& program, const Profile& profile) {
-    if (!program.info.uses_shared || !profile.needs_lds_barriers) {
+static constexpr u32 GcnSubgroupSize = 64;
+
+void SharedMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_info,
+                             const Profile& profile) {
+    if (program.info.stage != Stage::Compute) {
+        return;
+    }
+    const auto& cs_info = runtime_info.cs_info;
+    const u32 shared_memory_size = cs_info.shared_memory_size;
+    const u32 threadgroup_size =
+        cs_info.workgroup_size[0] * cs_info.workgroup_size[1] * cs_info.workgroup_size[2];
+    // The compiler can only omit barriers when the local workgroup size is the same as the HW
+    // subgroup.
+    if (shared_memory_size == 0 || threadgroup_size != GcnSubgroupSize ||
+        !profile.needs_lds_barriers) {
         return;
     }
     using Type = IR::AbstractSyntaxNode::Type;
@@ -67,6 +93,8 @@ void SharedMemoryBarrierPass(IR::Program& program, const Profile& profile) {
             --branch_depth;
             continue;
         }
+        // Check if branch depth is zero, we don't want to insert barrier in potentially divergent
+        // code.
         if (node.type == Type::If && branch_depth++ == 0) {
             EmitBarrierInMergeBlock(node.data);
             continue;

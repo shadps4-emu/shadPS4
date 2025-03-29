@@ -3,21 +3,21 @@
 
 #include <boost/container/small_vector.hpp>
 
-#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
-ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
-                                 DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 ComputePipelineKey compute_key_, const Shader::Info& info_,
-                                 vk::ShaderModule module)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
+ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
+                                 DescriptorHeap& desc_heap, const Shader::Profile& profile,
+                                 vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key_,
+                                 const Shader::Info& info_, vk::ShaderModule module)
+    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache, true},
+      compute_key{compute_key_} {
     auto& info = stages[int(Shader::LogicalStage::Compute)];
     info = &info_;
+    const auto debug_str = GetDebugString();
 
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
@@ -27,30 +27,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
-
-    if (info->has_readconst) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
     for (const auto& buffer : info->buffers) {
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
-                                                      : vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
-    for (const auto& tex_buffer : info->texture_buffers) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                    : vk::DescriptorType::eUniformTexelBuffer,
+            .descriptorType = buffer.IsStorage(sharp, profile) ? vk::DescriptorType::eStorageBuffer
+                                                               : vk::DescriptorType::eUniformBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
@@ -58,9 +40,8 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     for (const auto& image : info->images) {
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = image.IsStorage(image.GetSharp(*info))
-                                  ? vk::DescriptorType::eStorageImage
-                                  : vk::DescriptorType::eSampledImage,
+            .descriptorType = image.is_written ? vk::DescriptorType::eStorageImage
+                                               : vk::DescriptorType::eSampledImage,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });
@@ -89,8 +70,9 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
         .bindingCount = static_cast<u32>(bindings.size()),
         .pBindings = bindings.data(),
     };
+    const auto device = instance.GetDevice();
     auto [descriptor_set_result, descriptor_set] =
-        instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
+        device.createDescriptorSetLayoutUnique(desc_layout_ci);
     ASSERT_MSG(descriptor_set_result == vk::Result::eSuccess,
                "Failed to create compute descriptor set layout: {}",
                vk::to_string(descriptor_set_result));
@@ -107,6 +89,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
+    SetObjectName(device, *pipeline_layout, "Compute PipelineLayout {}", debug_str);
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
@@ -117,6 +100,7 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
                vk::to_string(pipeline_result));
     pipeline = std::move(pipe);
+    SetObjectName(device, *pipeline, "Compute Pipeline {}", debug_str);
 }
 
 ComputePipeline::~ComputePipeline() = default;

@@ -28,6 +28,7 @@
 #include <Rpc.h>
 #endif
 #include <common/singleton.h>
+#include "aio.h"
 
 namespace Libraries::Kernel {
 
@@ -59,7 +60,7 @@ static void KernelServiceThread(std::stop_token stoken) {
         }
 
         io_context.run();
-        io_context.reset();
+        io_context.restart();
 
         asio_requests = 0;
     }
@@ -84,16 +85,22 @@ int ErrnoToSceKernelError(int error) {
 }
 
 void SetPosixErrno(int e) {
-    // Some error numbers are different between supported OSes or the PS4
+    // Some error numbers are different between supported OSes
     switch (e) {
     case EPERM:
         g_posix_errno = POSIX_EPERM;
         break;
-    case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
+    case ENOENT:
+        g_posix_errno = POSIX_ENOENT;
+        break;
+    case EDEADLK:
+        g_posix_errno = POSIX_EDEADLK;
         break;
     case ENOMEM:
         g_posix_errno = POSIX_ENOMEM;
+        break;
+    case EACCES:
+        g_posix_errno = POSIX_EACCES;
         break;
     case EINVAL:
         g_posix_errno = POSIX_EINVAL;
@@ -104,13 +111,14 @@ void SetPosixErrno(int e) {
     case ERANGE:
         g_posix_errno = POSIX_ERANGE;
         break;
-    case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
+    case EAGAIN:
+        g_posix_errno = POSIX_EAGAIN;
         break;
     case ETIMEDOUT:
         g_posix_errno = POSIX_ETIMEDOUT;
         break;
     default:
+        LOG_WARNING(Kernel, "Unhandled errno {}", e);
         g_posix_errno = e;
     }
 }
@@ -130,14 +138,6 @@ void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
     info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
     info->mstate_table = g_mstate_table;
     info->getSegmentInfo = 0;
-}
-
-s64 PS4_SYSV_ABI ps4__write(int d, const char* buf, std::size_t nbytes) {
-    return sceKernelWrite(d, buf, nbytes);
-}
-
-s64 PS4_SYSV_ABI ps4__read(int d, void* buf, u64 nbytes) {
-    return sceKernelRead(d, buf, nbytes);
 }
 
 struct OrbisKernelUuid {
@@ -218,6 +218,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
+    Libraries::Kernel::RegisterAio(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
@@ -227,13 +228,10 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", 1, 1, __Error);
-    LIB_FUNCTION("DRuBt2pvICk", "libkernel", 1, "libkernel", 1, 1, ps4__read);
     LIB_FUNCTION("k+AXqu2-eBc", "libkernel", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  sceLibcHeapGetTraceInfo);
-    LIB_FUNCTION("FxVZqBAA7ks", "libkernel", 1, "libkernel", 1, 1, ps4__write);
-    LIB_FUNCTION("FN4gaPmuFV8", "libScePosix", 1, "libkernel", 1, 1, ps4__write);
 }
 
 } // namespace Libraries::Kernel

@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "SDL3/SDL_events.h"
+
 #include <QDockWidget>
 #include <QKeyEvent>
+#include <QPlainTextEdit>
 #include <QProgressDialog>
+#include <QStatusBar>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -15,12 +19,12 @@
 #include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/version.h"
-#include "core/file_format/pkg.h"
-#include "core/loader.h"
+#include "control_settings.h"
 #include "game_install_dialog.h"
-#include "install_dir_select.h"
+#include "kbm_gui.h"
 #include "main_window.h"
 #include "settings_dialog.h"
+
 #include "video_core/renderer_vulkan/vk_instance.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
@@ -52,13 +56,25 @@ bool MainWindow::Init() {
     SetLastIconSizeBullet();
     GetPhysicalDevices();
     // show ui
-    setMinimumSize(350, minimumSizeHint().height());
+    setMinimumSize(720, 405);
     std::string window_title = "";
     if (Common::isRelease) {
         window_title = fmt::format("shadPS4 v{}", Common::VERSION);
     } else {
-        window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
-                                   Common::g_scm_desc);
+        std::string remote_url(Common::g_scm_remote_url);
+        std::string remote_host;
+        try {
+            remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
+        } catch (...) {
+            remote_host = "unknown";
+        }
+        if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
+            window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
+                                       Common::g_scm_desc);
+        } else {
+            window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::VERSION, remote_host,
+                                       Common::g_scm_branch, Common::g_scm_desc);
+        }
     }
     setWindowTitle(QString::fromStdString(window_title));
     this->show();
@@ -113,24 +129,163 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeViolet);
     m_theme_act_group->addAction(ui->setThemeGruvbox);
     m_theme_act_group->addAction(ui->setThemeTokyoNight);
+    m_theme_act_group->addAction(ui->setThemeOled);
+}
+
+void MainWindow::PauseGame() {
+    SDL_Event event;
+    SDL_memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_TOGGLE_PAUSE;
+    is_paused = !is_paused;
+    UpdateToolbarButtons();
+    SDL_PushEvent(&event);
+}
+
+void MainWindow::toggleLabelsUnderIcons() {
+    bool showLabels = ui->toggleLabelsAct->isChecked();
+    Config::setShowLabelsUnderIcons();
+    UpdateToolbarLabels();
+    if (isGameRunning) {
+        UpdateToolbarButtons();
+    }
+}
+
+void MainWindow::toggleFullscreen() {
+    SDL_Event event;
+    SDL_memset(&event, 0, sizeof(event));
+    event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
+    SDL_PushEvent(&event);
+}
+
+QWidget* MainWindow::createButtonWithLabel(QPushButton* button, const QString& labelText,
+                                           bool showLabel) {
+    QWidget* container = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(container);
+    layout->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(button);
+
+    QLabel* label = nullptr;
+    if (showLabel && ui->toggleLabelsAct->isChecked()) {
+        label = new QLabel(labelText, this);
+        label->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
+        layout->addWidget(label);
+        button->setToolTip("");
+    } else {
+        button->setToolTip(labelText);
+    }
+
+    container->setLayout(layout);
+    container->setProperty("buttonLabel", QVariant::fromValue(label));
+    return container;
+}
+
+QWidget* createSpacer(QWidget* parent) {
+    QWidget* spacer = new QWidget(parent);
+    spacer->setFixedWidth(15);
+    spacer->setFixedHeight(15);
+    return spacer;
 }
 
 void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
-    ui->toolBar->setObjectName("mw_toolbar");
-    ui->toolBar->addWidget(ui->playButton);
-    ui->toolBar->addWidget(ui->pauseButton);
-    ui->toolBar->addWidget(ui->stopButton);
-    ui->toolBar->addWidget(ui->refreshButton);
-    ui->toolBar->addWidget(ui->settingsButton);
-    ui->toolBar->addWidget(ui->controllerButton);
+
+    bool showLabels = ui->toggleLabelsAct->isChecked();
+    ui->toolBar->clear();
+
+    ui->toolBar->addWidget(createSpacer(this));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
+    ui->toolBar->addWidget(
+        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
+    ui->toolBar->addWidget(
+        createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
+    ui->toolBar->addWidget(createButtonWithLabel(ui->keyboardButton, tr("Keyboard"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
     QFrame* line = new QFrame(this);
-    line->setFrameShape(QFrame::StyledPanel);
+    line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Sunken);
+    line->setMinimumWidth(2);
     ui->toolBar->addWidget(line);
-    ui->toolBar->addWidget(ui->sizeSliderContainer);
-    ui->toolBar->addWidget(ui->mw_searchbar);
+    ui->toolBar->addWidget(createSpacer(this));
+    if (showLabels) {
+        QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
+        if (pauseButtonLabel) {
+            pauseButtonLabel->setVisible(false);
+        }
+    }
+    ui->toolBar->addWidget(
+        createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
+    ui->toolBar->addWidget(createSpacer(this));
+
+    QBoxLayout* toolbarLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+    toolbarLayout->setSpacing(2);
+    toolbarLayout->setContentsMargins(2, 2, 2, 2);
+    ui->sizeSliderContainer->setFixedWidth(150);
+
+    QWidget* searchSliderContainer = new QWidget(this);
+    QBoxLayout* searchSliderLayout = new QBoxLayout(QBoxLayout::TopToBottom);
+    searchSliderLayout->setContentsMargins(0, 0, 6, 6);
+    searchSliderLayout->setSpacing(2);
+    ui->mw_searchbar->setFixedWidth(150);
+
+    searchSliderLayout->addWidget(ui->sizeSliderContainer);
+    searchSliderLayout->addWidget(ui->mw_searchbar);
+
+    searchSliderContainer->setLayout(searchSliderLayout);
+
+    ui->toolBar->addWidget(searchSliderContainer);
+
+    if (!showLabels) {
+        toolbarLayout->addWidget(searchSliderContainer);
+    }
+
+    ui->playButton->setVisible(true);
+    ui->pauseButton->setVisible(false);
+}
+
+void MainWindow::UpdateToolbarButtons() {
+    // add toolbar widgets when game is running
+    bool showLabels = ui->toggleLabelsAct->isChecked();
+
+    ui->playButton->setVisible(false);
+    ui->pauseButton->setVisible(true);
+
+    if (showLabels) {
+        QLabel* playButtonLabel = ui->playButton->parentWidget()->findChild<QLabel*>();
+        if (playButtonLabel)
+            playButtonLabel->setVisible(false);
+    }
+
+    if (is_paused) {
+        ui->pauseButton->setIcon(ui->playButton->icon());
+        ui->pauseButton->setToolTip(tr("Resume"));
+    } else {
+        if (isIconBlack) {
+            ui->pauseButton->setIcon(QIcon(":images/pause_icon.png"));
+        } else {
+            ui->pauseButton->setIcon(RecolorIcon(QIcon(":images/pause_icon.png"), isWhite));
+        }
+        ui->pauseButton->setToolTip(tr("Pause"));
+    }
+
+    if (showLabels) {
+        QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
+        if (pauseButtonLabel) {
+            pauseButtonLabel->setText(is_paused ? tr("Resume") : tr("Pause"));
+            pauseButtonLabel->setVisible(true);
+        }
+    }
+}
+
+void MainWindow::UpdateToolbarLabels() {
+    AddUiWidgets();
 }
 
 void MainWindow::CreateDockWindows() {
@@ -185,10 +340,14 @@ void MainWindow::CreateDockWindows() {
 }
 
 void MainWindow::LoadGameLists() {
+    // Load compatibility database
+    if (Config::getCompatibilityEnabled())
+        m_compat_info->LoadCompatibilityFile();
+
     // Update compatibility database
-    if (Config::getCheckCompatibilityOnStartup()) {
+    if (Config::getCheckCompatibilityOnStartup())
         m_compat_info->UpdateCompatibilityDatabase(this);
-    }
+
     // Get game info from game folders.
     m_game_info->GetGameInfo(this);
     if (isTableList) {
@@ -231,6 +390,8 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
+    connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
+    connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
@@ -247,7 +408,14 @@ void MainWindow::CreateConnects() {
         }
     });
 
+    connect(ui->shadFolderAct, &QAction::triggered, this, [this]() {
+        QString userPath;
+        Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
+        QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+    });
+
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->pauseButton, &QPushButton::clicked, this, &MainWindow::PauseGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -262,6 +430,27 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
+        connect(settingsDialog, &SettingsDialog::accepted, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::rejected, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::close, this, &MainWindow::RefreshGameTable);
+
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
+
         settingsDialog->exec();
     });
 
@@ -274,7 +463,38 @@ void MainWindow::CreateConnects() {
         connect(settingsDialog, &SettingsDialog::CompatibilityChanged, this,
                 &MainWindow::RefreshGameTable);
 
+        connect(settingsDialog, &SettingsDialog::accepted, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::rejected, this, &MainWindow::RefreshGameTable);
+        connect(settingsDialog, &SettingsDialog::close, this, &MainWindow::RefreshGameTable);
+
+        connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
+                [this](int opacity) {
+                    Config::setBackgroundImageOpacity(opacity);
+                    if (m_game_list_frame) {
+                        QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
+                        if (current) {
+                            m_game_list_frame->SetListBackgroundImage(current);
+                        }
+                    }
+                    if (m_game_grid_frame) {
+                        if (m_game_grid_frame->IsValidCellSelected()) {
+                            m_game_grid_frame->SetGridBackgroundImage(m_game_grid_frame->crtRow,
+                                                                      m_game_grid_frame->crtColumn);
+                        }
+                    }
+                });
+
         settingsDialog->exec();
+    });
+
+    connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
+        auto configWindow = new ControlSettings(m_game_info, this);
+        configWindow->exec();
+    });
+
+    connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
+        auto kbmWindow = new KBMSettings(m_game_info, this);
+        kbmWindow->exec();
     });
 
 #ifdef ENABLE_UPDATER
@@ -357,6 +577,7 @@ void MainWindow::CreateConnects() {
         int slider_pos = Config::getSliderPosition();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
+        ui->mw_searchbar->setText("");
     });
     // Grid
     connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -374,6 +595,7 @@ void MainWindow::CreateConnects() {
         int slider_pos_grid = Config::getSliderPositionGrid();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
+        ui->mw_searchbar->setText("");
     });
     // Elf Viewer
     connect(ui->setlistElfAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -494,7 +716,6 @@ void MainWindow::CreateConnects() {
     });
 
     // Package install.
-    connect(ui->bootInstallPkgAct, &QAction::triggered, this, &MainWindow::InstallPkg);
     connect(ui->bootGameAct, &QAction::triggered, this, &MainWindow::BootGame);
     connect(ui->gameInstallPathAct, &QAction::triggered, this, &MainWindow::InstallDirectory);
 
@@ -502,13 +723,58 @@ void MainWindow::CreateConnects() {
     connect(ui->addElfFolderAct, &QAction::triggered, m_elf_viewer.data(),
             &ElfViewer::OpenElfFolder);
 
-    // Package Viewer.
-    connect(ui->pkgViewerAct, &QAction::triggered, this, [this]() {
-        PKGViewer* pkgViewer = new PKGViewer(
-            m_game_info, this, [this](std::filesystem::path file, int pkgNum, int nPkg) {
-                this->InstallDragDropPkg(file, pkgNum, nPkg);
-            });
-        pkgViewer->show();
+    // Trophy Viewer
+    connect(ui->trophyViewerAct, &QAction::triggered, this, [this]() {
+        if (m_game_info->m_games.empty()) {
+            QMessageBox::information(
+                this, tr("Trophy Viewer"),
+                tr("No games found. Please add your games to your library first."));
+            return;
+        }
+
+        const auto& firstGame = m_game_info->m_games[0];
+        QString trophyPath, gameTrpPath;
+        Common::FS::PathToQString(trophyPath, firstGame.serial);
+        Common::FS::PathToQString(gameTrpPath, firstGame.path);
+
+        auto game_update_path = Common::FS::PathFromQString(gameTrpPath);
+        game_update_path += "-UPDATE";
+        if (std::filesystem::exists(game_update_path)) {
+            Common::FS::PathToQString(gameTrpPath, game_update_path);
+        } else {
+            game_update_path = Common::FS::PathFromQString(gameTrpPath);
+            game_update_path += "-patch";
+            if (std::filesystem::exists(game_update_path)) {
+                Common::FS::PathToQString(gameTrpPath, game_update_path);
+            }
+        }
+
+        QVector<TrophyGameInfo> allTrophyGames;
+        for (const auto& game : m_game_info->m_games) {
+            TrophyGameInfo gameInfo;
+            gameInfo.name = QString::fromStdString(game.name);
+            Common::FS::PathToQString(gameInfo.trophyPath, game.serial);
+            Common::FS::PathToQString(gameInfo.gameTrpPath, game.path);
+
+            auto update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+            update_path += "-UPDATE";
+            if (std::filesystem::exists(update_path)) {
+                Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+            } else {
+                update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
+                update_path += "-patch";
+                if (std::filesystem::exists(update_path)) {
+                    Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
+                }
+            }
+
+            allTrophyGames.append(gameInfo);
+        }
+
+        QString gameName = QString::fromStdString(firstGame.name);
+        TrophyViewer* trophyViewer =
+            new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
+        trophyViewer->show();
     });
 
     // Themes
@@ -568,6 +834,14 @@ void MainWindow::CreateConnects() {
             isIconBlack = false;
         }
     });
+    connect(ui->setThemeOled, &QAction::triggered, &m_window_themes, [this]() {
+        m_window_themes.SetWindowTheme(Theme::Oled, ui->mw_searchbar);
+        Config::setMainWindowTheme(static_cast<int>(Theme::Oled));
+        if (isIconBlack) {
+            SetUiIcons(false);
+            isIconBlack = false;
+        }
+    });
 }
 
 void MainWindow::StartGame() {
@@ -599,17 +873,29 @@ void MainWindow::StartGame() {
             return;
         }
         StartEmulator(path);
+
+        UpdateToolbarButtons();
     }
 }
 
+bool isTable;
 void MainWindow::SearchGameTable(const QString& text) {
     if (isTableList) {
+        if (isTable != true) {
+            m_game_info->m_games = m_game_info->m_games_backup;
+            m_game_list_frame->PopulateGameList();
+            isTable = true;
+        }
         for (int row = 0; row < m_game_list_frame->rowCount(); row++) {
             QString game_name = QString::fromStdString(m_game_info->m_games[row].name);
             bool match = (game_name.contains(text, Qt::CaseInsensitive)); // Check only in column 1
             m_game_list_frame->setRowHidden(row, !match);
         }
     } else {
+        isTable = false;
+        m_game_info->m_games = m_game_info->m_games_backup;
+        m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
+
         QVector<GameInfo> filteredGames;
         for (const auto& gameInfo : m_game_info->m_games) {
             QString game_name = QString::fromStdString(gameInfo.name);
@@ -618,6 +904,7 @@ void MainWindow::SearchGameTable(const QString& text) {
             }
         }
         std::sort(filteredGames.begin(), filteredGames.end(), m_game_info->CompareStrings);
+        m_game_info->m_games = filteredGames;
         m_game_grid_frame->PopulateGameGrid(filteredGames, true);
     }
 }
@@ -666,22 +953,6 @@ void MainWindow::SaveWindowState() const {
                                   this->geometry().width(), this->geometry().height());
 }
 
-void MainWindow::InstallPkg() {
-    QFileDialog dialog;
-    dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter(tr("PKG File (*.PKG *.pkg)"));
-    if (dialog.exec()) {
-        QStringList fileNames = dialog.selectedFiles();
-        int nPkg = fileNames.size();
-        int pkgNum = 0;
-        for (const QString& file : fileNames) {
-            ++pkgNum;
-            std::filesystem::path path = Common::FS::PathFromQString(file);
-            MainWindow::InstallDragDropPkg(path, pkgNum, nPkg);
-        }
-    }
-}
-
 void MainWindow::BootGame() {
     QFileDialog dialog;
     dialog.setFileMode(QFileDialog::ExistingFile);
@@ -702,204 +973,6 @@ void MainWindow::BootGame() {
             }
             StartEmulator(path);
         }
-    }
-}
-
-void MainWindow::InstallDragDropPkg(std::filesystem::path file, int pkgNum, int nPkg) {
-    if (Loader::DetectFileType(file) == Loader::FileTypes::Pkg) {
-        std::string failreason;
-        pkg = PKG();
-        if (!pkg.Open(file, failreason)) {
-            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
-            return;
-        }
-        if (!psf.Open(pkg.sfo)) {
-            QMessageBox::critical(this, tr("PKG ERROR"),
-                                  "Could not read SFO. Check log for details");
-            return;
-        }
-        auto category = psf.GetString("CATEGORY");
-        InstallDirSelect ids;
-        ids.exec();
-        auto game_install_dir = ids.getSelectedDirectory();
-        auto game_folder_path = game_install_dir / pkg.GetTitleID();
-        QString pkgType = QString::fromStdString(pkg.GetPkgFlags());
-        bool use_game_update = pkgType.contains("PATCH") && Config::getSeparateUpdateEnabled();
-        auto game_update_path = use_game_update
-                                    ? game_install_dir / (std::string(pkg.GetTitleID()) + "-UPDATE")
-                                    : game_folder_path;
-        QString gameDirPath;
-        Common::FS::PathToQString(gameDirPath, game_folder_path);
-        QDir game_dir(gameDirPath);
-        if (game_dir.exists()) {
-            QMessageBox msgBox;
-            msgBox.setWindowTitle(tr("PKG Extraction"));
-
-            std::string content_id;
-            if (auto value = psf.GetString("CONTENT_ID"); value.has_value()) {
-                content_id = std::string{*value};
-            } else {
-                QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no CONTENT_ID");
-                return;
-            }
-            std::string entitlement_label = Common::SplitString(content_id, '-')[2];
-
-            auto addon_extract_path =
-                Config::getAddonInstallDir() / pkg.GetTitleID() / entitlement_label;
-            QString addonDirPath;
-            Common::FS::PathToQString(addonDirPath, addon_extract_path);
-            QDir addon_dir(addonDirPath);
-
-            if (pkgType.contains("PATCH")) {
-                QString pkg_app_version;
-                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
-                    pkg_app_version = QString::fromStdString(std::string{*app_ver});
-                } else {
-                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
-                    return;
-                }
-                std::filesystem::path sce_folder_path =
-                    std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")
-                        ? game_update_path / "sce_sys" / "param.sfo"
-                        : game_folder_path / "sce_sys" / "param.sfo";
-                psf.Open(sce_folder_path);
-                QString game_app_version;
-                if (auto app_ver = psf.GetString("APP_VER"); app_ver.has_value()) {
-                    game_app_version = QString::fromStdString(std::string{*app_ver});
-                } else {
-                    QMessageBox::critical(this, tr("PKG ERROR"), "PSF file there is no APP_VER");
-                    return;
-                }
-                double appD = game_app_version.toDouble();
-                double pkgD = pkg_app_version.toDouble();
-                if (pkgD == appD) {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("PKG and Game versions match: ") + pkg_app_version +
-                                           "\n" + tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
-                } else if (pkgD < appD) {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("PKG Version %1 is older than installed version: ")
-                                               .arg(pkg_app_version) +
-                                           game_app_version + "\n" +
-                                           tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
-                } else {
-                    msgBox.setText(QString(tr("Patch detected!") + "\n" +
-                                           tr("Game is installed: ") + game_app_version + "\n" +
-                                           tr("Would you like to install Patch: ") +
-                                           pkg_app_version + " ?"));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
-                }
-                int result = msgBox.exec();
-                if (result == QMessageBox::Yes) {
-                    // Do nothing.
-                } else {
-                    return;
-                }
-            } else if (category == "ac") {
-                if (!addon_dir.exists()) {
-                    QMessageBox addonMsgBox;
-                    addonMsgBox.setWindowTitle(tr("DLC Installation"));
-                    addonMsgBox.setText(QString(tr("Would you like to install DLC: %1?"))
-                                            .arg(QString::fromStdString(entitlement_label)));
-
-                    addonMsgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    addonMsgBox.setDefaultButton(QMessageBox::No);
-                    int result = addonMsgBox.exec();
-                    if (result == QMessageBox::Yes) {
-                        game_update_path = addon_extract_path;
-                    } else {
-                        return;
-                    }
-                } else {
-                    msgBox.setText(QString(tr("DLC already installed:") + "\n" + addonDirPath +
-                                           "\n\n" + tr("Would you like to overwrite?")));
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                    msgBox.setDefaultButton(QMessageBox::No);
-                    int result = msgBox.exec();
-                    if (result == QMessageBox::Yes) {
-                        game_update_path = addon_extract_path;
-                    } else {
-                        return;
-                    }
-                }
-            } else {
-                msgBox.setText(QString(tr("Game already installed") + "\n" + gameDirPath + "\n" +
-                                       tr("Would you like to overwrite?")));
-                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                msgBox.setDefaultButton(QMessageBox::No);
-                int result = msgBox.exec();
-                if (result == QMessageBox::Yes) {
-                    // Do nothing.
-                } else {
-                    return;
-                }
-            }
-        } else {
-            // Do nothing;
-            if (pkgType.contains("PATCH") || category == "ac") {
-                QMessageBox::information(
-                    this, tr("PKG Extraction"),
-                    tr("PKG is a patch or DLC, please install the game first!"));
-                return;
-            }
-            // what else?
-        }
-        if (!pkg.Extract(file, game_update_path, failreason)) {
-            QMessageBox::critical(this, tr("PKG ERROR"), QString::fromStdString(failreason));
-        } else {
-            int nfiles = pkg.GetNumberOfFiles();
-
-            if (nfiles > 0) {
-                QVector<int> indices;
-                for (int i = 0; i < nfiles; i++) {
-                    indices.append(i);
-                }
-
-                QProgressDialog dialog;
-                dialog.setWindowTitle(tr("PKG Extraction"));
-                dialog.setWindowModality(Qt::WindowModal);
-                QString extractmsg = QString(tr("Extracting PKG %1/%2")).arg(pkgNum).arg(nPkg);
-                dialog.setLabelText(extractmsg);
-                dialog.setAutoClose(true);
-                dialog.setRange(0, nfiles);
-
-                QFutureWatcher<void> futureWatcher;
-                connect(&futureWatcher, &QFutureWatcher<void>::finished, this, [=, this]() {
-                    if (pkgNum == nPkg) {
-                        QString path;
-                        Common::FS::PathToQString(path, game_install_dir);
-                        QMessageBox extractMsgBox(this);
-                        extractMsgBox.setWindowTitle(tr("Extraction Finished"));
-                        extractMsgBox.setText(
-                            QString(tr("Game successfully installed at %1")).arg(path));
-                        extractMsgBox.addButton(QMessageBox::Ok);
-                        extractMsgBox.setDefaultButton(QMessageBox::Ok);
-                        connect(&extractMsgBox, &QMessageBox::buttonClicked, this,
-                                [&](QAbstractButton* button) {
-                                    if (extractMsgBox.button(QMessageBox::Ok) == button) {
-                                        extractMsgBox.close();
-                                        emit ExtractionFinished();
-                                    }
-                                });
-                        extractMsgBox.exec();
-                    }
-                });
-                connect(&dialog, &QProgressDialog::canceled, [&]() { futureWatcher.cancel(); });
-                connect(&futureWatcher, &QFutureWatcher<void>::progressValueChanged, &dialog,
-                        &QProgressDialog::setValue);
-                futureWatcher.setFuture(
-                    QtConcurrent::map(indices, [&](int index) { pkg.ExtractFiles(index); }));
-                dialog.exec();
-            }
-        }
-    } else {
-        QMessageBox::critical(this, tr("PKG ERROR"),
-                              tr("File doesn't appear to be a valid PKG file"));
     }
 }
 
@@ -948,6 +1021,11 @@ void MainWindow::SetLastUsedTheme() {
         isIconBlack = false;
         SetUiIcons(false);
         break;
+    case Theme::Oled:
+        ui->setThemeOled->setChecked(true);
+        isIconBlack = false;
+        SetUiIcons(false);
+        break;
     }
 }
 
@@ -980,8 +1058,8 @@ QIcon MainWindow::RecolorIcon(const QIcon& icon, bool isWhite) {
 }
 
 void MainWindow::SetUiIcons(bool isWhite) {
-    ui->bootInstallPkgAct->setIcon(RecolorIcon(ui->bootInstallPkgAct->icon(), isWhite));
     ui->bootGameAct->setIcon(RecolorIcon(ui->bootGameAct->icon(), isWhite));
+    ui->shadFolderAct->setIcon(RecolorIcon(ui->shadFolderAct->icon(), isWhite));
     ui->exitAct->setIcon(RecolorIcon(ui->exitAct->icon(), isWhite));
 #ifdef ENABLE_UPDATER
     ui->updaterAct->setIcon(RecolorIcon(ui->updaterAct->icon(), isWhite));
@@ -1000,11 +1078,14 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
     ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
+    ui->restartButton->setIcon(RecolorIcon(ui->restartButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
+    ui->fullscreenButton->setIcon(RecolorIcon(ui->fullscreenButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
+    ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
-    ui->pkgViewerAct->setIcon(RecolorIcon(ui->pkgViewerAct->icon(), isWhite));
+    ui->trophyViewerAct->setIcon(RecolorIcon(ui->trophyViewerAct->icon(), isWhite));
     ui->configureAct->setIcon(RecolorIcon(ui->configureAct->icon(), isWhite));
     ui->addElfFolderAct->setIcon(RecolorIcon(ui->addElfFolderAct->icon(), isWhite));
 }

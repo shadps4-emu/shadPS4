@@ -54,10 +54,16 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::SetAttribute:
     case Opcode::SetTcsGenericAttribute:
     case Opcode::SetPatch:
+    case Opcode::StoreBufferU8:
+    case Opcode::StoreBufferU16:
     case Opcode::StoreBufferU32:
     case Opcode::StoreBufferU32x2:
     case Opcode::StoreBufferU32x3:
     case Opcode::StoreBufferU32x4:
+    case Opcode::StoreBufferF32:
+    case Opcode::StoreBufferF32x2:
+    case Opcode::StoreBufferF32x3:
+    case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferFormatF32:
     case Opcode::BufferAtomicIAdd32:
     case Opcode::BufferAtomicSMin32:
@@ -72,7 +78,6 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicSwap32:
     case Opcode::DataAppend:
     case Opcode::DataConsume:
-    case Opcode::WriteSharedU128:
     case Opcode::WriteSharedU64:
     case Opcode::WriteSharedU32:
     case Opcode::SharedAtomicIAdd32:

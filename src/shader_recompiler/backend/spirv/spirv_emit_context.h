@@ -8,7 +8,7 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/profile.h"
 
 namespace Shader::Backend::SPIRV {
@@ -37,14 +37,15 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, const Info& info,
+    explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
 
     Id Def(const IR::Value& value);
 
-    void DefineBufferOffsets();
+    void DefineBufferProperties();
     void DefineInterpolatedAttribs();
+    void DefineWorkgroupIndex();
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
@@ -132,7 +133,7 @@ public:
         return ConstantComposite(type, constituents);
     }
 
-    const Info& info;
+    Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage;
@@ -200,8 +201,10 @@ public:
     std::array<Id, 30> patches{};
 
     Id workgroup_id{};
+    Id num_workgroups_id{};
+    Id workgroup_index_id{};
     Id local_invocation_id{};
-    Id invocation_id{}; // for instanced geoshaders or output vertices within TCS patch
+    Id invocation_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
 
@@ -222,33 +225,46 @@ public:
         Id sampled_type;
         Id pointer_type;
         Id image_type;
+        AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
+    };
+
+    enum class BufferAlias : u32 {
+        U8,
+        U16,
+        U32,
+        F32,
+        NumAlias,
+    };
+
+    struct BufferSpv {
+        Id id;
+        Id pointer_type;
     };
 
     struct BufferDefinition {
-        Id id;
+        u32 binding;
+        BufferType buffer_type;
         Id offset;
         Id offset_dwords;
-        u32 binding;
-        const VectorIds* data_types;
-        Id pointer_type;
-    };
-    struct TextureBufferDefinition {
-        Id id;
-        Id coord_offset;
-        Id coord_shift;
-        u32 binding;
-        Id image_type;
-        Id result_type;
-        bool is_integer = false;
-        bool is_storage = false;
+        Id size;
+        Id size_shorts;
+        Id size_dwords;
+        std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
+
+        const BufferSpv& operator[](BufferAlias alias) const {
+            return aliases[u32(alias)];
+        }
+
+        BufferSpv& operator[](BufferAlias alias) {
+            return aliases[u32(alias)];
+        }
     };
 
     Bindings& binding;
+    boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
-    boost::container::small_vector<TextureBufferDefinition, 8> texture_buffers;
-    BufferDefinition srt_flatbuf;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 
@@ -270,6 +286,11 @@ public:
     std::array<SpirvAttribute, IR::NumParams> output_params{};
     std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
+    Id uf11_to_f32{};
+    Id f32_to_uf11{};
+    Id uf10_to_f32{};
+    Id f32_to_uf10{};
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
@@ -277,12 +298,20 @@ private:
     void DefineOutputs();
     void DefinePushDataBlock();
     void DefineBuffers();
-    void DefineTextureBuffers();
     void DefineImagesAndSamplers();
     void DefineSharedMemory();
+    void DefineFunctions();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output);
+
+    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
+                           Id data_type);
+
+    Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
+    Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
+
+    Id GetBufferSize(u32 sharp_idx);
 };
 
 } // namespace Shader::Backend::SPIRV

@@ -11,8 +11,7 @@
 
 namespace Shader::Optimization {
 
-void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
-                           Stage stage) {
+void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info) {
     auto& info = program.info;
 
     const auto& ForEachInstruction = [&](auto func) {
@@ -24,7 +23,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         }
     };
 
-    switch (stage) {
+    switch (program.info.stage) {
     case Stage::Local: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();

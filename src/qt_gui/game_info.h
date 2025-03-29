@@ -17,9 +17,13 @@ public:
     ~GameInfoClass();
     void GetGameInfo(QWidget* parent = nullptr);
     QVector<GameInfo> m_games;
+    QVector<GameInfo> m_games_backup;
 
     static bool CompareStrings(GameInfo& a, GameInfo& b) {
-        return a.name < b.name;
+        std::string name_a = a.name, name_b = b.name;
+        std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
+        std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
+        return name_a < name_b;
     }
 
     static GameInfo readGameInfo(const std::filesystem::path& filePath) {
@@ -30,6 +34,12 @@ public:
         game_update_path += "-UPDATE";
         if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
             sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
+        } else {
+            game_update_path = filePath;
+            game_update_path += "-patch";
+            if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
+                sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
+            }
         }
 
         PSF psf;

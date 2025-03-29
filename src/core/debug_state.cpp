@@ -17,6 +17,8 @@ using namespace DebugStateType;
 
 DebugStateImpl& DebugState = *Common::Singleton<DebugStateImpl>::Instance();
 
+bool DebugStateType::showing_debug_menu_bar = false;
+
 static ThreadID ThisThreadID() {
 #ifdef _WIN32
     return GetCurrentThreadId();

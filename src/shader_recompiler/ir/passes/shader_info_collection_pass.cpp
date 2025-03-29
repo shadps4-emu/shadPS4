@@ -5,7 +5,7 @@
 
 namespace Shader::Optimization {
 
-void Visit(Info& info, IR::Inst& inst) {
+void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU32:
@@ -50,12 +50,6 @@ void Visit(Info& info, IR::Inst& inst) {
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
-    case IR::Opcode::LoadBufferFormatF32:
-        info.has_texel_buffers = true;
-        break;
-    case IR::Opcode::StoreBufferFormatF32:
-        info.has_image_buffers = true;
-        break;
     case IR::Opcode::QuadShuffle:
         info.uses_group_quad = true;
         break;
@@ -80,7 +74,20 @@ void Visit(Info& info, IR::Inst& inst) {
         info.uses_lane_id = true;
         break;
     case IR::Opcode::ReadConst:
-        info.has_readconst = true;
+        if (!info.has_readconst) {
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .inline_cbuf = AmdGpu::Buffer::Null(),
+                .buffer_type = BufferType::ReadConstUbo,
+            });
+            info.has_readconst = true;
+        }
+        break;
+    case IR::Opcode::PackUfloat10_11_11:
+        info.uses_pack_10_11_11 = true;
+        break;
+    case IR::Opcode::UnpackUfloat10_11_11:
+        info.uses_unpack_10_11_11 = true;
         break;
     default:
         break;
@@ -88,10 +95,9 @@ void Visit(Info& info, IR::Inst& inst) {
 }
 
 void CollectShaderInfoPass(IR::Program& program) {
-    Info& info{program.info};
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(info, inst);
+            Visit(program.info, inst);
         }
     }
 }

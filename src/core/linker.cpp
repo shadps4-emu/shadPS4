@@ -52,7 +52,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
-void Linker::Execute() {
+void Linker::Execute(const std::vector<std::string> args) {
     if (Config::debugDump()) {
         DebugDump();
     }
@@ -101,7 +101,7 @@ void Linker::Execute() {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    main_thread.Run([this, module](std::stop_token) {
+    main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         LoadSharedLibraries();
 
@@ -109,6 +109,12 @@ void Linker::Execute() {
         EntryParams params{};
         params.argc = 1;
         params.argv[0] = "eboot.bin";
+        if (!args.empty()) {
+            params.argc = args.size() + 1;
+            for (int i = 0; i < args.size() && i < 32; i++) {
+                params.argv[i + 1] = args[i].c_str();
+            }
+        }
         params.entry_addr = module->GetEntryAddress();
         RunMainEntry(&params);
     });
@@ -131,6 +137,35 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
     return m_modules.size() - 1;
+}
+
+s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
+                               int* pRes) {
+    u32 handle = FindByName(path);
+    if (handle != -1) {
+        return handle;
+    }
+    handle = LoadModule(path, true);
+    if (handle == -1) {
+        return -1;
+    }
+    auto* module = GetModule(handle);
+    RelocateAnyImports(module);
+
+    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
+    if (module->tls.image_size != 0) {
+        AdvanceGenerationCounter();
+    }
+
+    // Retrieve and verify proc param according to libkernel.
+    u64* param = module->GetProcParam<u64*>();
+    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    s32 ret = module->Start(args, argp, param);
+    if (pRes) {
+        *pRes = ret;
+    }
+
+    return handle;
 }
 
 Module* Linker::FindByAddress(VAddr address) {

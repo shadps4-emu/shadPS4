@@ -32,10 +32,8 @@ OPCODE(EmitPrimitive,                                       Void,               
 // Shared memory operations
 OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
 OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
-OPCODE(LoadSharedU128,                                      U32x4,          U32,                                                                            )
 OPCODE(WriteSharedU32,                                      Void,           U32,            U32,                                                            )
 OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
-OPCODE(WriteSharedU128,                                     Void,           U32,            U32x4,                                                          )
 
 // Shared atomic operations
 OPCODE(SharedAtomicIAdd32,                                  U32,            U32,            U32,                                                            )
@@ -90,15 +88,27 @@ OPCODE(UndefU32,                                            U32,                
 OPCODE(UndefU64,                                            U64,                                                                                            )
 
 // Buffer operations
+OPCODE(LoadBufferU8,                                        U32,            Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferU16,                                       U32,            Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32,                                       U32,            Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32x2,                                     U32x2,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32x3,                                     U32x3,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32x4,                                     U32x4,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32,                                       F32,            Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x2,                                     F32x2,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x3,                                     F32x3,          Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferF32x4,                                     F32x4,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferFormatF32,                                 F32x4,          Opaque,         Opaque,                                                         )
+OPCODE(StoreBufferU8,                                       Void,           Opaque,         Opaque,         U32,                                            )
+OPCODE(StoreBufferU16,                                      Void,           Opaque,         Opaque,         U32,                                            )
 OPCODE(StoreBufferU32,                                      Void,           Opaque,         Opaque,         U32,                                            )
 OPCODE(StoreBufferU32x2,                                    Void,           Opaque,         Opaque,         U32x2,                                          )
 OPCODE(StoreBufferU32x3,                                    Void,           Opaque,         Opaque,         U32x3,                                          )
 OPCODE(StoreBufferU32x4,                                    Void,           Opaque,         Opaque,         U32x4,                                          )
+OPCODE(StoreBufferF32,                                      Void,           Opaque,         Opaque,         F32,                                            )
+OPCODE(StoreBufferF32x2,                                    Void,           Opaque,         Opaque,         F32x2,                                          )
+OPCODE(StoreBufferF32x3,                                    Void,           Opaque,         Opaque,         F32x3,                                          )
+OPCODE(StoreBufferF32x4,                                    Void,           Opaque,         Opaque,         F32x4,                                          )
 OPCODE(StoreBufferFormatF32,                                Void,           Opaque,         Opaque,         F32x4,                                          )
 
 // Buffer atomic operations
@@ -118,6 +128,7 @@ OPCODE(BufferAtomicSwap32,                                  U32,            Opaq
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
 OPCODE(CompositeConstructU32x3,                             U32x3,          U32,            U32,            U32,                                            )
 OPCODE(CompositeConstructU32x4,                             U32x4,          U32,            U32,            U32,            U32,                            )
+OPCODE(CompositeConstructU32x2x2,                           U32x4,          U32x2,          U32x2,                                                          )
 OPCODE(CompositeExtractU32x2,                               U32,            U32x2,          U32,                                                            )
 OPCODE(CompositeExtractU32x3,                               U32,            U32x3,          U32,                                                            )
 OPCODE(CompositeExtractU32x4,                               U32,            U32x4,          U32,                                                            )
@@ -142,6 +153,7 @@ OPCODE(CompositeShuffleF16x4,                               F16x4,          F16x
 OPCODE(CompositeConstructF32x2,                             F32x2,          F32,            F32,                                                            )
 OPCODE(CompositeConstructF32x3,                             F32x3,          F32,            F32,            F32,                                            )
 OPCODE(CompositeConstructF32x4,                             F32x4,          F32,            F32,            F32,            F32,                            )
+OPCODE(CompositeConstructF32x2x2,                           F32x4,          F32x2,          F32x2,                                                          )
 OPCODE(CompositeExtractF32x2,                               F32,            F32x2,          U32,                                                            )
 OPCODE(CompositeExtractF32x3,                               F32,            F32x3,          U32,                                                            )
 OPCODE(CompositeExtractF32x4,                               F32,            F32x4,          U32,                                                            )
@@ -180,13 +192,42 @@ OPCODE(BitCastU64F64,                                       U64,            F64,
 OPCODE(BitCastF16U16,                                       F16,            U16,                                                                            )
 OPCODE(BitCastF32U32,                                       F32,            U32,                                                                            )
 OPCODE(BitCastF64U64,                                       F64,            U64,                                                                            )
+
 OPCODE(PackUint2x32,                                        U64,            U32x2,                                                                          )
 OPCODE(UnpackUint2x32,                                      U32x2,          U64,                                                                            )
 OPCODE(PackFloat2x32,                                       F64,            F32x2,                                                                          )
-OPCODE(PackFloat2x16,                                       U32,            F16x2,                                                                          )
-OPCODE(UnpackFloat2x16,                                     F16x2,          U32,                                                                            )
+
+OPCODE(PackUnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackSnorm2x16,                                       U32,            F32x2,                                                                          )
+OPCODE(UnpackSnorm2x16,                                     F32x2,          U32,                                                                            )
+OPCODE(PackUint2x16,                                        U32,            F32x2,                                                                          )
+OPCODE(UnpackUint2x16,                                      F32x2,          U32,                                                                            )
+OPCODE(PackSint2x16,                                        U32,            F32x2,                                                                          )
+OPCODE(UnpackSint2x16,                                      F32x2,          U32,                                                                            )
 OPCODE(PackHalf2x16,                                        U32,            F32x2,                                                                          )
 OPCODE(UnpackHalf2x16,                                      F32x2,          U32,                                                                            )
+
+OPCODE(PackUnorm4x8,                                        U32,            F32x4,                                                                          )
+OPCODE(UnpackUnorm4x8,                                      F32x4,          U32,                                                                            )
+OPCODE(PackSnorm4x8,                                        U32,            F32x4,                                                                          )
+OPCODE(UnpackSnorm4x8,                                      F32x4,          U32,                                                                            )
+OPCODE(PackUint4x8,                                         U32,            F32x4,                                                                          )
+OPCODE(UnpackUint4x8,                                       F32x4,          U32,                                                                            )
+OPCODE(PackSint4x8,                                         U32,            F32x4,                                                                          )
+OPCODE(UnpackSint4x8,                                       F32x4,          U32,                                                                            )
+
+OPCODE(PackUfloat10_11_11,                                  U32,            F32x3,                                                                          )
+OPCODE(UnpackUfloat10_11_11,                                F32x3,          U32,                                                                            )
+
+OPCODE(PackUnorm2_10_10_10,                                 U32,            F32x4,                                                                          )
+OPCODE(UnpackUnorm2_10_10_10,                               F32x4,          U32,                                                                            )
+OPCODE(PackSnorm2_10_10_10,                                 U32,            F32x4,                                                                          )
+OPCODE(UnpackSnorm2_10_10_10,                               F32x4,          U32,                                                                            )
+OPCODE(PackUint2_10_10_10,                                  U32,            F32x4,                                                                          )
+OPCODE(UnpackUint2_10_10_10,                                F32x4,          U32,                                                                            )
+OPCODE(PackSint2_10_10_10,                                  U32,            F32x4,                                                                          )
+OPCODE(UnpackSint2_10_10_10,                                F32x4,          U32,                                                                            )
 
 // Floating-point operations
 OPCODE(FPAbs32,                                             F32,            F32,                                                                            )
@@ -321,7 +362,8 @@ OPCODE(SLessThanEqual,                                      U1,             U32,
 OPCODE(ULessThanEqual,                                      U1,             U32,            U32,                                                            )
 OPCODE(SGreaterThan,                                        U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThan,                                        U1,             U32,            U32,                                                            )
-OPCODE(INotEqual,                                           U1,             U32,            U32,                                                            )
+OPCODE(INotEqual32,                                         U1,             U32,            U32,                                                            )
+OPCODE(INotEqual64,                                         U1,             U64,            U64,                                                            )
 OPCODE(SGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 OPCODE(UGreaterThanEqual,                                   U1,             U32,            U32,                                                            )
 
@@ -373,6 +415,9 @@ OPCODE(ImageAtomicAnd32,                                    U32,            Opaq
 OPCODE(ImageAtomicOr32,                                     U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicXor32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicExchange32,                               U32,            Opaque,         Opaque,         U32,                                            )
+
+// Cube operations - optional, usable if profile.supports_native_cube_calc
+OPCODE(CubeFaceIndex,                                       F32,            F32x3,                                                                          )
 
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )

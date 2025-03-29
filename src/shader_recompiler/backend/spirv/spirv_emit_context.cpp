@@ -5,7 +5,6 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
-#include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/types.h"
 
@@ -51,6 +50,8 @@ static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
         return 3u;
     case AmdGpu::PrimitiveType::AdjTriangleList:
         return 6u;
+    case AmdGpu::PrimitiveType::AdjLineList:
+        return 4u;
     default:
         UNREACHABLE();
     }
@@ -65,17 +66,17 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 
 } // Anonymous namespace
 
-EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_,
-                         const Info& info_, Bindings& binding_)
+EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_, Info& info_,
+                         Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
-    DefineBuffers();
-    DefineTextureBuffers();
-    DefineImagesAndSamplers();
     DefineSharedMemory();
+    DefineBuffers();
+    DefineImagesAndSamplers();
+    DefineFunctions();
 }
 
 EmitContext::~EmitContext() = default;
@@ -107,6 +108,8 @@ Id EmitContext::Def(const IR::Value& value) {
 void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
+    U8 = Name(TypeUInt(8), "u8_id");
+    U16 = Name(TypeUInt(16), "u16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");
@@ -191,8 +194,30 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
 }
 
-void EmitContext::DefineBufferOffsets() {
-    for (BufferDefinition& buffer : buffers) {
+Id EmitContext::GetBufferSize(const u32 sharp_idx) {
+    const auto& srt_flatbuf = buffers.back();
+    ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+
+    const auto rsrc1{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
+    const auto rsrc2{
+        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 2)))};
+
+    const auto stride{OpBitFieldUExtract(U32[1], rsrc1, ConstU32(16u), ConstU32(14u))};
+    const auto num_records{rsrc2};
+
+    const auto stride_zero{OpIEqual(U1[1], stride, u32_zero_value)};
+    const auto stride_size{OpIMul(U32[1], num_records, stride)};
+    return OpSelect(U32[1], stride_zero, num_records, stride_size);
+}
+
+void EmitContext::DefineBufferProperties() {
+    for (u32 i = 0; i < buffers.size(); i++) {
+        BufferDefinition& buffer = buffers[i];
+        if (buffer.buffer_type != BufferType::Guest) {
+            continue;
+        }
         const u32 binding = buffer.binding;
         const u32 half = PushData::BufOffsetIndex + (binding >> 4);
         const u32 comp = (binding & 0xf) >> 2;
@@ -204,19 +229,22 @@ void EmitContext::DefineBufferOffsets() {
         Name(buffer.offset, fmt::format("buf{}_off", binding));
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
-    }
-    for (TextureBufferDefinition& tex_buffer : texture_buffers) {
-        const u32 binding = tex_buffer.binding;
-        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-        const u32 comp = (binding & 0xf) >> 2;
-        const u32 offset = (binding & 0x3) << 3;
-        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                   push_data_block, ConstU32(half), ConstU32(comp))};
-        const Id value{OpLoad(U32[1], ptr)};
-        tex_buffer.coord_offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(6U));
-        tex_buffer.coord_shift =
-            OpBitFieldUExtract(U32[1], value, ConstU32(offset + 6U), ConstU32(2U));
-        Name(tex_buffer.coord_offset, fmt::format("texbuf{}_off", binding));
+
+        // Only need to load size if performing bounds checks and the buffer is both guest and not
+        // inline.
+        if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
+            const BufferResource& desc = info.buffers[i];
+            if (desc.sharp_idx == std::numeric_limits<u32>::max()) {
+                buffer.size = ConstU32(desc.inline_cbuf.GetSize());
+            } else {
+                buffer.size = GetBufferSize(desc.sharp_idx);
+            }
+            Name(buffer.size, fmt::format("buf{}_size", binding));
+            buffer.size_shorts = OpShiftRightLogical(U32[1], buffer.size, ConstU32(1U));
+            Name(buffer.size_shorts, fmt::format("buf{}_short_size", binding));
+            buffer.size_dwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(2U));
+            Name(buffer.size_dwords, fmt::format("buf{}_dword_size", binding));
+        }
     }
 }
 
@@ -224,8 +252,7 @@ void EmitContext::DefineInterpolatedAttribs() {
     if (!profile.needs_manual_interpolation) {
         return;
     }
-    // Iterate all input attributes, load them and manually interpolate with barycentric
-    // coordinates.
+    // Iterate all input attributes, load them and manually interpolate.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
         const u32 semantic = input.param_index;
@@ -248,6 +275,20 @@ void EmitContext::DefineInterpolatedAttribs() {
         Name(params.id, fmt::format("fs_in_attr{}", semantic));
         params.is_loaded = true;
     }
+}
+
+void EmitContext::DefineWorkgroupIndex() {
+    const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
+    const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
+    const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
+    const Id workgroup_z{OpCompositeExtract(U32[1], workgroup_id_val, 2)};
+    const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
+    const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
+    const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
+    workgroup_index_id =
+        OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
+               OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
+    Name(workgroup_index_id, "workgroup_index");
 }
 
 Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
@@ -318,9 +359,16 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment:
-        frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
-        frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        front_facing = DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+            frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+        }
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.loads.Get(IR::Attribute::IsFrontFace)) {
+            front_facing =
+                DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        }
         if (profile.needs_manual_interpolation) {
             gl_bary_coord_id =
                 DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
@@ -329,7 +377,7 @@ void EmitContext::DefineInputs() {
             const auto& input = runtime_info.fs_info.inputs[i];
             const u32 semantic = input.param_index;
             ASSERT(semantic < IR::NumParams);
-            if (input.is_default && !input.is_flat) {
+            if (input.IsDefault()) {
                 input_params[semantic] = {
                     MakeDefaultValue(*this, input.default_value), input_f32, F32[1], 4, false, true,
                 };
@@ -355,9 +403,19 @@ void EmitContext::DefineInputs() {
         }
         break;
     case LogicalStage::Compute:
-        workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
-        local_invocation_id =
-            DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
+            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+            workgroup_id =
+                DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
+            num_workgroups_id =
+                DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
+            local_invocation_id =
+                DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
         break;
     case LogicalStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
@@ -395,7 +453,7 @@ void EmitContext::DefineInputs() {
             DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = runtime_info.hs_info.ls_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -409,7 +467,7 @@ void EmitContext::DefineInputs() {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -418,7 +476,7 @@ void EmitContext::DefineInputs() {
             Name(input_attr_array, "in_attrs");
         }
 
-        u32 patch_base_location = runtime_info.vs_info.hs_output_cp_stride >> 4;
+        const u32 patch_base_location = num_attrs;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
@@ -453,7 +511,7 @@ void EmitContext::DefineOutputs() {
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
         if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
-            const u32 num_attrs = runtime_info.ls_info.ls_stride >> 4;
+            const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
                 output_attr_array = DefineOutput(type, 0);
@@ -488,7 +546,7 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
-        const u32 num_attrs = runtime_info.hs_info.hs_output_cp_stride >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what glslang does)
@@ -498,7 +556,7 @@ void EmitContext::DefineOutputs() {
             Name(output_attr_array, "out_attrs");
         }
 
-        u32 patch_base_location = runtime_info.hs_info.hs_output_cp_stride >> 4;
+        const u32 patch_base_location = num_attrs;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
@@ -568,128 +626,117 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(
-        TypeStruct(U32[1], U32[1], U32[4], U32[4], U32[4], U32[4], U32[4], U32[4]), "AuxData")};
+    const Id struct_type{Name(TypeStruct(U32[1], U32[1], F32[1], F32[1], F32[1], F32[1], U32[4],
+                                         U32[4], U32[4], U32[4], U32[4], U32[4]),
+                              "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
-    MemberName(struct_type, 0, "sr0");
-    MemberName(struct_type, 1, "sr1");
-    MemberName(struct_type, 2, "buf_offsets0");
-    MemberName(struct_type, 3, "buf_offsets1");
-    MemberName(struct_type, 4, "ud_regs0");
-    MemberName(struct_type, 5, "ud_regs1");
-    MemberName(struct_type, 6, "ud_regs2");
-    MemberName(struct_type, 7, "ud_regs3");
-    MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-    MemberDecorate(struct_type, 1, spv::Decoration::Offset, 4U);
-    MemberDecorate(struct_type, 2, spv::Decoration::Offset, 8U);
-    MemberDecorate(struct_type, 3, spv::Decoration::Offset, 24U);
-    MemberDecorate(struct_type, 4, spv::Decoration::Offset, 40U);
-    MemberDecorate(struct_type, 5, spv::Decoration::Offset, 56U);
-    MemberDecorate(struct_type, 6, spv::Decoration::Offset, 72U);
-    MemberDecorate(struct_type, 7, spv::Decoration::Offset, 88U);
+    MemberName(struct_type, PushData::Step0Index, "sr0");
+    MemberName(struct_type, PushData::Step1Index, "sr1");
+    MemberName(struct_type, PushData::XOffsetIndex, "xoffset");
+    MemberName(struct_type, PushData::YOffsetIndex, "yoffset");
+    MemberName(struct_type, PushData::XScaleIndex, "xscale");
+    MemberName(struct_type, PushData::YScaleIndex, "yscale");
+    MemberName(struct_type, PushData::UdRegsIndex + 0, "ud_regs0");
+    MemberName(struct_type, PushData::UdRegsIndex + 1, "ud_regs1");
+    MemberName(struct_type, PushData::UdRegsIndex + 2, "ud_regs2");
+    MemberName(struct_type, PushData::UdRegsIndex + 3, "ud_regs3");
+    MemberName(struct_type, PushData::BufOffsetIndex + 0, "buf_offsets0");
+    MemberName(struct_type, PushData::BufOffsetIndex + 1, "buf_offsets1");
+    MemberDecorate(struct_type, PushData::Step0Index, spv::Decoration::Offset, 0U);
+    MemberDecorate(struct_type, PushData::Step1Index, spv::Decoration::Offset, 4U);
+    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 12U);
+    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 16U);
+    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 20U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 24U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 40U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 56U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 72U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 88U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 104U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
 }
 
-void EmitContext::DefineBuffers() {
-    boost::container::small_vector<Id, 8> type_ids;
-    const auto define_struct = [&](Id record_array_type, bool is_instance_data,
-                                   std::optional<std::string_view> explicit_name = {}) {
-        const Id struct_type{TypeStruct(record_array_type)};
-        if (std::ranges::find(type_ids, record_array_type.value, &Id::value) != type_ids.end()) {
-            return struct_type;
-        }
-        Decorate(record_array_type, spv::Decoration::ArrayStride, 4);
-        auto name = is_instance_data ? fmt::format("{}_instance_data_f32", stage)
-                                     : fmt::format("{}_cbuf_block_f32", stage);
-        name = explicit_name.value_or(name);
-        Name(struct_type, name);
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
+                                                 BufferType buffer_type, Id data_type) {
+    // Define array type.
+    const Id max_num_items = ConstU32(u32(profile.max_ubo_size) >> elem_shift);
+    const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
+                                          : TypeArray(data_type, max_num_items)};
+    // Define block struct type. Don't perform decorations twice on the same Id.
+    const Id struct_type{TypeStruct(record_array_type)};
+    if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) ==
+        buf_type_ids.end()) {
+        Decorate(record_array_type, spv::Decoration::ArrayStride, 1 << elem_shift);
         Decorate(struct_type, spv::Decoration::Block);
         MemberName(struct_type, 0, "data");
         MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
-        type_ids.push_back(record_array_type);
-        return struct_type;
-    };
-
-    if (info.has_readconst) {
-        const Id data_type = U32[1];
-        const auto storage_class = spv::StorageClass::Uniform;
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id record_array_type{
-            TypeArray(U32[1], ConstU32(static_cast<u32>(info.flattened_ud_buf.size())))};
-
-        const Id struct_type{define_struct(record_array_type, false, "srt_flatbuf_ty")};
-
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        buf_type_ids.push_back(record_array_type);
+    }
+    // Define buffer binding interface.
+    const auto storage_class =
+        is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+    const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
+    const Id pointer_type = TypePointer(storage_class, data_type);
+    const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
+    Decorate(id, spv::Decoration::Binding, binding.unified);
+    Decorate(id, spv::Decoration::DescriptorSet, 0U);
+    if (is_storage && !is_written) {
+        Decorate(id, spv::Decoration::NonWritable);
+    }
+    switch (buffer_type) {
+    case Shader::BufferType::GdsBuffer:
+        Name(id, "gds_buffer");
+        break;
+    case Shader::BufferType::ReadConstUbo:
         Name(id, "srt_flatbuf_ubo");
-
-        srt_flatbuf = {
-            .id = id,
-            .binding = binding.buffer++,
-            .pointer_type = pointer_type,
-        };
-        interfaces.push_back(id);
+        break;
+    case Shader::BufferType::SharedMemory:
+        Name(id, "ssbo_shmem");
+        break;
+    default:
+        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "ubo", binding.buffer));
+        break;
     }
+    interfaces.push_back(id);
+    return {id, pointer_type};
+};
 
+void EmitContext::DefineBuffers() {
+    if (!profile.supports_robust_buffer_access && !info.has_readconst) {
+        // In case ReadConstUbo has not already been bound by IR and is needed
+        // to query buffer sizes, bind it now.
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .inline_cbuf = AmdGpu::Buffer::Null(),
+            .buffer_type = BufferType::ReadConstUbo,
+        });
+    }
     for (const auto& desc : info.buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(sharp);
-        const u32 array_size = sharp.NumDwords() != 0 ? sharp.NumDwords() : MaxUboDwords;
-        const auto* data_types = True(desc.used_types & IR::Type::F32) ? &F32 : &U32;
-        const Id data_type = (*data_types)[1];
-        const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                              : TypeArray(data_type, ConstU32(array_size))};
-        const Id struct_type{define_struct(record_array_type, desc.is_instance_data)};
+        const auto buf_sharp = desc.GetSharp(info);
+        const bool is_storage = desc.IsStorage(buf_sharp, profile);
 
-        const auto storage_class =
-            is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
-        const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
-        const Id pointer_type = TypePointer(storage_class, data_type);
-        const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        if (is_storage && !desc.is_written) {
-            Decorate(id, spv::Decoration::NonWritable);
+        // Define aliases depending on the shader usage.
+        auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        if (True(desc.used_types & IR::Type::U32)) {
+            spv_buffer[BufferAlias::U32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
         }
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "cbuf", desc.sharp_idx));
-
-        buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .data_types = data_types,
-            .pointer_type = pointer_type,
-        });
-        interfaces.push_back(id);
-    }
-}
-
-void EmitContext::DefineTextureBuffers() {
-    for (const auto& desc : info.texture_buffers) {
-        const auto sharp = desc.GetSharp(info);
-        const auto nfmt = sharp.GetNumberFmt();
-        const bool is_integer = AmdGpu::IsInteger(nfmt);
-        const VectorIds& sampled_type{GetAttributeType(*this, nfmt)};
-        const u32 sampled = desc.is_written ? 2 : 1;
-        const Id image_type{TypeImage(sampled_type[1], spv::Dim::Buffer, false, false, false,
-                                      sampled, spv::ImageFormat::Unknown)};
-        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
-        const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
-        Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}", desc.is_written ? "imgbuf" : "texbuf", desc.sharp_idx));
-        texture_buffers.push_back({
-            .id = id,
-            .binding = binding.buffer++,
-            .image_type = image_type,
-            .result_type = sampled_type[4],
-            .is_integer = is_integer,
-            .is_storage = desc.is_written,
-        });
-        interfaces.push_back(id);
+        if (True(desc.used_types & IR::Type::F32)) {
+            spv_buffer[BufferAlias::F32] =
+                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
+        }
+        if (True(desc.used_types & IR::Type::U16)) {
+            spv_buffer[BufferAlias::U16] =
+                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
+        }
+        if (True(desc.used_types & IR::Type::U8)) {
+            spv_buffer[BufferAlias::U8] =
+                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+        }
+        ++binding.unified;
     }
 }
 
@@ -773,8 +820,8 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
-    const auto type = image.GetBoundType();
-    const u32 sampled = desc.IsStorage(image) ? 2 : 1;
+    const auto type = image.GetViewType(desc.is_array);
+    const u32 sampled = desc.is_written ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
@@ -788,9 +835,6 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, true, sampled, format);
     case AmdGpu::ImageType::Color3D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
-    case AmdGpu::ImageType::Cube:
-        return ctx.TypeImage(sampled_type, spv::Dim::Cube, false, desc.is_array, false, sampled,
-                             format);
     default:
         break;
     }
@@ -802,7 +846,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const auto sharp = image_desc.GetSharp(info);
         const auto nfmt = sharp.GetNumberFmt();
         const bool is_integer = AmdGpu::IsInteger(nfmt);
-        const bool is_storage = image_desc.IsStorage(sharp);
+        const bool is_storage = image_desc.is_written;
         const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
@@ -817,6 +861,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .sampled_type = is_storage ? sampled_type : TypeSampledImage(image_type),
             .pointer_type = pointer_type,
             .image_type = image_type,
+            .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
         });
@@ -841,20 +886,131 @@ void EmitContext::DefineImagesAndSamplers() {
 }
 
 void EmitContext::DefineSharedMemory() {
-    static constexpr size_t DefaultSharedMemSize = 2_KB;
     if (!info.uses_shared) {
         return;
     }
-    u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    if (shared_memory_size == 0) {
-        shared_memory_size = DefaultSharedMemSize;
-    }
+    ASSERT(info.stage == Stage::Compute);
+    const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
     shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
+    Name(shared_memory_u32, "shared_mem");
     interfaces.push_back(shared_memory_u32);
+}
+
+Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/util/format_r11g11b10f.h
+    const auto func_type{TypeFunction(U32[1], F32[1])};
+    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto value{OpFunctionParameter(F32[1])};
+    Name(func, name);
+    AddLabel();
+
+    const auto raw_value{OpBitcast(U32[1], value)};
+    const auto exponent{
+        OpBitcast(S32[1], OpBitFieldSExtract(U32[1], raw_value, ConstU32(23U), ConstU32(8U)))};
+    const auto sign{OpBitFieldUExtract(U32[1], raw_value, ConstU32(31U), ConstU32(1U))};
+
+    const auto is_zero{OpLogicalOr(U1[1], OpIEqual(U1[1], raw_value, ConstU32(0U)),
+                                   OpIEqual(U1[1], sign, ConstU32(1U)))};
+    const auto is_nan{OpIsNan(U1[1], value)};
+    const auto is_inf{OpIsInf(U1[1], value)};
+    const auto is_denorm{OpSLessThanEqual(U1[1], exponent, ConstS32(-15))};
+
+    const auto denorm_mantissa{OpConvertFToU(
+        U32[1],
+        OpRoundEven(F32[1], OpFMul(F32[1], value,
+                                   ConstF32(static_cast<float>(1 << (mantissa_bits + 14))))))};
+    const auto denorm_overflow{
+        OpINotEqual(U1[1], OpShiftRightLogical(U32[1], denorm_mantissa, ConstU32(mantissa_bits)),
+                    ConstU32(0U))};
+    const auto denorm{
+        OpSelect(U32[1], denorm_overflow, ConstU32(1U << mantissa_bits), denorm_mantissa)};
+
+    const auto norm_mantissa{OpConvertFToU(
+        U32[1],
+        OpRoundEven(F32[1],
+                    OpLdexp(F32[1], value,
+                            OpISub(S32[1], ConstS32(static_cast<int>(mantissa_bits)), exponent))))};
+    const auto norm_overflow{
+        OpUGreaterThanEqual(U1[1], norm_mantissa, ConstU32(2U << mantissa_bits))};
+    const auto norm_final_mantissa{OpBitwiseAnd(
+        U32[1],
+        OpSelect(U32[1], norm_overflow, OpShiftRightLogical(U32[1], norm_mantissa, ConstU32(1U)),
+                 norm_mantissa),
+        ConstU32((1U << mantissa_bits) - 1))};
+    const auto norm_final_exponent{OpBitcast(
+        U32[1],
+        OpIAdd(S32[1],
+               OpSelect(S32[1], norm_overflow, OpIAdd(S32[1], exponent, ConstS32(1)), exponent),
+               ConstS32(15)))};
+    const auto norm{OpBitFieldInsert(U32[1], norm_final_mantissa, norm_final_exponent,
+                                     ConstU32(mantissa_bits), ConstU32(5U))};
+
+    const auto result{OpSelect(U32[1], is_zero, ConstU32(0U),
+                               OpSelect(U32[1], is_nan, ConstU32(31u << mantissa_bits | 1U),
+                                        OpSelect(U32[1], is_inf, ConstU32(31U << mantissa_bits),
+                                                 OpSelect(U32[1], is_denorm, denorm, norm))))};
+
+    OpReturnValue(result);
+    OpFunctionEnd();
+    return func;
+}
+
+Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_view name) {
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/util/format_r11g11b10f.h
+    const auto func_type{TypeFunction(F32[1], U32[1])};
+    const auto func{OpFunction(F32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto value{OpFunctionParameter(U32[1])};
+    Name(func, name);
+    AddLabel();
+
+    const auto raw_mantissa{
+        OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
+    const auto mantissa{OpConvertUToF(F32[1], raw_mantissa)};
+    const auto exponent{OpBitcast(
+        S32[1], OpBitFieldSExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U)))};
+
+    const auto is_exp_neg_one{OpIEqual(U1[1], exponent, ConstS32(-1))};
+    const auto is_exp_zero{OpIEqual(U1[1], exponent, ConstS32(0))};
+
+    const auto is_zero{OpIEqual(U1[1], value, ConstU32(0u))};
+    const auto is_nan{
+        OpLogicalAnd(U1[1], is_exp_neg_one, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+    const auto is_inf{
+        OpLogicalAnd(U1[1], is_exp_neg_one, OpIEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+    const auto is_denorm{
+        OpLogicalAnd(U1[1], is_exp_zero, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
+
+    const auto denorm{OpFMul(F32[1], mantissa, ConstF32(1.f / (1 << 20)))};
+    const auto norm{OpLdexp(
+        F32[1],
+        OpFAdd(F32[1],
+               OpFMul(F32[1], mantissa, ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
+               ConstF32(1.f)),
+        exponent)};
+
+    const auto result{OpSelect(F32[1], is_zero, ConstF32(0.f),
+                               OpSelect(F32[1], is_nan, ConstF32(NAN),
+                                        OpSelect(F32[1], is_inf, ConstF32(INFINITY),
+                                                 OpSelect(F32[1], is_denorm, denorm, norm))))};
+
+    OpReturnValue(result);
+    OpFunctionEnd();
+    return func;
+}
+
+void EmitContext::DefineFunctions() {
+    if (info.uses_pack_10_11_11) {
+        f32_to_uf11 = DefineFloat32ToUfloatM5(6, "f32_to_uf11");
+        f32_to_uf10 = DefineFloat32ToUfloatM5(5, "f32_to_uf10");
+    }
+    if (info.uses_unpack_10_11_11) {
+        uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
+        uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
+    }
 }
 
 } // namespace Shader::Backend::SPIRV

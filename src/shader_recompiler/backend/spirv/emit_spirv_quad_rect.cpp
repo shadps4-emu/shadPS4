@@ -13,8 +13,7 @@ constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
     explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
-        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_}, inputs{fs_info_.num_inputs},
-          outputs{fs_info_.num_inputs} {
+        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_} {
         void_id = TypeVoid();
         bool_id = TypeBool();
         float_id = TypeFloat(32);
@@ -253,11 +252,16 @@ private:
         } else {
             gl_per_vertex = AddOutput(gl_per_vertex_type);
         }
+        outputs.reserve(fs_info.num_inputs);
         for (int i = 0; i < fs_info.num_inputs; i++) {
-            outputs[i] = AddOutput(model == spv::ExecutionModel::TessellationControl
-                                       ? TypeArray(vec4_id, Int(4))
-                                       : vec4_id);
-            Decorate(outputs[i], spv::Decoration::Location, fs_info.inputs[i].param_index);
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
+            outputs.emplace_back(AddOutput(model == spv::ExecutionModel::TessellationControl
+                                               ? TypeArray(vec4_id, Int(4))
+                                               : vec4_id));
+            Decorate(outputs.back(), spv::Decoration::Location, input.param_index);
         }
     }
 
@@ -272,9 +276,14 @@ private:
         const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 32U))};
         gl_in = AddInput(gl_per_vertex_array);
         const Id float_arr{TypeArray(vec4_id, Int(32))};
+        inputs.reserve(fs_info.num_inputs);
         for (int i = 0; i < fs_info.num_inputs; i++) {
-            inputs[i] = AddInput(float_arr);
-            Decorate(inputs[i], spv::Decoration::Location, fs_info.inputs[i].param_index);
+            const auto& input = fs_info.inputs[i];
+            if (input.IsDefault()) {
+                continue;
+            }
+            inputs.emplace_back(AddInput(float_arr));
+            Decorate(inputs.back(), spv::Decoration::Location, input.param_index);
         }
     }
 

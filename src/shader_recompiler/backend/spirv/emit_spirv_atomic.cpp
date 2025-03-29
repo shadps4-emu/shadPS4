@@ -21,14 +21,41 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
+Id BufferAtomicU32BoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto emit_func) {
+    if (Sirit::ValidId(buffer_size)) {
+        // Bounds checking enabled, wrap in a conditional branch to make sure that
+        // the atomic is not mistakenly executed when the index is out of bounds.
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer_size);
+        const Id ib_label = ctx.OpLabel();
+        const Id oob_label = ctx.OpLabel();
+        const Id end_label = ctx.OpLabel();
+        ctx.OpBranchConditional(in_bounds, ib_label, oob_label);
+        ctx.AddLabel(ib_label);
+        const Id ib_result = emit_func();
+        ctx.OpBranch(end_label);
+        ctx.AddLabel(oob_label);
+        const Id oob_result = ctx.u32_zero_value;
+        ctx.OpBranch(end_label);
+        ctx.AddLabel(end_label);
+        return ctx.OpPhi(ctx.U32[1], ib_result, ib_label, oob_result, oob_label);
+    }
+    // Bounds checking not enabled, just perform the atomic operation.
+    return emit_func();
+}
+
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    const auto& buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    }
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index);
+    const auto [id, pointer_type] = buffer[EmitContext::BufferAlias::U32];
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+    return BufferAtomicU32BoundsCheck(ctx, index, buffer.size_dwords, [&] {
+        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+    });
 }
 
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
@@ -165,17 +192,17 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
 }
 
 Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    auto& buffer = ctx.buffers[binding];
-    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value,
-                                     ctx.ConstU32(gds_addr));
+    const auto& buffer = ctx.buffers[binding];
+    const auto [id, pointer_type] = buffer[EmitContext::BufferAlias::U32];
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return ctx.OpAtomicIIncrement(ctx.U32[1], ptr, scope, semantics);
 }
 
 Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    auto& buffer = ctx.buffers[binding];
-    const Id ptr = ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value,
-                                     ctx.ConstU32(gds_addr));
+    const auto& buffer = ctx.buffers[binding];
+    const auto [id, pointer_type] = buffer[EmitContext::BufferAlias::U32];
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return ctx.OpAtomicIDecrement(ctx.U32[1], ptr, scope, semantics);
 }

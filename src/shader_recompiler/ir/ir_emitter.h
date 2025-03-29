@@ -109,12 +109,22 @@ public:
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
-    [[nodiscard]] Value LoadBuffer(int num_dwords, const Value& handle, const Value& address,
-                                   BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] Value LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
+                                      BufferInstInfo info);
+    [[nodiscard]] Value LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
+                                      BufferInstInfo info);
     [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
-    void StoreBuffer(int num_dwords, const Value& handle, const Value& address, const Value& data,
-                     BufferInstInfo info);
+    void StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+                       BufferInstInfo info);
+    void StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+                        BufferInstInfo info);
+    void StoreBufferU32(int num_dwords, const Value& handle, const Value& address,
+                        const Value& data, BufferInstInfo info);
+    void StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
+                        const Value& data, BufferInstInfo info);
     void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
                            BufferInstInfo info);
 
@@ -167,14 +177,19 @@ public:
 
     [[nodiscard]] U64 PackUint2x32(const Value& vector);
     [[nodiscard]] Value UnpackUint2x32(const U64& value);
-
     [[nodiscard]] F64 PackFloat2x32(const Value& vector);
 
-    [[nodiscard]] U32 PackFloat2x16(const Value& vector);
-    [[nodiscard]] Value UnpackFloat2x16(const U32& value);
+    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack2x16(AmdGpu::NumberFormat number_format, const U32& value);
 
-    [[nodiscard]] U32 PackHalf2x16(const Value& vector);
-    [[nodiscard]] Value UnpackHalf2x16(const U32& value);
+    [[nodiscard]] U32 Pack4x8(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack4x8(AmdGpu::NumberFormat number_format, const U32& value);
+
+    [[nodiscard]] U32 Pack10_11_11(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack10_11_11(AmdGpu::NumberFormat number_format, const U32& value);
+
+    [[nodiscard]] U32 Pack2_10_10_10(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] Value Unpack2_10_10_10(AmdGpu::NumberFormat number_format, const U32& value);
 
     [[nodiscard]] F32F64 FPAdd(const F32F64& a, const F32F64& b);
     [[nodiscard]] F32F64 FPSub(const F32F64& a, const F32F64& b);
@@ -258,7 +273,7 @@ public:
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
     [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
     [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);
-    [[nodiscard]] U1 INotEqual(const U32& lhs, const U32& rhs);
+    [[nodiscard]] U1 INotEqual(const U32U64& lhs, const U32U64& rhs);
     [[nodiscard]] U1 IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
 
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
@@ -325,8 +340,6 @@ public:
                                                    const Value& offset, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
-                                            const U1& skip_mips);
-    [[nodiscard]] Value ImageQueryDimension(const Value& handle, const U32& lod,
                                             const U1& skip_mips, TextureInstInfo info);
 
     [[nodiscard]] Value ImageQueryLod(const Value& handle, const Value& coords,
@@ -343,6 +356,8 @@ public:
                                   const U32& multisampling, TextureInstInfo info);
     void ImageWrite(const Value& handle, const Value& coords, const U32& lod,
                     const U32& multisampling, const Value& color, TextureInstInfo info);
+
+    [[nodiscard]] F32 CubeFaceIndex(const Value& cube_coords);
 
     void EmitVertex();
     void EmitPrimitive();

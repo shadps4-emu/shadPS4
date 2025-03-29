@@ -164,6 +164,8 @@ public:
         return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
     }
 
+    u64 ClampRangeSize(VAddr virtual_addr, u64 size);
+
     bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
@@ -196,7 +198,9 @@ public:
 
     int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
-    int Protect(VAddr addr, size_t size, MemoryProt prot);
+    s32 Protect(VAddr addr, size_t size, MemoryProt prot);
+
+    s64 ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t size, MemoryProt prot);
 
     int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 
@@ -252,7 +256,9 @@ private:
 
     DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
 
-    s32 UnmapMemoryImpl(VAddr virtual_addr, size_t size);
+    u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
+
+    s32 UnmapMemoryImpl(VAddr virtual_addr, u64 size);
 
 private:
     AddressSpace impl;

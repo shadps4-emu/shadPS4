@@ -160,31 +160,42 @@ void EmitGetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+using BufferAlias = EmitContext::BufferAlias;
+
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
-    u32 flatbuf_off_dw = inst->Flags<u32>();
-    ASSERT(ctx.srt_flatbuf.binding >= 0);
-    ASSERT(flatbuf_off_dw > 0);
-    Id index = ctx.ConstU32(flatbuf_off_dw);
-    auto& buffer = ctx.srt_flatbuf;
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
+    const u32 flatbuf_off_dw = inst->Flags<u32>();
+    const auto& srt_flatbuf = ctx.buffers.back();
+    ASSERT(srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0 &&
+           srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+    const Id ptr{
+        ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
     return ctx.OpLoad(ctx.U32[1], ptr);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    auto& buffer = ctx.buffers[handle];
+    const auto& buffer = ctx.buffers[handle];
     index = ctx.OpIAdd(ctx.U32[1], index, buffer.offset_dwords);
-    const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-    return ctx.OpLoad(buffer.data_types->Get(1), ptr);
+    const auto [id, pointer_type] = buffer[BufferAlias::U32];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    const Id result{ctx.OpLoad(ctx.U32[1], ptr)};
+
+    if (Sirit::ValidId(buffer.size_dwords)) {
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer.size_dwords);
+        return ctx.OpSelect(ctx.U32[1], in_bounds, result, ctx.u32_zero_value);
+    } else {
+        return result;
+    }
 }
 
 Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
+    const auto index{rate_idx == 0 ? PushData::Step0Index : PushData::Step1Index};
     return ctx.OpLoad(
         ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                      ctx.push_data_block,
-                                      rate_idx == 0 ? ctx.u32_zero_value : ctx.u32_one_value));
+                                      ctx.push_data_block, ctx.ConstU32(index)));
 }
 
-Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
@@ -285,6 +296,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return EmitReadStepRate(ctx, 0);
     case IR::Attribute::InstanceId1:
         return EmitReadStepRate(ctx, 1);
+    case IR::Attribute::WorkgroupIndex:
+        return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
     case IR::Attribute::LocalInvocationId:
@@ -397,99 +410,235 @@ void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
 }
 
 template <u32 N>
-static Id EmitLoadBufferU32xN(EmitContext& ctx, u32 handle, Id address) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-        return ctx.OpLoad(buffer.data_types->Get(1), ptr);
-    } else {
-        boost::container::static_vector<Id, N> ids;
-        for (u32 i = 0; i < N; i++) {
-            const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr{
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i)};
-            ids.push_back(ctx.OpLoad(buffer.data_types->Get(1), ptr));
+static Id EmitLoadBufferBoundsCheck(EmitContext& ctx, Id index, Id buffer_size, Id result,
+                                    bool is_float) {
+    if (Sirit::ValidId(buffer_size)) {
+        // Bounds checking enabled, wrap in a select.
+        const auto result_type = is_float ? ctx.F32[N] : ctx.U32[N];
+        auto compare_index = index;
+        auto zero_value = is_float ? ctx.f32_zero_value : ctx.u32_zero_value;
+        if (N > 1) {
+            compare_index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(N - 1));
+            std::array<Id, N> zero_ids;
+            zero_ids.fill(zero_value);
+            zero_value = ctx.ConstantComposite(result_type, zero_ids);
         }
-        return ctx.OpCompositeConstruct(buffer.data_types->Get(N), ids);
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], compare_index, buffer_size);
+        return ctx.OpSelect(result_type, in_bounds, result, zero_value);
     }
+    // Bounds checking not enabled, just return the plain value.
+    return result;
 }
 
-Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<1>(ctx, handle, address);
+template <u32 N, BufferAlias alias>
+static Id EmitLoadBufferB32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto flags = inst->Flags<IR::BufferInstInfo>();
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const auto& data_types = alias == BufferAlias::U32 ? ctx.U32 : ctx.F32;
+    const auto [id, pointer_type] = spv_buffer[alias];
+
+    boost::container::static_vector<Id, N> ids;
+    for (u32 i = 0; i < N; i++) {
+        const Id index_i = i == 0 ? index : ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
+        const Id ptr_i = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
+        const Id result_i = ctx.OpLoad(data_types[1], ptr_i);
+        if (!flags.typed) {
+            // Untyped loads have bounds checking per-component.
+            ids.push_back(EmitLoadBufferBoundsCheck<1>(ctx, index_i, spv_buffer.size_dwords,
+                                                       result_i, alias == BufferAlias::F32));
+        } else {
+            ids.push_back(result_i);
+        }
+    }
+
+    const Id result = N == 1 ? ids[0] : ctx.OpCompositeConstruct(data_types[N], ids);
+    if (flags.typed) {
+        // Typed loads have single bounds check for the whole load.
+        return EmitLoadBufferBoundsCheck<N>(ctx, index, spv_buffer.size_dwords, result,
+                                            alias == BufferAlias::F32);
+    }
+    return result;
 }
 
-Id EmitLoadBufferU32x2(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<2>(ctx, handle, address);
+Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
+    const Id result{ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U8, ptr))};
+    return EmitLoadBufferBoundsCheck<1>(ctx, address, spv_buffer.size, result, false);
 }
 
-Id EmitLoadBufferU32x3(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<3>(ctx, handle, address);
+Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    const Id result{ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U16, ptr))};
+    return EmitLoadBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts, result, false);
 }
 
-Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst*, u32 handle, Id address) {
-    return EmitLoadBufferU32xN<4>(ctx, handle, address);
+Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<1, BufferAlias::U32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<2, BufferAlias::U32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<3, BufferAlias::U32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<4, BufferAlias::U32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<1, BufferAlias::F32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<2, BufferAlias::F32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<3, BufferAlias::F32>(ctx, inst, handle, address);
+}
+
+Id EmitLoadBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    return EmitLoadBufferB32xN<4, BufferAlias::F32>(ctx, inst, handle, address);
 }
 
 Id EmitLoadBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
-    const auto& buffer = ctx.texture_buffers[handle];
-    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord =
-        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
-                   buffer.coord_offset);
-    Id texel = buffer.is_storage ? ctx.OpImageRead(buffer.result_type, tex_buffer, coord)
-                                 : ctx.OpImageFetch(buffer.result_type, tex_buffer, coord);
-    if (buffer.is_integer) {
-        texel = ctx.OpBitcast(ctx.F32[4], texel);
-    }
-    return texel;
+    UNREACHABLE_MSG("SPIR-V instruction");
 }
 
 template <u32 N>
-static void EmitStoreBufferU32xN(EmitContext& ctx, u32 handle, Id address, Id value) {
-    auto& buffer = ctx.buffers[handle];
-    address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    if constexpr (N == 1) {
-        const Id ptr{ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index)};
-        ctx.OpStore(ptr, value);
-    } else {
-        for (u32 i = 0; i < N; i++) {
-            const Id index_i = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
-            const Id ptr =
-                ctx.OpAccessChain(buffer.pointer_type, buffer.id, ctx.u32_zero_value, index_i);
-            ctx.OpStore(ptr, ctx.OpCompositeExtract(buffer.data_types->Get(1), value, i));
+void EmitStoreBufferBoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto emit_func) {
+    if (Sirit::ValidId(buffer_size)) {
+        // Bounds checking enabled, wrap in a conditional branch.
+        auto compare_index = index;
+        if (N > 1) {
+            index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(N - 1));
         }
+        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], compare_index, buffer_size);
+        const Id in_bounds_label = ctx.OpLabel();
+        const Id merge_label = ctx.OpLabel();
+        ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        ctx.OpBranchConditional(in_bounds, in_bounds_label, merge_label);
+        ctx.AddLabel(in_bounds_label);
+        emit_func();
+        ctx.OpBranch(merge_label);
+        ctx.AddLabel(merge_label);
+        return;
     }
+    // Bounds checking not enabled, just perform the store.
+    emit_func();
+}
+
+template <u32 N, BufferAlias alias>
+static void EmitStoreBufferB32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
+                                 Id value) {
+    const auto flags = inst->Flags<IR::BufferInstInfo>();
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const auto& data_types = alias == BufferAlias::U32 ? ctx.U32 : ctx.F32;
+    const auto [id, pointer_type] = spv_buffer[alias];
+
+    auto store = [&] {
+        for (u32 i = 0; i < N; i++) {
+            const Id index_i = i == 0 ? index : ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(i));
+            const Id ptr_i = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
+            const Id value_i = N == 1 ? value : ctx.OpCompositeExtract(data_types[1], value, i);
+            auto store_i = [&]() { ctx.OpStore(ptr_i, value_i); };
+            if (!flags.typed) {
+                // Untyped stores have bounds checking per-component.
+                EmitStoreBufferBoundsCheck<1>(ctx, index_i, spv_buffer.size_dwords, store_i);
+            } else {
+                store_i();
+            }
+        }
+    };
+
+    if (flags.typed) {
+        // Typed stores have single bounds check for the whole store.
+        EmitStoreBufferBoundsCheck<N>(ctx, index, spv_buffer.size_dwords, store);
+    } else {
+        store();
+    }
+}
+
+void EmitStoreBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
+    const Id result{ctx.OpUConvert(ctx.U8, value)};
+    EmitStoreBufferBoundsCheck<1>(ctx, address, spv_buffer.size, [&] { ctx.OpStore(ptr, result); });
+}
+
+void EmitStoreBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    const Id result{ctx.OpUConvert(ctx.U16, value)};
+    EmitStoreBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts,
+                                  [&] { ctx.OpStore(ptr, result); });
 }
 
 void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<1>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<1, BufferAlias::U32>(ctx, inst, handle, address, value);
 }
 
 void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<2>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<2, BufferAlias::U32>(ctx, inst, handle, address, value);
 }
 
 void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<3>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<3, BufferAlias::U32>(ctx, inst, handle, address, value);
 }
 
 void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    EmitStoreBufferU32xN<4>(ctx, handle, address, value);
+    EmitStoreBufferB32xN<4, BufferAlias::U32>(ctx, inst, handle, address, value);
+}
+
+void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferB32xN<1, BufferAlias::F32>(ctx, inst, handle, address, value);
+}
+
+void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferB32xN<2, BufferAlias::F32>(ctx, inst, handle, address, value);
+}
+
+void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferB32xN<3, BufferAlias::F32>(ctx, inst, handle, address, value);
+}
+
+void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    EmitStoreBufferB32xN<4, BufferAlias::F32>(ctx, inst, handle, address, value);
 }
 
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
-    const auto& buffer = ctx.texture_buffers[handle];
-    const Id tex_buffer = ctx.OpLoad(buffer.image_type, buffer.id);
-    const Id coord =
-        ctx.OpIAdd(ctx.U32[1], ctx.OpShiftLeftLogical(ctx.U32[1], address, buffer.coord_shift),
-                   buffer.coord_offset);
-    if (buffer.is_integer) {
-        value = ctx.OpBitcast(buffer.result_type, value);
-    }
-    ctx.OpImageWrite(tex_buffer, coord, value);
+    UNREACHABLE_MSG("SPIR-V instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

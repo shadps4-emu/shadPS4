@@ -28,30 +28,19 @@ static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
 static const char* const CRASH_DIAGNOSTIC_LAYER_NAME = "VK_LAYER_LUNARG_crash_diagnostic";
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
-    const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
-
-    switch (static_cast<u32>(callback_data->messageIdNumber)) {
-    case 0x609a13b: // Vertex attribute at location not consumed by shader
-    case 0xc81ad50e:
-    case 0xb7c39078:
-    case 0x32868fde: // vkCreateBufferView(): pCreateInfo->range does not equal VK_WHOLE_SIZE
-    case 0x1012616b: // `VK_FORMAT_UNDEFINED` does not match fragment shader output type
-        return VK_FALSE;
-    default:
-        break;
-    }
+    vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type,
+    const vk::DebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
 
     Common::Log::Level level{};
     switch (severity) {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+    case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
         level = Common::Log::Level::Error;
         break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+    case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
         level = Common::Log::Level::Info;
         break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+    case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
+    case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
         level = Common::Log::Level::Debug;
         break;
     default:
@@ -171,6 +160,10 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     }
 
+    if (Config::allowHDR()) {
+        extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
+    }
+
     if (enable_debug_utils) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
@@ -285,6 +278,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     vk::Bool32 enable_force_barriers = vk::True;
 #ifdef __APPLE__
     const vk::Bool32 mvk_debug_mode = enable_crash_diagnostic ? vk::True : vk::False;
+    constexpr vk::Bool32 mvk_use_mtlheap = vk::True;
 #endif
 
     const std::array layer_setings = {
@@ -360,7 +354,16 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
             .type = vk::LayerSettingTypeEXT::eBool32,
             .valueCount = 1,
             .pValues = &mvk_debug_mode,
-        }
+        },
+        // Use MTLHeap to back device memory, which among other things allows us to
+        // use VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT via memory aliasing.
+        vk::LayerSettingEXT{
+            .pLayerName = "MoltenVK",
+            .pSettingName = "MVK_CONFIG_USE_MTLHEAP",
+            .type = vk::LayerSettingTypeEXT::eBool32,
+            .valueCount = 1,
+            .pValues = &mvk_use_mtlheap,
+        },
 #endif
     };
 

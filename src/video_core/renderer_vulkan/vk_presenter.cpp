@@ -6,19 +6,23 @@
 #include "common/singleton.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
-#include "core/file_format/splash.h"
 #include "core/libraries/system/systemservice.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
+#include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/image.h"
 
 #include "video_core/host_shaders/fs_tri_vert.h"
-#include "video_core/host_shaders/post_process_frag.h"
 
 #include <vk_mem_alloc.h>
+
+#include <imgui.h>
+
+#include "common/elf_info.h"
+#include "imgui/renderer/imgui_impl_vulkan.h"
 
 namespace Vulkan {
 
@@ -103,206 +107,10 @@ static vk::Rect2D FitImage(s32 frame_width, s32 frame_height, s32 swapchain_widt
                          dst_rect.offset.x, dst_rect.offset.y);
 }
 
-static vk::Format FormatToUnorm(vk::Format fmt) {
-    switch (fmt) {
-    case vk::Format::eR8G8B8A8Srgb:
-        return vk::Format::eR8G8B8A8Unorm;
-    case vk::Format::eB8G8R8A8Srgb:
-        return vk::Format::eB8G8R8A8Unorm;
-    default:
-        UNREACHABLE();
-    }
-}
-
-void Presenter::CreatePostProcessPipeline() {
-    static const std::array pp_shaders{
-        HostShaders::FS_TRI_VERT,
-        HostShaders::POST_PROCESS_FRAG,
-    };
-
-    boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
-        {
-            .binding = 0,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-    };
-
-    const vk::DescriptorSetLayoutCreateInfo desc_layout_ci = {
-        .flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR,
-        .bindingCount = static_cast<u32>(bindings.size()),
-        .pBindings = bindings.data(),
-    };
-    auto desc_layout_result = instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
-    ASSERT_MSG(desc_layout_result.result == vk::Result::eSuccess,
-               "Failed to create descriptor set layout: {}",
-               vk::to_string(desc_layout_result.result));
-    pp_desc_set_layout = std::move(desc_layout_result.value);
-
-    const vk::PushConstantRange push_constants = {
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        .offset = 0,
-        .size = sizeof(PostProcessSettings),
-    };
-
-    const auto& vs_module =
-        Vulkan::Compile(pp_shaders[0], vk::ShaderStageFlagBits::eVertex, instance.GetDevice());
-    ASSERT(vs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), vs_module, "fs_tri.vert");
-
-    const auto& fs_module =
-        Vulkan::Compile(pp_shaders[1], vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
-    ASSERT(fs_module);
-    Vulkan::SetObjectName(instance.GetDevice(), fs_module, "post_process.frag");
-
-    const std::array shaders_ci{
-        vk::PipelineShaderStageCreateInfo{
-            .stage = vk::ShaderStageFlagBits::eVertex,
-            .module = vs_module,
-            .pName = "main",
-        },
-        vk::PipelineShaderStageCreateInfo{
-            .stage = vk::ShaderStageFlagBits::eFragment,
-            .module = fs_module,
-            .pName = "main",
-        },
-    };
-
-    const vk::DescriptorSetLayout set_layout = *pp_desc_set_layout;
-    const vk::PipelineLayoutCreateInfo layout_info = {
-        .setLayoutCount = 1U,
-        .pSetLayouts = &set_layout,
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges = &push_constants,
-    };
-    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
-    ASSERT_MSG(layout_result == vk::Result::eSuccess, "Failed to create pipeline layout: {}",
-               vk::to_string(layout_result));
-    pp_pipeline_layout = std::move(layout);
-
-    const std::array pp_color_formats{
-        vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
-    };
-    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
-        .colorAttachmentCount = 1u,
-        .pColorAttachmentFormats = pp_color_formats.data(),
-    };
-
-    const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
-        .vertexBindingDescriptionCount = 0u,
-        .vertexAttributeDescriptionCount = 0u,
-    };
-
-    const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
-        .topology = vk::PrimitiveTopology::eTriangleList,
-    };
-
-    const vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = 1.0f,
-        .height = 1.0f,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    const vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = {1, 1},
-    };
-
-    const vk::PipelineViewportStateCreateInfo viewport_info = {
-        .viewportCount = 1,
-        .pViewports = &viewport,
-        .scissorCount = 1,
-        .pScissors = &scissor,
-    };
-
-    const vk::PipelineRasterizationStateCreateInfo raster_state = {
-        .depthClampEnable = false,
-        .rasterizerDiscardEnable = false,
-        .polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eBack,
-        .frontFace = vk::FrontFace::eClockwise,
-        .depthBiasEnable = false,
-        .lineWidth = 1.0f,
-    };
-
-    const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = vk::SampleCountFlagBits::e1,
-    };
-
-    const std::array attachments{
-        vk::PipelineColorBlendAttachmentState{
-            .blendEnable = false,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
-        },
-    };
-
-    const vk::PipelineColorBlendStateCreateInfo color_blending = {
-        .logicOpEnable = false,
-        .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = attachments.size(),
-        .pAttachments = attachments.data(),
-        .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
-    };
-
-    const std::array dynamic_states = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eScissor,
-    };
-
-    const vk::PipelineDynamicStateCreateInfo dynamic_info = {
-        .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
-        .pDynamicStates = dynamic_states.data(),
-    };
-
-    const vk::GraphicsPipelineCreateInfo pipeline_info = {
-        .pNext = &pipeline_rendering_ci,
-        .stageCount = static_cast<u32>(shaders_ci.size()),
-        .pStages = shaders_ci.data(),
-        .pVertexInputState = &vertex_input_info,
-        .pInputAssemblyState = &input_assembly,
-        .pViewportState = &viewport_info,
-        .pRasterizationState = &raster_state,
-        .pMultisampleState = &multisampling,
-        .pColorBlendState = &color_blending,
-        .pDynamicState = &dynamic_info,
-        .layout = *pp_pipeline_layout,
-    };
-
-    auto result = instance.GetDevice().createGraphicsPipelineUnique(
-        /*pipeline_cache*/ {}, pipeline_info);
-    if (result.result == vk::Result::eSuccess) {
-        pp_pipeline = std::move(result.value);
-    } else {
-        UNREACHABLE_MSG("Post process pipeline creation failed!");
-    }
-
-    // Once pipeline is compiled, we don't need the shader module anymore
-    instance.GetDevice().destroyShaderModule(vs_module);
-    instance.GetDevice().destroyShaderModule(fs_module);
-
-    // Create sampler resource
-    const vk::SamplerCreateInfo sampler_ci = {
-        .magFilter = vk::Filter::eLinear,
-        .minFilter = vk::Filter::eLinear,
-        .mipmapMode = vk::SamplerMipmapMode::eNearest,
-        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
-        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
-    };
-    auto [sampler_result, smplr] = instance.GetDevice().createSamplerUnique(sampler_ci);
-    ASSERT_MSG(sampler_result == vk::Result::eSuccess, "Failed to create sampler: {}",
-               vk::to_string(sampler_result));
-    pp_sampler = std::move(smplr);
-}
-
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
       instance{window, Config::getGpuId(), Config::vkValidationEnabled(),
-               Config::vkCrashDiagnosticEnabled()},
+               Config::getVkCrashDiagnosticEnabled()},
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
@@ -314,19 +122,16 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     present_frames.resize(num_images);
     for (u32 i = 0; i < num_images; i++) {
         Frame& frame = present_frames[i];
-        auto [fence_result, fence] =
-            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
-        ASSERT_MSG(fence_result == vk::Result::eSuccess, "Failed to create present done fence: {}",
-                   vk::to_string(fence_result));
+        frame.id = i;
+        auto fence = Check<"create present done fence">(
+            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled}));
         frame.present_done = fence;
         free_queue.push(&frame);
     }
 
-    CreatePostProcessPipeline();
+    fsr_pass.Create(device, instance.GetAllocator(), num_images);
+    pp_pass.Create(device);
 
-    // Setup ImGui
-    ImGui::Core::Initialize(instance, window, num_images,
-                            FormatToUnorm(swapchain.GetSurfaceFormat().format));
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }
 
@@ -344,6 +149,9 @@ Presenter::~Presenter() {
 
 void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::Device device = instance.GetDevice();
+    if (frame->imgui_texture) {
+        ImGui::Vulkan::RemoveTexture(frame->imgui_texture);
+    }
     if (frame->image_view) {
         device.destroyImageView(frame->image_view);
     }
@@ -361,7 +169,7 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         .arrayLayers = 1,
         .samples = vk::SampleCountFlagBits::e1,
         .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |
-                 vk::ImageUsageFlagBits::eTransferSrc,
+                 vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled,
     };
 
     const VmaAllocationCreateInfo alloc_info = {
@@ -384,11 +192,12 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
         UNREACHABLE();
     }
     frame->image = vk::Image{unsafe_image};
+    SetObjectName(device, frame->image, "Frame image #{}", frame->id);
 
     const vk::ImageViewCreateInfo view_info = {
         .image = frame->image,
         .viewType = vk::ImageViewType::e2D,
-        .format = FormatToUnorm(format),
+        .format = format,
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0,
@@ -397,49 +206,38 @@ void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
             .layerCount = 1,
         },
     };
-    auto [view_result, view] = device.createImageView(view_info);
-    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create frame image view: {}",
-               vk::to_string(view_result));
+    auto view = Check<"create frame image view">(device.createImageView(view_info));
     frame->image_view = view;
     frame->width = width;
     frame->height = height;
+
+    frame->imgui_texture = ImGui::Vulkan::AddTexture(view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    frame->is_hdr = swapchain.GetHDR();
 }
 
-bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
-    const auto* splash = Common::Singleton<Splash>::Instance();
-    if (splash->GetImageData().empty()) {
-        return false;
+Frame* Presenter::PrepareLastFrame() {
+    if (last_submit_frame == nullptr) {
+        return nullptr;
     }
 
-    if (!Libraries::SystemService::IsSplashVisible()) {
-        return false;
-    }
+    Frame* frame = last_submit_frame;
 
-    draw_scheduler.EndRendering();
-    const auto cmdbuf = draw_scheduler.CommandBuffer();
-
-    if (!frame) {
-        if (!splash_img.has_value()) {
-            VideoCore::ImageInfo info{};
-            info.pixel_format = vk::Format::eR8G8B8A8Srgb;
-            info.type = vk::ImageType::e2D;
-            info.size =
-                VideoCore::Extent3D{splash->GetImageInfo().width, splash->GetImageInfo().height, 1};
-            info.pitch = splash->GetImageInfo().width;
-            info.guest_address = VAddr(splash->GetImageData().data());
-            info.guest_size_bytes = splash->GetImageData().size();
-            info.mips_layout.emplace_back(splash->GetImageData().size(),
-                                          splash->GetImageInfo().width,
-                                          splash->GetImageInfo().height, 0);
-            splash_img.emplace(instance, present_scheduler, info);
-            texture_cache.RefreshImage(*splash_img);
-
-            splash_img->Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                vk::AccessFlagBits2::eTransferRead, {}, cmdbuf);
+    while (true) {
+        vk::Result result = instance.GetDevice().waitForFences(frame->present_done, false,
+                                                               std::numeric_limits<u64>::max());
+        if (result == vk::Result::eSuccess) {
+            break;
         }
-
-        frame = GetRenderFrame();
+        if (result == vk::Result::eTimeout) {
+            continue;
+        }
+        ASSERT_MSG(result != vk::Result::eErrorDeviceLost,
+                   "Device lost during waiting for a frame");
     }
+
+    auto& scheduler = flip_scheduler;
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
 
     const auto frame_subresources = vk::ImageSubresourceRange{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -450,12 +248,12 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
     };
 
     const auto pre_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .oldLayout = vk::ImageLayout::eUndefined,
-                                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead,
+                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                                .oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                                .newLayout = vk::ImageLayout::eGeneral,
                                 .image = frame->image,
                                 .subresourceRange{frame_subresources}};
 
@@ -464,35 +262,12 @@ bool Presenter::ShowSplash(Frame* frame /*= nullptr*/) {
         .pImageMemoryBarriers = &pre_barrier,
     });
 
-    cmdbuf.blitImage(splash_img->image, vk::ImageLayout::eTransferSrcOptimal, frame->image,
-                     vk::ImageLayout::eTransferDstOptimal,
-                     MakeImageBlitFit(splash->GetImageInfo().width, splash->GetImageInfo().height,
-                                      frame->width, frame->height),
-                     vk::Filter::eLinear);
-
-    const auto post_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-                                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-                                .newLayout = vk::ImageLayout::eGeneral,
-                                .image = frame->image,
-                                .subresourceRange{frame_subresources}};
-
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &post_barrier,
-    });
-
     // Flush frame creation commands.
-    frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
-    frame->ready_tick = draw_scheduler.CurrentTick();
+    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_tick = scheduler.CurrentTick();
     SubmitInfo info{};
-    draw_scheduler.Flush(info);
-
-    Present(frame);
-    return true;
+    scheduler.Flush(info);
+    return frame;
 }
 
 Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop) {
@@ -506,6 +281,14 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
 
+    bool vk_host_markers_enabled = Config::getVkHostMarkersEnabled();
+    if (vk_host_markers_enabled) {
+        const auto label = fmt::format("PrepareFrameInternal:{}", image_id.index);
+        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+            .pLabelName = label.c_str(),
+        });
+    }
+
     const auto frame_subresources = vk::ImageSubresourceRange{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = 0,
@@ -515,8 +298,8 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     };
 
     const auto pre_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                                .srcAccessMask = vk::AccessFlagBits2::eTransferRead,
+        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead,
                                 .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
                                 .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
                                 .oldLayout = vk::ImageLayout::eUndefined,
@@ -531,76 +314,72 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
 
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
+        vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
+        float ratio = (float)image_size.width / (float)image_size.height;
+        if (ratio != expected_ratio) {
+            expected_ratio = ratio;
+        }
+
         image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
                       cmdbuf);
 
-        static vk::DescriptorImageInfo image_info{
-            .sampler = *pp_sampler,
-            .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-        };
-
         VideoCore::ImageViewInfo info{};
         info.format = image.info.pixel_format;
+        // Exclude alpha from output frame to avoid blending with UI.
+        info.mapping = vk::ComponentMapping{
+            .r = vk::ComponentSwizzle::eIdentity,
+            .g = vk::ComponentSwizzle::eIdentity,
+            .b = vk::ComponentSwizzle::eIdentity,
+            .a = vk::ComponentSwizzle::eOne,
+        };
+        vk::ImageView imageView;
         if (auto view = image.FindView(info)) {
-            image_info.imageView = *texture_cache.GetImageView(view).image_view;
+            imageView = *texture_cache.GetImageView(view).image_view;
         } else {
-            image_info.imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
+            imageView = *texture_cache.RegisterImageView(image_id, info).image_view;
         }
 
-        static const std::array set_writes{
-            vk::WriteDescriptorSet{
-                .dstSet = VK_NULL_HANDLE,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-                .pImageInfo = &image_info,
+        if (vk_host_markers_enabled) {
+            cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+                .pLabelName = "Host/FSR",
+            });
+        }
+
+        imageView = fsr_pass.Render(cmdbuf, imageView, image_size, {frame->width, frame->height},
+                                    fsr_settings, frame->is_hdr);
+
+        if (vk_host_markers_enabled) {
+            cmdbuf.endDebugUtilsLabelEXT();
+            cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+                .pLabelName = "Host/Post processing",
+            });
+        }
+        pp_pass.Render(cmdbuf, imageView, image_size, *frame, pp_settings);
+        if (vk_host_markers_enabled) {
+            cmdbuf.endDebugUtilsLabelEXT();
+        }
+
+        DebugState.game_resolution = {image_size.width, image_size.height};
+        DebugState.output_resolution = {frame->width, frame->height};
+    } else {
+        // Fix display of garbage images on startup on some drivers
+        const std::array<vk::RenderingAttachmentInfo, 1> attachments = {{
+            {
+                .imageView = frame->image_view,
+                .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+                .loadOp = vk::AttachmentLoadOp::eClear,
+                .storeOp = vk::AttachmentStoreOp::eStore,
             },
-        };
-
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *pp_pipeline);
-
-        const auto& dst_rect =
-            FitImage(image.info.size.width, image.info.size.height, frame->width, frame->height);
-
-        const std::array viewports = {
-            vk::Viewport{
-                .x = 1.0f * dst_rect.offset.x,
-                .y = 1.0f * dst_rect.offset.y,
-                .width = 1.0f * dst_rect.extent.width,
-                .height = 1.0f * dst_rect.extent.height,
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f,
-            },
-        };
-
-        cmdbuf.setViewport(0, viewports);
-        cmdbuf.setScissor(0, {dst_rect});
-
-        cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pp_pipeline_layout, 0,
-                                    set_writes);
-        cmdbuf.pushConstants(*pp_pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0,
-                             sizeof(PostProcessSettings), &pp_settings);
-
-        const std::array attachments = {vk::RenderingAttachmentInfo{
-            .imageView = frame->image_view,
-            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eClear,
-            .storeOp = vk::AttachmentStoreOp::eStore,
         }};
-
-        vk::RenderingInfo rendering_info{
-            .renderArea =
-                vk::Rect2D{
-                    .offset = {0, 0},
-                    .extent = {frame->width, frame->height},
-                },
+        const vk::RenderingInfo rendering_info{
+            .renderArea{
+                .extent{frame->width, frame->height},
+            },
             .layerCount = 1,
             .colorAttachmentCount = attachments.size(),
             .pColorAttachments = attachments.data(),
         };
         cmdbuf.beginRendering(rendering_info);
-        cmdbuf.draw(3, 1, 0, 0);
         cmdbuf.endRendering();
     }
 
@@ -619,6 +398,10 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
         .pImageMemoryBarriers = &post_barrier,
     });
 
+    if (vk_host_markers_enabled) {
+        cmdbuf.endDebugUtilsLabelEXT();
+    }
+
     // Flush frame creation commands.
     frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
     frame->ready_tick = scheduler.CurrentTick();
@@ -627,17 +410,19 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
     return frame;
 }
 
-void Presenter::Present(Frame* frame) {
+void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     // Free the frame for reuse
     const auto free_frame = [&] {
-        std::scoped_lock fl{free_mutex};
-        free_queue.push(frame);
-        free_cv.notify_one();
+        if (!is_reusing_frame) {
+            last_submit_frame = frame;
+            std::scoped_lock fl{free_mutex};
+            free_queue.push(frame);
+            free_cv.notify_one();
+        }
     };
 
     // Recreate the swapchain if the window was resized.
-    if (window.GetWidth() != swapchain.GetExtent().width ||
-        window.GetHeight() != swapchain.GetExtent().height) {
+    if (window.GetWidth() != swapchain.GetWidth() || window.GetHeight() != swapchain.GetHeight()) {
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
@@ -656,14 +441,19 @@ void Presenter::Present(Frame* frame) {
     // the frame's present fence and future GetRenderFrame() call will hang waiting for this frame.
     instance.GetDevice().resetFences(frame->present_done);
 
-    ImGui::Core::NewFrame();
+    ImGuiID dockId = ImGui::Core::NewFrame(is_reusing_frame);
 
     const vk::Image swapchain_image = swapchain.Image();
+    const vk::ImageView swapchain_image_view = swapchain.ImageView();
 
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    ImGui::Core::Render(cmdbuf, frame);
+    if (Config::getVkHostMarkersEnabled()) {
+        cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
+            .pLabelName = "Present",
+        });
+    }
 
     {
         auto* profiler_ctx = instance.GetProfilerContext();
@@ -674,9 +464,9 @@ void Presenter::Present(Frame* frame) {
         const std::array pre_barriers{
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eNone,
-                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
                 .oldLayout = vk::ImageLayout::eUndefined,
-                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = swapchain_image,
@@ -690,9 +480,9 @@ void Presenter::Present(Frame* frame) {
             },
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
                 .oldLayout = vk::ImageLayout::eGeneral,
-                .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = frame->image,
@@ -705,10 +495,11 @@ void Presenter::Present(Frame* frame) {
                 },
             },
         };
+
         const vk::ImageMemoryBarrier post_barrier{
-            .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
             .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
-            .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
             .newLayout = vk::ImageLayout::ePresentSrcKHR,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -723,14 +514,59 @@ void Presenter::Present(Frame* frame) {
         };
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::PipelineStageFlagBits::eTransfer,
+                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
-        cmdbuf.blitImage(
-            frame->image, vk::ImageLayout::eTransferSrcOptimal, swapchain_image,
-            vk::ImageLayout::eTransferDstOptimal,
-            MakeImageBlitStretch(frame->width, frame->height, extent.width, extent.height),
-            vk::Filter::eLinear);
+        { // Draw the game
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+            ImGui::SetNextWindowDockID(dockId, ImGuiCond_Once);
+            ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav);
+
+            auto game_texture = frame->imgui_texture;
+            auto game_width = frame->width;
+            auto game_height = frame->height;
+
+            if (Libraries::SystemService::IsSplashVisible()) { // draw splash
+                if (!splash_img.has_value()) {
+                    splash_img.emplace();
+                    auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
+                    if (!splash_path.empty()) {
+                        splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                    }
+                }
+                if (auto& splash_image = this->splash_img.value()) {
+                    auto [im_id, width, height] = splash_image.GetTexture();
+                    game_texture = im_id;
+                    game_width = width;
+                    game_height = height;
+                }
+            }
+
+            ImVec2 contentArea = ImGui::GetContentRegionAvail();
+            SetExpectedGameSize((s32)contentArea.x, (s32)contentArea.y);
+
+            const auto imgRect =
+                FitImage(game_width, game_height, (s32)contentArea.x, (s32)contentArea.y);
+            ImVec2 offset{
+                static_cast<float>(imgRect.offset.x),
+                static_cast<float>(imgRect.offset.y),
+            };
+            ImVec2 size{
+                static_cast<float>(imgRect.extent.width),
+                static_cast<float>(imgRect.extent.height),
+            };
+
+            ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
+            ImGui::Image(game_texture, size);
+
+            ImGui::End();
+            ImGui::PopStyleVar(3);
+            ImGui::PopStyleColor();
+        }
+        ImGui::Core::Render(cmdbuf, swapchain_image_view, swapchain.GetExtent());
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
                                vk::PipelineStageFlagBits::eAllCommands,
@@ -739,6 +575,10 @@ void Presenter::Present(Frame* frame) {
         if (profiler_ctx) {
             TracyVkCollect(profiler_ctx, cmdbuf);
         }
+    }
+
+    if (Config::getVkHostMarkersEnabled()) {
+        cmdbuf.endDebugUtilsLabelEXT();
     }
 
     // Flush vulkan commands.
@@ -756,7 +596,9 @@ void Presenter::Present(Frame* frame) {
     }
 
     free_frame();
-    DebugState.IncFlipFrameNum();
+    if (!is_reusing_frame) {
+        DebugState.IncFlipFrameNum();
+    }
 }
 
 Frame* Presenter::GetRenderFrame() {
@@ -790,12 +632,24 @@ Frame* Presenter::GetRenderFrame() {
         }
     }
 
-    // If the window dimensions changed, recreate this frame
-    if (frame->width != window.GetWidth() || frame->height != window.GetHeight()) {
-        RecreateFrame(frame, window.GetWidth(), window.GetHeight());
+    if (frame->width != expected_frame_width || frame->height != expected_frame_height ||
+        frame->is_hdr != swapchain.GetHDR()) {
+        RecreateFrame(frame, expected_frame_width, expected_frame_height);
     }
 
     return frame;
+}
+
+void Presenter::SetExpectedGameSize(s32 width, s32 height) {
+    const float ratio = (float)width / (float)height;
+
+    expected_frame_height = height;
+    expected_frame_width = width;
+    if (ratio > expected_ratio) {
+        expected_frame_width = static_cast<s32>(height * expected_ratio);
+    } else {
+        expected_frame_height = static_cast<s32>(width / expected_ratio);
+    }
 }
 
 } // namespace Vulkan

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "SDL3/SDL_log.h"
 #include "layer.h"
 
 #include <imgui.h>
@@ -21,14 +22,13 @@
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
-using namespace Core::Devtools;
-using L = Core::Devtools::Layer;
+using namespace ::Core::Devtools;
+using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 
 static float fps_scale = 1.0f;
-static bool show_advanced_debug = false;
 static int dump_frame_count = 1;
 
 static Widget::FrameGraph frame_graph;
@@ -82,8 +82,24 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
+            auto& pp_settings = presenter->GetPPSettingsRef();
             if (BeginMenu("Brightness")) {
-                SliderFloat("Gamma", &presenter->GetGammaRef(), 0.1f, 2.0f);
+                SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
+                ImGui::EndMenu();
+            }
+            if (BeginMenu("FSR")) {
+                auto& fsr = presenter->GetFsrSettingsRef();
+                Checkbox("FSR Enabled", &fsr.enable);
+                BeginDisabled(!fsr.enable);
+                {
+                    Checkbox("RCAS", &fsr.use_rcas);
+                    BeginDisabled(!fsr.use_rcas);
+                    {
+                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
+                    }
+                    EndDisabled();
+                }
+                EndDisabled();
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -94,24 +110,14 @@ void L::DrawMenuBar() {
             }
             ImGui::EndMenu();
         }
+
+        SameLine(ImGui::GetWindowWidth() - 30.0f);
+        if (Button("X", ImVec2(25, 25))) {
+            DebugState.IsShowingDebugMenuBar() = false;
+        }
+
         EndMainMenuBar();
     }
-
-    if (IsKeyPressed(ImGuiKey_F9, false)) {
-        if (io.KeyCtrl && io.KeyAlt) {
-            if (!DebugState.ShouldPauseInSubmit()) {
-                DebugState.RequestFrameDump(dump_frame_count);
-            }
-        }
-        if (!io.KeyCtrl && !io.KeyAlt) {
-            if (isSystemPaused) {
-                DebugState.ResumeGuestThreads();
-            } else {
-                DebugState.PauseGuestThreads();
-            }
-        }
-    }
-
     if (open_popup_options) {
         OpenPopup("GPU Tools Options");
         just_opened_options = true;
@@ -253,8 +259,20 @@ void L::DrawAdvanced() {
 }
 
 void L::DrawSimple() {
-    const auto io = GetIO();
-    Text("%.1f FPS (%.2f ms)", io.Framerate, 1000.0f / io.Framerate);
+    const float frameRate = DebugState.Framerate;
+    if (Config::fpsColor()) {
+        if (frameRate < 10) {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
+        } else if (frameRate >= 10 && frameRate < 20) {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
+        } else {
+            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+        }
+    } else {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
+    }
+    Text("%d FPS (%.1f ms)", static_cast<int>(std::round(frameRate)), 1000.0f / frameRate);
+    PopStyleColor();
 }
 
 static void LoadSettings(const char* line) {
@@ -265,7 +283,7 @@ static void LoadSettings(const char* line) {
         return;
     }
     if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
-        show_advanced_debug = i != 0;
+        DebugState.IsShowingDebugMenuBar() = i != 0;
         return;
     }
     if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
@@ -310,7 +328,7 @@ void L::SetupSettings() {
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
         buf->appendf("fps_scale=%f\n", fps_scale);
-        buf->appendf("show_advanced_debug=%d\n", show_advanced_debug);
+        buf->appendf("show_advanced_debug=%d\n", DebugState.IsShowingDebugMenuBar());
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
@@ -336,16 +354,42 @@ void L::Draw() {
 
     if (!DebugState.IsGuestThreadsPaused()) {
         const auto fn = DebugState.flip_frame_count.load();
-        frame_graph.AddFrame(fn, io.DeltaTime);
+        frame_graph.AddFrame(fn, DebugState.FrameDeltaTime);
     }
 
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
-            show_advanced_debug = !show_advanced_debug;
+            DebugState.IsShowingDebugMenuBar() ^= true;
         } else {
             show_simple_fps = !show_simple_fps;
         }
         visibility_toggled = true;
+    }
+
+    if (IsKeyPressed(ImGuiKey_F9, false)) {
+        if (io.KeyCtrl && io.KeyAlt) {
+            if (!DebugState.ShouldPauseInSubmit()) {
+                DebugState.RequestFrameDump(dump_frame_count);
+            }
+        } else {
+            if (DebugState.IsGuestThreadsPaused()) {
+                DebugState.ResumeGuestThreads();
+                SDL_Log("Game resumed from Keyboard");
+                show_pause_status = false;
+            } else {
+                DebugState.PauseGuestThreads();
+                SDL_Log("Game paused from Keyboard");
+                show_pause_status = true;
+            }
+            visibility_toggled = true;
+        }
+    }
+
+    if (show_pause_status) {
+        ImVec2 pos = ImVec2(10, 10);
+        ImU32 color = IM_COL32(255, 255, 255, 255);
+
+        ImGui::GetForegroundDrawList()->AddText(pos, color, "Game Paused Press F9 to Resume");
     }
 
     if (show_simple_fps) {
@@ -376,7 +420,7 @@ void L::Draw() {
         End();
     }
 
-    if (show_advanced_debug) {
+    if (DebugState.IsShowingDebugMenuBar()) {
         PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();

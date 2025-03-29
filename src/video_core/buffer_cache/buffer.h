@@ -32,13 +32,12 @@ enum class MemoryUsage {
 };
 
 constexpr vk::BufferUsageFlags ReadFlags =
-    vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformTexelBuffer |
-    vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eIndexBuffer |
-    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer;
+    vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer |
+    vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
+    vk::BufferUsageFlagBits::eIndirectBuffer;
 
-constexpr vk::BufferUsageFlags AllFlags = ReadFlags | vk::BufferUsageFlagBits::eTransferDst |
-                                          vk::BufferUsageFlagBits::eStorageTexelBuffer |
-                                          vk::BufferUsageFlagBits::eStorageBuffer;
+constexpr vk::BufferUsageFlags AllFlags =
+    ReadFlags | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer;
 
 struct UniqueBuffer {
     explicit UniqueBuffer(vk::Device device, VmaAllocator allocator);
@@ -83,9 +82,6 @@ public:
     Buffer& operator=(Buffer&&) = default;
     Buffer(Buffer&&) = default;
 
-    vk::BufferView View(u32 offset, u32 size, bool is_written, AmdGpu::DataFormat dfmt,
-                        AmdGpu::NumberFormat nfmt);
-
     /// Increases the likeliness of this being a stream buffer
     void IncreaseStreamScore(int score) noexcept {
         stream_score += score;
@@ -119,11 +115,14 @@ public:
         return buffer;
     }
 
-    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlagBits2 dst_acess_mask,
-                                                       vk::PipelineStageFlagBits2 dst_stage) {
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(
+        vk::Flags<vk::AccessFlagBits2> dst_acess_mask, vk::PipelineStageFlagBits2 dst_stage,
+        u32 offset = 0) {
         if (dst_acess_mask == access_mask && stage == dst_stage) {
             return {};
         }
+
+        DEBUG_ASSERT(offset < size_bytes);
 
         auto barrier = vk::BufferMemoryBarrier2{
             .srcStageMask = stage,
@@ -131,7 +130,8 @@ public:
             .dstStageMask = dst_stage,
             .dstAccessMask = dst_acess_mask,
             .buffer = buffer.buffer,
-            .size = size_bytes,
+            .offset = offset,
+            .size = size_bytes - offset,
         };
         access_mask = dst_acess_mask;
         stage = dst_stage;
@@ -150,8 +150,10 @@ public:
     Vulkan::Scheduler* scheduler;
     MemoryUsage usage;
     UniqueBuffer buffer;
-    vk::AccessFlagBits2 access_mask{vk::AccessFlagBits2::eNone};
-    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eNone};
+    vk::Flags<vk::AccessFlagBits2> access_mask{
+        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+        vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite};
+    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eAllCommands};
 };
 
 class StreamBuffer : public Buffer {
@@ -166,7 +168,7 @@ public:
     void Commit();
 
     /// Maps and commits a memory region with user provided data
-    u64 Copy(VAddr src, size_t size, size_t alignment = 0) {
+    u64 Copy(auto src, size_t size, size_t alignment = 0) {
         const auto [data, offset] = Map(size, alignment);
         std::memcpy(data, reinterpret_cast<const void*>(src), size);
         Commit();

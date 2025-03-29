@@ -153,6 +153,11 @@ int PS4_SYSV_ABI sceKernelDebugRaiseException() {
     return 0;
 }
 
+int PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode() {
+    UNREACHABLE();
+    return 0;
+}
+
 void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("il03nluKfMk", "libkernel_unity", 1, "libkernel", 1, 1, sceKernelRaiseException);
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel", 1, 1,
@@ -160,6 +165,8 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Qhv5ARAoOEc", "libkernel_unity", 1, "libkernel", 1, 1,
                  sceKernelRemoveExceptionHandler)
     LIB_FUNCTION("OMDRKKAZ8I4", "libkernel", 1, "libkernel", 1, 1, sceKernelDebugRaiseException);
+    LIB_FUNCTION("zE-wXIZjLoM", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelDebugRaiseExceptionOnReleaseMode);
 }
 
 } // namespace Libraries::Kernel

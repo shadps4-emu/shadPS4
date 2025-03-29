@@ -23,7 +23,7 @@ public:
     ~Swapchain();
 
     /// Creates (or recreates) the swapchain with a given size.
-    void Create(u32 width, u32 height, vk::SurfaceKHR surface);
+    void Create(u32 width, u32 height);
 
     /// Recreates the swapchain with a given size and current surface.
     void Recreate(u32 width, u32 height);
@@ -40,6 +40,10 @@ public:
 
     vk::Image Image() const {
         return images[image_index];
+    }
+
+    vk::ImageView ImageView() const {
+        return images_view[image_index];
     }
 
     vk::SurfaceFormatKHR GetSurfaceFormat() const {
@@ -78,6 +82,16 @@ public:
         return present_ready[image_index];
     }
 
+    bool HasHDR() const {
+        return supports_hdr;
+    }
+
+    void SetHDR(bool hdr);
+
+    bool GetHDR() const {
+        return needs_hdr;
+    }
+
 private:
     /// Selects the best available swapchain image format
     void FindPresentFormat();
@@ -96,13 +110,16 @@ private:
 
 private:
     const Instance& instance;
+    const Frontend::WindowSDL& window;
     vk::SwapchainKHR swapchain{};
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
+    vk::Format view_format;
     vk::Extent2D extent;
     vk::SurfaceTransformFlagBitsKHR transform;
     vk::CompositeAlphaFlagBitsKHR composite_alpha;
     std::vector<vk::Image> images;
+    std::vector<vk::ImageView> images_view;
     std::vector<vk::Semaphore> image_acquired;
     std::vector<vk::Semaphore> present_ready;
     u32 width = 0;
@@ -111,6 +128,8 @@ private:
     u32 image_index = 0;
     u32 frame_index = 0;
     bool needs_recreation = true;
+    bool needs_hdr = false;    // The game requested HDR swapchain
+    bool supports_hdr = false; // SC supports HDR output
 };
 
 } // namespace Vulkan

@@ -35,6 +35,8 @@ class ShaderList;
 
 namespace DebugStateType {
 
+extern bool showing_debug_menu_bar;
+
 enum class QueueType {
     dcb = 0,
     ccb = 1,
@@ -153,11 +155,22 @@ class DebugStateImpl {
     std::vector<ShaderDump> shader_dump_list{};
 
 public:
+    float Framerate = 1.0f / 60.0f;
+    float FrameDeltaTime;
+
+    std::pair<u32, u32> game_resolution{};
+    std::pair<u32, u32> output_resolution{};
+    bool is_using_fsr{};
+
     void ShowDebugMessage(std::string message) {
         if (message.empty()) {
             return;
         }
         debug_message_popup.push(std::move(message));
+    }
+
+    bool& IsShowingDebugMenuBar() {
+        return showing_debug_menu_bar;
     }
 
     void AddCurrentThreadToGuestList();

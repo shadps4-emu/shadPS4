@@ -204,6 +204,11 @@ struct PM4CmdSetData {
     static constexpr u32* SetShReg(u32* cmdbuf, Args... data) {
         return WritePacket<PM4ItOpcode::SetShReg>(cmdbuf, type, data...);
     }
+
+    template <PM4ShaderType type = PM4ShaderType::ShaderGraphics, typename... Args>
+    static constexpr u32* SetUconfigReg(u32* cmdbuf, Args... data) {
+        return WritePacket<PM4ItOpcode::SetUconfigReg>(cmdbuf, type, data...);
+    }
 };
 
 struct PM4CmdNop {
@@ -372,12 +377,14 @@ struct PM4CmdAcquireMem {
 enum class DmaDataDst : u32 {
     Memory = 0,
     Gds = 1,
+    MemoryUsingL2 = 3,
 };
 
 enum class DmaDataSrc : u32 {
     Memory = 0,
     Gds = 1,
     Data = 2,
+    MemoryUsingL2 = 3,
 };
 
 struct PM4DmaData {
@@ -791,6 +798,18 @@ struct PM4CmdDispatchIndirect {
     u32 dispatch_initiator; ///< Dispatch Initiator Register
 };
 
+struct PM4CmdDispatchIndirectMec {
+    PM4Type3Header header;
+    u32 address0;
+    u32 address1;
+    u32 dispatch_initiator; ///< Dispatch Initiator Register
+
+    template <typename T>
+    T Address() const {
+        return std::bit_cast<T>(address0 | (u64(address1 & 0xffff) << 32u));
+    }
+};
+
 struct DrawIndirectArgs {
     u32 vertex_count_per_instance;
     u32 instance_count;
@@ -865,6 +884,67 @@ struct PM4CmdDrawIndexIndirectMulti {
     u64 countAddr;      ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
     u32 stride;         ///< Stride in memory from one data structure to the next
     u32 draw_initiator; ///< Draw Initiator Register
+};
+
+struct PM4CmdMemSemaphore {
+    enum class ClientCode : u32 {
+        CommandProcessor = 0u,
+        CommandBuffer = 1u,
+        DataBuffer = 2u,
+    };
+    enum class Select : u32 {
+        SignalSemaphore = 6u,
+        WaitSemaphore = 7u,
+    };
+    enum class SignalType : u32 {
+        Increment = 0u,
+        Write = 1u,
+    };
+
+    PM4Type3Header header; ///< header
+    union {
+        u32 dw1;
+        BitField<3, 29, u32> addr_lo; ///< Semaphore address bits [31:3]
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi;             ///< Semaphore address bits [39:32]
+        BitField<16, 1, u32> use_mailbox;        ///< Enables waiting until mailbox is written to
+        BitField<20, 1, SignalType> signal_type; ///< Indicates the type of signal sent
+        BitField<24, 2, ClientCode> client_code;
+        BitField<29, 3, Select> sem_sel; ///< Indicates whether to do a signal or wait operation
+    };
+
+    template <typename T>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>(u64(addr_lo) << 3 | (u64(addr_hi) << 32));
+    }
+
+    [[nodiscard]] bool IsSignaling() const {
+        return sem_sel == Select::SignalSemaphore;
+    }
+
+    [[nodiscard]] bool Signaled() const {
+        return *Address<u64*>() > 0;
+    }
+
+    void Decrement() const {
+        *Address<u64*>() -= 1;
+    }
+
+    void Signal() const {
+        auto* ptr = Address<u64*>();
+        switch (signal_type) {
+        case SignalType::Increment:
+            *ptr += 1;
+            break;
+        case SignalType::Write:
+            *ptr = 1;
+            break;
+        default:
+            UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
+        }
+    }
 };
 
 } // namespace AmdGpu

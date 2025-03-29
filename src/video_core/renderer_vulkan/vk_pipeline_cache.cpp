@@ -29,8 +29,6 @@ using Shader::VsOutput;
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1024},
-    vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 128},
-    vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 128},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
@@ -86,7 +84,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     const auto BuildCommon = [&](const auto& program) {
         info.num_user_data = program.settings.num_user_regs;
         info.num_input_vgprs = program.settings.vgpr_comp_cnt;
-        info.num_allocated_vgprs = program.settings.num_vgprs * 4;
+        info.num_allocated_vgprs = program.NumVgprs();
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
     };
@@ -125,6 +123,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+        info.vs_info.clip_disable = graphics_key.clip_disable;
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
             info.vs_info.tess_topology = regs.tess_config.topology;
@@ -166,10 +165,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
             };
         }
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
-            info.fs_info.color_buffers[i] = {
-                .num_format = graphics_key.color_num_formats[i],
-                .swizzle = graphics_key.color_swizzles[i],
-            };
+            info.fs_info.color_buffers[i] = graphics_key.color_buffers[i];
         }
         break;
     }
@@ -200,13 +196,23 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .subgroup_size = instance.SubgroupSize(),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
+        .support_fp32_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat32),
         .support_explicit_workgroup_layout = true,
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
+        .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
+        .supports_robust_buffer_access = instance_.IsRobustBufferAccess2Supported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        // When binding a UBO, we calculate its size considering the offset in the larger buffer
+        // cache underlying resource. In some cases, it may produce sizes exceeding the system
+        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
+        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
+        .max_viewport_width = instance.GetMaxViewportWidth(),
+        .max_viewport_height = instance.GetMaxViewportHeight(),
+        .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
     };
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
@@ -222,7 +228,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
-        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap,
+        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, profile,
                                                         graphics_key, *pipeline_cache, infos,
                                                         runtime_infos, fetch_shader, modules);
         if (Config::collectShadersForDebug()) {
@@ -243,8 +249,9 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
-        it.value() = std::make_unique<ComputePipeline>(
-            instance, scheduler, desc_heap, *pipeline_cache, compute_key, *infos[0], modules[0]);
+        it.value() =
+            std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
+                                              *pipeline_cache, compute_key, *infos[0], modules[0]);
         if (Config::collectShadersForDebug()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
@@ -259,6 +266,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
+    key.clip_disable =
+        regs.clipper_control.clip_disable || regs.primitive_type == AmdGpu::PrimitiveType::RectList;
     key.depth_test_enable = regs.depth_control.depth_enable;
     key.depth_write_enable =
         regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;
@@ -301,10 +310,9 @@ bool PipelineCache::RefreshGraphicsKey() {
     // order. We need to do some arrays compaction at this stage
     key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
-    key.color_num_formats.fill(AmdGpu::NumberFormat::Unorm);
+    key.color_buffers.fill({});
     key.blend_controls.fill({});
     key.write_masks.fill({});
-    key.color_swizzles.fill({});
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
 
     key.patch_control_points = 0;
@@ -327,10 +335,25 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
 
+        // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
+        // need a bias applied to round correctly; detect and set the flag for that here.
+        const auto needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk &&
+                                       (col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
+                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Snorm ||
+                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Srgb) &&
+                                       (col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8 ||
+                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
+                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
+
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_num_formats[remapped_cb] = col_buf.GetNumberFmt();
-        key.color_swizzles[remapped_cb] = col_buf.Swizzle();
+        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
+            .num_format = col_buf.GetNumberFmt(),
+            .num_conversion = col_buf.GetNumberConversion(),
+            .export_format = regs.color_export_format.GetFormat(cb),
+            .needs_unorm_fixup = needs_unorm_fixup,
+            .swizzle = col_buf.Swizzle(),
+        };
     }
 
     fetch_shader = std::nullopt;
@@ -396,8 +419,10 @@ bool PipelineCache::RefreshGraphicsKey() {
         break;
     }
     case Liverpool::ShaderStageEnable::VgtStages::LsHs: {
-        if (!instance.IsTessellationSupported()) {
-            break;
+        if (!instance.IsTessellationSupported() ||
+            (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
+             !instance.IsTessellationIsolinesSupported())) {
+            return false;
         }
         if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;
@@ -416,17 +441,17 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
     }
 
-    const auto vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
+    const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
     if (vs_info && fetch_shader && !instance.IsVertexInputDynamicState()) {
+        // Without vertex input dynamic state, the pipeline needs to specialize on format.
+        // Stride will still be handled outside the pipeline using dynamic state.
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
             if (attrib.UsesStepRates()) {
+                // Skip attribute binding as the data will be pulled by shader.
                 continue;
             }
             const auto& buffer = attrib.GetSharp(*vs_info);
-            if (buffer.GetSize() == 0) {
-                continue;
-            }
             ASSERT(vertex_binding < MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
@@ -446,7 +471,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
             key.color_formats[remapped_cb] = vk::Format::eUndefined;
-            key.color_swizzles[remapped_cb] = {};
+            key.color_buffers[remapped_cb] = {};
             ++remapped_cb;
             continue;
         }

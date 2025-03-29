@@ -4,7 +4,7 @@
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-#include "shader_recompiler/exception.h"
+#include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
@@ -21,9 +21,14 @@
 
 namespace Shader::Gcn {
 
+static u32 next_vgpr_num;
+static std::unordered_map<u32, IR::VectorReg> vgpr_map;
+
 Translator::Translator(IR::Block* block_, Info& info_, const RuntimeInfo& runtime_info_,
                        const Profile& profile_)
-    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {}
+    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {
+    next_vgpr_num = vgpr_map.empty() ? runtime_info.num_allocated_vgprs : next_vgpr_num;
+}
 
 void Translator::EmitPrologue() {
     ir.Prologue();
@@ -179,7 +184,20 @@ void Translator::EmitPrologue() {
     default:
         UNREACHABLE_MSG("Unknown shader stage");
     }
+
+    // Clear any scratch vgpr mappings for next shader.
+    vgpr_map.clear();
 }
+
+IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
+    const auto [it, is_new] = vgpr_map.try_emplace(offset);
+    if (is_new) {
+        ASSERT_MSG(next_vgpr_num < 256, "Out of VGPRs");
+        const auto new_vgpr = static_cast<IR::VectorReg>(next_vgpr_num++);
+        it->second = new_vgpr;
+    }
+    return it->second;
+};
 
 template <typename T>
 T Translator::GetSrc(const InstOperand& operand) {
@@ -453,8 +471,29 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 
 void Translator::EmitFetch(const GcnInst& inst) {
     // Read the pointer to the fetch shader assembly.
+    const auto code_sgpr_base = inst.src[0].code;
+    if (!profile.supports_robust_buffer_access) {
+        // The fetch shader must be inlined to access as regular buffers, so that
+        // bounds checks can be emitted to emulate robust buffer access.
+        const auto* code = GetFetchShaderCode(info, code_sgpr_base);
+        GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
+        GcnDecodeContext decoder;
+
+        // Decode and save instructions
+        u32 sub_pc = 0;
+        while (!slice.atEnd()) {
+            const auto sub_inst = decoder.decodeInstruction(slice);
+            if (sub_inst.opcode == Opcode::S_SETPC_B64) {
+                // Assume we're swapping back to the main shader.
+                break;
+            }
+            TranslateInstruction(sub_inst, sub_pc++);
+        }
+        return;
+    }
+
     info.has_fetch_shader = true;
-    info.fetch_shader_sgpr_base = inst.src[0].code;
+    info.fetch_shader_sgpr_base = code_sgpr_base;
 
     const auto fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
@@ -490,7 +529,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
             info.buffers.push_back({
                 .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
                 .used_types = IR::Type::F32,
-                .is_instance_data = true,
                 .instance_attrib = attrib.semantic,
             });
         }
@@ -502,6 +540,40 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
               magic_enum::enum_name(inst.opcode), u32(inst.opcode),
               magic_enum::enum_name(inst.category));
     info.translation_failed = true;
+}
+
+void Translator::TranslateInstruction(const GcnInst& inst, const u32 pc) {
+    // Emit instructions for each category.
+    switch (inst.category) {
+    case InstCategory::DataShare:
+        EmitDataShare(inst);
+        break;
+    case InstCategory::VectorInterpolation:
+        EmitVectorInterpolation(inst);
+        break;
+    case InstCategory::ScalarMemory:
+        EmitScalarMemory(inst);
+        break;
+    case InstCategory::VectorMemory:
+        EmitVectorMemory(inst);
+        break;
+    case InstCategory::Export:
+        EmitExport(inst);
+        break;
+    case InstCategory::FlowControl:
+        EmitFlowControl(pc, inst);
+        break;
+    case InstCategory::ScalarALU:
+        EmitScalarAlu(inst);
+        break;
+    case InstCategory::VectorALU:
+        EmitVectorAlu(inst);
+        break;
+    case InstCategory::DebugProfile:
+        break;
+    default:
+        UNREACHABLE();
+    }
 }
 
 void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info,
@@ -521,37 +593,7 @@ void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Inf
             continue;
         }
 
-        // Emit instructions for each category.
-        switch (inst.category) {
-        case InstCategory::DataShare:
-            translator.EmitDataShare(inst);
-            break;
-        case InstCategory::VectorInterpolation:
-            translator.EmitVectorInterpolation(inst);
-            break;
-        case InstCategory::ScalarMemory:
-            translator.EmitScalarMemory(inst);
-            break;
-        case InstCategory::VectorMemory:
-            translator.EmitVectorMemory(inst);
-            break;
-        case InstCategory::Export:
-            translator.EmitExport(inst);
-            break;
-        case InstCategory::FlowControl:
-            translator.EmitFlowControl(pc, inst);
-            break;
-        case InstCategory::ScalarALU:
-            translator.EmitScalarAlu(inst);
-            break;
-        case InstCategory::VectorALU:
-            translator.EmitVectorAlu(inst);
-            break;
-        case InstCategory::DebugProfile:
-            break;
-        default:
-            UNREACHABLE();
-        }
+        translator.TranslateInstruction(inst, pc);
     }
 }
 
