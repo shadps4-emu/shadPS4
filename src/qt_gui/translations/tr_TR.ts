@@ -883,10 +883,6 @@
       <translation>Kısayol oluşturulurken hata oluştu!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>PKG Yükle</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Oyun</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Tuş Atamaları</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Klasörü Seç</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Hangi dizine yüklemek istediğinizi seçin.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Tüm Kuyruktakileri Seçili Klasöre Yükle</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Yüklemede PKG Dosyasını Sil</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Elf Klasörü Aç/Ekle</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Paketleri Kur (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Oyunu Başlat</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Yapılandır...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>.pkg dosyasından uygulama yükle</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>Oyun bulunamadı. Oyunlarınızı lütfen önce kütüphanenize ekleyin.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKG Görüntüleyici</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Sadece bir dosya seçilebilir!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG Çıkartma</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Yama tespit edildi!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG ve oyun sürümleri uyumlu: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Üzerine yazmak ister misiniz?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG Sürümü %1, kurulu sürümden daha eski: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Oyun yüklendi: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Yamanın yüklenmesini ister misiniz: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC Yükleme</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>DLC&apos;yi yüklemek ister misiniz: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC zaten yüklü:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Oyun zaten yüklü</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HATASI</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>PKG Çıkarılıyor %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Çıkarma Tamamlandı</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Oyun başarıyla %1 konumuna yüklendi</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Dosya geçerli bir PKG dosyası gibi görünmüyor</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Oyunu Çalıştır</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Eboot.bin dosyası bulunamadı</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG Dosyası (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG bir yama ya da DLC, lütfen önce oyunu yükleyin!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation>Simgelerin Altında Etiketleri Göster</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Klasörü Aç</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HATASI</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Ad</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Seri Numarası</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>Yüklü</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Boyut</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>Tür</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>Uygulama Sürümü</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>Sistem Yazılımı</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Bölge</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Bayraklar</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Yol</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Dosya</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Bilinmeyen</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paket</translation>
     </message>
   </context>
   <context>

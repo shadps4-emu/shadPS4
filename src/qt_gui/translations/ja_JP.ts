@@ -883,10 +883,6 @@
       <translation>ショートカットの作成に失敗しました!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>PKGをインストール</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>ゲーム</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - ディレクトリを選択</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>インストール先のディレクトリを選択してください。</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>インストール時にPKGファイルを削除</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Elfフォルダを開く/追加する</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>パッケージをインストール (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>ゲームを起動</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>設定...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>.pkgファイルからアプリケーションをインストール</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKGビューアー</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>1つのファイルしか選択できません!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKGの抽出</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>パッチが検出されました！</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKGとゲームのバージョンが一致しています: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>上書きしてもよろしいですか？</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKGバージョン %1 はインストールされているバージョンよりも古いです: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>ゲームはインストール済みです: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>パッチをインストールしてもよろしいですか: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLCのインストール</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>DLCをインストールしてもよろしいですか: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLCはすでにインストールされています:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>ゲームはすでにインストールされています</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKGエラー</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>PKGを抽出中 %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>抽出完了</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>ゲームが %1 に正常にインストールされました</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>ファイルが有効なPKGファイルでないようです</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>ゲームを実行</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Eboot.bin ファイルが見つかりません</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKGファイル (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>フォルダーを開く</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKGエラー</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>名前</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>シリアル</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>サイズ</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>地域</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>パス</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>ファイル</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>不明</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>パッケージ</translation>
     </message>
   </context>
   <context>

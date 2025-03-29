@@ -883,10 +883,6 @@
       <translation>Fel vid skapandet av genväg!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installera PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Spel</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Tangentbindningar</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Välj katalog</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Välj vilken katalog som du vill installera till.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installera alla köade till markerad mapp</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Ta bort PKG-fil efter installation</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Öppna/Lägg till Elf-mapp</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installera paket (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Starta spel</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfigurera...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installera program från en .pkg-fil</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>Inga spel hittades. Lägg till dina spel till biblioteket först.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKG-visare</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Endast en fil kan väljas!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-extrahering</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Patch upptäcktes!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG och spelversioner matchar: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Vill du skriva över?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versionen %1 är äldre än installerad version: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spelet är installerat: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Vill du installera patch: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC-installation</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Vill du installera DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC redan installerat:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spelet redan installerat</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extraherar PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extrahering färdig</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spelet installerades i %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Filen verkar inte vara en giltig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Kör spel</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Filen eboot.bin hittades inte</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG-fil (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG är en patch eller DLC. Installera spelet först!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1516,110 +1409,43 @@
     </message>
     <message>
       <source>Play</source>
-      <translation type="unfinished">Play</translation>
+      <translation>Spela</translation>
     </message>
     <message>
       <source>Pause</source>
-      <translation type="unfinished">Pause</translation>
+      <translation>Paus</translation>
     </message>
     <message>
       <source>Stop</source>
-      <translation type="unfinished">Stop</translation>
+      <translation>Stoppa</translation>
     </message>
     <message>
       <source>Restart</source>
-      <translation type="unfinished">Restart</translation>
+      <translation>Starta om</translation>
     </message>
     <message>
       <source>Full Screen</source>
-      <translation type="unfinished">Full Screen</translation>
+      <translation>Helskärm</translation>
     </message>
     <message>
       <source>Controllers</source>
-      <translation type="unfinished">Controllers</translation>
+      <translation>Kontroller</translation>
     </message>
     <message>
       <source>Keyboard</source>
-      <translation type="unfinished">Keyboard</translation>
+      <translation>Tangentbord</translation>
     </message>
     <message>
       <source>Refresh List</source>
-      <translation type="unfinished">Refresh List</translation>
+      <translation>Uppdatera lista</translation>
     </message>
     <message>
       <source>Resume</source>
-      <translation type="unfinished">Resume</translation>
+      <translation>Återuppta</translation>
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Öppna mapp</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Namn</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Serienummer</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>Installerat</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Storlek</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>Typ</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>Appver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flaggor</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Sökväg</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Arkiv</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Okänt</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paket</translation>
+      <translation>Visa etiketter under ikoner</translation>
     </message>
   </context>
   <context>

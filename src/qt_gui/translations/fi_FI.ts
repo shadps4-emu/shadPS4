@@ -883,10 +883,6 @@
       <translation>Virhe pikakuvakkeen luonnissa!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Asenna PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Peli</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Valitse hakemisto</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Valitse, mihin hakemistoon haluat asentaa.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Avaa/Lisää Elf Hakemisto</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Asenna Paketteja (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Käynnistä Peli</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Asetukset...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Asenna sovellus .pkg tiedostosta</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKG Selain</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Vain yksi tiedosto voi olla valittuna!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG:n purku</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Päivitys havaittu!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG- ja peliversiot vastaavat: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Haluatko korvata?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versio %1 on vanhempi kuin asennettu versio: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Peli on asennettu: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Haluatko asentaa päivityksen: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Lisäsisällön asennus</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Haluatko asentaa lisäsisällön: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>Lisäsisältö on jo asennettu:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Peli on jo asennettu</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG VIRHE</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Purkaminen PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Purku valmis</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Peli asennettu onnistuneesti kohtaan %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Tiedosto ei vaikuta olevan kelvollinen PKG-tiedosto</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Avaa Hakemisto</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG VIRHE</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Nimi</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Sarjanumero</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Koko</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Alue</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Polku</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Tiedosto</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Tuntematon</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>
