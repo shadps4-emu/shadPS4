@@ -301,8 +301,7 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
             int player_count = Config::GetNumberOfPlayers();
             AddUserServiceEvent({OrbisUserServiceEventType::Logout, player_count});
             Config::SetNumberOfPlayers(player_count - 1);
-        }
-        else if (input_id == SDLK_F5) {
+        } else if (input_id == SDLK_F5) {
             int player_count = Config::GetNumberOfPlayers();
             AddUserServiceEvent({OrbisUserServiceEventType::Login, player_count + 1});
             Config::SetNumberOfPlayers(player_count + 1);

@@ -22,11 +22,7 @@
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-<<<<<<< HEAD
-=======
 #include "common/singleton.h"
-#include "common/version.h"
->>>>>>> ac515a2bb (Multiple controllers v0)
 #include "input/controller.h"
 #include "input/input_mouse.h"
 
@@ -585,20 +581,20 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
-            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
+            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
             controllers[gamepad_index]->CheckButton(0, OrbisPadButtonDataOffset::L2,
                                                     *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
-            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
+            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
             controllers[gamepad_index]->CheckButton(0, OrbisPadButtonDataOffset::R2,
                                                     *new_param > 0x20);
             return;
         default:
             break;
         }
-        controllers[gamepad_index]->Axis(0, c_axis, GetAxis(-0x80, 0x80, *new_param * multiplier));
+        controllers[gamepad_index]->Axis(0, c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
     }
 }
 
