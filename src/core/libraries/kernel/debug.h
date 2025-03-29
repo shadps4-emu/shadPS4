@@ -6,7 +6,7 @@
 namespace Core::Loader {
 class SymbolsResolver;
 }
-    
+
 namespace Libraries::Kernel {
 
 void RegisterDebug(Core::Loader::SymbolsResolver* sym);
