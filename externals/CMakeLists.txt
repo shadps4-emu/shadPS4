@@ -201,6 +201,11 @@ if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
 
+# libusb
+if (NOT TARGET usb-1.0)
+    add_subdirectory(libusb)
+endif()
+
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     add_subdirectory(discord-rpc)
