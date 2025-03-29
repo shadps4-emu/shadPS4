@@ -140,15 +140,17 @@ public:
             QString open_update_path;
             Common::FS::PathToQString(open_update_path, m_games[itemID].path);
             open_update_path += "-UPDATE";
-            if (!std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+            if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
+            } else {
                 Common::FS::PathToQString(open_update_path, m_games[itemID].path);
                 open_update_path += "-patch";
-                if (!std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
+                } else {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update folder to open!")));
                 }
-            } else {
-                QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
             }
         }
 
