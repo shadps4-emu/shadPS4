@@ -2067,7 +2067,7 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>Виберіть гру:</translation>
     </message>
     <message>
       <source>Progress</source>
