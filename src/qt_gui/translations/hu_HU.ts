@@ -883,10 +883,6 @@
       <translation>Hiba a parancsikon létrehozásával!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>PKG telepítése</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Játék</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Mappa kiválasztása</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Válassza ki a mappát a játékok telepítésére.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>ELF Mappa Megnyitása/Hozzáadása</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>PKG-k Telepítése (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Játék Indítása</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfigurálás...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Program telepítése egy .pkg fájlból</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>PKG Nézegető</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Csak egy fájl választható ki!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG kicsomagolás</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Frissítés észlelve!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>A PKG és a játék verziói egyeznek: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Szeretné felülírni?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>A(z) %1-es PKG verzió régebbi, mint a telepített verzió: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>A játék telepítve van: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Szeretné telepíteni a frissítést: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC Telepítés</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Szeretné telepíteni a %1 DLC-t?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC már telepítve:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>A játék már telepítve van</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HIBA</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>PKG kicsomagolása %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Kicsomagolás befejezve</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>A játék sikeresen telepítve itt: %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>A fájl nem tűnik érvényes PKG fájlnak</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>Mappa Megnyitása</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HIBA</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Név</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Sorozatszám</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Méret</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Régió</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Útvonal</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Fájl</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Ismeretlen</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>

@@ -1,11 +1,3 @@
-[submodule "externals/cryptopp-cmake"]
-	path = externals/cryptopp-cmake
-	url = https://github.com/shadps4-emu/ext-cryptopp-cmake.git
-	shallow = true
-[submodule "externals/cryptopp"]
-	path = externals/cryptopp
-	url = https://github.com/shadps4-emu/ext-cryptopp.git
-	shallow = true
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
