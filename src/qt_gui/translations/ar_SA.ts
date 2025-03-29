@@ -883,10 +883,6 @@
       <translation>خطأ في إنشاء الاختصار</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>PKG تثبيت</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>اللعبة</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>أزرار التحكم</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - اختر المجلد</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>حدد الدليل الذي تريد تثبيت إليه.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>تثبيت كل قائمة الانتظار إلى المجلد المحدد</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>حذف مِلَفّ PKG عند التثبيت</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Elf فتح/إضافة مجلد</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>(PKG) تثبيت الحزم</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>تشغيل اللعبة</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>...تكوين</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>.pkg تثبيت التطبيق من ملف</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>لم يتم العثور على ألعاب. الرجاء إضافة ألعابك إلى مكتبتك أولاً.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>عارض PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>!يمكن تحديد ملف واحد فقط</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG استخراج</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>تم اكتشاف تصحيح!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation> :واللعبة تتطابق إصدارات PKG</translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>هل ترغب في الكتابة فوق الملف الموجود؟</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation> :أقدم من الإصدار المثبت PKG Version %1</translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation> :اللعبة مثبتة</translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation> :هل ترغب في تثبيت التصحيح</translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>تثبيت المحتوى القابل للتنزيل</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>هل ترغب في تثبيت المحتوى القابل للتنزيل: 1%؟</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation> :المحتوى القابل للتنزيل مثبت بالفعل</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>اللعبة مثبتة بالفعل</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG خطأ في</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>PKG %1/%2 جاري استخراج</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>اكتمل الاستخراج</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>تم تثبيت اللعبة بنجاح في %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>يبدو أن الملف ليس ملف PKG صالحًا</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>تشغيل اللعبة</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>لم يتم العثور على ملف Eboot.bin</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>ملف PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG هو تصحيح أو DLC، يرجى تثبيت اللعبة أولاً!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation>إظهار العلامات أسفل الأيقونات</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation>فتح المجلد</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG خطأ في</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>اسم</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>سيريال</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation>مثبت</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>حجم</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation>الفئة</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation>النوع</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation>إصدار</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>منطقة</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>مسار</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>ملف</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>غير معروف</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>

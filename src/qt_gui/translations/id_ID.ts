@@ -7,22 +7,22 @@
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>Tentang shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <translation>shadPS4 adalah emulator sumber terbuka eksperimental untuk PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>Perangkat lunak ini tidak boleh digunakan untuk memainkan permainan yang tidak Anda peroleh secara legal.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation type="unfinished">Cheats / Patches for </translation>
+      <translation>Kecurangan / Tambalan untuk </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
@@ -34,7 +34,7 @@
     </message>
     <message>
       <source>Serial: </source>
-      <translation type="unfinished">Serial: </translation>
+      <translation>Seri: </translation>
     </message>
     <message>
       <source>Version: </source>
@@ -400,38 +400,38 @@
     </message>
     <message>
       <source>Playable</source>
-      <translation type="unfinished">Playable</translation>
+      <translation>Dapat dimainkan</translation>
     </message>
   </context>
   <context>
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Konfigurasi Kontrol</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Tombol arah</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Atas</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Kiri</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Kanan</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Bawah</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Zona Mati Stik Kiri (standar: 2, maksimum: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
@@ -883,10 +883,6 @@
       <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation type="unfinished">Game</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation type="unfinished">Boot Game</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation type="unfinished">Configure...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Hanya satu file yang bisa dipilih!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Ekstraksi PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Patch terdeteksi!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Versi PKG dan Game cocok: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Apakah Anda ingin menimpa?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Versi PKG %1 lebih lama dari versi yang terpasang: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Game telah terpasang: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Apakah Anda ingin menginstal patch: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalasi DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Apakah Anda ingin menginstal DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC sudah terpasang:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Game sudah terpasang</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>KESALAHAN PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Mengekstrak PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Ekstraksi Selesai</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Game berhasil dipasang di %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>File tampaknya bukan file PKG yang valid</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1553,73 +1446,6 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation type="unfinished">Show Labels Under Icons</translation>
-    </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>KESALAHAN PKG</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Nama</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation type="unfinished">Serial</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Ukuran</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Wilayah</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Jalur</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation type="unfinished">File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Tidak Dikenal</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
     </message>
   </context>
   <context>
