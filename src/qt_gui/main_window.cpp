@@ -45,11 +45,11 @@ MainWindow::~MainWindow() {
 bool MainWindow::Init() {
     auto start = std::chrono::steady_clock::now();
     // setup ui
+    LoadTranslation();
     AddUiWidgets();
     CreateActions();
     CreateRecentGameActions();
     ConfigureGuiFromSettings();
-    LoadTranslation();
     CreateDockWindows();
     CreateConnects();
     SetLastUsedTheme();
