@@ -12,6 +12,7 @@ set(SHADER_FILES
     detilers/micro_64bpp.comp
     detilers/micro_8bpp.comp
     fs_tri.vert
+    fsr.comp
     post_process.frag
 )
 

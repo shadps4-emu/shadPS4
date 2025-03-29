@@ -407,7 +407,7 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>操控設定</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -519,7 +519,7 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
+      <translation>色彩調整</translation>
     </message>
     <message>
       <source>R:</source>
@@ -540,6 +540,77 @@
     <message>
       <source>Override Color</source>
       <translation type="unfinished">Override Color</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>無法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation type="unfinished">Cannot bind axis values more than once</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>套用</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation type="unfinished">Use Per-Game configs</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>錯誤</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation type="unfinished">Could not open the file for reading</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation type="unfinished">Could not open the file for writing</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>儲存變更</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation type="unfinished">Do you want to save changes?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation type="unfinished">Help</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation type="unfinished">Do you want to reset this config to your custom default config?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation type="unfinished">Reset to Default</translation>
     </message>
   </context>
   <context>
@@ -812,10 +883,6 @@
       <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation type="unfinished">Game</translation>
     </message>
@@ -885,22 +952,26 @@
     </message>
   </context>
   <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
+      <source>Quickstart</source>
+      <translation type="unfinished">Quickstart</translation>
     </message>
     <message>
-      <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
+      <source>FAQ</source>
+      <translation type="unfinished">FAQ</translation>
     </message>
     <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
+      <source>Syntax</source>
+      <translation type="unfinished">Syntax</translation>
     </message>
     <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
+      <source>Special Bindings</source>
+      <translation type="unfinished">Special Bindings</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation type="unfinished">Keybindings</translation>
     </message>
   </context>
   <context>
@@ -956,10 +1027,6 @@
     <message>
       <source>Use per-game configs</source>
       <translation type="unfinished">Use per-game configs</translation>
-    </message>
-    <message>
-      <source>Copy  from Common Config</source>
-      <translation type="unfinished">Copy  from Common Config</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1050,20 +1117,72 @@
       <translation type="unfinished">Right Stick</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation type="unfinished">Deadzone Offset (def 0.50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation type="unfinished">Speed Multiplier (def 1.0): </translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation type="unfinished">Speed Offset (def 0.125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation type="unfinished">Speed Offset (def 0.125): </translation>
+      <source>Copy from Common Config</source>
+      <translation type="unfinished">Copy from Common Config</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation type="unfinished">Common Config Selected</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation type="unfinished">Copy values from Common Config</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation type="unfinished">Cannot bind any unique input more than once</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation type="unfinished">Press a key</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation type="unfinished">Cannot set mapping</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
     </message>
   </context>
   <context>
@@ -1071,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation type="unfinished">Open/Add Elf Folder</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1091,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation type="unfinished">Configure...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1165,8 +1276,12 @@
       <translation type="unfinished">Dump Game List</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1277,84 +1392,12 @@
       <translation>只能選擇一個檔案！</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG 解壓縮</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>檢測到補丁！</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG 和遊戲版本匹配: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>您想要覆蓋嗎？</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG 版本 %1 比已安裝版本更舊: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>遊戲已安裝: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>您想要安裝補丁嗎: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC 安裝</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>您想要安裝 DLC: %1 嗎？</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC 已經安裝:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>遊戲已經安裝</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 錯誤</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>正在解壓縮 PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>解壓縮完成</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>遊戲成功安裝於 %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>檔案似乎不是有效的 PKG 檔案</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1364,72 +1407,45 @@
       <source>shadPS4</source>
       <translation type="unfinished">shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
+      <source>Play</source>
+      <translation type="unfinished">Play</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG 錯誤</translation>
+      <source>Pause</source>
+      <translation type="unfinished">Pause</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>名稱</translation>
+      <source>Stop</source>
+      <translation type="unfinished">Stop</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>序號</translation>
+      <source>Restart</source>
+      <translation type="unfinished">Restart</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <source>Full Screen</source>
+      <translation type="unfinished">Full Screen</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>大小</translation>
+      <source>Controllers</source>
+      <translation type="unfinished">Controllers</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <source>Keyboard</source>
+      <translation type="unfinished">Keyboard</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <source>Refresh List</source>
+      <translation type="unfinished">Refresh List</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <source>Resume</source>
+      <translation type="unfinished">Resume</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>區域</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>路徑</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation type="unfinished">File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>未知</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <source>Show Labels Under Icons</source>
+      <translation type="unfinished">Show Labels Under Icons</translation>
     </message>
   </context>
   <context>
@@ -1795,10 +1811,6 @@
       <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>從不</translation>
     </message>
@@ -2026,12 +2038,36 @@
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
       <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
     </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation type="unfinished">Cannot create portable user folder</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation type="unfinished">%1 already exists</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation type="unfinished">Portable user folder created</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation type="unfinished">%1 successfully created.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation type="unfinished">Select Game:</translation>
     </message>
     <message>
       <source>Progress</source>

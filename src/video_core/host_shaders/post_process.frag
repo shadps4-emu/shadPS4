@@ -8,7 +8,7 @@ layout (location = 0) out vec4 color;
 
 layout (binding = 0) uniform sampler2D texSampler;
 
-layout(push_constant) uniform settings {
+layout (push_constant) uniform settings {
     float gamma;
     bool hdr;
 } pp;

@@ -175,6 +175,7 @@ void WorkerLoop() {
 
             auto texture = Vulkan::UploadTexture(pixels, vk::Format::eR8G8B8A8Unorm, width, height,
                                                  width * height * 4 * sizeof(stbi_uc));
+            stbi_image_free((void*)pixels);
 
             core->upload_data = texture;
             core->width = width;

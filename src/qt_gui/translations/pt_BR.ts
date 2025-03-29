@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Substituir a Cor</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Não foi possível salvar</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Não é possível vincular os valores do eixo mais de uma vez</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Padrões</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Editar atalhos de entrada do Teclado + Mouse e do Controle</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Usar configurações por jogo</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Erro</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Não foi possível abrir o arquivo para leitura</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Não foi possível abrir o arquivo para gravação</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Salvar Alterações</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Gostaria de salvar as alterações?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Ajuda</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Você gostaria de redefinir sua configuração padrão personalizada de volta para a configuração padrão original?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Você gostaria de redefinir esta configuração para a sua configuração padrão personalizada?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Redefinir ao Padrão</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -627,7 +698,7 @@
     </message>
     <message>
       <source>Play Time</source>
-      <translation>Tempo Jogado</translation>
+      <translation>Tempo de Jogo</translation>
     </message>
     <message>
       <source>Never Played</source>
@@ -651,7 +722,7 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>Jogo não inicializa corretamente / trava o emulador</translation>
+      <translation>O jogo não inicializa corretamente ou trava o emulador</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
@@ -659,7 +730,7 @@
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation>Jogo exibe imagem mas não passa do menu</translation>
+      <translation>O jogo exibe imagem mas não passa do menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
@@ -812,10 +883,6 @@
       <translation>Erro ao criar atalho!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Instalar PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Jogo</translation>
     </message>
@@ -841,7 +908,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório do %2 %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -885,22 +952,26 @@
     </message>
   </context>
   <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Escolha o diretório</translation>
+      <source>Quickstart</source>
+      <translation>Introdução</translation>
     </message>
     <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Selecione o diretório em que você deseja instalar.</translation>
+      <source>FAQ</source>
+      <translation>Perguntas frequentes</translation>
     </message>
     <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Instalar Tudo da Fila para a Pasta Selecionada</translation>
+      <source>Syntax</source>
+      <translation>Sintaxe</translation>
     </message>
     <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Excluir o PKG após a Instalação</translation>
+      <source>Special Bindings</source>
+      <translation>Atalhos Especiais</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Teclas de atalho</translation>
     </message>
   </context>
   <context>
@@ -911,7 +982,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>Direcionais</translation>
+      <translation>Direcional</translation>
     </message>
     <message>
       <source>Up</source>
@@ -956,10 +1027,6 @@
     <message>
       <source>Use per-game configs</source>
       <translation>Usar configurações por jogo</translation>
-    </message>
-    <message>
-      <source>Copy  from Common Config</source>
-      <translation>Copiar da Configuração Comum</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1015,7 +1082,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>Nota: clique no botão de Ajuda -> Special Bindings para obter mais informações</translation>
+      <translation>Nota: clique no botão de Ajuda e Atalhos Especiais para obter mais informações</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1050,20 +1117,72 @@
       <translation>Analógico Direito</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation>Deslocamento da Zona Morta (Pad 0,50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation>Multiplicador de Velocidade (Pad 1,0): </translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation>Deslocamento de Velocidade (Pad 0,125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation>Deslocamento de Velocidade (Pad 0,125): </translation>
+      <source>Copy from Common Config</source>
+      <translation>Copiar da Configuração Comum</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Deslocamento da Zona Morta (Pad 0,50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Multiplicador de Velocidade (Pad 1,0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configuração Comum Selecionada</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Este botão copia os mapeamentos da Configuração Comum para o perfil atualmente selecionado, e não pode ser usado quando o perfil atualmente selecionado é a Configuração Comum.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copiar valores da Configuração Comum</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Você deseja substituir os mapeamentos existentes com os mapeamentos da Configuração Comum?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Não foi possível salvar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Não é possível vincular qualquer entrada única mais de uma vez</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Aperte uma tecla</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Não é possível definir o mapeamento</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>A rolagem do mouse não pode ser mapeada para saídas do analógico</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar Padrões</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
     </message>
   </context>
   <context>
@@ -1071,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation>Abrir/Adicionar pasta Elf</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Instalar Pacotes (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1091,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Configurar...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Instalar aplicativo de um arquivo .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1142,11 +1253,11 @@
     </message>
     <message>
       <source>List View</source>
-      <translation>Visualizar em Lista</translation>
+      <translation>Visualização em Lista</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>Visualizar em Grade</translation>
+      <translation>Visualização em Grade</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
@@ -1165,8 +1276,12 @@
       <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>Visualizador de PKG</translation>
+      <source>Trophy Viewer</source>
+      <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Nenhum jogo encontrado. Adicione seus jogos à sua biblioteca primeiro.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1277,84 +1392,12 @@
       <translation>Apenas um arquivo pode ser selecionado!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Extração de PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Atualização detectada!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>As versões do PKG e do Jogo são iguais: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Você gostaria de sobrescrever?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>A Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Jogo instalado: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Você gostaria de instalar a atualização: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalação de DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Você gostaria de instalar o DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC já está instalado:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>O jogo já está instalado:</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ERRO DE PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extraindo PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extração Concluída</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Jogo instalado com sucesso em %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>O arquivo não parece ser um arquivo PKG válido</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Executar Jogo</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Arquivo Eboot.bin não encontrado</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Arquivo PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>O PKG é um patch ou DLC, por favor instale o jogo primeiro!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1364,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Abrir Pasta</translation>
+      <source>Play</source>
+      <translation>Jogar</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>ERRO DE PKG</translation>
+      <source>Pause</source>
+      <translation>Pausar</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Nome</translation>
+      <source>Stop</source>
+      <translation>Parar</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serial</translation>
+      <source>Restart</source>
+      <translation>Reiniciar</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Instalado</translation>
+      <source>Full Screen</source>
+      <translation>Tela Cheia</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Tamanho</translation>
+      <source>Controllers</source>
+      <translation>Controles</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Categoria</translation>
+      <source>Keyboard</source>
+      <translation>Teclado</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Tipo</translation>
+      <source>Refresh List</source>
+      <translation>Atualizar Lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Versão do App</translation>
+      <source>Resume</source>
+      <translation>Continuar</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Região</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Caminho</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Arquivo</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Desconhecido</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Pacote</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Mostrar Rótulos Sob Ícones</translation>
     </message>
   </context>
   <context>
@@ -1492,7 +1508,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation>Abrir a pasta de imagens/sons de troféus personalizados</translation>
+      <translation>Abrir a pasta de imagens e sons de troféus personalizados</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1795,10 +1811,6 @@
       <translation>Atualizar Lista de Compatibilidade:\nAtualiza imediatamente o banco de dados de compatibilidade.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Abrir a pasta de imagens/sons de troféus personalizados:\nVocê pode adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas em versões Qt.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>Nunca</translation>
     </message>
@@ -1892,11 +1904,11 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Host:\nInsere informações vindo do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Host:\nInsere informações vindo do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, ative os Diagnósticos de Falhas.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, ative os Diagnósticos de Falhas.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -2016,15 +2028,35 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation>Pasta de Usuário Portátil</translation>
+      <translation>Pasta Portátil do Usuário</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation>Criar Pasta de Usuário Portátil a partir da Pasta de Usuário Comum</translation>
+      <translation>Criar Pasta Portátil do Usuário a partir da Pasta Comum do Usuário</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation>Pasta de usuário portátil:\nArmazena as configurações e dados do shadPS4 que serão aplicados apenas à compilação do shadPS4 localizada na pasta atual. Reinicie o aplicativo após criar a pasta de usuário portátil para começar a usá-la.</translation>
+      <translation>Pasta Portátil do Usuário:\nArmazena as configurações e dados do shadPS4 que serão aplicados apenas à compilação do shadPS4 localizada na pasta atual. Reinicie o aplicativo após criar a pasta portátil do usuário para começar a usá-la.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Não é possível criar a pasta portátil do usuário</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 já existe</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Pasta portátil do usuário criada</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 criado com sucesso.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Abrir a pasta de imagens e sons de troféus personalizados:\nVocê pode adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.wav OU trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas em versões Qt.</translation>
     </message>
   </context>
   <context>
@@ -2032,6 +2064,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Selecionar Jogo:</translation>
     </message>
     <message>
       <source>Progress</source>

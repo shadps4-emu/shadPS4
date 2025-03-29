@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -69,6 +70,8 @@ class ElfInfo {
     u32 raw_firmware_ver = 0;
     PSFAttributes psf_attributes{};
 
+    std::filesystem::path splash_path{};
+
 public:
     static constexpr u32 FW_15 = 0x1500000;
     static constexpr u32 FW_16 = 0x1600000;
@@ -115,6 +118,10 @@ public:
     [[nodiscard]] const PSFAttributes& GetPSFAttributes() const {
         ASSERT(initialized);
         return psf_attributes;
+    }
+
+    [[nodiscard]] const std::filesystem::path& GetSplashPath() const {
+        return splash_path;
     }
 };
 

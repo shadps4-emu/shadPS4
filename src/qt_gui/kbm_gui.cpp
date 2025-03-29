@@ -15,7 +15,6 @@
 #include "ui_kbm_gui.h"
 
 HelpDialog* HelpWindow;
-
 KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
     : QDialog(parent), m_game_info(game_info_get), ui(new Ui::KBMSettings) {
 
@@ -48,6 +47,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
 
     ui->ProfileComboBox->setCurrentText("Common Config");
     ui->TitleLabel->setText("Common Config");
+    config_id = "default";
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -63,10 +63,16 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
         }
     });
 
+    ui->buttonBox->button(QDialogButtonBox::Save)->setText(tr("Save"));
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
+    ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+
     connect(ui->HelpButton, &QPushButton::clicked, this, &KBMSettings::onHelpClicked);
     connect(ui->TextEditorButton, &QPushButton::clicked, this, [this]() {
         auto kbmWindow = new EditorDialog(this);
         kbmWindow->exec();
+        SetUIValuestoMappings(config_id);
     });
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, [this] {
@@ -79,23 +85,21 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
 
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
         GetGameTitle();
-        std::string config_id = (ui->ProfileComboBox->currentText() == "Common Config")
-                                    ? "default"
-                                    : ui->ProfileComboBox->currentText().toStdString();
         SetUIValuestoMappings(config_id);
     });
 
     connect(ui->CopyCommonButton, &QPushButton::clicked, this, [this] {
         if (ui->ProfileComboBox->currentText() == "Common Config") {
-            QMessageBox::information(this, "Common Config Selected",
-                                     "This button copies mappings from the Common Config to the "
-                                     "currently selected profile, and cannot be used when the "
-                                     "currently selected profile is the Common Config.");
+            QMessageBox::information(this, tr("Common Config Selected"),
+                                     // clang-format off
+tr("This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config."));
+            // clang-format on
         } else {
             QMessageBox::StandardButton reply =
-                QMessageBox::question(this, "Copy values from Common Config",
-                                      "Do you want to overwrite existing mappings with the "
-                                      "mappings from the Common Config?",
+                QMessageBox::question(this, tr("Copy values from Common Config"),
+                                      // clang-format off
+tr("Do you want to overwrite existing mappings with the mappings from the Common Config?"),
+                                      // clang-format on
                                       QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::Yes) {
                 SetUIValuestoMappings("default");
@@ -379,10 +383,6 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     lines.push_back(output_string + " = " + input_string);
 
     lines.push_back("");
-
-    std::string config_id = (ui->ProfileComboBox->currentText() == "Common Config")
-                                ? "default"
-                                : ui->ProfileComboBox->currentText().toStdString();
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
     std::fstream file(config_file);
     int lineCount = 0;
@@ -423,8 +423,8 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     // Prevent duplicate inputs for KBM as this breaks the engine
     for (auto it = inputs.begin(); it != inputs.end(); ++it) {
         if (std::find(it + 1, inputs.end(), *it) != inputs.end()) {
-            QMessageBox::information(this, "Unable to Save",
-                                     "Cannot bind any unique input more than once");
+            QMessageBox::information(this, tr("Unable to Save"),
+                                     tr("Cannot bind any unique input more than once"));
             return;
         }
     }
@@ -620,12 +620,15 @@ void KBMSettings::GetGameTitle() {
             }
         }
     }
+    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+                    ? "default"
+                    : ui->ProfileComboBox->currentText().toStdString();
 }
 
 void KBMSettings::onHelpClicked() {
     if (!HelpWindowOpen) {
         HelpWindow = new HelpDialog(&HelpWindowOpen, this);
-        HelpWindow->setWindowTitle("Help");
+        HelpWindow->setWindowTitle(tr("Help"));
         HelpWindow->setAttribute(Qt::WA_DeleteOnClose); // Clean up on close
         HelpWindow->show();
         HelpWindowOpen = true;
@@ -643,7 +646,7 @@ void KBMSettings::StartTimer(QPushButton*& button) {
     mapping = button->text();
 
     DisableMappingButtons();
-    button->setText("Press a key [" + QString::number(MappingTimer) + "]");
+    button->setText(tr("Press a key") + " [" + QString::number(MappingTimer) + "]");
     timer = new QTimer(this);
     MappingButton = button;
     connect(timer, &QTimer::timeout, this, [this]() { CheckMapping(MappingButton); });
@@ -652,7 +655,7 @@ void KBMSettings::StartTimer(QPushButton*& button) {
 
 void KBMSettings::CheckMapping(QPushButton*& button) {
     MappingTimer -= 1;
-    button->setText("Press a key [" + QString::number(MappingTimer) + "]");
+    button->setText(tr("Press a key") + " [" + QString::number(MappingTimer) + "]");
 
     if (MappingCompleted) {
         EnableMapping = false;
@@ -1003,15 +1006,15 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
                     SetMapping("mousewheelup");
                 } else {
-                    QMessageBox::information(this, "Cannot set mapping",
-                                             "Mousewheel cannot be mapped to stick outputs");
+                    QMessageBox::information(this, tr("Cannot set mapping"),
+                                             tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             } else if (wheelEvent->angleDelta().y() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
                     SetMapping("mousewheeldown");
                 } else {
-                    QMessageBox::information(this, "Cannot set mapping",
-                                             "Mousewheel cannot be mapped to stick outputs");
+                    QMessageBox::information(this, tr("Cannot set mapping"),
+                                             tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             }
             if (wheelEvent->angleDelta().x() > 5) {
@@ -1023,8 +1026,8 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                         SetMapping("mousewheelright");
                     }
                 } else {
-                    QMessageBox::information(this, "Cannot set mapping",
-                                             "Mousewheel cannot be mapped to stick outputs");
+                    QMessageBox::information(this, tr("Cannot set mapping"),
+                                             tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             } else if (wheelEvent->angleDelta().x() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
@@ -1034,8 +1037,8 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                         SetMapping("mousewheelleft");
                     }
                 } else {
-                    QMessageBox::information(this, "Cannot set mapping",
-                                             "Mousewheel cannot be mapped to stick outputs");
+                    QMessageBox::information(this, tr("Cannot set mapping"),
+                                             tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             }
             return true;

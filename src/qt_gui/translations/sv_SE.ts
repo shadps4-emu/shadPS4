@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Åsidosätt färg</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Kan inte binda axelvärden fler än en gång</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Redigera inmatningsbindningar för tangentbord + mus och kontroller</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Använd konfigurationer per-spel</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Fel</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Kunde inte öppna filen för läsning</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Kunde inte öppna filen för skrivning</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Spara ändringar</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Vill du spara ändringarna?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hjälp</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Vill du återställa din anpassade standardkonfiguration till ursprungliga standardkonfigurationen?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Vill du återställa denna konfiguration till din anpassade standardkonfiguration?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Återställ till standard</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -812,10 +883,6 @@
       <translation>Fel vid skapandet av genväg!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installera PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Spel</translation>
     </message>
@@ -885,185 +952,237 @@
     </message>
   </context>
   <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Välj katalog</translation>
+      <source>Quickstart</source>
+      <translation>Snabbstart</translation>
     </message>
     <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Välj vilken katalog som du vill installera till.</translation>
+      <source>FAQ</source>
+      <translation>Frågor och svar</translation>
     </message>
     <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installera alla köade till markerad mapp</translation>
+      <source>Syntax</source>
+      <translation>Syntax</translation>
     </message>
     <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Ta bort PKG-fil efter installation</translation>
+      <source>Special Bindings</source>
+      <translation>Speciella bindningar</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Tangentbindningar</translation>
     </message>
   </context>
   <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>Konfigurera kontroller</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>Riktningsknappar</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>Upp</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>inte mappad</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>Vänster</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>Höger</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>Ner</translation>
     </message>
     <message>
       <source>Left Analog Halfmode</source>
-      <translation type="unfinished">Left Analog Halfmode</translation>
+      <translation>Halvläge för vänster analog</translation>
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation type="unfinished">hold to move left stick at half-speed</translation>
+      <translation>håll ner för att flytta vänster spak i halvfart</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>Vänster spak</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>Konfigurationsval</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Gemensam konfiguration</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
-    </message>
-    <message>
-      <source>Copy  from Common Config</source>
-      <translation type="unfinished">Copy  from Common Config</translation>
+      <translation>Använd konfiguration per-spel</translation>
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Text Editor</source>
-      <translation type="unfinished">Text Editor</translation>
+      <translation>Textredigerare</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Hjälp</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>Klick på styrplatta</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
-      <translation type="unfinished">Mouse to Joystick</translation>
+      <translation>Mus till styrspak</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
+      <translation>*tryck F7 i spelet för att aktivera</translation>
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
+      <translation>Alternativ</translation>
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>Parametrar för musrörelse</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>observera: klicka på Hjälp-knapp/Speciella tangentbindningar för mer information</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation type="unfinished">Face Buttons</translation>
+      <translation>Handlingsknappar</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>Triangel</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>Fyrkant</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>Cirkel</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>Kryss</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation type="unfinished">Right Analog Halfmode</translation>
+      <translation>Halvläge för höger analog</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>håll ner för att flytta höger spak i halvfart</translation>
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
-    </message>
-    <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation type="unfinished">Deadzone Offset (def 0.50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation type="unfinished">Speed Multiplier (def 1.0): </translation>
+      <translation>Höger spak</translation>
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Offset för hastighet (standard 0.125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation type="unfinished">Speed Offset (def 0.125): </translation>
+      <source>Copy from Common Config</source>
+      <translation>Kopiera från gemensam konfiguration</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Offset för dödläge (standard 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Hastighetsmultiplikator (standard 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Gemensam konfiguration valdes</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Den här knappen kopierar mappningar från gemensam konfiguration till den aktuella valda profilen och kan inte användas när den aktuella valda profilen är gemensam konfiguration.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Kopiera värden från gemensam konfiguration</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Vill du skriva över befintliga mappningar med mappningarna från gemensam konfiguration?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Kan inte binda någon unik inmatning fler än en gång</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Tryck på en tangent</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Kan inte ställa in mappning</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>Mushjulet kan inte mappas till spakutmatningar</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
@@ -1071,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation>Öppna/Lägg till Elf-mapp</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installera paket (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1091,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfigurera...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installera program från en .pkg-fil</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1165,8 +1276,12 @@
       <translation>Dumpa spellista</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>PKG-visare</translation>
+      <source>Trophy Viewer</source>
+      <translation>Trofévisare</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Inga spel hittades. Lägg till dina spel till biblioteket först.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1277,84 +1392,12 @@
       <translation>Endast en fil kan väljas!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-extrahering</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Patch upptäcktes!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG och spelversioner matchar: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Vill du skriva över?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versionen %1 är äldre än installerad version: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spelet är installerat: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Vill du installera patch: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC-installation</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Vill du installera DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC redan installerat:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spelet redan installerat</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extraherar PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extrahering färdig</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spelet installerades i %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Filen verkar inte vara en giltig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Kör spel</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Filen eboot.bin hittades inte</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG-fil (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG är en patch eller DLC. Installera spelet först!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1364,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Öppna mapp</translation>
+      <source>Play</source>
+      <translation>Spela</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
+      <source>Pause</source>
+      <translation>Paus</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Namn</translation>
+      <source>Stop</source>
+      <translation>Stoppa</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serienummer</translation>
+      <source>Restart</source>
+      <translation>Starta om</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Installerat</translation>
+      <source>Full Screen</source>
+      <translation>Helskärm</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Storlek</translation>
+      <source>Controllers</source>
+      <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
+      <source>Keyboard</source>
+      <translation>Tangentbord</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Typ</translation>
+      <source>Refresh List</source>
+      <translation>Uppdatera lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Appver</translation>
+      <source>Resume</source>
+      <translation>Återuppta</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flaggor</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Sökväg</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Arkiv</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Okänt</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paket</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Visa etiketter under ikoner</translation>
     </message>
   </context>
   <context>
@@ -1795,10 +1811,6 @@
       <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Öppna mappen för anpassade trofébilder/ljud:\nDu kan lägga till anpassade bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservera: Ljudet fungerar endast i QT-versioner.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>Aldrig</translation>
     </message>
@@ -2016,15 +2028,35 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>Portabel användarmapp</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+      <translation>Skapa portabel användarmapp från gemensam användarmapp</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
+      <translation>Portabel användarmapp:\nLagrar shadPS4-inställningar och data som endast tillämpas på den shadPS4-version som finns i den aktuella mappen. Starta om appen efter att du har skapat den portabla användarmappen för att börja använda den.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Kan inte skapa portabel användarmapp</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 finns redan</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Portabel användarmapp skapad</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 skapades.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Öppna mappen för anpassade trofébilder/ljud:\nDu kan lägga till egna bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\ntrophy.wav ELLER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservera: Ljudet fungerar endast i QT-versioner.</translation>
     </message>
   </context>
   <context>
@@ -2032,6 +2064,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Trofé-visare</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Välj spel:</translation>
     </message>
     <message>
       <source>Progress</source>

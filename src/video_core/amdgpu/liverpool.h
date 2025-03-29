@@ -1496,10 +1496,13 @@ public:
     }
 
     struct AscQueueInfo {
+        static constexpr size_t Pm4BufferSize = 1024;
         VAddr map_addr;
         u32* read_addr;
         u32 ring_size_dw;
         u32 pipe_id;
+        std::array<u32, Pm4BufferSize> tmp_packet;
+        u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
 
@@ -1541,7 +1544,7 @@ private:
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     template <bool is_indirect = false>
-    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
+    Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
 
     void Process(std::stop_token stoken);
 

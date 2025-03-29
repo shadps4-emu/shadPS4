@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 
@@ -39,9 +40,6 @@ static IR::Condition MakeCondition(const GcnInst& inst) {
         return IR::Condition::Execz;
     case Opcode::S_CBRANCH_EXECNZ:
         return IR::Condition::Execnz;
-    case Opcode::S_AND_SAVEEXEC_B64:
-    case Opcode::S_ANDN2_B64:
-        return IR::Condition::Execnz;
     default:
         return IR::Condition::True;
     }
@@ -76,9 +74,9 @@ CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_l
     index_to_pc.resize(inst_list.size() + 1);
     labels.reserve(LabelReserveSize);
     EmitLabels();
-    EmitDivergenceLabels();
     EmitBlocks();
     LinkBlocks();
+    SplitDivergenceScopes();
 }
 
 void CFG::EmitLabels() {
@@ -112,7 +110,7 @@ void CFG::EmitLabels() {
     std::ranges::sort(labels);
 }
 
-void CFG::EmitDivergenceLabels() {
+void CFG::SplitDivergenceScopes() {
     const auto is_open_scope = [](const GcnInst& inst) {
         // An open scope instruction is an instruction that modifies EXEC
         // but also saves the previous value to restore later. This indicates
@@ -136,64 +134,97 @@ void CFG::EmitDivergenceLabels() {
                (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo);
     };
 
-    // Since we will be adding new labels, avoid iterating those as well.
-    const size_t end_size = labels.size();
-    for (u32 l = 0; l < end_size; l++) {
-        const Label start = labels[l];
-        // Stop if we reached end of existing labels.
-        if (l == end_size - 1) {
-            break;
-        }
-        const Label end = labels[l + 1];
-        const size_t end_index = GetIndex(end);
-
+    for (auto blk = blocks.begin(); blk != blocks.end(); blk++) {
+        auto next_blk = std::next(blk);
         s32 curr_begin = -1;
-        s32 last_exec_idx = -1;
-        for (size_t index = GetIndex(start); index < end_index; index++) {
+        for (size_t index = blk->begin_index; index <= blk->end_index; index++) {
             const auto& inst = inst_list[index];
-            if (curr_begin != -1) {
-                // Keep note of the last instruction that does not ignore exec, so we know where
-                // to end the divergence block without impacting trailing instructions that do.
-                if (!IgnoresExecMask(inst)) {
-                    last_exec_idx = index;
-                }
-                // Consider a close scope on certain instruction types or at the last instruction
-                // before the next label.
-                if (is_close_scope(inst) || index == end_index - 1) {
-                    // Only insert a scope if, since the open-scope instruction, there is at least
-                    // one instruction that does not ignore exec.
-                    if (index - curr_begin > 1 && last_exec_idx != -1) {
-                        // Add a label to the instruction right after the open scope call.
-                        // It is the start of a new basic block.
-                        const auto& save_inst = inst_list[curr_begin];
-                        AddLabel(index_to_pc[curr_begin] + save_inst.length);
-                        // Add a label to the close scope instruction.
-                        // There are 3 cases where we need to close a scope.
-                        // * Close scope instruction inside the block
-                        // * Close scope instruction at the end of the block (cbranch or endpgm)
-                        // * Normal instruction at the end of the block
-                        // If the instruction we want to close the scope at is at the end of the
-                        // block, we do not need to insert a new label.
-                        if (last_exec_idx != end_index - 1) {
-                            // Add the label after the last instruction affected by exec.
-                            const auto& last_exec_inst = inst_list[last_exec_idx];
-                            AddLabel(index_to_pc[last_exec_idx] + last_exec_inst.length);
-                        }
-                    }
-                    // Reset scope begin.
+            const bool is_close = is_close_scope(inst);
+            if ((is_close || index == blk->end_index) && curr_begin != -1) {
+                // If there are no instructions inside scope don't do anything.
+                if (index - curr_begin == 1) {
                     curr_begin = -1;
+                    continue;
                 }
+                // If all instructions in the scope ignore exec masking, we shouldn't insert a
+                // scope.
+                const auto start = inst_list.begin() + curr_begin + 1;
+                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
+                    // Determine the first instruction affected by the exec mask.
+                    do {
+                        ++curr_begin;
+                    } while (IgnoresExecMask(inst_list[curr_begin]));
+
+                    // Determine the last instruction affected by the exec mask.
+                    s32 curr_end = index;
+                    while (IgnoresExecMask(inst_list[curr_end])) {
+                        --curr_end;
+                    }
+
+                    // Create a new block for the divergence scope.
+                    Block* block = block_pool.Create();
+                    block->begin = index_to_pc[curr_begin];
+                    block->end = index_to_pc[curr_end];
+                    block->begin_index = curr_begin;
+                    block->end_index = curr_end;
+                    block->end_inst = inst_list[curr_end];
+                    blocks.insert_before(next_blk, *block);
+
+                    // If we are inside the parent block, make an epilogue block and jump to it.
+                    if (curr_end != blk->end_index) {
+                        Block* epi_block = block_pool.Create();
+                        epi_block->begin = index_to_pc[curr_end + 1];
+                        epi_block->end = blk->end;
+                        epi_block->begin_index = curr_end + 1;
+                        epi_block->end_index = blk->end_index;
+                        epi_block->end_inst = blk->end_inst;
+                        epi_block->cond = blk->cond;
+                        epi_block->end_class = blk->end_class;
+                        epi_block->branch_true = blk->branch_true;
+                        epi_block->branch_false = blk->branch_false;
+                        blocks.insert_before(next_blk, *epi_block);
+
+                        // Have divergence block always jump to epilogue block.
+                        block->cond = IR::Condition::True;
+                        block->branch_true = epi_block;
+                        block->branch_false = nullptr;
+
+                        // If the parent block fails to enter divergence block make it jump to
+                        // epilogue too
+                        blk->branch_false = epi_block;
+                    } else {
+                        // No epilogue block is needed since the divergence block
+                        // also ends the parent block. Inherit the end condition.
+                        auto& parent_blk = *blk;
+                        ASSERT(blk->cond == IR::Condition::True && blk->branch_true);
+                        block->cond = IR::Condition::True;
+                        block->branch_true = blk->branch_true;
+                        block->branch_false = nullptr;
+
+                        // If the parent block didn't enter the divergence scope
+                        // have it jump directly to the next one
+                        blk->branch_false = blk->branch_true;
+                    }
+
+                    // Shrink parent block to end right before curr_begin
+                    // and make it jump to divergence block
+                    --curr_begin;
+                    blk->end = index_to_pc[curr_begin];
+                    blk->end_index = curr_begin;
+                    blk->end_inst = inst_list[curr_begin];
+                    blk->cond = IR::Condition::Execnz;
+                    blk->end_class = EndClass::Branch;
+                    blk->branch_true = block;
+                }
+                // Reset scope begin.
+                curr_begin = -1;
             }
             // Mark a potential start of an exec scope.
             if (is_open_scope(inst)) {
                 curr_begin = index;
-                last_exec_idx = -1;
             }
         }
     }
-
-    // Sort labels to make sure block insertion is correct.
-    std::ranges::sort(labels);
 }
 
 void CFG::EmitBlocks() {
@@ -234,22 +265,6 @@ void CFG::LinkBlocks() {
     for (auto it = blocks.begin(); it != blocks.end(); it++) {
         auto& block = *it;
         const auto end_inst{block.end_inst};
-        // Handle divergence block inserted here.
-        if (end_inst.opcode == Opcode::S_AND_SAVEEXEC_B64 ||
-            end_inst.opcode == Opcode::S_ANDN2_B64 || end_inst.IsCmpx()) {
-            // Blocks are stored ordered by address in the set
-            auto next_it = std::next(it);
-            auto* target_block = &(*next_it);
-            ++target_block->num_predecessors;
-            block.branch_true = target_block;
-
-            auto merge_it = std::next(next_it);
-            auto* merge_block = &(*merge_it);
-            ++merge_block->num_predecessors;
-            block.branch_false = merge_block;
-            block.end_class = EndClass::Branch;
-            continue;
-        }
 
         // If the block doesn't end with a branch we simply
         // need to link with the next block.

@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Sostituisci Colore</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossibile Salvare</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Impossibile associare i valori degli assi più di una volta</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salva</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Applica</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Ripristina Impostazioni Predefinite</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annulla</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Modifica le associazioni di input di tastiera + mouse e controller</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Usa Configurazioni Per Gioco</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Errore</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Impossibile aprire il file per la lettura</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Impossibile aprire il file per la scrittura</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Salva Modifiche</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Vuoi salvare le modifiche?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Aiuto</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Vuoi reimpostare la configurazione predefinita personalizzata alla configurazione predefinita originale?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Vuoi reimpostare questa configurazione alla configurazione predefinita personalizzata?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Ripristina a Predefinito</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -812,10 +883,6 @@
       <translation>Errore nella creazione della scorciatoia!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installa PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Gioco</translation>
     </message>
@@ -885,22 +952,26 @@
     </message>
   </context>
   <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Scegli cartella</translation>
+      <source>Quickstart</source>
+      <translation>Avvio rapido</translation>
     </message>
     <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Seleziona in quale cartella vuoi effettuare l&apos;installazione.</translation>
+      <source>FAQ</source>
+      <translation>FAQ</translation>
     </message>
     <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installa tutto in coda nella Cartella Selezionata</translation>
+      <source>Syntax</source>
+      <translation>Sintassi</translation>
     </message>
     <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Elimina file PKG dopo Installazione</translation>
+      <source>Special Bindings</source>
+      <translation>Associazioni Speciali</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Associazioni dei pulsanti</translation>
     </message>
   </context>
   <context>
@@ -956,10 +1027,6 @@
     <message>
       <source>Use per-game configs</source>
       <translation>Usa configurazioni per gioco</translation>
-    </message>
-    <message>
-      <source>Copy  from Common Config</source>
-      <translation>Copia da Configurazione Comune</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1050,20 +1117,72 @@
       <translation>Levetta Destra</translation>
     </message>
     <message>
-      <source>Deadzone Offset (def 0.50): </source>
-      <translation>Scostamento Zona Morta (def 0,50): </translation>
-    </message>
-    <message>
-      <source>Speed Multiplier (def 1.0): </source>
-      <translation>Moltiplicatore Di Velocità (def 1,0): </translation>
-    </message>
-    <message>
       <source>Speed Offset (def 0.125):</source>
       <translation>Scostamento Velocità (def 0,125):</translation>
     </message>
     <message>
-      <source>Speed Offset (def 0.125): </source>
-      <translation>Scostamento Velocità (def 0,125): </translation>
+      <source>Copy from Common Config</source>
+      <translation>Copia da Configurazione Comune</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Scostamento Zona Morta (def 0,50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Moltiplicatore Di Velocità (def 1,0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Configurazione Comune Selezionata</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Questo pulsante copia le mappature dalla Configurazione Comune al profilo attualmente selezionato, e non può essere usato quando il profilo attualmente selezionato è Configurazione Comune.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Copia valori da Configurazione Comune</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Vuoi sovrascrivere le mappature esistenti con le mappature dalla Configurazione Comune?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Impossibile Salvare</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Non è possibile associare qualsiasi input univoco più di una volta</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Premi un tasto</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Impossibile impostare la mappatura</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>La rotella del mouse non può essere associata ai comandi della levetta analogica</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salva</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Applica</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Ripristina Impostazioni Predefinite</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Annulla</translation>
     </message>
   </context>
   <context>
@@ -1071,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation>Apri/Aggiungi cartella Elf</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installa Pacchetti (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1091,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Configura...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installa applicazione da un file .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1165,8 +1276,12 @@
       <translation>Scarica Lista Giochi</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>Visualizzatore PKG</translation>
+      <source>Trophy Viewer</source>
+      <translation>Visualizzatore Trofei</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Nessun gioco trovato. Aggiungi prima i tuoi giochi alla tua libreria.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1277,84 +1392,12 @@
       <translation>Si può selezionare solo un file!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Estrazione file PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Patch rilevata!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Le versioni di PKG e del Gioco corrispondono: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Vuoi sovrascrivere?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>La versione PKG %1 è più vecchia rispetto alla versione installata: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Gioco installato: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Vuoi installare la patch: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Installazione DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Vuoi installare il DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC già installato:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Gioco già installato</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ERRORE PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Estrazione file PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Estrazione Completata</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Gioco installato correttamente in %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Il file sembra non essere un file PKG valido</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Esegui Gioco</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>File Eboot.bin non trovato</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>File PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>Il file PKG è una patch o DLC, si prega di installare prima il gioco!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1364,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Apri Cartella</translation>
+      <source>Play</source>
+      <translation type="unfinished">Play</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>ERRORE PKG</translation>
+      <source>Pause</source>
+      <translation type="unfinished">Pause</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Nome</translation>
+      <source>Stop</source>
+      <translation type="unfinished">Stop</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Seriale</translation>
+      <source>Restart</source>
+      <translation type="unfinished">Restart</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Installato</translation>
+      <source>Full Screen</source>
+      <translation type="unfinished">Full Screen</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Dimensione</translation>
+      <source>Controllers</source>
+      <translation type="unfinished">Controllers</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Categoria</translation>
+      <source>Keyboard</source>
+      <translation type="unfinished">Keyboard</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Tipo</translation>
+      <source>Refresh List</source>
+      <translation type="unfinished">Refresh List</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Vers. App.</translation>
+      <source>Resume</source>
+      <translation type="unfinished">Resume</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Regione</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Segnalazioni</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Percorso</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Sconosciuto</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Pacchetto</translation>
+      <source>Show Labels Under Icons</source>
+      <translation type="unfinished">Show Labels Under Icons</translation>
     </message>
   </context>
   <context>
@@ -1795,10 +1811,6 @@
       <translation>Aggiorna Database Compatibilità:\nAggiorna immediatamente il database di compatibilità.</translation>
     </message>
     <message>
-      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
-    </message>
-    <message>
       <source>Never</source>
       <translation>Mai</translation>
     </message>
@@ -2016,15 +2028,35 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>Cartella Utente Portatile</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+      <translation>Crea una Cartella Utente Portatile dalla Cartella Comune Utente</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
       <translation>Cartella utente portatile:\nMemorizza le impostazioni e i dati shadPS4 che saranno applicati solo alla build shadPS4 situata nella cartella attuale. Riavviare l'applicazione dopo aver creato la cartella utente portatile per iniziare a usarla.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Impossibile creare la cartella utente portatile</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1: esiste già</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Cartella utente portatile creata</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 creato con successo.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Apri la cartella personalizzata delle immagini/suoni trofei:\nÈ possibile aggiungere immagini personalizzate ai trofei e un audio.\nAggiungi i file a custom_trophy con i seguenti nomi:\ntrophy.wav OPPURE trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: Il suono funzionerà solo nelle versioni QT.</translation>
     </message>
   </context>
   <context>
@@ -2032,6 +2064,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizzatore Trofei</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Seleziona Gioco:</translation>
     </message>
     <message>
       <source>Progress</source>
