@@ -883,10 +883,6 @@
         <translation>Error creating shortcut!</translation>
     </message>
     <message>
-        <source>Install PKG</source>
-        <translation>Install PKG</translation>
-    </message>
-    <message>
         <source>Game</source>
         <translation>Game</translation>
     </message>
@@ -975,25 +971,6 @@
     </message>
     <message>
         <source>Keybindings</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>InstallDirSelect</name>
-    <message>
-        <source>shadPS4 - Choose directory</source>
-        <translation>shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-        <source>Select which directory you want to install to.</source>
-        <translation>Select which directory you want to install to.</translation>
-    </message>
-    <message>
-        <source>Install All Queued to Selected Folder</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Delete PKG File on Install</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1215,10 +1192,6 @@
         <translation>Open/Add Elf Folder</translation>
     </message>
     <message>
-        <source>Install Packages (PKG)</source>
-        <translation>Install Packages (PKG)</translation>
-    </message>
-    <message>
         <source>Boot Game</source>
         <translation>Boot Game</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
         <source>Configure...</source>
         <translation>Configure...</translation>
-    </message>
-    <message>
-        <source>Install application from a .pkg file</source>
-        <translation>Install application from a .pkg file</translation>
     </message>
     <message>
         <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
         <source>No games found. Please add your games to your library first.</source>
         <translation>No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-        <source>PKG Viewer</source>
-        <translation>PKG Viewer</translation>
     </message>
     <message>
         <source>Search...</source>
@@ -1427,83 +1392,11 @@
         <translation>Only one file can be selected!</translation>
     </message>
     <message>
-        <source>PKG Extraction</source>
-        <translation>PKG Extraction</translation>
-    </message>
-    <message>
-        <source>Patch detected!</source>
-        <translation>Patch detected!</translation>
-    </message>
-    <message>
-        <source>PKG and Game versions match: </source>
-        <translation>PKG and Game versions match: </translation>
-    </message>
-    <message>
-        <source>Would you like to overwrite?</source>
-        <translation>Would you like to overwrite?</translation>
-    </message>
-    <message>
-        <source>PKG Version %1 is older than installed version: </source>
-        <translation>PKG Version %1 is older than installed version: </translation>
-    </message>
-    <message>
-        <source>Game is installed: </source>
-        <translation>Game is installed: </translation>
-    </message>
-    <message>
-        <source>Would you like to install Patch: </source>
-        <translation>Would you like to install Patch: </translation>
-    </message>
-    <message>
-        <source>DLC Installation</source>
-        <translation>DLC Installation</translation>
-    </message>
-    <message>
-        <source>Would you like to install DLC: %1?</source>
-        <translation>Would you like to install DLC: %1?</translation>
-    </message>
-    <message>
-        <source>DLC already installed:</source>
-        <translation>DLC already installed:</translation>
-    </message>
-    <message>
-        <source>Game already installed</source>
-        <translation>Game already installed</translation>
-    </message>
-    <message>
-        <source>PKG ERROR</source>
-        <translation>PKG ERROR</translation>
-    </message>
-    <message>
-        <source>Extracting PKG %1/%2</source>
-        <translation>Extracting PKG %1/%2</translation>
-    </message>
-    <message>
-        <source>Extraction Finished</source>
-        <translation>Extraction Finished</translation>
-    </message>
-    <message>
-        <source>Game successfully installed at %1</source>
-        <translation>Game successfully installed at %1</translation>
-    </message>
-    <message>
-        <source>File doesn&apos;t appear to be a valid PKG file</source>
-        <translation>File doesn&apos;t appear to be a valid PKG file</translation>
-    </message>
-    <message>
         <source>Run Game</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Eboot.bin file not found</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PKG File (*.PKG *.pkg)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>PKG is a patch or DLC, please install the game first!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1556,73 +1449,6 @@
     </message>
 </context>
 <context>
-    <name>PKGViewer</name>
-    <message>
-        <source>Open Folder</source>
-        <translation>Open Folder</translation>
-    </message>
-    <message>
-        <source>PKG ERROR</source>
-        <translation type="unfinished">PKG ERROR</translation>
-    </message>
-    <message>
-        <source>Name</source>
-        <translation type="unfinished">Name</translation>
-    </message>
-    <message>
-        <source>Serial</source>
-        <translation type="unfinished">Serial</translation>
-    </message>
-    <message>
-        <source>Installed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Size</source>
-        <translation type="unfinished">Size</translation>
-    </message>
-    <message>
-        <source>Category</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Type</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>App Ver</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>FW</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Region</source>
-        <translation type="unfinished">Region</translation>
-    </message>
-    <message>
-        <source>Flags</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Path</source>
-        <translation type="unfinished">Path</translation>
-    </message>
-    <message>
-        <source>File</source>
-        <translation type="unfinished">File</translation>
-    </message>
-    <message>
-        <source>Unknown</source>
-        <translation type="unfinished">Unknown</translation>
-    </message>
-    <message>
-        <source>Package</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>SettingsDialog</name>
     <message>
         <source>Settings</source>
@@ -1647,10 +1473,6 @@
     <message>
         <source>Emulator</source>
         <translation>Emulator</translation>
-    </message>
-    <message>
-        <source>Enable Separate Update Folder</source>
-        <translation>Enable Separate Update Folder</translation>
     </message>
     <message>
         <source>Default tab when opening settings</source>
@@ -1915,10 +1737,6 @@
     <message>
         <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
         <translation>Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
-    </message>
-    <message>
-        <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-        <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
     </message>
     <message>
         <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>

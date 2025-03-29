@@ -114,6 +114,7 @@ git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 message("start git things")
+
 # Try to get the upstream remote and branch
 message("check for remote and branch")
 execute_process(
@@ -123,6 +124,7 @@ execute_process(
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check default push")
@@ -134,15 +136,38 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 endif()
+
 # If running in GitHub Actions and the above fails
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check github")
   set(GIT_REMOTE_NAME "origin")
 
-  if (DEFINED ENV{GITHUB_HEAD_REF})  # PR branch name
-    set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
-  elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
-    string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
+  # Retrieve environment variables
+  if (DEFINED ENV{GITHUB_HEAD_REF})
+    set(GITHUB_HEAD_REF "$ENV{GITHUB_HEAD_REF}")
+  else()
+    set(GITHUB_HEAD_REF "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_REF})
+    string(REGEX REPLACE "^refs/[^/]*/" "" GITHUB_BRANCH "$ENV{GITHUB_REF}")
+  else()
+    set(GITHUB_BRANCH "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_EVENT_PATH})
+    file(READ "$ENV{GITHUB_EVENT_PATH}" GITHUB_EVENT_JSON)
+    string(JSON PR_NUMBER GET ${GITHUB_EVENT_JSON} "number")
+  else()
+    set(PR_NUMBER "")
+  endif()
+
+  if (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_HEAD_REF}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_BRANCH}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}")
   else()
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
@@ -585,6 +610,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/logging/text_formatter.cpp
            src/common/logging/text_formatter.h
            src/common/logging/types.h
+           src/common/aes.h
            src/common/alignment.h
            src/common/arch.h
            src/common/assert.cpp
@@ -616,6 +642,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/sha1.h
            src/common/signal_context.h
            src/common/signal_context.cpp
            src/common/singleton.h
@@ -680,8 +707,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
-         src/core/loader.cpp
-         src/core/loader.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -971,8 +996,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
-           src/qt_gui/install_dir_select.cpp
-           src/qt_gui/install_dir_select.h
            src/qt_gui/trophy_viewer.cpp
            src/qt_gui/trophy_viewer.h
            src/qt_gui/elf_viewer.cpp
@@ -1028,7 +1051,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers cryptopp::cryptopp)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
