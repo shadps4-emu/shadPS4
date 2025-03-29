@@ -9,7 +9,6 @@
 
 class Ui_MainWindow {
 public:
-    QAction* bootInstallPkgAct;
     QAction* bootGameAct;
     QAction* addElfFolderAct;
     QAction* shadFolderAct;
@@ -20,13 +19,13 @@ public:
     QAction* setIconSizeSmallAct;
     QAction* setIconSizeMediumAct;
     QAction* setIconSizeLargeAct;
+    QAction* toggleLabelsAct;
     QAction* setlistModeListAct;
     QAction* setlistModeGridAct;
     QAction* setlistElfAct;
     QAction* gameInstallPathAct;
     QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
-    QAction* pkgViewerAct;
     QAction* trophyViewerAct;
 #ifdef ENABLE_UPDATER
     QAction* updaterAct;
@@ -50,6 +49,8 @@ public:
     QPushButton* settingsButton;
     QPushButton* controllerButton;
     QPushButton* keyboardButton;
+    QPushButton* fullscreenButton;
+    QPushButton* restartButton;
 
     QWidget* sizeSliderContainer;
     QHBoxLayout* sizeSliderContainer_layout;
@@ -84,9 +85,6 @@ public:
         MainWindow->setDockNestingEnabled(true);
         MainWindow->setDockOptions(QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks |
                                    QMainWindow::AnimatedDocks | QMainWindow::GroupedDragging);
-        bootInstallPkgAct = new QAction(MainWindow);
-        bootInstallPkgAct->setObjectName("bootInstallPkgAct");
-        bootInstallPkgAct->setIcon(QIcon(":images/file_icon.png"));
         bootGameAct = new QAction(MainWindow);
         bootGameAct->setObjectName("bootGameAct");
         bootGameAct->setIcon(QIcon(":images/play_icon.png"));
@@ -104,7 +102,15 @@ public:
         showGameListAct->setCheckable(true);
         refreshGameListAct = new QAction(MainWindow);
         refreshGameListAct->setObjectName("refreshGameListAct");
-        refreshGameListAct->setIcon(QIcon(":images/refresh_icon.png"));
+        refreshGameListAct->setIcon(QIcon(":images/refreshlist_icon.png"));
+
+        toggleLabelsAct = new QAction(MainWindow);
+        toggleLabelsAct->setObjectName("toggleLabelsAct");
+        toggleLabelsAct->setText(
+            QCoreApplication::translate("MainWindow", "Show Labels Under Icons"));
+        toggleLabelsAct->setCheckable(true);
+        toggleLabelsAct->setChecked(Config::getShowLabelsUnderIcons());
+
         setIconSizeTinyAct = new QAction(MainWindow);
         setIconSizeTinyAct->setObjectName("setIconSizeTinyAct");
         setIconSizeTinyAct->setCheckable(true);
@@ -137,9 +143,6 @@ public:
         dumpGameListAct = new QAction(MainWindow);
         dumpGameListAct->setObjectName("dumpGameList");
         dumpGameListAct->setIcon(QIcon(":images/dump_icon.png"));
-        pkgViewerAct = new QAction(MainWindow);
-        pkgViewerAct->setObjectName("pkgViewer");
-        pkgViewerAct->setIcon(QIcon(":images/file_icon.png"));
         trophyViewerAct = new QAction(MainWindow);
         trophyViewerAct->setObjectName("trophyViewer");
         trophyViewerAct->setIcon(QIcon(":images/trophy_icon.png"));
@@ -210,20 +213,28 @@ public:
         stopButton->setIconSize(QSize(40, 40));
         refreshButton = new QPushButton(centralWidget);
         refreshButton->setFlat(true);
-        refreshButton->setIcon(QIcon(":images/refresh_icon.png"));
-        refreshButton->setIconSize(QSize(32, 32));
+        refreshButton->setIcon(QIcon(":images/refreshlist_icon.png"));
+        refreshButton->setIconSize(QSize(40, 40));
+        fullscreenButton = new QPushButton(centralWidget);
+        fullscreenButton->setFlat(true);
+        fullscreenButton->setIcon(QIcon(":images/fullscreen_icon.png"));
+        fullscreenButton->setIconSize(QSize(38, 38));
         settingsButton = new QPushButton(centralWidget);
         settingsButton->setFlat(true);
         settingsButton->setIcon(QIcon(":images/settings_icon.png"));
-        settingsButton->setIconSize(QSize(44, 44));
+        settingsButton->setIconSize(QSize(40, 40));
         controllerButton = new QPushButton(centralWidget);
         controllerButton->setFlat(true);
         controllerButton->setIcon(QIcon(":images/controller_icon.png"));
-        controllerButton->setIconSize(QSize(40, 40));
+        controllerButton->setIconSize(QSize(55, 48));
         keyboardButton = new QPushButton(centralWidget);
         keyboardButton->setFlat(true);
         keyboardButton->setIcon(QIcon(":images/keyboard_icon.png"));
-        keyboardButton->setIconSize(QSize(48, 44));
+        keyboardButton->setIconSize(QSize(50, 50));
+        restartButton = new QPushButton(centralWidget);
+        restartButton->setFlat(true);
+        restartButton->setIcon(QIcon(":images/restart_game_icon.png"));
+        restartButton->setIconSize(QSize(40, 40));
 
         sizeSliderContainer = new QWidget(centralWidget);
         sizeSliderContainer->setObjectName("sizeSliderContainer");
@@ -290,7 +301,6 @@ public:
         menuBar->addAction(menuView->menuAction());
         menuBar->addAction(menuSettings->menuAction());
         menuBar->addAction(menuHelp->menuAction());
-        menuFile->addAction(bootInstallPkgAct);
         menuFile->addAction(bootGameAct);
         menuFile->addSeparator();
         menuFile->addAction(addElfFolderAct);
@@ -304,6 +314,7 @@ public:
         menuView->addAction(refreshGameListAct);
         menuView->addAction(menuGame_List_Mode->menuAction());
         menuView->addAction(menuGame_List_Icons->menuAction());
+        menuView->addAction(toggleLabelsAct);
         menuView->addAction(menuThemes->menuAction());
         menuThemes->addAction(setThemeDark);
         menuThemes->addAction(setThemeLight);
@@ -325,7 +336,6 @@ public:
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
-        menuUtils->addAction(pkgViewerAct);
         menuUtils->addAction(trophyViewerAct);
 #ifdef ENABLE_UPDATER
         menuHelp->addAction(updaterAct);
@@ -341,8 +351,6 @@ public:
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "shadPS4", nullptr));
         addElfFolderAct->setText(
             QCoreApplication::translate("MainWindow", "Open/Add Elf Folder", nullptr));
-        bootInstallPkgAct->setText(
-            QCoreApplication::translate("MainWindow", "Install Packages (PKG)", nullptr));
         bootGameAct->setText(QCoreApplication::translate("MainWindow", "Boot Game", nullptr));
 #ifdef ENABLE_UPDATER
         updaterAct->setText(
@@ -351,8 +359,6 @@ public:
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
 #if QT_CONFIG(tooltip)
-        bootInstallPkgAct->setToolTip(QCoreApplication::translate(
-            "MainWindow", "Install application from a .pkg file", nullptr));
 #endif // QT_CONFIG(tooltip)
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
         shadFolderAct->setText(
@@ -384,7 +390,6 @@ public:
             QCoreApplication::translate("MainWindow", "Download Cheats/Patches", nullptr));
         dumpGameListAct->setText(
             QCoreApplication::translate("MainWindow", "Dump Game List", nullptr));
-        pkgViewerAct->setText(QCoreApplication::translate("MainWindow", "PKG Viewer", nullptr));
         trophyViewerAct->setText(
             QCoreApplication::translate("MainWindow", "Trophy Viewer", nullptr));
         mw_searchbar->setPlaceholderText(

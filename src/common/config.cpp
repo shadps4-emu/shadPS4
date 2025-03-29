@@ -32,6 +32,7 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 namespace Config {
 
 static bool isNeo = false;
+static bool isDevKit = false;
 static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
 static int BGMvolume = 50;
@@ -40,7 +41,7 @@ static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
-static std::string logType = "async";
+static std::string logType = "sync";
 static std::string userName = "shadPS4";
 static std::string updateChannel;
 static std::string chooseHomeTab;
@@ -97,7 +98,6 @@ u32 m_slider_pos_grid = 0;
 u32 m_table_mode = 0;
 u32 m_window_size_W = 1280;
 u32 m_window_size_H = 720;
-std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
@@ -106,6 +106,7 @@ static bool showBackgroundImage = true;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
+static bool showLabelsUnderIcons = true;
 
 // Language
 u32 m_language = 1; // english
@@ -167,8 +168,20 @@ bool isNeoModeConsole() {
     return isNeo;
 }
 
+bool isDevKitConsole() {
+    return isDevKit;
+}
+
 bool getIsFullscreen() {
     return isFullscreen;
+}
+
+bool getShowLabelsUnderIcons() {
+    return showLabelsUnderIcons;
+}
+
+bool setShowLabelsUnderIcons() {
+    return false;
 }
 
 std::string getFullscreenMode() {
@@ -422,6 +435,9 @@ void setVblankDiv(u32 value) {
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
+static void setShowLabelsUnderIcons(bool enable) {
+    showLabelsUnderIcons = enable;
+}
 
 void setFullscreenMode(std::string mode) {
     fullscreenMode = mode;
@@ -584,11 +600,6 @@ void setMainWindowHeight(u32 height) {
     m_window_size_H = height;
 }
 
-void setPkgViewer(const std::vector<std::string>& pkgList) {
-    m_pkg_viewer.resize(pkgList.size());
-    m_pkg_viewer = pkgList;
-}
-
 void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer.resize(elfList.size());
     m_elf_viewer = elfList;
@@ -692,10 +703,6 @@ u32 getMainWindowHeight() {
     return m_window_size_H;
 }
 
-std::vector<std::string> getPkgViewer() {
-    return m_pkg_viewer;
-}
-
 std::vector<std::string> getElfViewer() {
     return m_elf_viewer;
 }
@@ -755,6 +762,7 @@ void load(const std::filesystem::path& path) {
         const toml::value& general = data.at("General");
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
+        isDevKit = toml::find_or<bool>(general, "isDevKit", false);
         playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         trophyNotificationDuration =
@@ -842,7 +850,7 @@ void load(const std::filesystem::path& path) {
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
         const auto install_dir_array =
-            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
 
         try {
             install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
@@ -868,7 +876,6 @@ void load(const std::filesystem::path& path) {
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
         main_window_geometry_h = toml::find_or<int>(gui, "geometry_h", 0);
-        m_pkg_viewer = toml::find_or<std::vector<std::string>>(gui, "pkgDirs", {});
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
@@ -955,6 +962,7 @@ void save(const std::filesystem::path& path) {
     }
 
     data["General"]["isPS4Pro"] = isNeo;
+    data["General"]["isDevKit"] = isDevKit;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
     data["General"]["playBGM"] = playBGM;
@@ -1086,7 +1094,6 @@ void saveMainWindow(const std::filesystem::path& path) {
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;
     data["GUI"]["geometry_h"] = main_window_geometry_h;
-    data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 
@@ -1101,6 +1108,7 @@ void saveMainWindow(const std::filesystem::path& path) {
 void setDefaultValues() {
     isHDRAllowed = false;
     isNeo = false;
+    isDevKit = false;
     isFullscreen = false;
     isTrophyPopupDisabled = false;
     playBGM = false;
@@ -1109,7 +1117,7 @@ void setDefaultValues() {
     screenWidth = 1280;
     screenHeight = 720;
     logFilter = "";
-    logType = "async";
+    logType = "sync";
     userName = "shadPS4";
     if (Common::isRelease) {
         updateChannel = "Release";

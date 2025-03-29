@@ -883,10 +883,6 @@
       <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation type="unfinished">Game</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation type="unfinished">Boot Game</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation type="unfinished">Configure...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1307,8 +1276,12 @@
       <translation type="unfinished">Dump Game List</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
+      <source>Trophy Viewer</source>
+      <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>Kun én fil kan vælges!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-udtrækning</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Opdatering detekteret!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG og spilversioner matcher: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Vil du overskrive?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG Version %1 er ældre end den installerede version: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spillet er installeret: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Vil du installere opdateringen: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation type="unfinished">DLC Installation</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Vil du installere DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC allerede installeret:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spillet er allerede installeret</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEJL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Udvinding af PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Udvinding afsluttet</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spillet blev installeret succesfuldt på %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Filen ser ikke ud til at være en gyldig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation type="unfinished">shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
+      <source>Play</source>
+      <translation type="unfinished">Play</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEJL</translation>
+      <source>Pause</source>
+      <translation type="unfinished">Pause</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Navn</translation>
+      <source>Stop</source>
+      <translation type="unfinished">Stop</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Seriel</translation>
+      <source>Restart</source>
+      <translation type="unfinished">Restart</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
+      <source>Full Screen</source>
+      <translation type="unfinished">Full Screen</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Størrelse</translation>
+      <source>Controllers</source>
+      <translation type="unfinished">Controllers</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
+      <source>Keyboard</source>
+      <translation type="unfinished">Keyboard</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
+      <source>Refresh List</source>
+      <translation type="unfinished">Refresh List</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
+      <source>Resume</source>
+      <translation type="unfinished">Resume</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation type="unfinished">Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Sti</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation type="unfinished">File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Ukendt</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
+      <source>Show Labels Under Icons</source>
+      <translation type="unfinished">Show Labels Under Icons</translation>
     </message>
   </context>
   <context>
@@ -2190,6 +2064,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation type="unfinished">Trophy Viewer</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation type="unfinished">Select Game:</translation>
     </message>
     <message>
       <source>Progress</source>
