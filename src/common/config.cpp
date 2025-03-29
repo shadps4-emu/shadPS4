@@ -99,7 +99,6 @@ u32 m_slider_pos_grid = 0;
 u32 m_table_mode = 0;
 u32 m_window_size_W = 1280;
 u32 m_window_size_H = 720;
-std::vector<std::string> m_pkg_viewer;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
@@ -610,11 +609,6 @@ void setMainWindowHeight(u32 height) {
     m_window_size_H = height;
 }
 
-void setPkgViewer(const std::vector<std::string>& pkgList) {
-    m_pkg_viewer.resize(pkgList.size());
-    m_pkg_viewer = pkgList;
-}
-
 void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer.resize(elfList.size());
     m_elf_viewer = elfList;
@@ -716,10 +710,6 @@ u32 getMainWindowWidth() {
 
 u32 getMainWindowHeight() {
     return m_window_size_H;
-}
-
-std::vector<std::string> getPkgViewer() {
-    return m_pkg_viewer;
 }
 
 std::vector<std::string> getElfViewer() {
@@ -870,7 +860,7 @@ void load(const std::filesystem::path& path) {
         m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
         const auto install_dir_array =
-            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
 
         try {
             install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
@@ -896,7 +886,6 @@ void load(const std::filesystem::path& path) {
         main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
         main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
         main_window_geometry_h = toml::find_or<int>(gui, "geometry_h", 0);
-        m_pkg_viewer = toml::find_or<std::vector<std::string>>(gui, "pkgDirs", {});
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
@@ -1116,7 +1105,6 @@ void saveMainWindow(const std::filesystem::path& path) {
     data["GUI"]["geometry_y"] = main_window_geometry_y;
     data["GUI"]["geometry_w"] = main_window_geometry_w;
     data["GUI"]["geometry_h"] = main_window_geometry_h;
-    data["GUI"]["pkgDirs"] = m_pkg_viewer;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 

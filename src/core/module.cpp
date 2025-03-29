@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cryptopp/sha.h>
-
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
+#include "common/sha1.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
@@ -65,11 +64,13 @@ static std::string StringToNid(std::string_view symbol) {
     std::memcpy(input.data(), symbol.data(), symbol.size());
     std::memcpy(input.data() + symbol.size(), Salt.data(), Salt.size());
 
-    std::array<u8, CryptoPP::SHA1::DIGESTSIZE> hash;
-    CryptoPP::SHA1().CalculateDigest(hash.data(), input.data(), input.size());
+    sha1::SHA1::digest8_t hash;
+    sha1::SHA1 sha;
+    sha.processBytes(input.data(), input.size());
+    sha.getDigestBytes(hash);
 
     u64 digest;
-    std::memcpy(&digest, hash.data(), sizeof(digest));
+    std::memcpy(&digest, hash, sizeof(digest));
 
     static constexpr std::string_view codes =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";

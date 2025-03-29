@@ -583,6 +583,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/logging/text_formatter.cpp
            src/common/logging/text_formatter.h
            src/common/logging/types.h
+           src/common/aes.h
            src/common/alignment.h
            src/common/arch.h
            src/common/assert.cpp
@@ -614,6 +615,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/sha1.h
            src/common/signal_context.h
            src/common/signal_context.cpp
            src/common/singleton.h
@@ -653,9 +655,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/crypto/crypto.cpp
-         src/core/crypto/crypto.h
-         src/core/crypto/keys.h
          src/core/devices/base_device.cpp
          src/core/devices/base_device.h
          src/core/devices/ioccom.h
@@ -673,10 +672,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/srandom_device.cpp
          src/core/devices/srandom_device.h
          src/core/file_format/pfs.h
-         src/core/file_format/pkg.cpp
-         src/core/file_format/pkg.h
-         src/core/file_format/pkg_type.cpp
-         src/core/file_format/pkg_type.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
          src/core/file_format/playgo_chunk.cpp
@@ -685,8 +680,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
-         src/core/loader.cpp
-         src/core/loader.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -976,10 +969,6 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/game_grid_frame.h
            src/qt_gui/game_install_dialog.cpp
            src/qt_gui/game_install_dialog.h
-           src/qt_gui/install_dir_select.cpp
-           src/qt_gui/install_dir_select.h
-           src/qt_gui/pkg_viewer.cpp
-           src/qt_gui/pkg_viewer.h
            src/qt_gui/trophy_viewer.cpp
            src/qt_gui/trophy_viewer.h
            src/qt_gui/elf_viewer.cpp
@@ -1035,7 +1024,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers cryptopp::cryptopp)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

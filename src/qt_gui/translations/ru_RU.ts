@@ -883,10 +883,6 @@
       <translation>Ошибка создания ярлыка!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Установить PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Игры</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Бинды клавиш</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Выберите папку</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Выберите папку, в которую вы хотите установить.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Установить все из очереди в выбранную папку</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Удалить файл PKG при установке</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Открыть/Добавить папку Elf</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Установить пакеты (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Запустить игру</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Настроить...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Установить приложение из файла .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation>Не найдено ни одной игры. Пожалуйста, сначала добавьте игры в библиотеку.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation>Просмотр PKG</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Можно выбрать только один файл!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Извлечение PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Обнаружен патч!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Версии PKG и игры совпадают: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Хотите перезаписать?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Версия PKG %1 старше установленной версии: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Игра установлена: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Хотите установить патч: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Установка DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Вы хотите установить DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC уже установлен:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Игра уже установлена</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ОШИБКА PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Извлечение PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Извлечение завершено</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Игра успешно установлена в %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Файл не является допустимым файлом PKG</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Запустить игру</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Файл eboot.bin не найден</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Файл PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>Выбранный PKG является патчем или DLC, пожалуйста, сначала установите игру!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1514,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Открыть папку</translation>
+      <source>Play</source>
+      <translation>Играть</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>ОШИБКА PKG</translation>
+      <source>Pause</source>
+      <translation>Пауза</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Название</translation>
+      <source>Stop</source>
+      <translation>Остановить</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Серийный номер</translation>
+      <source>Restart</source>
+      <translation>Перезапустить</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Установлено</translation>
+      <source>Full Screen</source>
+      <translation>Полный экран</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Размер</translation>
+      <source>Controllers</source>
+      <translation>Контроллеры</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Категория</translation>
+      <source>Keyboard</source>
+      <translation>Клавиатура</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Тип</translation>
+      <source>Refresh List</source>
+      <translation>Обновить список</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Версия приложения</translation>
+      <source>Resume</source>
+      <translation>Продолжить</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>Прошивка</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Регион</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Флаги</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Путь</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Файл</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Неизвестно</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Пакет</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Показывать метки под значками</translation>
     </message>
   </context>
   <context>
