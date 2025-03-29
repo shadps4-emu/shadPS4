@@ -1,35 +1,24 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cryptopp/aes.h>
-#include <cryptopp/modes.h>
-
+#include "common/aes.h"
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/file_format/trp.h"
 
-static void DecryptEFSM(std::span<CryptoPP::byte, 16> trophyKey,
-                        std::span<CryptoPP::byte, 16> NPcommID,
-                        std::span<CryptoPP::byte, 16> efsmIv, std::span<CryptoPP::byte> ciphertext,
-                        std::span<CryptoPP::byte> decrypted) {
+static void DecryptEFSM(std::span<u8, 16> trophyKey, std::span<u8, 16> NPcommID,
+                        std::span<u8, 16> efsmIv, std::span<u8> ciphertext,
+                        std::span<u8> decrypted) {
+    // Step 1: Encrypt NPcommID
+    std::array<u8, 16> trophyIv{};
+    std::array<u8, 16> trpKey;
+    aes::encrypt_cbc(NPcommID.data(), NPcommID.size(), trophyKey.data(), trophyKey.size(),
+                     trophyIv.data(), trpKey.data(), trpKey.size(), false);
 
-    // step 1: Encrypt NPcommID
-    CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption encrypt;
-
-    std::vector<CryptoPP::byte> trophyIv(16, 0);
-    std::vector<CryptoPP::byte> trpKey(16);
-
-    encrypt.SetKeyWithIV(trophyKey.data(), trophyKey.size(), trophyIv.data());
-    encrypt.ProcessData(trpKey.data(), NPcommID.data(), 16);
-
-    // step 2: decrypt efsm.
-    CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption decrypt;
-    decrypt.SetKeyWithIV(trpKey.data(), trpKey.size(), efsmIv.data());
-
-    for (size_t i = 0; i < decrypted.size(); i += CryptoPP::AES::BLOCKSIZE) {
-        decrypt.ProcessData(decrypted.data() + i, ciphertext.data() + i, CryptoPP::AES::BLOCKSIZE);
-    }
+    // Step 2: Decrypt EFSM
+    aes::decrypt_cbc(ciphertext.data(), ciphertext.size(), trpKey.data(), trpKey.size(),
+                     efsmIv.data(), decrypted.data(), decrypted.size(), nullptr);
 }
 
 TRP::TRP() = default;
@@ -80,7 +69,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
         return false;
     }
 
-    std::array<CryptoPP::byte, 16> user_key{};
+    std::array<u8, 16> user_key{};
     hexToBytes(user_key_str.c_str(), user_key.data());
 
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
