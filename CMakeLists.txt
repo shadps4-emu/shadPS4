@@ -324,6 +324,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/threads/thread_state.h
                src/core/libraries/kernel/process.cpp
                src/core/libraries/kernel/process.h
+               src/core/libraries/kernel/debug.cpp
+               src/core/libraries/kernel/debug.h
                src/core/libraries/kernel/equeue.cpp
                src/core/libraries/kernel/equeue.h
                src/core/libraries/kernel/file_system.cpp
