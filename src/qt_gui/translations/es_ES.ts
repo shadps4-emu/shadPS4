@@ -1475,10 +1475,6 @@
       <translation>Emulador</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Habilitar Carpeta Independiente de Actualizaciones</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Pestaña predeterminada al abrir la configuración</translation>
     </message>
@@ -1741,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Idioma del Emulador:\nConfigura el idioma de la interfaz de usuario del emulador.</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Habilitar Carpeta Independiente de Actualizaciónes:\nHabilita el instalar actualizaciones del juego en una carpeta separada para mas facilidad en la gestión.\nPuede crearse manualmente añadiendo la actualización extraída a la carpeta del juego con el nombre &quot;CUSA00000-UPDATE&quot; donde el CUSA ID coincide con el ID del juego.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
