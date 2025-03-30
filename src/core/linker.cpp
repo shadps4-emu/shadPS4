@@ -109,7 +109,7 @@ void Linker::Execute(const std::vector<std::string> args) {
     void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
 
     const s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
-        &addr_out, InternalMemorySize, 3, 0, "SceKernelPrimaryTcbTls");
+        &addr_out, InternalMemorySize, 3, 0, "SceKernelInternalMemory");
     ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
 
     main_thread.Run([this, module, args](std::stop_token) {
