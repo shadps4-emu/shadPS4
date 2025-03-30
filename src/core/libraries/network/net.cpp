@@ -12,9 +12,13 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "net_error.h"
+#include "net_util.h"
+#include "netctl.h"
 
 namespace Libraries::Net {
 
@@ -640,8 +644,15 @@ int PS4_SYSV_ABI sceNetGetIfnameNumList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetMacAddress() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr, int flags) {
+    if (addr == nullptr) {
+        LOG_ERROR(Lib_Net, "addr is null!");
+        return ORBIS_NET_EINVAL;
+    }
+    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    netinfo->RetrieveEthernetAddr();
+    memcpy(addr->data, netinfo->GetEthernetAddr().data(), 6);
+
     return ORBIS_OK;
 }
 
