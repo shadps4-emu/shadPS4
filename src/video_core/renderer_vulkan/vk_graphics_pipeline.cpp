@@ -77,8 +77,8 @@ GraphicsPipeline::GraphicsPipeline(
 
     auto prim_restart = key.enable_primitive_restart != 0;
     if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
-        LOG_WARNING(Render_Vulkan,
-                    "Primitive restart is enabled for list topology but not supported by driver.");
+        LOG_DEBUG(Render_Vulkan,
+                  "Primitive restart is enabled for list topology but not supported by driver.");
         prim_restart = false;
     }
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
