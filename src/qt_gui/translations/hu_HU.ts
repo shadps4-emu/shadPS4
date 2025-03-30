@@ -1475,10 +1475,6 @@
       <translation>Emulátor</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Külön Frissítési Mappa Engedélyezése</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Alapértelmezett fül a beállítások megnyitásakor</translation>
     </message>
@@ -1741,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulátor nyelve:\nBeállítja az emulátor felhasználói felületének nyelvét.</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Külön Frissítéi Mappa Engedélyezése:\nEngedélyezi a frissítések külön mappába helyezését, a könnyű kezelésük érdekében.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
