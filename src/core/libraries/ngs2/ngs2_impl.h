@@ -30,7 +30,6 @@ struct OrbisNgs2SystemOption {
     u32 aReserved[6];
 };
 
-
 using OrbisNgs2BufferAllocHandler =
     s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
 using OrbisNgs2BufferFreeHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
