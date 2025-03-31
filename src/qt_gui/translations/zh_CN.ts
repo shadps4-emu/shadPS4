@@ -1475,10 +1475,6 @@
       <translation>模拟器</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>启用单独的更新目录</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>打开设置时的默认选项卡</translation>
     </message>
@@ -1741,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>模拟器语言：\n设置模拟器用户界面的语言。</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>启用单独的更新目录：\n启用安装游戏更新到一个单独的目录中以更便于管理。</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
