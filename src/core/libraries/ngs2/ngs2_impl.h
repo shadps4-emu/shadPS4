@@ -31,7 +31,8 @@ struct OrbisNgs2SystemOption {
 };
 
 
-using OrbisNgs2BufferAllocHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
+using OrbisNgs2BufferAllocHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
 using OrbisNgs2BufferFreeHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
 
 struct OrbisNgs2SystemInfo {

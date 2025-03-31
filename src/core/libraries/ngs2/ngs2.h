@@ -16,7 +16,8 @@ class SymbolsResolver;
 
 namespace Libraries::Ngs2 {
 
-using OrbisNgs2ParseReadHandler = s32 PS4_SYSV_ABI (*)(uintptr_t user_data, u32 offset, void* data, size_t size);
+using OrbisNgs2ParseReadHandler = s32 PS4_SYSV_ABI (*)(uintptr_t user_data, u32 offset, void* data,
+                                                       size_t size);
 
 enum class OrbisNgs2HandleType : u32 {
     Invalid = 0,
@@ -114,7 +115,8 @@ struct OrbisNgs2UserFx2CleanupContext {
     u64 reserved[4];
 };
 
-using OrbisNgs2UserFx2CleanupHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2CleanupContext* context);
+using OrbisNgs2UserFx2CleanupHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2CleanupContext* context);
 
 struct OrbisNgs2UserFx2ControlContext {
     const void* data;
@@ -125,7 +127,8 @@ struct OrbisNgs2UserFx2ControlContext {
     u64 reserved[4];
 };
 
-using OrbisNgs2UserFx2ControlHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ControlContext* context);
+using OrbisNgs2UserFx2ControlHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ControlContext* context);
 
 struct OrbisNgs2UserFx2ProcessContext {
     float** aChannelData;
@@ -143,7 +146,8 @@ struct OrbisNgs2UserFx2ProcessContext {
     u64 reserved2[4];
 };
 
-using OrbisNgs2UserFx2ProcessHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ProcessContext* context);
+using OrbisNgs2UserFx2ProcessHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ProcessContext* context);
 
 struct OrbisNgs2BufferAllocator {
     OrbisNgs2BufferAllocHandler allocHandler;
