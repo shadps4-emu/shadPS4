@@ -188,17 +188,17 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreateWithAllocator(const OrbisNgs2SystemOption* o
         OrbisNgs2BufferAllocHandler hostAlloc = allocator->allocHandler;
         if (outHandle) {
             OrbisNgs2BufferFreeHandler hostFree = allocator->freeHandler;
-            OrbisNgs2ContextBufferInfo* bufferInfo = 0;
-            result = SystemSetup(option, bufferInfo, 0, 0);
+            OrbisNgs2ContextBufferInfo bufferInfo;
+            result = SystemSetup(option, &bufferInfo, 0, 0);
             if (result >= 0) {
                 uintptr_t sysUserData = allocator->userData;
-                result = hostAlloc(bufferInfo);
+                result = hostAlloc(&bufferInfo);
                 if (result >= 0) {
                     OrbisNgs2Handle* handleCopy = outHandle;
-                    result = SystemSetup(option, bufferInfo, hostFree, handleCopy);
+                    result = SystemSetup(option, &bufferInfo, hostFree, handleCopy);
                     if (result < 0) {
                         if (hostFree) {
-                            hostFree(bufferInfo);
+                            hostFree(&bufferInfo);
                         }
                     }
                 }
