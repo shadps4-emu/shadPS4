@@ -127,6 +127,11 @@ int PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, int flags,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI exit(s32 status) {
+    UNREACHABLE_MSG("Exiting with status code {}", status);
+    return 0;
+}
+
 void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, sceKernelIsNeoMode);
@@ -136,6 +141,7 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
     LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoForUnwind);
     LIB_FUNCTION("f7KBOafysXo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoFromAddr);
+    LIB_FUNCTION("6Z83sYWFlA8", "libkernel", 1, "libkernel", 1, 1, exit);
 }
 
 } // namespace Libraries::Kernel

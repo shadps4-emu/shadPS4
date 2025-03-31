@@ -1409,43 +1409,43 @@
     </message>
     <message>
       <source>Play</source>
-      <translation type="unfinished">Play</translation>
+      <translation>Riproduci</translation>
     </message>
     <message>
       <source>Pause</source>
-      <translation type="unfinished">Pause</translation>
+      <translation>Pausa</translation>
     </message>
     <message>
       <source>Stop</source>
-      <translation type="unfinished">Stop</translation>
+      <translation>Arresta</translation>
     </message>
     <message>
       <source>Restart</source>
-      <translation type="unfinished">Restart</translation>
+      <translation>Riavvia</translation>
     </message>
     <message>
       <source>Full Screen</source>
-      <translation type="unfinished">Full Screen</translation>
+      <translation>Schermo Intero</translation>
     </message>
     <message>
       <source>Controllers</source>
-      <translation type="unfinished">Controllers</translation>
+      <translation>Controller</translation>
     </message>
     <message>
       <source>Keyboard</source>
-      <translation type="unfinished">Keyboard</translation>
+      <translation>Tastiera</translation>
     </message>
     <message>
       <source>Refresh List</source>
-      <translation type="unfinished">Refresh List</translation>
+      <translation>Aggiorna Lista</translation>
     </message>
     <message>
       <source>Resume</source>
-      <translation type="unfinished">Resume</translation>
+      <translation>Riprendi</translation>
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation type="unfinished">Show Labels Under Icons</translation>
+      <translation>Mostra Etichette Sotto Icone</translation>
     </message>
   </context>
   <context>
@@ -1473,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulatore</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Abilita Cartella Aggiornamenti Separata</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1741,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Lingua dell&apos;Emulatore:\nImposta la lingua dell&apos;interfaccia utente dell&apos;emulatore.</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Abilita Cartella Aggiornamenti Separata:\nAbilita l&apos;installazione degli aggiornamenti in una cartella separata per una più facile gestione.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>

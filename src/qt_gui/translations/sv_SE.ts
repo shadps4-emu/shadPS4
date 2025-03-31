@@ -1475,10 +1475,6 @@
       <translation>Emulator</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Aktivera separat uppdateringsmapp</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Standardflik när inställningar öppnas</translation>
     </message>
@@ -1741,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Aktivera separat uppdateringsmapp:\nAktiverar installation av speluppdateringar i en separat mapp för enkel hantering.\nDetta kan skapas manuellt genom att lägga till uppackad uppdatering till spelmappen med namnet &quot;CUSA00000-UPDATE&quot; där CUSA ID matchar spelets id</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>

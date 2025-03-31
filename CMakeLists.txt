@@ -114,6 +114,7 @@ git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 message("start git things")
+
 # Try to get the upstream remote and branch
 message("check for remote and branch")
 execute_process(
@@ -123,6 +124,7 @@ execute_process(
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check default push")
@@ -134,15 +136,48 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 endif()
+
 # If running in GitHub Actions and the above fails
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check github")
   set(GIT_REMOTE_NAME "origin")
 
-  if (DEFINED ENV{GITHUB_HEAD_REF})  # PR branch name
-    set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
-  elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
-    string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
+  # Retrieve environment variables
+  if (DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
+    message("github head ref: $ENV{GITHUB_HEAD_REF}")
+    set(GITHUB_HEAD_REF "$ENV{GITHUB_HEAD_REF}")
+  else()
+    set(GITHUB_HEAD_REF "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_REF} AND NOT "$ENV{GITHUB_REF}" STREQUAL "")
+    message("github ref: $ENV{GITHUB_REF}")
+    string(REGEX REPLACE "^refs/[^/]*/" "" GITHUB_BRANCH "$ENV{GITHUB_REF}")
+    string(REGEX MATCH "refs/pull/([0-9]+)/merge" MATCHED_REF "$ENV{GITHUB_REF}")
+    if (MATCHED_REF)
+      set(PR_NUMBER "${CMAKE_MATCH_1}")
+      set(GITHUB_BRANCH "")
+      message("PR number: ${PR_NUMBER}")
+    else()
+      set(PR_NUMBER "")
+    endif()
+  else()
+    set(GITHUB_BRANCH "")
+    set(PR_NUMBER "")
+  endif()
+
+  if (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_HEAD_REF}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_BRANCH}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_HEAD_REF}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_BRANCH}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_REF}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_REF}")
   else()
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
@@ -299,6 +334,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/threads/thread_state.h
                src/core/libraries/kernel/process.cpp
                src/core/libraries/kernel/process.h
+               src/core/libraries/kernel/debug.cpp
+               src/core/libraries/kernel/debug.h
                src/core/libraries/kernel/equeue.cpp
                src/core/libraries/kernel/equeue.h
                src/core/libraries/kernel/file_system.cpp
