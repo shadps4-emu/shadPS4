@@ -226,10 +226,6 @@ find_package(Zydis 5.0.0 CONFIG)
 find_package(pugixml 1.14 CONFIG)
 find_package(usb-1.0 1.0.27 CONFIG)
 
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT MSVC)
-    find_package(cryptopp 8.9.0 MODULE)
-endif()
-
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
 endif()
