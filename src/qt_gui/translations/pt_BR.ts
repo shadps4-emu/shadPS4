@@ -730,7 +730,7 @@
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation>Jogo exibe imagem mas não passa do menu</translation>
+      <translation>O jogo exibe imagem mas não passa do menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
@@ -883,10 +883,6 @@
       <translation>Erro ao criar atalho!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Instalar PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Jogo</translation>
     </message>
@@ -912,7 +908,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Tem certeza de que deseja excluir o diretório %2 de %1?</translation>
+      <translation>Tem certeza de que deseja excluir o diretório do %2 %1?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Teclas de atalho</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Escolha o diretório</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Selecione o diretório em que você deseja instalar.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Instalar Tudo da Fila para a Pasta Selecionada</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Excluir o PKG após a Instalação</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Abrir/Adicionar pasta Elf</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Instalar Pacotes (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Iniciar Jogo</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Configurar...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Instalar aplicativo de um arquivo .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1284,11 +1253,11 @@
     </message>
     <message>
       <source>List View</source>
-      <translation>Visualizar em Lista</translation>
+      <translation>Visualização em Lista</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>Visualizar em Grade</translation>
+      <translation>Visualização em Grade</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
@@ -1307,8 +1276,12 @@
       <translation>Exportar Lista de Jogos</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>Visualizador de PKG</translation>
+      <source>Trophy Viewer</source>
+      <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Nenhum jogo encontrado. Adicione seus jogos à sua biblioteca primeiro.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>Apenas um arquivo pode ser selecionado!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Extração de PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Atualização detectada!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>As versões do PKG e do Jogo são iguais: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Você gostaria de sobrescrever?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>A Versão do PKG %1 é mais antiga do que a versão instalada: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Jogo instalado: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Você gostaria de instalar a atualização: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalação de DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Você gostaria de instalar o DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC já está instalado:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>O jogo já está instalado:</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ERRO DE PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extraindo PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extração Concluída</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Jogo instalado com sucesso em %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>O arquivo não parece ser um arquivo PKG válido</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Executar Jogo</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Arquivo Eboot.bin não encontrado</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Arquivo PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>O PKG é um patch ou DLC, por favor instale o jogo primeiro!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Abrir Pasta</translation>
+      <source>Play</source>
+      <translation>Jogar</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>ERRO DE PKG</translation>
+      <source>Pause</source>
+      <translation>Pausar</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Nome</translation>
+      <source>Stop</source>
+      <translation>Parar</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serial</translation>
+      <source>Restart</source>
+      <translation>Reiniciar</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Instalado</translation>
+      <source>Full Screen</source>
+      <translation>Tela Cheia</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Tamanho</translation>
+      <source>Controllers</source>
+      <translation>Controles</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Categoria</translation>
+      <source>Keyboard</source>
+      <translation>Teclado</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Tipo</translation>
+      <source>Refresh List</source>
+      <translation>Atualizar Lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Versão do App</translation>
+      <source>Resume</source>
+      <translation>Continuar</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Região</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Caminho</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Arquivo</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Desconhecido</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Pacote</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Mostrar Rótulos Sob Ícones</translation>
     </message>
   </context>
   <context>
@@ -1599,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulador</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Ativar Pasta de Atualização Separada</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1869,10 +1739,6 @@
       <translation>Idioma do Emulador:\nDefine o idioma da interface do emulador.</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Ativar Pasta de Atualização Separada:\nPermite instalar atualizações de jogos em uma pasta separada para fácil gerenciamento.\nIsso pode ser manualmente criado adicionando a atualização extraída à pasta do jogo com o nome &quot;CUSA00000-UPDATE&quot; onde o ID do CUSA corresponde ao ID do jogo.</translation>
-    </message>
-    <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Mostrar Splash Inicial:\nExibe a tela inicial do jogo (imagem especial) ao iniciar o jogo.</translation>
     </message>
@@ -2030,11 +1896,11 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Host:\nInsere informações vindo do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Host:\nInsere informações vindo do emulador como marcadores para comandos AMDGPU específicos em torno de comandos Vulkan, além de fornecer nomes de depuração aos recursos.\nSe isso estiver habilitado, ative os Diagnósticos de Falhas.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Marcadores de Depuração de Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, ative os Diagnósticos de Falha.\nÚtil para programas como o RenderDoc.</translation>
+      <translation>Marcadores de Depuração do Convidado:\nInsere quaisquer marcadores de depuração que o próprio jogo adicionou ao buffer de comando.\nSe isso estiver habilitado, ative os Diagnósticos de Falhas.\nÚtil para programas como o RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -2190,6 +2056,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Visualizador de Troféus</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Selecionar Jogo:</translation>
     </message>
     <message>
       <source>Progress</source>

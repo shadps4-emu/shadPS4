@@ -883,10 +883,6 @@
       <translation>Feil ved opprettelse av snarvei!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installer PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Spill</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Hurtigtast</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Velg mappe</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Velg hvilken mappe du vil installere til.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installer alle i kø til den valgte mappa</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Slett PKG-fila ved installering</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Åpne eller legg til Elf-mappe</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installer pakker (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Start spill</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Sett opp …</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installer fra en .pkg fil</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1307,8 +1276,12 @@
       <translation>Dump spilliste</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>PKG-viser</translation>
+      <source>Trophy Viewer</source>
+      <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Fant ingen spill. Legg til spillene dine i biblioteket først.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>Kun én fil kan velges!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-utpakking</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Programrettelse oppdaget!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG og spillversjoner stemmer overens: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Ønsker du å overskrive?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versjon %1 er eldre enn installert versjon: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spillet er installert: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Ønsker du å installere programrettelsen: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC installasjon</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Ønsker du å installere DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC allerede installert:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spillet er allerede installert</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEIL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Pakker ut PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Utpakking fullført</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spillet ble installert i %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Fila ser ikke ut til å være en gyldig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Kjør spill</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Klarte ikke finne Eboot.bin-fila</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG-fil (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG er en programrettelse eller DLC. Installer spillet først!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Åpne mappe</translation>
+      <source>Play</source>
+      <translation>Spill</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEIL</translation>
+      <source>Pause</source>
+      <translation>Pause</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Navn</translation>
+      <source>Stop</source>
+      <translation>Stopp</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serienummer</translation>
+      <source>Restart</source>
+      <translation>Start på nytt</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Installert</translation>
+      <source>Full Screen</source>
+      <translation>Fullskjerm</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Størrelse</translation>
+      <source>Controllers</source>
+      <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
+      <source>Keyboard</source>
+      <translation>Tastatur</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Type</translation>
+      <source>Refresh List</source>
+      <translation>Oppdater lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Programversjon</translation>
+      <source>Resume</source>
+      <translation>Gjenoppta</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FV</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flagg</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Adresse</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Fil</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Ukjent</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Pakke</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Vis merkelapp under ikoner</translation>
     </message>
   </context>
   <context>
@@ -1599,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulator</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Bruk seperat oppdateringsmappe</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1734,11 +1604,11 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation>Feilretting</translation>
+      <translation>Feilsøking</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Bruk feilrettingsdumping</translation>
+      <translation>Bruk feilsøkingsdumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -1869,10 +1739,6 @@
       <translation>Emulatorspråket:\nAngir språket for emulatorens brukergrensesnitt.</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Bruk separat oppdateringsmappe:\n Gjør det mulig å installere spilloppdateringer i en egen mappe for enkel administrasjon.\nDette kan gjøres manuelt ved å legge til den utpakkede oppdateringen, til spillmappa med navnet &quot;CUSA00000-UPDATE&quot; der CUSA-ID-en samsvarer med spillets-ID.</translation>
-    </message>
-    <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Vis velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
     </message>
@@ -1950,15 +1816,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Berøringsplate Venstre</translation>
+      <translation>Berøringsplate venstre</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Berøringsplate Høyre</translation>
+      <translation>Berøringsplate høyre</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Berøringsplate Midt</translation>
+      <translation>Berøringsplate midten</translation>
     </message>
     <message>
       <source>None</source>
@@ -2002,7 +1868,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Bruk feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
+      <translation>Bruk feilsøkingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
@@ -2058,7 +1924,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>Bruk bevegelseskontroller</translation>
+      <translation>Bruk bevegelsesstyring</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -2190,6 +2056,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Velg spill:</translation>
     </message>
     <message>
       <source>Progress</source>

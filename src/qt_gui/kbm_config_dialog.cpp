@@ -225,7 +225,8 @@ void EditorDialog::loadInstalledGames() {
         QDir parentFolder(installDir);
         QFileInfoList fileList = parentFolder.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
         for (const auto& fileInfo : fileList) {
-            if (fileInfo.isDir() && !fileInfo.filePath().endsWith("-UPDATE")) {
+            if (fileInfo.isDir() && (!fileInfo.filePath().endsWith("-UPDATE") ||
+                                     !fileInfo.filePath().endsWith("-patch"))) {
                 gameComboBox->addItem(fileInfo.fileName()); // Add game name to combo box
             }
         }

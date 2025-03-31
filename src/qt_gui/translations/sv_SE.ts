@@ -551,19 +551,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Spara</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Tillämpa</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Återställ till standard</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
@@ -883,10 +883,6 @@
       <translation>Fel vid skapandet av genväg!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installera PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Spel</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Tangentbindningar</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Välj katalog</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Välj vilken katalog som du vill installera till.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installera alla köade till markerad mapp</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Ta bort PKG-fil efter installation</translation>
     </message>
   </context>
   <context>
@@ -1193,19 +1170,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Spara</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Tillämpa</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Återställ till standard</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
@@ -1213,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation>Öppna/Lägg till Elf-mapp</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installera paket (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Konfigurera...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installera program från en .pkg-fil</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1307,8 +1276,12 @@
       <translation>Dumpa spellista</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>PKG-visare</translation>
+      <source>Trophy Viewer</source>
+      <translation>Trofévisare</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Inga spel hittades. Lägg till dina spel till biblioteket först.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>Endast en fil kan väljas!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-extrahering</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Patch upptäcktes!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG och spelversioner matchar: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Vill du skriva över?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versionen %1 är äldre än installerad version: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spelet är installerat: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Vill du installera patch: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC-installation</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Vill du installera DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC redan installerat:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spelet redan installerat</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extraherar PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extrahering färdig</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spelet installerades i %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Filen verkar inte vara en giltig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Kör spel</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Filen eboot.bin hittades inte</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG-fil (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG är en patch eller DLC. Installera spelet först!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Öppna mapp</translation>
+      <source>Play</source>
+      <translation>Spela</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG-FEL</translation>
+      <source>Pause</source>
+      <translation>Paus</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Namn</translation>
+      <source>Stop</source>
+      <translation>Stoppa</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serienummer</translation>
+      <source>Restart</source>
+      <translation>Starta om</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Installerat</translation>
+      <source>Full Screen</source>
+      <translation>Helskärm</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Storlek</translation>
+      <source>Controllers</source>
+      <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
+      <source>Keyboard</source>
+      <translation>Tangentbord</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Typ</translation>
+      <source>Refresh List</source>
+      <translation>Uppdatera lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Appver</translation>
+      <source>Resume</source>
+      <translation>Återuppta</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flaggor</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Sökväg</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Arkiv</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Okänt</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paket</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Visa etiketter under ikoner</translation>
     </message>
   </context>
   <context>
@@ -1599,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulator</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Aktivera separat uppdateringsmapp</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1867,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Aktivera separat uppdateringsmapp:\nAktiverar installation av speluppdateringar i en separat mapp för enkel hantering.\nDetta kan skapas manuellt genom att lägga till uppackad uppdatering till spelmappen med namnet &quot;CUSA00000-UPDATE&quot; där CUSA ID matchar spelets id</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -2190,6 +2056,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Trofé-visare</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Välj spel:</translation>
     </message>
     <message>
       <source>Progress</source>

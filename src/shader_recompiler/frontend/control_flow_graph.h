@@ -57,9 +57,9 @@ public:
 
 private:
     void EmitLabels();
-    void EmitDivergenceLabels();
     void EmitBlocks();
     void LinkBlocks();
+    void SplitDivergenceScopes();
 
     void AddLabel(Label address) {
         const auto it = std::ranges::find(labels, address);

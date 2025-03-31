@@ -82,7 +82,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     const auto eboot_name = file.filename().string();
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
-        game_folder_name.ends_with("-UPDATE")) {
+        game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
         // If an executable was launched from a separate update directory,
         // use the base game directory as the game folder.
         const auto base_name = game_folder_name.substr(0, game_folder_name.size() - 7);
@@ -291,13 +291,12 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
-    constexpr std::array<SysModules, 11> ModulesToLoad{
+    constexpr std::array<SysModules, 10> ModulesToLoad{
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
-         {"libSceDiscMap.sprx", &Libraries::DiscMap::RegisterlibSceDiscMap},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterlibSceRtc},
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},

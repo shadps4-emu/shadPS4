@@ -15,7 +15,6 @@
 #include "ui_kbm_gui.h"
 
 HelpDialog* HelpWindow;
-
 KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
     : QDialog(parent), m_game_info(game_info_get), ui(new Ui::KBMSettings) {
 
@@ -48,6 +47,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
 
     ui->ProfileComboBox->setCurrentText("Common Config");
     ui->TitleLabel->setText("Common Config");
+    config_id = "default";
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -72,6 +72,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
     connect(ui->TextEditorButton, &QPushButton::clicked, this, [this]() {
         auto kbmWindow = new EditorDialog(this);
         kbmWindow->exec();
+        SetUIValuestoMappings(config_id);
     });
 
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, [this] {
@@ -84,9 +85,6 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
 
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
         GetGameTitle();
-        std::string config_id = (ui->ProfileComboBox->currentText() == "Common Config")
-                                    ? "default"
-                                    : ui->ProfileComboBox->currentText().toStdString();
         SetUIValuestoMappings(config_id);
     });
 
@@ -385,10 +383,6 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     lines.push_back(output_string + " = " + input_string);
 
     lines.push_back("");
-
-    std::string config_id = (ui->ProfileComboBox->currentText() == "Common Config")
-                                ? "default"
-                                : ui->ProfileComboBox->currentText().toStdString();
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
     std::fstream file(config_file);
     int lineCount = 0;
@@ -626,6 +620,9 @@ void KBMSettings::GetGameTitle() {
             }
         }
     }
+    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+                    ? "default"
+                    : ui->ProfileComboBox->currentText().toStdString();
 }
 
 void KBMSettings::onHelpClicked() {
