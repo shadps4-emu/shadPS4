@@ -883,10 +883,6 @@
       <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation type="unfinished">Install PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation type="unfinished">Game</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation type="unfinished">Select which directory you want to install to.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation type="unfinished">Install All Queued to Selected Folder</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation type="unfinished">Delete PKG File on Install</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation type="unfinished">Install Packages (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation type="unfinished">Boot Game</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation type="unfinished">Configure...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation type="unfinished">Install application from a .pkg file</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1313,10 +1282,6 @@
     <message>
       <source>No games found. Please add your games to your library first.</source>
       <translation type="unfinished">No games found. Please add your games to your library first.</translation>
-    </message>
-    <message>
-      <source>PKG Viewer</source>
-      <translation type="unfinished">PKG Viewer</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1427,84 +1392,12 @@
       <translation>Μπορεί να επιλεγεί μόνο ένα αρχείο!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Εξαγωγή PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Αναγνώριση ενημέρωσης!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Οι εκδόσεις PKG και παιχνιδιού ταιριάζουν: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Θέλετε να αντικαταστήσετε;</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>Η έκδοση PKG %1 είναι παλαιότερη από την εγκατεστημένη έκδοση: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Το παιχνίδι είναι εγκατεστημένο: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Θέλετε να εγκαταστήσετε την ενημέρωση: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Εγκατάσταση DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Θέλετε να εγκαταστήσετε το DLC: %1;</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC ήδη εγκατεστημένο:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Παιχνίδι ήδη εγκατεστημένο</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ΣΦΑΛΜΑ PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Εξαγωγή PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Η εξαγωγή ολοκληρώθηκε</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Το παιχνίδι εγκαταστάθηκε επιτυχώς στο %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Η αρχείο δεν φαίνεται να είναι έγκυρο αρχείο PKG</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation type="unfinished">Run Game</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation type="unfinished">Eboot.bin file not found</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation type="unfinished">PKG File (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation type="unfinished">PKG is a patch or DLC, please install the game first!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1556,73 +1449,6 @@
     </message>
   </context>
   <context>
-    <name>PKGViewer</name>
-    <message>
-      <source>Open Folder</source>
-      <translation type="unfinished">Open Folder</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ΣΦΑΛΜΑ PKG</translation>
-    </message>
-    <message>
-      <source>Name</source>
-      <translation>Όνομα</translation>
-    </message>
-    <message>
-      <source>Serial</source>
-      <translation>Σειριακός αριθμός</translation>
-    </message>
-    <message>
-      <source>Installed</source>
-      <translation type="unfinished">Installed</translation>
-    </message>
-    <message>
-      <source>Size</source>
-      <translation>Μέγεθος</translation>
-    </message>
-    <message>
-      <source>Category</source>
-      <translation type="unfinished">Category</translation>
-    </message>
-    <message>
-      <source>Type</source>
-      <translation type="unfinished">Type</translation>
-    </message>
-    <message>
-      <source>App Ver</source>
-      <translation type="unfinished">App Ver</translation>
-    </message>
-    <message>
-      <source>FW</source>
-      <translation type="unfinished">FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Περιοχή</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation type="unfinished">Flags</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Διαδρομή</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation type="unfinished">File</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Άγνωστο</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation type="unfinished">Package</translation>
-    </message>
-  </context>
-  <context>
     <name>SettingsDialog</name>
     <message>
       <source>Settings</source>
@@ -1647,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation type="unfinished">Emulator</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation type="unfinished">Enable Separate Update Folder</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1915,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Γλώσσα Εξομοιωτή:\nΡυθμίζει τη γλώσσα του γραφικού περιβάλλοντος του εξομοιωτή.</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation type="unfinished">Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>

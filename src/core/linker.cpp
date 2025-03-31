@@ -101,6 +101,17 @@ void Linker::Execute(const std::vector<std::string> args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
+    // Simulate sceKernelInternalMemory mapping, a mapping usually performed during libkernel init.
+    // Due to the large size of this mapping, failing to emulate it causes issues in some titles.
+    // This mapping belongs in the system reserved area, which starts at address 0x880000000.
+    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
+    static constexpr s64 InternalMemorySize = 0x1000000;
+    void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
+
+    const s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
+        &addr_out, InternalMemorySize, 3, 0, "SceKernelInternalMemory");
+    ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
+
     main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         LoadSharedLibraries();
@@ -372,7 +383,8 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 
     // If sceKernelMapNamedFlexibleMemory is being called from libkernel and addr = 0
     // it automatically places mappings in system reserved area instead of managed.
-    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
+    // Since the system reserved area already has a mapping in it, this address is slightly higher.
+    static constexpr VAddr KernelAllocBase = 0x881000000ULL;
 
     // The kernel module has a few different paths for TLS allocation.
     // For SDK < 1.7 it allocates both main and secondary thread blocks using libc mspace/malloc.
