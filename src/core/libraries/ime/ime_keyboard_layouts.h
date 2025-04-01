@@ -5,6 +5,8 @@
 
 #include <string>
 #include <vector>
+#include "core/libraries/pad/pad.h"
+// using B = Libraries::Pad::OrbisPadButtonDataOffset;
 
 enum class KeyType {
     Text,          // Inserts character(s) into input buffer
@@ -34,6 +36,7 @@ struct Key {
     std::string label;
     std::string controller_hint;
     KeyType type = KeyType::Text; // default to Text input
+    std::vector<Libraries::Pad::OrbisPadButtonDataOffset> bound_buttons = {}; // new field
 };
 
 extern const std::vector<Key> kUppercaseLayout;

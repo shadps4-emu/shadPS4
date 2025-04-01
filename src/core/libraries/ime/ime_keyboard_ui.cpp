@@ -5,6 +5,9 @@
 #include <imgui.h>
 #include "ime_keyboard_layouts.h"
 #include "ime_keyboard_ui.h"
+#include "input/controller.h"
+
+#include "common/singleton.h"
 
 using namespace ImGui;
 
@@ -18,13 +21,17 @@ void DrawVirtualKeyboard(char* buffer, std::size_t buffer_capacity, bool* input_
         layout = shift_enabled ? &kUppercaseLayout : &kLowercaseLayout;
     }
 
+    auto current_pad_button =
+        Common::Singleton<Input::GameController>::Instance()->GetLastState().buttonsState;
+
     RenderKeyboardLayout(*layout, buffer, buffer_capacity, input_changed, kb_mode, shift_enabled,
-                         done_pressed);
+                         done_pressed, current_pad_button);
 }
 
 void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::size_t buffer_capacity,
                           bool* input_changed, KeyboardMode& kb_mode, bool& shift_enabled,
-                          bool* done_pressed) {
+                          bool* done_pressed,
+                          Libraries::Pad::OrbisPadButtonDataOffset current_pad_button) {
     // Define desired total layout size (in pixels)
     const float layout_width = 485.0f;
     const float layout_height = 200.0f;
@@ -69,6 +76,72 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
                         std::strcat(buffer, key.label.c_str());
                         if (input_changed)
                             *input_changed = true;
+                    }
+                    // Controller debug injection
+                    for (Libraries::Pad::OrbisPadButtonDataOffset button : key.bound_buttons) {
+                        if (current_pad_button == button) {
+                            // DEBUG: always insert "ok" when a key is triggered via gamepad
+                            size_t len = std::strlen(buffer);
+                            if (len + 2 < buffer_capacity) {
+                                std::strcat(buffer, "ok");
+                                if (input_changed)
+                                    *input_changed = true;
+                            }
+                        }
+                    }
+
+                    // Controller press simulation
+                    for (Libraries::Pad::OrbisPadButtonDataOffset button : key.bound_buttons) {
+                        if (current_pad_button == button) {
+                            switch (key.type) {
+                            case KeyType::Text:
+                                if (!key.label.empty()) {
+                                    size_t len = std::strlen(buffer);
+                                    if (len + key.label.size() < buffer_capacity) {
+                                        std::strcat(buffer, key.label.c_str());
+                                        if (input_changed)
+                                            *input_changed = true;
+                                    }
+                                }
+                                break;
+                            case KeyType::Backspace:
+                                if (buffer[0] != '\0') {
+                                    size_t len = std::strlen(buffer);
+                                    buffer[len - 1] = '\0';
+                                    if (input_changed)
+                                        *input_changed = true;
+                                }
+                                break;
+                            case KeyType::Space:
+                                if (std::strlen(buffer) + 1 < buffer_capacity) {
+                                    std::strcat(buffer, " ");
+                                    if (input_changed)
+                                        *input_changed = true;
+                                }
+                                break;
+                            case KeyType::Enter:
+                            case KeyType::Done:
+                                if (done_pressed)
+                                    *done_pressed = true;
+                                break;
+                            case KeyType::Shift:
+                                shift_enabled = !shift_enabled;
+                                break;
+                            case KeyType::SymbolsLayout:
+                                kb_mode = KeyboardMode::Symbols;
+                                break;
+                            case KeyType::TextLayout:
+                                kb_mode = KeyboardMode::Letters;
+                                break;
+                            case KeyType::ToggleKeyboard:
+                                kb_mode = (kb_mode == KeyboardMode::Letters)
+                                              ? KeyboardMode::Symbols
+                                              : KeyboardMode::Letters;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
                     }
                 }
                 break;
