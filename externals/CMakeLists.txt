@@ -201,6 +201,12 @@ if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
 
+# libusb
+if (NOT TARGET libusb::usb)
+    add_subdirectory(libusb)
+    add_library(libusb::usb ALIAS usb-1.0)
+endif()
+
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     add_subdirectory(discord-rpc)
