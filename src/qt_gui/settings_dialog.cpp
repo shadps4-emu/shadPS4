@@ -318,7 +318,6 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
         // General
         ui->consoleLanguageGroupBox->installEventFilter(this);
         ui->emulatorLanguageGroupBox->installEventFilter(this);
-        ui->separateUpdatesCheckBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
         ui->userName->installEventFilter(this);
@@ -450,8 +449,6 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString translatedText_FullscreenMode =
         screenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
     ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
-    ui->separateUpdatesCheckBox->setChecked(
-        toml::find_or<bool>(data, "General", "separateUpdateEnabled", false));
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
     QString translatedText_logType = logTypeMap.key(QString::fromStdString(Config::getLogType()));
@@ -600,8 +597,6 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Console Language:\\nSets the language that the PS4 game uses.\\nIt's recommended to set this to a language the game supports, which will vary by region.");
     } else if (elementName == "emulatorLanguageGroupBox") {
         text = tr("Emulator Language:\\nSets the language of the emulator's user interface.");
-    } else if (elementName == "separateUpdatesCheckBox") {
-        text = tr("Enable Separate Update Folder:\\nEnables installing game updates into a separate folder for easy management.\\nThis can be manually created by adding the extracted update to the game folder with the name \"CUSA00000-UPDATE\" where the CUSA ID matches the game's ID.");
     } else if (elementName == "showSplashCheckBox") {
         text = tr("Show Splash Screen:\\nShows the game's splash screen (a special image) while the game is starting.");
     } else if (elementName == "discordRPCCheckbox") {
@@ -760,7 +755,6 @@ void SettingsDialog::UpdateSettings() {
     Config::setVblankDiv(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
-    Config::setSeparateUpdateEnabled(ui->separateUpdatesCheckBox->isChecked());
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
@@ -817,11 +811,11 @@ void SettingsDialog::ResetInstallFolders() {
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
         const auto install_dir_array =
-            toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
 
         std::vector<bool> install_dirs_enabled;
         try {
-            install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
+            install_dirs_enabled = Config::getGameInstallDirsEnabled();
         } catch (...) {
             // If it does not exist, assume that all are enabled.
             install_dirs_enabled.resize(install_dir_array.size(), true);

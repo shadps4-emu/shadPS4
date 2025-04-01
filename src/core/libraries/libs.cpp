@@ -115,6 +115,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpParty::RegisterlibSceNpParty(sym);
     Libraries::Zlib::RegisterlibSceZlib(sym);
     Libraries::Hmd::RegisterlibSceHmd(sym);
+    Libraries::DiscMap::RegisterlibSceDiscMap(sym);
 }
 
 } // namespace Libraries

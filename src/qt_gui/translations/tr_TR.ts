@@ -26,11 +26,11 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches deneysel niteliktedir.\nDikkatli kullanın.\n\nCheat&apos;leri ayrı ayrı indirerek, depo seçerek ve indirme düğmesine tıklayarak indirin.\nPatches sekmesinde tüm patch&apos;leri bir kerede indirebilir, hangi patch&apos;leri kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nCheats/Patches&apos;i geliştirmediğimiz için,\nproblemleri cheat yazarına bildirin.\n\nYeni bir cheat mi oluşturduğunuz? Şu adresi ziyaret edin:\n</translation>
+      <translation>Hileler/Yamalar deneysel özelliklerdir.\nDikkatli kullanın.\n\nHileleri depo seçerek ve indirme düğmesine tıklayarak ayrı ayrı indirin.\nYamalar sekmesinde tüm yamaları tek seferde indirebilir, hangi yamaları kullanmak istediğinizi seçebilir ve seçiminizi kaydedebilirsiniz.\n\nHileleri ve yamaları biz geliştirmediğimiz için\nsorunlarınızı hile geliştiricisine bildirin.\n\nYeni bir hile oluşturduysanız şu adresi ziyaret edin:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Görüntü Mevcut Değil</translation>
+      <translation>Kaynak Mevcut Değil</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -70,7 +70,7 @@
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>Seçilen dosyayı silmek istiyor musunuz?\n%1</translation>
+      <translation>Seçili dosyayı silmek istiyor musunuz?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
@@ -122,7 +122,7 @@
     </message>
     <message>
       <source>Success</source>
-      <translation>Başarı</translation>
+      <translation>Başarılı</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
@@ -138,11 +138,11 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Dosya Var</translation>
+      <translation>Dosya mevcut</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>Dosya zaten var. Üzerine yazmak ister misiniz?</translation>
+      <translation>Dosya zaten mevcut. Var olan dosyayı değiştirmek istiyor musunuz?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -313,7 +313,7 @@
     </message>
     <message>
       <source>Update</source>
-      <translation>Güncelleme</translation>
+      <translation>Güncelle</translation>
     </message>
     <message>
       <source>No</source>
@@ -551,26 +551,26 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Kaydet</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Uygula</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Varsayılanlara Sıfırla</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>İptal</translation>
     </message>
   </context>
   <context>
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Klavye + Fare ve Kontrolcü tuş atamalarını düzenle</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -883,10 +883,6 @@
       <translation>Kısayol oluşturulurken hata oluştu!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>PKG Yükle</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Oyun</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Tuş Atamaları</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Klasörü Seç</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Hangi dizine yüklemek istediğinizi seçin.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Tüm Kuyruktakileri Seçili Klasöre Yükle</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Yüklemede PKG Dosyasını Sil</translation>
     </message>
   </context>
   <context>
@@ -1141,7 +1118,7 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Hız Sapması (varsayılan 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
@@ -1149,7 +1126,7 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>Ölü Bölge Sapması (varsayılan 0.50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
@@ -1161,7 +1138,7 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>Bu tuş, Ortak Yapılandırma'daki atamaları seçili profile kopyalar ve seçili profil Ortak Yapılandırma ise kullanılamaz.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
@@ -1193,19 +1170,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Kaydet</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Uygula</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Varsayılanlara Sıfırla</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>İptal</translation>
     </message>
   </context>
   <context>
@@ -1213,10 +1190,6 @@
     <message>
       <source>Open/Add Elf Folder</source>
       <translation>Elf Klasörü Aç/Ekle</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Paketleri Kur (PKG)</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Yapılandır...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>.pkg dosyasından uygulama yükle</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1307,8 +1276,12 @@
       <translation>Oyun Listesini Kaydet</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>PKG Görüntüleyici</translation>
+      <source>Trophy Viewer</source>
+      <translation>Kupa Görüntüleyici</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Oyun bulunamadı. Oyunlarınızı lütfen önce kütüphanenize ekleyin.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>Sadece bir dosya seçilebilir!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG Çıkartma</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Yama tespit edildi!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG ve oyun sürümleri uyumlu: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Üzerine yazmak ister misiniz?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG Sürümü %1, kurulu sürümden daha eski: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Oyun yüklendi: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Yamanın yüklenmesini ister misiniz: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC Yükleme</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>DLC&apos;yi yüklemek ister misiniz: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC zaten yüklü:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Oyun zaten yüklü</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HATASI</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>PKG Çıkarılıyor %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Çıkarma Tamamlandı</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Oyun başarıyla %1 konumuna yüklendi</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Dosya geçerli bir PKG dosyası gibi görünmüyor</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Oyunu Çalıştır</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Eboot.bin dosyası bulunamadı</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG Dosyası (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG bir yama ya da DLC, lütfen önce oyunu yükleyin!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Klasörü Aç</translation>
+      <source>Play</source>
+      <translation>Başlat</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG HATASI</translation>
+      <source>Pause</source>
+      <translation>Duraklat</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Ad</translation>
+      <source>Stop</source>
+      <translation>Durdur</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Seri Numarası</translation>
+      <source>Restart</source>
+      <translation>Yeniden Başlat</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Yüklü</translation>
+      <source>Full Screen</source>
+      <translation>Tam Ekran</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Boyut</translation>
+      <source>Controllers</source>
+      <translation>Kontrolcüler</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
+      <source>Keyboard</source>
+      <translation>Klavye</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Tür</translation>
+      <source>Refresh List</source>
+      <translation>Listeyi Yenile</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Uygulama Sürümü</translation>
+      <source>Resume</source>
+      <translation>Devam Et</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>Sistem Yazılımı</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Bölge</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Bayraklar</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Yol</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Dosya</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Bilinmeyen</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paket</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Simgelerin Altında Etiketleri Göster</translation>
     </message>
   </context>
   <context>
@@ -1599,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emülatör</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Ayrı Güncelleme Klasörünü Etkinleştir</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1869,10 +1739,6 @@
       <translation>Emülatör Dili:\nEmülatörün kullanıcı arayüzünün dilini ayarlar.</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
-    </message>
-    <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Açılış Ekranını Göster:\nOyun açılırken (özel bir görüntü) açılış ekranını gösterir.</translation>
     </message>
@@ -2030,7 +1896,7 @@
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Ana Bilgisayar Hata Ayıklama Göstergeleri:\nVulkan komutlarının etrafına belirli AMDGPU komutları için göstergeler gibi emülatör tarafı bilgileri ekler ve kaynaklara hata ayıklama adları verir.\nBunu etkinleştirdiyseniz, Çökme Tanılamaları'nı etkinleştirmelisiniz.\nRenderDoc gibi programlar için faydalıdır.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
@@ -2190,6 +2056,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Kupa Görüntüleyici</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Oyun Seç:</translation>
     </message>
     <message>
       <source>Progress</source>

@@ -883,10 +883,6 @@
       <translation>¡Error al crear el acceso directo!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Instalar PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Juego</translation>
     </message>
@@ -976,25 +972,6 @@
     <message>
       <source>Keybindings</source>
       <translation>Asignación de Teclas</translation>
-    </message>
-  </context>
-  <context>
-    <name>InstallDirSelect</name>
-    <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Elegir carpeta</translation>
-    </message>
-    <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Selecciona el directorio de instalación.</translation>
-    </message>
-    <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Instalar toda la cola en la carpeta seleccionada</translation>
-    </message>
-    <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Eliminar archivo PKG tras la instalación</translation>
     </message>
   </context>
   <context>
@@ -1215,10 +1192,6 @@
       <translation>Abrir/Agregar carpeta Elf</translation>
     </message>
     <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Instalar paquetes (PKG)</translation>
-    </message>
-    <message>
       <source>Boot Game</source>
       <translation>Iniciar juego</translation>
     </message>
@@ -1233,10 +1206,6 @@
     <message>
       <source>Configure...</source>
       <translation>Configurar...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Instalar aplicación desde un archivo .pkg</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -1307,8 +1276,12 @@
       <translation>Volcar Lista de Juegos</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>Vista PKG</translation>
+      <source>Trophy Viewer</source>
+      <translation>Expositor de Trofeos</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>No se encontraron juegos. Por favor, añade tus juegos a tu biblioteca primero.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1419,84 +1392,12 @@
       <translation>¡Solo se puede seleccionar un archivo!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>Extracción de PKG</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>¡Actualización detectada!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>Las versiones de PKG y del juego coinciden: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>¿Desea sobrescribir?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>La versión de PKG %1 es más antigua que la versión instalada: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>El juego está instalado: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>¿Desea instalar la actualización: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>Instalación de DLC</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>¿Desea instalar el DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC ya instalado:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Juego ya instalado</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>ERROR PKG</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Extrayendo PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Extracción terminada</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Juego instalado exitosamente en %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>El archivo parece no ser un archivo PKG válido</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Ejecutar juego</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Archivo Eboot.bin no encontrado</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>Archivo PKG (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>El archivo PKG es un parche o DLC, ¡debes instalar el juego primero!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1506,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Abrir Carpeta</translation>
+      <source>Play</source>
+      <translation>Jugar</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>ERROR PKG</translation>
+      <source>Pause</source>
+      <translation>Pausar</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Nombre</translation>
+      <source>Stop</source>
+      <translation>Detener</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Número de Serie</translation>
+      <source>Restart</source>
+      <translation>Reiniciar</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Instalado</translation>
+      <source>Full Screen</source>
+      <translation>Pantalla completa</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Tamaño</translation>
+      <source>Controllers</source>
+      <translation>Controles</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Categoría</translation>
+      <source>Keyboard</source>
+      <translation>Teclado</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Tipo</translation>
+      <source>Refresh List</source>
+      <translation>Actualizar lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Versión de la Aplicación</translation>
+      <source>Resume</source>
+      <translation>Reanudar</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FW</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Región</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Etiquetas</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Ruta</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Archivo</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Desconocido</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Paquete</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Mostrar etiquetas debajo de los iconos</translation>
     </message>
   </context>
   <context>
@@ -1599,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulador</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Habilitar Carpeta Independiente de Actualizaciones</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1867,10 +1737,6 @@
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
       <translation>Idioma del Emulador:\nConfigura el idioma de la interfaz de usuario del emulador.</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Habilitar Carpeta Independiente de Actualizaciónes:\nHabilita el instalar actualizaciones del juego en una carpeta separada para mas facilidad en la gestión.\nPuede crearse manualmente añadiendo la actualización extraída a la carpeta del juego con el nombre &quot;CUSA00000-UPDATE&quot; donde el CUSA ID coincide con el ID del juego.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
@@ -2190,6 +2056,10 @@
     <message>
       <source>Trophy Viewer</source>
       <translation>Expositor de Trofeos</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Selecciona un Juego:</translation>
     </message>
     <message>
       <source>Progress</source>
