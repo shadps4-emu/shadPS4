@@ -201,6 +201,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
         .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
+        .supports_trinary_minmax = instance_.IsAmdShaderTrinaryMinMaxSupported(),
         .supports_robust_buffer_access = instance_.IsRobustBufferAccess2Supported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,

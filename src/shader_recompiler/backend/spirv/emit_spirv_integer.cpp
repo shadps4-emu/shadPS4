@@ -256,6 +256,50 @@ Id EmitUMax32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpUMax(ctx.U32[1], a, b);
 }
 
+Id EmitSMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMin3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpSMin(ctx.U32[1], a, ctx.OpSMin(ctx.U32[1], b, c));
+}
+
+Id EmitUMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMin3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpUMin(ctx.U32[1], a, ctx.OpUMin(ctx.U32[1], b, c));
+}
+
+Id EmitSMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMax3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpSMax(ctx.U32[1], a, ctx.OpSMax(ctx.U32[1], b, c));
+}
+
+Id EmitUMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMax3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpUMax(ctx.U32[1], a, ctx.OpUMax(ctx.U32[1], b, c));
+}
+
+Id EmitSMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMid3AMD(ctx.U32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpSMin(ctx.U32[1], ctx.OpSMax(ctx.U32[1], a, b), c)};
+    return ctx.OpSMax(ctx.U32[1], ctx.OpSMin(ctx.U32[1], a, b), mmx);
+}
+
+Id EmitUMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMid3AMD(ctx.U32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpUMin(ctx.U32[1], ctx.OpUMax(ctx.U32[1], a, b), c)};
+    return ctx.OpUMax(ctx.U32[1], ctx.OpUMin(ctx.U32[1], a, b), mmx);
+}
+
 Id EmitSClamp32(EmitContext& ctx, IR::Inst* inst, Id value, Id min, Id max) {
     Id result{};
     if (ctx.profile.has_broken_spirv_clamp) {
