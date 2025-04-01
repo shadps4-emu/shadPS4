@@ -683,19 +683,8 @@ void KBMSettings::CheckMapping(QPushButton*& button) {
 }
 
 void KBMSettings::SetMapping(QString input) {
-    if (mappinglist.size() >= 3) {
-        return;
-    }
-
-    if (!mappinglist.contains(input)) {
-        mappinglist.append(input);
-    }
-
-    mapping = mappinglist.join(",");
-
-    if (mappinglist.size() >= 1) { // Adjust this condition as needed
-        MappingCompleted = true;
-    }
+    mapping = input;
+    MappingCompleted = true;
 }
 
 bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
@@ -707,343 +696,303 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
     }
 
     if (EnableMapping) {
+        if (Qt::ShiftModifier & QApplication::keyboardModifiers()) {
+            modifier = "lshift";
+        } else if (Qt::AltModifier & QApplication::keyboardModifiers()) {
+            modifier = "lalt";
+        } else if (Qt::ControlModifier & QApplication::keyboardModifiers()) {
+            modifier = "lctrl";
+        } else if (Qt::MetaModifier & QApplication::keyboardModifiers()) {
+#ifdef _WIN32
+            modifier = "lwin";
+#else
+            modifier = "lmeta";
+#endif
+        }
+
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-            QString keyText;
 
             switch (keyEvent->key()) {
             case Qt::Key_Space:
-                keyText = "space";
+                SetMapping("space");
                 break;
             case Qt::Key_Comma:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kpcomma";
+                    SetMapping("kpcomma");
                 } else {
-                    keyText = "comma";
+                    SetMapping("comma");
                 }
                 break;
             case Qt::Key_Period:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kpperiod";
+                    SetMapping("kpperiod");
                 } else {
-                    keyText = "period";
+                    SetMapping("period");
                 }
                 break;
             case Qt::Key_Slash:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers())
-                    keyText = "kpdivide";
+                    SetMapping("kpdivide");
                 break;
             case Qt::Key_Asterisk:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers())
-                    keyText = "kpmultiply";
+                    SetMapping("kpmultiply");
                 break;
             case Qt::Key_Question:
-                keyText = "question";
+                SetMapping("question");
                 break;
             case Qt::Key_Semicolon:
-                keyText = "semicolon";
+                SetMapping("semicolon");
                 break;
             case Qt::Key_Minus:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kpminus";
+                    SetMapping("kpminus");
                 } else {
-                    keyText = "minus";
+                    SetMapping("minus");
                 }
                 break;
             case Qt::Key_Plus:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kpplus";
+                    SetMapping("kpplus");
                 } else {
-                    keyText = "plus";
+                    SetMapping("plus");
                 }
                 break;
             case Qt::Key_ParenLeft:
-                keyText = "lparenthesis";
+                SetMapping("lparenthesis");
                 break;
             case Qt::Key_ParenRight:
-                keyText = "rparenthesis";
+                SetMapping("rparenthesis");
                 break;
             case Qt::Key_BracketLeft:
-                keyText = "lbracket";
+                SetMapping("lbracket");
                 break;
             case Qt::Key_BracketRight:
-                keyText = "rbracket";
+                SetMapping("rbracket");
                 break;
             case Qt::Key_BraceLeft:
-                keyText = "lbrace";
+                SetMapping("lbrace");
                 break;
             case Qt::Key_BraceRight:
-                keyText = "rbrace";
+                SetMapping("rbrace");
                 break;
             case Qt::Key_Backslash:
-                keyText = "backslash";
+                SetMapping("backslash");
                 break;
             case Qt::Key_Tab:
-                keyText = "tab";
+                SetMapping("tab");
                 break;
             case Qt::Key_Backspace:
-                keyText = "backspace";
+                SetMapping("backspace");
                 break;
             case Qt::Key_Return:
-                keyText = "enter";
+                SetMapping("enter");
                 break;
             case Qt::Key_Enter:
-                keyText = "kpenter";
+                SetMapping("kpenter");
                 break;
             case Qt::Key_Escape:
-                keyText = "unmapped";
+                SetMapping("unmapped");
                 break;
             case Qt::Key_Shift:
-                if (keyEvent->nativeScanCode() == lshift) {
-                    keyText = "lshift";
-                } else if (keyEvent->nativeScanCode() == rshift) {
-                    keyText = "rshift";
-                } else {
-                    keyText = "shift";
-                }
+                SetMapping("lshift");
                 break;
             case Qt::Key_Alt:
-                if (keyEvent->nativeScanCode() == lalt) {
-                    keyText = "lalt";
-                } else if (keyEvent->nativeScanCode() == ralt) {
-                    keyText = "ralt";
-                } else {
-                    keyText = "alt";
-                }
+                SetMapping("lalt");
                 break;
             case Qt::Key_Control:
-                if (keyEvent->nativeScanCode() == lctrl) {
-                    keyText = "lctrl";
-                } else if (keyEvent->nativeScanCode() == rctrl) {
-                    keyText = "rctrl";
-                } else {
-                    keyText = "ctrl";
-                }
+                SetMapping("lctrl");
                 break;
             case Qt::Key_Meta:
                 activateWindow();
 #ifdef _WIN32
-                keyText = "lwin";
+                SetMapping("lwin");
 #else
-                keyText = "lmeta";
+                SetMapping("lmeta");
 #endif
             case Qt::Key_1:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp1";
+                    SetMapping("kp1");
                 } else {
-                    keyText = "1";
+                    SetMapping("1");
                 }
                 break;
             case Qt::Key_2:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp2";
+                    SetMapping("kp2");
                 } else {
-                    keyText = "2";
+                    SetMapping("2");
                 }
                 break;
             case Qt::Key_3:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp3";
+                    SetMapping("kp3");
                 } else {
-                    keyText = "3";
+                    SetMapping("3");
                 }
                 break;
             case Qt::Key_4:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp4";
+                    SetMapping("kp4");
                 } else {
-                    keyText = "4";
+                    SetMapping("4");
                 }
                 break;
             case Qt::Key_5:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp5";
+                    SetMapping("kp5");
                 } else {
-                    keyText = "5";
+                    SetMapping("5");
                 }
                 break;
             case Qt::Key_6:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp6";
+                    SetMapping("kp6");
                 } else {
-                    keyText = "6";
+                    SetMapping("6");
                 }
                 break;
             case Qt::Key_7:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp7";
+                    SetMapping("kp7");
                 } else {
-                    keyText = "7";
+                    SetMapping("7");
                 }
                 break;
             case Qt::Key_8:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp8";
+                    SetMapping("kp8");
                 } else {
-                    keyText = "8";
+                    SetMapping("8");
                 }
                 break;
             case Qt::Key_9:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp9";
+                    SetMapping("kp9");
                 } else {
-                    keyText = "9";
+                    SetMapping("9");
                 }
                 break;
             case Qt::Key_0:
                 if (Qt::KeypadModifier & QApplication::keyboardModifiers()) {
-                    keyText = "kp0";
+                    SetMapping("kp0");
                 } else {
-                    keyText = "0";
+                    SetMapping("0");
                 }
                 break;
             case Qt::Key_Up:
                 activateWindow();
-                keyText = "up";
+                SetMapping("up");
                 break;
             case Qt::Key_Down:
-                keyText = "down";
+                SetMapping("down");
                 break;
             case Qt::Key_Left:
-                keyText = "left";
+                SetMapping("left");
                 break;
             case Qt::Key_Right:
-                keyText = "right";
+                SetMapping("right");
                 break;
             case Qt::Key_A:
-                keyText = "a";
+                SetMapping("a");
                 break;
             case Qt::Key_B:
-                keyText = "b";
+                SetMapping("b");
                 break;
             case Qt::Key_C:
-                keyText = "c";
+                SetMapping("c");
                 break;
             case Qt::Key_D:
-                keyText = "d";
+                SetMapping("d");
                 break;
             case Qt::Key_E:
-                keyText = "e";
+                SetMapping("e");
                 break;
             case Qt::Key_F:
-                keyText = "f";
+                SetMapping("f");
                 break;
             case Qt::Key_G:
-                keyText = "g";
+                SetMapping("g");
                 break;
             case Qt::Key_H:
-                keyText = "h";
+                SetMapping("h");
                 break;
             case Qt::Key_I:
-                keyText = "i";
+                SetMapping("i");
                 break;
             case Qt::Key_J:
-                keyText = "j";
+                SetMapping("j");
                 break;
             case Qt::Key_K:
-                keyText = "k";
+                SetMapping("k");
                 break;
             case Qt::Key_L:
-                keyText = "l";
+                SetMapping("l");
                 break;
             case Qt::Key_M:
-                keyText = "m";
+                SetMapping("m");
                 break;
             case Qt::Key_N:
-                keyText = "n";
+                SetMapping("n");
                 break;
             case Qt::Key_O:
-                keyText = "o";
+                SetMapping("o");
                 break;
             case Qt::Key_P:
-                keyText = "p";
+                SetMapping("p");
                 break;
             case Qt::Key_Q:
-                keyText = "q";
+                SetMapping("q");
                 break;
             case Qt::Key_R:
-                keyText = "r";
+                SetMapping("r");
                 break;
             case Qt::Key_S:
-                keyText = "s";
+                SetMapping("s");
                 break;
             case Qt::Key_T:
-                keyText = "t";
+                SetMapping("t");
                 break;
             case Qt::Key_U:
-                keyText = "u";
+                SetMapping("u");
                 break;
             case Qt::Key_V:
-                keyText = "v";
+                SetMapping("v");
                 break;
             case Qt::Key_W:
-                keyText = "w";
+                SetMapping("w");
                 break;
             case Qt::Key_X:
-                keyText = "x";
+                SetMapping("x");
                 break;
             case Qt::Key_Y:
-                keyText = "Y";
+                SetMapping("Y");
                 break;
             case Qt::Key_Z:
-                keyText = "z";
+                SetMapping("z");
                 break;
             default:
                 break;
             }
-            if (!keyText.isEmpty() && !mappinglist.contains(keyText)) {
-                SetMapping(keyText); // Add the key to the mapping list
-            }
-
-            return true;
-        }
-
-        if (event->type() == QEvent::KeyRelease) {
-            EnableMapping = false;
-            EnableMappingButtons();
-            timer->stop();
-
-            if (modifier != "") {
-                MappingButton->setText(modifier + "," + mapping);
-            } else {
-                MappingButton->setText(mapping);
-            }
-
-            mappinglist.clear(); // Clear the list for the next mapping
             return true;
         }
 
         if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-            QString buttonText;
             switch (mouseEvent->button()) {
             case Qt::LeftButton:
-                buttonText = "leftbutton";
+                SetMapping("leftbutton");
                 break;
             case Qt::RightButton:
-                buttonText = "rightbutton";
+                SetMapping("rightbutton");
                 break;
             case Qt::MiddleButton:
-                buttonText = "middlebutton";
+                SetMapping("middlebutton");
                 break;
             default:
                 break;
             }
-            return true;
-        }
-
-        if (event->type() == QEvent::MouseButtonRelease) {
-            EnableMapping = false;
-            EnableMappingButtons();
-            timer->stop();
-
-            if (modifier != "") {
-                MappingButton->setText(modifier + "," + mapping);
-            } else {
-                MappingButton->setText(mapping);
-            }
-
-            mappinglist.clear(); // Clear the list for the next mapping
             return true;
         }
 
@@ -1053,17 +1002,16 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
 
         if (event->type() == QEvent::Wheel) {
             QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
-            QString WheelText;
             if (wheelEvent->angleDelta().y() > 5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
-                    WheelText = "mousewheelup";
+                    SetMapping("mousewheelup");
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
                                              tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             } else if (wheelEvent->angleDelta().y() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
-                    WheelText = "mousewheeldown";
+                    SetMapping("mousewheeldown");
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
                                              tr("Mousewheel cannot be mapped to stick outputs"));
@@ -1073,9 +1021,9 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
                     // QT changes scrolling to horizontal for all widgets with the alt modifier
                     if (Qt::AltModifier & QApplication::keyboardModifiers()) {
-                        WheelText = "mousewheelup";
+                        SetMapping("mousewheelup");
                     } else {
-                        WheelText = "mousewheelright";
+                        SetMapping("mousewheelright");
                     }
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
@@ -1084,9 +1032,9 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             } else if (wheelEvent->angleDelta().x() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
                     if (Qt::AltModifier & QApplication::keyboardModifiers()) {
-                        WheelText = "mousewheeldown";
+                        SetMapping("mousewheeldown");
                     } else {
-                        WheelText = "mousewheelleft";
+                        SetMapping("mousewheelleft");
                     }
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
