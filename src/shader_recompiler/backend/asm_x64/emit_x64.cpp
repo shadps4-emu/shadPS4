@@ -12,14 +12,27 @@ namespace Shader::Backend::X64 {
 using namespace Xbyak;
 using namespace Xbyak::util;
 
-static void TestCondition(EmitContext& ctx, const IR::Inst* ref) {
+static void EmitCondition(EmitContext& ctx, const IR::Inst* ref, Label& label, bool invert) {
     IR::Value cond = ref->Arg(0);
-    Operand& op = ctx.Def(cond)[0];
-    Reg8 tmp = op.isREG() ? op.getReg().cvt8() : ctx.TempGPReg(false).cvt8();
-    if (!op.isREG()) {
-        ctx.Code().mov(tmp, op);
+    if (cond.IsImmediate()) {
+        // If imediate, we evaluate at compile time
+        if (cond.U1() != invert) {
+            ctx.Code().jmp(label);
+        }
+    } else {
+        Operand& op = ctx.Def(cond)[0];
+        if (op.isREG()) {
+            Reg8 reg = op.getReg().cvt8();
+            ctx.Code().test(reg, reg);
+        } else {
+            ctx.Code().test(op, 0xff);
+        }
+        if (invert) {
+            ctx.Code().jz(label);
+        } else {
+            ctx.Code().jnz(label);
+        }
     }
-    ctx.Code().test(tmp, tmp);
 }
 
 template <typename ArgType>
@@ -120,22 +133,20 @@ static void Traverse(EmitContext& ctx, const IR::Program& program) {
         case IR::AbstractSyntaxNode::Type::If: {
             IR::Inst* ref = node.data.if_node.cond.InstRecursive();
             Label& merge = ctx.BlockLabel(node.data.if_node.merge);
-            TestCondition(ctx, ref);
-            c.jz(merge);
+            EmitCondition(ctx, ref, merge, true);
             break;
         }
         case IR::AbstractSyntaxNode::Type::Repeat: {
             IR::Inst* ref = node.data.repeat.cond.InstRecursive();
             Label& loop_header = ctx.BlockLabel(node.data.repeat.loop_header);
-            TestCondition(ctx, ref);
-            c.jnz(loop_header);
+            EmitCondition(ctx, ref, loop_header, false);
             break;
         }
         case IR::AbstractSyntaxNode::Type::Break: {
             IR::Inst* ref = node.data.break_node.cond.InstRecursive();
             Label& merge = ctx.BlockLabel(node.data.break_node.merge);
-            TestCondition(ctx, ref);
-            c.jz(merge);
+            EmitCondition(ctx, ref, merge, true);
+            +c.jz(merge);
             break;
         }
         case IR::AbstractSyntaxNode::Type::Return: {
