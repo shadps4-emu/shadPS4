@@ -17,6 +17,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
