@@ -899,8 +899,14 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
 
 if (ARCHITECTURE STREQUAL "x86_64")
     set(SHADER_RECOMPILER ${SHADER_RECOMPILER}
+                          src/shader_recompiler/backend/asm_x64/emit_x64_condition.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_condition.h
                           src/shader_recompiler/backend/asm_x64/emit_x64.cpp
-                          src/shader_recompiler/backend/asm_x64/emit_x64.h)
+                          src/shader_recompiler/backend/asm_x64/emit_x64.h
+                          src/shader_recompiler/backend/asm_x64/x64_emit_context.cpp
+                          src/shader_recompiler/backend/asm_x64/x64_emit_context.h
+                          src/shader_recompiler/backend/asm_x64/x64_utils.cpp
+                          src/shader_recompiler/backend/asm_x64/x64_utils.h)
 endif()
 
 set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
