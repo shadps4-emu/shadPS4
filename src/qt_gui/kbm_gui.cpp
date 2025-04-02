@@ -699,7 +699,10 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
             QString keyText;
-
+            if (timer && timer->isActive()) {
+                timer->stop();
+            }
+            
             switch (keyEvent->key()) {
             case Qt::Key_Space:
                 keyText = "space";
@@ -992,11 +995,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             EnableMappingButtons();
             timer->stop();
 
-            if (modifier != "") {
-                MappingButton->setText(modifier + "," + mapping);
-            } else {
-                MappingButton->setText(mapping);
-            }
+            MappingButton->setText(mapping);
 
             mappinglist.clear(); // Clear the list for the next mapping
             return true;
@@ -1005,6 +1004,11 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
         if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             QString buttonText;
+
+            if (timer && timer->isActive()) {
+                timer->stop();
+            }
+
             switch (mouseEvent->button()) {
             case Qt::LeftButton:
                 buttonText = "leftbutton";
@@ -1018,6 +1022,9 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             default:
                 break;
             }
+            if (!buttonText.isEmpty() && !mappinglist.contains(buttonText)) {
+                SetMapping(buttonText); // Add the key to the mapping list
+            }
             return true;
         }
 
@@ -1026,11 +1033,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             EnableMappingButtons();
             timer->stop();
 
-            if (modifier != "") {
-                MappingButton->setText(modifier + "," + mapping);
-            } else {
-                MappingButton->setText(mapping);
-            }
+            MappingButton->setText(mapping);
 
             mappinglist.clear(); // Clear the list for the next mapping
             return true;
@@ -1082,6 +1085,15 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                                              tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             }
+            if (!WheelText.isEmpty() && !mappinglist.contains(WheelText)) {
+                SetMapping(WheelText);
+            }
+            EnableMapping = false;
+            EnableMappingButtons();
+            timer->stop();
+            MappingButton->setText(mapping);
+            mappinglist.clear();
+            
             return true;
         }
     }
