@@ -9,7 +9,7 @@
 
 namespace Libraries::Ulobjmgr {
 
-s64 PS4_SYSV_ABI Func_046DBA8411A2365C(u64 unk1, s32 unk2, u32* unk3) {
+s32 PS4_SYSV_ABI Func_046DBA8411A2365C(u64 arg0, s32 arg1, u32* arg2) {
     if (unk1 == 0 || unk2 == 0 || unk3 == nullptr) {
         return POSIX_EINVAL;
     }
@@ -17,18 +17,18 @@ s64 PS4_SYSV_ABI Func_046DBA8411A2365C(u64 unk1, s32 unk2, u32* unk3) {
     return ORBIS_OK;
 }
 
-s64 PS4_SYSV_ABI Func_1D9F50D9CFB8054E() {
+s32 PS4_SYSV_ABI Func_1D9F50D9CFB8054E() {
     return ORBIS_OK;
 }
 
-s64 PS4_SYSV_ABI Func_4A67FE7D435B94F7(u32 unk) {
+s32 PS4_SYSV_ABI Func_4A67FE7D435B94F7(u32 arg0) {
     if (unk >= 0x4000) {
         return POSIX_EINVAL;
     }
     return ORBIS_OK;
 }
 
-s64 PS4_SYSV_ABI Func_4B07893BBB77A649(u64 unk) {
+s32 PS4_SYSV_ABI Func_4B07893BBB77A649(u64 arg0) {
     if (unk == 0) {
         return POSIX_EINVAL;
     }
