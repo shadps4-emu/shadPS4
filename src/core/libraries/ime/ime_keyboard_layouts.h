@@ -5,8 +5,7 @@
 
 #include <string>
 #include <vector>
-#include "core/libraries/pad/pad.h"
-// using B = Libraries::Pad::OrbisPadButtonDataOffset;
+#include <imgui.h>
 
 enum class KeyType {
     Text,          // Inserts character(s) into input buffer
@@ -14,7 +13,8 @@ enum class KeyType {
     Space,         // Adds space
     Enter,         // Submits input
     Shift,         // Toggle uppercase/lowercase
-    SymbolsLayout, // Switch to symbols layout
+    Symbols1Layout, // Switch to symbols layout
+    Symbols2Layout, // Switch to symbols layout
     TextLayout,    // Switch to text layout
     Done,          // Finish and close keyboard
     CursorLeft,
@@ -35,10 +35,11 @@ struct Key {
     int rowspan = 1;
     std::string label;
     std::string controller_hint;
-    KeyType type = KeyType::Text; // default to Text input
-    std::vector<Libraries::Pad::OrbisPadButtonDataOffset> bound_buttons = {}; // new field
+    KeyType type = KeyType::Text;
+    std::vector<ImGuiNavInput> bound_buttons = {}; // Now using ImGui navigation inputs
 };
 
 extern const std::vector<Key> kUppercaseLayout;
 extern const std::vector<Key> kLowercaseLayout;
 extern const std::vector<Key> kSymbols1Layout;
+extern const std::vector<Key> kSymbols2Layout;

@@ -190,7 +190,7 @@ void ImeUi::DrawInputText() {
 }
 
 void ImeUi::DrawKeyboard() {
-    static KeyboardMode kb_mode = KeyboardMode::Letters;
+    static KeyboardMode kb_mode = KeyboardMode::Letters1;
     static bool shift_enabled = false;
 
     static bool has_logged = false;
@@ -205,10 +205,34 @@ void ImeUi::DrawKeyboard() {
     DrawVirtualKeyboard(state->current_text.begin(), state->current_text.capacity(), &input_changed,
                         kb_mode, shift_enabled, &done_pressed);
 
+    if (input_changed) {
+        OrbisImeEditText eventParam{};
+        eventParam.str = reinterpret_cast<char16_t*>(ime_param->work);
+        eventParam.caret_index = std::strlen(state->current_text.begin());
+        eventParam.area_num = 1;
+        eventParam.text_area[0].mode = 1;
+        eventParam.text_area[0].index = 0;
+        eventParam.text_area[0].length = eventParam.caret_index;
+
+        state->ConvertUTF8ToOrbis(state->current_text.begin(), eventParam.caret_index,
+                                  eventParam.str, ime_param->maxTextLength);
+        state->ConvertUTF8ToOrbis(state->current_text.begin(), eventParam.caret_index,
+                                  ime_param->inputTextBuffer, ime_param->maxTextLength);
+
+        OrbisImeEvent event{};
+        event.id = OrbisImeEventId::UpdateText;
+        event.param.text = eventParam;
+        state->SendEvent(&event);
+    }
+
     if (done_pressed) {
-        state->SendEnterEvent(); // Submit action
+        state->SendEnterEvent();
     }
 }
+
+
+
+
 
 int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeUi* ui = static_cast<ImeUi*>(data->UserData);

@@ -69,37 +69,42 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
     rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
     rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-    rb.AddChar(0x00D7); // × Cross
-    rb.AddChar(0x25CB); // ○ Circle
-    rb.AddChar(0x25B3); // △ Triangle
-    rb.AddChar(0x25A1); // □ Square
-    rb.AddChar(0x2191); // ↑ Up Arrow
-    rb.AddChar(0x2193); // ↓ Down Arrow
-    rb.AddChar(0x2190); // ← Left Arrow
-    rb.AddChar(0x2192); // → Right Arrow
+    //For keyboard
+    rb.AddChar(U'×');
+    rb.AddChar(U'○');
+    rb.AddChar(U'△');
+    rb.AddChar(U'□');
+    rb.AddChar(U'↑');
+    rb.AddChar(U'↓');
+    rb.AddChar(U'←');
+    rb.AddChar(U'→');
+    rb.AddChar(U'⊗');
+    rb.AddChar(U'⮾');
+    rb.AddChar(U'🗙');
+    rb.AddChar(U'◀');
+    rb.AddChar(U'▲');
+    rb.AddChar(U'▶');
+    rb.AddChar(U'▼');
+    rb.AddChar(U'⇧');
+    rb.AddChar(U'⬆');
+    rb.AddChar(U'⇦');
+    rb.AddChar(U'€');
+    rb.AddChar(U'₩');
+    rb.AddChar(U'“');
+    rb.AddChar(U'”');
+    rb.AddChar(U'„');
+    rb.AddChar(U'‼');
+    rb.AddChar(U'¿');
+    rb.AddChar(U'⁇');
+    rb.AddChar(U'‹');
+    rb.AddChar(U'›');
+    rb.AddChar(U'’');
+    rb.AddChar(U'‘');
+    rb.AddChar(U'‛');
+    rb.AddChar(U'‚');
+    rb.AddChar(U'№');
 
-    rb.AddChar(0x2297);  // ⊗ Circled Times (often used as cross)
-    rb.AddChar(0x2BBE);  // ⮾ Circled X (if supported by font)
-    rb.AddChar(0x1F5D9); // 🗙 Cancellation X (heavy)
 
-    rb.AddChar(0x25C0); // ◀ Black Left-Pointing Triangle
-    rb.AddChar(0x25B2); // ▲ Black Up-Pointing Triangle
-    rb.AddChar(0x25B6); // ▶ Black Right-Pointing Triangle
-    rb.AddChar(0x25BC); // ▼ Black Down-Pointing Triangle
-
-    rb.AddChar(0x232B); // ⌫ Backspace
-
-    rb.AddChar(0x21E7); // ⇧ UPWARDS WHITE ARROW
-    rb.AddChar(0x2B06); // ⬆ UPWARDS BLACK ARROW
-
-    rb.AddChar(0x21E6); // ⇦ Leftwards White Arrow
-
-
-    //rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
-    // Manually add full BMP range
-    //for (ImWchar c = 0x0020; c <= 0xFFFF; ++c) {
-    //    rb.AddChar(c);
-    //}
     ImVector<ImWchar> ranges{};
     rb.BuildRanges(&ranges);
     ImFontConfig font_cfg{};

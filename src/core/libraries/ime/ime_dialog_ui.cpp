@@ -342,7 +342,7 @@ void ImeDialogUi::DrawMultiLineInputText() {
 }
 
 void ImeDialogUi::DrawKeyboard() {
-    static KeyboardMode kb_mode = KeyboardMode::Letters;
+    static KeyboardMode kb_mode = KeyboardMode::Letters1;
     static bool shift_enabled = false;
 
     static bool has_logged = false;

@@ -5,40 +5,55 @@
 #include <imgui.h>
 #include "ime_keyboard_layouts.h"
 #include "ime_keyboard_ui.h"
-#include "input/controller.h"
-
-#include "common/singleton.h"
+#include "ime_ui.h" // for ImeState
+#include "ime_common.h"
 
 using namespace ImGui;
+
+// --- UTF-8 safe backspace helper ---
+void Utf8SafeBackspace(char* buffer) {
+    size_t len = std::strlen(buffer);
+    if (len == 0)
+        return;
+
+    while (len > 0 && (static_cast<unsigned char>(buffer[len]) & 0b11000000) == 0b10000000) {
+        --len;
+    }
+
+    if (len > 0) {
+        buffer[len - 1] = '\0';
+        buffer[len] = '\0';
+    }
+}
 
 void DrawVirtualKeyboard(char* buffer, std::size_t buffer_capacity, bool* input_changed,
                          KeyboardMode& kb_mode, bool& shift_enabled, bool* done_pressed) {
     const std::vector<Key>* layout = nullptr;
 
-    if (kb_mode == KeyboardMode::Symbols) {
+    switch (kb_mode) {
+    case KeyboardMode::Symbols1:
         layout = &kSymbols1Layout;
-    } else {
+        break;
+    case KeyboardMode::Symbols2:
+        layout = &kSymbols2Layout;
+        break;
+    default:
         layout = shift_enabled ? &kUppercaseLayout : &kLowercaseLayout;
+        break;
     }
 
-    auto current_pad_button =
-        Common::Singleton<Input::GameController>::Instance()->GetLastState().buttonsState;
-
     RenderKeyboardLayout(*layout, buffer, buffer_capacity, input_changed, kb_mode, shift_enabled,
-                         done_pressed, current_pad_button);
+                         done_pressed);
 }
 
 void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::size_t buffer_capacity,
                           bool* input_changed, KeyboardMode& kb_mode, bool& shift_enabled,
-                          bool* done_pressed,
-                          Libraries::Pad::OrbisPadButtonDataOffset current_pad_button) {
-    // Define desired total layout size (in pixels)
+                          bool* done_pressed) {
     const float layout_width = 485.0f;
     const float layout_height = 200.0f;
     const float cell_spacing = 4.0f;
     const float hint_padding = 2.0f;
 
-    // Find max rows and columns
     int max_col = 0;
     int max_row = 0;
     for (const Key& key : layout) {
@@ -46,7 +61,6 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
         max_row = std::max(max_row, key.row + static_cast<int>(key.rowspan));
     }
 
-    // Calculate cell size dynamically
     const float cell_width = (layout_width - (max_col - 1) * cell_spacing) / max_col;
     const float cell_height = (layout_height - (max_row - 1) * cell_spacing) / max_row;
 
@@ -66,8 +80,9 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
                               : key.label;
 
         ImGui::SetCursorScreenPos(pos);
+        bool key_activated = ImGui::Button(button_id.c_str(), size);
 
-        if (ImGui::Button(button_id.c_str(), size)) {
+        if (key_activated) {
             switch (key.type) {
             case KeyType::Text:
                 if (!key.label.empty()) {
@@ -77,78 +92,11 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
                         if (input_changed)
                             *input_changed = true;
                     }
-                    // Controller debug injection
-                    for (Libraries::Pad::OrbisPadButtonDataOffset button : key.bound_buttons) {
-                        if (current_pad_button == button) {
-                            // DEBUG: always insert "ok" when a key is triggered via gamepad
-                            size_t len = std::strlen(buffer);
-                            if (len + 2 < buffer_capacity) {
-                                std::strcat(buffer, "ok");
-                                if (input_changed)
-                                    *input_changed = true;
-                            }
-                        }
-                    }
-
-                    // Controller press simulation
-                    for (Libraries::Pad::OrbisPadButtonDataOffset button : key.bound_buttons) {
-                        if (current_pad_button == button) {
-                            switch (key.type) {
-                            case KeyType::Text:
-                                if (!key.label.empty()) {
-                                    size_t len = std::strlen(buffer);
-                                    if (len + key.label.size() < buffer_capacity) {
-                                        std::strcat(buffer, key.label.c_str());
-                                        if (input_changed)
-                                            *input_changed = true;
-                                    }
-                                }
-                                break;
-                            case KeyType::Backspace:
-                                if (buffer[0] != '\0') {
-                                    size_t len = std::strlen(buffer);
-                                    buffer[len - 1] = '\0';
-                                    if (input_changed)
-                                        *input_changed = true;
-                                }
-                                break;
-                            case KeyType::Space:
-                                if (std::strlen(buffer) + 1 < buffer_capacity) {
-                                    std::strcat(buffer, " ");
-                                    if (input_changed)
-                                        *input_changed = true;
-                                }
-                                break;
-                            case KeyType::Enter:
-                            case KeyType::Done:
-                                if (done_pressed)
-                                    *done_pressed = true;
-                                break;
-                            case KeyType::Shift:
-                                shift_enabled = !shift_enabled;
-                                break;
-                            case KeyType::SymbolsLayout:
-                                kb_mode = KeyboardMode::Symbols;
-                                break;
-                            case KeyType::TextLayout:
-                                kb_mode = KeyboardMode::Letters;
-                                break;
-                            case KeyType::ToggleKeyboard:
-                                kb_mode = (kb_mode == KeyboardMode::Letters)
-                                              ? KeyboardMode::Symbols
-                                              : KeyboardMode::Letters;
-                                break;
-                            default:
-                                break;
-                            }
-                        }
-                    }
                 }
                 break;
             case KeyType::Backspace:
                 if (buffer[0] != '\0') {
-                    size_t len = std::strlen(buffer);
-                    buffer[len - 1] = '\0';
+                    Utf8SafeBackspace(buffer);
                     if (input_changed)
                         *input_changed = true;
                 }
@@ -168,22 +116,25 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
             case KeyType::Shift:
                 shift_enabled = !shift_enabled;
                 break;
-            case KeyType::SymbolsLayout:
-                kb_mode = KeyboardMode::Symbols;
+            case KeyType::Symbols1Layout:
+                kb_mode = KeyboardMode::Symbols1;
+                break;
+            case KeyType::Symbols2Layout:
+                kb_mode = KeyboardMode::Symbols2;
                 break;
             case KeyType::TextLayout:
-                kb_mode = KeyboardMode::Letters;
+                kb_mode = KeyboardMode::Letters1;
                 break;
             case KeyType::ToggleKeyboard:
-                kb_mode = (kb_mode == KeyboardMode::Letters) ? KeyboardMode::Symbols
-                                                             : KeyboardMode::Letters;
+                kb_mode = (kb_mode == KeyboardMode::Letters1) ? KeyboardMode::Symbols1
+                                                             : KeyboardMode::Letters1;
                 break;
             default:
                 break;
             }
         }
 
-        // Controller hint
+        // Draw controller hint label
         if (!key.controller_hint.empty()) {
             float original_font_size = ImGui::GetFontSize();
             float small_font_size = original_font_size * 0.5f;
