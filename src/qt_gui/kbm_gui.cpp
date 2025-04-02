@@ -699,6 +699,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
             QString keyText;
+
             if (timer && timer->isActive()) {
                 timer->stop();
             }
@@ -1008,7 +1009,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (timer && timer->isActive()) {
                 timer->stop();
             }
-
             switch (mouseEvent->button()) {
             case Qt::LeftButton:
                 buttonText = "leftbutton";
@@ -1025,6 +1025,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (!buttonText.isEmpty() && !mappinglist.contains(buttonText)) {
                 SetMapping(buttonText); // Add the key to the mapping list
             }
+
             return true;
         }
 
@@ -1088,6 +1089,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (!WheelText.isEmpty() && !mappinglist.contains(WheelText)) {
                 SetMapping(WheelText);
             }
+
             EnableMapping = false;
             EnableMappingButtons();
             timer->stop();
