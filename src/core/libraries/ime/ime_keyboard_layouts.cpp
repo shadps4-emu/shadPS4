@@ -364,13 +364,13 @@ const std::vector<Key> kSymbols2Layout = {
     //{3, 0, 1, 1, "←", "", KeyType::Symbols1Layout, {}},
     {3, 1, 1, 1, "¢", "", KeyType::Text, {}},
     {3, 2, 1, 1, "¤", "", KeyType::Text, {}},
-    {3, 3, 1, 1, "’", "", KeyType::Text, {}},//not sure
-    {3, 4, 1, 1, "‘", "", KeyType::Text, {}},//not sure
-    {3, 5, 1, 1, "‛", "", KeyType::Text, {}},//not sure
-    {3, 6, 1, 1, "‚", "", KeyType::Text, {}},//not sure
+    {3, 3, 1, 1, "’", "", KeyType::Text, {}}, // not sure
+    {3, 4, 1, 1, "‘", "", KeyType::Text, {}}, // not sure
+    {3, 5, 1, 1, "‛", "", KeyType::Text, {}}, // not sure
+    {3, 6, 1, 1, "‚", "", KeyType::Text, {}}, // not sure
     {3, 7, 1, 1, "№", "", KeyType::Text, {}},
     {3, 8, 1, 1, "", "", KeyType::Disabled, {}},
-    {3, 9, 1, 1, "", "", KeyType::Disabled,{}},
+    {3, 9, 1, 1, "", "", KeyType::Disabled, {}},
 
     // Row 5
     {4, 0, 1, 1, "", "", KeyType::Disabled, {}},

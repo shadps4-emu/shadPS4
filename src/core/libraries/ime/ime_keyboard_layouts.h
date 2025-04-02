@@ -8,15 +8,15 @@
 #include <imgui.h>
 
 enum class KeyType {
-    Text,          // Inserts character(s) into input buffer
-    Backspace,     // Deletes last character
-    Space,         // Adds space
-    Enter,         // Submits input
-    Shift,         // Toggle uppercase/lowercase
+    Text,           // Inserts character(s) into input buffer
+    Backspace,      // Deletes last character
+    Space,          // Adds space
+    Enter,          // Submits input
+    Shift,          // Toggle uppercase/lowercase
     Symbols1Layout, // Switch to symbols layout
     Symbols2Layout, // Switch to symbols layout
-    TextLayout,    // Switch to text layout
-    Done,          // Finish and close keyboard
+    TextLayout,     // Switch to text layout
+    Done,           // Finish and close keyboard
     CursorLeft,
     CursorRight,
     CursorUp,

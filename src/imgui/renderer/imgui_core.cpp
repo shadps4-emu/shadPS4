@@ -69,7 +69,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
     rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
     rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-    //For keyboard
+    // For keyboard
     rb.AddChar(U'×');
     rb.AddChar(U'○');
     rb.AddChar(U'△');
@@ -103,7 +103,6 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     rb.AddChar(U'‛');
     rb.AddChar(U'‚');
     rb.AddChar(U'№');
-
 
     ImVector<ImWchar> ranges{};
     rb.BuildRanges(&ranges);

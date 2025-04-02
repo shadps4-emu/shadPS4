@@ -230,10 +230,6 @@ void ImeUi::DrawKeyboard() {
     }
 }
 
-
-
-
-
 int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeUi* ui = static_cast<ImeUi*>(data->UserData);
     ASSERT(ui);

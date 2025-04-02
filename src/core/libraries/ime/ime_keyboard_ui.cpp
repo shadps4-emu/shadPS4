@@ -3,10 +3,10 @@
 
 #include <cstring>
 #include <imgui.h>
+#include "ime_common.h"
 #include "ime_keyboard_layouts.h"
 #include "ime_keyboard_ui.h"
 #include "ime_ui.h" // for ImeState
-#include "ime_common.h"
 
 using namespace ImGui;
 
@@ -127,7 +127,7 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
                 break;
             case KeyType::ToggleKeyboard:
                 kb_mode = (kb_mode == KeyboardMode::Letters1) ? KeyboardMode::Symbols1
-                                                             : KeyboardMode::Letters1;
+                                                              : KeyboardMode::Letters1;
                 break;
             default:
                 break;
