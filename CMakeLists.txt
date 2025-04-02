@@ -578,6 +578,8 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
                src/core/libraries/move/move.h
+               src/core/libraries/ulobjmgr/ulobjmgr.cpp
+               src/core/libraries/ulobjmgr/ulobjmgr.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
