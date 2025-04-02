@@ -702,7 +702,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (timer && timer->isActive()) {
                 timer->stop();
             }
-            
+
             switch (keyEvent->key()) {
             case Qt::Key_Space:
                 keyText = "space";
@@ -1093,7 +1093,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             timer->stop();
             MappingButton->setText(mapping);
             mappinglist.clear();
-            
+
             return true;
         }
     }
