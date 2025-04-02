@@ -790,7 +790,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 } else {
                     keyText = "shift";
                 }
-                keyText = QString::number(keyEvent->nativeScanCode());
                 break;
             case Qt::Key_Alt:
                 if (keyEvent->nativeScanCode() == lalt) {
@@ -800,7 +799,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 } else {
                     keyText = "alt";
                 }
-                keyText = QString::number(keyEvent->nativeScanCode());
                 break;
             case Qt::Key_Control:
                 if (keyEvent->nativeScanCode() == lctrl) {
@@ -810,7 +808,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 } else {
                     keyText = "ctrl";
                 }
-                keyText = QString::number(keyEvent->nativeScanCode());
                 break;
             case Qt::Key_Meta:
                 activateWindow();
