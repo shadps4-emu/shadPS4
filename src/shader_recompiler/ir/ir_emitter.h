@@ -271,10 +271,13 @@ public:
     [[nodiscard]] U32 IMax(const U32& a, const U32& b, bool is_signed);
     [[nodiscard]] U32 SMinTri(const U32& a, const U32& b, const U32& c);
     [[nodiscard]] U32 UMinTri(const U32& a, const U32& b, const U32& c);
+    [[nodiscard]] U32 IMinTri(const U32& a, const U32& b, const U32& c, bool is_signed);
     [[nodiscard]] U32 SMaxTri(const U32& a, const U32& b, const U32& c);
     [[nodiscard]] U32 UMaxTri(const U32& a, const U32& b, const U32& c);
+    [[nodiscard]] U32 IMaxTri(const U32& a, const U32& b, const U32& c, bool is_signed);
     [[nodiscard]] U32 SMedTri(const U32& a, const U32& b, const U32& c);
     [[nodiscard]] U32 UMedTri(const U32& a, const U32& b, const U32& c);
+    [[nodiscard]] U32 IMedTri(const U32& a, const U32& b, const U32& c, bool is_signed);
     [[nodiscard]] U32 SClamp(const U32& value, const U32& min, const U32& max);
     [[nodiscard]] U32 UClamp(const U32& value, const U32& min, const U32& max);
 

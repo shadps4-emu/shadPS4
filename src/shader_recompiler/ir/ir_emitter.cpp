@@ -1587,6 +1587,10 @@ U32 IREmitter::UMinTri(const U32& a, const U32& b, const U32& c) {
     return Inst<U32>(Opcode::UMinTri32, a, b, c);
 }
 
+U32 IREmitter::IMinTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMinTri(a, b, c) : UMinTri(a, b, c);
+}
+
 U32 IREmitter::SMaxTri(const U32& a, const U32& b, const U32& c) {
     return Inst<U32>(Opcode::SMaxTri32, a, b, c);
 }
@@ -1595,12 +1599,20 @@ U32 IREmitter::UMaxTri(const U32& a, const U32& b, const U32& c) {
     return Inst<U32>(Opcode::UMaxTri32, a, b, c);
 }
 
+U32 IREmitter::IMaxTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMaxTri(a, b, c) : UMaxTri(a, b, c);
+}
+
 U32 IREmitter::SMedTri(const U32& a, const U32& b, const U32& c) {
     return Inst<U32>(Opcode::SMedTri32, a, b, c);
 }
 
 U32 IREmitter::UMedTri(const U32& a, const U32& b, const U32& c) {
     return Inst<U32>(Opcode::UMedTri32, a, b, c);
+}
+
+U32 IREmitter::IMedTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMedTri(a, b, c) : UMedTri(a, b, c);
 }
 
 U32 IREmitter::SClamp(const U32& value, const U32& min, const U32& max) {

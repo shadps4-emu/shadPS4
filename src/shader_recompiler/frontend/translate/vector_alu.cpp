@@ -359,21 +359,21 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_MIN3_F32:
         return V_MIN3_F32(inst);
     case Opcode::V_MIN3_I32:
-        return V_MIN3_I32(inst);
+        return V_MIN3_U32(true, inst);
     case Opcode::V_MIN3_U32:
-        return V_MIN3_U32(inst);
+        return V_MIN3_U32(false, inst);
     case Opcode::V_MAX3_F32:
         return V_MAX3_F32(inst);
     case Opcode::V_MAX3_I32:
-        return V_MAX3_I32(inst);
+        return V_MAX3_U32(true, inst);
     case Opcode::V_MAX3_U32:
-        return V_MAX3_U32(inst);
+        return V_MAX3_U32(false, inst);
     case Opcode::V_MED3_F32:
         return V_MED3_F32(inst);
     case Opcode::V_MED3_I32:
-        return V_MED3_I32(inst);
+        return V_MED3_U32(true, inst);
     case Opcode::V_MED3_U32:
-        return V_MED3_U32(inst);
+        return V_MED3_U32(false, inst);
     case Opcode::V_SAD_U32:
         return V_SAD_U32(inst);
     case Opcode::V_CVT_PK_U16_U32:
@@ -1169,18 +1169,11 @@ void Translator::V_MIN3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMinTri(src0, src1, src2));
 }
 
-void Translator::V_MIN3_I32(const GcnInst& inst) {
+void Translator::V_MIN3_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.SMinTri(src0, src1, src2));
-}
-
-void Translator::V_MIN3_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.UMinTri(src0, src1, src2));
+    SetDst(inst.dst[0], ir.IMinTri(src0, src1, src2, is_signed));
 }
 
 void Translator::V_MAX3_F32(const GcnInst& inst) {
@@ -1190,18 +1183,11 @@ void Translator::V_MAX3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMaxTri(src0, src1, src2));
 }
 
-void Translator::V_MAX3_I32(const GcnInst& inst) {
+void Translator::V_MAX3_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.SMaxTri(src0, src1, src2));
-}
-
-void Translator::V_MAX3_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.UMaxTri(src0, src1, src2));
+    SetDst(inst.dst[0], ir.IMaxTri(src0, src1, src2, is_signed));
 }
 
 void Translator::V_MED3_F32(const GcnInst& inst) {
@@ -1211,18 +1197,11 @@ void Translator::V_MED3_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMedTri(src0, src1, src2));
 }
 
-void Translator::V_MED3_I32(const GcnInst& inst) {
+void Translator::V_MED3_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.SMedTri(src0, src1, src2));
-}
-
-void Translator::V_MED3_U32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 src2{GetSrc(inst.src[2])};
-    SetDst(inst.dst[0], ir.UMedTri(src0, src1, src2));
+    SetDst(inst.dst[0], ir.IMedTri(src0, src1, src2, is_signed));
 }
 
 void Translator::V_SAD(const GcnInst& inst) {
