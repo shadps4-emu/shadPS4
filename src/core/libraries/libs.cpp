@@ -50,6 +50,7 @@
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
+#include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
@@ -116,6 +117,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Zlib::RegisterlibSceZlib(sym);
     Libraries::Hmd::RegisterlibSceHmd(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
+    Libraries::Ulobjmgr::RegisterlibSceUlobjmgr(sym);
 }
 
 } // namespace Libraries
