@@ -13,6 +13,22 @@ class KBMSettings : public QDialog {
 public:
     explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
     ~KBMSettings();
+    // Platform-specific scan codes
+#ifdef _WIN32
+    const int lctrl = 29;
+    const int rctrl = 57373;
+    const int lalt = 56;
+    const int ralt = 57400;
+    const int lshift = 42;
+    const int rshift = 54;
+#else
+    const int lctrl = 29;
+    const int rctrl = 97;
+    const int lalt = 56;
+    const int ralt = 100;
+    const int lshift = 42;
+    const int rshift = 54;
+#endif
 
 private Q_SLOTS:
     void SaveKBMConfig(bool CloseOnSave);
@@ -37,6 +53,7 @@ private:
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
     QString mapping;
+    QStringList mappinglist;
     QString modifier;
     int MappingTimer;
     QTimer* timer;
