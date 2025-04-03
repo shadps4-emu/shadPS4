@@ -22,10 +22,6 @@
 #include <windows.h>
 #else
 #include <pthread.h>
-#ifdef __APPLE__
-#include <half.hpp>
-#include <sys/sysctl.h>
-#endif
 #endif
 
 using namespace Xbyak::util;
@@ -129,67 +125,7 @@ static Xbyak::Reg AllocateScratchRegister(
     UNREACHABLE_MSG("Out of scratch registers!");
 }
 
-#ifdef __APPLE__
-
-static pthread_key_t stack_pointer_slot;
-static pthread_key_t patch_stack_slot;
-static std::once_flag patch_context_slots_init_flag;
-static constexpr u32 patch_stack_size = 0x1000;
-
-static_assert(sizeof(void*) == sizeof(u64),
-              "Cannot fit a register inside a thread local storage slot.");
-
-static void FreePatchStack(void* patch_stack) {
-    // Subtract back to the bottom of the stack for free.
-    std::free(static_cast<u8*>(patch_stack) - patch_stack_size);
-}
-
-static void InitializePatchContextSlots() {
-    ASSERT_MSG(pthread_key_create(&stack_pointer_slot, nullptr) == 0,
-               "Unable to allocate thread-local register for stack pointer.");
-    ASSERT_MSG(pthread_key_create(&patch_stack_slot, FreePatchStack) == 0,
-               "Unable to allocate thread-local register for patch stack.");
-}
-
-void InitializeThreadPatchStack() {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    pthread_setspecific(patch_stack_slot,
-                        static_cast<u8*>(std::malloc(patch_stack_size)) + patch_stack_size);
-}
-
-/// Saves the stack pointer to thread local storage and loads the patch stack.
-static void SaveStack(Xbyak::CodeGenerator& c) {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    // Save original stack pointer and load patch stack.
-    c.putSeg(gs);
-    c.mov(qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))], rsp);
-    c.putSeg(gs);
-    c.mov(rsp, qword[reinterpret_cast<void*>(patch_stack_slot * sizeof(void*))]);
-}
-
-/// Restores the stack pointer from thread local storage.
-static void RestoreStack(Xbyak::CodeGenerator& c) {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    // Save patch stack pointer and load original stack.
-    c.putSeg(gs);
-    c.mov(qword[reinterpret_cast<void*>(patch_stack_slot * sizeof(void*))], rsp);
-    c.putSeg(gs);
-    c.mov(rsp, qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))]);
-}
-
-/// Validates that the dst register is supported given the SaveStack/RestoreStack implementation.
-static void ValidateDst(const Xbyak::Reg& dst) {
-    // No restrictions.
-}
-
-#else
-
-void InitializeThreadPatchStack() {
-    // No-op
-}
+#if !defined(__APPLE__)
 
 // NOTE: Since stack pointer here is subtracted through safe zone and not saved anywhere,
 // it must not be modified during the instruction. Otherwise, we will not be able to find
@@ -211,8 +147,6 @@ static void ValidateDst(const Xbyak::Reg& dst) {
     // Stack pointer is not preserved, so it can't be used as a dst.
     ASSERT_MSG(dst.getIdx() != rsp.getIdx(), "Stack pointer not supported as destination.");
 }
-
-#endif
 
 /// Switches to the patch stack, saves registers, and restores the original stack.
 static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
@@ -472,147 +406,6 @@ static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerat
     RestoreRegisters(c, {scratch});
 }
 
-#ifdef __APPLE__
-
-static __attribute__((sysv_abi)) void PerformVCVTPH2PS(float* out, const half_float::half* in,
-                                                       const u32 count) {
-    for (u32 i = 0; i < count; i++) {
-        out[i] = half_float::half_cast<float>(in[i]);
-    }
-}
-
-static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-
-    const auto float_count = dst.getBit() / 32;
-    const auto byte_count = float_count * 4;
-
-    SaveContext(c, true);
-
-    // Allocate stack space for outputs and load into first parameter.
-    c.sub(rsp, byte_count);
-    c.mov(rdi, rsp);
-
-    if (src->isXMM()) {
-        // Allocate stack space for inputs and load into second parameter.
-        c.sub(rsp, byte_count);
-        c.mov(rsi, rsp);
-
-        // Move input to the allocated space.
-        c.movdqu(ptr[rsp], *reinterpret_cast<Xbyak::Xmm*>(src.get()));
-    } else {
-        c.lea(rsi, src->getAddress());
-    }
-
-    // Load float count into third parameter.
-    c.mov(rdx, float_count);
-
-    c.mov(rax, reinterpret_cast<u64>(PerformVCVTPH2PS));
-    c.call(rax);
-
-    if (src->isXMM()) {
-        // Clean up after inputs space.
-        c.add(rsp, byte_count);
-    }
-
-    // Load outputs into destination register and clean up space.
-    if (dst.isYMM()) {
-        c.vmovdqu(*reinterpret_cast<const Xbyak::Ymm*>(&dst), ptr[rsp]);
-    } else {
-        c.movdqu(*reinterpret_cast<const Xbyak::Xmm*>(&dst), ptr[rsp]);
-    }
-    c.add(rsp, byte_count);
-
-    RestoreContext(c, dst, true);
-}
-
-using SingleToHalfFloatConverter = half_float::half (*)(float);
-static const SingleToHalfFloatConverter SingleToHalfFloatConverters[4] = {
-    half_float::half_cast<half_float::half, std::round_to_nearest, float>,
-    half_float::half_cast<half_float::half, std::round_toward_neg_infinity, float>,
-    half_float::half_cast<half_float::half, std::round_toward_infinity, float>,
-    half_float::half_cast<half_float::half, std::round_toward_zero, float>,
-};
-
-static __attribute__((sysv_abi)) void PerformVCVTPS2PH(half_float::half* out, const float* in,
-                                                       const u32 count, const u8 rounding_mode) {
-    const auto conversion_func = SingleToHalfFloatConverters[rounding_mode];
-
-    for (u32 i = 0; i < count; i++) {
-        out[i] = conversion_func(in[i]);
-    }
-}
-
-static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakOperand(operands[0]);
-    const auto src = ZydisToXbyakRegisterOperand(operands[1]);
-    const auto ctrl = ZydisToXbyakImmediateOperand(operands[2]);
-
-    const auto float_count = src.getBit() / 32;
-    const auto byte_count = float_count * 4;
-
-    SaveContext(c, true);
-
-    if (dst->isXMM()) {
-        // Allocate stack space for outputs and load into first parameter.
-        c.sub(rsp, byte_count);
-        c.mov(rdi, rsp);
-    } else {
-        c.lea(rdi, dst->getAddress());
-    }
-
-    // Allocate stack space for inputs and load into second parameter.
-    c.sub(rsp, byte_count);
-    c.mov(rsi, rsp);
-
-    // Move input to the allocated space.
-    if (src.isYMM()) {
-        c.vmovdqu(ptr[rsp], *reinterpret_cast<const Xbyak::Ymm*>(&src));
-    } else {
-        c.movdqu(ptr[rsp], *reinterpret_cast<const Xbyak::Xmm*>(&src));
-    }
-
-    // Load float count into third parameter.
-    c.mov(rdx, float_count);
-
-    // Load rounding mode into fourth parameter.
-    if (ctrl & 4) {
-        // Load from MXCSR.RC.
-        c.stmxcsr(ptr[rsp - 4]);
-        c.mov(rcx, ptr[rsp - 4]);
-        c.shr(rcx, 13);
-        c.and_(rcx, 3);
-    } else {
-        c.mov(rcx, ctrl & 3);
-    }
-
-    c.mov(rax, reinterpret_cast<u64>(PerformVCVTPS2PH));
-    c.call(rax);
-
-    // Clean up after inputs space.
-    c.add(rsp, byte_count);
-
-    if (dst->isXMM()) {
-        // Load outputs into destination register and clean up space.
-        c.movdqu(*reinterpret_cast<Xbyak::Xmm*>(dst.get()), ptr[rsp]);
-        c.add(rsp, byte_count);
-    }
-
-    RestoreContext(c, *dst, true);
-}
-
-static bool FilterRosetta2Only(const ZydisDecodedOperand*) {
-    int ret = 0;
-    size_t size = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_translated", &ret, &size, nullptr, 0) != 0) {
-        return false;
-    }
-    return ret;
-}
-
-#else // __APPLE__
-
 static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
     const auto& dst_op = operands[0];
     const auto& src_op = operands[1];
@@ -657,16 +450,16 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 #endif
 }
 
-#endif // __APPLE__
+static bool FilterNoBMI1(const ZydisDecodedOperand*) {
+    Cpu cpu;
+    return !cpu.has(Cpu::tBMI1);
+}
+
+#endif // !defined(__APPLE__)
 
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
     return !cpu.has(Cpu::tSSE4a);
-}
-
-static bool FilterNoBMI1(const ZydisDecodedOperand*) {
-    Cpu cpu;
-    return !cpu.has(Cpu::tBMI1);
 }
 
 static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
@@ -940,15 +733,18 @@ struct PatchInfo {
 };
 
 static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
+    // SSE4a
+    {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
+    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
+
+#if !defined(__APPLE__)
+    // TLS access
 #if defined(_WIN32)
     // Windows needs a trampoline.
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, true}},
-#elif !defined(__APPLE__)
+#else
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, false}},
 #endif
-
-    {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
-    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
 
     // BMI1
     {ZYDIS_MNEMONIC_ANDN, {FilterNoBMI1, GenerateANDN, true}},
@@ -957,13 +753,7 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     {ZYDIS_MNEMONIC_BLSMSK, {FilterNoBMI1, GenerateBLSMSK, true}},
     {ZYDIS_MNEMONIC_BLSR, {FilterNoBMI1, GenerateBLSR, true}},
     {ZYDIS_MNEMONIC_TZCNT, {FilterNoBMI1, GenerateTZCNT, true}},
-
-#ifdef __APPLE__
-    // Patches for instruction sets not supported by Rosetta 2.
-    // F16C
-    {ZYDIS_MNEMONIC_VCVTPH2PS, {FilterRosetta2Only, GenerateVCVTPH2PS, true}},
-    {ZYDIS_MNEMONIC_VCVTPS2PH, {FilterRosetta2Only, GenerateVCVTPS2PH, true}},
-#endif
+#endif // !defined(__APPLE__)
 };
 
 static std::once_flag init_flag;
