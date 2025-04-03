@@ -143,6 +143,10 @@ U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     return Inst<U32>(Opcode::GetUserData, reg);
 }
 
+void IREmitter::SetUserData(const U32& offset, const U32& data) {
+    Inst(Opcode::SetUserData, offset, data);
+}
+
 U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {
     ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U1>(Opcode::GetThreadBitScalarReg, reg);
@@ -1972,10 +1976,6 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& 
 
 [[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
     return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
-}
-
-void IREmitter::StoreFlatbuf(const U32& data, const U32& offset) {
-    Inst(Opcode::StoreFlatbuf, data, offset);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

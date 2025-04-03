@@ -128,6 +128,10 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     return ud_reg;
 }
 
+void EmitSetUserData(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitGetThreadBitScalarReg(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
