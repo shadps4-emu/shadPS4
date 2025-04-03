@@ -43,12 +43,12 @@ Xmm& EmitContext::TempXmmReg(bool reserve) {
         std::ranges::find(preserved_regs, reg) == preserved_regs.end()) {
         preserved_regs.push_back(reg);
         code.sub(rsp, 16);
-        code.movdqu(ptr[rsp], reg);
+        code.movups(ptr[rsp], reg);
     }
     return reg;
 }
 
-Operands EmitContext::Def(IR::Inst* inst) {
+const Operands& EmitContext::Def(IR::Inst* inst) {
     return inst_to_operands.at(inst);
 }
 
@@ -141,7 +141,7 @@ void EmitContext::Epilogue() {
     for (auto it = preserved_regs.rbegin(); it != preserved_regs.rend(); ++it) {
         Reg& reg = *it;
         if (reg.isMMX()) {
-            code.movdqu(reg.cvt128(), ptr[rsp]);
+            code.movups(reg.cvt128(), ptr[rsp]);
             code.add(rsp, 16);
         } else {
             code.pop(reg);

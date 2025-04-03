@@ -159,7 +159,7 @@ static IR::Program GenerateSrtReadConstsSubProgram(IR::Program& program, PassInf
             }
             IR::IREmitter ir(*inst->GetParent(),
                              ++IR::Block::InstructionList::s_iterator_to(*inst));
-            ir.StoreFlatbuf(IR::U32(inst), save_offset);
+            ir.SetUserData(save_offset, IR::U32(inst));
         }
         data.original_inst->SetFlags<u32>(1);
         IR::IREmitter ir(*data.original_inst);

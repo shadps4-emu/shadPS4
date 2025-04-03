@@ -48,7 +48,6 @@ public:
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
-    void StoreFlatbuf(const U32& data, const U32& offset);
     void DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> args);
 
     void Barrier();
@@ -56,6 +55,7 @@ public:
     void DeviceMemoryBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
+    void SetUserData(const U32& offset, const U32& data);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
     void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
 

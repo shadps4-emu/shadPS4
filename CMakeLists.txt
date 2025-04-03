@@ -899,8 +899,13 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
 
 if (ARCHITECTURE STREQUAL "x86_64")
     set(SHADER_RECOMPILER ${SHADER_RECOMPILER}
-                          src/shader_recompiler/backend/asm_x64/emit_x64_condition.cpp
-                          src/shader_recompiler/backend/asm_x64/emit_x64_condition.h
+                          src/shader_recompiler/backend/asm_x64/emit_x64_atomic.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_barrier.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_bitwise_conversion.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_composite.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_image.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_instructions.h
+                          src/shader_recompiler/backend/asm_x64/emit_x64_shared_memory.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64.h
                           src/shader_recompiler/backend/asm_x64/x64_emit_context.cpp

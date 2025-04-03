@@ -102,10 +102,6 @@ void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
     throw NotImplementedException("Geometry streams");
 }
 
-void EmitStoreFlatbuf(EmitContext& ctx, const IR::Value& data, const IR::Value& offset) {
-    UNREACHABLE_MSG("StoreFlatbuf not intended for SPIR-V");
-}
-
 void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, Id arg2, Id arg3) {
     IR::DebugPrintFlags flags = inst->Flags<IR::DebugPrintFlags>();
     std::array<Id, IR::DEBUGPRINT_NUM_FORMAT_ARGS> fmt_args = {arg0, arg1, arg2, arg3};
