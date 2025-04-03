@@ -1,121 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
-#include "shader_recompiler/backend/spirv/spirv_emit_context.h"
-#include "shader_recompiler/ir/attribute.h"
-#include "shader_recompiler/ir/patch.h"
-#include "shader_recompiler/runtime_info.h"
+#include "shader_recompiler/exception.h"
+#include "shader_recompiler/backend/asm_x64/x64_emit_context.h" 
 
-#include <magic_enum/magic_enum.hpp>
+namespace Shader::Backend::X64 {
 
-namespace Shader::Backend::SPIRV {
-namespace {
-
-Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
-    switch (output) {
-    case VsOutput::ClipDist0:
-    case VsOutput::ClipDist1:
-    case VsOutput::ClipDist2:
-    case VsOutput::ClipDist3:
-    case VsOutput::ClipDist4:
-    case VsOutput::ClipDist5:
-    case VsOutput::ClipDist6:
-    case VsOutput::ClipDist7: {
-        const u32 index = u32(output) - u32(VsOutput::ClipDist0);
-        const Id clip_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.clip_distances), "Clip distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
-    }
-    case VsOutput::CullDist0:
-    case VsOutput::CullDist1:
-    case VsOutput::CullDist2:
-    case VsOutput::CullDist3:
-    case VsOutput::CullDist4:
-    case VsOutput::CullDist5:
-    case VsOutput::CullDist6:
-    case VsOutput::CullDist7: {
-        const u32 index = u32(output) - u32(VsOutput::CullDist0);
-        const Id cull_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.cull_distances), "Cull distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
-    }
-    default:
-        UNREACHABLE();
-    }
-}
-
-Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
-    if (IR::IsParam(attr)) {
-        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
-            return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
-                                     ctx.ConstU32(element));
-        } else {
-            const auto& info{ctx.output_params.at(attr_index)};
-            ASSERT(info.num_components > 0);
-            if (info.num_components == 1) {
-                return info.id;
-            } else {
-                return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
-            }
-        }
-    }
-    if (IR::IsMrt(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
-        const auto& info{ctx.frag_outputs.at(index)};
-        if (info.num_components == 1) {
-            return info.id;
-        } else {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
-        }
-    }
-    switch (attr) {
-    case IR::Attribute::Position0: {
-        return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
-    }
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3: {
-        const u32 index = u32(attr) - u32(IR::Attribute::Position1);
-        return VsOutputAttrPointer(ctx, ctx.runtime_info.vs_info.outputs[index][element]);
-    }
-    case IR::Attribute::Depth:
-        return ctx.frag_depth;
-    default:
-        throw NotImplementedException("Write attribute {}", attr);
-    }
-}
-
-std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
-    if (IR::IsParam(attr)) {
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-            return {ctx.F32[1], false};
-        } else {
-            const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto& info{ctx.output_params.at(index)};
-            return {info.component_type, info.is_integer};
-        }
-    }
-    if (IR::IsMrt(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
-        const auto& info{ctx.frag_outputs.at(index)};
-        return {info.component_type, info.is_integer};
-    }
-    switch (attr) {
-    case IR::Attribute::Position0:
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3:
-    case IR::Attribute::Depth:
-        return {ctx.F32[1], false};
-    default:
-        throw NotImplementedException("Write attribute {}", attr);
-    }
-}
-} // Anonymous namespace
+using namespace Xbyak;
+using namespace Xbyak::util;
 
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     const u32 index = ctx.binding.user_data + ctx.info.ud_mask.Index(reg);
@@ -642,4 +534,4 @@ void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id a
     UNREACHABLE_MSG("SPIR-V instruction");
 }
 
-} // namespace Shader::Backend::SPIRV
+}
