@@ -903,6 +903,7 @@ if (ARCHITECTURE STREQUAL "x86_64")
                           src/shader_recompiler/backend/asm_x64/emit_x64_barrier.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_bitwise_conversion.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_composite.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_context_get_set.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_image.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_instructions.h
                           src/shader_recompiler/backend/asm_x64/emit_x64_shared_memory.cpp
