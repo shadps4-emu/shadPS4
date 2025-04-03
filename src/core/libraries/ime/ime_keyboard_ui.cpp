@@ -32,13 +32,18 @@ void DrawVirtualKeyboard(char* buffer, std::size_t buffer_capacity, bool* input_
 
     switch (kb_mode) {
     case KeyboardMode::Symbols1:
-        layout = &kSymbols1Layout;
+        layout = &kLayoutEnSymbols1;
         break;
     case KeyboardMode::Symbols2:
-        layout = &kSymbols2Layout;
+        layout = &kLayoutEnSymbols2;
         break;
+    case KeyboardMode::Letters2:
+        layout =
+            shift_enabled ? &kLayoutEnAccentLettersUppercase : &kLayoutEnAccentLettersLowercase;
+        break;
+    case KeyboardMode::Letters1:
     default:
-        layout = shift_enabled ? &kUppercaseLayout : &kLowercaseLayout;
+        layout = shift_enabled ? &kLayoutEnLettersUppercase : &kLayoutEnLettersLowercase;
         break;
     }
 
@@ -122,9 +127,13 @@ void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::siz
             case KeyType::Symbols2Layout:
                 kb_mode = KeyboardMode::Symbols2;
                 break;
-            case KeyType::TextLayout:
+            case KeyType::LettersLayout:
                 kb_mode = KeyboardMode::Letters1;
                 break;
+            case KeyType::AccentLettersLayout:
+                kb_mode = KeyboardMode::Letters2;
+                break;
+
             case KeyType::ToggleKeyboard:
                 kb_mode = (kb_mode == KeyboardMode::Letters1) ? KeyboardMode::Symbols1
                                                               : KeyboardMode::Letters1;
