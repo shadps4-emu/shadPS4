@@ -145,6 +145,11 @@ public:
         return amd_gcn_shader;
     }
 
+    /// Returns true when VK_AMD_shader_trinary_minmax is supported.
+    bool IsAmdShaderTrinaryMinMaxSupported() const {
+        return amd_shader_trinary_minmax;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -333,6 +338,7 @@ private:
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
+    bool amd_shader_trinary_minmax{};
     bool portability_subset{};
 };
 
