@@ -75,6 +75,28 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpFMin(ctx.F64[1], a, b);
 }
 
+Id EmitFPMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMin3AMD(ctx.F32[1], a, b, c);
+    }
+    return ctx.OpFMin(ctx.F32[1], a, ctx.OpFMin(ctx.F32[1], b, c));
+}
+
+Id EmitFPMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMax3AMD(ctx.F32[1], a, b, c);
+    }
+    return ctx.OpFMax(ctx.F32[1], a, ctx.OpFMax(ctx.F32[1], b, c));
+}
+
+Id EmitFPMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMid3AMD(ctx.F32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpFMin(ctx.F32[1], ctx.OpFMax(ctx.F32[1], a, b), c)};
+    return ctx.OpFMax(ctx.F32[1], ctx.OpFMin(ctx.F32[1], a, b), mmx);
+}
+
 Id EmitFPMul16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return Decorate(ctx, inst, ctx.OpFMul(ctx.F16[1], a, b));
 }
