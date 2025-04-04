@@ -510,6 +510,9 @@ void EmitContext::DefineOutputs() {
             cull_distances =
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
+        if (info.has_layer_output) {
+            output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+        }
         if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
@@ -580,6 +583,10 @@ void EmitContext::DefineOutputs() {
             cull_distances =
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
+        if (info.has_layer_output) {
+            output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+        }
+
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -609,6 +616,9 @@ void EmitContext::DefineOutputs() {
         break;
     case LogicalStage::Geometry: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+        if (info.has_layer_output) {
+            output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+        }
 
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
