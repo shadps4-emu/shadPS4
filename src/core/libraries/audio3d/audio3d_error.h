@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "core/libraries/error_codes.h"
-
 constexpr int ORBIS_AUDIO3D_ERROR_UNKNOWN = 0x80EA0001;
 constexpr int ORBIS_AUDIO3D_ERROR_INVALID_PORT = 0x80EA0002;
 constexpr int ORBIS_AUDIO3D_ERROR_INVALID_OBJECT = 0x80EA0003;
