@@ -54,8 +54,8 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Set x86_64 target level to Sandy Bridge to generally match what is supported for PS4 guest code with CPU patches.
-    add_compile_options(-march=sandybridge)
+    # Target the same x86_64 feature set as the PS4 CPU to match requirements.
+    add_compile_options(-march=btver2 -mno-sse4a)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
