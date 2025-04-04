@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 14)
+    # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
