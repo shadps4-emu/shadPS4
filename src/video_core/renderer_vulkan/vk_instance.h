@@ -84,6 +84,11 @@ public:
         return features.samplerAnisotropy;
     }
 
+    /// Returns true if depth bounds testing is supported
+    bool IsDepthBoundsSupported() const {
+        return features.depthBounds;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;

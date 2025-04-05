@@ -123,7 +123,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
-        info.vs_info.clip_disable = graphics_key.clip_disable;
+        info.vs_info.clip_disable = regs.IsClipDisabled();
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
             info.vs_info.tess_topology = regs.tess_config.topology;
@@ -267,16 +267,6 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    key.clip_disable =
-        regs.clipper_control.clip_disable || regs.primitive_type == AmdGpu::PrimitiveType::RectList;
-    key.depth_test_enable = regs.depth_control.depth_enable;
-    key.depth_write_enable =
-        regs.depth_control.depth_write_enable && !regs.depth_render_control.depth_clear_enable;
-    key.depth_bounds_test_enable = regs.depth_control.depth_bounds_enable;
-    key.depth_bias_enable = regs.polygon_control.NeedsBias();
-    key.depth_compare_op = LiverpoolToVK::CompareOp(regs.depth_control.depth_func);
-    key.stencil_test_enable = regs.depth_control.stencil_enable;
-
     const auto depth_format = instance.GetSupportedFormat(
         LiverpoolToVK::DepthFormat(regs.depth_buffer.z_info.format,
                                    regs.depth_buffer.stencil_info.format),
@@ -285,13 +275,11 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.depth_format = depth_format;
     } else {
         key.depth_format = vk::Format::eUndefined;
-        key.depth_test_enable = false;
     }
     if (regs.depth_buffer.StencilValid()) {
         key.stencil_format = depth_format;
     } else {
         key.stencil_format = vk::Format::eUndefined;
-        key.stencil_test_enable = false;
     }
 
     key.prim_type = regs.primitive_type;
