@@ -41,6 +41,8 @@ public:
     [[nodiscard]] Xbyak::Reg64& TempGPReg(bool reserve = true);
     [[nodiscard]] Xbyak::Xmm& TempXmmReg(bool reserve = true);
 
+    [[nodiscard]] const Xbyak::Reg64& UserData() const {return Xbyak::util::r11;}
+
     [[nodiscard]] const Operands& Def(IR::Inst* inst);
     [[nodiscard]] Operands Def(const IR::Value& value);
     [[nodiscard]] std::optional<std::reference_wrapper<const EmitContext::PhiAssignmentList>>

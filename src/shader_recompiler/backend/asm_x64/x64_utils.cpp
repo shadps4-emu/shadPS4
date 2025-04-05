@@ -193,12 +193,18 @@ void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand
 
 void MovGP(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
     CodeGenerator& c = ctx.Code();
-    if (src.isMEM() && dst.isMEM()) {
-        const Reg64& tmp = ctx.TempGPReg(false);
+    Reg tmp = (src.isMEM() && dst.isMEM()) ? ctx.TempGPReg(false).changeBit(dst.getBit()) : dst.getReg();
+    if (src.getBit() == dst.getBit()) {
         c.mov(tmp, src);
-        c.mov(dst, tmp);
+    } else if (src.getBit() < dst.getBit()) {
+        c.movzx(tmp, src);
     } else {
-        c.mov(dst, src);
+        Operand src_tmp = src;
+        src_tmp.setBit(dst.getBit());
+        c.mov(tmp, src_tmp);
+    }
+    if (src.isMEM() && dst.isMEM()) {
+        c.mov(dst, tmp);
     }
 }
 
