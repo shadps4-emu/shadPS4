@@ -159,6 +159,9 @@ Reg ResizeRegToType(const Reg& reg, IR::Type type) {
 
 void MovFloat(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
     CodeGenerator& c = ctx.Code();
+    if (src == dst) {
+        return;
+    }
     if (src.isMEM() && dst.isMEM()) {
         Reg tmp = ctx.TempGPReg(false).cvt32();
         c.mov(tmp, src);
@@ -176,6 +179,9 @@ void MovFloat(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand&
 
 void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
     CodeGenerator& c = ctx.Code();
+    if (src == dst) {
+        return;
+    }
     if (src.isMEM() && dst.isMEM()) {
         const Reg64& tmp = ctx.TempGPReg(false);
         c.mov(tmp, src);
@@ -193,6 +199,9 @@ void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand
 
 void MovGP(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
     CodeGenerator& c = ctx.Code();
+    if (src == dst) {
+        return;
+    }
     Reg tmp = (src.isMEM() && dst.isMEM()) ? ctx.TempGPReg(false).changeBit(dst.getBit()) : dst.getReg();
     if (src.getBit() == dst.getBit()) {
         c.mov(tmp, src);
@@ -286,6 +295,146 @@ void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src) {
             c.mov(dst[0], tmp);
         }
     }
+}
+
+void EmitInlineF16ToF32(EmitContext& ctx, const Operand& dest, const Operand& src) {
+    CodeGenerator& c = ctx.Code();
+    Label nonzero_exp, zero_mantissa, norm_loop, norm_done, normal, done;
+    Reg sign = ctx.TempGPReg().cvt32();
+    Reg exponent = ctx.TempGPReg().cvt32();
+    Reg mantissa = ctx.TempGPReg().cvt32();
+
+    c.movzx(mantissa, src);
+
+    // Extract sign, exponent, and mantissa
+    c.mov(sign, mantissa);
+    c.and_(sign, 0x8000);
+    c.shl(sign, 16);
+    c.mov(exponent, mantissa);
+    c.and_(exponent, 0x7C00);
+    c.shr(exponent, 10);
+    c.and_(mantissa, 0x03FF);
+
+    // Check for zero exponent and mantissa
+    c.test(exponent, exponent);
+    c.jnz(nonzero_exp);
+    c.test(mantissa, mantissa);
+    c.jz(zero_mantissa);
+
+    // Nromalize subnormal number
+    c.mov(exponent, 1);
+    c.L(norm_loop);
+    c.test(mantissa, 0x400);
+    c.jnz(norm_done);
+    c.shl(mantissa, 1);
+    c.dec(exponent);
+    c.jmp(norm_loop);
+    c.L(norm_done);
+    c.and_(mantissa, 0x03FF);
+    c.jmp(normal);
+
+    // Zero mantissa
+    c.L(zero_mantissa);
+    c.and_(mantissa, sign);
+    c.jmp(done);
+
+    // Non-zero exponent
+    c.L(nonzero_exp);
+    c.cmp(exponent, 0x1F);
+    c.jne(normal);
+
+    // Infinite or NaN
+    c.shl(mantissa, 13);
+    c.or_(mantissa, sign);
+    c.or_(mantissa, 0x7F800000);
+    c.jmp(done);
+
+    // Normal number
+    c.L(normal);
+    c.add(exponent, 112);
+    c.shl(exponent, 23);
+    c.shl(mantissa, 13);
+    c.or_(mantissa, sign);
+    c.or_(mantissa, exponent);
+
+    c.L(done);
+    if (dest.isMEM()) {
+        c.mov(dest, mantissa);
+    } else {
+        c.movd(dest.getReg().cvt128(), mantissa);
+    }
+
+    ctx.PopTempGPReg();
+    ctx.PopTempGPReg();
+    ctx.PopTempGPReg();
+}
+
+void EmitInlineF32ToF16(EmitContext& ctx, const Operand& dest, const Operand& src) {
+    CodeGenerator& c = ctx.Code();
+    Label zero_exp, underflow, overflow, done;
+    Reg sign = ctx.TempGPReg().cvt32();
+    Reg exponent = ctx.TempGPReg().cvt32();
+    Reg mantissa = dest.isMEM() ? ctx.TempGPReg().cvt32() : dest.getReg().cvt32();
+
+    if (src.isMEM()) {
+        c.mov(mantissa, src);
+    } else {
+        c.movd(mantissa, src.getReg().cvt128());
+    }
+
+    // Extract sign, exponent, and mantissa
+    c.mov(exponent, mantissa);
+    c.mov(sign, mantissa);
+    c.and_(exponent, 0x7F800000);
+    c.and_(mantissa, 0x007FFFFF);
+    c.shr(exponent, 23);
+    c.shl(mantissa, 3);
+    c.shr(sign, 16);
+    c.and_(sign, 0x8000);
+
+    // Subnormal numbers will be zero
+    c.test(exponent, exponent);
+    c.jz(zero_exp);
+
+    // Check for overflow and underflow
+    c.sub(exponent, 112);
+    c.cmp(exponent, 0);
+    c.jle(underflow);
+    c.cmp(exponent, 0x1F);
+    c.jge(overflow);
+
+    // Normal number
+    c.shl(exponent, 10);
+    c.shr(mantissa, 13);
+    c.or_(mantissa, exponent);
+    c.or_(mantissa, sign);
+    c.jmp(done);
+
+    // Undeflow
+    c.L(underflow);
+    c.xor_(mantissa, mantissa);
+    c.jmp(done);
+
+    // Overflow
+    c.L(overflow);
+    c.mov(mantissa, 0x7C00);
+    c.or_(mantissa, sign);
+    c.jmp(done);
+
+    // Zero value
+    c.L(zero_exp);
+    c.and_(mantissa, sign);
+
+    c.L(done);
+    if (dest.isMEM()) {
+        c.mov(dest, mantissa);
+    } else {
+        c.and_(mantissa, 0xFFFF);
+    }
+
+    ctx.PopTempGPReg();
+    ctx.PopTempGPReg();
+    ctx.PopTempGPReg();
 }
 
 } // namespace Shader::Backend::X64

@@ -16,32 +16,24 @@ void EmitBitCastU16F16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitBitCastU32F32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    if (dest[0].isMEM() && src[0].isMEM()) {
-        Reg32 tmp = ctx.TempGPReg(false).getReg().cvt32();
-        ctx.Code().mov(tmp, src[0]);
-        ctx.Code().mov(dest[0], tmp);
-    } else if (src[0].isMEM()) {
-        ctx.Code().mov(dest[0], src[0]);
+    if (src[0].isMEM()) {
+        MovGP(ctx, dest[0], src[0]);
     } else if (dest[0].isMEM()) {
         ctx.Code().movd(dest[0].getAddress(), src[0].getReg().cvt128());
     } else {
         ctx.Code().movd(dword[rsp - 4], src[0].getReg().cvt128());
-        ctx.Code().mov(dest[0], dword[rsp - 4]);
+        MovGP(ctx, dest[0], dword[rsp - 4]);
     }
 }
 
 void EmitBitCastU64F64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    if (dest[0].isMEM() && src[0].isMEM()) {
-        Reg tmp = ctx.TempGPReg(false);
-        ctx.Code().mov(tmp, src[0]);
-        ctx.Code().mov(dest[0], tmp);
-    } else if (src[0].isMEM()) {
-        ctx.Code().mov(dest[0], src[0]);
+    if (src[0].isMEM()) {
+        MovGP(ctx, dest[0], src[0]);
     } else if (dest[0].isMEM()) {
         ctx.Code().movq(dest[0].getAddress(), src[0].getReg().cvt128());
     } else {
         ctx.Code().movq(qword[rsp - 8], src[0].getReg().cvt128());
-        ctx.Code().mov(dest[0], qword[rsp - 8]);
+        MovGP(ctx, dest[0], qword[rsp - 8]);
     }
 }
 
@@ -50,31 +42,23 @@ void EmitBitCastF16U16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitBitCastF32U32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    if (dest[0].isMEM() && src[0].isMEM()) {
-        Reg32 tmp = ctx.TempGPReg(false).getReg().cvt32();
-        ctx.Code().mov(tmp, src[0]);
-        ctx.Code().mov(dest[0], tmp);
-    } else if (dest[0].isMEM()) {
-        ctx.Code().mov(dest[0], src[0]);
+    if (dest[0].isMEM()) {
+        MovGP(ctx, dest[0], src[0]);
     } else if (src[0].isMEM()) {
         ctx.Code().movd(dest[0].getReg().cvt128(), src[0].getAddress());
     } else {
-        ctx.Code().mov(dword[rsp - 4], src[0]);
+        MovGP(ctx, dword[rsp - 4], src[0]);
         ctx.Code().movd(dest[0].getReg().cvt128(), dword[rsp - 4]);
     }
 }
 
 void EmitBitCastF64U64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    if (dest[0].isMEM() && src[0].isMEM()) {
-        Reg tmp = ctx.TempGPReg(false);
-        ctx.Code().mov(tmp, src[0]);
-        ctx.Code().mov(dest[0], tmp);
-    } else if (dest[0].isMEM()) {
-        ctx.Code().mov(dest[0], src[0]);
+    if (dest[0].isMEM()) {
+        MovGP(ctx, dest[0], src[0]);
     } else if (src[0].isMEM()) {
         ctx.Code().movq(dest[0].getReg().cvt128(), src[0].getAddress());
     } else {
-        ctx.Code().mov(qword[rsp - 8], src[0].getReg());
+        MovGP(ctx, qword[rsp - 8], src[0]);
         ctx.Code().mov(dest[0].getReg().cvt128(), qword[rsp - 8]);
     }
 }
@@ -82,35 +66,27 @@ void EmitBitCastF64U64(EmitContext& ctx, const Operands& dest, const Operands& s
 void EmitPackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
     const bool is_mem = dest[0].isMEM() && (src[0].isMEM() || src[1].isMEM());
     Reg tmp = is_mem ? ctx.TempGPReg(false) : dest[0].getReg();
-    ctx.Code().mov(tmp, src[0]);
+    MovGP(ctx, tmp, src[1]);
     ctx.Code().shl(tmp, 32);
     ctx.Code().or_(tmp, src[0]);
-    if (is_mem) {
-        ctx.Code().mov(dest[0], tmp);
-    }
+    MovGP(ctx, dest[0], tmp);
 }
 
 void EmitUnpackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
     Reg src0 = src[0].isMEM() ? ctx.TempGPReg() : src[0].getReg();
-    if (src[0].isMEM()) {
-        ctx.Code().mov(src0, src[0]);
-    }
+    MovGP(ctx, src0, src[0]);
     Reg dest1 = dest[1].isMEM() ? ctx.TempGPReg(false) : dest[1].getReg().changeBit(64);
-    ctx.Code().mov(dest1, src0);
+    MovGP(ctx, dest1, src0);
     ctx.Code().shr(dest1, 32);
-    if (dest[1].isMEM()) {
-        ctx.Code().mov(dest[1], dest1.cvt32());
-    }
-    ctx.Code().mov(dest[0], src0.cvt32());
+    MovGP(ctx, dest[1], dest1);
+    MovGP(ctx, dest[0], src0.cvt32());
 }
 
 void EmitPackFloat2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
     Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, src[0]);
     ctx.Code().pinsrd(tmp, src[1], 1);
-    if (dest[0].isMEM()) {
-        ctx.Code().movss(dest[0].getAddress(), tmp);
-    }
+    MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitPackUnorm2x16(EmitContext& ctx) {

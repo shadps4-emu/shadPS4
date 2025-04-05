@@ -19,7 +19,7 @@ void EmitGetUserData(EmitContext& ctx, const Operands& dest, IR::ScalarReg reg) 
 
 void EmitSetUserData(EmitContext& ctx, const Operands& offset, const Operands& value) {
     Reg& tmp = ctx.TempGPReg();
-    ctx.Code().mov(tmp, offset[0]);
+    MovGP(ctx, tmp, offset[0]);
     ctx.Code().shl(tmp, 2);
     ctx.Code().lea(tmp, ptr[ctx.UserData() + tmp]);
     MovGP(ctx, ptr[tmp], value[0]);
@@ -59,7 +59,7 @@ void EmitGetGotoVariable(EmitContext&) {
 
 void EmitReadConst(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset) {
     Reg& tmp = ctx.TempGPReg(false);
-    ctx.Code().mov(tmp, base[1]);
+    MovGP(ctx, tmp, base[1]);
     ctx.Code().shl(tmp, 32);
     ctx.Code().or_(tmp, base[0]);
     if (offset[0].isMEM()) {

@@ -48,6 +48,16 @@ Xmm& EmitContext::TempXmmReg(bool reserve) {
     return reg;
 }
 
+void EmitContext::PopTempGPReg() {
+    ASSERT(temp_gp_reg_index > 0);
+    temp_gp_reg_index--;
+}
+
+void EmitContext::PopTempXmmReg() {
+    ASSERT(temp_xmm_reg_index > 0);
+    temp_xmm_reg_index--;
+}
+
 const Operands& EmitContext::Def(IR::Inst* inst) {
     return inst_to_operands.at(inst);
 }

@@ -19,5 +19,7 @@ void MovFloat(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand&
 void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src);
 void MovGP(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src);
 void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src);
+void EmitInlineF16ToF32(EmitContext& ctx, const Xbyak::Operand& dest, const Xbyak::Operand& src);
+void EmitInlineF32ToF16(EmitContext& ctx, const Xbyak::Operand& dest, const Xbyak::Operand& src);
 
 } // namespace Shader::Backend::X64
