@@ -547,7 +547,7 @@
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
-      <translation>不能連結多個方向軸設定值</translation>
+      <translation>不能同時連結多個方向軸設定值</translation>
     </message>
     <message>
       <source>Save</source>
@@ -990,7 +990,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>鍵位未有對應</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1006,11 +1006,11 @@
     </message>
     <message>
       <source>Left Analog Halfmode</source>
-      <translation type="unfinished">Left Analog Halfmode</translation>
+      <translation>左類比搖桿半速模式</translation>
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation type="unfinished">hold to move left stick at half-speed</translation>
+      <translation>按住可半速移動左搖桿</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -1066,7 +1066,7 @@
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
+      <translation>*在遊戲中按F7啟動</translation>
     </message>
     <message>
       <source>R3</source>
@@ -1078,11 +1078,11 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>滑鼠指標移動參數</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>注意：點擊 幫助 按鈕/特殊按鍵連結以取得更多資訊</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1106,11 +1106,11 @@
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation type="unfinished">Right Analog Halfmode</translation>
+      <translation>右類比搖桿半速模式</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>按住可半速移動右搖桿</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -1118,19 +1118,19 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>速度偏移量（預設為 0.125）：</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>從通用組態檔中複製設定值</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>無效區偏移量（預設為 0.50）：</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>速度倍數（預設為 1.0）：</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
@@ -1138,7 +1138,7 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>此按鈕會將通用組態檔中的鍵位對應複製到目前選取的組態檔案，選取通用組態檔時無法使用此按鈕。</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
@@ -1146,7 +1146,7 @@
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>你要將通用組態檔中的鍵位對應覆寫到現有的鍵位對應嗎？</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1154,7 +1154,7 @@
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
-      <translation type="unfinished">Cannot bind any unique input more than once</translation>
+      <translation>任何唯一的鍵位都不能重複連結</translation>
     </message>
     <message>
       <source>Press a key</source>
@@ -1162,11 +1162,11 @@
     </message>
     <message>
       <source>Cannot set mapping</source>
-      <translation type="unfinished">Cannot set mapping</translation>
+      <translation>無法設定鍵位對應</translation>
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+      <translation>滑鼠滾輪無法對應到搖桿輸出</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1892,15 +1892,15 @@
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>複製 GPU 緩衝區：\n解決涉及 GPU 提交的競爭條件。 \n說不定能幫助解決 PM4 類型 0 的當機。</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Host 偵錯標記：\n插入模擬器端資訊，例如圍繞 Vulkan 指令的特定 AMDGPU 指令的標記，以及提供資源偵錯名稱。 \n如果啟用此功能，則應啟用當機診斷。 \n對於 RenderDoc 等程式很有用。</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Guest 偵錯標記：\n插入遊戲本身已新增至指令緩衝區的任何偵錯標記。 \n如果啟用此功能，則應啟用當機診斷。 \n對於 RenderDoc 等程式很有用。</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
@@ -1920,11 +1920,11 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>設定背景音樂的音量。</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>啟用動態感應控制</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1988,11 +1988,11 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>單獨的日誌紀錄檔</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>單獨的日誌紀錄檔：\n為個別遊戲寫入單獨的日誌記錄檔。</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
@@ -2020,15 +2020,15 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>可移植的使用者資料夾</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+      <translation>從通用使用者資料夾建立可移植的使用者資料夾</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
+      <translation>可移植的使用者資料夾：\n儲存僅套用於目前資料夾中的 shadPS4 版本的 shadPS4 設定和資料。建立可移植的使用者資料夾後重新啟動應用程式以便開始使用它。</translation>
     </message>
     <message>
       <source>Cannot create portable user folder</source>
