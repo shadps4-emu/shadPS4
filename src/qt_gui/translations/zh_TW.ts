@@ -812,91 +812,91 @@
     </message>
     <message>
       <source>Copy Name</source>
-      <translation type="unfinished">Copy Name</translation>
+      <translation>複製名稱</translation>
     </message>
     <message>
       <source>Copy Serial</source>
-      <translation type="unfinished">Copy Serial</translation>
+      <translation>複製序號</translation>
     </message>
     <message>
       <source>Copy Version</source>
-      <translation type="unfinished">Copy Version</translation>
+      <translation>複製版本資訊</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation type="unfinished">Copy Size</translation>
+      <translation>複製大小</translation>
     </message>
     <message>
       <source>Copy All</source>
-      <translation type="unfinished">Copy All</translation>
+      <translation>全部複製</translation>
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>刪除…</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>刪除遊戲</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation type="unfinished">Delete Update</translation>
+      <translation>刪除更新</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation type="unfinished">Delete DLC</translation>
+      <translation>刪除DLC</translation>
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>刪除獎盃</translation>
     </message>
     <message>
       <source>Compatibility...</source>
-      <translation type="unfinished">Compatibility...</translation>
+      <translation>相容性…</translation>
     </message>
     <message>
       <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
+      <translation>更新資料庫</translation>
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>檢視報告</translation>
     </message>
     <message>
       <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
+      <translation>提交報告</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
-      <translation type="unfinished">Shortcut creation</translation>
+      <translation>建立捷徑</translation>
     </message>
     <message>
       <source>Shortcut created successfully!</source>
-      <translation type="unfinished">Shortcut created successfully!</translation>
+      <translation>成功建立捷徑！</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>錯誤</translation>
     </message>
     <message>
       <source>Error creating shortcut!</source>
-      <translation type="unfinished">Error creating shortcut!</translation>
+      <translation>建立捷徑出錯！</translation>
     </message>
     <message>
       <source>Game</source>
-      <translation type="unfinished">Game</translation>
+      <translation>遊戲</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>此遊戲沒有可刪除的更新！</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>更新</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>此遊戲沒有可刪除的DLC！</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -924,11 +924,11 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>找不到此遊戲的日誌紀錄檔！</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>轉換圖示失敗。</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
@@ -944,7 +944,7 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>獎盃</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -955,23 +955,23 @@
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>快速入門</translation>
     </message>
     <message>
       <source>FAQ</source>
-      <translation type="unfinished">FAQ</translation>
+      <translation>常見問答</translation>
     </message>
     <message>
       <source>Syntax</source>
-      <translation type="unfinished">Syntax</translation>
+      <translation>語法</translation>
     </message>
     <message>
       <source>Special Bindings</source>
-      <translation type="unfinished">Special Bindings</translation>
+      <translation>特殊連結</translation>
     </message>
     <message>
       <source>Keybindings</source>
-      <translation type="unfinished">Keybindings</translation>
+      <translation>按鍵連結</translation>
     </message>
   </context>
   <context>
@@ -1142,7 +1142,7 @@
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation type="unfinished">Copy values from Common Config</translation>
+      <translation>從通用組態檔中複製設定值</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
@@ -1313,7 +1313,7 @@
     </message>
     <message>
       <source>Themes</source>
-      <translation type="unfinished">Themes</translation>
+      <translation>主題</translation>
     </message>
     <message>
       <source>Help</source>
@@ -1321,27 +1321,27 @@
     </message>
     <message>
       <source>Dark</source>
-      <translation type="unfinished">Dark</translation>
+      <translation>深色</translation>
     </message>
     <message>
       <source>Light</source>
-      <translation type="unfinished">Light</translation>
+      <translation>淺色</translation>
     </message>
     <message>
       <source>Green</source>
-      <translation type="unfinished">Green</translation>
+      <translation>綠色</translation>
     </message>
     <message>
       <source>Blue</source>
-      <translation type="unfinished">Blue</translation>
+      <translation>藍色</translation>
     </message>
     <message>
       <source>Violet</source>
-      <translation type="unfinished">Violet</translation>
+      <translation>紫羅蘭色</translation>
     </message>
     <message>
       <source>toolBar</source>
-      <translation type="unfinished">toolBar</translation>
+      <translation>工具列</translation>
     </message>
     <message>
       <source>Game List</source>
@@ -1393,15 +1393,15 @@
     </message>
     <message>
       <source>Run Game</source>
-      <translation type="unfinished">Run Game</translation>
+      <translation>執行遊戲</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>找不到 Eboot.bin 檔案</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>已在執行遊戲！</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -1452,27 +1452,27 @@
     <name>SettingsDialog</name>
     <message>
       <source>Settings</source>
-      <translation type="unfinished">Settings</translation>
+      <translation>設定</translation>
     </message>
     <message>
       <source>General</source>
-      <translation type="unfinished">General</translation>
+      <translation>一般</translation>
     </message>
     <message>
       <source>System</source>
-      <translation type="unfinished">System</translation>
+      <translation>系統</translation>
     </message>
     <message>
       <source>Console Language</source>
-      <translation type="unfinished">Console Language</translation>
+      <translation>主機語言</translation>
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation type="unfinished">Emulator Language</translation>
+      <translation>模擬器語言</translation>
     </message>
     <message>
       <source>Emulator</source>
-      <translation type="unfinished">Emulator</translation>
+      <translation>模擬器</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1484,7 +1484,7 @@
     </message>
     <message>
       <source>Show Splash</source>
-      <translation type="unfinished">Show Splash</translation>
+      <translation>顯示啟動畫面</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1492,31 +1492,31 @@
     </message>
     <message>
       <source>Username</source>
-      <translation type="unfinished">Username</translation>
+      <translation>使用者名稱</translation>
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation type="unfinished">Trophy Key</translation>
+      <translation>獎盃金鑰</translation>
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>獎盃</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>開啟自訂獎盃圖像/音效資料夾</translation>
     </message>
     <message>
       <source>Logger</source>
-      <translation type="unfinished">Logger</translation>
+      <translation>日誌紀錄器</translation>
     </message>
     <message>
       <source>Log Type</source>
-      <translation type="unfinished">Log Type</translation>
+      <translation>日誌記錄類型</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation type="unfinished">Log Filter</translation>
+      <translation>日誌紀錄過濾器</translation>
     </message>
     <message>
       <source>Open Log Location</source>
@@ -1540,7 +1540,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>秒</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1552,7 +1552,7 @@
     </message>
     <message>
       <source>Graphics</source>
-      <translation type="unfinished">Graphics</translation>
+      <translation>圖形</translation>
     </message>
     <message>
       <source>GUI</source>
@@ -1564,27 +1564,27 @@
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation type="unfinished">Graphics Device</translation>
+      <translation>圖形裝置</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation type="unfinished">Vblank Divider</translation>
+      <translation>Vblank 分隔符</translation>
     </message>
     <message>
       <source>Advanced</source>
-      <translation type="unfinished">Advanced</translation>
+      <translation>進階</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation type="unfinished">Enable Shaders Dumping</translation>
+      <translation>啟用著色器傾印</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation type="unfinished">Enable NULL GPU</translation>
+      <translation>啟用空值GPU</translation>
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>啟用 HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1604,39 +1604,39 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation type="unfinished">Debug</translation>
+      <translation>偵錯</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation type="unfinished">Enable Debug Dumping</translation>
+      <translation>啟用偵錯傾印</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers</translation>
+      <translation>啟用 Vulkan 驗證層</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation</translation>
+      <translation>啟用 Vulkan 同步驗證</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation type="unfinished">Enable RenderDoc Debugging</translation>
+      <translation>啟用 RenderDoc 偵錯</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>啟用當機診斷</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>收集著色器</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>複製 GPU 緩衝區</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation type="unfinished">Host Debug Markers</translation>
+      <translation>Host 偵錯標記</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
@@ -1668,7 +1668,7 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>標題音樂</translation>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
@@ -1684,7 +1684,7 @@
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>透明度</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -2036,7 +2036,7 @@
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation type="unfinished">%1 already exists</translation>
+      <translation>%1 已存在</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
@@ -2055,7 +2055,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>獎盃檢視器</translation>
     </message>
     <message>
       <source>Select Game:</source>
@@ -2063,7 +2063,7 @@
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>進度</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>
