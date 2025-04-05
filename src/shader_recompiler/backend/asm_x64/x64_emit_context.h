@@ -40,7 +40,9 @@ public:
 
     [[nodiscard]] Xbyak::Reg64& TempGPReg(bool reserve = true);
     [[nodiscard]] Xbyak::Xmm& TempXmmReg(bool reserve = true);
-
+    void PopTempGPReg();
+    void PopTempXmmReg();
+    
     [[nodiscard]] const Xbyak::Reg64& UserData() const {return Xbyak::util::r11;}
 
     [[nodiscard]] const Operands& Def(IR::Inst* inst);
