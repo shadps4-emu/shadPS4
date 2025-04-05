@@ -105,7 +105,6 @@ GraphicsPipeline::GraphicsPipeline(
         .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
                          ? vk::FrontFace::eClockwise
                          : vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = key.depth_bias_enable,
         .lineWidth = 1.0f,
     };
 
@@ -123,18 +122,20 @@ GraphicsPipeline::GraphicsPipeline(
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
     };
 
-    boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewportWithCountEXT,
-        vk::DynamicState::eScissorWithCountEXT,
-        vk::DynamicState::eBlendConstants,
-        vk::DynamicState::eDepthBounds,
-        vk::DynamicState::eDepthBias,
-        vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilCompareMask,
-        vk::DynamicState::eStencilWriteMask,
+    boost::container::static_vector<vk::DynamicState, 17> dynamic_states = {
+        vk::DynamicState::eViewportWithCountEXT, vk::DynamicState::eScissorWithCountEXT,
+        vk::DynamicState::eBlendConstants,       vk::DynamicState::eDepthTestEnableEXT,
+        vk::DynamicState::eDepthWriteEnableEXT,  vk::DynamicState::eDepthCompareOpEXT,
+        vk::DynamicState::eDepthBiasEnableEXT,   vk::DynamicState::eDepthBias,
+        vk::DynamicState::eStencilTestEnableEXT, vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask,   vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOpEXT,
     };
 
+    if (instance.IsDepthBoundsSupported()) {
+        dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnableEXT);
+        dynamic_states.push_back(vk::DynamicState::eDepthBounds);
+    }
     if (instance.IsDynamicColorWriteMaskSupported()) {
         dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
     }
@@ -147,14 +148,6 @@ GraphicsPipeline::GraphicsPipeline(
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
         .pDynamicStates = dynamic_states.data(),
-    };
-
-    const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth_test_enable,
-        .depthWriteEnable = key.depth_write_enable,
-        .depthCompareOp = key.depth_compare_op,
-        .depthBoundsTestEnable = key.depth_bounds_test_enable,
-        .stencilTestEnable = key.stencil_test_enable,
     };
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
@@ -292,7 +285,6 @@ GraphicsPipeline::GraphicsPipeline(
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,
-        .pDepthStencilState = &depth_info,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = *pipeline_layout,
