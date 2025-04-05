@@ -1122,7 +1122,7 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation>從通用組態檔中複製設定值</translation>
+      <translation>從通用組態中複製設定值</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1138,15 +1138,15 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>此按鈕會將通用組態檔中的鍵位對應複製到目前選取的組態檔案，選取通用組態檔時無法使用此按鈕。</translation>
+      <translation>此按鈕會將通用組態中的鍵位對應複製到目前選取的組態檔案，選取通用組態時無法使用此按鈕。</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>從通用組態檔中複製設定值</translation>
+      <translation>從通用組態中複製設定值</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation>你要將通用組態檔中的鍵位對應覆寫到現有的鍵位對應嗎？</translation>
+      <translation>你要將通用組態中的鍵位對應覆寫到現有的鍵位對應嗎？</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -2032,7 +2032,7 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>無法建立可移植的使用者資料夾</translation>
     </message>
     <message>
       <source>%1 already exists</source>
@@ -2040,15 +2040,15 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>已建立可移植的使用者資料夾</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
-      <translation type="unfinished">%1 successfully created.</translation>
+      <translation>已成功建立 %1。</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>開啟自訂獎盃影像/聲音資料夾：\n您可以將自訂影像新增至獎盃和音訊。 \n將檔案加入 custom_tropy，名稱如下：\ntropy.wav OR trophy.mp3、bronze.png、gold.png、platinum.png、silver.png\n注意：聲音僅在 QT 版本中有效。</translation>
     </message>
   </context>
   <context>
