@@ -443,15 +443,15 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>選取組態檔</translation>
+      <translation>選取組態</translation>
     </message>
     <message>
       <source>Common Config</source>
-      <translation>一般設定</translation>
+      <translation>通用組態</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>使用個別遊戲組態檔</translation>
+      <translation>使用個別遊戲組態</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -574,7 +574,7 @@
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation>使用個別遊戲組態檔</translation>
+      <translation>使用個別遊戲組態</translation>
     </message>
     <message>
       <source>Error</source>
@@ -730,7 +730,7 @@
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation>可以顯示遊戲畫面，但是在選單頁面無法繼續</translation>
+      <translation>可以顯示遊戲畫面，但是在標題畫面無法繼續</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
@@ -1018,7 +1018,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>選取組態檔</translation>
+      <translation>選取組態</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -1026,7 +1026,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>使用個別遊戲組態檔</translation>
+      <translation>使用個別遊戲組態</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1796,7 +1796,7 @@
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>啟動時更新相容性：\nshadPS4 啟動時自動更新相容性資料庫。</translation>
+      <translation>啟動時更新相容性：\n在 shadPS4 啟動時自動更新相容性資料庫。</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
