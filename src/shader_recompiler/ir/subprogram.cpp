@@ -124,7 +124,15 @@ void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
         if (cond->asl_node->type == AbstractSyntaxNode::Type::If) {
             AddInst(cond->asl_node->data.if_node.cond.InstRecursive());
         } else if (cond->asl_node->type == AbstractSyntaxNode::Type::Loop) {
-            AddInst(&cond->asl_node->data.loop.continue_block->back());
+            // In case of loop, we need to add the loop itself and also
+            // the break conditions.
+            Block* loop_merge = cond->asl_node->data.loop.merge;
+            for (Block* pred : loop_merge->ImmPredecessors()) {
+                if (pred->CondData().asl_node == cond->asl_node) {
+                    ASSERT(pred->back().Type() == Inst::Type::ConditionRef);
+                    AddInst(pred->back().InstRecursive());
+                }
+            }
         }
         if (orig_phi->GetParent()->CondData().asl_node == cond->asl_node) {
             break;
