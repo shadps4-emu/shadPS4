@@ -10,7 +10,6 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/elf_info.h"
-#include "common/version.h"
 #include "core/debug_state.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"

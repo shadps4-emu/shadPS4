@@ -13,7 +13,7 @@
 #include "cheats_patches.h"
 #include "common/config.h"
 #include "common/path_util.h"
-#include "common/version.h"
+#include "common/scm_rev.h"
 #include "compatibility_info.h"
 #include "game_info.h"
 #include "trophy_viewer.h"
@@ -115,7 +115,7 @@ public:
 
         compatibilityMenu->addAction(updateCompatibility);
         compatibilityMenu->addAction(viewCompatibilityReport);
-        if (Common::isRelease) {
+        if (Common::g_is_release) {
             compatibilityMenu->addAction(submitCompatibilityReport);
         }
 
@@ -571,7 +571,7 @@ public:
             query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
             query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
             query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
-            query.addQueryItem("emulator-version", QString(Common::VERSION));
+            query.addQueryItem("emulator-version", QString(Common::g_version));
             url.setQuery(query);
 
             QDesktopServices::openUrl(url);
