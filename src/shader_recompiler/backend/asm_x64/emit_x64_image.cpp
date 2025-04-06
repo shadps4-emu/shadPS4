@@ -59,4 +59,4 @@ void EmitCubeFaceIndex(EmitContext& ctx) {
     throw NotImplementedException("CubeFaceIndex");
 }
 
-}
+} // namespace Shader::Backend::X64

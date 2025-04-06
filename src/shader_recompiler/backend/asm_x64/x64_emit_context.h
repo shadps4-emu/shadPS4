@@ -38,10 +38,21 @@ public:
         return block_labels.at(block);
     }
 
+    void SetEndFlag() {
+        end_flag = true;
+    }
+
+    [[nodiscard]] bool EndFlag() {
+        bool flag = end_flag;
+        end_flag = false;
+        return flag;
+    }
+
     [[nodiscard]] Xbyak::Reg64& TempGPReg(bool reserve = true);
     [[nodiscard]] Xbyak::Xmm& TempXmmReg(bool reserve = true);
     void PopTempGPReg();
     void PopTempXmmReg();
+    void ResetTempRegs();
     
     [[nodiscard]] const Xbyak::Reg64& UserData() const {return Xbyak::util::r11;}
 
@@ -50,7 +61,6 @@ public:
     [[nodiscard]] std::optional<std::reference_wrapper<const EmitContext::PhiAssignmentList>>
     PhiAssignments(IR::Block* block) const;
 
-    void ResetTempRegs();
 
     void Prologue();
     void Epilogue();
@@ -107,6 +117,9 @@ private:
     // Labels
     boost::container::small_flat_map<IR::Block*, Xbyak::Label, 8> block_labels;
     Xbyak::Label end_label;
+
+    // End flag, used to defer jump to end label
+    bool end_flag = false;
 
     void SpillInst(RegAllocContext& ctx, const ActiveInstInterval& interval,
                    ActiveIntervalList& active_intervals);

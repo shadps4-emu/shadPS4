@@ -17,7 +17,8 @@ void DoIAdd64(ImmValueList& inst_values, const ImmValueList& args0, const ImmVal
 }
 
 void DoIAddCary32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1) {
-    UNREACHABLE_MSG("IAddCary32 not implemented");
+    Common::CartesianInvoke(ImmValue::AddCarry<Type::U32, false>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1);
 }
 
 void DoISub32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1) {

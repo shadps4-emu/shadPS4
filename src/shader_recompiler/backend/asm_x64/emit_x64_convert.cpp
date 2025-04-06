@@ -10,7 +10,7 @@ using namespace Xbyak;
 using namespace Xbyak::util;
 
 void EmitConvertS16F16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp_xmm = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = ctx.TempXmmReg();
     Reg tmp_reg = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     EmitInlineF16ToF32(ctx, tmp_xmm, src[0]);
     ctx.Code().cvttss2si(tmp_reg, tmp_xmm);
@@ -19,21 +19,21 @@ void EmitConvertS16F16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertS16F32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     ctx.Code().cvttss2si(tmp, src[0]);
     ctx.Code().and_(tmp, 0xFFFF);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitConvertS16F64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     ctx.Code().cvttsd2si(tmp, src[0]);
     ctx.Code().and_(tmp, 0xFFFF);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitConvertS32F16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp_xmm = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = ctx.TempXmmReg();
     Reg tmp_reg = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     EmitInlineF16ToF32(ctx, tmp_xmm, src[0]);
     ctx.Code().cvttss2si(tmp_reg, tmp_xmm);
@@ -41,19 +41,19 @@ void EmitConvertS32F16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertS32F32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     ctx.Code().cvttss2si(tmp, src[0]);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitConvertS32F64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
     ctx.Code().cvttsd2si(tmp, src[0]);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitConvertS64F16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp_xmm = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = ctx.TempXmmReg();
     Reg tmp_reg = dest[0].isMEM() ? ctx.TempGPReg() : dest[0].getReg();
     EmitInlineF16ToF32(ctx, tmp_xmm, src[0]);
     ctx.Code().cvttss2si(tmp_reg, tmp_xmm);
@@ -61,13 +61,13 @@ void EmitConvertS64F16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertS64F32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg() : dest[0].getReg();
     ctx.Code().cvttss2si(tmp, src[0]);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitConvertS64F64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg() : dest[0].getReg();
     ctx.Code().cvttsd2si(tmp, src[0]);
     MovGP(ctx, dest[0], tmp);
 }
@@ -125,20 +125,20 @@ void EmitConvertF32F16(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertF32F64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtsd2ss(tmp, src[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitConvertF64F32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtss2sd(tmp, src[0]);
     MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitConvertF16S8(EmitContext& ctx, const Operands& dest, const Operands& src) {
     Reg tmp_reg = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
-    Xmm tmp_xmm = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = ctx.TempXmmReg();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
     EmitInlineF32ToF16(ctx, dest[0], tmp_xmm);
@@ -146,20 +146,20 @@ void EmitConvertF16S8(EmitContext& ctx, const Operands& dest, const Operands& sr
 
 void EmitConvertF16S16(EmitContext& ctx, const Operands& dest, const Operands& src) {
     Reg tmp_reg = dest[0].isMEM() ? ctx.TempGPReg().cvt32() : dest[0].getReg().cvt32();
-    Xmm tmp_xmm = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = ctx.TempXmmReg();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
     EmitInlineF32ToF16(ctx, dest[0], tmp_xmm);
 }
 
 void EmitConvertF16S32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = ctx.TempXmmReg(false);
+    Xmm tmp = ctx.TempXmmReg();
     ctx.Code().cvtsi2ss(tmp, src[0]);
     EmitInlineF32ToF16(ctx, dest[0], tmp);
 }
 
 void EmitConvertF16S64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = ctx.TempXmmReg(false);
+    Xmm tmp = ctx.TempXmmReg();
     ctx.Code().cvtsi2ss(tmp, src[0]);
     EmitInlineF32ToF16(ctx, dest[0], tmp);
 }
@@ -181,29 +181,29 @@ void EmitConvertF16U64(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertF32S8(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp_reg = ctx.TempGPReg(false).cvt32();
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
     MovFloat(ctx, dest[0], tmp_xmm);
 }
 
 void EmitConvertF32S16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp_reg = ctx.TempGPReg(false).cvt32();
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
     MovFloat(ctx, dest[0], tmp_xmm);
 }
 
 void EmitConvertF32S32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtsi2ss(tmp, src[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitConvertF32S64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtsi2ss(tmp, src[0]);
     MovFloat(ctx, dest[0], tmp);
 }
@@ -225,29 +225,29 @@ void EmitConvertF32U64(EmitContext& ctx, const Operands& dest, const Operands& s
 }
 
 void EmitConvertF64S8(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp_reg = ctx.TempGPReg(false).cvt32();
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2sd(tmp_xmm, tmp_reg);
     MovDouble(ctx, dest[0], tmp_xmm);
 }
 
 void EmitConvertF64S16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp_reg = ctx.TempGPReg(false).cvt32();
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().movsx(tmp_reg, src[0]);
     ctx.Code().cvtsi2sd(tmp_xmm, tmp_reg);
     MovDouble(ctx, dest[0], tmp_xmm);
 }
 
 void EmitConvertF64S32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtsi2sd(tmp, src[0]);
     MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitConvertF64S64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().cvtsi2sd(tmp, src[0]);
     MovDouble(ctx, dest[0], tmp);
 }
@@ -276,5 +276,4 @@ void EmitConvertU32U16(EmitContext& ctx, const Operands& dest, const Operands& s
     MovGP(ctx, dest[0], src[0]);
 }
 
-}
-
+} // namespace Shader::Backend::X64

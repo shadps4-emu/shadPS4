@@ -13,15 +13,15 @@ using namespace Xbyak::util;
 
 
 void EmitFPAbs16(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt16() : dest[0].getReg().cvt16();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt16() : dest[0].getReg().cvt16();
     MovGP(ctx, tmp, src[0]);
     ctx.Code().and_(tmp, 0x7FFF);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitFPAbs32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg reg_tmp = ctx.TempXmmReg(false);
-    Xmm xmm_tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg reg_tmp = ctx.TempXmmReg();
+    Xmm xmm_tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().mov(reg_tmp, 0x7FFFFFFF);
     ctx.Code().movd(xmm_tmp, reg_tmp);
     ctx.Code().andps(xmm_tmp, src[0]);
@@ -29,8 +29,8 @@ void EmitFPAbs32(EmitContext& ctx, const Operands& dest, const Operands& src) {
 }
 
 void EmitFPAbs64(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Reg reg_tmp = ctx.TempGPReg(false);
-    Xmm xmm_tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Reg reg_tmp = ctx.TempGPReg();
+    Xmm xmm_tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().mov(reg_tmp, 0x7FFFFFFFFFFFFFFF);
     ctx.Code().movq(xmm_tmp, reg_tmp);
     ctx.Code().andpd(xmm_tmp, src[0]);
@@ -47,21 +47,21 @@ void EmitFPAdd16(EmitContext& ctx, const Operands& dest, const Operands& op1, co
 }
 
 void EmitFPAdd32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op1[0]);
     ctx.Code().addss(tmp, op2[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPAdd64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op1[0]);
     ctx.Code().addsd(tmp, op2[0]);
     MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitFPSub32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op1[0]);
     ctx.Code().subss(tmp, op2[0]);
     MovFloat(ctx, dest[0], tmp);
@@ -112,7 +112,7 @@ void EmitFPMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, co
         ctx.Code().orps(tmp2, tmp1);
         MovFloat(ctx, dest[0], tmp2);
     } else {
-        Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+        Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
         MovFloat(ctx, tmp, op1[0]);
         ctx.Code().maxss(tmp, op2[0]);
         MovFloat(ctx, dest[0], tmp);
@@ -120,7 +120,7 @@ void EmitFPMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, co
 }
 
 void EmitFPMax64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op1[0]);
     ctx.Code().maxsd(tmp, op2[0]);
     MovDouble(ctx, dest[0], tmp);
@@ -138,7 +138,7 @@ void EmitFPMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, co
         ctx.Code().orps(tmp2, tmp1);
         MovFloat(ctx, dest[0], tmp2);
     } else {
-        Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+        Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
         MovFloat(ctx, tmp, op1[0]);
         ctx.Code().minss(tmp, op2[0]);
         MovFloat(ctx, dest[0], tmp);
@@ -146,7 +146,7 @@ void EmitFPMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, co
 }
 
 void EmitFPMin64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op1[0]);
     ctx.Code().minsd(tmp, op2[0]);
     MovDouble(ctx, dest[0], tmp);
@@ -162,43 +162,43 @@ void EmitFPMul16(EmitContext& ctx, const Operands& dest, const Operands& op1, co
 }
 
 void EmitFPMul32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op1[0]);
     ctx.Code().mulss(tmp, op2[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPMul64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op1[0]);
     ctx.Code().mulsd(tmp, op2[0]);
     MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitFPDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op1[0]);
     ctx.Code().divss(tmp, op2[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPDiv64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op1[0]);
     ctx.Code().divsd(tmp, op2[0]);
     MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitFPNeg16(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt16() : dest[0].getReg().cvt16();
+    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg().cvt16() : dest[0].getReg().cvt16();
     MovGP(ctx, tmp, op1[0]);
     ctx.Code().xor_(tmp, 0x8000);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitFPNeg32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
-    Reg tmp_reg = ctx.TempGPReg(false).cvt32();
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
     ctx.Code().mov(tmp_reg, 0x80000000);
     ctx.Code().movd(tmp_xmm, tmp_reg);
     ctx.Code().xorps(tmp_xmm, op1[0]);
@@ -206,8 +206,8 @@ void EmitFPNeg32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
 }
 
 void EmitFPNeg64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
-    Reg tmp_reg = ctx.TempXmmReg(false);
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempXmmReg();
     ctx.Code().mov(tmp_reg, 0x8000000000000000);
     ctx.Code().movq(tmp_xmm, tmp_reg);
     ctx.Code().xorpd(tmp_xmm, op1[0]);
@@ -236,14 +236,14 @@ void EmitFPLog2(EmitContext& ctx) {
 }
 
 void EmitFPRecip32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().rcpss(tmp, op1[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPRecip64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
-    Reg tmp_reg = ctx.TempGPReg(false);
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg();
     ctx.Code().mov(tmp_reg, 1);
     ctx.Code().cvtsi2sd(tmp_xmm, tmp_reg);
     ctx.Code().divsd(tmp_xmm, op1[0]);
@@ -251,14 +251,14 @@ void EmitFPRecip64(EmitContext& ctx, const Operands& dest, const Operands& op1) 
 }
 
 void EmitFPRecipSqrt32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().rsqrtss(tmp, op1[0]);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPRecipSqrt64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
-    Reg tmp_reg = ctx.TempGPReg(false);
+    Xmm tmp_xmm = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
+    Reg tmp_reg = ctx.TempGPReg();
     ctx.Code().mov(tmp_reg, 1);
     ctx.Code().cvtsi2sd(tmp_xmm, tmp_reg);
     ctx.Code().divsd(tmp_xmm, op1[0]);
@@ -267,7 +267,7 @@ void EmitFPRecipSqrt64(EmitContext& ctx, const Operands& dest, const Operands& o
 }
 
 void EmitFPSqrt(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().sqrtss(tmp, op1[0]);
     MovFloat(ctx, dest[0], tmp);
 }
@@ -297,7 +297,7 @@ void EmitFPClamp16(EmitContext& ctx, const Operands& dest, const Operands& op, c
 }
 
 void EmitFPClamp32(EmitContext& ctx, const Operands& dest, const Operands& op, const Operands& min, const Operands& max) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op[0]);
     ctx.Code().maxss(tmp, min[0]);
     ctx.Code().minss(tmp, max[0]);
@@ -305,7 +305,7 @@ void EmitFPClamp32(EmitContext& ctx, const Operands& dest, const Operands& op, c
 }
 
 void EmitFPClamp64(EmitContext& ctx, const Operands& dest, const Operands& op, const Operands& min, const Operands& max) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op[0]);
     ctx.Code().maxsd(tmp, min[0]);
     ctx.Code().minsd(tmp, max[0]);
@@ -320,13 +320,13 @@ void EmitFPRoundEven16(EmitContext& ctx, const Operands& dest, const Operands& o
 }
 
 void EmitFPRoundEven32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundss(tmp, op1[0], 0x00);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPRoundEven64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundsd(tmp, op1[0], 0x00);
     MovDouble(ctx, dest[0], tmp);
 }
@@ -339,13 +339,13 @@ void EmitFPFloor16(EmitContext& ctx, const Operands& dest, const Operands& op1) 
 }
 
 void EmitFPFloor32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundss(tmp, op1[0], 0x01);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPFloor64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundsd(tmp, op1[0], 0x01);
     MovDouble(ctx, dest[0], tmp);
 }
@@ -358,13 +358,13 @@ void EmitFPCeil16(EmitContext& ctx, const Operands& dest, const Operands& op1) {
 }
 
 void EmitFPCeil32(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundss(tmp, op1[0], 0x02);
     MovFloat(ctx, dest[0], tmp);
 }
 
 void EmitFPCeil64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     ctx.Code().roundsd(tmp, op1[0], 0x02);
     MovDouble(ctx, dest[0], tmp);
 }
@@ -439,14 +439,14 @@ void EmitFPUnordEqual16(EmitContext& ctx, const Operands& dest, const Operands& 
 }
 
 void EmitFPUnordEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().sete(dest[0]);
 }
 
 void EmitFPUnordEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().sete(dest[0]);
@@ -462,7 +462,7 @@ void EmitFPOrdNotEqual16(EmitContext& ctx, const Operands& dest, const Operands&
 
 void EmitFPOrdNotEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
     Label not_nan;
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     ctx.Code().jnp(not_nan);
     ctx.Code().mov(dest[0], 0);
     ctx.Code().L(not_nan);
@@ -486,14 +486,14 @@ void EmitFPUnordNotEqual16(EmitContext& ctx, const Operands& dest, const Operand
 }
 
 void EmitFPUnordNotEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().setne(dest[0]);
 }
 
 void EmitFPUnordNotEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().setne(dest[0]);
@@ -533,14 +533,14 @@ void EmitFPUnordLessThan16(EmitContext& ctx, const Operands& dest, const Operand
 }
 
 void EmitFPUnordLessThan32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().setb(dest[0]);
 }
 
 void EmitFPUnordLessThan64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().setb(dest[0]);
@@ -580,14 +580,14 @@ void EmitFPUnordGreaterThan16(EmitContext& ctx, const Operands& dest, const Oper
 }
 
 void EmitFPUnordGreaterThan32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().seta(dest[0]);
 }
 
 void EmitFPUnordGreaterThan64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().seta(dest[0]);
@@ -627,14 +627,14 @@ void EmitFPUnordLessThanEqual16(EmitContext& ctx, const Operands& dest, const Op
 }
 
 void EmitFPUnordLessThanEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().setbe(dest[0]);
 }
 
 void EmitFPUnordLessThanEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().setbe(dest[0]);
@@ -646,7 +646,6 @@ void EmitFPOrdGreaterThanEqual16(EmitContext& ctx, const Operands& dest, const O
     ctx.Code().jnp(not_nan);
     ctx.Code().mov(dest[0], 0);
     ctx.Code().L(not_nan);
-    ctx.Code().vfpclassss(tmp1, tmp2);
 }
 
 void EmitFPOrdGreaterThanEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
@@ -675,14 +674,14 @@ void EmitFPUnordGreaterThanEqual16(EmitContext& ctx, const Operands& dest, const
 }
 
 void EmitFPUnordGreaterThanEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovFloat(ctx, tmp, lhs[0]);
     ctx.Code().ucomiss(tmp, rhs[0]);
     ctx.Code().setae(dest[0]);
 }
 
 void EmitFPUnordGreaterThanEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg(false) : lhs[0].getReg().cvt128();
+    Xmm tmp = lhs[0].isMEM() ? ctx.TempXmmReg() : lhs[0].getReg().cvt128();
     MovDouble(ctx, tmp, lhs[0]);
     ctx.Code().ucomisd(tmp, rhs[0]);
     ctx.Code().setae(dest[0]);
@@ -696,14 +695,14 @@ void EmitFPIsNan16(EmitContext& ctx, const Operands& dest, const Operands& op) {
 }
 
 void EmitFPIsNan32(EmitContext& ctx, const Operands& dest, const Operands& op) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, op[0]);
     ctx.Code().ucomiss(tmp, tmp);
     ctx.Code().setp(dest[0]);
 }
 
 void EmitFPIsNan64(EmitContext& ctx, const Operands& dest, const Operands& op) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovDouble(ctx, tmp, op[0]);
     ctx.Code().ucomisd(tmp, tmp);
     ctx.Code().setp(dest[0]);
@@ -720,4 +719,5 @@ void EmitFPIsInf64(EmitContext& ctx) {
 void EmitFPCmpClass32(EmitContext&) {
     UNREACHABLE();
 }
-}
+
+} // namespace Shader::Backend::X64

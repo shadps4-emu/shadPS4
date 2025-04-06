@@ -38,7 +38,7 @@ static void EmitCondition(EmitContext& ctx, const IR::Inst* ref, Label& label, b
 }
 
 template <typename ArgType>
-ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
+std::remove_reference_t<ArgType> Arg(EmitContext& ctx, const IR::Value& arg) {
     if constexpr (std::is_same_v<ArgType, const Operands&>) {
         return ctx.Def(arg);
     } else if constexpr (std::is_same_v<ArgType, const IR::Value&>) {
@@ -114,9 +114,24 @@ void EmitInst(EmitContext& ctx, IR::Inst* inst) {
     UNREACHABLE_MSG("Invalid opcode {}", inst->GetOpcode());
 }
 
+static bool IsLastInst(const IR::AbstractSyntaxList& list, IR::AbstractSyntaxList::const_iterator it) {
+    for (; it != list.end(); ++it) {
+        switch (it->type) {
+        case IR::AbstractSyntaxNode::Type::Return:
+        case IR::AbstractSyntaxNode::Type::Loop:
+        case IR::AbstractSyntaxNode::Type::EndIf:
+            continue;
+        default:
+            return false;
+        }
+    }
+    return true;
+}
+
 void Traverse(EmitContext& ctx, const IR::Program& program) {
     CodeGenerator& c = ctx.Code();
-    for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
+    for (auto it = program.syntax_list.begin(); it != program.syntax_list.end(); ++it) {
+        const IR::AbstractSyntaxNode& node = *it;
         ctx.ResetTempRegs();
         switch (node.type) {
         case IR::AbstractSyntaxNode::Type::Block: {
@@ -129,6 +144,9 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
                 for (const auto& [phi, value] : phi_assignments->get()) {
                     MovValue(ctx, ctx.Def(phi), value);
                 }
+            }
+            if (ctx.EndFlag() && IsLastInst(program.syntax_list, it)) {
+                c.jmp(ctx.EndLabel());
             }
             break;
         }
@@ -148,17 +166,14 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
             IR::Inst* ref = node.data.break_node.cond.InstRecursive();
             Label& merge = ctx.BlockLabel(node.data.break_node.merge);
             EmitCondition(ctx, ref, merge, true);
-            +c.jz(merge);
-            break;
-        }
-        case IR::AbstractSyntaxNode::Type::Return: {
-            c.jmp(ctx.EndLabel());
+            c.jz(merge);
             break;
         }
         case IR::AbstractSyntaxNode::Type::Unreachable: {
             c.int3();
             break;
         }
+        case IR::AbstractSyntaxNode::Type::Return:
         case IR::AbstractSyntaxNode::Type::Loop:
         case IR::AbstractSyntaxNode::Type::EndIf:
             break;

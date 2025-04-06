@@ -386,6 +386,62 @@ ImmValue ImmValue::Add<Type::F64, true>(const ImmValue& a, const ImmValue& b) no
 }
 
 template <>
+ImmValue ImmValue::AddCarry<Type::U8, false>(const ImmValue& a, const ImmValue& b) noexcept {
+    u8 result = a.imm_values[0].imm_u8 + b.imm_values[0].imm_u8;
+    u8 carry = (result < a.imm_values[0].imm_u8) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U8, true>(const ImmValue& a, const ImmValue& b) noexcept {
+    u8 result = a.imm_values[0].imm_u8 + b.imm_values[0].imm_u8;
+    u8 carry = (result < a.imm_values[0].imm_u8) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U16, false>(const ImmValue& a, const ImmValue& b) noexcept {
+    u16 result = a.imm_values[0].imm_u16 + b.imm_values[0].imm_u16;
+    u16 carry = (result < a.imm_values[0].imm_u16) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U16, true>(const ImmValue& a, const ImmValue& b) noexcept {
+    s16 result = a.imm_values[0].imm_s16 + b.imm_values[0].imm_s16;
+    s16 carry = (result < a.imm_values[0].imm_s16) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U32, false>(const ImmValue& a, const ImmValue& b) noexcept {
+    u32 result = a.imm_values[0].imm_u32 + b.imm_values[0].imm_u32;
+    u32 carry = (result < a.imm_values[0].imm_u32) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U32, true>(const ImmValue& a, const ImmValue& b) noexcept {
+    s32 result = a.imm_values[0].imm_s32 + b.imm_values[0].imm_s32;
+    s32 carry = (result < a.imm_values[0].imm_s32) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U64, false>(const ImmValue& a, const ImmValue& b) noexcept {
+    u64 result = a.imm_values[0].imm_u64 + b.imm_values[0].imm_u64;
+    u64 carry = (result < a.imm_values[0].imm_u64) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
+ImmValue ImmValue::AddCarry<Type::U64, true>(const ImmValue& a, const ImmValue& b) noexcept {
+    s64 result = a.imm_values[0].imm_s64 + b.imm_values[0].imm_s64;
+    s64 carry = (result < a.imm_values[0].imm_s64) ? 1 : 0;
+    return ImmValue(result, carry);
+}
+
+template <>
 ImmValue ImmValue::Sub<Type::U8, false>(const ImmValue& a, const ImmValue& b) noexcept {
     return ImmValue(a.imm_values[0].imm_u8 - b.imm_values[0].imm_u8,
                     a.imm_values[1].imm_u8 - b.imm_values[1].imm_u8,

@@ -58,6 +58,11 @@ void EmitContext::PopTempXmmReg() {
     temp_xmm_reg_index--;
 }
 
+void EmitContext::ResetTempRegs() {
+    temp_gp_reg_index = 0;
+    temp_xmm_reg_index = 0;
+}
+
 const Operands& EmitContext::Def(IR::Inst* inst) {
     return inst_to_operands.at(inst);
 }
@@ -133,11 +138,6 @@ EmitContext::PhiAssignments(IR::Block* block) const {
         return std::cref(it->second);
     }
     return std::nullopt;
-}
-
-void EmitContext::ResetTempRegs() {
-    temp_gp_reg_index = 0;
-    temp_xmm_reg_index = 0;
 }
 
 void EmitContext::Prologue() {

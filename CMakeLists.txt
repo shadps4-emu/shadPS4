@@ -908,7 +908,13 @@ if (ARCHITECTURE STREQUAL "x86_64")
                           src/shader_recompiler/backend/asm_x64/emit_x64_floating_point.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_image.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_instructions.h
+                          src/shader_recompiler/backend/asm_x64/emit_x64_integer.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_logical.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_select.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64_shared_memory.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_special.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_undefined.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_warp.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64.cpp
                           src/shader_recompiler/backend/asm_x64/emit_x64.h
                           src/shader_recompiler/backend/asm_x64/x64_emit_context.cpp
