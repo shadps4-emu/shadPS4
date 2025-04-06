@@ -129,8 +129,8 @@ void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
             Block* loop_merge = cond->asl_node->data.loop.merge;
             for (Block* pred : loop_merge->ImmPredecessors()) {
                 if (pred->CondData().asl_node == cond->asl_node) {
-                    ASSERT(pred->back().Type() == Inst::Type::ConditionRef);
-                    AddInst(pred->back().InstRecursive());
+                    ASSERT(pred->back().GetOpcode() == IR::Opcode::ConditionRef);
+                    AddInst(&pred->back());
                 }
             }
         }
