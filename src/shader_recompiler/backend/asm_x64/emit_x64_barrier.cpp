@@ -17,4 +17,4 @@ void EmitDeviceMemoryBarrier(EmitContext& ctx) {
     
 }
 
-}
+} // namespace Shader::Backend::X64

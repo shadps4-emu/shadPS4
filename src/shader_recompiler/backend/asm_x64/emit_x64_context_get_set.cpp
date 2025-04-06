@@ -58,7 +58,7 @@ void EmitGetGotoVariable(EmitContext&) {
 }
 
 void EmitReadConst(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset) {
-    Reg& tmp = ctx.TempGPReg(false);
+    Reg& tmp = ctx.TempGPReg();
     MovGP(ctx, tmp, base[1]);
     ctx.Code().shl(tmp, 32);
     ctx.Code().or_(tmp, base[0]);
@@ -198,4 +198,4 @@ void EmitStoreBufferFormatF32(EmitContext& ctx) {
     throw NotImplementedException("StoreBufferFormatF32");
 }
 
-}
+} // namespace Shader::Backend::X64

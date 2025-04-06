@@ -347,4 +347,4 @@ void EmitCompositeShuffleF64x4(EmitContext& ctx, const Operands& dest, const Ope
     MovDouble(ctx, dest[3], GetSuffleOperand<4>(composite1, composite2, idx4));
 }
 
-}
+} // namespace Shader::Backend::X64

@@ -98,6 +98,9 @@ public:
     [[nodiscard]] static ImmValue Add(const ImmValue& a, const ImmValue& b) noexcept;
 
     template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue AddCarry(const ImmValue& a, const ImmValue& b) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
     [[nodiscard]] static ImmValue Sub(const ImmValue& a, const ImmValue& b) noexcept;
 
     template <IR::Type Type, bool IsSigned>

@@ -65,7 +65,7 @@ void EmitBitCastF64U64(EmitContext& ctx, const Operands& dest, const Operands& s
 
 void EmitPackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
     const bool is_mem = dest[0].isMEM() && (src[0].isMEM() || src[1].isMEM());
-    Reg tmp = is_mem ? ctx.TempGPReg(false) : dest[0].getReg();
+    Reg tmp = is_mem ? ctx.TempGPReg() : dest[0].getReg();
     MovGP(ctx, tmp, src[1]);
     ctx.Code().shl(tmp, 32);
     ctx.Code().or_(tmp, src[0]);
@@ -75,7 +75,7 @@ void EmitPackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& sr
 void EmitUnpackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
     Reg src0 = src[0].isMEM() ? ctx.TempGPReg() : src[0].getReg();
     MovGP(ctx, src0, src[0]);
-    Reg dest1 = dest[1].isMEM() ? ctx.TempGPReg(false) : dest[1].getReg().changeBit(64);
+    Reg dest1 = dest[1].isMEM() ? ctx.TempGPReg() : dest[1].getReg().changeBit(64);
     MovGP(ctx, dest1, src0);
     ctx.Code().shr(dest1, 32);
     MovGP(ctx, dest[1], dest1);
@@ -83,7 +83,7 @@ void EmitUnpackUint2x32(EmitContext& ctx, const Operands& dest, const Operands& 
 }
 
 void EmitPackFloat2x32(EmitContext& ctx, const Operands& dest, const Operands& src) {
-    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg(false) : dest[0].getReg().cvt128();
+    Xmm tmp = dest[0].isMEM() ? ctx.TempXmmReg() : dest[0].getReg().cvt128();
     MovFloat(ctx, tmp, src[0]);
     ctx.Code().pinsrd(tmp, src[1], 1);
     MovFloat(ctx, dest[0], tmp);
@@ -201,4 +201,4 @@ void EmitUnpackSint2_10_10_10(EmitContext& ctx) {
     throw NotImplementedException("UnpackSint2_10_10_10");
 }
 
-}
+} // namespace Shader::Backend::X64
