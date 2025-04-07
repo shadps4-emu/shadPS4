@@ -22,7 +22,6 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
-#include "common/version.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -123,7 +122,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             Common::Log::Initialize(id + ".log");
             Common::Log::Start();
         }
-        LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::VERSION);
+        LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
         LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
         LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
         LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
@@ -197,8 +196,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
-    if (Common::isRelease) {
-        window_title = fmt::format("shadPS4 v{} | {}", Common::VERSION, game_title);
+    if (Common::g_is_release) {
+        window_title = fmt::format("shadPS4 v{} | {}", Common::g_version, game_title);
     } else {
         std::string remote_url(Common::g_scm_remote_url);
         std::string remote_host;
@@ -208,10 +207,10 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             remote_host = "unknown";
         }
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::VERSION,
+            window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::g_version,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         } else {
-            window_title = fmt::format("shadPS4 v{} {}/{} {} | {}", Common::VERSION, remote_host,
+            window_title = fmt::format("shadPS4 v{} {}/{} {} | {}", Common::g_version, remote_host,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         }
     }

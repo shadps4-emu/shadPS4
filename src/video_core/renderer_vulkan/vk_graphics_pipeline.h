@@ -39,18 +39,6 @@ struct GraphicsPipelineKey {
     vk::Format depth_format;
     vk::Format stencil_format;
 
-    struct {
-        bool clip_disable : 1;
-        bool depth_test_enable : 1;
-        bool depth_write_enable : 1;
-        bool depth_bounds_test_enable : 1;
-        bool depth_bias_enable : 1;
-        bool stencil_test_enable : 1;
-        // Must be named to be zero-initialized.
-        u8 _unused : 2;
-    };
-    vk::CompareOp depth_compare_op;
-
     u32 num_samples;
     u32 mrt_mask;
     AmdGpu::PrimitiveType prim_type;
@@ -92,10 +80,6 @@ public:
 
     auto GetMrtMask() const {
         return key.mrt_mask;
-    }
-
-    auto IsClipDisabled() const {
-        return key.clip_disable;
     }
 
     [[nodiscard]] bool IsPrimitiveListTopology() const {

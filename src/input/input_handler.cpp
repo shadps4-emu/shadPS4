@@ -22,7 +22,6 @@
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-#include "common/version.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
 
