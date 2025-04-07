@@ -54,7 +54,7 @@ public:
     void PopTempXmmReg();
     void ResetTempRegs();
     
-    [[nodiscard]] const Xbyak::Reg64& UserData() const {return Xbyak::util::r11;}
+    [[nodiscard]] const Xbyak::Reg64& UserData() const {return Xbyak::util::rdi;}
 
     [[nodiscard]] const Operands& Def(IR::Inst* inst);
     [[nodiscard]] Operands Def(const IR::Value& value);

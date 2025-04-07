@@ -125,7 +125,7 @@ Operands EmitContext::Def(const IR::Value& value) {
         code.mov(operands.back(), std::bit_cast<u64>(value.Patch()));
         break;
     default:
-        UNREACHABLE_MSG("Unsupported value type: %s", IR::NameOf(value.Type()));
+        UNREACHABLE_MSG("Unsupported value type: {}", IR::NameOf(value.Type()));
         break;
     }
     return operands;
@@ -173,17 +173,17 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
             current_sp += ctx.free_stack_slots.back();
             ctx.free_stack_slots.pop_back();
         }
-        switch (GetRegBytesOfType(inst->Type())) {
-        case 8:
+        switch (GetRegBytesOfType(IR::Value(inst))) {
+        case 1:
             return byte[r11 + current_sp];
-        case 16:
+        case 2:
             return word[r11 + current_sp];
-        case 32:
+        case 4:
             return dword[r11 + current_sp];
-        case 64:
+        case 8:
             return qword[r11 + current_sp];
         default:
-            UNREACHABLE_MSG("Unsupported register size: %zu", GetRegBytesOfType(inst->Type()));
+            UNREACHABLE_MSG("Unsupported register size: {}", GetRegBytesOfType(inst));
             return {};
         }
     };
@@ -197,7 +197,7 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
         Operands& operands = inst_to_operands[spill_candidate->inst];
         Reg reg = operands[spill_candidate->component].getReg();
         inst_to_operands[interval.inst][interval.component] =
-            reg.isXMM() ? reg : ResizeRegToType(reg, interval.inst->Type());
+            reg.isXMM() ? reg : ResizeRegToType(reg, interval.inst);
         operands[spill_candidate->component] = get_operand(spill_candidate->inst);
         ctx.active_spill_intervals.push_back(*spill_candidate);
         *spill_candidate = interval;
@@ -252,8 +252,8 @@ void EmitContext::AllocateRegisters() {
     const std::array<Reg64, 6> initial_gp_inst_regs = {rcx, rdx, rsi, r8, r9, r10};
     const std::array<Xmm, 7> initial_xmm_inst_regs = {xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6};
     const std::array<Reg64, 6> initial_gp_temp_regs = {rax, rbx, r12, r13, r14, r15};
-    const std::array<Xmm, 10> initial_xmm_temp_regs = {xmm7,  xmm7,  xmm8,  xmm9,  xmm10,
-                                                       xmm11, xmm12, xmm13, xmm14, xmm15};
+    const std::array<Xmm, 9> initial_xmm_temp_regs = {xmm7,  xmm8,  xmm9,  xmm10, xmm11,
+                                                      xmm12, xmm13, xmm14, xmm15};
 
     boost::container::small_vector<InstInterval, 64> intervals;
     FlatInstList insts;
@@ -274,10 +274,10 @@ void EmitContext::AllocateRegisters() {
     std::sort(intervals.begin(), intervals.end(),
               [](const InstInterval& a, const InstInterval& b) { return a.start < b.start; });
     RegAllocContext ctx;
-    ctx.free_gp_regs.insert(ctx.free_gp_regs.end(), initial_gp_temp_regs.begin(),
-                            initial_gp_temp_regs.end());
-    ctx.free_xmm_regs.insert(ctx.free_xmm_regs.end(), initial_xmm_temp_regs.begin(),
-                             initial_xmm_temp_regs.end());
+    ctx.free_gp_regs.insert(ctx.free_gp_regs.end(), initial_gp_inst_regs.begin(),
+                            initial_gp_inst_regs.end());
+    ctx.free_xmm_regs.insert(ctx.free_xmm_regs.end(), initial_xmm_inst_regs.begin(),
+                             initial_xmm_inst_regs.end());
     boost::container::static_vector<Reg64, 6> unused_gp_inst_regs;
     boost::container::static_vector<Xmm, 7> unused_xmm_inst_regs;
     unused_gp_inst_regs.insert(unused_gp_inst_regs.end(), ctx.free_gp_regs.begin(),
@@ -287,7 +287,7 @@ void EmitContext::AllocateRegisters() {
     for (const InstInterval& interval : intervals) {
         // Free old interval resources
         for (auto it = ctx.active_gp_intervals.begin(); it != ctx.active_gp_intervals.end();) {
-            if (it->end <= interval.start) {
+            if (it->end < interval.start) {
                 Reg64 reg = inst_to_operands[it->inst][it->component].getReg().cvt64();
                 ctx.free_gp_regs.push_back(reg);
                 it = ctx.active_gp_intervals.erase(it);
@@ -296,7 +296,7 @@ void EmitContext::AllocateRegisters() {
             }
         }
         for (auto it = ctx.active_xmm_intervals.begin(); it != ctx.active_xmm_intervals.end();) {
-            if (it->end <= interval.start) {
+            if (it->end < interval.start) {
                 Xmm reg = inst_to_operands[it->inst][it->component].getReg().cvt128();
                 ctx.free_xmm_regs.push_back(reg);
                 it = ctx.active_xmm_intervals.erase(it);
@@ -306,7 +306,7 @@ void EmitContext::AllocateRegisters() {
         }
         for (auto it = ctx.active_spill_intervals.begin();
              it != ctx.active_spill_intervals.end();) {
-            if (it->end <= interval.start) {
+            if (it->end < interval.start) {
                 const Address& addr = inst_to_operands[it->inst][it->component].getAddress();
                 ctx.free_stack_slots.push_back(addr.getDisp());
                 it = ctx.active_spill_intervals.erase(it);
@@ -314,15 +314,17 @@ void EmitContext::AllocateRegisters() {
                 ++it;
             }
         }
-        u8 num_components = GetNumComponentsOfType(interval.inst->Type());
-        bool is_floating = IsFloatingType(interval.inst->Type());
+        u8 num_components = GetNumComponentsOfType(interval.inst);
+        bool is_floating = IsFloatingType(interval.inst);
+        auto& operands = inst_to_operands[interval.inst];
+        operands.resize(num_components);
         if (is_floating) {
             for (size_t i = 0; i < num_components; ++i) {
                 ActiveInstInterval active(interval, i);
                 if (!ctx.free_xmm_regs.empty()) {
                     Xmm& reg = ctx.free_xmm_regs.back();
                     ctx.free_xmm_regs.pop_back();
-                    inst_to_operands[active.inst][active.component] = reg;
+                    operands[active.component] = reg;
                     unused_xmm_inst_regs.erase(
                         std::remove(unused_xmm_inst_regs.begin(), unused_xmm_inst_regs.end(), reg),
                         unused_xmm_inst_regs.end());
@@ -337,8 +339,7 @@ void EmitContext::AllocateRegisters() {
                 if (!ctx.free_gp_regs.empty()) {
                     Reg64& reg = ctx.free_gp_regs.back();
                     ctx.free_gp_regs.pop_back();
-                    inst_to_operands[active.inst][active.component] =
-                        ResizeRegToType(reg, active.inst->Type());
+                    operands[active.component] = ResizeRegToType(reg, active.inst);
                     unused_gp_inst_regs.erase(
                         std::remove(unused_gp_inst_regs.begin(), unused_gp_inst_regs.end(), reg),
                         unused_gp_inst_regs.end());
@@ -354,10 +355,10 @@ void EmitContext::AllocateRegisters() {
                          unused_xmm_inst_regs.end());
     num_scratch_gp_regs = unused_gp_inst_regs.size() + 1;   // rax is scratch
     num_scratch_xmm_regs = unused_xmm_inst_regs.size() + 1; // xmm7 is scratch
-    temp_gp_regs.insert(temp_gp_regs.end(), initial_gp_inst_regs.begin(),
-                        initial_gp_inst_regs.end());
-    temp_xmm_regs.insert(temp_xmm_regs.end(), initial_xmm_inst_regs.begin(),
-                         initial_xmm_inst_regs.end());
+    temp_gp_regs.insert(temp_gp_regs.end(), initial_gp_temp_regs.begin(),
+                        initial_gp_temp_regs.end());
+    temp_xmm_regs.insert(temp_xmm_regs.end(), initial_xmm_temp_regs.begin(),
+                         initial_xmm_temp_regs.end());
 }
 
 } // namespace Shader::Backend::X64

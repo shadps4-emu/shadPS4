@@ -328,8 +328,8 @@ void EmitIAdd64(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 void EmitIAddCary32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitISub32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitISub64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
-void EmitSMulExt(EmitContext& ctx,const Operands& dest, const Operands& op1, const Operands& op2);
-void EmitUMulExt(EmitContext& ctx,const Operands& dest, const Operands& op1, const Operands& op2);
+void EmitSMulExt(EmitContext& ctx);
+void EmitUMulExt(EmitContext& ctx);
 void EmitIMul32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitIMul64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitSDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
@@ -350,9 +350,9 @@ void EmitBitwiseAnd64(EmitContext& ctx, const Operands& dest, const Operands& op
 void EmitBitwiseOr32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitBitwiseOr64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitBitwiseXor32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
-void EmitBitFieldInsert(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& insert, const Operands& offset, const Operands& count);
-void EmitBitFieldSExtract(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset, const Operands& count);
-void EmitBitFieldUExtract(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset, const Operands& count);
+void EmitBitFieldInsert(EmitContext& ctx);
+void EmitBitFieldSExtract(EmitContext& ctx);
+void EmitBitFieldUExtract(EmitContext& ctx);
 void EmitBitReverse32(EmitContext& ctx);
 void EmitBitCount32(EmitContext& ctx);
 void EmitBitCount64(EmitContext& ctx);

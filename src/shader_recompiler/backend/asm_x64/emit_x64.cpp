@@ -107,7 +107,8 @@ void EmitInst(EmitContext& ctx, IR::Inst* inst) {
     switch (inst->GetOpcode()) {
 #define OPCODE(name, result_type, ...)                                                             \
     case IR::Opcode::name:                                                                         \
-        Invoke<&Emit##name, IR::Type::result_type != IR::Type::Void>(ctx, inst);
+        Invoke<&Emit##name, IR::Type::result_type != IR::Type::Void>(ctx, inst);                   \
+        return;
 #include "shader_recompiler/ir/opcodes.inc"
 #undef OPCODE
     }
@@ -138,6 +139,8 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
             IR::Block* block = node.data.block;
             c.L(ctx.BlockLabel(block));
             for (IR::Inst& inst : *block) {
+                ctx.ResetTempRegs();
+                EmitInst(ctx, &inst);
             }
             const auto& phi_assignments = ctx.PhiAssignments(block);
             if (phi_assignments) {
