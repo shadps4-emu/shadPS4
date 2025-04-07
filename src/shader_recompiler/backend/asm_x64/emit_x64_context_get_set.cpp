@@ -61,11 +61,11 @@ void EmitReadConst(EmitContext& ctx, const Operands& dest, const Operands& base,
     Reg& tmp = ctx.TempGPReg();
     MovGP(ctx, tmp, base[1]);
     ctx.Code().shl(tmp, 32);
-    ctx.Code().or_(tmp, base[0]);
-    if (offset[0].isMEM()) {
-        ctx.Code().add(tmp, offset[0]);
+    ctx.Code().or_(tmp, base[0].Op());
+    if (offset[0].IsMem()) {
+        ctx.Code().add(tmp, offset[0].Mem());
     } else {
-        ctx.Code().lea(tmp, ptr[tmp + offset[0].getReg().cvt64()]);
+        ctx.Code().lea(tmp, ptr[tmp + offset[0].Reg().cvt64()]);
     }
     MovGP(ctx, dest[0], dword[tmp]);
 }

@@ -107,63 +107,73 @@ Reg ResizeRegToType(const Reg& reg, const IR::Value& value) {
     return reg;
 }
 
-void MovFloat(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
+void MovFloat(EmitContext& ctx, const OperandHolder& dst, const OperandHolder& src) {
     CodeGenerator& c = ctx.Code();
-    if (src == dst) {
+    if (src.Op() == dst.Op()) {
         return;
     }
-    if (src.isMEM() && dst.isMEM()) {
+    if (src.IsMem() && dst.IsMem()) {
         Reg tmp = ctx.TempGPReg(false).cvt32();
-        c.mov(tmp, src);
-        c.mov(dst, tmp);
-    } else if (src.isMEM() && dst.isXMM()) {
-        c.movss(dst.getReg().cvt128(), src.getAddress());
-    } else if (src.isXMM() && dst.isMEM()) {
-        c.movss(dst.getAddress(), src.getReg().cvt128());
-    } else if (src.isXMM() && dst.isXMM()) {
-        c.movaps(dst.getReg().cvt128(), src.getReg().cvt128());
+        c.mov(tmp, src.Mem());
+        c.mov(dst.Mem(), tmp);
+    } else if (src.IsMem() && dst.IsXmm()) {
+        c.movss(dst.Xmm(), src.Mem());
+    } else if (src.IsXmm() && dst.IsMem()) {
+        c.movss(dst.Mem(), src.Xmm());
+    } else if (src.IsXmm() && dst.IsXmm()) {
+        c.movaps(dst.Xmm(), src.Xmm());
     } else {
-        UNREACHABLE_MSG("Unsupported mov float {} {}", src.toString(), dst.toString());
+        UNREACHABLE_MSG("Unsupported mov float {} {}", src.Op().toString(), dst.Op().toString());
     }
 }
 
-void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
+void MovDouble(EmitContext& ctx, const OperandHolder& dst, const OperandHolder& src) {
     CodeGenerator& c = ctx.Code();
-    if (src == dst) {
+    if (src.Op() == dst.Op()) {
         return;
     }
-    if (src.isMEM() && dst.isMEM()) {
+    if (src.IsMem() && dst.IsMem()) {
         const Reg64& tmp = ctx.TempGPReg(false);
-        c.mov(tmp, src);
-        c.mov(dst, tmp);
-    } else if (src.isMEM() && dst.isXMM()) {
-        c.movsd(dst.getReg().cvt128(), src.getAddress());
-    } else if (src.isXMM() && dst.isMEM()) {
-        c.movsd(dst.getAddress(), src.getReg().cvt128());
-    } else if (src.isXMM() && dst.isXMM()) {
-        c.movapd(dst.getReg().cvt128(), src.getReg().cvt128());
+        c.mov(tmp, src.Mem());
+        c.mov(dst.Mem(), tmp);
+    } else if (src.IsMem() && dst.IsXmm()) {
+        c.movsd(dst.Xmm(), src.Mem());
+    } else if (src.IsXmm() && dst.IsMem()) {
+        c.movsd(dst.Mem(), src.Xmm());
+    } else if (src.IsXmm() && dst.IsXmm()) {
+        c.movapd(dst.Xmm(), src.Xmm());
     } else {
-        UNREACHABLE_MSG("Unsupported mov double {} {}", src.toString(), dst.toString());
+        UNREACHABLE_MSG("Unsupported mov double {} {}", src.Op().toString(), dst.Op().toString());
     }
 }
 
-void MovGP(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& src) {
+void MovGP(EmitContext& ctx, const OperandHolder& dst, const OperandHolder& src) {
     CodeGenerator& c = ctx.Code();
-    if (src == dst) {
+    if (src.Op() == dst.Op()) {
         return;
     }
-    Reg tmp = dst.isMEM() ? ctx.TempGPReg(false).changeBit(dst.getBit()) : dst.getReg();
-    if (src.getBit() < dst.getBit() && !src.isBit(32)) {
-        c.movzx(tmp, src);
-    } else if (src.getBit() > dst.getBit()) {
-        Operand src_tmp = src;
-        src_tmp.setBit(dst.getBit());
-        c.mov(tmp, src_tmp);
+    const bool is_mem2mem = src.IsMem() && dst.IsMem();
+    const u32 src_bit = src.Op().getBit();
+    const u32 dst_bit = dst.Op().getBit();
+    OperandHolder tmp = is_mem2mem ? ctx.TempGPReg(false).changeBit(dst_bit) : dst;
+    if (src_bit < dst_bit) {
+        if (!dst.IsMem() && !src.Op().isBit(32)) {
+            c.movzx(tmp.Reg(), src.Op());
+        } else {
+            if (dst.IsMem()) {
+                c.mov(tmp.Op(), 0);
+            }
+            c.mov(tmp.Op(), src.Op());
+        }
+    } else if (src_bit > dst_bit) {
+        OperandHolder src_tmp = src;
+        src_tmp.Op().setBit(dst_bit);
+        c.mov(tmp.Op(), src_tmp.Op());
     } else {
-        c.mov(tmp, src);
+        c.mov(tmp.Op(), src.Op());
     }
-    if (dst.isMEM()) {
-        c.mov(dst, tmp);
+    if (is_mem2mem) {
+        c.mov(dst.Op(), tmp.Op());
     }
 }
 
@@ -194,56 +204,56 @@ void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src) {
         }
     } else {
         CodeGenerator& c = ctx.Code();
-        const bool is_mem = dst[0].isMEM();
+        const bool is_mem = dst[0].IsMem();
         Reg64& tmp = ctx.TempGPReg(false);
         switch (src.Type()) {
         case IR::Type::U1:
-            c.mov(is_mem ? tmp.cvt8() : dst[0], src.U1());
+            c.mov(is_mem ? tmp.cvt8() : dst[0].Reg(), src.U1());
             break;
         case IR::Type::U8:
-            c.mov(is_mem ? tmp.cvt8() : dst[0], src.U8());
+            c.mov(is_mem ? tmp.cvt8() : dst[0].Reg(), src.U8());
             break;
         case IR::Type::U16:
-            c.mov(is_mem ? tmp.cvt16() : dst[0], src.U16());
+            c.mov(is_mem ? tmp.cvt16() : dst[0].Reg(), src.U16());
             break;
         case IR::Type::U32:
-            c.mov(is_mem ? tmp.cvt32() : dst[0], src.U32());
+            c.mov(is_mem ? tmp.cvt32() : dst[0].Reg(), src.U32());
             break;
         case IR::Type::F32:
-            c.mov(tmp.cvt32(), std::bit_cast<u32>(src.F32()));
+            c.mov(tmp.cvt32(), static_cast<u32>(src.F32()));
             if (!is_mem) {
-                c.movd(dst[0].getReg().cvt128(), tmp.cvt32());
+                c.movd(dst[0].Xmm(), tmp.cvt32());
                 return;
             }
             break;
         case IR::Type::U64:
-            c.mov(is_mem ? tmp : dst[0], src.U64());
+            c.mov(is_mem ? tmp : dst[0].Reg(), src.U64());
             break;
         case IR::Type::F64:
-            c.mov(tmp, std::bit_cast<u64>(src.F64()));
+            c.mov(tmp, static_cast<u64>(src.F64()));
             if (!is_mem) {
-                c.movq(dst[0].getReg().cvt128(), tmp);
+                c.movq(dst[0].Xmm(), tmp);
                 return;
             }
             break;
         case IR::Type::ScalarReg:
-            c.mov(is_mem ? tmp.cvt32() : dst[0], std::bit_cast<u32>(src.ScalarReg()));
+            c.mov(is_mem ? tmp.cvt32() : dst[0].Reg(), static_cast<u32>(src.ScalarReg()));
             break;
         case IR::Type::VectorReg:
-            c.mov(is_mem ? tmp.cvt32() : dst[0], std::bit_cast<u32>(src.VectorReg()));
+            c.mov(is_mem ? tmp.cvt32() : dst[0].Reg(), static_cast<u32>(src.VectorReg()));
             break;
         case IR::Type::Attribute:
-            c.mov(is_mem ? tmp : dst[0], std::bit_cast<u64>(src.Attribute()));
+            c.mov(is_mem ? tmp : dst[0].Reg(), std::bit_cast<u64>(src.Attribute()));
             break;
         case IR::Type::Patch:
-            c.mov(is_mem ? tmp : dst[0], std::bit_cast<u64>(src.Patch()));
+            c.mov(is_mem ? tmp : dst[0].Reg(), std::bit_cast<u64>(src.Patch()));
             break;
         default:
             UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(src.Type()));
             break;
         }
         if (is_mem) {
-            c.mov(dst[0], tmp);
+            c.mov(dst[0].Mem(), tmp);
         }
     }
 }

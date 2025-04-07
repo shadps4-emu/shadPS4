@@ -6,6 +6,7 @@
 #include <boost/container/static_vector.hpp>
 #include <xbyak/xbyak.h>
 #include "common/types.h"
+#include "shader_recompiler/backend/asm_x64/x64_emit_context.h"
 
 namespace Shader::IR {
 enum class Attribute : u64;
@@ -16,10 +17,6 @@ class Value;
 } // namespace Shader::IR
 
 namespace Shader::Backend::X64 {
-    
-using Operands = boost::container::static_vector<Xbyak::Operand, 4>;
-    
-class EmitContext;
 
 // Microinstruction emitters
 void EmitPhi(EmitContext& ctx);

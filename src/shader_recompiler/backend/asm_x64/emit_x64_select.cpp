@@ -11,7 +11,7 @@ using namespace Xbyak::util;
 
 void EmitSelectU1(EmitContext& ctx, const Operands& dest, const Operands& cond, const Operands& true_value, const Operands& false_value) {
     Label false_label, end_label;
-    Reg tmp = cond[0].isMEM() ? ctx.TempGPReg().cvt8() : cond[0].getReg().cvt8();
+    Reg tmp = cond[0].IsMem() ? ctx.TempGPReg().cvt8() : cond[0].Reg().cvt8();
     MovGP(ctx, tmp, cond[0]);
     ctx.Code().test(tmp, tmp);
     ctx.Code().jz(false_label);
@@ -44,7 +44,7 @@ void EmitSelectF16(EmitContext& ctx, const Operands& dest, const Operands& cond,
 
 void EmitSelectF32(EmitContext& ctx, const Operands& dest, const Operands& cond, const Operands& true_value, const Operands& false_value) {
     Label false_label, end_label;
-    Reg tmp = cond[0].isMEM() ? ctx.TempGPReg().cvt8() : cond[0].getReg().cvt8();
+    Reg tmp = cond[0].IsMem() ? ctx.TempGPReg().cvt8() : cond[0].Reg().cvt8();
     MovGP(ctx, tmp, cond[0]);
     ctx.Code().test(tmp, tmp);
     ctx.Code().jz(false_label);
@@ -57,7 +57,7 @@ void EmitSelectF32(EmitContext& ctx, const Operands& dest, const Operands& cond,
 
 void EmitSelectF64(EmitContext& ctx, const Operands& dest, const Operands& cond, const Operands& true_value, const Operands& false_value) {
     Label false_label, end_label;
-    Reg tmp = cond[0].isMEM() ? ctx.TempGPReg().cvt8() : cond[0].getReg().cvt8();
+    Reg tmp = cond[0].IsMem() ? ctx.TempGPReg().cvt8() : cond[0].Reg().cvt8();
     MovGP(ctx, tmp, cond[0]);
     ctx.Code().test(tmp, tmp);
     ctx.Code().jz(false_label);

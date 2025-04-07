@@ -11,7 +11,78 @@
 
 namespace Shader::Backend::X64 {
 
-using Operands = boost::container::static_vector<Xbyak::Operand, 4>;
+class OperandHolder {
+public:
+    OperandHolder() : op() {}
+    OperandHolder(const OperandHolder&) = default;
+    OperandHolder(OperandHolder&&) = default;
+    OperandHolder& operator=(const OperandHolder&) = default;
+    OperandHolder& operator=(OperandHolder&&) = default;
+
+    OperandHolder(const Xbyak::Reg& reg_) : reg(reg_) {}
+    OperandHolder(const Xbyak::Xmm& xmm_) : xmm(xmm_) {}
+    OperandHolder(const Xbyak::Address& mem_) : mem(mem_) {}
+    OperandHolder(const Xbyak::Operand& op_) : op(op_) {}
+
+    [[nodiscard]] inline Xbyak::Operand& Op() {
+        return op;
+    }
+
+    [[nodiscard]] inline const Xbyak::Operand& Op() const {
+        return op;
+    }
+
+    [[nodiscard]] inline Xbyak::Reg& Reg() {
+        ASSERT(IsReg());
+        return reg;
+    }
+
+    [[nodiscard]] inline const Xbyak::Reg& Reg() const {
+        ASSERT(IsReg());
+        return reg;
+    }
+    
+    [[nodiscard]] inline Xbyak::Xmm& Xmm() {
+        ASSERT(IsXmm());
+        return xmm;
+    }
+    
+    [[nodiscard]] inline const Xbyak::Xmm& Xmm() const {
+        ASSERT(IsXmm());
+        return xmm;
+    }
+
+    [[nodiscard]] inline Xbyak::Address& Mem() {
+        ASSERT(IsMem());
+        return mem;
+    }
+
+    [[nodiscard]] inline const Xbyak::Address& Mem() const {
+        ASSERT(IsMem());
+        return mem;
+    }
+
+    [[nodiscard]] inline bool IsReg() const {
+        return op.isREG();
+    }
+
+    [[nodiscard]] inline bool IsXmm() const {
+        return op.isXMM();
+    }
+
+    [[nodiscard]] inline bool IsMem() const {
+        return op.isMEM();
+    }
+private:
+    union {
+        Xbyak::Operand op;
+        Xbyak::Reg reg;
+        Xbyak::Xmm xmm;
+        Xbyak::Address mem;
+    };
+};
+
+using Operands = boost::container::static_vector<OperandHolder, 4>;
 
 class EmitContext {
 public:

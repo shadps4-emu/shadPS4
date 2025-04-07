@@ -22,12 +22,12 @@ static void EmitCondition(EmitContext& ctx, const IR::Inst* ref, Label& label, b
             ctx.Code().jmp(label);
         }
     } else {
-        const Operand& op = ctx.Def(cond.InstRecursive())[0];
-        if (op.isREG()) {
-            Reg8 reg = op.getReg().cvt8();
+        const OperandHolder& op = ctx.Def(cond.InstRecursive())[0];
+        if (op.IsReg()) {
+            Reg8 reg = op.Reg().cvt8();
             ctx.Code().test(reg, reg);
         } else {
-            ctx.Code().test(op, 0xff);
+            ctx.Code().test(op.Mem(), 0xff);
         }
         if (invert) {
             ctx.Code().jz(label);
