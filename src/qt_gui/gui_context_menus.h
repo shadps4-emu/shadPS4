@@ -122,7 +122,8 @@ public:
         menu.addMenu(compatibilityMenu);
 
         compatibilityMenu->setEnabled(Config::getCompatibilityEnabled());
-        viewCompatibilityReport->setEnabled(!m_games[itemID].compatibility.url.isEmpty());
+        viewCompatibilityReport->setEnabled(m_games[itemID].compatibility.status !=
+                                            CompatibilityStatus::Unknown);
 
         // Show menu.
         auto selected = menu.exec(global_pos);
@@ -557,24 +558,36 @@ public:
         }
 
         if (selected == viewCompatibilityReport) {
-            if (!m_games[itemID].compatibility.url.isEmpty())
-                QDesktopServices::openUrl(QUrl(m_games[itemID].compatibility.url));
+            if (m_games[itemID].compatibility.issue_number != "") {
+                auto url_issues =
+                    "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+                QDesktopServices::openUrl(
+                    QUrl(url_issues + m_games[itemID].compatibility.issue_number));
+            }
         }
 
         if (selected == submitCompatibilityReport) {
-            QUrl url = QUrl("https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new");
-            QUrlQuery query;
-            query.addQueryItem("template", QString("game_compatibility.yml"));
-            query.addQueryItem(
-                "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
-                                                QString::fromStdString(m_games[itemID].name)));
-            query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
-            query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
-            query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
-            query.addQueryItem("emulator-version", QString(Common::g_version));
-            url.setQuery(query);
+            if (m_games[itemID].compatibility.issue_number == "") {
+                QUrl url =
+                    QUrl("https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new");
+                QUrlQuery query;
+                query.addQueryItem("template", QString("game_compatibility.yml"));
+                query.addQueryItem(
+                    "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
+                                                    QString::fromStdString(m_games[itemID].name)));
+                query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
+                query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
+                query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
+                query.addQueryItem("emulator-version", QString(Common::g_version));
+                url.setQuery(query);
 
-            QDesktopServices::openUrl(url);
+                QDesktopServices::openUrl(url);
+            } else {
+                auto url_issues =
+                    "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+                QDesktopServices::openUrl(
+                    QUrl(url_issues + m_games[itemID].compatibility.issue_number));
+            }
         }
     }
 
