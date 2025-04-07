@@ -214,7 +214,8 @@ static void GenerateSrtProgram(IR::Program& program, PassInfo& pass_info, Pools&
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     if (!pass_info.all_readconsts.empty()) {
-        GenerateSrtReadConstsSubProgram(program, pass_info, pools);
+        IR::Program sub_program = GenerateSrtReadConstsSubProgram(program, pass_info, pools);
+        Backend::X64::EmitX64(sub_program, c);
     }
 
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;

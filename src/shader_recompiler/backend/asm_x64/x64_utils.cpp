@@ -8,65 +8,15 @@ using namespace Xbyak::util;
 
 namespace Shader::Backend::X64 {
 
-bool IsFloatingType(IR::Type type) {
+bool IsFloatingType(const IR::Value& value) {
     // We store F16 on general purpose registers since we don't do
     // arithmetic on them
+    IR::Type type = value.Type();
     return type == IR::Type::F32 || type == IR::Type::F64;
 }
 
-bool IsConditionalOpcode(IR::Opcode opcode) {
-    switch (opcode) {
-    case IR::Opcode::FPOrdEqual32:
-    case IR::Opcode::FPOrdEqual64:
-    case IR::Opcode::FPUnordEqual32:
-    case IR::Opcode::FPUnordEqual64:
-    case IR::Opcode::FPOrdNotEqual32:
-    case IR::Opcode::FPOrdNotEqual64:
-    case IR::Opcode::FPUnordNotEqual32:
-    case IR::Opcode::FPUnordNotEqual64:
-    case IR::Opcode::FPOrdLessThan32:
-    case IR::Opcode::FPOrdLessThan64:
-    case IR::Opcode::FPUnordLessThan32:
-    case IR::Opcode::FPUnordLessThan64:
-    case IR::Opcode::FPOrdGreaterThan32:
-    case IR::Opcode::FPOrdGreaterThan64:
-    case IR::Opcode::FPUnordGreaterThan32:
-    case IR::Opcode::FPUnordGreaterThan64:
-    case IR::Opcode::FPOrdLessThanEqual32:
-    case IR::Opcode::FPOrdLessThanEqual64:
-    case IR::Opcode::FPUnordLessThanEqual32:
-    case IR::Opcode::FPUnordLessThanEqual64:
-    case IR::Opcode::FPOrdGreaterThanEqual32:
-    case IR::Opcode::FPOrdGreaterThanEqual64:
-    case IR::Opcode::FPUnordGreaterThanEqual32:
-    case IR::Opcode::FPUnordGreaterThanEqual64:
-    case IR::Opcode::FPIsNan32:
-    case IR::Opcode::FPIsNan64:
-    case IR::Opcode::FPIsInf32:
-    case IR::Opcode::FPIsInf64:
-    case IR::Opcode::FPCmpClass32:
-    case IR::Opcode::SLessThan32:
-    case IR::Opcode::SLessThan64:
-    case IR::Opcode::ULessThan32:
-    case IR::Opcode::ULessThan64:
-    case IR::Opcode::IEqual32:
-    case IR::Opcode::IEqual64:
-    case IR::Opcode::SLessThanEqual:
-    case IR::Opcode::ULessThanEqual:
-    case IR::Opcode::SGreaterThan:
-    case IR::Opcode::UGreaterThan:
-    case IR::Opcode::INotEqual32:
-    case IR::Opcode::INotEqual64:
-    case IR::Opcode::SGreaterThanEqual:
-    case IR::Opcode::UGreaterThanEqual:
-        return true;
-    default:
-        return false;
-    }
-}
-
-size_t GetRegBytesOfType(IR::Type type) {
-    switch (type) {
+size_t GetRegBytesOfType(const IR::Value& value) {
+    switch (value.Type()) {
     case IR::Type::U1:
     case IR::Type::U8:
         return 1;
@@ -98,12 +48,12 @@ size_t GetRegBytesOfType(IR::Type type) {
     default:
         break;
     }
-    UNREACHABLE_MSG("Unsupported type %s", IR::NameOf(type));
+    UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(value.Type()));
     return 0;
 }
 
-u8 GetNumComponentsOfType(IR::Type type) {
-    switch (type) {
+u8 GetNumComponentsOfType(const IR::Value& value) {
+    switch (value.Type()) {
     case IR::Type::U1:
     case IR::Type::U8:
     case IR::Type::U16:
@@ -135,13 +85,13 @@ u8 GetNumComponentsOfType(IR::Type type) {
     default:
         break;
     }
-    UNREACHABLE_MSG("Unsupported type %s", IR::NameOf(type));
+    UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(value.Type()));
     return 0;
 }
 
-Reg ResizeRegToType(const Reg& reg, IR::Type type) {
+Reg ResizeRegToType(const Reg& reg, const IR::Value& value) {
     ASSERT(reg.getKind() == Operand::Kind::REG);
-    switch (GetRegBytesOfType(type)) {
+    switch (GetRegBytesOfType(value)) {
     case 1:
         return reg.cvt8();
     case 2:
@@ -153,7 +103,7 @@ Reg ResizeRegToType(const Reg& reg, IR::Type type) {
     default:
         break;
     }
-    UNREACHABLE_MSG("Unsupported type %s", IR::NameOf(type));
+    UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(value.Type()));
     return reg;
 }
 
@@ -173,7 +123,7 @@ void MovFloat(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand&
     } else if (src.isXMM() && dst.isXMM()) {
         c.movaps(dst.getReg().cvt128(), src.getReg().cvt128());
     } else {
-        UNREACHABLE_MSG("Unsupported mov float %s %s", src.toString(), dst.toString());
+        UNREACHABLE_MSG("Unsupported mov float {} {}", src.toString(), dst.toString());
     }
 }
 
@@ -193,7 +143,7 @@ void MovDouble(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand
     } else if (src.isXMM() && dst.isXMM()) {
         c.movapd(dst.getReg().cvt128(), src.getReg().cvt128());
     } else {
-        UNREACHABLE_MSG("Unsupported mov double %s %s", src.toString(), dst.toString());
+        UNREACHABLE_MSG("Unsupported mov double {} {}", src.toString(), dst.toString());
     }
 }
 
@@ -202,26 +152,27 @@ void MovGP(EmitContext& ctx, const Xbyak::Operand& dst, const Xbyak::Operand& sr
     if (src == dst) {
         return;
     }
-    Reg tmp = (src.isMEM() && dst.isMEM()) ? ctx.TempGPReg(false).changeBit(dst.getBit()) : dst.getReg();
-    if (src.getBit() == dst.getBit()) {
-        c.mov(tmp, src);
-    } else if (src.getBit() < dst.getBit()) {
+    Reg tmp = dst.isMEM() ? ctx.TempGPReg(false).changeBit(dst.getBit()) : dst.getReg();
+    if (src.getBit() < dst.getBit() && !src.isBit(32)) {
         c.movzx(tmp, src);
-    } else {
+    } else if (src.getBit() > dst.getBit()) {
         Operand src_tmp = src;
         src_tmp.setBit(dst.getBit());
         c.mov(tmp, src_tmp);
+    } else {
+        c.mov(tmp, src);
     }
-    if (src.isMEM() && dst.isMEM()) {
+    if (dst.isMEM()) {
         c.mov(dst, tmp);
     }
 }
 
 void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src) {
     if (!src.IsImmediate()) {
-        const Operands& src_op = ctx.Def(src);
-        if (IsFloatingType(src.Type())) {
-            switch (GetRegBytesOfType(src.Type())) {
+        IR::Inst* src_inst = src.InstRecursive();
+        const Operands& src_op = ctx.Def(src_inst);
+        if (IsFloatingType(src)) {
+            switch (GetRegBytesOfType(src)) {
             case 32:
                 for (size_t i = 0; i < src_op.size(); i++) {
                     MovFloat(ctx, dst[i], src_op[i]);
@@ -233,7 +184,7 @@ void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src) {
                 }
                 break;
             default:
-                UNREACHABLE_MSG("Unsupported type %s", IR::NameOf(src.Type()));
+                UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(src.Type()));
                 break;
             }
         } else {
@@ -288,7 +239,7 @@ void MovValue(EmitContext& ctx, const Operands& dst, const IR::Value& src) {
             c.mov(is_mem ? tmp : dst[0], std::bit_cast<u64>(src.Patch()));
             break;
         default:
-            UNREACHABLE_MSG("Unsupported type %s", IR::NameOf(src.Type()));
+            UNREACHABLE_MSG("Unsupported type {}", IR::NameOf(src.Type()));
             break;
         }
         if (is_mem) {

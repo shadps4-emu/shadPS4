@@ -14,7 +14,7 @@ void EmitGetUserData(EmitContext& ctx, const Operands& dest, IR::ScalarReg reg) 
     const u32 offset = static_cast<u32>(reg) << 2;
     Reg& tmp = ctx.TempGPReg();
     ctx.Code().lea(tmp, ptr[ctx.UserData() + offset]);
-    MovGP( ctx, dest[0], ptr[tmp]);
+    MovGP( ctx, dest[0], dword[tmp]);
 }
 
 void EmitSetUserData(EmitContext& ctx, const Operands& offset, const Operands& value) {
@@ -22,7 +22,7 @@ void EmitSetUserData(EmitContext& ctx, const Operands& offset, const Operands& v
     MovGP(ctx, tmp, offset[0]);
     ctx.Code().shl(tmp, 2);
     ctx.Code().lea(tmp, ptr[ctx.UserData() + tmp]);
-    MovGP(ctx, ptr[tmp], value[0]);
+    MovGP(ctx, dword[tmp], value[0]);
 }
 
 void EmitGetThreadBitScalarReg(EmitContext& ctx) {
@@ -65,9 +65,9 @@ void EmitReadConst(EmitContext& ctx, const Operands& dest, const Operands& base,
     if (offset[0].isMEM()) {
         ctx.Code().add(tmp, offset[0]);
     } else {
-        ctx.Code().lea(tmp, ptr[tmp + offset[0].getReg()]);
+        ctx.Code().lea(tmp, ptr[tmp + offset[0].getReg().cvt64()]);
     }
-    MovGP(ctx, dest[0], ptr[tmp]);
+    MovGP(ctx, dest[0], dword[tmp]);
 }
 
 void EmitReadConstBuffer(EmitContext& ctx) {
