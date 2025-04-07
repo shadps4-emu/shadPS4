@@ -202,27 +202,50 @@ void EmitContext::AdjustInstInterval(InstInterval& interval, const FlatInstList&
     size_t dist = std::distance(insts.begin(), std::find(insts.begin(), insts.end(), inst));
     interval.start = dist;
     interval.end = dist;
+    const auto enlarge_interval = [&](IR::Inst* inst) {
+        size_t position = std::distance(insts.begin(), std::find(insts.begin(), insts.end(), inst));
+        interval.start = std::min(interval.start, position);
+        interval.end = std::max(interval.end, position);
+    };
     for (const auto& use : inst->Uses()) {
+        IR::Inst* target_inst = use.user;
         if (use.user->GetOpcode() == IR::Opcode::Phi) {
             // We assign the value at the end of the phi block
-            IR::Inst& last_inst = use.user->PhiBlock(use.operand)->back();
-            dist = std::distance(insts.begin(), std::find(insts.begin(), insts.end(), &last_inst));
-            interval.start = std::min(interval.start, dist);
-            interval.end = std::max(interval.end, dist);
-        } else {
-            dist = std::distance(insts.begin(), std::find(insts.begin(), insts.end(), use.user));
-            interval.end = std::max(interval.end, dist);
+            target_inst = &use.user->PhiBlock(use.operand)->back();
         }
+        // If the user is in a loop and the instruction is not, we need to extend the interval
+        // to the end of the loop
+        u32 target_depth = inst->GetParent()->CondData().depth;
+        const auto* cond_data = &target_inst->GetParent()->CondData();
+        const IR::AbstractSyntaxNode* target_loop = nullptr;
+        while (cond_data && cond_data->depth > target_depth) {
+            if (cond_data->asl_node->type == IR::AbstractSyntaxNode::Type::Loop) {
+                target_loop = cond_data->asl_node;
+            }
+            cond_data = cond_data->parent;
+        }
+        if (target_loop) {
+            IR::Block* cont_block = target_loop->data.loop.continue_block;
+            target_inst = &cont_block->back();
+            ASSERT(target_inst->GetOpcode() == IR::Opcode::ConditionRef);
+        }
+        enlarge_interval(target_inst);
     }
     if (inst->GetOpcode() == IR::Opcode::Phi) {
         for (size_t i = 0; i < inst->NumArgs(); i++) {
             IR::Block* block = inst->PhiBlock(i);
-            dist =
-                std::distance(insts.begin(), std::find(insts.begin(), insts.end(), &block->back()));
-            interval.start = std::min(interval.start, dist);
-            interval.end = std::max(interval.end, dist);
+            enlarge_interval(&block->back());
             phi_assignments[block].emplace_back(inst, inst->Arg(i));
         }
+        // Extend to predecessors
+        // Phis in loop headers need to extend to the end of the loop
+        for (IR::Block* pred : inst->GetParent()->ImmPredecessors()) {
+            IR::Inst* last_inst = &pred->back();
+            if (last_inst->GetOpcode() == IR::Opcode::ConditionRef) {
+                enlarge_interval(last_inst);
+            }
+        }
+
     }
 }
 
