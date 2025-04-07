@@ -167,12 +167,7 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
                             ActiveIntervalList& active_intervals) {
     const auto get_operand = [&](IR::Inst* inst) -> Operand {
         size_t current_sp = inst_stack_space;
-        if (ctx.free_stack_slots.empty()) {
-            inst_stack_space += 8;
-        } else {
-            current_sp += ctx.free_stack_slots.back();
-            ctx.free_stack_slots.pop_back();
-        }
+        inst_stack_space += 8;
         switch (GetRegBytesOfType(IR::Value(inst))) {
         case 1:
             return byte[r11 + current_sp];
@@ -192,14 +187,12 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
         [](const ActiveInstInterval& a, const ActiveInstInterval& b) { return a.end < b.end; });
     if (spill_candidate == active_intervals.end() || spill_candidate->end <= interval.start) {
         inst_to_operands[interval.inst][interval.component] = get_operand(interval.inst);
-        ctx.active_spill_intervals.push_back(interval);
     } else {
         Operands& operands = inst_to_operands[spill_candidate->inst];
-        Reg reg = operands[spill_candidate->component].Reg();
+        OperandHolder op = operands[spill_candidate->component];
         inst_to_operands[interval.inst][interval.component] =
-            reg.isXMM() ? reg : ResizeRegToType(reg, interval.inst);
+            op.IsXmm() ? op : ResizeRegToType(op.Reg(), interval.inst);
         operands[spill_candidate->component] = get_operand(spill_candidate->inst);
-        ctx.active_spill_intervals.push_back(*spill_candidate);
         *spill_candidate = interval;
     }
 }
@@ -300,16 +293,6 @@ void EmitContext::AllocateRegisters() {
                 Xmm reg = inst_to_operands[it->inst][it->component].Xmm();
                 ctx.free_xmm_regs.push_back(reg);
                 it = ctx.active_xmm_intervals.erase(it);
-            } else {
-                ++it;
-            }
-        }
-        for (auto it = ctx.active_spill_intervals.begin();
-             it != ctx.active_spill_intervals.end();) {
-            if (it->end < interval.start) {
-                const Address& addr = inst_to_operands[it->inst][it->component].Mem();
-                ctx.free_stack_slots.push_back(addr.getDisp());
-                it = ctx.active_spill_intervals.erase(it);
             } else {
                 ++it;
             }
