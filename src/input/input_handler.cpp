@@ -550,18 +550,18 @@ void ControllerOutput::FinalizeUpdate() {
             break;
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
-            controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
+            controller->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
-            controller->Axis(0, c_axis, GetAxis(0x0, 0x80, *new_param));
+            controller->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
             controller->CheckButton(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;
         }
-        controller->Axis(0, c_axis, GetAxis(-0x80, 0x80, *new_param * multiplier));
+        controller->Axis(0, c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
     }
 }
 
