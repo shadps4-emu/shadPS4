@@ -30,7 +30,7 @@ void EmitDiscard(EmitContext& ctx) {
 }
 
 void EmitDiscardCond(EmitContext& ctx, const Operands& condition) {
-    Reg tmp = condition[0].isMEM() ? ctx.TempGPReg().cvt8() : condition[0].getReg().cvt8();
+    Reg tmp = condition[0].IsMem() ? ctx.TempGPReg().cvt8() : condition[0].Reg().cvt8();
     MovGP(ctx, tmp, condition[0]);
     ctx.Code().test(tmp, tmp);
     ctx.Code().jnz(ctx.EndLabel());

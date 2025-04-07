@@ -76,19 +76,19 @@ Operands EmitContext::Def(const IR::Value& value) {
     switch (value.Type()) {
     case IR::Type::U1:
         operands.push_back(TempGPReg().cvt8());
-        code.mov(operands.back(), value.U1());
+        code.mov(operands.back().Reg(), value.U1());
         break;
     case IR::Type::U8:
         operands.push_back(TempGPReg().cvt8());
-        code.mov(operands.back(), value.U8());
+        code.mov(operands.back().Reg(), value.U8());
         break;
     case IR::Type::U16:
         operands.push_back(TempGPReg().cvt16());
-        code.mov(operands.back(), value.U16());
+        code.mov(operands.back().Reg(), value.U16());
         break;
     case IR::Type::U32:
         operands.push_back(TempGPReg().cvt32());
-        code.mov(operands.back(), value.U32());
+        code.mov(operands.back().Reg(), value.U32());
         break;
     case IR::Type::F32: {
         code.mov(tmp.cvt32(), std::bit_cast<u32>(value.F32()));
@@ -99,7 +99,7 @@ Operands EmitContext::Def(const IR::Value& value) {
     }
     case IR::Type::U64:
         operands.push_back(TempGPReg());
-        code.mov(operands.back(), value.U64());
+        code.mov(operands.back().Reg(), value.U64());
         break;
     case IR::Type::F64: {
         code.mov(tmp, std::bit_cast<u64>(value.F64()));
@@ -110,19 +110,19 @@ Operands EmitContext::Def(const IR::Value& value) {
     }
     case IR::Type::ScalarReg:
         operands.push_back(TempGPReg().cvt32());
-        code.mov(operands.back(), std::bit_cast<u32>(value.ScalarReg()));
+        code.mov(operands.back().Reg(), std::bit_cast<u32>(value.ScalarReg()));
         break;
     case IR::Type::VectorReg:
         operands.push_back(TempXmmReg().cvt32());
-        code.mov(operands.back(), std::bit_cast<u32>(value.VectorReg()));
+        code.mov(operands.back().Reg(), std::bit_cast<u32>(value.VectorReg()));
         break;
     case IR::Type::Attribute:
         operands.push_back(TempGPReg());
-        code.mov(operands.back(), std::bit_cast<u64>(value.Attribute()));
+        code.mov(operands.back().Reg(), std::bit_cast<u64>(value.Attribute()));
         break;
     case IR::Type::Patch:
         operands.push_back(TempGPReg());
-        code.mov(operands.back(), std::bit_cast<u64>(value.Patch()));
+        code.mov(operands.back().Reg(), std::bit_cast<u64>(value.Patch()));
         break;
     default:
         UNREACHABLE_MSG("Unsupported value type: {}", IR::NameOf(value.Type()));
@@ -195,7 +195,7 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
         ctx.active_spill_intervals.push_back(interval);
     } else {
         Operands& operands = inst_to_operands[spill_candidate->inst];
-        Reg reg = operands[spill_candidate->component].getReg();
+        Reg reg = operands[spill_candidate->component].Reg();
         inst_to_operands[interval.inst][interval.component] =
             reg.isXMM() ? reg : ResizeRegToType(reg, interval.inst);
         operands[spill_candidate->component] = get_operand(spill_candidate->inst);
@@ -288,7 +288,7 @@ void EmitContext::AllocateRegisters() {
         // Free old interval resources
         for (auto it = ctx.active_gp_intervals.begin(); it != ctx.active_gp_intervals.end();) {
             if (it->end < interval.start) {
-                Reg64 reg = inst_to_operands[it->inst][it->component].getReg().cvt64();
+                Reg64 reg = inst_to_operands[it->inst][it->component].Reg().cvt64();
                 ctx.free_gp_regs.push_back(reg);
                 it = ctx.active_gp_intervals.erase(it);
             } else {
@@ -297,7 +297,7 @@ void EmitContext::AllocateRegisters() {
         }
         for (auto it = ctx.active_xmm_intervals.begin(); it != ctx.active_xmm_intervals.end();) {
             if (it->end < interval.start) {
-                Xmm reg = inst_to_operands[it->inst][it->component].getReg().cvt128();
+                Xmm reg = inst_to_operands[it->inst][it->component].Xmm();
                 ctx.free_xmm_regs.push_back(reg);
                 it = ctx.active_xmm_intervals.erase(it);
             } else {
@@ -307,7 +307,7 @@ void EmitContext::AllocateRegisters() {
         for (auto it = ctx.active_spill_intervals.begin();
              it != ctx.active_spill_intervals.end();) {
             if (it->end < interval.start) {
-                const Address& addr = inst_to_operands[it->inst][it->component].getAddress();
+                const Address& addr = inst_to_operands[it->inst][it->component].Mem();
                 ctx.free_stack_slots.push_back(addr.getDisp());
                 it = ctx.active_spill_intervals.erase(it);
             } else {

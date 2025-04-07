@@ -12,7 +12,7 @@ using namespace Xbyak::util;
 namespace {
 
 template <u32 N>
-static const Operand& GetSuffleOperand(const Operands& comp1, const Operands& comp2, u32 index) {
+static const OperandHolder& GetSuffleOperand(const Operands& comp1, const Operands& comp2, u32 index) {
     if (index < N) {
         return comp1[index];
     } else {

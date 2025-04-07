@@ -12,8 +12,12 @@ using namespace Xbyak::util;
 
 namespace {
 
-static bool EmitSaveRegTemp(EmitContext ctx, const Reg& save, const Operand& dest) {
-    if (dest.getIdx() == save.getIdx()) {
+static bool IsReg(const OperandHolder& op, const Reg& reg) {
+    return op.IsReg() && op.Reg().getIdx() == reg.getIdx();
+}
+
+static bool EmitSaveRegTemp(EmitContext ctx, const Reg& save, const OperandHolder& dest) {
+    if (IsReg(dest, save)) {
         // Destination is reg, no need to save
         return false;
     }
@@ -28,47 +32,47 @@ static void EmitRestoreRegTemp(EmitContext ctx, const Reg& save) {
 } // namespace
 
 void EmitIAdd32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    if (dest[0].isREG() && op1[0].isREG() && op2[0].isREG()) {
-        ctx.Code().lea(dest[0].getReg(), ptr[op1[0].getReg() + op2[0].getReg()]);
+    if (dest[0].IsReg() && op1[0].IsReg() && op2[0].IsReg()) {
+        ctx.Code().lea(dest[0].Reg(), ptr[op1[0].Reg() + op2[0].Reg()]);
     } else {
-        Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+        OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
         MovGP(ctx, tmp, op1[0]);
-        ctx.Code().add(tmp, op2[0]);
+        ctx.Code().add(tmp.Op(), op2[0].Op());
         MovGP(ctx, dest[0], tmp); 
     }
 }
 
 void EmitIAdd64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    if (dest[0].isREG() && op1[0].isREG() && op2[0].isREG()) {
-        ctx.Code().lea(dest[0].getReg(), ptr[op1[0].getReg() + op2[0].getReg()]);
+    if (dest[0].IsReg() && op1[0].IsReg() && op2[0].IsReg()) {
+        ctx.Code().lea(dest[0].Reg(), ptr[op1[0].Reg() + op2[0].Reg()]);
     } else {
-        Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+        OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg() : dest[0];
         MovGP(ctx, tmp, op1[0]);
-        ctx.Code().add(tmp, op2[0]);
+        ctx.Code().add(tmp.Op(), op2[0].Op());
         MovGP(ctx, dest[0], tmp); 
     }
 }
 
 void EmitIAddCary32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
-    Operand carry = dest[1];
-    carry.setBit(1);
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
+    OperandHolder carry = dest[1];
+    carry.Op().setBit(1);
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().add(tmp, op2[0]);
-    ctx.Code().setc(carry);
+    ctx.Code().add(tmp.Op(), op2[0].Op());
+    ctx.Code().setc(carry.Op());
 }
 
 void EmitISub32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().sub(tmp, op2[0]);
+    ctx.Code().sub(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitISub64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().sub(tmp, op2[0]);
+    ctx.Code().sub(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
@@ -81,29 +85,29 @@ void EmitUMulExt(EmitContext& ctx) {
 }
 
 void EmitIMul32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().imul(tmp, op2[0]);
+    ctx.Code().imul(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitIMul64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().imul(tmp, op2[0]);
+    ctx.Code().imul(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitSDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     bool rax_saved = EmitSaveRegTemp(ctx, rax, dest[0]);
     bool rdx_saved = EmitSaveRegTemp(ctx, rdx, dest[0]);
-    Reg tmp = op2[0].getReg().cvt32();
-    while (tmp.getIdx() == rax.getIdx()) {
+    OperandHolder tmp = op2[0];
+    while (IsReg(tmp, rax)) {
         tmp = ctx.TempGPReg().cvt32();
     }
     MovGP(ctx, tmp, op2[0]);
     MovGP(ctx, eax, op1[0]);
-    ctx.Code().idiv(tmp);
+    ctx.Code().idiv(tmp.Op());
     MovGP(ctx, dest[0], eax);
     if (rdx_saved) {
         EmitRestoreRegTemp(ctx, rdx);
@@ -116,13 +120,13 @@ void EmitSDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 void EmitUDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     bool rax_saved = EmitSaveRegTemp(ctx, rax, dest[0]);
     bool rdx_saved = EmitSaveRegTemp(ctx, rdx, dest[0]);
-    Reg tmp = op2[0].getReg().cvt32();
-    while (tmp.getIdx() == rax.getIdx()) {
+    OperandHolder tmp = op2[0];
+    while (IsReg(tmp, rax)) {
         tmp = ctx.TempGPReg().cvt32();
     }
     MovGP(ctx, tmp, op2[0]);
     MovGP(ctx, eax, op1[0]);
-    ctx.Code().div(tmp);
+    ctx.Code().div(tmp.Op());
     MovGP(ctx, dest[0], eax);
     if (rdx_saved) {
         EmitRestoreRegTemp(ctx, rdx);
@@ -135,13 +139,13 @@ void EmitUDiv32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 void EmitSMod32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     bool rax_saved = EmitSaveRegTemp(ctx, rax, dest[0]);
     bool rdx_saved = EmitSaveRegTemp(ctx, rdx, dest[0]);
-    Reg tmp = op2[0].getReg().cvt32();
-    while (tmp.getIdx() == rax.getIdx()) {
+    OperandHolder tmp = op2[0];
+    while (IsReg(tmp, rax)) {
         tmp = ctx.TempGPReg().cvt32();
     }
     MovGP(ctx, tmp, op2[0]);
     MovGP(ctx, eax, op1[0]);
-    ctx.Code().idiv(tmp);
+    ctx.Code().idiv(tmp.Op());
     MovGP(ctx, dest[0], edx);
     if (rdx_saved) {
         EmitRestoreRegTemp(ctx, rdx);
@@ -154,13 +158,13 @@ void EmitSMod32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 void EmitUMod32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     bool rax_saved = EmitSaveRegTemp(ctx, rax, dest[0]);
     bool rdx_saved = EmitSaveRegTemp(ctx, rdx, dest[0]);
-    Reg tmp = op2[0].getReg().cvt32();
-    while (tmp.getIdx() == rax.getIdx()) {
+    OperandHolder tmp = op2[0];
+    while (IsReg(tmp, rax)) {
         tmp = ctx.TempGPReg().cvt32();
     }
     MovGP(ctx, tmp, op2[0]);
     MovGP(ctx, eax, op1[0]);
-    ctx.Code().div(tmp);
+    ctx.Code().div(tmp.Op());
     MovGP(ctx, dest[0], edx);
     if (rdx_saved) {
         EmitRestoreRegTemp(ctx, rdx);
@@ -171,36 +175,30 @@ void EmitUMod32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 }
 
 void EmitINeg32(EmitContext& ctx, const Operands& dest, const Operands& op) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
-    MovGP(ctx, tmp, op[0]);
-    ctx.Code().neg(tmp);
-    MovGP(ctx, dest[0], tmp);
+    MovGP(ctx, dest[0], op[0]);
+    ctx.Code().neg(dest[0].Op());
 }
 
 void EmitINeg64(EmitContext& ctx, const Operands& dest, const Operands& op) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
-    MovGP(ctx, tmp, op[0]);
-    ctx.Code().neg(tmp);
-    MovGP(ctx, dest[0], tmp);
+    MovGP(ctx, dest[0], op[0]);
+    ctx.Code().neg(dest[0].Op());
 }
 
 void EmitIAbs32(EmitContext& ctx, const Operands& dest, const Operands& op) {
     Label done;
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
-    MovGP(ctx, tmp, op[0]);
-    ctx.Code().cmp(tmp, 0);
+    MovGP(ctx, dest[0], op[0]);
+    ctx.Code().cmp(dest[0].Op(), 0);
     ctx.Code().jns(done);
-    ctx.Code().neg(tmp);
+    ctx.Code().neg(dest[0].Op());
     ctx.Code().L(done);
-    MovGP(ctx, dest[0], tmp);
 }
 
 void EmitShiftLeftLogical32(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].getIdx() == rcx.getIdx() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().shl(tmp, cl);
+    ctx.Code().shl(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -209,10 +207,10 @@ void EmitShiftLeftLogical32(EmitContext& ctx, const Operands& dest, const Operan
 
 void EmitShiftLeftLogical64(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].getIdx() == rcx.getIdx() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().shl(tmp, cl);
+    ctx.Code().shl(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -221,10 +219,10 @@ void EmitShiftLeftLogical64(EmitContext& ctx, const Operands& dest, const Operan
 
 void EmitShiftRightLogical32(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().shr(tmp, cl);
+    ctx.Code().shr(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -233,10 +231,10 @@ void EmitShiftRightLogical32(EmitContext& ctx, const Operands& dest, const Opera
 
 void EmitShiftRightLogical64(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().shr(tmp, cl);
+    ctx.Code().shr(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -245,10 +243,10 @@ void EmitShiftRightLogical64(EmitContext& ctx, const Operands& dest, const Opera
 
 void EmitShiftRightArithmetic32(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().sar(tmp, cl);
+    ctx.Code().sar(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -257,10 +255,10 @@ void EmitShiftRightArithmetic32(EmitContext& ctx, const Operands& dest, const Op
 
 void EmitShiftRightArithmetic64(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& shift) {
     bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, base[0]);
     MovGP(ctx, cl, shift[0]);
-    ctx.Code().sar(tmp, cl);
+    ctx.Code().sar(tmp.Op(), cl);
     MovGP(ctx, dest[0], tmp);
     if (rcx_saved) {
         EmitRestoreRegTemp(ctx, rcx);
@@ -268,37 +266,37 @@ void EmitShiftRightArithmetic64(EmitContext& ctx, const Operands& dest, const Op
 }
 
 void EmitBitwiseAnd32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().and_(tmp, op2[0]);
+    ctx.Code().and_(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitBitwiseAnd64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().and_(tmp, op2[0]);
+    ctx.Code().and_(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitBitwiseOr32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().or_(tmp, op2[0]);
+    ctx.Code().or_(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitBitwiseOr64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false) : dest[0].getReg();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().or_(tmp, op2[0]);
+    ctx.Code().or_(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitBitwiseXor32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().xor_(tmp, op2[0]);
+    ctx.Code().xor_(tmp.Op(), op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
@@ -327,10 +325,8 @@ void EmitBitCount64(EmitContext& ctx) {
 }
 
 void EmitBitwiseNot32(EmitContext& ctx, const Operands& dest, const Operands& op) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
-    MovGP(ctx, tmp, op[0]);
-    ctx.Code().not_(tmp);
-    MovGP(ctx, dest[0], tmp);
+    MovGP(ctx, dest[0], op[0]);
+    ctx.Code().not_(dest[0].Op());
 }
 
 void EmitFindSMsb32(EmitContext& ctx) {
@@ -350,153 +346,153 @@ void EmitFindILsb64(EmitContext& ctx) {
 }
 
 void EmitSMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().cmp(tmp, op2[0]);
-    ctx.Code().cmovg(tmp, op2[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovg(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitUMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().cmp(tmp, op2[0]);
-    ctx.Code().cmova(tmp, op2[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmova(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitSMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().cmp(tmp, op2[0]);
-    ctx.Code().cmovl(tmp, op2[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovl(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitUMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().cmp(tmp, op2[0]);
-    ctx.Code().cmovb(tmp, op2[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovb(tmp, op2[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitSClamp32(EmitContext& ctx, const Operands& dest, const Operands& value, const Operands& min, const Operands& max) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, value[0]);
-    ctx.Code().cmp(tmp, min[0]);
-    ctx.Code().cmovl(tmp, min[0]);
-    ctx.Code().cmp(tmp, max[0]);
-    ctx.Code().cmovg(tmp, max[0]);
+    ctx.Code().cmp(tmp, min[0].Op());
+    ctx.Code().cmovl(tmp, min[0].Op());
+    ctx.Code().cmp(tmp, max[0].Op());
+    ctx.Code().cmovg(tmp, max[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitUClamp32(EmitContext& ctx, const Operands& dest, const Operands& value, const Operands& min, const Operands& max) {
-    Reg tmp = dest[0].isMEM() ? ctx.TempGPReg(false).cvt32() : dest[0].getReg().cvt32();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, value[0]);
-    ctx.Code().cmp(tmp, min[0]);
-    ctx.Code().cmovb(tmp, min[0]);
-    ctx.Code().cmp(tmp, max[0]);
-    ctx.Code().cmova(tmp, max[0]);
+    ctx.Code().cmp(tmp, min[0].Op());
+    ctx.Code().cmovb(tmp, min[0].Op());
+    ctx.Code().cmp(tmp, max[0].Op());
+    ctx.Code().cmova(tmp, max[0].Op());
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitSLessThan32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setl(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setl(dest[0].Op());
 }
 
 void EmitSLessThan64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false) : lhs[0].getReg();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setl(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setl(dest[0].Op());
 }
 
 void EmitULessThan32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setb(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setb(dest[0].Op());
 }
 
 void EmitULessThan64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false) : lhs[0].getReg();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setb(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setb(dest[0].Op());
 }
 
 void EmitIEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().sete(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().sete(dest[0].Op());
 }
 
 void EmitIEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false) : lhs[0].getReg();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().sete(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().sete(dest[0].Op());
 }
 
 void EmitSLessThanEqual(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setle(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setle(dest[0].Op());
 }
 
 void EmitULessThanEqual(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setbe(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setbe(dest[0].Op());
 }
 
 void EmitSGreaterThan(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setg(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setg(dest[0].Op());
 }
 
 void EmitUGreaterThan(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().seta(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().seta(dest[0].Op());
 }
 
 void EmitINotEqual32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setne(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setne(dest[0].Op());
 }
 
 void EmitINotEqual64(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false) : lhs[0].getReg();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setne(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setne(dest[0].Op());
 }
 
 void EmitSGreaterThanEqual(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setge(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setge(dest[0].Op());
 }
 
 void EmitUGreaterThanEqual(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs) {
-    Reg tmp = lhs[0].isMEM() && rhs[0].isMEM() ? ctx.TempGPReg(false).cvt32() : lhs[0].getReg().cvt32();
+    OperandHolder tmp = lhs[0].IsMem() && rhs[0].IsMem() ? ctx.TempGPReg().cvt32() : lhs[0];
     MovGP(ctx, tmp, lhs[0]);
-    ctx.Code().cmp(tmp, rhs[0]);
-    ctx.Code().setae(dest[0]);
+    ctx.Code().cmp(tmp.Op(), rhs[0].Op());
+    ctx.Code().setae(dest[0].Op());
 }
 
 } // namespace Shader::Backend::X64
