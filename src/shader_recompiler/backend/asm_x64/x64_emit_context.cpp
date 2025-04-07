@@ -165,7 +165,7 @@ void EmitContext::Epilogue() {
 
 void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& interval,
                             ActiveIntervalList& active_intervals) {
-    const auto get_operand = [&](IR::Inst* inst) -> Operand {
+    const auto get_operand = [&](IR::Inst* inst) -> Address {
         size_t current_sp = inst_stack_space;
         inst_stack_space += 8;
         switch (GetRegBytesOfType(IR::Value(inst))) {
@@ -179,7 +179,7 @@ void EmitContext::SpillInst(RegAllocContext& ctx, const ActiveInstInterval& inte
             return qword[r11 + current_sp];
         default:
             UNREACHABLE_MSG("Unsupported register size: {}", GetRegBytesOfType(inst));
-            return {};
+            return ptr[r11 + current_sp];
         }
     };
     auto spill_candidate = std::max_element(
