@@ -154,10 +154,8 @@ private:
     struct RegAllocContext {
         boost::container::static_vector<Xbyak::Reg64, NumGPRegs> free_gp_regs;
         boost::container::static_vector<Xbyak::Xmm, NumXmmRegs> free_xmm_regs;
-        boost::container::small_vector<size_t, 8> free_stack_slots;
         ActiveIntervalList active_gp_intervals;
         ActiveIntervalList active_xmm_intervals;
-        ActiveIntervalList active_spill_intervals;
     };
 
     using FlatInstList = boost::container::small_vector<IR::Inst*, 64>;
