@@ -12,11 +12,15 @@
 #include "common/path_util.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
+#include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/num_executions.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
+#include "shader_recompiler/ir/subprogram.h"
 #include "shader_recompiler/ir/value.h"
 #include "src/common/arch.h"
 #include "src/common/decoder.h"
@@ -57,28 +61,23 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
 using namespace Shader;
 
 struct PassInfo {
-    // map offset to inst
-    using PtrUserList = boost::container::flat_map<u32, Shader::IR::Inst*>;
+    struct ReadConstData {
+        u32 offset_dw;
+        u32 count_dw;
+        IR::Inst* unique_inst;
+        IR::Inst* original_inst;
+    };
 
     Optimization::SrtGvnTable gvn_table;
-    // keys are GetUserData or ReadConst instructions that are used as pointers
-    std::unordered_map<IR::Inst*, PtrUserList> pointer_uses;
-    // GetUserData instructions corresponding to sgpr_base of SRT roots
-    boost::container::small_flat_map<IR::ScalarReg, IR::Inst*, 1> srt_roots;
-
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
+    // map of all readconsts to their subprogram insts
+    boost::container::small_flat_map<IR::Inst*, IR::Inst*, 32> all_readconsts;
+    // subprogram insts mapped to their readconst data
+    boost::container::small_flat_map<IR::Inst*, ReadConstData, 32> readconst_data;
 
-    // Bumped during codegen to assign offsets to readconsts
-    u32 dst_off_dw;
-
-    PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
-        auto it = pointer_uses.find(inst);
-        if (it != pointer_uses.end()) {
-            return &it->second;
-        }
-        return nullptr;
-    }
+    // Incremented during SRT program generation
+    u32 dst_off_dw = 0;
 
     // Return a single instruction that this instruction is identical to, according
     // to value number
@@ -105,39 +104,79 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
 
-static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
-                         Xbyak::CodeGenerator& c) {
-    PushPtr(c, off_dw);
-    PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
-    ASSERT(use_list);
-
-    // First copy all the src data from this tree level
-    // That way, all data that was contiguous in the guest SRT is also contiguous in the
-    // flattened buffer.
-    // TODO src and dst are contiguous. Optimize with wider loads/stores
-    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
-        c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
-        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
-
-        use->SetFlags<u32>(pass_info.dst_off_dw);
-        pass_info.dst_off_dw++;
+static IR::U32 WrapInstWithCounter(IR::Inst* inst, u32 inital_value, IR::Block* first_block) {
+    const IR::Block::ConditionalData* loop_data = &inst->GetParent()->CondData();
+    while (loop_data != nullptr &&
+           loop_data->asl_node->type != IR::AbstractSyntaxNode::Type::Loop) {
+        loop_data = loop_data->parent;
     }
-
-    // Then visit any children used as pointers
-    for (const auto [src_off_dw, use] : *use_list) {
-        if (pass_info.GetUsesAsPointer(use)) {
-            VisitPointer(src_off_dw, use, pass_info, c);
-        }
-    }
-
-    PopPtr(c);
+    ASSERT(loop_data != nullptr);
+    IR::Block* loop_body = loop_data->asl_node->data.loop.body;
+    // We are putting the Phi node in the loop header so that the counter is
+    // incremented each time the loop is executed. We point the Phi node to the
+    // first block so that the counter is not reset each time the loop is
+    // executed (nested loops)
+    IR::IREmitter ir_inst(*inst->GetParent(), ++IR::Block::InstructionList::s_iterator_to(*inst));
+    IR::IREmitter ir_loop_header(*loop_body->ImmPredecessors().front());
+    IR::Inst* phi = ir_loop_header.Phi(IR::Type::U32).Inst();
+    IR::U32 inc = ir_inst.IAdd(IR::U32(phi), ir_inst.Imm32(1));
+    phi->AddPhiOperand(first_block, ir_loop_header.Imm32(inital_value));
+    phi->AddPhiOperand(inst->GetParent(), inc);
+    return IR::U32(phi);
 }
 
-static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
-    Xbyak::CodeGenerator& c = g_srt_codegen;
+static void GenerateSrtReadConsts(IR::Program& program, PassInfo& pass_info, Pools& pools) {
+    IR::SubProgram sub_gen(&program, pools);
+    for (auto& [inst, sub_inst] : pass_info.all_readconsts) {
+        sub_inst = sub_gen.AddInst(inst);
+        pass_info.readconst_data[sub_inst] = {0, 0, pass_info.DeduplicateInstruction(sub_inst),
+                                              inst};
+    }
+    IR::Program sub_program = sub_gen.GetSubProgram();
+    IR::Block* original_first_block = program.blocks.front();
+    IR::Block* sub_first_block = sub_program.blocks.front();
+    for (auto& [inst, data] : pass_info.readconst_data) {
+        if (inst != data.unique_inst) {
+            PassInfo::ReadConstData& unique_data = pass_info.readconst_data[data.unique_inst];
+            data.offset_dw = unique_data.offset_dw;
+            // In this context, count_dw is always the same as unique_data.count_dw
+            // There are no duplicate instructions in different loops
+            data.count_dw = unique_data.count_dw;
+        } else {
+            u32 count = static_cast<u32>(IR::GetNumExecutions(inst));
+            ASSERT_MSG(count > 0, "Dynamic loop range not supported yet");
+            data.count_dw = count;
+            data.offset_dw = pass_info.dst_off_dw;
+            pass_info.dst_off_dw += count;
+            IR::U32 save_offset;
+            if (data.count_dw > 1) {
+                save_offset = WrapInstWithCounter(inst, data.offset_dw, sub_first_block);
+            } else {
+                IR::IREmitter ir(*inst);
+                save_offset = ir.Imm32(data.offset_dw);
+            }
+            IR::IREmitter ir(*inst->GetParent(),
+                             ++IR::Block::InstructionList::s_iterator_to(*inst));
+            ir.StoreFlatbuf(IR::U32(inst), save_offset);
+        }
+        if (data.count_dw > 1) {
+            IR::U32 counter =
+                WrapInstWithCounter(data.original_inst, data.offset_dw, original_first_block);
+            data.original_inst->SetArg(1, counter);
+        } else {
+            IR::IREmitter ir(*data.original_inst);
+            data.original_inst->SetArg(1, ir.Imm32(data.offset_dw));
+        }
+    }
+    DeadCodeEliminationPass(sub_program);
+    IR::DumpProgram(sub_program, sub_program.info, "srt");
+}
 
-    if (info.srt_info.srt_reservations.empty() && pass_info.srt_roots.empty()) {
+static void GenerateSrtProgram(IR::Program& program, PassInfo& pass_info, Pools& pools) {
+    Xbyak::CodeGenerator& c = g_srt_codegen;
+    Shader::Info& info = program.info;
+
+    if (info.srt_info.srt_reservations.empty() && pass_info.all_readconsts.empty()) {
         return;
     }
 
@@ -167,9 +206,11 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
 
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
-    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        VisitPointer(static_cast<u32>(sgpr_base), root, pass_info, c);
+    if (!pass_info.all_readconsts.empty()) {
+        GenerateSrtReadConsts(program, pass_info, pools);
     }
+
+    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 
     c.ret();
     c.ready();
@@ -178,75 +219,25 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
         size_t codesize = c.getCurr() - reinterpret_cast<const u8*>(info.srt_info.walker_func);
         DumpSrtProgram(info, reinterpret_cast<const u8*>(info.srt_info.walker_func), codesize);
     }
-
-    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
 }; // namespace
 
-void FlattenExtendedUserdataPass(IR::Program& program) {
+void FlattenExtendedUserdataPass(IR::Program& program, Pools& pools) {
     Shader::Info& info = program.info;
     PassInfo pass_info;
 
-    // traverse at end and assign offsets to duplicate readconsts, using
-    // vn_to_inst as the source
-    boost::container::small_vector<IR::Inst*, 32> all_readconsts;
-
-    for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
-         r_it++) {
-        IR::Block* block = *r_it;
-        for (IR::Inst& inst : *block) {
+    for (auto it = program.post_order_blocks.rbegin(); it != program.post_order_blocks.rend();
+         ++it) {
+        IR::Block* block = *it;
+        for (auto& inst : block->Instructions()) {
             if (inst.GetOpcode() == IR::Opcode::ReadConst) {
-                if (!inst.Arg(1).IsImmediate()) {
-                    LOG_WARNING(Render_Recompiler, "ReadConst has non-immediate offset");
-                    continue;
-                }
-
-                all_readconsts.push_back(&inst);
-                if (pass_info.DeduplicateInstruction(&inst) != &inst) {
-                    // This is a duplicate of a readconst we've already visited
-                    continue;
-                }
-
-                IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
-
-                const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst) {
-                        return inst;
-                    }
-                    return std::nullopt;
-                };
-                auto base0 = IR::BreadthFirstSearch(ptr_composite->Arg(0), pred);
-                auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
-                ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
-
-                IR::Inst* ptr_lo = base0.value();
-                ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
-
-                auto ptr_uses_kv =
-                    pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
-                PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
-
-                user_list[inst.Arg(1).U32()] = &inst;
-
-                if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
-                    IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
-                    pass_info.srt_roots[ud_reg] = ptr_lo;
-                }
+                pass_info.all_readconsts[&inst] = nullptr;
             }
         }
     }
 
-    GenerateSrtProgram(info, pass_info);
-
-    // Assign offsets to duplicate readconsts
-    for (IR::Inst* readconst : all_readconsts) {
-        ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
-        IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        readconst->SetFlags<u32>(original->Flags<u32>());
-    }
-
+    GenerateSrtProgram(program, pass_info, pools);
     info.RefreshFlatBuf();
 }
 

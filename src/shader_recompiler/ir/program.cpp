@@ -15,7 +15,7 @@
 
 namespace Shader::IR {
 
-void DumpProgram(const Program& program, const Info& info) {
+void DumpProgram(const Program& program, const Info& info, const std::string& type) {
     using namespace Common::FS;
 
     if (!Config::dumpShaders()) {
@@ -26,7 +26,8 @@ void DumpProgram(const Program& program, const Info& info) {
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto ir_filename = fmt::format("{}_{:#018x}.irprogram.txt", info.stage, info.pgm_hash);
+    const auto ir_filename =
+        fmt::format("{}_{:#018x}.{}irprogram.txt", info.stage, info.pgm_hash, type);
     const auto ir_file = IOFile{dump_dir / ir_filename, FileAccessMode::Write, FileType::TextFile};
 
     size_t index{0};
@@ -43,7 +44,7 @@ void DumpProgram(const Program& program, const Info& info) {
         ir_file.WriteString(s);
     }
 
-    const auto asl_filename = fmt::format("{}_{:#018x}.asl.txt", info.stage, info.pgm_hash);
+    const auto asl_filename = fmt::format("{}_{:#018x}.{}asl.txt", info.stage, info.pgm_hash, type);
     const auto asl_file =
         IOFile{dump_dir / asl_filename, FileAccessMode::Write, FileType::TextFile};
 

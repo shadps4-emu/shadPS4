@@ -17,6 +17,7 @@ NOP_FUNCTION(Prologue)
 NOP_FUNCTION(Epilogue)
 NOP_FUNCTION(Discard)
 NOP_FUNCTION(DiscardCond)
+NOP_FUNCTION(StoreFlatbuf)
 NOP_FUNCTION(DebugPrint)
 
 NOP_FUNCTION(ReadConst)

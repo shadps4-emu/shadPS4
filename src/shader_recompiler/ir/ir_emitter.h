@@ -18,6 +18,8 @@ namespace Shader::IR {
 class IREmitter {
 public:
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
+    explicit IREmitter(Inst& inst)
+        : block{inst.GetParent()}, insertion_point{Block::InstructionList::s_iterator_to(inst)} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
 
@@ -39,12 +41,14 @@ public:
     U1 ConditionRef(const U1& value);
     void Reference(const Value& value);
 
+    [[nodiscard]] Value Phi(IR::Type type);
     void PhiMove(IR::Inst& phi, const Value& value);
 
     void Prologue();
     void Epilogue();
     void Discard();
     void Discard(const U1& cond);
+    void StoreFlatbuf(const U32& data, const U32& offset);
     void DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> args);
 
     void Barrier();

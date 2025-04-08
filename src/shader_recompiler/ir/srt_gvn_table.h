@@ -51,20 +51,6 @@ private:
         u32 vn;
 
         switch (inst->GetOpcode()) {
-        case IR::Opcode::Phi: {
-            const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                    inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
-                    inst->GetOpcode() == IR::Opcode::ReadConst) {
-                    return inst;
-                }
-                return std::nullopt;
-            };
-            IR::Inst* source = IR::BreadthFirstSearch(inst, pred).value();
-            vn = GetValueNumber(source);
-            value_numbers[IR::Value(inst)] = vn;
-            break;
-        }
         case IR::Opcode::GetUserData:
         case IR::Opcode::CompositeConstructU32x2:
         case IR::Opcode::ReadConst: {

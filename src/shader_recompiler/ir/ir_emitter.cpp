@@ -102,6 +102,10 @@ void IREmitter::Reference(const Value& value) {
     Inst(Opcode::Reference, value);
 }
 
+Value IREmitter::Phi(IR::Type type) {
+    return Inst(Opcode::Phi, Flags(type));
+}
+
 void IREmitter::PhiMove(IR::Inst& phi, const Value& value) {
     Inst(Opcode::PhiMove, Value{&phi}, value);
 }
@@ -1968,6 +1972,10 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& 
 
 [[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
     return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
+}
+
+void IREmitter::StoreFlatbuf(const U32& data, const U32& offset) {
+    Inst(Opcode::StoreFlatbuf, data, offset);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction
