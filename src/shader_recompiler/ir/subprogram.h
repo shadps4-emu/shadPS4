@@ -27,12 +27,14 @@ struct SubProgram {
     Program GetSubProgram();
 
 private:
+    Inst* AddInst(Inst* orig_inst, std::optional<Block::InstructionList::iterator> insertion_point);
     void AddPhi(Inst* orig_phi, Inst* phi);
 
-    void SetArg(Inst* inst, size_t index, const Value& arg);
+    void SetArg(Inst* inst, Inst* orig_inst, size_t index);
     void AddPhiOperand(Inst* phi, Block* block, const Value& arg);
 
     void BuildBlockListAndASL(Program& sub_program);
+    void AddProlgueAndEpilogue(Program& sub_program);
 
     bool completed = false;
     Program* super_program;

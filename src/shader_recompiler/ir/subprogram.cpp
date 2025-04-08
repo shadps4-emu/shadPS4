@@ -23,24 +23,7 @@ Block* SubProgram::AddBlock(Block* orig_block) {
 }
 
 Inst* SubProgram::AddInst(Inst* orig_inst) {
-    auto it = orig_inst_to_inst.find(orig_inst);
-    if (it != orig_inst_to_inst.end()) {
-        return it->second;
-    }
-    Block* block = AddBlock(orig_inst->GetParent());
-    Inst inst(orig_inst->GetOpcode(), orig_inst->Flags<u32>());
-    if (orig_inst->GetOpcode() == Opcode::Phi) {
-        AddPhi(orig_inst, &inst);
-    } else {
-        for (size_t i = 0; i < orig_inst->NumArgs(); ++i) {
-            SetArg(&inst, i, orig_inst->Arg(i));
-        }
-    }
-    auto insertion_point = block->end();
-    if (block->back().GetOpcode() == Opcode::ConditionRef) {
-        --insertion_point;
-    }
-    return &(*block->PrependNewInst(insertion_point, inst));
+    return AddInst(orig_inst, std::nullopt);
 }
 
 Block* SubProgram::GetBlock(Block* orig_block) {
@@ -64,12 +47,54 @@ Program SubProgram::GetSubProgram() {
     completed = true;
     Program sub_program(super_program->info);
     BuildBlockListAndASL(sub_program);
+    AddProlgueAndEpilogue(sub_program);
     sub_program.post_order_blocks = PostOrder(sub_program.syntax_list.front());
     AddConditionalTreeFromASL(sub_program.syntax_list);
     for (Block* block : sub_program.blocks) {
         block->SsaSeal();
     }
     return sub_program;
+}
+
+void SubProgram::AddProlgueAndEpilogue(Program& sub_program) {
+    // We may need to handle this better.
+    Block* epilogue_block = pools.block_pool.Create(pools.inst_pool);
+    Block* front_block = sub_program.blocks.front();
+    sub_program.blocks.back()->AddBranch(epilogue_block);
+    sub_program.blocks.push_back(epilogue_block);
+    sub_program.syntax_list.push_back(AbstractSyntaxNode{.data = {.block = epilogue_block},
+                                                         .type = AbstractSyntaxNode::Type::Block});
+    sub_program.syntax_list.push_back(AbstractSyntaxNode{.type = AbstractSyntaxNode::Type::Return});
+    epilogue_block->AppendNewInst(Opcode::Epilogue, {});
+    front_block->PrependNewInst(front_block->begin(), Opcode::Prologue);
+    epilogue_block->SsaSeal();
+}
+
+Inst* SubProgram::AddInst(Inst* orig_inst,
+                          std::optional<Block::InstructionList::iterator> insertion_point) {
+    auto it = orig_inst_to_inst.find(orig_inst);
+    if (it != orig_inst_to_inst.end()) {
+        return it->second;
+    }
+    Block* block = AddBlock(orig_inst->GetParent());
+    if (!insertion_point) {
+        if (block->back().GetOpcode() == Opcode::ConditionRef) {
+            insertion_point = --block->end();
+        } else {
+            insertion_point = block->end();
+        }
+    }
+    Inst* inst = &(
+        *block->PrependNewInst(*insertion_point, orig_inst->GetOpcode(), orig_inst->Flags<u32>()));
+    orig_inst_to_inst[orig_inst] = inst;
+    if (orig_inst->GetOpcode() == Opcode::Phi) {
+        AddPhi(orig_inst, inst);
+    } else {
+        for (size_t i = 0; i < orig_inst->NumArgs(); ++i) {
+            SetArg(inst, orig_inst, i);
+        }
+    }
+    return inst;
 }
 
 void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
@@ -108,11 +133,18 @@ void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
     }
 }
 
-void SubProgram::SetArg(Inst* inst, size_t index, const Value& arg) {
+void SubProgram::SetArg(Inst* inst, Inst* orig_inst, size_t index) {
+    const Value& arg = orig_inst->Arg(index);
     if (arg.IsImmediate()) {
         inst->SetArg(index, arg);
     } else {
-        inst->SetArg(index, Value(AddInst(arg.InstRecursive())));
+        Inst* arg_inst = arg.InstRecursive();
+        if (orig_inst->GetParent() == arg_inst->GetParent()) {
+            inst->SetArg(index,
+                         Value(AddInst(arg_inst, Block::InstructionList::s_iterator_to(*inst))));
+        } else {
+            inst->SetArg(index, Value(AddInst(arg_inst, std::nullopt)));
+        }
     }
 }
 
@@ -216,6 +248,7 @@ void SubProgram::BuildBlockListAndASL(Program& sub_program) {
             break;
         }
         case AbstractSyntaxNode::Type::Unreachable:
+        case AbstractSyntaxNode::Type::Return:
             continue;
         default:
             break;

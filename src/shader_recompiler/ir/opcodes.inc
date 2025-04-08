@@ -14,6 +14,7 @@ OPCODE(Prologue,                                            Void,               
 OPCODE(Epilogue,                                            Void,                                                                                           )
 OPCODE(Discard,                                             Void,                                                                                           )
 OPCODE(DiscardCond,                                         Void,           U1,                                                                             )
+OPCODE(StoreFlatbuf,                                        Void,           U32,            U32                                                             )
 OPCODE(DebugPrint,                                          Void,           StringLiteral,  Opaque,          Opaque,        Opaque,         Opaque,         )
 
 // Constant memory operations
