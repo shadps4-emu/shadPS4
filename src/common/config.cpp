@@ -7,10 +7,10 @@
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
+#include "common/config.h"
+#include "common/logging/formatter.h"
 #include "common/path_util.h"
-#include "config.h"
-#include "logging/formatter.h"
-#include "version.h"
+#include "common/scm_rev.h"
 
 namespace toml {
 template <typename TC, typename K>
@@ -763,7 +763,7 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        if (Common::isRelease) {
+        if (Common::g_is_release) {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
         } else {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
@@ -1108,7 +1108,7 @@ void setDefaultValues() {
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";
-    if (Common::isRelease) {
+    if (Common::g_is_release) {
         updateChannel = "Release";
     } else {
         updateChannel = "Nightly";
