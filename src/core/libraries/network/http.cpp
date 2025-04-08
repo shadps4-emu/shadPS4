@@ -13,7 +13,7 @@ void NormalizeAndAppendPath(char* dest, char* src) {
     char* lastSlash;
     u64 length;
 
-    lastSlash = strrchr(dest, 0x2f);
+    lastSlash = strrchr(dest, '/');
     if (lastSlash == NULL) {
         length = strlen(dest);
         dest[length] = '/';
