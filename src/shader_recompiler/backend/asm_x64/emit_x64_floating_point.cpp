@@ -146,6 +146,34 @@ void EmitFPMin64(EmitContext& ctx, const Operands& dest, const Operands& op1, co
     MovDouble(ctx, dest[0], tmp);
 }
 
+void EmitFPMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Xmm tmp = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    MovFloat(ctx, tmp, op1[0]);
+    ctx.Code().minss(tmp, op2[0].Op());
+    ctx.Code().minss(tmp, op3[0].Op());
+    MovFloat(ctx, dest[0], tmp);
+}
+
+void EmitFPMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Xmm tmp = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    MovFloat(ctx, tmp, op1[0]);
+    ctx.Code().maxss(tmp, op2[0].Op());
+    ctx.Code().maxss(tmp, op3[0].Op());
+    MovFloat(ctx, dest[0], tmp);
+}
+
+void EmitFPMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Xmm tmp = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    Xmm tmp2 = ctx.TempXmmReg();
+    MovFloat(ctx, tmp2, op1[0]);
+    ctx.Code().maxss(tmp2, op2[0].Op());
+    ctx.Code().minss(tmp2, op3[0].Op());
+    MovFloat(ctx, tmp, op1[0]);
+    ctx.Code().minss(tmp, op2[0].Op());
+    ctx.Code().maxss(tmp, tmp2);
+    MovFloat(ctx, dest[0], tmp);
+}
+
 void EmitFPMul16(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     Xmm tmp1 = ctx.TempXmmReg();
     Xmm tmp2 = ctx.TempXmmReg();

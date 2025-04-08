@@ -237,6 +237,9 @@ void EmitFPMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, co
 void EmitFPMax64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitFPMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, bool is_legacy = false);
 void EmitFPMin64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
+void EmitFPMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitFPMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitFPMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
 void EmitFPMul16(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitFPMul32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitFPMul64(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
@@ -362,6 +365,12 @@ void EmitSMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
 void EmitUMin32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitSMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
 void EmitUMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2);
+void EmitSMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitUMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitSMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitUMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitSMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
+void EmitUMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3);
 void EmitSClamp32(EmitContext& ctx, const Operands& dest, const Operands& op, const Operands& min, const Operands& max);
 void EmitUClamp32(EmitContext& ctx, const Operands& dest, const Operands& op, const Operands& min, const Operands& max);
 void EmitSLessThan32(EmitContext& ctx, const Operands& dest, const Operands& lhs, const Operands& rhs);

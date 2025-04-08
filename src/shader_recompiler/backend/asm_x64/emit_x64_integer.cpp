@@ -377,6 +377,78 @@ void EmitUMax32(EmitContext& ctx, const Operands& dest, const Operands& op1, con
     MovGP(ctx, dest[0], tmp);
 }
 
+void EmitSMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovg(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, op3[0].Op());
+    ctx.Code().cmovg(tmp, op3[0].Op());
+    MovGP(ctx, dest[0], tmp);
+}
+
+void EmitUMinTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmova(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, op3[0].Op());
+    ctx.Code().cmova(tmp, op3[0].Op());
+    MovGP(ctx, dest[0], tmp);
+}
+
+void EmitSMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovl(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, op3[0].Op());
+    ctx.Code().cmovl(tmp, op3[0].Op());
+    MovGP(ctx, dest[0], tmp);
+}
+
+void EmitUMaxTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovb(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, op3[0].Op());
+    ctx.Code().cmovb(tmp, op3[0].Op());
+    MovGP(ctx, dest[0], tmp);
+}
+
+void EmitSMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    Reg tmp2 = ctx.TempGPReg().cvt32();
+    MovGP(ctx, tmp2, op1[0]);
+    ctx.Code().cmp(tmp2, op2[0].Op());
+    ctx.Code().cmovl(tmp2, op2[0].Op());
+    ctx.Code().cmp(tmp2, op3[0].Op());
+    ctx.Code().cmovg(tmp2, op3[0].Op());
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmovg(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, tmp);
+    ctx.Code().cmovl(tmp, tmp2);
+    MovGP(ctx, dest[0], tmp);
+}
+
+void EmitUMedTri32(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2, const Operands& op3) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
+    Reg tmp2 = ctx.TempGPReg().cvt32();
+    MovGP(ctx, tmp, op1[0]);
+    ctx.Code().cmp(tmp, op2[0].Op());
+    ctx.Code().cmova(tmp, op2[0].Op());
+    ctx.Code().cmp(tmp, op3[0].Op());
+    ctx.Code().cmovb(tmp, op3[0].Op());
+    MovGP(ctx, tmp2, op1[0]);
+    ctx.Code().cmp(tmp2, op2[0].Op());
+    ctx.Code().cmovb(tmp2, op2[0].Op());
+    ctx.Code().cmp(tmp2, tmp);
+    ctx.Code().cmova(tmp2, tmp);
+    MovGP(ctx, dest[0], tmp2);
+}
+
 void EmitSClamp32(EmitContext& ctx, const Operands& dest, const Operands& value, const Operands& min, const Operands& max) {
     Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg();
     MovGP(ctx, tmp, value[0]);

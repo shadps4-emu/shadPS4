@@ -167,6 +167,15 @@ public:
     [[nodiscard]] static ImmValue Max(const ImmValue& a, const ImmValue& b) noexcept;
 
     template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue MinTri(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue MaxTri(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
+    [[nodiscard]] static ImmValue MedTri(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept;
+
+    template <IR::Type Type, bool IsSigned>
     [[nodiscard]] static ImmValue Clamp(const ImmValue& in, const ImmValue& min,
                                         const ImmValue& max) noexcept;
 

@@ -1128,6 +1128,202 @@ ImmValue ImmValue::Max<Type::F64, true>(const ImmValue& a, const ImmValue& b) no
 }
 
 template <>
+ImmValue ImmValue::MinTri<Type::U8, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_u8, b.imm_values[0].imm_u8),
+                             c.imm_values[0].imm_u8));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U8, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_s8, b.imm_values[0].imm_s8),
+                             c.imm_values[0].imm_s8));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U16, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_u16, b.imm_values[0].imm_u16),
+                             c.imm_values[0].imm_u16));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U16, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_s16, b.imm_values[0].imm_s16),
+                             c.imm_values[0].imm_s16));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U32, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_u32, b.imm_values[0].imm_u32),
+                             c.imm_values[0].imm_u32));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_s32, b.imm_values[0].imm_s32),
+                             c.imm_values[0].imm_s32));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U64, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_u64, b.imm_values[0].imm_u64),
+                             c.imm_values[0].imm_u64));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::U64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_u64, b.imm_values[0].imm_u64),
+                             c.imm_values[0].imm_u64));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::F32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32),
+                             c.imm_values[0].imm_f32));
+}
+
+template <>
+ImmValue ImmValue::MinTri<Type::F64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::min(std::min(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64),
+                             c.imm_values[0].imm_f64));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U8, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_u8, b.imm_values[0].imm_u8),
+                             c.imm_values[0].imm_u8));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U8, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_s8, b.imm_values[0].imm_s8),
+                             c.imm_values[0].imm_s8));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U16, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_u16, b.imm_values[0].imm_u16),
+                             c.imm_values[0].imm_u16));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U16, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_s16, b.imm_values[0].imm_s16),
+                             c.imm_values[0].imm_s16));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U32, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_u32, b.imm_values[0].imm_u32),
+                             c.imm_values[0].imm_u32));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_s32, b.imm_values[0].imm_s32),
+                             c.imm_values[0].imm_s32));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U64, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_u64, b.imm_values[0].imm_u64),
+                             c.imm_values[0].imm_u64));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::U64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_s64, b.imm_values[0].imm_s64),
+                             c.imm_values[0].imm_s64));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::F32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32),
+                             c.imm_values[0].imm_f32));
+}
+
+template <>
+ImmValue ImmValue::MaxTri<Type::F64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64),
+                             c.imm_values[0].imm_f64));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U8, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    u8 mmx = std::min(std::max(a.imm_values[0].imm_u8, b.imm_values[0].imm_u8),
+                             c.imm_values[0].imm_u8);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_u8, b.imm_values[0].imm_u8),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U8, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    s8 mmx = std::min(std::max(a.imm_values[0].imm_s8, b.imm_values[0].imm_s8),
+                             c.imm_values[0].imm_s8);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_s8, b.imm_values[0].imm_s8),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U16, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    u16 mmx = std::min(std::max(a.imm_values[0].imm_u16, b.imm_values[0].imm_u16),
+                             c.imm_values[0].imm_u16);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_u16, b.imm_values[0].imm_u16),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U16, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    s16 mmx = std::min(std::max(a.imm_values[0].imm_s16, b.imm_values[0].imm_s16),
+                             c.imm_values[0].imm_s16);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_s16, b.imm_values[0].imm_s16),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U32, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+     u32 mmx = std::min(std::max(a.imm_values[0].imm_u32, b.imm_values[0].imm_u32),
+                             c.imm_values[0].imm_u32);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_u32, b.imm_values[0].imm_u32),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    s32 mmx = std::min(std::max(a.imm_values[0].imm_s32, b.imm_values[0].imm_s32),
+                             c.imm_values[0].imm_s32);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_s32, b.imm_values[0].imm_s32),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U64, false>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    u64 mmx = std::min(std::max(a.imm_values[0].imm_u64, b.imm_values[0].imm_u64),
+                             c.imm_values[0].imm_u64);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_u64, b.imm_values[0].imm_u64),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::U64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    s64 mmx = std::min(std::max(a.imm_values[0].imm_s64, b.imm_values[0].imm_s64),
+                             c.imm_values[0].imm_s64);
+    return ImmValue(std::max(std::min(a.imm_values[0].imm_s64, b.imm_values[0].imm_s64),
+                             mmx));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::F32, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_f32, b.imm_values[0].imm_f32),
+                             c.imm_values[0].imm_f32));
+}
+
+template <>
+ImmValue ImmValue::MedTri<Type::F64, true>(const ImmValue& a, const ImmValue& b, const ImmValue& c) noexcept {
+    return ImmValue(std::max(std::max(a.imm_values[0].imm_f64, b.imm_values[0].imm_f64),
+                             c.imm_values[0].imm_f64));
+}
+
+template <>
 ImmValue ImmValue::Clamp<Type::U8, false>(const ImmValue& in, const ImmValue& min,
                                           const ImmValue& max) noexcept {
     return ImmValue(

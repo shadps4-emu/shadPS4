@@ -219,6 +219,42 @@ void DoUMax32(ImmValueList& inst_values, const ImmValueList& args0, const ImmVal
                             std::insert_iterator(inst_values, inst_values.begin()), args0, args1);
 }
 
+void DoSMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                 const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MinTri<Type::U32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
+void DoUMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                 const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MinTri<Type::U32, false>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
+void DoSMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                 const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MaxTri<Type::U32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
+void DoUMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, 
+                 const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MaxTri<Type::U32, false>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
+void DoSMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+               const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MedTri<Type::U32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
+void DoUMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+               const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MedTri<Type::U32, false>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1, args2);
+}
+
 void DoSClamp32(ImmValueList& inst_values, const ImmValueList& value, const ImmValueList& min,
                 const ImmValueList& max) {
     Common::CartesianInvoke(ImmValue::Clamp<Type::U32, true>,
