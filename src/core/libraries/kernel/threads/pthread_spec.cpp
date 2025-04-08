@@ -147,6 +147,11 @@ void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0-KXaS70xy4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getspecific);
     LIB_FUNCTION("WrOLvHU0yQM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setspecific);
 
+    // Posix-Kernel
+    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_key_create);
+    LIB_FUNCTION("0-KXaS70xy4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
+    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, posix_pthread_setspecific);
+
     // Orbis
     LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_create));
     LIB_FUNCTION("PrdHuuDekhY", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_delete));

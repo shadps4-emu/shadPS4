@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
@@ -148,13 +149,19 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     return 0;
 }
 
-int PS4_SYSV_ABI sceKernelDebugRaiseException() {
-    UNREACHABLE();
+s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
+    if (unk != 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    UNREACHABLE_MSG("error {:#x}", error);
     return 0;
 }
 
-int PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode() {
-    UNREACHABLE();
+s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
+    if (unk != 0) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    UNREACHABLE_MSG("error {:#x}", error);
     return 0;
 }
 
@@ -163,7 +170,7 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel", 1, 1,
                  sceKernelInstallExceptionHandler);
     LIB_FUNCTION("Qhv5ARAoOEc", "libkernel_unity", 1, "libkernel", 1, 1,
-                 sceKernelRemoveExceptionHandler)
+                 sceKernelRemoveExceptionHandler);
     LIB_FUNCTION("OMDRKKAZ8I4", "libkernel", 1, "libkernel", 1, 1, sceKernelDebugRaiseException);
     LIB_FUNCTION("zE-wXIZjLoM", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelDebugRaiseExceptionOnReleaseMode);

@@ -7,14 +7,13 @@
 #include <QDesktopServices>
 #include <QMenu>
 #include <QMessageBox>
-#include <QTreeWidget>
 #include <QTreeWidgetItem>
 
 #include <qt_gui/background_music_player.h>
 #include "cheats_patches.h"
 #include "common/config.h"
 #include "common/path_util.h"
-#include "common/version.h"
+#include "common/scm_rev.h"
 #include "compatibility_info.h"
 #include "game_info.h"
 #include "trophy_viewer.h"
@@ -116,14 +115,15 @@ public:
 
         compatibilityMenu->addAction(updateCompatibility);
         compatibilityMenu->addAction(viewCompatibilityReport);
-        if (Common::isRelease) {
+        if (Common::g_is_release) {
             compatibilityMenu->addAction(submitCompatibilityReport);
         }
 
         menu.addMenu(compatibilityMenu);
 
         compatibilityMenu->setEnabled(Config::getCompatibilityEnabled());
-        viewCompatibilityReport->setEnabled(!m_games[itemID].compatibility.url.isEmpty());
+        viewCompatibilityReport->setEnabled(m_games[itemID].compatibility.status !=
+                                            CompatibilityStatus::Unknown);
 
         // Show menu.
         auto selected = menu.exec(global_pos);
@@ -141,15 +141,17 @@ public:
             QString open_update_path;
             Common::FS::PathToQString(open_update_path, m_games[itemID].path);
             open_update_path += "-UPDATE";
-            if (!std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+            if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
+            } else {
                 Common::FS::PathToQString(open_update_path, m_games[itemID].path);
                 open_update_path += "-patch";
-                if (!std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
+                } else {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update folder to open!")));
                 }
-            } else {
-                QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
             }
         }
 
@@ -556,24 +558,36 @@ public:
         }
 
         if (selected == viewCompatibilityReport) {
-            if (!m_games[itemID].compatibility.url.isEmpty())
-                QDesktopServices::openUrl(QUrl(m_games[itemID].compatibility.url));
+            if (m_games[itemID].compatibility.issue_number != "") {
+                auto url_issues =
+                    "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+                QDesktopServices::openUrl(
+                    QUrl(url_issues + m_games[itemID].compatibility.issue_number));
+            }
         }
 
         if (selected == submitCompatibilityReport) {
-            QUrl url = QUrl("https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new");
-            QUrlQuery query;
-            query.addQueryItem("template", QString("game_compatibility.yml"));
-            query.addQueryItem(
-                "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
-                                                QString::fromStdString(m_games[itemID].name)));
-            query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
-            query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
-            query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
-            query.addQueryItem("emulator-version", QString(Common::VERSION));
-            url.setQuery(query);
+            if (m_games[itemID].compatibility.issue_number == "") {
+                QUrl url =
+                    QUrl("https://github.com/shadps4-emu/shadps4-game-compatibility/issues/new");
+                QUrlQuery query;
+                query.addQueryItem("template", QString("game_compatibility.yml"));
+                query.addQueryItem(
+                    "title", QString("%1 - %2").arg(QString::fromStdString(m_games[itemID].serial),
+                                                    QString::fromStdString(m_games[itemID].name)));
+                query.addQueryItem("game-name", QString::fromStdString(m_games[itemID].name));
+                query.addQueryItem("game-serial", QString::fromStdString(m_games[itemID].serial));
+                query.addQueryItem("game-version", QString::fromStdString(m_games[itemID].version));
+                query.addQueryItem("emulator-version", QString(Common::g_version));
+                url.setQuery(query);
 
-            QDesktopServices::openUrl(url);
+                QDesktopServices::openUrl(url);
+            } else {
+                auto url_issues =
+                    "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+                QDesktopServices::openUrl(
+                    QUrl(url_issues + m_games[itemID].compatibility.issue_number));
+            }
         }
     }
 
@@ -597,30 +611,6 @@ public:
             }
         }
         return -1;
-    }
-
-    void RequestGameMenuPKGViewer(
-        const QPoint& pos, QStringList m_pkg_app_list, QTreeWidget* treeWidget,
-        std::function<void(std::filesystem::path, int, int)> InstallDragDropPkg) {
-        QPoint global_pos = treeWidget->viewport()->mapToGlobal(pos); // context menu position
-        QTreeWidgetItem* currentItem = treeWidget->currentItem();     // current clicked item
-        int itemIndex = GetRowIndex(treeWidget, currentItem);         // row
-
-        QMenu menu(treeWidget);
-        QAction installPackage(tr("Install PKG"), treeWidget);
-
-        menu.addAction(&installPackage);
-
-        auto selected = menu.exec(global_pos);
-        if (!selected) {
-            return;
-        }
-
-        if (selected == &installPackage) {
-            QStringList pkg_app_ = m_pkg_app_list[itemIndex].split(";;");
-            std::filesystem::path path = Common::FS::PathFromQString(pkg_app_[9]);
-            InstallDragDropPkg(path, 1, 1);
-        }
     }
 
 private:

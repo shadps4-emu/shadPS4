@@ -16,7 +16,8 @@ class SymbolsResolver;
 
 namespace Libraries::Ngs2 {
 
-typedef s32 (*OrbisNgs2ParseReadHandler)(uintptr_t userData, u32 offset, void* data, size_t size);
+using OrbisNgs2ParseReadHandler = s32 PS4_SYSV_ABI (*)(uintptr_t user_data, u32 offset, void* data,
+                                                       size_t size);
 
 enum class OrbisNgs2HandleType : u32 {
     Invalid = 0,
@@ -90,7 +91,7 @@ struct OrbisNgs2UserFxProcessContext {
     u32 sampleRate;
 };
 
-typedef s32 (*OrbisNgs2UserFxProcessHandler)(OrbisNgs2UserFxProcessContext* context);
+using OrbisNgs2UserFxProcessHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFxProcessContext* context);
 
 struct OrbisNgs2UserFx2SetupContext {
     void* common;
@@ -102,7 +103,7 @@ struct OrbisNgs2UserFx2SetupContext {
     u64 reserved[4];
 };
 
-typedef s32 (*OrbisNgs2UserFx2SetupHandler)(OrbisNgs2UserFx2SetupContext* context);
+using OrbisNgs2UserFx2SetupHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2SetupContext* context);
 
 struct OrbisNgs2UserFx2CleanupContext {
     void* common;
@@ -114,7 +115,8 @@ struct OrbisNgs2UserFx2CleanupContext {
     u64 reserved[4];
 };
 
-typedef s32 (*OrbisNgs2UserFx2CleanupHandler)(OrbisNgs2UserFx2CleanupContext* context);
+using OrbisNgs2UserFx2CleanupHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2CleanupContext* context);
 
 struct OrbisNgs2UserFx2ControlContext {
     const void* data;
@@ -125,7 +127,8 @@ struct OrbisNgs2UserFx2ControlContext {
     u64 reserved[4];
 };
 
-typedef s32 (*OrbisNgs2UserFx2ControlHandler)(OrbisNgs2UserFx2ControlContext* context);
+using OrbisNgs2UserFx2ControlHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ControlContext* context);
 
 struct OrbisNgs2UserFx2ProcessContext {
     float** aChannelData;
@@ -143,7 +146,8 @@ struct OrbisNgs2UserFx2ProcessContext {
     u64 reserved2[4];
 };
 
-typedef s32 (*OrbisNgs2UserFx2ProcessHandler)(OrbisNgs2UserFx2ProcessContext* context);
+using OrbisNgs2UserFx2ProcessHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2UserFx2ProcessContext* context);
 
 struct OrbisNgs2BufferAllocator {
     OrbisNgs2BufferAllocHandler allocHandler;
@@ -237,7 +241,7 @@ struct OrbisNgs2VoiceCallbackInfo {
     } param;
 };
 
-typedef void (*OrbisNgs2VoiceCallbackHandler)(const OrbisNgs2VoiceCallbackInfo* info);
+using OrbisNgs2VoiceCallbackHandler = void PS4_SYSV_ABI (*)(const OrbisNgs2VoiceCallbackInfo* info);
 
 struct OrbisNgs2VoiceCallbackParam {
     OrbisNgs2VoiceParamHeader header;

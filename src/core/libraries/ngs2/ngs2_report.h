@@ -18,7 +18,8 @@ struct OrbisNgs2ReportDataHeader {
     s32 result;
 };
 
-typedef void (*OrbisNgs2ReportHandler)(const OrbisNgs2ReportDataHeader* data, uintptr_t userData);
+using OrbisNgs2ReportHandler = void PS4_SYSV_ABI (*)(const OrbisNgs2ReportDataHeader* data,
+                                                     uintptr_t user_data);
 
 struct OrbisNgs2ReportMessageData {
     OrbisNgs2ReportDataHeader header;

@@ -30,8 +30,9 @@ struct OrbisNgs2SystemOption {
     u32 aReserved[6];
 };
 
-typedef s32 (*OrbisNgs2BufferAllocHandler)(OrbisNgs2ContextBufferInfo* ioBufferInfo);
-typedef s32 (*OrbisNgs2BufferFreeHandler)(OrbisNgs2ContextBufferInfo* ioBufferInfo);
+using OrbisNgs2BufferAllocHandler =
+    s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
+using OrbisNgs2BufferFreeHandler = s32 PS4_SYSV_ABI (*)(OrbisNgs2ContextBufferInfo* io_buffer_info);
 
 struct OrbisNgs2SystemInfo {
     char name[ORBIS_NGS2_SYSTEM_NAME_LENGTH]; // 0

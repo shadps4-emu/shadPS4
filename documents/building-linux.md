@@ -108,7 +108,7 @@ Now run the emulator. If Qt was enabled at configure time:
 ./build/shadps4
 ```
 
-Otherwise, specify the path to your PKG's boot file:
+Otherwise, specify the path to your game's boot file:
 
 ```bash
 ./build/shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin

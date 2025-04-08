@@ -12,6 +12,7 @@
 #include "common/va_ctx.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/debug.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
@@ -219,6 +220,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);
     Libraries::Kernel::RegisterAio(sym);
+    Libraries::Kernel::RegisterDebug(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
