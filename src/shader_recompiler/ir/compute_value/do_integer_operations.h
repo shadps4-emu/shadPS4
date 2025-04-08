@@ -62,6 +62,12 @@ void DoSMin32(ImmValueList& inst_values, const ImmValueList& args0, const ImmVal
 void DoUMin32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
 void DoSMax32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
 void DoUMax32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
+void DoSMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
+void DoUMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
+void DoSMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
+void DoUMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
+void DoSMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
+void DoUMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, const ImmValueList& args2);
 void DoSClamp32(ImmValueList& inst_values, const ImmValueList& value, const ImmValueList& min,
                 const ImmValueList& max);
 void DoUClamp32(ImmValueList& inst_values, const ImmValueList& value, const ImmValueList& min,

@@ -85,6 +85,27 @@ void DoFPMin64(ImmValueList& inst_values, const ImmValueList& args0, const ImmVa
                             std::insert_iterator(inst_values, inst_values.begin()), args0, args1);
 }
 
+void DoFPMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                  const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MaxTri<Type::F32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1,
+                            args2);
+}
+
+void DoFPMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                  const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MinTri<Type::F32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1,
+                            args2);
+}
+
+void DoFPMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                  const ImmValueList& args2) {
+    Common::CartesianInvoke(ImmValue::MedTri<Type::F32, true>,
+                            std::insert_iterator(inst_values, inst_values.begin()), args0, args1,
+                            args2);
+}
+
 void DoFPMul32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1) {
     Common::CartesianInvoke(ImmValue::Mul<Type::F32, true>,
                             std::insert_iterator(inst_values, inst_values.begin()), args0, args1);

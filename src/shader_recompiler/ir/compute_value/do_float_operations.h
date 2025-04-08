@@ -22,6 +22,12 @@ void DoFPMax64(ImmValueList& inst_values, const ImmValueList& args0, const ImmVa
 void DoFPMin32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
                const ImmValueList& args_legacy);
 void DoFPMin64(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
+void DoFPMinTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1, 
+                  const ImmValueList& args2);
+void DoFPMaxTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                  const ImmValueList& args2);
+void DoFPMedTri32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1,
+                  const ImmValueList& args2);
 void DoFPMul32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
 void DoFPMul64(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
 void DoFPDiv32(ImmValueList& inst_values, const ImmValueList& args0, const ImmValueList& args1);
