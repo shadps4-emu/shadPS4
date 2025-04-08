@@ -946,19 +946,19 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     mapped_ranges -= boost::icl::interval<VAddr>::right_open(addr, addr + size);
 }
 
-void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
 
-    const auto& regs = liverpool->regs;
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.setBlendConstants(&regs.blend_constants.red);
-    if (instance.IsDynamicColorWriteMaskSupported()) {
-        cmdbuf.setColorWriteMaskEXT(0, pipeline.GetWriteMasks());
-    }
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
+    dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
+
+    // Commit new dynamic state to the command buffer.
+    dynamic_state.Commit(instance, scheduler.CommandBuffer());
 }
 
-void Rasterizer::UpdateViewportScissorState() {
+void Rasterizer::UpdateViewportScissorState() const {
     const auto& regs = liverpool->regs;
 
     const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
@@ -1071,92 +1071,65 @@ void Rasterizer::UpdateViewportScissorState() {
         scissors.push_back(empty_scissor);
     }
 
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.setViewportWithCountEXT(viewports);
-    cmdbuf.setScissorWithCountEXT(scissors);
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetViewports(viewports);
+    dynamic_state.SetScissors(scissors);
 }
 
-void Rasterizer::UpdateDepthStencilState() {
-    auto& regs = liverpool->regs;
-    const auto cmdbuf = scheduler.CommandBuffer();
+void Rasterizer::UpdateDepthStencilState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
 
-    bool depth_test = regs.depth_control.depth_enable && regs.depth_buffer.DepthValid();
-    cmdbuf.setDepthTestEnableEXT(depth_test);
-    cmdbuf.setDepthWriteEnableEXT(regs.depth_control.depth_write_enable &&
-                                  !regs.depth_render_control.depth_clear_enable);
-    if (depth_test) {
-        cmdbuf.setDepthCompareOpEXT(LiverpoolToVK::CompareOp(regs.depth_control.depth_func));
+    const auto depth_test_enabled =
+        regs.depth_control.depth_enable && regs.depth_buffer.DepthValid();
+    dynamic_state.SetDepthTestEnabled(depth_test_enabled);
+    if (depth_test_enabled) {
+        dynamic_state.SetDepthWriteEnabled(regs.depth_control.depth_write_enable &&
+                                           !regs.depth_render_control.depth_clear_enable);
+        dynamic_state.SetDepthCompareOp(LiverpoolToVK::CompareOp(regs.depth_control.depth_func));
     }
 
-    if (instance.IsDepthBoundsSupported()) {
-        cmdbuf.setDepthBoundsTestEnableEXT(regs.depth_control.depth_bounds_enable);
-        if (regs.depth_control.depth_bounds_enable) {
-            cmdbuf.setDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
-        }
+    const auto depth_bounds_test_enabled = regs.depth_control.depth_bounds_enable;
+    dynamic_state.SetDepthBoundsTestEnabled(depth_bounds_test_enabled);
+    if (depth_bounds_test_enabled) {
+        dynamic_state.SetDepthBounds(regs.depth_bounds_min, regs.depth_bounds_max);
     }
 
-    cmdbuf.setDepthBiasEnableEXT(regs.polygon_control.NeedsBias());
-    if (regs.polygon_control.enable_polygon_offset_front) {
-        cmdbuf.setDepthBias(regs.poly_offset.front_offset, regs.poly_offset.depth_bias,
-                            regs.poly_offset.front_scale / 16.f);
-    } else if (regs.polygon_control.enable_polygon_offset_back) {
-        cmdbuf.setDepthBias(regs.poly_offset.back_offset, regs.poly_offset.depth_bias,
-                            regs.poly_offset.back_scale / 16.f);
+    const auto depth_bias_enabled = regs.polygon_control.NeedsBias();
+    if (depth_bias_enabled) {
+        dynamic_state.SetDepthBias(
+            regs.polygon_control.enable_polygon_offset_front ? regs.poly_offset.front_offset
+                                                             : regs.poly_offset.back_offset,
+            regs.poly_offset.depth_bias,
+            (regs.polygon_control.enable_polygon_offset_front ? regs.poly_offset.front_scale
+                                                              : regs.poly_offset.back_scale) /
+                16.f);
     }
 
-    cmdbuf.setStencilTestEnableEXT(regs.depth_control.stencil_enable &&
-                                   regs.depth_buffer.StencilValid());
-    if (regs.depth_control.stencil_enable) {
-        const auto front_fail_op =
-            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_front);
-        const auto front_pass_op =
-            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_front);
-        const auto front_depth_fail_op =
-            LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_front);
-        const auto front_compare_op = LiverpoolToVK::CompareOp(regs.depth_control.stencil_ref_func);
-        if (regs.depth_control.backface_enable) {
-            const auto back_fail_op =
-                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_back);
-            const auto back_pass_op =
-                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_back);
-            const auto back_depth_fail_op =
-                LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_back);
-            const auto back_compare_op =
-                LiverpoolToVK::CompareOp(regs.depth_control.stencil_bf_func);
-            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFront, front_fail_op, front_pass_op,
-                                   front_depth_fail_op, front_compare_op);
-            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eBack, back_fail_op, back_pass_op,
-                                   back_depth_fail_op, back_compare_op);
-        } else {
-            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFrontAndBack, front_fail_op,
-                                   front_pass_op, front_depth_fail_op, front_compare_op);
-        }
+    const auto stencil_test_enabled =
+        regs.depth_control.stencil_enable && regs.depth_buffer.StencilValid();
+    dynamic_state.SetStencilTestEnabled(stencil_test_enabled);
+    if (stencil_test_enabled) {
+        const StencilOps front_ops{
+            .fail_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_front),
+            .pass_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_front),
+            .depth_fail_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_front),
+            .compare_op = LiverpoolToVK::CompareOp(regs.depth_control.stencil_ref_func),
+        };
+        const StencilOps back_ops = regs.depth_control.backface_enable ? StencilOps{
+            .fail_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_fail_back),
+            .pass_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zpass_back),
+            .depth_fail_op = LiverpoolToVK::StencilOp(regs.stencil_control.stencil_zfail_back),
+            .compare_op = LiverpoolToVK::CompareOp(regs.depth_control.stencil_bf_func),
+        } : front_ops;
+        dynamic_state.SetStencilOps(front_ops, back_ops);
 
         const auto front = regs.stencil_ref_front;
-        const auto back = regs.stencil_ref_back;
-        if (front.stencil_test_val == back.stencil_test_val) {
-            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack,
-                                       front.stencil_test_val);
-        } else {
-            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eFront, front.stencil_test_val);
-            cmdbuf.setStencilReference(vk::StencilFaceFlagBits::eBack, back.stencil_test_val);
-        }
-
-        if (front.stencil_write_mask == back.stencil_write_mask) {
-            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFrontAndBack,
-                                       front.stencil_write_mask);
-        } else {
-            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eFront, front.stencil_write_mask);
-            cmdbuf.setStencilWriteMask(vk::StencilFaceFlagBits::eBack, back.stencil_write_mask);
-        }
-
-        if (front.stencil_mask == back.stencil_mask) {
-            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
-                                         front.stencil_mask);
-        } else {
-            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFront, front.stencil_mask);
-            cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eBack, back.stencil_mask);
-        }
+        const auto back =
+            regs.depth_control.backface_enable ? regs.stencil_ref_back : regs.stencil_ref_front;
+        dynamic_state.SetStencilReferences(front.stencil_test_val, back.stencil_test_val);
+        dynamic_state.SetStencilWriteMasks(front.stencil_write_mask, back.stencil_write_mask);
+        dynamic_state.SetStencilCompareMasks(front.stencil_mask, back.stencil_mask);
     }
 }
 
