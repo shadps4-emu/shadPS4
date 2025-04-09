@@ -27,7 +27,8 @@ Reg64& EmitContext::TempGPReg(bool reserve) {
     if (idx > num_scratch_gp_regs &&
         std::ranges::find(preserved_regs, reg) == preserved_regs.end()) {
         preserved_regs.push_back(reg);
-        code.push(reg);
+        code.sub(rsp, 8);
+        code.mov(ptr[rsp], reg);
     }
     return reg;
 }
@@ -154,7 +155,8 @@ void EmitContext::Epilogue() {
             code.movups(reg.cvt128(), ptr[rsp]);
             code.add(rsp, 16);
         } else {
-            code.pop(reg);
+            code.mov(reg, ptr[rsp]);
+            code.add(rsp, 8);
         }
     }
     preserved_regs.clear();

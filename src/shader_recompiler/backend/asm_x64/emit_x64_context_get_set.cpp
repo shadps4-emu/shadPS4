@@ -12,16 +12,15 @@ using namespace Xbyak::util;
 
 void EmitGetUserData(EmitContext& ctx, const Operands& dest, IR::ScalarReg reg) {
     const u32 offset = static_cast<u32>(reg) << 2;
-    Reg& tmp = ctx.TempGPReg();
+    Reg tmp = ctx.TempGPReg();
     ctx.Code().lea(tmp, ptr[ctx.UserData() + offset]);
     MovGP( ctx, dest[0], dword[tmp]);
 }
 
 void EmitSetUserData(EmitContext& ctx, const Operands& offset, const Operands& value) {
-    Reg& tmp = ctx.TempGPReg();
+    Reg tmp = ctx.TempGPReg();
     MovGP(ctx, tmp, offset[0]);
-    ctx.Code().shl(tmp, 2);
-    ctx.Code().lea(tmp, ptr[ctx.UserData() + tmp]);
+    ctx.Code().lea(tmp, ptr[ctx.UserData() + tmp * 4]);
     MovGP(ctx, dword[tmp], value[0]);
 }
 
@@ -58,32 +57,53 @@ void EmitGetGotoVariable(EmitContext&) {
 }
 
 void EmitReadConst(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset) {
-    Reg& tmp = ctx.TempGPReg();
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg() : dest[0].Reg().changeBit(64);
+    Reg off_tmp = offset[0].IsMem() ? ctx.TempGPReg() : offset[0].Reg().changeBit(64);
     MovGP(ctx, tmp, base[1]);
+    MovGP(ctx, off_tmp, offset[0]);
     ctx.Code().shl(tmp, 32);
     ctx.Code().or_(tmp, base[0].Op());
-    if (offset[0].IsMem()) {
-        ctx.Code().add(tmp, offset[0].Mem());
-    } else {
-        ctx.Code().lea(tmp, ptr[tmp + offset[0].Reg().cvt64()]);
-    }
+    ctx.Code().lea(tmp, ptr[tmp + off_tmp * 4]);
     MovGP(ctx, dest[0], dword[tmp]);
 }
 
-void EmitReadConstBuffer(EmitContext& ctx) {
-    throw NotImplementedException("ReadConstBuffer");
+void EmitReadConstBuffer(EmitContext& ctx, const Operands& dest, const Operands& handle, const Operands& offset) {
+    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg() : dest[0].Reg().changeBit(64);
+    // Reconstruct base address
+    Reg off_tmp = ctx.TempGPReg();
+    MovGP(ctx, tmp, handle[1]);
+    ctx.Code().and_(tmp, 0xFFF);
+    ctx.Code().shl(tmp, 32);
+    MovGP(ctx, off_tmp.cvt32(), handle[0]);
+    ctx.Code().and_(off_tmp.cvt32(), 0xFFFFFFFF);
+    ctx.Code().or_(tmp, off_tmp);
+    // TODO: we should correctly clamp the offset
+    MovGP(ctx, off_tmp, offset[0]);
+    ctx.Code().lea(tmp, ptr[tmp + off_tmp * 4]);
+    MovGP(ctx, dest[0], dword[tmp]);
+
 }
 
 void EmitReadStepRate(EmitContext& ctx) {
     throw NotImplementedException("ReadStepRate");
 }
 
-void EmitGetAttribute(EmitContext& ctx) {
-    throw NotImplementedException("GetAttribute");
+void EmitGetAttribute(EmitContext& ctx, const Operands& dest) {
+    LOG_WARNING(Render_Recompiler, "GetAttribute stubbed, setting to 0.0");
+    if (dest[0].IsMem()) {
+        ctx.Code().mov(dest[0].Mem(), 0);
+    } else {
+        ctx.Code().pxor(dest[0].Xmm(), dest[0].Xmm());
+    }
 }
 
-void EmitGetAttributeU32(EmitContext& ctx) {
-    throw NotImplementedException("GetAttributeU32");
+void EmitGetAttributeU32(EmitContext& ctx, const Operands& dest) {
+    LOG_WARNING(Render_Recompiler, "GetAttributeU32 stubbed, setting to 0");
+    if (dest[0].IsMem()) {
+        ctx.Code().mov(dest[0].Mem(), 0);
+    } else {
+        ctx.Code().xor_(dest[0].Reg(), dest[0].Reg());
+    }
 }
 
 void EmitSetAttribute(EmitContext& ctx) {
