@@ -244,7 +244,8 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
         }
         return std::nullopt;
     };
-    // We are not accounting for modifications to after the source.
+    // Value may be modified between the ReadConst/GetUserData and inst.
+    // We don't take this into account.
     const auto result = IR::BreadthFirstSearch(inst, pred);
     ASSERT_MSG(result, "Unable to track sharp source");
     inst = result.value();

@@ -255,8 +255,9 @@ struct Info {
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         // Run the JIT program to walk the SRT and write the leaves to a flat buffer
         if (srt_info.walker_func) {
-            srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
+            srt_info.walker_func(flattened_ud_buf.data());
         }
+
     }
 
     void ReadTessConstantBuffer(TessellationDataConstantBuffer& tess_constants) const {

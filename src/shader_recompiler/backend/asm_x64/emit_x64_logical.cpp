@@ -10,29 +10,33 @@ using namespace Xbyak;
 using namespace Xbyak::util;
 
 void EmitLogicalOr(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0].Reg().cvt8();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().or_(tmp, op2[0].Op());
+    ctx.Code().or_(tmp.Op(), op2[0].Op());
+    ctx.Code().and_(tmp.Op(), 1);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitLogicalAnd(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0].Reg().cvt8();
-    MovGP(ctx, tmp, op1[0]);
-    ctx.Code().and_(tmp, op2[0].Op());
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0];
+    MovGP(ctx, tmp.Op(), op1[0]);
+    ctx.Code().and_(tmp.Op(), op2[0].Op());
+    ctx.Code().and_(tmp.Op(), 1);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitLogicalXor(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
-    Reg tmp = dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0].Reg().cvt8();
+    OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0];
     MovGP(ctx, tmp, op1[0]);
-    ctx.Code().xor_(tmp, op2[0].Op());
+    ctx.Code().xor_(tmp.Op(), op2[0].Op());
+    ctx.Code().and_(tmp.Op(), 1);
     MovGP(ctx, dest[0], tmp);
 }
 
 void EmitLogicalNot(EmitContext& ctx, const Operands& dest, const Operands& op) {
     MovGP(ctx, dest[0], op[0]);
     ctx.Code().not_(dest[0].Op());
+    ctx.Code().and_(dest[0].Op(), 1);
 }
 
 } // namespace Shader::Backend::X64

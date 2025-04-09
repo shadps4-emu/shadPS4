@@ -157,13 +157,15 @@ void MovGP(EmitContext& ctx, const OperandHolder& dst, const OperandHolder& src)
     const u32 dst_bit = dst.Op().getBit();
     OperandHolder tmp = is_mem2mem ? ctx.TempGPReg(false).changeBit(dst_bit) : dst;
     if (src_bit < dst_bit) {
-        if (!dst.IsMem() && !src.Op().isBit(32)) {
+        if (!tmp.IsMem() && !src.Op().isBit(32)) {
             c.movzx(tmp.Reg(), src.Op());
+        } else if (tmp.IsMem()) {
+            Address addr = tmp.Mem();
+            c.mov(addr, 0);
+            addr.setBit(dst_bit);
+            c.mov(addr, src.Reg());
         } else {
-            if (dst.IsMem()) {
-                c.mov(tmp.Op(), 0);
-            }
-            c.mov(tmp.Op(), src.Op());
+            c.mov(tmp.Reg().cvt32(), src.Op());
         }
     } else if (src_bit > dst_bit) {
         OperandHolder src_tmp = src;

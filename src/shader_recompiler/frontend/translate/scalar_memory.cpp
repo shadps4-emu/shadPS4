@@ -46,7 +46,7 @@ void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
         if (smrd.offset == SQ_SRC_LITERAL) {
             return ir.Imm32(inst.src[1].code);
         }
-        return ir.GetScalarReg(IR::ScalarReg(smrd.offset));
+        return ir.ShiftRightLogical(ir.GetScalarReg(IR::ScalarReg(smrd.offset)), ir.Imm32(2));
     }();
     const IR::ScalarReg sbase{inst.src[0].code * 2};
     const IR::Value base =
