@@ -290,7 +290,9 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     }
     if (dirty_state.primitive_restart_enable) {
         dirty_state.primitive_restart_enable = false;
-        cmdbuf.setPrimitiveRestartEnableEXT(primitive_restart_enable);
+        if (instance.IsPrimitiveRestartDisableSupported()) {
+            cmdbuf.setPrimitiveRestartEnableEXT(primitive_restart_enable);
+        }
     }
     if (dirty_state.cull_mode) {
         dirty_state.cull_mode = false;

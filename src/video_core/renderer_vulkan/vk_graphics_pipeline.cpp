@@ -28,6 +28,15 @@ static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eCompute,
 };
 
+static bool IsPrimitiveTopologyList(const vk::PrimitiveTopology topology) {
+    return topology == vk::PrimitiveTopology::ePointList ||
+           topology == vk::PrimitiveTopology::eLineList ||
+           topology == vk::PrimitiveTopology::eTriangleList ||
+           topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
+           topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
+           topology == vk::PrimitiveTopology::ePatchList;
+}
+
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
@@ -75,8 +84,13 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
+    const auto topology = LiverpoolToVK::PrimitiveType(key.prim_type);
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
-        .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
+        .topology = topology,
+        // Avoid warning spam on all pipelines about unsupported restart disable, if not supported.
+        // However, must be false for list topologies to avoid validation errors.
+        .primitiveRestartEnable =
+            !instance.IsPrimitiveRestartDisableSupported() && !IsPrimitiveTopologyList(topology),
     };
 
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
@@ -114,10 +128,13 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eDepthBiasEnableEXT,   vk::DynamicState::eDepthBias,
         vk::DynamicState::eStencilTestEnableEXT, vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilCompareMask,   vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eStencilOpEXT,         vk::DynamicState::ePrimitiveRestartEnableEXT,
-        vk::DynamicState::eCullModeEXT,          vk::DynamicState::eFrontFaceEXT,
+        vk::DynamicState::eStencilOpEXT,         vk::DynamicState::eCullModeEXT,
+        vk::DynamicState::eFrontFaceEXT,
     };
 
+    if (instance.IsPrimitiveRestartDisableSupported()) {
+        dynamic_states.push_back(vk::DynamicState::ePrimitiveRestartEnableEXT);
+    }
     if (instance.IsDepthBoundsSupported()) {
         dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnableEXT);
         dynamic_states.push_back(vk::DynamicState::eDepthBounds);

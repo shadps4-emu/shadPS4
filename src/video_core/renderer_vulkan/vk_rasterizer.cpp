@@ -1133,33 +1133,14 @@ void Rasterizer::UpdateDepthStencilState() const {
     }
 }
 
-static bool IsPrimitiveListTopology(const AmdGpu::PrimitiveType prim_type) {
-    return prim_type == AmdGpu::PrimitiveType::PointList ||
-           prim_type == AmdGpu::PrimitiveType::LineList ||
-           prim_type == AmdGpu::PrimitiveType::TriangleList ||
-           prim_type == AmdGpu::PrimitiveType::AdjLineList ||
-           prim_type == AmdGpu::PrimitiveType::AdjTriangleList ||
-           prim_type == AmdGpu::PrimitiveType::RectList ||
-           prim_type == AmdGpu::PrimitiveType::QuadList;
-}
-
 void Rasterizer::UpdatePrimitiveState() const {
     const auto& regs = liverpool->regs;
     auto& dynamic_state = scheduler.GetDynamicState();
 
-    auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
-    if (prim_restart) {
-        ASSERT_MSG(regs.primitive_restart_index == 0xFFFF ||
-                       regs.primitive_restart_index == 0xFFFFFFFF,
-                   "Primitive restart index other than -1 is not supported yet");
-
-        if (IsPrimitiveListTopology(regs.primitive_type) && !instance.IsListRestartSupported()) {
-            LOG_TRACE(
-                Render_Vulkan,
-                "Primitive restart is enabled for list topology but not supported by driver.");
-            prim_restart = false;
-        }
-    }
+    const auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
+    ASSERT_MSG(!prim_restart || regs.primitive_restart_index == 0xFFFF ||
+                   regs.primitive_restart_index == 0xFFFFFFFF,
+               "Primitive restart index other than -1 is not supported yet");
 
     const auto cull_mode = LiverpoolToVK::IsPrimitiveCulled(regs.primitive_type)
                                ? LiverpoolToVK::CullMode(regs.polygon_control.CullingMode())
