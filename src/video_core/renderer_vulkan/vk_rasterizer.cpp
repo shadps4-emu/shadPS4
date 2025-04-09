@@ -1096,14 +1096,13 @@ void Rasterizer::UpdateDepthStencilState() const {
     }
 
     const auto depth_bias_enabled = regs.polygon_control.NeedsBias();
+    dynamic_state.SetDepthBiasEnabled(depth_bias_enabled);
     if (depth_bias_enabled) {
+        const bool front = regs.polygon_control.enable_polygon_offset_front;
         dynamic_state.SetDepthBias(
-            regs.polygon_control.enable_polygon_offset_front ? regs.poly_offset.front_offset
-                                                             : regs.poly_offset.back_offset,
+            front ? regs.poly_offset.front_offset : regs.poly_offset.back_offset,
             regs.poly_offset.depth_bias,
-            (regs.polygon_control.enable_polygon_offset_front ? regs.poly_offset.front_scale
-                                                              : regs.poly_offset.back_scale) /
-                16.f);
+            (front ? regs.poly_offset.front_scale : regs.poly_offset.back_scale) / 16.f);
     }
 
     const auto stencil_test_enabled =
