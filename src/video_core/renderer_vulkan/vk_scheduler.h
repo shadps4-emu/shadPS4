@@ -95,6 +95,10 @@ struct DynamicState {
         bool stencil_back_write_mask : 1;
         bool stencil_back_compare_mask : 1;
 
+        bool primitive_restart_enable : 1;
+        bool cull_mode : 1;
+        bool front_face : 1;
+
         bool blend_constants : 1;
         bool color_write_masks : 1;
     } dirty_state{};
@@ -124,6 +128,10 @@ struct DynamicState {
     u32 stencil_back_reference{};
     u32 stencil_back_write_mask{};
     u32 stencil_back_compare_mask{};
+
+    bool primitive_restart_enable{};
+    vk::CullModeFlags cull_mode{};
+    vk::FrontFace front_face{};
 
     float blend_constants[4]{};
     ColorWriteMasks color_write_masks{};
@@ -251,6 +259,27 @@ struct DynamicState {
         if (stencil_back_compare_mask != back_compare_mask) {
             stencil_back_compare_mask = back_compare_mask;
             dirty_state.stencil_back_compare_mask = true;
+        }
+    }
+
+    void SetPrimitiveRestartEnabled(const bool enabled) {
+        if (primitive_restart_enable != enabled) {
+            primitive_restart_enable = enabled;
+            dirty_state.primitive_restart_enable = true;
+        }
+    }
+
+    void SetCullMode(const vk::CullModeFlags cull_mode_) {
+        if (cull_mode != cull_mode_) {
+            cull_mode = cull_mode_;
+            dirty_state.cull_mode = true;
+        }
+    }
+
+    void SetFrontFace(const vk::FrontFace front_face_) {
+        if (front_face != front_face_) {
+            front_face = front_face_;
+            dirty_state.front_face = true;
         }
     }
 

@@ -75,19 +75,10 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
-    auto prim_restart = key.enable_primitive_restart != 0;
-    if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
-        LOG_DEBUG(Render_Vulkan,
-                  "Primitive restart is enabled for list topology but not supported by driver.");
-        prim_restart = false;
-    }
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = prim_restart,
     };
-    ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
-                   key.primitive_restart_index == 0xFFFFFFFF,
-               "Primitive restart index other than -1 is not supported yet");
+
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
     const bool is_quad_list = key.prim_type == AmdGpu::PrimitiveType::QuadList;
     const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
@@ -99,12 +90,6 @@ GraphicsPipeline::GraphicsPipeline(
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::IsPrimitiveCulled(key.prim_type)
-                        ? LiverpoolToVK::CullMode(key.cull_mode)
-                        : vk::CullModeFlagBits::eNone,
-        .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
-                         ? vk::FrontFace::eClockwise
-                         : vk::FrontFace::eCounterClockwise,
         .lineWidth = 1.0f,
     };
 
@@ -122,14 +107,15 @@ GraphicsPipeline::GraphicsPipeline(
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
     };
 
-    boost::container::static_vector<vk::DynamicState, 17> dynamic_states = {
+    boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
         vk::DynamicState::eViewportWithCountEXT, vk::DynamicState::eScissorWithCountEXT,
         vk::DynamicState::eBlendConstants,       vk::DynamicState::eDepthTestEnableEXT,
         vk::DynamicState::eDepthWriteEnableEXT,  vk::DynamicState::eDepthCompareOpEXT,
         vk::DynamicState::eDepthBiasEnableEXT,   vk::DynamicState::eDepthBias,
         vk::DynamicState::eStencilTestEnableEXT, vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilCompareMask,   vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eStencilOpEXT,
+        vk::DynamicState::eStencilOpEXT,         vk::DynamicState::ePrimitiveRestartEnableEXT,
+        vk::DynamicState::eCullModeEXT,          vk::DynamicState::eFrontFaceEXT,
     };
 
     if (instance.IsDepthBoundsSupported()) {

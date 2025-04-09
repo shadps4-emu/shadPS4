@@ -26,6 +26,8 @@ vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode);
 
 vk::CullModeFlags CullMode(Liverpool::CullMode mode);
 
+vk::FrontFace FrontFace(Liverpool::FrontFace mode);
+
 vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor);
 
 vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func);

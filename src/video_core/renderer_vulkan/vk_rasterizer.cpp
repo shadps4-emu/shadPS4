@@ -949,6 +949,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
+    UpdatePrimitiveState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
@@ -1130,6 +1131,44 @@ void Rasterizer::UpdateDepthStencilState() const {
         dynamic_state.SetStencilWriteMasks(front.stencil_write_mask, back.stencil_write_mask);
         dynamic_state.SetStencilCompareMasks(front.stencil_mask, back.stencil_mask);
     }
+}
+
+static bool IsPrimitiveListTopology(const AmdGpu::PrimitiveType prim_type) {
+    return prim_type == AmdGpu::PrimitiveType::PointList ||
+           prim_type == AmdGpu::PrimitiveType::LineList ||
+           prim_type == AmdGpu::PrimitiveType::TriangleList ||
+           prim_type == AmdGpu::PrimitiveType::AdjLineList ||
+           prim_type == AmdGpu::PrimitiveType::AdjTriangleList ||
+           prim_type == AmdGpu::PrimitiveType::RectList ||
+           prim_type == AmdGpu::PrimitiveType::QuadList;
+}
+
+void Rasterizer::UpdatePrimitiveState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+
+    auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
+    if (prim_restart) {
+        ASSERT_MSG(regs.primitive_restart_index == 0xFFFF ||
+                       regs.primitive_restart_index == 0xFFFFFFFF,
+                   "Primitive restart index other than -1 is not supported yet");
+
+        if (IsPrimitiveListTopology(regs.primitive_type) && !instance.IsListRestartSupported()) {
+            LOG_TRACE(
+                Render_Vulkan,
+                "Primitive restart is enabled for list topology but not supported by driver.");
+            prim_restart = false;
+        }
+    }
+
+    const auto cull_mode = LiverpoolToVK::IsPrimitiveCulled(regs.primitive_type)
+                               ? LiverpoolToVK::CullMode(regs.polygon_control.CullingMode())
+                               : vk::CullModeFlagBits::eNone;
+    const auto front_face = LiverpoolToVK::FrontFace(regs.polygon_control.front_face);
+
+    dynamic_state.SetPrimitiveRestartEnabled(prim_restart);
+    dynamic_state.SetCullMode(cull_mode);
+    dynamic_state.SetFrontFace(front_face);
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
