@@ -102,6 +102,10 @@ void IREmitter::Reference(const Value& value) {
     Inst(Opcode::Reference, value);
 }
 
+Value IREmitter::Phi(IR::Type type) {
+    return Inst(Opcode::Phi, Flags(type));
+}
+
 void IREmitter::PhiMove(IR::Inst& phi, const Value& value) {
     Inst(Opcode::PhiMove, Value{&phi}, value);
 }
@@ -137,6 +141,10 @@ void IREmitter::DeviceMemoryBarrier() {
 U32 IREmitter::GetUserData(IR::ScalarReg reg) {
     ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
     return Inst<U32>(Opcode::GetUserData, reg);
+}
+
+void IREmitter::SetUserData(const U32& offset, const U32& data) {
+    Inst(Opcode::SetUserData, offset, data);
 }
 
 U1 IREmitter::GetThreadBitScalarReg(IR::ScalarReg reg) {

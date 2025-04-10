@@ -23,6 +23,12 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, const Inst& base
     return instructions.insert(insertion_point, *inst);
 }
 
+Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op, u32 flags) {
+    Inst* const inst{inst_pool->Create(op, flags)};
+    inst->SetParent(this);
+    return instructions.insert(insertion_point, *inst);
+}
+
 Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
                                       std::initializer_list<Value> args, u32 flags) {
     Inst* const inst{inst_pool->Create(op, flags)};

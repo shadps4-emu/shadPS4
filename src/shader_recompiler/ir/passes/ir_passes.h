@@ -5,6 +5,7 @@
 
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/pools.h"
 
 namespace Shader {
 struct Profile;
@@ -16,7 +17,7 @@ void SsaRewritePass(IR::BlockList& program);
 void IdentityRemovalPass(IR::BlockList& program);
 void DeadCodeEliminationPass(IR::Program& program);
 void ConstantPropagationPass(IR::BlockList& program);
-void FlattenExtendedUserdataPass(IR::Program& program);
+void FlattenExtendedUserdataPass(IR::Program& program, Pools& pools);
 void ReadLaneEliminationPass(IR::Program& program);
 void ResourceTrackingPass(IR::Program& program);
 void CollectShaderInfoPass(IR::Program& program);

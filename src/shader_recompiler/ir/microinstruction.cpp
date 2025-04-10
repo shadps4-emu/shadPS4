@@ -103,6 +103,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::DebugPrint:
     case Opcode::EmitVertex:
     case Opcode::EmitPrimitive:
+    case Opcode::SetUserData:
         return true;
     default:
         return false;
