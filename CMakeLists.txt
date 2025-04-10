@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 14)
+    # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -53,8 +54,9 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Set x86_64 target level to Sandy Bridge to generally match what is supported for PS4 guest code with CPU patches.
-    add_compile_options(-march=sandybridge)
+    # Target the same CPU architecture as the PS4, to maintain the same level of compatibility.
+    # Exclude SSE4a as it is only available on AMD CPUs.
+    add_compile_options(-march=btver2 -mtune=generic -mno-sse4a)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -114,6 +116,7 @@ git_branch_name(GIT_BRANCH)
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
 
 message("start git things")
+
 # Try to get the upstream remote and branch
 message("check for remote and branch")
 execute_process(
@@ -123,6 +126,7 @@ execute_process(
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check default push")
@@ -134,15 +138,48 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 endif()
+
 # If running in GitHub Actions and the above fails
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   message("check github")
   set(GIT_REMOTE_NAME "origin")
 
-  if (DEFINED ENV{GITHUB_HEAD_REF})  # PR branch name
-    set(GIT_BRANCH "pr-$ENV{GITHUB_HEAD_REF}")
-  elseif (DEFINED ENV{GITHUB_REF})  # Normal branch name
-    string(REGEX REPLACE "^refs/[^/]*/" "" GIT_BRANCH "$ENV{GITHUB_REF}")
+  # Retrieve environment variables
+  if (DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
+    message("github head ref: $ENV{GITHUB_HEAD_REF}")
+    set(GITHUB_HEAD_REF "$ENV{GITHUB_HEAD_REF}")
+  else()
+    set(GITHUB_HEAD_REF "")
+  endif()
+
+  if (DEFINED ENV{GITHUB_REF} AND NOT "$ENV{GITHUB_REF}" STREQUAL "")
+    message("github ref: $ENV{GITHUB_REF}")
+    string(REGEX REPLACE "^refs/[^/]*/" "" GITHUB_BRANCH "$ENV{GITHUB_REF}")
+    string(REGEX MATCH "refs/pull/([0-9]+)/merge" MATCHED_REF "$ENV{GITHUB_REF}")
+    if (MATCHED_REF)
+      set(PR_NUMBER "${CMAKE_MATCH_1}")
+      set(GITHUB_BRANCH "")
+      message("PR number: ${PR_NUMBER}")
+    else()
+      set(PR_NUMBER "")
+    endif()
+  else()
+    set(GITHUB_BRANCH "")
+    set(PR_NUMBER "")
+  endif()
+
+  if (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_HEAD_REF}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}-${GITHUB_BRANCH}")
+  elseif (NOT "${PR_NUMBER}" STREQUAL "")
+    set(GIT_BRANCH "pr-${PR_NUMBER}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_HEAD_REF}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_HEAD_REF}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_BRANCH}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_BRANCH}")
+  elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_REF}" STREQUAL "")
+    set(GIT_BRANCH "${GITHUB_REF}")
   else()
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
@@ -166,6 +203,8 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+set(APP_VERSION "0.7.1 WIP")
+set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
@@ -182,17 +221,14 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.305 CONFIG)
+find_package(VulkanHeaders 1.4.309 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(ZLIB 1.3 MODULE)
 find_package(Zydis 5.0.0 CONFIG)
 find_package(pugixml 1.14 CONFIG)
-
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT MSVC)
-    find_package(cryptopp 8.9.0 MODULE)
-endif()
+find_package(libusb 1.0.27 MODULE)
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -299,6 +335,8 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/threads/thread_state.h
                src/core/libraries/kernel/process.cpp
                src/core/libraries/kernel/process.h
+               src/core/libraries/kernel/debug.cpp
+               src/core/libraries/kernel/debug.h
                src/core/libraries/kernel/equeue.cpp
                src/core/libraries/kernel/equeue.h
                src/core/libraries/kernel/file_system.cpp
@@ -544,6 +582,8 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
                src/core/libraries/move/move.h
+               src/core/libraries/ulobjmgr/ulobjmgr.cpp
+               src/core/libraries/ulobjmgr/ulobjmgr.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -634,7 +674,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/uint128.h
            src/common/unique_function.h
            src/common/va_ctx.h
-           src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
            src/common/number_utils.h
@@ -1024,7 +1063,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
@@ -1156,8 +1195,8 @@ if (ENABLE_QT_GUI)
         MACOSX_BUNDLE ON
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
         MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
-        )
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
+    )
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)

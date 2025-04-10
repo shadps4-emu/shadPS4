@@ -7,10 +7,10 @@
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
+#include "common/config.h"
+#include "common/logging/formatter.h"
 #include "common/path_util.h"
-#include "config.h"
-#include "logging/formatter.h"
-#include "version.h"
+#include "common/scm_rev.h"
 
 namespace toml {
 template <typename TC, typename K>
@@ -75,7 +75,6 @@ static double trophyNotificationDuration = 6.0;
 static bool useUnifiedInputConfig = true;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
@@ -352,10 +351,6 @@ void setVkGuestMarkersEnabled(bool enable) {
     vkGuestMarkers = enable;
 }
 
-bool getSeparateUpdateEnabled() {
-    return separateupdatefolder;
-}
-
 bool getCompatibilityEnabled() {
     return compatibilityData;
 }
@@ -515,10 +510,6 @@ void setSpecialPadClass(int type) {
 
 void setIsMotionControlsEnabled(bool use) {
     isMotionControlsEnabled = use;
-}
-
-void setSeparateUpdateEnabled(bool use) {
-    separateupdatefolder = use;
 }
 
 void setCompatibilityEnabled(bool use) {
@@ -772,7 +763,7 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        if (Common::isRelease) {
+        if (Common::g_is_release) {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
         } else {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
@@ -781,7 +772,6 @@ void load(const std::filesystem::path& path) {
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
-        separateupdatefolder = toml::find_or<bool>(general, "separateUpdateEnabled", false);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
@@ -977,7 +967,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
     data["General"]["sideTrophy"] = isSideTrophy;
-    data["General"]["separateUpdateEnabled"] = separateupdatefolder;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
     data["Input"]["cursorState"] = cursorState;
@@ -1119,7 +1108,7 @@ void setDefaultValues() {
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";
-    if (Common::isRelease) {
+    if (Common::g_is_release) {
         updateChannel = "Release";
     } else {
         updateChannel = "Nightly";
@@ -1150,7 +1139,6 @@ void setDefaultValues() {
     emulator_language = "en_US";
     m_language = 1;
     gpuId = -1;
-    separateupdatefolder = false;
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
     backgroundImageOpacity = 50;

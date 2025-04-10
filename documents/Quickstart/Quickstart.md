@@ -24,7 +24,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 - A CPU supporting the following instruction sets: MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, F16C, CLMUL, AES, BMI1, MOVBE, XSAVE, ABM
   - **Intel**: Haswell generation or newer
   - **AMD**: Jaguar generation or newer
-  - **Apple**: Rosetta 2 on macOS 15 or newer
+  - **Apple**: Rosetta 2 on macOS 15.4 or newer
 
 ### GPU
 

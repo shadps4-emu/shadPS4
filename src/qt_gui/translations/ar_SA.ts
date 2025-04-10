@@ -1126,7 +1126,7 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation> إزاحة المدى الغير فعال (الأصل ٠.٥٠).</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
@@ -1138,7 +1138,7 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>هذا الزر يقوم بنسخ تعيينات الأزرار من إعدادات المستخدم العامة لإعدادات المستخدم المحددة حالياً، ولا يمكن استعماله عندما تكون الإعدادات المستخدمة هي الإعدادات العامة.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
@@ -1146,7 +1146,7 @@
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>هل تريد استبدال التعيينات الحالية بالتعيينات العامة؟</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1475,10 +1475,6 @@
       <translation>المحاكي</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder</source>
-      <translation type="unfinished">Enable Separate Update Folder</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>علامة التبويب الافتراضية عند فتح الإعدادات</translation>
     </message>
@@ -1500,7 +1496,7 @@
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation type="unfinished">Trophy Key</translation>
+      <translation>زر الميداليات</translation>
     </message>
     <message>
       <source>Trophy</source>
@@ -1508,7 +1504,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>افتح مجلد تخصيص اصوات/صور الميداليات</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1544,7 +1540,7 @@
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>س</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1588,7 +1584,7 @@
     </message>
     <message>
       <source>Enable HDR</source>
-      <translation type="unfinished">Enable HDR</translation>
+      <translation>تشغيل HDR</translation>
     </message>
     <message>
       <source>Paths</source>
@@ -1628,23 +1624,23 @@
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>تشغيل تشخيص الأعطال</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>اجمع برامج التظليل</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>انسخ التخزين المؤقت لوحدة معالجة الرُسوم</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation type="unfinished">Host Debug Markers</translation>
+      <translation>استضافة علامات التصحيح</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation type="unfinished">Guest Debug Markers</translation>
+      <translation>ضيف علامات التصحيح</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1656,7 +1652,7 @@
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation type="unfinished">Always Show Changelog</translation>
+      <translation>اظهر سجل التغيرات دائماً</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1672,23 +1668,23 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>موسيقى الشاشة الرئيسية</translation>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>إغلاق إشعارات الميداليات</translation>
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>صورة الخلفية</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>إظهار صورة الخلفية</translation>
     </message>
     <message>
       <source>Opacity</source>
-      <translation type="unfinished">Opacity</translation>
+      <translation>درجة السواد</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1696,19 +1692,19 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation type="unfinished">Update Compatibility Database On Startup</translation>
+      <translation>تحديث قاعدة بيانات التوافق عند التشغيل</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
-      <translation type="unfinished">Game Compatibility</translation>
+      <translation>توافق الألعاب</translation>
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation type="unfinished">Display Compatibility Data</translation>
+      <translation>إظهار معلومات التوافق</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation type="unfinished">Update Compatibility Database</translation>
+      <translation>تحديث قاعدة بيانات التوافق</translation>
     </message>
     <message>
       <source>Volume</source>
@@ -1743,10 +1739,6 @@
       <translation>لغة المحاكي:\nتحدد لغة واجهة المستخدم الخاصة بالمحاكي.</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.</translation>
-    </message>
-    <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>إظهار شاشة البداية:\nيعرض شاشة البداية الخاصة باللعبة (صورة خاصة) أثناء بدء التشغيل.</translation>
     </message>
@@ -1760,7 +1752,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>مفتاح الميداليات:\nمفتاح يستخدم لفتح تشفير الميداليات. يجب أن يكون من جهاز مكسور الحماية.\nيجي أن يحتوي على أحرف نظام العد السداسي.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1776,7 +1768,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>صورة الخلفية:\nيتحكم في درجة سواد صورة خلفية اللعبة.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1784,7 +1776,7 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>إغلاق نوافذ الميداليات المنبثقة:\n إغلاق إشعارات الميداليات داخل اللعبة. تقدم الميداليات يمكن تتبعه باستخدام عارض الميداليات (قم بالضغط على زر الفأرة الأيمن داخل النافذة الرئيسية).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
@@ -1800,15 +1792,15 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>عرض بيانات التوافق:\nيقوم بإظهار معلومات توافق اللعبة في طريقة عرض الطاولة. تشغيل&quot;تحديث التوافق عند التشغيل&quot; للحصول على معلومات محدثة.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>تحديث التوافق عند التشغيل:\nتحديث قاعدة بيانات التوافق تلقائياً عند تشغيل shadps4.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>تحديث قاعدة بيانات التوافق:\nقم بتحديث قاعدة بيانات التوافق حالاً.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1860,7 +1852,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>تشغيل HDR:\n يقوم بتشغيل HDR في الألعاب المدعومة.\nيجب أن تدعم شاشتك أطياف ألوان BT2020 PQ و صيغة تنسيق المبادلة RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1892,11 +1884,11 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>تجميع برامج التظليل:\n يجب أن تقوم بتشغيل هذا لتعديل برامج التظليل باستخدام قائمة تصحيح الأخطاء (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>تشخيص الأعطال:\nيقوم بإنشاء ملف بصيغة .yaml يحتوي على معلومات عن حالة Vulkan في وقت حدوث العطل.\nمفيد لتصحيح أخطاء &apos;فصل الجهاز&apos;. إذا قمت بتشغيل هذا من الأفضل أن تقوم بتشغيل "استضافة علامات تصحيح الأخطاء" و "ضيف علامات تصحيح الأخطاء".\nلا يعمل على وحدة معالجة رسوم إنتل.\nتحتاج لتشغيل التحقق من طبقات Vulkan و مجموعة تطوير البرامج الخاصة بـVulkan من أجل أن يعمل هذا.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>

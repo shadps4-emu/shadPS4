@@ -1423,6 +1423,10 @@ struct Liverpool {
             return num_samples;
         }
 
+        bool IsClipDisabled() const {
+            return clipper_control.clip_disable || primitive_type == PrimitiveType::RectList;
+        }
+
         void SetDefaults();
     };
 
