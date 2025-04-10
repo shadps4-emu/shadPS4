@@ -702,7 +702,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
         }
     }
 
-        if (EnableMapping) {
+    if (EnableMapping) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
@@ -1010,7 +1010,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             return true;
         }
     }
-
 
     const QList<QPushButton*> AxisList = {
         ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
