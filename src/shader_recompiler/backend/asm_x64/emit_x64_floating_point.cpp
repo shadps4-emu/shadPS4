@@ -389,24 +389,47 @@ void EmitFPCeil64(EmitContext& ctx, const Operands& dest, const Operands& op1) {
     MovDouble(ctx, dest[0], tmp);
 }
 
-void EmitFPTrunc16(EmitContext& ctx) {
-    throw NotImplementedException("FPTrunc16");
+void EmitFPTrunc16(EmitContext& ctx, const Operands& dest, const Operands& op) {
+    Xmm tmp_xmm = ctx.TempXmmReg();
+    Reg tmp_reg = dest[0].IsMem() ? ctx.TempGPReg().cvt32() : dest[0].Reg().cvt32();
+    EmitInlineF16ToF32(ctx, tmp_xmm, op[0].Op());
+    ctx.Code().cvttss2si(tmp_reg, tmp_xmm);
+    ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
+    EmitInlineF32ToF16(ctx, dest[0].Op(), tmp_xmm);
 }
 
-void EmitFPTrunc32(EmitContext& ctx) {
-    throw NotImplementedException("FPTrunc32");
+void EmitFPTrunc32(EmitContext& ctx, const Operands& dest, const Operands& op) {
+    Xmm tmp_xmm = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    Reg tmp_reg = ctx.TempGPReg().cvt32();
+    ctx.Code().cvttss2si(tmp_reg, op[0].Op());
+    ctx.Code().cvtsi2ss(tmp_xmm, tmp_reg);
+    MovFloat(ctx, dest[0], tmp_xmm);
 }
 
-void EmitFPTrunc64(EmitContext& ctx) {
-    throw NotImplementedException("FPTrunc64");
+void EmitFPTrunc64(EmitContext& ctx, const Operands& dest, const Operands& op) {
+    Xmm tmp_xmm = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    Reg tmp_reg = ctx.TempGPReg();
+    ctx.Code().cvttsd2si(tmp_reg, op[0].Op());
+    ctx.Code().cvtsi2sd(tmp_xmm, tmp_reg);
+    MovDouble(ctx, dest[0], tmp_xmm);
 }
 
-void EmitFPFract32(EmitContext& ctx) {
-    throw NotImplementedException("FPFract32");
+void EmitFPFract32(EmitContext& ctx, const Operands& dest, const Operands& op) {
+    Xmm tmp = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    Xmm tmp2 = ctx.TempXmmReg();
+    MovFloat(ctx, tmp, op[0]);
+    ctx.Code().roundss(tmp2, tmp, 0x01);
+    ctx.Code().subss(tmp, tmp2);
+    MovFloat(ctx, dest[0], tmp);
 }
 
-void EmitFPFract64(EmitContext& ctx) {
-    throw NotImplementedException("FPFract64");
+void EmitFPFract64(EmitContext& ctx, const Operands& dest, const Operands& op) {
+    Xmm tmp = dest[0].IsMem() ? ctx.TempXmmReg() : dest[0].Xmm();
+    Xmm tmp2 = ctx.TempXmmReg();
+    MovDouble(ctx, tmp, op[0]);
+    ctx.Code().roundsd(tmp2, tmp, 0x01);
+    ctx.Code().subsd(tmp, tmp2);
+    MovDouble(ctx, dest[0], tmp);
 }
 
 void EmitFPFrexpSig32(EmitContext& ctx) {
