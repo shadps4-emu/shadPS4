@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
 #include <QDialog>
 #include "game_info.h"
 
@@ -13,7 +10,18 @@ class KBMSettings : public QDialog {
 public:
     explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
     ~KBMSettings();
-    // Platform-specific scan codes
+
+private Q_SLOTS:
+    void SaveKBMConfig(bool CloseOnSave);
+    void SetDefault();
+    void CheckMapping(QPushButton*& button);
+    void StartTimer(QPushButton*& button);
+    void onHelpClicked();
+
+private:
+    std::unique_ptr<Ui::KBMSettings> ui;
+    std::shared_ptr<GameInfoClass> m_game_info;
+
 #ifdef _WIN32
     const int lctrl = 29;
     const int rctrl = 57373;
@@ -30,17 +38,6 @@ public:
     const int rshift = 62;
 #endif
 
-private Q_SLOTS:
-    void SaveKBMConfig(bool CloseOnSave);
-    void SetDefault();
-    void CheckMapping(QPushButton*& button);
-    void StartTimer(QPushButton*& button);
-    void onHelpClicked();
-
-private:
-    std::unique_ptr<Ui::KBMSettings> ui;
-    std::shared_ptr<GameInfoClass> m_game_info;
-
     bool eventFilter(QObject* obj, QEvent* event) override;
     void ButtonConnects();
     void SetUIValuestoMappings(std::string config_id);
@@ -48,12 +45,14 @@ private:
     void DisableMappingButtons();
     void EnableMappingButtons();
     void SetMapping(QString input);
+    QString KBMSettings::keyToString(int key);
 
+    QSet<int> pressedKeys;
+    QSet<QString> pressedNonInt;
     bool EnableMapping = false;
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
     QString mapping;
-    QStringList mappinglist;
     QString modifier;
     int MappingTimer;
     QTimer* timer;
