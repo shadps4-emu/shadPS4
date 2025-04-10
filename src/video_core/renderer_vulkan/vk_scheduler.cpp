@@ -288,6 +288,20 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
             }
         }
     }
+    if (dirty_state.primitive_restart_enable) {
+        dirty_state.primitive_restart_enable = false;
+        if (instance.IsPrimitiveRestartDisableSupported()) {
+            cmdbuf.setPrimitiveRestartEnableEXT(primitive_restart_enable);
+        }
+    }
+    if (dirty_state.cull_mode) {
+        dirty_state.cull_mode = false;
+        cmdbuf.setCullModeEXT(cull_mode);
+    }
+    if (dirty_state.front_face) {
+        dirty_state.front_face = false;
+        cmdbuf.setFrontFaceEXT(front_face);
+    }
     if (dirty_state.blend_constants) {
         dirty_state.blend_constants = false;
         cmdbuf.setBlendConstants(blend_constants);

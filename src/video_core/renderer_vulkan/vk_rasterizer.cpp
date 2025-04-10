@@ -949,6 +949,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
+    UpdatePrimitiveState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
@@ -1130,6 +1131,25 @@ void Rasterizer::UpdateDepthStencilState() const {
         dynamic_state.SetStencilWriteMasks(front.stencil_write_mask, back.stencil_write_mask);
         dynamic_state.SetStencilCompareMasks(front.stencil_mask, back.stencil_mask);
     }
+}
+
+void Rasterizer::UpdatePrimitiveState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+
+    const auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
+    ASSERT_MSG(!prim_restart || regs.primitive_restart_index == 0xFFFF ||
+                   regs.primitive_restart_index == 0xFFFFFFFF,
+               "Primitive restart index other than -1 is not supported yet");
+
+    const auto cull_mode = LiverpoolToVK::IsPrimitiveCulled(regs.primitive_type)
+                               ? LiverpoolToVK::CullMode(regs.polygon_control.CullingMode())
+                               : vk::CullModeFlagBits::eNone;
+    const auto front_face = LiverpoolToVK::FrontFace(regs.polygon_control.front_face);
+
+    dynamic_state.SetPrimitiveRestartEnabled(prim_restart);
+    dynamic_state.SetCullMode(cull_mode);
+    dynamic_state.SetFrontFace(front_face);
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
