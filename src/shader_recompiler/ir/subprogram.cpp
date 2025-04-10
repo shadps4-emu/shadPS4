@@ -118,11 +118,40 @@ void SubProgram::AddPhi(Inst* orig_phi, Inst* phi) {
         }
         return {cond1, cond0};
     };
+    const auto is_negated_cond = [](Inst* ref1, Inst* ref2) {
+        IR::Value cond1 = ref1->Arg(0);
+        IR::Value cond2 = ref2->Arg(0);
+        if (cond1.IsImmediate() || cond2.IsImmediate()) {
+            if (!cond1.IsImmediate() || !cond2.IsImmediate()) {
+                return false;
+            }
+            return cond1.U1() != cond2.U1();
+        }
+        Inst* cond1_inst = cond1.InstRecursive();
+        Inst* cond2_inst = cond2.InstRecursive();
+        if (cond1_inst->GetOpcode() == Opcode::LogicalNot) {
+            return cond1_inst->Arg(0) == cond2;
+        }
+        if (cond2_inst->GetOpcode() == Opcode::LogicalNot) {
+            return cond2_inst->Arg(0) == cond1;
+        }
+        return false;
+    };
     const auto& [start_cond, target_cond] = get_conds();
     const Block::ConditionalData* cond = &start_cond;
     while (cond->depth > target_cond.depth) {
         if (cond->asl_node->type == AbstractSyntaxNode::Type::If) {
-            AddInst(cond->asl_node->data.if_node.cond.InstRecursive());
+            Inst* cond_ref_inst = cond->asl_node->data.if_node.cond.InstRecursive();
+            AddInst(cond_ref_inst);
+            // Check if the condition has an else branch, and add it.
+            Block* merge_block = cond->asl_node->data.if_node.merge;
+            Inst* else_cond_ref_inst = &merge_block->back();
+            if (else_cond_ref_inst->GetOpcode() == Opcode::ConditionRef) {
+                // Check if one condition is the negation of the other.
+                if (is_negated_cond(cond_ref_inst, else_cond_ref_inst)) {
+                    AddInst(else_cond_ref_inst);
+                }
+            }
         } else if (cond->asl_node->type == AbstractSyntaxNode::Type::Loop) {
             // In case of loop, we need to add the loop itself and also
             // the break conditions.
