@@ -19,7 +19,7 @@ void EmitLogicalOr(EmitContext& ctx, const Operands& dest, const Operands& op1, 
 
 void EmitLogicalAnd(EmitContext& ctx, const Operands& dest, const Operands& op1, const Operands& op2) {
     OperandHolder tmp = op2[0].IsMem() && dest[0].IsMem() ? ctx.TempGPReg().cvt8() : dest[0];
-    MovGP(ctx, tmp.Op(), op1[0]);
+    MovGP(ctx, tmp, op1[0]);
     ctx.Code().and_(tmp.Op(), op2[0].Op());
     ctx.Code().and_(tmp.Op(), 1);
     MovGP(ctx, dest[0], tmp);
