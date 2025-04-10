@@ -48,9 +48,7 @@ private:
     void DisableMappingButtons();
     void EnableMappingButtons();
     void SetMapping(QString input);
-    QString KBMSettings::keyToString(int key);
 
-    QSet<int> pressedKeys;
     QSet<QString> pressedNonInt;
     bool EnableMapping = false;
     bool MappingCompleted = false;
