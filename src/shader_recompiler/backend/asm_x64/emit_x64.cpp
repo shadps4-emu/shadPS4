@@ -15,24 +15,20 @@ using namespace Xbyak::util;
 namespace {
 
 static void EmitCondition(EmitContext& ctx, const IR::Inst* ref, Label& label, bool invert) {
+    CodeGenerator& c = ctx.Code();
     IR::Value cond = ref->Arg(0);
     if (cond.IsImmediate()) {
         // If imediate, we evaluate at compile time
         if (cond.U1() != invert) {
-            ctx.Code().jmp(label);
+            c.jmp(label, CodeGenerator::LabelType::T_NEAR);
         }
     } else {
         const OperandHolder& op = ctx.Def(cond.InstRecursive())[0];
-        if (op.IsReg()) {
-            Reg8 reg = op.Reg().cvt8();
-            ctx.Code().test(reg, reg);
-        } else {
-            ctx.Code().test(op.Mem(), 0xff);
-        }
+        c.test(op.Op(), 0x1);
         if (invert) {
-            ctx.Code().jz(label);
+            c.jz(label, CodeGenerator::LabelType::T_NEAR);
         } else {
-            ctx.Code().jnz(label);
+            c.jnz(label, CodeGenerator::LabelType::T_NEAR);
         }
     }
 }
