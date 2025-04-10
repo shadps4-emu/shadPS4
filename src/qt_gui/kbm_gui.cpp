@@ -806,14 +806,14 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 if (keyEvent->nativeScanCode() == ralt) {
                     pressedNonInt.insert("ralt");
                 } else {
-                    pressedNonInt.insert("alt");
+                    pressedNonInt.insert("lalt");
                 }
                 break;
             case Qt::Key_Control:
                 if (keyEvent->nativeScanCode() == rctrl) {
                     pressedNonInt.insert("rctrl");
                 } else {
-                    pressedNonInt.insert("ctrl");
+                    pressedNonInt.insert("lctrl");
                 }
                 break;
             case Qt::Key_Meta:
