@@ -54,9 +54,9 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Target Sandy Bridge as a reasonable subset of instructions supported by PS4 and host CPUs.
-    # Note that the native PS4 architecture 'btver2' has been attempted but causes issues with M1 CPUs.
-    add_compile_options(-march=sandybridge -mtune=generic)
+    # Target the same CPU architecture as the PS4, to maintain the same level of compatibility.
+    # Exclude SSE4a as it is only available on AMD CPUs.
+    add_compile_options(-march=btver2 -mtune=generic -mno-sse4a)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
