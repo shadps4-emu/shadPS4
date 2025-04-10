@@ -300,16 +300,70 @@ void EmitBitwiseXor32(EmitContext& ctx, const Operands& dest, const Operands& op
     MovGP(ctx, dest[0], tmp);
 }
 
-void EmitBitFieldInsert(EmitContext& ctx) {
-    throw NotImplementedException("BitFieldInsert");
+void EmitBitFieldInsert(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& insert, const Operands& offset, const Operands& count) {
+    bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
+    Reg mask = ctx.TempGPReg().cvt32();
+    Reg tmp2 = ctx.TempGPReg().cvt32();
+    MovGP(ctx, tmp, base[0]);
+    MovGP(ctx, cl, count[0]);
+    MovGP(ctx, tmp2, insert[0]);
+    ctx.Code().mov(mask, 1);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().sub(mask, 1);
+    MovGP(ctx, cl, offset[0]);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().shl(tmp2, cl);
+    ctx.Code().and_(tmp2, mask);
+    ctx.Code().not_(mask);
+    ctx.Code().and_(tmp.Op(), mask);
+    ctx.Code().or_(tmp.Op(), tmp2);
+    MovGP(ctx, dest[0], tmp);
+    if (rcx_saved) {
+        EmitRestoreRegTemp(ctx, rcx);
+    }
 }
 
-void EmitBitFieldSExtract(EmitContext& ctx) {
-    throw NotImplementedException("BitFieldSExtract");
+void EmitBitFieldSExtract(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset, const Operands& count) {
+    bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
+    Reg mask = ctx.TempGPReg().cvt32();
+    MovGP(ctx, tmp, base[0]);
+    MovGP(ctx, cl, count[0]);
+    ctx.Code().mov(mask, 1);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().sub(mask, 1);
+    MovGP(ctx, cl, offset[0]);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().and_(tmp.Op(), mask);
+    ctx.Code().shr(tmp.Op(), cl);
+    ctx.Code().mov(ecx, 0x20);
+    ctx.Code().sub(ecx, count[0].Op());
+    ctx.Code().shl(tmp.Op(), cl);
+    ctx.Code().sar(tmp.Op(), cl);
+    MovGP(ctx, dest[0], tmp);
+    if (rcx_saved) {
+        EmitRestoreRegTemp(ctx, rcx);
+    }
 }
 
-void EmitBitFieldUExtract(EmitContext& ctx) {
-    throw NotImplementedException("BitFieldUExtract");
+void EmitBitFieldUExtract(EmitContext& ctx, const Operands& dest, const Operands& base, const Operands& offset, const Operands& count) {
+    bool rcx_saved = EmitSaveRegTemp(ctx, rcx, dest[0]);
+    OperandHolder tmp = IsReg(dest[0], rcx) ? ctx.TempGPReg().cvt32() : dest[0];
+    Reg mask = ctx.TempGPReg().cvt32();
+    MovGP(ctx, tmp, base[0]);
+    MovGP(ctx, cl, count[0]);
+    ctx.Code().mov(mask, 1);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().sub(mask, 1);
+    MovGP(ctx, cl, offset[0]);
+    ctx.Code().shl(mask, cl);
+    ctx.Code().and_(tmp.Op(), mask);
+    ctx.Code().shr(tmp.Op(), cl);
+    MovGP(ctx, dest[0], tmp);
+    if (rcx_saved) {
+        EmitRestoreRegTemp(ctx, rcx);
+    }
 }
 
 void EmitBitReverse32(EmitContext& ctx) {
