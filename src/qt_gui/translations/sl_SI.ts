@@ -2,12 +2,12 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="nl_NL" sourcelanguage="en">
+<TS version="2.1" language="sl_SI" sourcelanguage="en">
   <context>
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation>Over shadPS4</translation>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
@@ -26,27 +26,27 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches zijn experimenteel.\nGebruik met voorzichtigheid.\n\nDownload cheats afzonderlijk door het repository te selecteren en op de downloadknop te klikken.\nOp het tabblad Patches kun je alle patches tegelijk downloaden, kiezen welke je wilt gebruiken en je selectie opslaan.\n\nAangezien wij de Cheats/Patches niet ontwikkelen,\nmeld problemen bij de auteur van de cheat.\n\nHeb je een nieuwe cheat gemaakt? Bezoek:\n</translation>
+      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Geen afbeelding beschikbaar</translation>
+      <translation type="unfinished">No Image Available</translation>
     </message>
     <message>
       <source>Serial: </source>
-      <translation>Serie: </translation>
+      <translation type="unfinished">Serial: </translation>
     </message>
     <message>
       <source>Version: </source>
-      <translation>Versie: </translation>
+      <translation type="unfinished">Version: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation>Grootte: </translation>
+      <translation type="unfinished">Size: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>Selecteer cheatbestand:</translation>
+      <translation type="unfinished">Select Cheat File:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,35 +54,35 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>Download cheats</translation>
+      <translation type="unfinished">Download Cheats</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation>Bestand verwijderen</translation>
+      <translation type="unfinished">Delete File</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation>Geen bestanden geselecteerd.</translation>
+      <translation type="unfinished">No files selected.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>Je kunt de cheats die je niet wilt verwijderen nadat je ze hebt gedownload.</translation>
+      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>Wil je het geselecteerde bestand verwijderen?\n%1</translation>
+      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>Selecteer patchbestand:</translation>
+      <translation type="unfinished">Select Patch File:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>Download patches</translation>
+      <translation type="unfinished">Download Patches</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>Opslaan</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Cheats</source>
@@ -94,313 +94,313 @@
     </message>
     <message>
       <source>Error</source>
-      <translation>Fout</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation>Geen patch geselecteerd.</translation>
+      <translation type="unfinished">No patch selected.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>Kan files.json niet openen voor lezen.</translation>
+      <translation type="unfinished">Unable to open files.json for reading.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>Geen patchbestand gevonden voor het huidige serienummer.</translation>
+      <translation type="unfinished">No patch file found for the current serial.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>Kan het bestand niet openen voor lezen.</translation>
+      <translation type="unfinished">Unable to open the file for reading.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>Kan het bestand niet openen voor schrijven.</translation>
+      <translation type="unfinished">Unable to open the file for writing.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>XML parsing mislukt: </translation>
+      <translation type="unfinished">Failed to parse XML: </translation>
     </message>
     <message>
       <source>Success</source>
-      <translation>Succes</translation>
+      <translation type="unfinished">Success</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation>Opties succesvol opgeslagen.</translation>
+      <translation type="unfinished">Options saved successfully.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation>Ongeldige bron</translation>
+      <translation type="unfinished">Invalid Source</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation>De geselecteerde bron is ongeldig.</translation>
+      <translation type="unfinished">The selected source is invalid.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Bestand bestaat</translation>
+      <translation type="unfinished">File Exists</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>Bestand bestaat al. Wil je het vervangen?</translation>
+      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>Kan bestand niet opslaan:</translation>
+      <translation type="unfinished">Failed to save file:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>Kan bestand niet downloaden:</translation>
+      <translation type="unfinished">Failed to download file:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>Cheats niet gevonden</translation>
+      <translation type="unfinished">Cheats Not Found</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>Geen cheats gevonden voor deze game in deze versie van de geselecteerde repository.Probeer een andere repository of een andere versie van het spel.</translation>
+      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>Cheats succesvol gedownload</translation>
+      <translation type="unfinished">Cheats Downloaded Successfully</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Je hebt cheats succesvol gedownload voor deze versie van het spel uit de geselecteerde repository. Je kunt proberen te downloaden van een andere repository. Als deze beschikbaar is, kan het ook worden gebruikt door het bestand uit de lijst te selecteren.</translation>
+      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>Opslaan mislukt:</translation>
+      <translation type="unfinished">Failed to save:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>Downloaden mislukt:</translation>
+      <translation type="unfinished">Failed to download:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download voltooid</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches succesvol gedownload! Alle beschikbare patches voor alle spellen zijn gedownload. Het is niet nodig om ze afzonderlijk te downloaden voor elk spel dat cheats heeft. Als de patch niet verschijnt, kan het zijn dat deze niet bestaat voor het specifieke serienummer en de versie van het spel.</translation>
+      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Kan JSON-gegevens uit HTML niet parseren.</translation>
+      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>Kan HTML-pagina niet ophalen.</translation>
+      <translation type="unfinished">Failed to retrieve HTML page.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>Het spel is in versie: %1</translation>
+      <translation type="unfinished">The game is in version: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation>De gedownloade patch werkt alleen op versie: %1</translation>
+      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>Misschien moet je je spel bijwerken.</translation>
+      <translation type="unfinished">You may need to update your game.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>Incompatibiliteitsmelding</translation>
+      <translation type="unfinished">Incompatibility Notice</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>Kan bestand niet openen:</translation>
+      <translation type="unfinished">Failed to open file:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>XML FOUT:</translation>
+      <translation type="unfinished">XML ERROR:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation>Kan files.json niet openen voor schrijven</translation>
+      <translation type="unfinished">Failed to open files.json for writing</translation>
     </message>
     <message>
       <source>Author: </source>
-      <translation>Auteur: </translation>
+      <translation type="unfinished">Author: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>Map bestaat niet:</translation>
+      <translation type="unfinished">Directory does not exist:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>Kan files.json niet openen voor lezen.</translation>
+      <translation type="unfinished">Failed to open files.json for reading.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation>Naam:</translation>
+      <translation type="unfinished">Name:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>Je kunt geen cheats toepassen voordat het spel is gestart.</translation>
+      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>Sluiten</translation>
+      <translation type="unfinished">Close</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>Automatische updater</translation>
+      <translation type="unfinished">Auto Updater</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>Fout</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation>Netwerkfout:</translation>
+      <translation type="unfinished">Network error:</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>De automatische updater staat tot 60 updatecontroles per uur toe.\nJe hebt deze limiet bereikt. Probeer het later opnieuw.</translation>
+      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>Kon update-informatie niet parseren.</translation>
+      <translation type="unfinished">Failed to parse update information.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation>Geen pre-releases gevonden.</translation>
+      <translation type="unfinished">No pre-releases found.</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation>Ongeldige releasegegevens.</translation>
+      <translation type="unfinished">Invalid release data.</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>Geen download-URL gevonden voor het opgegeven bestand.</translation>
+      <translation type="unfinished">No download URL found for the specified asset.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation>Uw versie is al up-to-date!</translation>
+      <translation type="unfinished">Your version is already up to date!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation>Update beschikbaar</translation>
+      <translation type="unfinished">Update Available</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Updatekanaal</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation>Huidige versie</translation>
+      <translation type="unfinished">Current Version</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>Laatste versie</translation>
+      <translation type="unfinished">Latest Version</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation>Wilt u updaten?</translation>
+      <translation type="unfinished">Do you want to update?</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation>Toon changelog</translation>
+      <translation type="unfinished">Show Changelog</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Bij opstart op updates controleren</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>Bijwerken</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>No</source>
-      <translation>Nee</translation>
+      <translation type="unfinished">No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>Verberg changelog</translation>
+      <translation type="unfinished">Hide Changelog</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation>Wijzigingen</translation>
+      <translation type="unfinished">Changes</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>Netwerkfout opgetreden tijdens toegang tot de URL</translation>
+      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download compleet</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>De update is gedownload, druk op OK om te installeren.</translation>
+      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>Kon het updatebestand niet opslaan op</translation>
+      <translation type="unfinished">Failed to save the update file at</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Starten van update...</translation>
+      <translation type="unfinished">Starting Update...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>Kon het update-scriptbestand niet maken</translation>
+      <translation type="unfinished">Failed to create the update script file</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>Compatibiliteitsgegevens ophalen, even geduld</translation>
+      <translation type="unfinished">Fetching compatibility data, please wait</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>Annuleren</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Laden...</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>Fout</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>Kan compatibiliteitsgegevens niet bijwerken! Probeer het later opnieuw.</translation>
+      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Kan compatibility_data.json niet openen voor schrijven.</translation>
+      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation>Onbekend</translation>
+      <translation type="unfinished">Unknown</translation>
     </message>
     <message>
       <source>Nothing</source>
-      <translation>Niets</translation>
+      <translation type="unfinished">Nothing</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>Laarsjes</translation>
+      <translation type="unfinished">Boots</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>Menu&apos;s</translation>
+      <translation type="unfinished">Menus</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>In het spel</translation>
+      <translation type="unfinished">Ingame</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>Speelbaar</translation>
+      <translation type="unfinished">Playable</translation>
     </message>
   </context>
   <context>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation/>
+      <translation type="unfinished">Could not open the file for reading</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
@@ -662,15 +662,15 @@
     <name>GameListFrame</name>
     <message>
       <source>Icon</source>
-      <translation>Pictogram</translation>
+      <translation type="unfinished">Icon</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation>Naam</translation>
+      <translation type="unfinished">Name</translation>
     </message>
     <message>
       <source>Serial</source>
-      <translation>Serienummer</translation>
+      <translation type="unfinished">Serial</translation>
     </message>
     <message>
       <source>Compatibility</source>
@@ -678,7 +678,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation>Regio</translation>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -686,19 +686,19 @@
     </message>
     <message>
       <source>Size</source>
-      <translation>Grootte</translation>
+      <translation type="unfinished">Size</translation>
     </message>
     <message>
       <source>Version</source>
-      <translation>Versie</translation>
+      <translation type="unfinished">Version</translation>
     </message>
     <message>
       <source>Path</source>
-      <translation>Pad</translation>
+      <translation type="unfinished">Path</translation>
     </message>
     <message>
       <source>Play Time</source>
-      <translation>Speeltijd</translation>
+      <translation type="unfinished">Play Time</translation>
     </message>
     <message>
       <source>Never Played</source>
@@ -742,11 +742,11 @@
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>Klik om details op GitHub te bekijken</translation>
+      <translation type="unfinished">Click to see details on github</translation>
     </message>
     <message>
       <source>Last updated</source>
-      <translation>Laatst bijgewerkt</translation>
+      <translation type="unfinished">Last updated</translation>
     </message>
   </context>
   <context>
@@ -792,19 +792,19 @@
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>Map openen...</translation>
+      <translation type="unfinished">Open Folder...</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation>Open Spelmap</translation>
+      <translation type="unfinished">Open Game Folder</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Open Map voor Opslagdata</translation>
+      <translation type="unfinished">Open Save Data Folder</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Open Logmap</translation>
+      <translation type="unfinished">Open Log Folder</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -1197,7 +1197,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Controleren op updates</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>About shadPS4</source>
@@ -1345,51 +1345,51 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>Lijst met spellen</translation>
+      <translation type="unfinished">Game List</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation> * Niet ondersteunde Vulkan-versie</translation>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>Download cheats voor alle geïnstalleerde spellen</translation>
+      <translation type="unfinished">Download Cheats For All Installed Games</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>Download patches voor alle spellen</translation>
+      <translation type="unfinished">Download Patches For All Games</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Download voltooid</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>Je hebt cheats gedownload voor alle spellen die je hebt geïnstalleerd.</translation>
+      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>Patches succesvol gedownload!</translation>
+      <translation type="unfinished">Patches Downloaded Successfully!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>Alle patches voor alle spellen zijn gedownload.</translation>
+      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
     </message>
     <message>
       <source>Games: </source>
-      <translation>Spellen: </translation>
+      <translation type="unfinished">Games: </translation>
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation>ELF-bestanden (*.bin *.elf *.oelf)</translation>
+      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>Spelopstart</translation>
+      <translation type="unfinished">Game Boot</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation>Je kunt slechts één bestand selecteren!</translation>
+      <translation type="unfinished">Only one file can be selected!</translation>
     </message>
     <message>
       <source>Run Game</source>
@@ -1476,11 +1476,11 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>Standaardtabblad bij het openen van instellingen</translation>
+      <translation type="unfinished">Default tab when opening settings</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>Toon grootte van het spel in de lijst</translation>
+      <translation type="unfinished">Show Game Size In List</translation>
     </message>
     <message>
       <source>Show Splash</source>
@@ -1488,7 +1488,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>Discord Rich Presence inschakelen</translation>
+      <translation type="unfinished">Enable Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1520,11 +1520,11 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Loglocatie openen</translation>
+      <translation type="unfinished">Open Log Location</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation>Invoer</translation>
+      <translation type="unfinished">Input</translation>
     </message>
     <message>
       <source>Cursor</source>
@@ -1532,11 +1532,11 @@
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>Cursor verbergen</translation>
+      <translation type="unfinished">Hide Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>Inactiviteit timeout voor het verbergen van de cursor</translation>
+      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
     </message>
     <message>
       <source>s</source>
@@ -1548,7 +1548,7 @@
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>Achterknop gedrag</translation>
+      <translation type="unfinished">Back Button Behavior</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1556,11 +1556,11 @@
     </message>
     <message>
       <source>GUI</source>
-      <translation>Interface</translation>
+      <translation type="unfinished">GUI</translation>
     </message>
     <message>
       <source>User</source>
-      <translation>Gebruiker</translation>
+      <translation type="unfinished">User</translation>
     </message>
     <message>
       <source>Graphics Device</source>
@@ -1588,19 +1588,19 @@
     </message>
     <message>
       <source>Paths</source>
-      <translation>Pad</translation>
+      <translation type="unfinished">Paths</translation>
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>Spelmappen</translation>
+      <translation type="unfinished">Game Folders</translation>
     </message>
     <message>
       <source>Add...</source>
-      <translation>Toevoegen...</translation>
+      <translation type="unfinished">Add...</translation>
     </message>
     <message>
       <source>Remove</source>
-      <translation>Verwijderen</translation>
+      <translation type="unfinished">Remove</translation>
     </message>
     <message>
       <source>Debug</source>
@@ -1644,27 +1644,27 @@
     </message>
     <message>
       <source>Update</source>
-      <translation>Bijwerken</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Bij opstart op updates controleren</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Altijd changelog tonen</translation>
+      <translation type="unfinished">Always Show Changelog</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Updatekanaal</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Controleren op updates</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>GUI Settings</source>
-      <translation>GUI-Instellingen</translation>
+      <translation type="unfinished">GUI Settings</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1688,7 +1688,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Titelmuziek afspelen</translation>
+      <translation type="unfinished">Play title music</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1712,43 +1712,43 @@
     </message>
     <message>
       <source>Save</source>
-      <translation>Opslaan</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation>Toepassen</translation>
+      <translation type="unfinished">Apply</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Standaardinstellingen herstellen</translation>
+      <translation type="unfinished">Restore Defaults</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>Sluiten</translation>
+      <translation type="unfinished">Close</translation>
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>Wijzig de muisaanwijzer naar een optie om de beschrijving weer te geven.</translation>
+      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Console Taal:\nStelt de taal in die het PS4-spel gebruikt.\nHet wordt aanbevolen om dit in te stellen op een taal die het spel ondersteunt, wat kan variëren per regio.</translation>
+      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Emulator Taal:\nStelt de taal van de gebruikersinterface van de emulator in.</translation>
+      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>Opstartscherm weergeven:\nToont het opstartscherm van het spel (een speciale afbeelding) tijdens het starten van het spel.</translation>
+      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>Discord Rich Presence inschakelen:\nToont het emulatoricoon en relevante informatie op je Discord-profiel.</translation>
+      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Gebruikersnaam:\nStelt de gebruikersnaam van het PS4-account in, die door sommige games kan worden weergegeven.</translation>
+      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
@@ -1756,15 +1756,15 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Logtype:\nStelt in of de uitvoer van het logvenster moet worden gesynchroniseerd voor prestaties. Kan nadelige effecten hebben op emulatie.</translation>
+      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Logfilter:\nFiltert het logboek om alleen specifieke informatie af te drukken.\nVoorbeelden: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveaus: Trace, Debug, Info, Waarschuwing, Fout, Kritiek - in deze volgorde, een specifiek niveau dempt alle voorgaande niveaus in de lijst en logt alle niveaus daarna.</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Updateren:\nRelease: Officiële versies die elke maand worden uitgebracht, die zeer verouderd kunnen zijn, maar betrouwbaar en getest zijn.\nNightly: Ontwikkelingsversies die alle nieuwste functies en bugfixes bevatten, maar mogelijk bugs bevatten en minder stabiel zijn.</translation>
+      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1772,7 +1772,7 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Speel titelsong:\nAls een game dit ondersteunt, wordt speciale muziek afgespeeld wanneer je het spel in de GUI selecteert.</translation>
+      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
@@ -1780,15 +1780,15 @@
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Verberg cursor:\nKies wanneer de cursor verdwijnt:\nNooit: Je ziet altijd de muis.\nInactief: Stel een tijd in waarna deze verdwijnt na inactiviteit.\nAltijd: je ziet de muis nooit.</translation>
+      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Stel een tijd in voor wanneer de muis verdwijnt na inactiviteit.</translation>
+      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Gedrag van de terugknop:\nStelt de terugknop van de controller in om een aanraking op de opgegeven positie op de PS4-touchpad na te bootsen.</translation>
+      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
@@ -1804,51 +1804,51 @@
     </message>
     <message>
       <source>Never</source>
-      <translation>Nooit</translation>
+      <translation type="unfinished">Never</translation>
     </message>
     <message>
       <source>Idle</source>
-      <translation>Inactief</translation>
+      <translation type="unfinished">Idle</translation>
     </message>
     <message>
       <source>Always</source>
-      <translation>Altijd</translation>
+      <translation type="unfinished">Always</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Touchpad Links</translation>
+      <translation type="unfinished">Touchpad Left</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Touchpad Rechts</translation>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Touchpad Midden</translation>
+      <translation type="unfinished">Touchpad Center</translation>
     </message>
     <message>
       <source>None</source>
-      <translation>Geen</translation>
+      <translation type="unfinished">None</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafische adapter:\nIn systemen met meerdere GPU&apos;s, kies de GPU die de emulator uit de vervolgkeuzelijst moet gebruiken,\nof kies &quot;Auto Select&quot; om dit automatisch in te stellen.</translation>
+      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Breedte/Hoogte:\nStelt de grootte van het emulatorvenster bij het opstarten in, wat tijdens het spelen kan worden gewijzigd.\nDit is anders dan de resolutie in de game.</translation>
+      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank deler:\nDe frame-rate waartegen de emulator wordt vernieuwd, vermenigvuldigd met dit getal. Dit veranderen kan nadelige effecten hebben, zoals het versnellen van het spel of het verpesten van kritieke gamefunctionaliteiten die niet verwachtten dat dit zou veranderen!</translation>
+      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Shaderdump inschakelen:\nVoor technische foutopsporing slaat het de shaders van de game op in een map terwijl ze worden gerenderd.</translation>
+      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Null GPU inschakelen:\nVoor technische foutopsporing schakelt de game-rendering uit alsof er geen grafische kaart is.</translation>
+      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1856,31 +1856,31 @@
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>Spelmap:\nDe lijst met mappen om te controleren op geïnstalleerde spellen.</translation>
+      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Toevoegen:\nVoeg een map toe aan de lijst.</translation>
+      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>Verwijderen:\nVerwijder een map uit de lijst.</translation>
+      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Foutopsporing dump inschakelen:\nSlaat de import- en export-symbolen en de bestandsheaderinformatie van de momenteel draaiende PS4-toepassing op in een map.</translation>
+      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan validatielaag inschakelen:\nSchakelt een systeem in dat de status van de Vulkan-renderer valideert en informatie over de interne status ervan logt. Dit zal de prestaties verlagen en waarschijnlijk het emulatiegedrag veranderen.</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan synchronisatievalidatie inschakelen:\nSchakelt een systeem in dat de timing van Vulkan-renderingtaken valideert. Dit zal de prestaties verlagen en waarschijnlijk het emulatiegedrag veranderen.</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>RenderDoc foutopsporing inschakelen:\nAls ingeschakeld, biedt de emulator compatibiliteit met Renderdoc om de momenteel gerenderde frame vast te leggen en te analyseren.</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
