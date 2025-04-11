@@ -34,10 +34,13 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto width =
+    const u32 width =
         render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
-    const auto height =
+    const u32 height =
         render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
+
+    const u32 cb_layers = *std::ranges::max_element(render_state.cb_slices);
+    const u32 layers = std::max<u32>(cb_layers, render_state.depth_slices);
 
     const vk::RenderingInfo rendering_info = {
         .renderArea =
@@ -45,7 +48,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
                 .offset = {0, 0},
                 .extent = {width, height},
             },
-        .layerCount = 1,
+        .layerCount = layers,
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.num_color_attachments > 0
                                  ? render_state.color_attachments.data()
