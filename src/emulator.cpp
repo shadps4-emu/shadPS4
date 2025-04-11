@@ -53,7 +53,7 @@ Emulator::Emulator() {
 
     // Defer until after logging is initialized.
     memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
+    controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
 
     // Load renderdoc module.
@@ -215,7 +215,7 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(
-        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
+        Config::getScreenWidth(), Config::getScreenHeight(), controllers, window_title);
 
     g_window = window.get();
 
