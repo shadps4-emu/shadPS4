@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 14)
+    # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4)
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -53,8 +54,9 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Set x86_64 target level to Sandy Bridge to generally match what is supported for PS4 guest code with CPU patches.
-    add_compile_options(-march=sandybridge)
+    # Target the same CPU architecture as the PS4, to maintain the same level of compatibility.
+    # Exclude SSE4a as it is only available on AMD CPUs.
+    add_compile_options(-march=btver2 -mtune=generic -mno-sse4a)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -201,6 +203,8 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+set(APP_VERSION "0.7.1 WIP")
+set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
@@ -217,7 +221,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.305 CONFIG)
+find_package(VulkanHeaders 1.4.309 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -670,7 +674,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/uint128.h
            src/common/unique_function.h
            src/common/va_ctx.h
-           src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
            src/common/number_utils.h
@@ -1192,8 +1195,8 @@ if (ENABLE_QT_GUI)
         MACOSX_BUNDLE ON
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
         MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
-        )
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
+    )
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)

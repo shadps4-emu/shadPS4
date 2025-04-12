@@ -24,7 +24,6 @@
 #include <common/config.h>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
-#include <common/version.h>
 #include "check_update.h"
 
 using namespace Common::FS;
@@ -52,7 +51,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases/latest");
             checkName = false;
         } else {
-            if (Common::isRelease) {
+            if (Common::g_is_release) {
                 Config::setUpdateChannel("Release");
             } else {
                 Config::setUpdateChannel("Nightly");
@@ -162,7 +161,7 @@ tr("The Auto Updater allows up to 60 update checks per hour.\\nYou have reached 
 
         QString currentRev = (updateChannel == "Nightly")
                                  ? QString::fromStdString(Common::g_scm_rev)
-                                 : "v." + QString::fromStdString(Common::VERSION);
+                                 : "v." + QString::fromStdString(Common::g_version);
         QString currentDate = Common::g_scm_date;
 
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
