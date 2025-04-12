@@ -35,7 +35,7 @@ u32 AjmM4aacDecoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
     return u32();
 }
 std::tuple<u32, u32> AjmM4aacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                                 AjmInstanceGapless& gapless) {
+                                                  AjmInstanceGapless& gapless) {
     return std::tuple<u32, u32>();
 }
 AVFrame* AjmM4aacDecoder::ConvertAudioFrame(AVFrame* frame) {
