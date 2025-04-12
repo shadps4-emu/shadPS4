@@ -18,7 +18,6 @@
 #include "common/path_util.h"
 #include "common/scm_rev.h"
 #include "common/string_util.h"
-#include "common/version.h"
 #include "control_settings.h"
 #include "game_install_dialog.h"
 #include "kbm_gui.h"
@@ -58,8 +57,8 @@ bool MainWindow::Init() {
     // show ui
     setMinimumSize(720, 405);
     std::string window_title = "";
-    if (Common::isRelease) {
-        window_title = fmt::format("shadPS4 v{}", Common::VERSION);
+    if (Common::g_is_release) {
+        window_title = fmt::format("shadPS4 v{}", Common::g_version);
     } else {
         std::string remote_url(Common::g_scm_remote_url);
         std::string remote_host;
@@ -69,10 +68,10 @@ bool MainWindow::Init() {
             remote_host = "unknown";
         }
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} {} {}", Common::VERSION, Common::g_scm_branch,
+            window_title = fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
                                        Common::g_scm_desc);
         } else {
-            window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::VERSION, remote_host,
+            window_title = fmt::format("shadPS4 v{} {}/{} {}", Common::g_version, remote_host,
                                        Common::g_scm_branch, Common::g_scm_desc);
         }
     }

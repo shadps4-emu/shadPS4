@@ -42,11 +42,7 @@ struct GraphicsPipelineKey {
     u32 num_samples;
     u32 mrt_mask;
     AmdGpu::PrimitiveType prim_type;
-    u32 enable_primitive_restart;
-    u32 primitive_restart_index;
     Liverpool::PolygonMode polygon_mode;
-    Liverpool::CullMode cull_mode;
-    Liverpool::FrontFace front_face;
     Liverpool::ClipSpace clip_space;
     Liverpool::ColorBufferMask cb_shader_mask;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
@@ -80,16 +76,6 @@ public:
 
     auto GetMrtMask() const {
         return key.mrt_mask;
-    }
-
-    [[nodiscard]] bool IsPrimitiveListTopology() const {
-        return key.prim_type == AmdGpu::PrimitiveType::PointList ||
-               key.prim_type == AmdGpu::PrimitiveType::LineList ||
-               key.prim_type == AmdGpu::PrimitiveType::TriangleList ||
-               key.prim_type == AmdGpu::PrimitiveType::AdjLineList ||
-               key.prim_type == AmdGpu::PrimitiveType::AdjTriangleList ||
-               key.prim_type == AmdGpu::PrimitiveType::RectList ||
-               key.prim_type == AmdGpu::PrimitiveType::QuadList;
     }
 
     /// Gets the attributes and bindings for vertex inputs.
