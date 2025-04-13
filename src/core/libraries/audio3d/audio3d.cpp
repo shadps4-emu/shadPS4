@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/audio/audioout_error.h"
 #include "core/libraries/audio3d/audio3d.h"
 #include "core/libraries/audio3d/audio3d_error.h"
 #include "core/libraries/error_codes.h"
@@ -180,7 +181,7 @@ int PS4_SYSV_ABI sceAudio3dInitialize(const s64 reserved) {
     state = std::make_unique<Audio3dState>();
 
     const auto init_ret = AudioOut::sceAudioOutInit();
-    if (init_ret < 0) {
+    if (init_ret < 0 && init_ret != ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT) {
         return init_ret;
     }
 
