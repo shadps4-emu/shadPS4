@@ -292,6 +292,11 @@ public:
                properties.limits.framebufferStencilSampleCounts;
     }
 
+    /// Returns whether disabling primitive restart is supported.
+    bool IsPrimitiveRestartDisableSupported() const {
+        return driver_id != vk::DriverId::eMoltenvk;
+    }
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();

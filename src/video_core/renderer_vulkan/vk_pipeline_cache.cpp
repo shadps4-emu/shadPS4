@@ -283,12 +283,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
 
     key.prim_type = regs.primitive_type;
-    key.enable_primitive_restart = regs.enable_primitive_restart & 1;
-    key.primitive_restart_index = regs.primitive_restart_index;
     key.polygon_mode = regs.polygon_control.PolyMode();
-    key.cull_mode = regs.polygon_control.CullingMode();
     key.clip_space = regs.clipper_control.clip_space;
-    key.front_face = regs.polygon_control.front_face;
     key.num_samples = regs.NumSamples();
 
     const bool skip_cb_binding =
