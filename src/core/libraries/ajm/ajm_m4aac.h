@@ -14,7 +14,10 @@ struct SwrContext;
 namespace Libraries::Ajm {
 
 enum AjmM4aacCodecFlags : u32 {
-
+    SbrDecode = 1 << 0,
+    NodelayOutput = 1 << 8,
+    InterleaveOrderExtlExtrLsRs = 1 << 16,
+    InterleaveOrderLsRsExtlExtr = 1 << 24
 };
 DECLARE_ENUM_FLAG_OPERATORS(AjmM4aacCodecFlags)
 
