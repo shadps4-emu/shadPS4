@@ -50,14 +50,14 @@ inline void KeepWindowInside(ImVec2 display_size = GetIO().DisplaySize) {
 }
 
 inline void KeepNavHighlight() {
-    GetCurrentContext()->NavDisableHighlight = false;
+    GetCurrentContext()->NavCursorVisible = true;
 }
 
 inline void SetItemCurrentNavFocus(const ImGuiID id = -1) {
     const auto ctx = GetCurrentContext();
     SetFocusID(id == -1 ? ctx->LastItemData.ID : id, ctx->CurrentWindow);
     ctx->NavInitResult.Clear();
-    ctx->NavDisableHighlight = false;
+    ctx->NavCursorVisible = true;
 }
 
 inline void DrawPrettyBackground() {
