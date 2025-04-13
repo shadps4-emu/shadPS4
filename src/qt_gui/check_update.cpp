@@ -188,7 +188,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     QHBoxLayout* titleLayout = new QHBoxLayout();
 
     QLabel* imageLabel = new QLabel(this);
-    QPixmap pixmap(":/images/shadps4.ico");
+    QPixmap pixmap(":/images/shadps4.svg");
     imageLabel->setPixmap(pixmap);
     imageLabel->setScaledContents(true);
     imageLabel->setFixedSize(50, 50);
