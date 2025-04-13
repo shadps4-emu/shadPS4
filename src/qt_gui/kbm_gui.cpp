@@ -660,8 +660,8 @@ void KBMSettings::CheckMapping(QPushButton*& button) {
     if (pressedNonInt.size() + pressedNonInt.size() > 0) {
         QStringList keyStrings;
 
-        for (const QString& wheelAction : pressedNonInt) {
-            keyStrings << wheelAction;
+        for (const QString& buttonAction : pressedNonInt) {
+            keyStrings << buttonAction;
         }
 
         QString combo = keyStrings.join(",");
