@@ -657,7 +657,7 @@ void KBMSettings::CheckMapping(QPushButton*& button) {
     MappingTimer -= 1;
     button->setText(tr("Press a key") + " [" + QString::number(MappingTimer) + "]");
 
-    if (pressedNonInt.size() + pressedNonInt.size() > 0) {
+    if (pressedNonInt.size() > 0) {
         QStringList keyStrings;
 
         for (const QString& buttonAction : pressedNonInt) {
