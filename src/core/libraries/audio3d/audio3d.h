@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <optional>
 #include <queue>
 
 #include "common/types.h"
@@ -62,12 +63,15 @@ struct OrbisAudio3dAttribute {
     size_t value_size;
 };
 
+struct AudioData {
+    u8* sample_buffer;
+    u32 num_samples;
+};
+
 struct Port {
     OrbisAudio3dOpenParameters parameters{};
-    std::deque<OrbisAudio3dPcm> queue; // Only stores PCM buffers for now
-
-    bool has_buffer{false};
-    OrbisAudio3dPcm current_buffer{};
+    std::deque<AudioData> queue; // Only stores PCM buffers for now
+    std::optional<AudioData> current_buffer{};
 };
 
 struct Audio3dState {

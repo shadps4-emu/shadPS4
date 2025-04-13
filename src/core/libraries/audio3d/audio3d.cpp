@@ -83,6 +83,36 @@ int PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
     return AudioOut::sceAudioOutOutputs(param, num);
 }
 
+static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm) {
+    const SDL_AudioSpec src_spec = {
+        .format = pcm.format == ORBIS_AUDIO3D_FORMAT_S16 ? SDL_AUDIO_S16LE : SDL_AUDIO_F32LE,
+        .channels = AUDIO3D_INPUT_NUM_CHANNELS,
+        .freq = AUDIO3D_SAMPLE_RATE,
+    };
+    constexpr SDL_AudioSpec dst_spec = {
+        .format = SDL_AUDIO_S16LE,
+        .channels = AUDIO3D_OUTPUT_NUM_CHANNELS,
+        .freq = AUDIO3D_SAMPLE_RATE,
+    };
+
+    const auto pcm_size = pcm.num_samples * (pcm.format == ORBIS_AUDIO3D_FORMAT_S16 ? 2 : 4) *
+                          AUDIO3D_INPUT_NUM_CHANNELS;
+
+    u8* dst_data;
+    int dst_len;
+    if (!SDL_ConvertAudioSamples(&src_spec, static_cast<u8*>(pcm.sample_buffer),
+                                 static_cast<int>(pcm_size), &dst_spec, &dst_data, &dst_len)) {
+        LOG_ERROR(Lib_Audio3d, "SDL_ConvertAudioSamples failed: {}", SDL_GetError());
+        return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
+    }
+
+    port.queue.emplace_back(AudioData{
+        .sample_buffer = dst_data,
+        .num_samples = pcm.num_samples,
+    });
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceAudio3dBedWrite(const OrbisAudio3dPortId port_id, const u32 num_channels,
                                     const OrbisAudio3dFormat format, void* buffer,
                                     const u32 num_samples) {
@@ -123,13 +153,12 @@ int PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
             }
         }
 
-        state->ports[port_id].queue.emplace_back(OrbisAudio3dPcm{
+        const OrbisAudio3dPcm pcm = {
             .format = format,
             .sample_buffer = buffer,
             .num_samples = num_samples,
-        });
-
-        return ORBIS_OK;
+        };
+        return PortQueueAudio(state->ports[port_id], pcm);
     }
 
     return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
@@ -227,16 +256,20 @@ int PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
+    auto& port = state->ports[port_id];
+
     for (size_t i = 0; i < num_attributes; i++) {
         const auto& attribute = attribute_array[i];
 
         switch (attribute.attribute_id) {
         case 0x00000001: { // PCM
-            const auto pcm_attribute = static_cast<OrbisAudio3dPcm*>(attribute.value);
-            state->ports[port_id].queue.emplace_back(*pcm_attribute);
-            break;
+            const auto pcm = static_cast<OrbisAudio3dPcm*>(attribute.value);
+            if (const auto ret = PortQueueAudio(port, *pcm); ret != ORBIS_OK) {
+                return ret;
+            }
         }
         default:
+            LOG_ERROR(Lib_Audio3d, "Unsupported attribute ID: {:#x}", attribute.attribute_id);
             break;
         }
     }
@@ -263,13 +296,18 @@ int PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
     }
 
     auto& port = state->ports[port_id];
-    port.has_buffer = !port.queue.empty();
-    if (port.has_buffer) {
+    if (port.current_buffer.has_value()) {
+        // Free existing buffer before replacing.
+        SDL_free(port.current_buffer->sample_buffer);
+    }
+
+    if (!port.queue.empty()) {
         port.current_buffer = port.queue.front();
         port.queue.pop_front();
     } else {
         // Nothing to advance to.
         LOG_DEBUG(Lib_Audio3d, "Port advance with no buffer queued");
+        port.current_buffer = std::nullopt;
     }
 
     return ORBIS_OK;
@@ -398,40 +436,15 @@ int PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
     }
 
-    if (!port.has_buffer) {
+    if (!port.current_buffer.has_value()) {
         // Nothing to push.
         LOG_DEBUG(Lib_Audio3d, "Port push with no buffer ready");
         return ORBIS_OK;
     }
 
-    const u32 src_size =
-        port.current_buffer.num_samples * sizeof(float) * AUDIO3D_INPUT_NUM_CHANNELS;
-    const SDL_AudioSpec src_spec = {
-        .format = port.current_buffer.format == ORBIS_AUDIO3D_FORMAT_S16 ? SDL_AUDIO_S16LE
-                                                                         : SDL_AUDIO_F32LE,
-        .channels = AUDIO3D_INPUT_NUM_CHANNELS,
-        .freq = AUDIO3D_SAMPLE_RATE,
-    };
-    constexpr SDL_AudioSpec dst_spec = {
-        .format = SDL_AUDIO_S16LE,
-        .channels = AUDIO3D_OUTPUT_NUM_CHANNELS,
-        .freq = AUDIO3D_SAMPLE_RATE,
-    };
-
-    u8* dst_data;
-    int dst_len;
-    if (!SDL_ConvertAudioSamples(&src_spec,
-                                 static_cast<const Uint8*>(port.current_buffer.sample_buffer),
-                                 static_cast<int>(src_size), &dst_spec, &dst_data, &dst_len)) {
-        LOG_ERROR(Lib_Audio3d, "SDL_ConvertAudioSamples failed: {}", SDL_GetError());
-        return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
-    }
-
     // TODO: Implement asynchronous blocking mode.
-    const auto ret = AudioOut::sceAudioOutOutput(state->audio_out_handle, dst_data);
-    SDL_free(dst_data);
-
-    return ret;
+    const auto& [sample_buffer, num_samples] = port.current_buffer.value();
+    return AudioOut::sceAudioOutOutput(state->audio_out_handle, sample_buffer);
 }
 
 int PS4_SYSV_ABI sceAudio3dPortQueryDebug() {
