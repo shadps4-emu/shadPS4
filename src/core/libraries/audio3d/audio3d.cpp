@@ -18,6 +18,7 @@ namespace Libraries::Audio3d {
 static constexpr u32 AUDIO3D_SAMPLE_RATE = 48000;
 
 static constexpr u32 AUDIO3D_INPUT_NUM_CHANNELS = 8;
+static constexpr u32 AUDIO3D_OBJECT_NUM_CHANNELS = 1;
 
 static constexpr AudioOut::OrbisAudioOutParamFormat AUDIO3D_OUTPUT_FORMAT =
     AudioOut::OrbisAudioOutParamFormat::S16Stereo;
@@ -83,10 +84,10 @@ int PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
     return AudioOut::sceAudioOutOutputs(param, num);
 }
 
-static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm) {
+static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm, int num_channels) {
     const SDL_AudioSpec src_spec = {
         .format = pcm.format == ORBIS_AUDIO3D_FORMAT_S16 ? SDL_AUDIO_S16LE : SDL_AUDIO_F32LE,
-        .channels = AUDIO3D_INPUT_NUM_CHANNELS,
+        .channels = num_channels,
         .freq = AUDIO3D_SAMPLE_RATE,
     };
     constexpr SDL_AudioSpec dst_spec = {
@@ -95,8 +96,8 @@ static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm) {
         .freq = AUDIO3D_SAMPLE_RATE,
     };
 
-    const auto pcm_size = pcm.num_samples * (pcm.format == ORBIS_AUDIO3D_FORMAT_S16 ? 2 : 4) *
-                          AUDIO3D_INPUT_NUM_CHANNELS;
+    const auto pcm_size =
+        pcm.num_samples * (pcm.format == ORBIS_AUDIO3D_FORMAT_S16 ? 2 : 4) * num_channels;
 
     u8* dst_data;
     int dst_len;
@@ -158,7 +159,7 @@ int PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
             .sample_buffer = buffer,
             .num_samples = num_samples,
         };
-        return PortQueueAudio(state->ports[port_id], pcm);
+        return PortQueueAudio(state->ports[port_id], pcm, AUDIO3D_INPUT_NUM_CHANNELS);
     }
 
     return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
@@ -264,9 +265,11 @@ int PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
         switch (attribute.attribute_id) {
         case 0x00000001: { // PCM
             const auto pcm = static_cast<OrbisAudio3dPcm*>(attribute.value);
-            if (const auto ret = PortQueueAudio(port, *pcm); ret != ORBIS_OK) {
+            if (const auto ret = PortQueueAudio(port, *pcm, AUDIO3D_OBJECT_NUM_CHANNELS);
+                ret != ORBIS_OK) {
                 return ret;
             }
+            break;
         }
         default:
             LOG_ERROR(Lib_Audio3d, "Unsupported attribute ID: {:#x}", attribute.attribute_id);
