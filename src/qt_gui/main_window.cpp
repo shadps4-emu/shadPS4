@@ -1059,8 +1059,7 @@ void MainWindow::SetLastIconSizeBullet() {
             ui->setIconSizeLargeAct->setChecked(true);
             break;
         }
-    }
-    else {
+    } else {
         switch (lastSizeGrid) {
         case 69:
             ui->setIconSizeTinyAct->setChecked(true);
