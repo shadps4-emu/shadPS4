@@ -1892,11 +1892,11 @@
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation>نسخ ذاكرة GPU:\nيتجاوز حالات التزامن الخاطئة التي تحدث عند إرسال البيانات إلى المعالج الرسومي.\nقد يساعد أو لا يساعد في حل أعطال من نوع PM4 النوع 0.</translation>
+      <translation>نسخ مخازن الذاكرة الخاصة بالـ GPU:\nيتجاوز مشكلة التزامن المتعلقة بتقديمات GPU.\n قد يساعد أو لا يساعد في حل أعطال PM4 من النوع 0.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>.</translation>
+      <translation>علامات تصحيح الأخطاء للمضيف:\nقوم بإدراج معلومات في المحاكي مثل علامات للأوامر AMDGPU المرتبطة بأوامر فولكن، إضافةً إلى تخصيص أسماء لتصحيح الأخطاء للموارد.\nمن الأفضل تفعيل تشخيص الأعطال عند تفعيل هذه الخاصية.\nمفيد لبرامج مثل أداة تصحيح الأخطاء الرسومية.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
@@ -1956,7 +1956,7 @@
     </message>
     <message>
       <source>Video</source>
-      <translation>:</translation>
+      <translation>الفيديو</translation>
     </message>
     <message>
       <source>Display Mode</source>
@@ -2040,7 +2040,7 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>تم إنشاء مجلد مستخدم محمول</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>افتح مجلد الصور/الأصوات الخاصة بالجوائز المخصصة:\nيمكنك إضافة صور مخصصة للجوائز وصوت مرفق.\nأضف الملفات إلى مجلد custom_trophy بالأسماء التالية:\ntrophy.wav أو trophy.mp3، bronze.png، gold.png، platinum.png، silver.png\nملاحظة: الصوت سيعمل فقط في الإصدارات التي تستخدم QT.</translation>
     </message>
   </context>
   <context>
