@@ -74,10 +74,3 @@ body:
       placeholder: "Example: 16 GB"
     validations:
       required: true
-  - type: input
-    id: vram
-    attributes:
-      label: Amount of VRAM in GB
-      placeholder: "Example: 8 GB"
-    validations:
-      required: true
