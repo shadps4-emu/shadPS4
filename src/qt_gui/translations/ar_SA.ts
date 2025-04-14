@@ -1892,43 +1892,43 @@
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>نسخ مخازن الذاكرة الخاصة بالـ GPU:\nيتجاوز مشكلة التزامن المتعلقة بتقديمات GPU.\n قد يساعد أو لا يساعد في حل أعطال PM4 من النوع 0.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>علامات تصحيح الأخطاء للمضيف:\nقوم بإدراج معلومات في المحاكي مثل علامات للأوامر AMDGPU المرتبطة بأوامر فولكن، إضافةً إلى تخصيص أسماء لتصحيح الأخطاء للموارد.\nمن الأفضل تفعيل تشخيص الأعطال عند تفعيل هذه الخاصية.\nمفيد لبرامج مثل أداة تصحيح الأخطاء الرسومية.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>علامات تصحيح الضيف:\nيُدخل أي علامات تصحيح أضافتها اللعبة بنفسها إلى ذاكرة أوامر الرسوميات.\nإذا تم التفعيل الأفضل تمكين "تشخيص الأعطال".\nمفيد لبرامج مثل دوك.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>مسار حفظ البيانات:\nالمجلد الذي سيتم فيه حفظ بيانات تخزين اللعبة.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>تصفح:\nاختر مجلدًا لتحديده كمكان لحفظ بيانات التخزين.</translation>
     </message>
     <message>
       <source>Release</source>
-      <translation type="unfinished">Release</translation>
+      <translation>إصدار</translation>
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>إصدار ليلي</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>ضبط صوت الموسيقى في الخلفية.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation type="unfinished">Enable Motion Controls</translation>
+      <translation>تفعيل التحكم بالحركة</translation>
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>مسار بيانات الحفظ</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1936,15 +1936,15 @@
     </message>
     <message>
       <source>async</source>
-      <translation type="unfinished">async</translation>
+      <translation>غير متزامن</translation>
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>متزامن</translation>
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>تلقائي</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -1952,11 +1952,11 @@
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>مسار الحفظ لبيانات الألعاب</translation>
     </message>
     <message>
       <source>Video</source>
-      <translation type="unfinished">Video</translation>
+      <translation>الفيديو</translation>
     </message>
     <message>
       <source>Display Mode</source>
@@ -1992,7 +1992,7 @@
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>ملفات السجل المنفصلة:\nيتم كتابة سجل منفصل لكل لعبه.</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
@@ -2028,7 +2028,7 @@
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
+      <translation>مجلد المستخدم القابل للنقل:\nتخزين إعدادات وبيانات المحاكي التي ستُطبق فقط على هذا الإصدار في المجلد الحالي. بعد إنشاء مجلد المستخدم القابل للنقل، يجب إعادة تشغيل التطبيق للبدء في استخدامه.</translation>
     </message>
     <message>
       <source>Cannot create portable user folder</source>
@@ -2040,7 +2040,7 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>تم إنشاء مجلد مستخدم محمول</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>افتح مجلد الصور/الأصوات الخاصة بالجوائز المخصصة:\nيمكنك إضافة صور مخصصة للجوائز وصوت مرفق.\nأضف الملفات إلى مجلد custom_trophy بالأسماء التالية:\ntrophy.wav أو trophy.mp3، bronze.png، gold.png، platinum.png، silver.png\nملاحظة: الصوت سيعمل فقط في الإصدارات التي تستخدم QT.</translation>
     </message>
   </context>
   <context>

@@ -2784,8 +2784,7 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     // 62 = DS_APPEND
     {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 63 = DS_ORDERED_COUNT
-    {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 64 = DS_ADD_U64
     {InstClass::DsAtomicArith64, InstCategory::DataShare, 3, 1, ScalarType::Uint64,
      ScalarType::Uint64},
