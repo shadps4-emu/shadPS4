@@ -78,7 +78,7 @@
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>تنزيل التصحيحات</translation>
+      <translation>تحميل الباتشات</translation>
     </message>
     <message>
       <source>Save</source>
@@ -86,7 +86,7 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation>الغش</translation>
+      <translation>الشفرات</translation>
     </message>
     <message>
       <source>Patches</source>
@@ -106,7 +106,7 @@
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>لم يتم العثور على ملف تصحيح للرقم التسلسلي الحالي.</translation>
+      <translation>لم يتم العثور على مِلَفّ باتش للسيريال الحالي.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
@@ -142,7 +142,7 @@
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>الملف موجود بالفعل. هل تريد استبداله؟</translation>
+      <translation>يوجد ملف بنفس الاسم. هل ترغب في استبداله؟</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -154,19 +154,19 @@
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>لم يتم العثور على الغش</translation>
+      <translation>لم يتم العثور على أي شفرات</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>لم يتم العثور على غش لهذه اللعبة في هذا الإصدار من المستودع المحدد. حاول استخدام مستودع آخر أو إصدار آخر من اللعبة.</translation>
+      <translation>لم يتم العثور على شفرات لهذه اللعبة في هذه النسخة من المستودع المحدد. حاول استخدام مستودع آخر أو نسخة مختلفة من اللعبة.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>تم تنزيل الغش بنجاح</translation>
+      <translation>تم تحميل الشفرات بنجاح</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>لقد نجحت في تنزيل الغش لهذا الإصدار من اللعبة من المستودع المحدد. يمكنك محاولة التنزيل من مستودع آخر. إذا كان متاحًا، يمكنك اختياره عن طريق تحديد الملف من القائمة.</translation>
+      <translation>تم تحميل الشفرات بنجاح لهذه النسخة من اللعبة من المستودع الذي اخترته. إذا أردت، يمكنك تجربة مستودع آخر، وإذا كان متاحًا، يمكنك استخدام الشفرات عن طريق اختيار الملف من القائمة.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -329,7 +329,7 @@
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>حدث خطأ في الشبكة أثناء محاولة الوصول إلى عنوان URL</translation>
+      <translation>حدث خطأ في الشبكة عند محاولة الوصول إلى الموقع</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -388,11 +388,11 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>أحذية</translation>
+      <translation>إقلاع</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>قوائم</translation>
+      <translation>القائمة</translation>
     </message>
     <message>
       <source>Ingame</source>
@@ -407,7 +407,7 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>تعديل عناصر التحكم</translation>
+      <translation>إعدادات التحكم</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -431,11 +431,11 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>مدى تسجيل الإدخال للعصا اليسرى (التلقائي:2 حد أقصى:127)</translation>
+      <translation>النقطة العمياء للعصا اليسرى (الافتراضي: 2، الحد الأقصى: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>إعدادات مدى تسجيل الإدخال لعصا التحكم اليسرى</translation>
+      <translation>النقطة العمياء لليسار</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -507,11 +507,11 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation>مدى تسجيل الإدخال للعصا اليمنى (التلقائي:2 حد أقصى:127)</translation>
+      <translation>النقطة العمياء للعصا اليمنى (الافتراضي: 2، الحد الأقصى: 127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation>إعدادات مدى تسجيل الإدخال لعصا التحكم اليمنى</translation>
+      <translation>النقطة العمياء اليمنى</translation>
     </message>
     <message>
       <source>Right Stick</source>
