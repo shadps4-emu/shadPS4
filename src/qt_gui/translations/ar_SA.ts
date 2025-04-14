@@ -15,7 +15,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>يجب عدم استخدام هذا البرنامج لتشغيل الألعاب التي لم تحصل عليها بشكل قانوني.</translation>
+      <translation>لا تستخدم هذا البرنامج لتشغيل الألعاب بطريقة غير قانونية.</translation>
     </message>
   </context>
   <context>
@@ -26,11 +26,11 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>الغش والتصحيحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الغش بشكل فردي عن طريق اختيار المستودع والنقر على زر التنزيل.\nفي علامة تبويب التصحيحات، يمكنك تنزيل جميع التصحيحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الغش/التصحيحات،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الغش.\n\nهل قمت بإنشاء غش جديد؟ قم بزيارة:\n</translation>
+      <translation>الشفرات والإصلاحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الشفرات بشكل فردي عن طريق اختيار المستودع والضغط على تنزيل.\nفي علامة تبويب الإصلاحات، يمكنك تنزيل جميع الإصلاحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الشفرات والإصلاحات ،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الشفرات.\n\nهل قمت بإنشاء شفرة جديد؟ قم بزيارة:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>لا تتوفر صورة</translation>
+      <translation>الصورة غير موجودة</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -46,7 +46,7 @@
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>اختر ملف الغش:</translation>
+      <translation>حدد مِلَفّ الشفرات:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,7 +54,7 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>تنزيل الغش</translation>
+      <translation>تحميل الشفرات</translation>
     </message>
     <message>
       <source>Delete File</source>
@@ -66,7 +66,7 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>يمكنك حذف الغش الذي لا تريده بعد تنزيله.</translation>
+      <translation>يمكنك حذف الشفرات التي لا تريدها بعد تنزيلها.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
