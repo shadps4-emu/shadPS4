@@ -25,6 +25,7 @@ enum class FloatClassFunc : u32 {
 
     NaN = SignalingNan | QuietNan,
     Infinity = PositiveInfinity | NegativeInfinity,
+    Negative = NegativeInfinity | NegativeNormal | NegativeDenorm | NegativeZero,
     Finite = NegativeNormal | NegativeDenorm | NegativeZero | PositiveNormal | PositiveDenorm |
              PositiveZero,
 };
