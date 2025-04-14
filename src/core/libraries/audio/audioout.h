@@ -20,7 +20,15 @@ class PortBackend;
 constexpr s32 SCE_AUDIO_OUT_NUM_PORTS = 22;
 constexpr s32 SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
 
-enum class OrbisAudioOutPort { Main = 0, Bgm = 1, Voice = 2, Personal = 3, Padspk = 4, Aux = 127 };
+enum class OrbisAudioOutPort {
+    Main = 0,
+    Bgm = 1,
+    Voice = 2,
+    Personal = 3,
+    Padspk = 4,
+    Audio3d = 126,
+    Aux = 127,
+};
 
 enum class OrbisAudioOutParamFormat : u32 {
     S16Mono = 0,
