@@ -450,8 +450,6 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d.cpp
                 src/core/libraries/audio3d/audio3d.h
                 src/core/libraries/audio3d/audio3d_error.h
-                src/core/libraries/audio3d/audio3d_impl.cpp
-                src/core/libraries/audio3d/audio3d_impl.h
                 src/core/libraries/game_live_streaming/gamelivestreaming.cpp
                 src/core/libraries/game_live_streaming/gamelivestreaming.h
                 src/core/libraries/remote_play/remoteplay.cpp

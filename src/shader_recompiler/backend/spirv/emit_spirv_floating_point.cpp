@@ -267,12 +267,12 @@ Id EmitFPFrexpSig64(EmitContext& ctx, Id value) {
 
 Id EmitFPFrexpExp32(EmitContext& ctx, Id value) {
     const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f32, value);
-    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
+    return ctx.OpBitcast(ctx.U32[1], ctx.OpCompositeExtract(ctx.S32[1], frexp, 1));
 }
 
 Id EmitFPFrexpExp64(EmitContext& ctx, Id value) {
     const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f64, value);
-    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
+    return ctx.OpBitcast(ctx.U32[1], ctx.OpCompositeExtract(ctx.S32[1], frexp, 1));
 }
 
 Id EmitFPOrdEqual16(EmitContext& ctx, Id lhs, Id rhs) {
