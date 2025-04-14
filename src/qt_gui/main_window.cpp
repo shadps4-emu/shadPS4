@@ -516,9 +516,11 @@ void MainWindow::CreateConnects() {
             Config::setIconSize(36);
             Config::setSliderPosition(0);
         } else {
+            m_game_grid_frame->icon_size = 69;
             ui->sizeSlider->setValue(0); // icone_size - 36
             Config::setIconSizeGrid(69);
             Config::setSliderPositionGrid(0);
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
 
@@ -529,9 +531,11 @@ void MainWindow::CreateConnects() {
             Config::setIconSize(64);
             Config::setSliderPosition(28);
         } else {
+            m_game_grid_frame->icon_size = 97;
             ui->sizeSlider->setValue(28);
             Config::setIconSizeGrid(97);
             Config::setSliderPositionGrid(28);
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
 
@@ -542,9 +546,11 @@ void MainWindow::CreateConnects() {
             Config::setIconSize(128);
             Config::setSliderPosition(92);
         } else {
+            m_game_grid_frame->icon_size = 161;
             ui->sizeSlider->setValue(92);
-            Config::setIconSizeGrid(160);
-            Config::setSliderPositionGrid(91);
+            Config::setIconSizeGrid(161);
+            Config::setSliderPositionGrid(92);
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
 
@@ -555,9 +561,11 @@ void MainWindow::CreateConnects() {
             Config::setIconSize(256);
             Config::setSliderPosition(220);
         } else {
+            m_game_grid_frame->icon_size = 256;
             ui->sizeSlider->setValue(220);
             Config::setIconSizeGrid(256);
             Config::setSliderPositionGrid(220);
+            m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
     // List
@@ -577,6 +585,7 @@ void MainWindow::CreateConnects() {
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
         ui->mw_searchbar->setText("");
+        SetLastIconSizeBullet();
     });
     // Grid
     connect(ui->setlistModeGridAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -595,6 +604,7 @@ void MainWindow::CreateConnects() {
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
         ui->mw_searchbar->setText("");
+        SetLastIconSizeBullet();
     });
     // Elf Viewer
     connect(ui->setlistElfAct, &QAction::triggered, m_dock_widget.data(), [this]() {
@@ -606,6 +616,7 @@ void MainWindow::CreateConnects() {
         isTableList = false;
         ui->sizeSlider->setDisabled(true);
         Config::setTableMode(2);
+        SetLastIconSizeBullet();
     });
 
     // Cheats/Patches Download.
@@ -1031,19 +1042,37 @@ void MainWindow::SetLastUsedTheme() {
 void MainWindow::SetLastIconSizeBullet() {
     // set QAction bullet point if applicable
     int lastSize = Config::getIconSize();
-    switch (lastSize) {
-    case 36:
-        ui->setIconSizeTinyAct->setChecked(true);
-        break;
-    case 64:
-        ui->setIconSizeSmallAct->setChecked(true);
-        break;
-    case 128:
-        ui->setIconSizeMediumAct->setChecked(true);
-        break;
-    case 256:
-        ui->setIconSizeLargeAct->setChecked(true);
-        break;
+    int lastSizeGrid = Config::getIconSizeGrid();
+    if (isTableList) {
+        switch (lastSize) {
+        case 36:
+            ui->setIconSizeTinyAct->setChecked(true);
+            break;
+        case 64:
+            ui->setIconSizeSmallAct->setChecked(true);
+            break;
+        case 128:
+            ui->setIconSizeMediumAct->setChecked(true);
+            break;
+        case 256:
+            ui->setIconSizeLargeAct->setChecked(true);
+            break;
+        }
+    } else {
+        switch (lastSizeGrid) {
+        case 69:
+            ui->setIconSizeTinyAct->setChecked(true);
+            break;
+        case 97:
+            ui->setIconSizeSmallAct->setChecked(true);
+            break;
+        case 161:
+            ui->setIconSizeMediumAct->setChecked(true);
+            break;
+        case 256:
+            ui->setIconSizeLargeAct->setChecked(true);
+            break;
+        }
     }
 }
 
