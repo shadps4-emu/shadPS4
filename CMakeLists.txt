@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
     # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -54,8 +54,9 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Target the same x86_64 feature set as the PS4 CPU to match requirements.
-    add_compile_options(-march=btver2 -mno-sse4a)
+    # Target the same CPU architecture as the PS4, to maintain the same level of compatibility.
+    # Exclude SSE4a as it is only available on AMD CPUs.
+    add_compile_options(-march=btver2 -mtune=generic -mno-sse4a)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -104,11 +105,8 @@ if (CLANG_FORMAT)
     unset(CCOMMENT)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 # generate git revision information
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/externals/cmake-modules/")
-include(GetGitRevisionDescription)
+include("${CMAKE_CURRENT_SOURCE_DIR}/externals/cmake-modules/GetGitRevisionDescription.cmake")
 get_git_head_revision(GIT_REF_SPEC GIT_REV)
 git_describe(GIT_DESC --always --long --dirty)
 git_branch_name(GIT_BRANCH)
@@ -202,10 +200,13 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+set(APP_VERSION "0.7.1 WIP")
+set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
@@ -218,7 +219,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.305 CONFIG)
+find_package(VulkanHeaders 1.4.309 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -226,10 +227,10 @@ find_package(ZLIB 1.3 MODULE)
 find_package(Zydis 5.0.0 CONFIG)
 find_package(pugixml 1.14 CONFIG)
 find_package(libusb 1.0.27 MODULE)
-
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
 endif()
+list(POP_BACK CMAKE_MODULE_PATH)
 
 # Note: Windows always has these functions through winpthreads
 include(CheckSymbolExists)
@@ -449,8 +450,6 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/audio3d/audio3d.cpp
                 src/core/libraries/audio3d/audio3d.h
                 src/core/libraries/audio3d/audio3d_error.h
-                src/core/libraries/audio3d/audio3d_impl.cpp
-                src/core/libraries/audio3d/audio3d_impl.h
                 src/core/libraries/game_live_streaming/gamelivestreaming.cpp
                 src/core/libraries/game_live_streaming/gamelivestreaming.h
                 src/core/libraries/remote_play/remoteplay.cpp
@@ -675,7 +674,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/uint128.h
            src/common/unique_function.h
            src/common/va_ctx.h
-           src/common/version.h
            src/common/ntapi.h
            src/common/ntapi.cpp
            src/common/number_utils.h
@@ -1176,7 +1174,7 @@ target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
 
 # embed resources
 
-include(CMakeRC)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
@@ -1197,8 +1195,8 @@ if (ENABLE_QT_GUI)
         MACOSX_BUNDLE ON
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
         MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "0.4.1"
-        )
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
+    )
 
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)

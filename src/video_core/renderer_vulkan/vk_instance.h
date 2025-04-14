@@ -84,6 +84,11 @@ public:
         return features.samplerAnisotropy;
     }
 
+    /// Returns true if depth bounds testing is supported
+    bool IsDepthBoundsSupported() const {
+        return features.depthBounds;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;
@@ -285,6 +290,11 @@ public:
         return properties.limits.framebufferColorSampleCounts &
                properties.limits.framebufferDepthSampleCounts &
                properties.limits.framebufferStencilSampleCounts;
+    }
+
+    /// Returns whether disabling primitive restart is supported.
+    bool IsPrimitiveRestartDisableSupported() const {
+        return driver_id != vk::DriverId::eMoltenvk;
     }
 
 private:
