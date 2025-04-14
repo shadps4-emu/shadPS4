@@ -191,6 +191,7 @@ int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         case OrbisAudioOutPort::Main:
         case OrbisAudioOutPort::Bgm:
         case OrbisAudioOutPort::Voice:
+        case OrbisAudioOutPort::Audio3d:
             state->output = 1;
             state->channel = port.format_info.num_channels > 2 ? 2 : port.format_info.num_channels;
             break;
@@ -316,7 +317,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
     if ((port_type < OrbisAudioOutPort::Main || port_type > OrbisAudioOutPort::Padspk) &&
-        (port_type != OrbisAudioOutPort::Aux)) {
+        (port_type != OrbisAudioOutPort::Audio3d && port_type != OrbisAudioOutPort::Aux)) {
         LOG_ERROR(Lib_AudioOut, "Invalid port type");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
