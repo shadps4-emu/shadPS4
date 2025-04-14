@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>:/images/shadps4.svg</pixmap>
+    <pixmap>:/images/shadps4.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
