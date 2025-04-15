@@ -96,7 +96,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         pInfo->stickInfo.deadZoneLeft = 1;
         pInfo->stickInfo.deadZoneRight = 1;
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
-        pInfo->connectedCount = 2;
+        pInfo->connectedCount = 1;
         pInfo->connected = false;
         pInfo->deviceClass = OrbisPadDeviceClass::Standard;
         return 0;
@@ -107,7 +107,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->stickInfo.deadZoneLeft = 1;
     pInfo->stickInfo.deadZoneRight = 1;
     pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
-    pInfo->connectedCount = 2;
+    pInfo->connectedCount = 1;
     pInfo->connected = true;
     pInfo->deviceClass = OrbisPadDeviceClass::Standard;
     if (Config::getUseSpecialPad()) {
