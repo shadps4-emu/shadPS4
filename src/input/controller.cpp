@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 #include <SDL3/SDL.h>
+#include <common/singleton.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
@@ -356,6 +357,17 @@ u32 GameController::Poll() {
         }
     }
     return 100;
+}
+
+u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
+    auto controllers = *Common::Singleton<GameControllers>::Instance();
+    for (int i = 0; i < 4; i++) {
+        if (controllers[i]->m_sdl_gamepad &&
+            SDL_GetGamepadID(controllers[i]->m_sdl_gamepad) == id) {
+            return i + 1;
+        }
+    }
+    return -1; // Not found
 }
 
 } // namespace Input

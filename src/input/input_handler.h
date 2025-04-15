@@ -471,6 +471,4 @@ bool UpdatePressedKeys(InputEvent event);
 
 void ActivateOutputsFromInputs();
 
-u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
-
 } // namespace Input
