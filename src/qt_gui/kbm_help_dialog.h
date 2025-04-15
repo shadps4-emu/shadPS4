@@ -61,6 +61,8 @@ A: -F12: Triggers Renderdoc capture
 -F9: Pauses emultor, if the debug menu is open
 -F8: Reparses the config file while in-game
 -F7: Toggles mouse capture and mouse input
+-F5: Registers a new simulated controller for the game. Required if you want to use your keyboard for multiple player inputs without actually connecting a new controller.
+-F4: Unregisters the last simulated controller. For the average user, this isn't really useful, and it is also possible to disconnect even the first controller with this, so only use it if you know what you're doing. If you accidentally hit this and remove all inputs, you can add back the first controller with F5.
 
 Q: How do I change between mouse and controller joystick input, and why is it even required?
 A: You can switch between them with F7, and it is required, because mouse input is done with polling, which means mouse movement is checked every frame, and if it didn't move, the code manually sets the emulator's virtual controller to 0 (back to the center), even if other input devices would update it.
@@ -100,6 +102,12 @@ axis_left_y_minus = w;
 You can make a comment line by putting # as the first character.
 Whitespace doesn't matter, <output>=<input>; is just as valid as <output> = <input>;
 ';' at the ends of lines is also optional.
+
+You can bind inputs to an output that's not the first controller with:
+<controller_output> : <index_of_output> = <input>
+For example:
+cross : 2 = o
+binds 'o' to the second controller's cross button. See the FAQ on how to enable a second controller without actually connecting one.
 )";
     }
     QString bindings() {
