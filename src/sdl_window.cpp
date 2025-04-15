@@ -194,21 +194,20 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         OnGamepadEvent(&event);
         break;
-    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:{
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
         int controller_id = Input::GetGamepadIndexFromJoystickId(event.gsensor.which) - 1;
         switch ((SDL_SensorType)event.gsensor.sensor) {
         case SDL_SENSOR_GYRO:
-            controllers[controller_id]->Gyro(
-                0, event.gsensor.data);
+            controllers[controller_id]->Gyro(0, event.gsensor.data);
             break;
         case SDL_SENSOR_ACCEL:
-            controllers[controller_id]->Acceleration(
-                0, event.gsensor.data);
+            controllers[controller_id]->Acceleration(0, event.gsensor.data);
             break;
         default:
             break;
         }
-        break;}
+        break;
+    }
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
@@ -312,13 +311,25 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
         }
         // test controller connect/disconnect
         else if (input_id == SDLK_F4) {
-            int player_count = Config::GetNumberOfPlayers();
-            AddUserServiceEvent({OrbisUserServiceEventType::Logout, player_count});
-            Config::SetNumberOfPlayers(player_count - 1);
+            auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
+            for (int i = 3; i >= 0; i--) {
+                if (controllers[i]->user_id != -1) {
+                    AddUserServiceEvent(
+                        {OrbisUserServiceEventType::Logout, (s32)controllers[i]->user_id});
+                    controllers[i]->user_id = -1;
+                    break;
+                }
+            }
         } else if (input_id == SDLK_F5) {
-            int player_count = Config::GetNumberOfPlayers();
-            AddUserServiceEvent({OrbisUserServiceEventType::Login, player_count + 1});
-            Config::SetNumberOfPlayers(player_count + 1);
+            auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
+            for (int i = 0; i < 4; i++) {
+                if (controllers[i]->user_id == -1) {
+                    controllers[i]->user_id = i + 1;
+                    AddUserServiceEvent(
+                        {OrbisUserServiceEventType::Login, (s32)controllers[i]->user_id});
+                    break;
+                }
+            }
         }
     }
 

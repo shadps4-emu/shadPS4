@@ -588,7 +588,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
     // TODO only first user, do the others as well
     for (int i = 0; i < 4; i++) {
         auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-        userIdList->user_id[i] = controllers[i]->GetUserId();
+        userIdList->user_id[i] = controllers[i]->user_id;
     }
     return ORBIS_OK;
 }
