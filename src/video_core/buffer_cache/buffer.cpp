@@ -112,6 +112,103 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     is_coherent = property_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
+ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
+                                       Vulkan::Scheduler& scheduler_, void* cpu_addr_,
+                                       u64 size_bytes_, vk::BufferUsageFlags flags)
+    : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, scheduler{&scheduler_} {
+    ASSERT_MSG(size_bytes > 0, "Size must be greater than 0");
+    ASSERT_MSG(cpu_addr != 0, "CPU address must not be null");
+    const vk::DeviceSize alignment = instance->GetExternalHostMemoryHostAlignment();
+    ASSERT_MSG(reinterpret_cast<u64>(cpu_addr) % alignment == 0,
+               "CPU address {:#x} is not aligned to {:#x}", cpu_addr, alignment);
+    ASSERT_MSG(size_bytes % alignment == 0, "Size {:#x} is not aligned to {:#x}", size_bytes,
+               alignment);
+
+    const auto& mem_props = instance->GetMemoryProperties();
+    auto ptr_props_result = instance->GetDevice().getMemoryHostPointerPropertiesEXT(
+        vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, cpu_addr);
+    ASSERT_MSG(ptr_props_result.result == vk::Result::eSuccess,
+               "Failed getting host pointer properties with error {}",
+               vk::to_string(ptr_props_result.result));
+    auto ptr_props = ptr_props_result.value;
+    u32 memory_type_index = UINT32_MAX;
+    for (u32 i = 0; i < mem_props.memoryTypeCount; ++i) {
+        if ((ptr_props.memoryTypeBits & (1 << i)) != 0) {
+            if (mem_props.memoryTypes[i].propertyFlags & (vk::MemoryPropertyFlagBits::eHostVisible |
+                                                        vk::MemoryPropertyFlagBits::eHostCoherent)) {
+                memory_type_index = i;
+                // We prefer cache coherent memory types.
+                if (mem_props.memoryTypes[i].propertyFlags &
+                    vk::MemoryPropertyFlagBits::eHostCached) {
+                    break;
+                }
+            }
+        }
+    }
+    ASSERT_MSG(memory_type_index != UINT32_MAX,
+               "Failed to find a host visible memory type for the imported host buffer");
+
+    const bool with_bda = bool(flags & vk::BufferUsageFlagBits::eShaderDeviceAddress);
+    vk::ExternalMemoryBufferCreateInfo external_info{
+        .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+    };
+    vk::BufferCreateInfo buffer_ci{
+        .pNext = &external_info,
+        .size = size_bytes,
+        .usage = flags,
+    };
+    vk::ImportMemoryHostPointerInfoEXT import_info{
+        .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+        .pHostPointer = reinterpret_cast<void*>(cpu_addr),
+    };
+    vk::MemoryAllocateFlagsInfo memory_flags_info{
+        .pNext = &import_info,
+        .flags = with_bda ? vk::MemoryAllocateFlagBits::eDeviceAddress : vk::MemoryAllocateFlags{},
+    };
+    vk::MemoryAllocateInfo alloc_ci{
+        .pNext = &memory_flags_info,
+        .allocationSize = size_bytes,
+        .memoryTypeIndex = memory_type_index,
+    };
+    
+    auto buffer_result = instance->GetDevice().createBuffer(buffer_ci);
+    ASSERT_MSG(buffer_result.result == vk::Result::eSuccess,
+               "Failed creating imported host buffer with error {}",
+               vk::to_string(buffer_result.result));
+    buffer = buffer_result.value;
+
+    auto device_memory_result = instance->GetDevice().allocateMemory(alloc_ci);
+    if (device_memory_result.result != vk::Result::eSuccess) {
+        // May fail to import the host memory if it is backed by a file. (AMD on Linux)
+        instance->GetDevice().destroyBuffer(buffer);
+        has_failed = true;
+        return;
+    }
+    device_memory = device_memory_result.value;
+
+    auto result = instance->GetDevice().bindBufferMemory(buffer, device_memory, 0);
+    ASSERT_MSG(result == vk::Result::eSuccess,
+               "Failed binding imported host buffer with error {}",
+               vk::to_string(result));
+
+    if (with_bda) {
+        vk::BufferDeviceAddressInfo bda_info{
+            .buffer = buffer,
+        };
+        bda_addr = instance->GetDevice().getBufferAddress(bda_info);
+        ASSERT_MSG(bda_addr != 0, "Failed getting buffer device address");
+    }
+}
+
+ImportedHostBuffer::~ImportedHostBuffer() {
+    if (!buffer) {
+        return;
+    }
+    const auto device = instance->GetDevice();
+    device.destroyBuffer(buffer);
+    device.freeMemory(device_memory);
+}
+
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
 

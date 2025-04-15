@@ -60,7 +60,7 @@ public:
     }
 
     template <typename... Args>
-    [[nodiscard]] SlotId insert(Args&&... args) noexcept {
+    SlotId insert(Args&&... args) noexcept {
         const u32 index = FreeValueIndex();
         new (&values[index].object) T(std::forward<Args>(args)...);
         SetStorageBit(index);

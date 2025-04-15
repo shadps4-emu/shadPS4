@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <bitset>
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
 #include "common/div_ceil.h"
@@ -42,6 +43,11 @@ public:
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
     static constexpr u64 DEVICE_PAGESIZE = 4_KB;
 
+    static constexpr u64 BDA_PAGEBITS = 16;
+    static constexpr u64 BDA_PAGESIZE = u64{1} << BDA_PAGEBITS;
+    static constexpr u64 BDA_NUMPAGES = (u64{1} << (u64(40) - BDA_PAGEBITS));
+    static constexpr u64 BDA_PAGETABLE_SIZE = BDA_NUMPAGES * sizeof(u64);
+
     struct Traits {
         using Entry = BufferId;
         static constexpr size_t AddressSpaceBits = 40;
@@ -73,6 +79,11 @@ public:
         return stream_buffer;
     }
 
+    /// Retrieves the device local DBA page table buffer.
+    [[nodiscard]] Buffer& GetBdaPageTableBuffer() noexcept {
+        return bda_pagetable_buffer;
+    }
+
     /// Retrieves the buffer with the specified id.
     [[nodiscard]] Buffer& GetBuffer(BufferId id) {
         return slot_buffers[id];
@@ -87,8 +98,11 @@ public:
     /// Bind host index buffer for the current draw.
     void BindIndexBuffer(u32 index_offset);
 
-    /// Writes a value to GPU buffer.
+    /// Writes a value to GPU buffer. (uses command buffer to temporarily store the data)
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+
+    /// Writes a value to GPU buffer. (uses staging buffer to temporarily store the data)
+    void WriteData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
@@ -109,6 +123,8 @@ public:
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
     [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
+
+    void MapMemory(VAddr device_addr, u64 size);
 
 private:
     template <typename Func>
@@ -134,7 +150,7 @@ private:
 
     void JoinOverlap(BufferId new_buffer_id, BufferId overlap_id, bool accumulate_stream_score);
 
-    [[nodiscard]] BufferId CreateBuffer(VAddr device_addr, u32 wanted_size);
+    BufferId CreateBuffer(VAddr device_addr, u32 wanted_size);
 
     void Register(BufferId buffer_id);
 
@@ -147,6 +163,10 @@ private:
 
     bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
 
+    void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
+
+    void WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
+
     void DeleteBuffer(BufferId buffer_id);
 
     const Vulkan::Instance& instance;
@@ -157,6 +177,9 @@ private:
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
+    Buffer bda_pagetable_buffer;
+    std::bitset<BDA_NUMPAGES> bda_mapped_pages;
+    std::vector<ImportedHostBuffer> imported_buffers;
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;

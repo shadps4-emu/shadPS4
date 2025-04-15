@@ -156,6 +156,72 @@ public:
     vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eAllCommands};
 };
 
+class ImportedHostBuffer {
+public:
+    ImportedHostBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+                        void* cpu_addr_, u64 size_bytes_, vk::BufferUsageFlags flags);
+    ~ImportedHostBuffer();
+
+
+    ImportedHostBuffer& operator=(const ImportedHostBuffer&) = delete;
+    ImportedHostBuffer(const ImportedHostBuffer&) = delete;
+
+    ImportedHostBuffer(ImportedHostBuffer&& other)
+        : size_bytes{std::exchange(other.size_bytes, 0)},
+          cpu_addr{std::exchange(other.cpu_addr, nullptr)},
+          bda_addr{std::exchange(other.bda_addr, 0)},
+          instance{other.instance}, scheduler{other.scheduler},
+          buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
+          device_memory{std::exchange(other.device_memory, VK_NULL_HANDLE)},
+          has_failed{std::exchange(other.has_failed, false)} {}
+    ImportedHostBuffer& operator=(ImportedHostBuffer&& other) {
+        size_bytes = std::exchange(other.size_bytes, 0);
+        cpu_addr = std::exchange(other.cpu_addr, nullptr);
+        bda_addr = std::exchange(other.bda_addr, false);
+        instance = other.instance;
+        scheduler = other.scheduler;
+        buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
+        device_memory = std::exchange(other.device_memory, VK_NULL_HANDLE);
+        has_failed = std::exchange(other.has_failed, false);
+        return *this;
+    }
+
+    /// Returns the base CPU address of the buffer
+    void* CpuAddr() const noexcept {
+        return cpu_addr;
+    }
+
+    // Returns the handle to the Vulkan buffer
+    vk::Buffer Handle() const noexcept {
+        return buffer;
+    }
+
+    // Returns the size of the buffer in bytes
+    size_t SizeBytes() const noexcept {
+        return size_bytes;
+    }
+
+    // Returns true if the buffer failed to be created
+    bool HasFailed() const noexcept {
+        return has_failed;
+    }
+
+    // Returns the Buffer Device Address of the buffer
+    vk::DeviceAddress BufferDeviceAddress() const noexcept {
+        ASSERT_MSG(bda_addr != 0, "Can't get BDA from a non BDA buffer");
+        return bda_addr;
+    }
+private:
+    size_t size_bytes = 0;
+    void* cpu_addr = 0;
+    vk::DeviceAddress bda_addr = 0;
+    const Vulkan::Instance* instance;
+    Vulkan::Scheduler* scheduler;
+    vk::Buffer buffer;
+    vk::DeviceMemory device_memory;
+    bool has_failed = false;
+};
+
 class StreamBuffer : public Buffer {
 public:
     explicit StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
