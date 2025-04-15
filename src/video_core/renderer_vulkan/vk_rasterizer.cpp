@@ -930,12 +930,17 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
         // There is no memory, so not mapped.
         return false;
     }
-    return mapped_ranges.find(boost::icl::interval<VAddr>::right_open(addr, addr + size)) !=
-           mapped_ranges.end();
+    const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+
+    std::shared_lock lock{mapped_ranges_mutex};
+    return boost::icl::contains(mapped_ranges, range);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
-    mapped_ranges += boost::icl::interval<VAddr>::right_open(addr, addr + size);
+    {
+        std::unique_lock lock{mapped_ranges_mutex};
+        mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+    }
     page_manager.OnGpuMap(addr, size);
 }
 
@@ -943,7 +948,10 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
-    mapped_ranges -= boost::icl::interval<VAddr>::right_open(addr, addr + size);
+    {
+        std::unique_lock lock{mapped_ranges_mutex};
+        mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+    }
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
