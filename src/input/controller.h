@@ -8,8 +8,6 @@
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 
-#include "SDL3/SDL_joystick.h"
-
 struct SDL_Gamepad;
 
 namespace Input {
@@ -108,8 +106,6 @@ public:
         return controllers[i];
     }
     static void TryOpenSDLControllers(GameControllers& controllers);
-
-    static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
 };
 
 } // namespace Input
