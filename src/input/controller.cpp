@@ -271,11 +271,10 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         }
     }
 
-    // Now, add any new controllers not already assigned
     for (int j = 0; j < controller_count; j++) {
         SDL_JoystickID id = new_joysticks[j];
         if (assigned_ids.contains(id))
-            continue; // already handled
+            continue;
 
         SDL_Gamepad* pad = SDL_OpenGamepad(id);
         if (!pad)
@@ -288,6 +287,27 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 slot_taken[i] = true;
                 AddUserServiceEvent(
                     {OrbisUserServiceEventType::Login, SDL_GetGamepadPlayerIndex(pad) + 1});
+
+                if (SDL_SetGamepadSensorEnabled(controllers[i]->m_sdl_gamepad, SDL_SENSOR_GYRO,
+                                                true)) {
+                    controllers[i]->gyro_poll_rate = SDL_GetGamepadSensorDataRate(
+                        controllers[i]->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                    LOG_INFO(Input, "Gyro initialized, poll rate: {}",
+                             controllers[i]->gyro_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                              controllers[i]->user_id);
+                }
+                if (SDL_SetGamepadSensorEnabled(controllers[i]->m_sdl_gamepad, SDL_SENSOR_ACCEL,
+                                                true)) {
+                    controllers[i]->accel_poll_rate = SDL_GetGamepadSensorDataRate(
+                        controllers[i]->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                    LOG_INFO(Input, "Accel initialized, poll rate: {}",
+                             controllers[i]->accel_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                              controllers[i]->user_id);
+                }
                 break;
             }
         }
