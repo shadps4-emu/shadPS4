@@ -42,7 +42,9 @@ static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
 static std::string logType = "sync";
-static std::array<std::string, 4> userNames = {"shadPS4" "shadps4-2", "shadPS4-3", "shadPS4-4"};
+static std::array<std::string, 4> userNames = {"shadPS4"
+                                               "shadps4-2",
+                                               "shadPS4-3", "shadPS4-4"};
 static std::string updateChannel;
 static std::string chooseHomeTab;
 static std::string backButtonBehavior = "left";
