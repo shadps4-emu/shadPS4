@@ -6,10 +6,12 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 
+#include "common/singleton.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
 #include "core/tls.h"
+#include "input/controller.h"
 
 namespace Libraries::UserService {
 
@@ -584,13 +586,9 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
     // TODO only first user, do the others as well
-    int player_count = Config::GetNumberOfPlayers();
     for (int i = 0; i < 4; i++) {
-        if (i < player_count) {
-            userIdList->user_id[i] = i + 1;
-        } else {
-            userIdList->user_id[i] = ORBIS_USER_SERVICE_USER_ID_INVALID;
-        }
+        auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
+        userIdList->user_id[i] = controllers[i]->GetUserId();
     }
     return ORBIS_OK;
 }

@@ -65,6 +65,9 @@ public:
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
     u32 Poll();
+    u32 GetUserId() {
+        return user_id;
+    }
 
     float gyro_poll_rate;
     float accel_poll_rate;
@@ -86,6 +89,7 @@ private:
     u32 m_first_state = 0;
     std::array<State, MAX_STATES> m_states;
     std::array<StateInternal, MAX_STATES> m_private;
+    u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
 
     SDL_Gamepad* m_sdl_gamepad = nullptr;
 };

@@ -117,7 +117,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-    Input::GameControllers::TryOpenSDLControllers(controllers);
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
@@ -146,10 +145,10 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     // default login
     using namespace Libraries::UserService;
-    int player_count = Config::GetNumberOfPlayers();
-    for (int i = 0; i < player_count; i++) {
-        AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
-    }
+    // int player_count = Config::GetNumberOfPlayers();
+    // for (int i = 0; i < player_count; i++) {
+    //     AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
+    // }
 }
 
 WindowSDL::~WindowSDL() = default;

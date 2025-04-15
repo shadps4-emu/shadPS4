@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_set>
 #include <SDL3/SDL.h>
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -242,21 +243,52 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
 void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     using namespace Libraries::UserService;
     int controller_count;
-    SDL_JoystickID* joysticks = SDL_GetGamepads(&controller_count);
+    SDL_JoystickID* new_joysticks = SDL_GetGamepads(&controller_count);
+
+    std::unordered_set<SDL_JoystickID> assigned_ids;
+    std::array<bool, 4> slot_taken{false, false, false, false};
+
     for (int i = 0; i < 4; i++) {
-        if (i < controller_count) {
-            SDL_Gamepad** temp = &(controllers[i]->m_sdl_gamepad);
-            controllers[i]->m_sdl_gamepad = SDL_OpenGamepad(joysticks[i]);
-            if (*temp == 0) {
-                AddUserServiceEvent({OrbisUserServiceEventType::Login,
-                                     SDL_GetGamepadPlayerIndex(controllers[i]->m_sdl_gamepad) + 2});
+        SDL_Gamepad* pad = controllers[i]->m_sdl_gamepad;
+        if (pad) {
+            SDL_JoystickID id = SDL_GetGamepadID(pad);
+            bool still_connected = false;
+            for (int j = 0; j < controller_count; j++) {
+                if (new_joysticks[j] == id) {
+                    still_connected = true;
+                    assigned_ids.insert(id);
+                    slot_taken[i] = true;
+                    break;
+                }
             }
-        } else {
-            SDL_Gamepad** temp = &(controllers[i]->m_sdl_gamepad);
-            controllers[i]->m_sdl_gamepad = nullptr;
-            if (*temp != 0) {
+            if (!still_connected) {
                 AddUserServiceEvent(
-                    {OrbisUserServiceEventType::Logout, SDL_GetGamepadPlayerIndex(*temp) + 2});
+                    {OrbisUserServiceEventType::Logout, SDL_GetGamepadPlayerIndex(pad) + 1});
+                SDL_CloseGamepad(pad);
+                controllers[i]->m_sdl_gamepad = nullptr;
+                controllers[i]->user_id = -1;
+            }
+        }
+    }
+
+    // Now, add any new controllers not already assigned
+    for (int j = 0; j < controller_count; j++) {
+        SDL_JoystickID id = new_joysticks[j];
+        if (assigned_ids.contains(id))
+            continue; // already handled
+
+        SDL_Gamepad* pad = SDL_OpenGamepad(id);
+        if (!pad)
+            continue;
+
+        for (int i = 0; i < 4; i++) {
+            if (!slot_taken[i]) {
+                controllers[i]->m_sdl_gamepad = pad;
+                controllers[i]->user_id = i + 1;
+                slot_taken[i] = true;
+                AddUserServiceEvent(
+                    {OrbisUserServiceEventType::Login, SDL_GetGamepadPlayerIndex(pad) + 1});
+                break;
             }
         }
     }
