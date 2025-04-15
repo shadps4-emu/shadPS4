@@ -145,10 +145,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     // default login
     using namespace Libraries::UserService;
-    // int player_count = Config::GetNumberOfPlayers();
-    // for (int i = 0; i < player_count; i++) {
-    //     AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
-    // }
 }
 
 WindowSDL::~WindowSDL() = default;
