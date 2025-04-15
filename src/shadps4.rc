@@ -1,1 +1,43 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "winresrc.h"
+
+#define xstr(s) str(s)
+#define str(s) #s
+
+// NEUTRAL LANG
+LANGUAGE LANG_NEUTRAL, 0x8
+
+// ICON
 IDI_ICON1 ICON "images/shadps4.ico"
+
+// VERSION
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    EMULATOR_VERSION_MAJOR, EMULATOR_VERSION_MINOR, EMULATOR_VERSION_PATCH, 0
+ PRODUCTVERSION EMULATOR_VERSION_MAJOR, EMULATOR_VERSION_MINOR, EMULATOR_VERSION_PATCH, 0
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "shadPS4 - PlayStation 4 Emulator\0"
+            VALUE "FileVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
+            VALUE "InternalName", "shadPS4\0"
+            VALUE "LegalCopyright", "Copyright 2025 shadPS4 Team\0"
+            VALUE "OriginalFilename", "shadPS4.exe\0"
+            VALUE "ProductName", "shadPS4\0"
+            VALUE "ProductVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
