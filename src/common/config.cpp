@@ -77,7 +77,6 @@ static double trophyNotificationDuration = 6.0;
 static bool useUnifiedInputConfig = true;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool separateupdatefolder = false;
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
