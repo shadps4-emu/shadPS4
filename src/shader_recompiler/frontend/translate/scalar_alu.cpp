@@ -238,6 +238,17 @@ void Translator::S_SUB_U32(const GcnInst& inst) {
     ir.SetScc(ir.IGreaterThan(src1, src0, false));
 }
 
+void Translator::S_SUBB_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 borrow{ir.Select(ir.GetScc(), ir.Imm32(1U), ir.Imm32(0U))};
+    const IR::U32 result{ir.ISub(ir.ISub(src0, src1), borrow)};
+    SetDst(inst.dst[0], result);
+
+    const IR::U32 sum_with_borrow{ir.IAdd(src1, borrow)};
+    ir.SetScc(ir.ILessThan(src0, sum_with_borrow, false));
+}
+
 void Translator::S_ADD_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
