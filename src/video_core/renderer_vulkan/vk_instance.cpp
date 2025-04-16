@@ -249,7 +249,7 @@ bool Instance::CreateDevice() {
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
     add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME);
     add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
 
     add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
@@ -422,9 +422,6 @@ bool Instance::CreateDevice() {
 #endif
     };
 
-    if (!maintenance4) {
-        device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
-    }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
     }
