@@ -24,6 +24,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_ADD_U32(inst);
         case Opcode::S_SUB_U32:
             return S_SUB_U32(inst);
+        case Opcode::S_SUBB_U32:
+            return S_SUBB_U32(inst);
         case Opcode::S_ADD_I32:
             return S_ADD_I32(inst);
         case Opcode::S_SUB_I32:
