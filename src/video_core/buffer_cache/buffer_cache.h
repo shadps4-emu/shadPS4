@@ -39,14 +39,11 @@ class TextureCache;
 
 class BufferCache {
 public:
-    static constexpr u32 CACHING_PAGEBITS = 12;
+    static constexpr u32 CACHING_PAGEBITS = 16;
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
-    static constexpr u64 DEVICE_PAGESIZE = 4_KB;
-
-    static constexpr u64 BDA_PAGEBITS = 16;
-    static constexpr u64 BDA_PAGESIZE = u64{1} << BDA_PAGEBITS;
-    static constexpr u64 BDA_NUMPAGES = (u64{1} << (u64(40) - BDA_PAGEBITS));
-    static constexpr u64 BDA_PAGETABLE_SIZE = BDA_NUMPAGES * sizeof(u64);
+    static constexpr u64 DEVICE_PAGESIZE = 64_KB;
+    static constexpr u64 CACHING_NUMPAGES = u64{1} << (40 - CACHING_PAGEBITS);
+    static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(u64);
 
     struct Traits {
         using Entry = BufferId;
@@ -65,8 +62,8 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
-                         PageManager& tracker);
+                         Vulkan::Rasterizer& rasterizer_, AmdGpu::Liverpool* liverpool,
+                         TextureCache& texture_cache, PageManager& tracker);
     ~BufferCache();
 
     /// Returns a pointer to GDS device local buffer.
@@ -124,8 +121,6 @@ public:
 
     [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
 
-    void MapMemory(VAddr device_addr, u64 size);
-
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
@@ -169,8 +164,11 @@ private:
 
     void DeleteBuffer(BufferId buffer_id);
 
+    void MapMemory(VAddr device_addr, u64 size);
+
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    Vulkan::Rasterizer& rasterizer;
     AmdGpu::Liverpool* liverpool;
     TextureCache& texture_cache;
     PageManager& tracker;
@@ -178,7 +176,7 @@ private:
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
-    std::bitset<BDA_NUMPAGES> bda_mapped_pages;
+    boost::icl::interval_set<u64> covered_regions;
     std::vector<ImportedHostBuffer> imported_buffers;
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;

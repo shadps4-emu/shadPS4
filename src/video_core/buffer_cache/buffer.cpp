@@ -180,6 +180,9 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
     auto device_memory_result = instance->GetDevice().allocateMemory(alloc_ci);
     if (device_memory_result.result != vk::Result::eSuccess) {
         // May fail to import the host memory if it is backed by a file. (AMD on Linux)
+        LOG_WARNING(Render_Vulkan,
+                    "Failed to import host memory at {} size {:#x}, Reason: {}",
+                    cpu_addr, size_bytes, vk::to_string(device_memory_result.result));
         instance->GetDevice().destroyBuffer(buffer);
         has_failed = true;
         return;

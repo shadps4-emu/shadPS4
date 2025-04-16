@@ -19,9 +19,9 @@ static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t UboStreamBufferSize = 128_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                         AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
-                         PageManager& tracker_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+                         Vulkan::Rasterizer& rasterizer_, AmdGpu::Liverpool* liverpool_,
+                         TextureCache& texture_cache_, PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, rasterizer{rasterizer_}, liverpool{liverpool_},
       texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
@@ -324,31 +324,38 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
 }
 
 void BufferCache::MapMemory(VAddr device_addr, u64 size) {
-    const u64 page_start = device_addr >> BDA_PAGEBITS;
-    const u64 page_end = Common::DivCeil(device_addr + size, BDA_PAGESIZE);
+    const u64 page_start = device_addr >> CACHING_PAGEBITS;
+    const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
+    auto interval = decltype(covered_regions)::interval_type::right_open(page_start, page_end);
+    auto interval_set = boost::icl::interval_set<u64>{interval};
+    auto uncovered_ranges = interval_set - covered_regions;
+    if (uncovered_ranges.empty()) {
+        return;
+    }
     // We fill any holes within the given range
     boost::container::small_vector<u64, 1024> bda_addrs;
-    bool importing_failed = false;
-    u64 range_start = page_start;
-    u64 range_end = page_start;
-    const auto import_range = [&]() {
-        // Import the host memory
-        void* cpu_addr = reinterpret_cast<void*>(range_start << BDA_PAGEBITS);
-        const u64 range_size = (range_end - range_start) << BDA_PAGEBITS;
-        ImportedHostBuffer buffer(instance, scheduler, cpu_addr, range_size, vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eStorageBuffer);
+    for (const auto& range : uncovered_ranges) {
+        // import host memory
+        const u64 range_start = range.lower();
+        const u64 range_end = range.upper();
+        void* cpu_addr = reinterpret_cast<void*>(range_start << CACHING_PAGEBITS);
+        const u64 range_size = (range_end - range_start) << CACHING_PAGEBITS;
+        ImportedHostBuffer buffer(instance, scheduler, cpu_addr, range_size,
+                                  vk::BufferUsageFlagBits::eShaderDeviceAddress |
+                                  vk::BufferUsageFlagBits::eStorageBuffer);
         if (buffer.HasFailed()) {
-            importing_failed = true;
+            continue;
         }
         // Update BDA page table
-        u64 bda_addr = buffer.BufferDeviceAddress();
-        u64 range = range_end - range_start;
+        const u64 bda_addr = buffer.BufferDeviceAddress();
+        const u64 range_pages = range_end - range_start;
         bda_addrs.clear();
-        bda_addrs.reserve(range);
-        for (u64 i = 0; i < range; ++i) {
+        bda_addrs.reserve(range_pages);
+        for (u64 i = 0; i < range_pages; ++i) {
             // TODO: we may want to mark the page as host imported
             // to let the shader know so that it can notify us if it
             // accesses the page, so we can create a GPU local buffer.
-            bda_addrs.push_back(bda_addr + (i << BDA_PAGEBITS));
+            bda_addrs.push_back((bda_addr + (i << CACHING_PAGEBITS)) | 0x1);
         }
         WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(u64), bda_addrs.data(),
                         bda_addrs.size() * sizeof(u64));
@@ -356,34 +363,9 @@ void BufferCache::MapMemory(VAddr device_addr, u64 size) {
             std::scoped_lock lk{mutex};
             imported_buffers.emplace_back(std::move(buffer));
         }
-    };
-    for (; range_end < page_end; ++range_end) {
-        if (!bda_mapped_pages.test(range_end)) {
-            continue;
-        }
-        if (range_start != range_end) {
-            import_range();
-            if (importing_failed) {
-                break;
-            }
-        }
-        range_start = range_end + 1;
+        // Mark the pages as covered
+        covered_regions += range;
     }
-    if (!importing_failed && range_start != range_end) {
-        import_range();
-    }
-    // Mark the pages as mapped
-    for (u64 page = page_start; page < page_end; ++page) {
-        bda_mapped_pages.set(page);
-    }
-    if (!importing_failed) {
-        return;
-    }
-    // If we failed to import the memory, fall back to copying the whole map
-    // to GPU memory.
-    LOG_INFO(Render_Vulkan, "Failed to import host memory at {:#x} size {:#x}, falling back to copying", 
-            device_addr, size);
-    CreateBuffer(device_addr, size);
 }
 
 BufferCache::OverlapResult BufferCache::ResolveOverlaps(VAddr device_addr, u32 wanted_size) {
