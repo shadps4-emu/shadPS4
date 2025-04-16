@@ -1980,11 +1980,11 @@
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>العرض:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>الارتفاع:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
