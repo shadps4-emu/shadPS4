@@ -394,6 +394,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_HI_U32(false, inst);
     case Opcode::V_MUL_LO_I32:
         return V_MUL_LO_U32(inst);
+    case Opcode::V_MUL_HI_I32:
+        return V_MUL_HI_U32(true, inst);
     case Opcode::V_MAD_U64_U32:
         return V_MAD_U64_U32(inst);
     case Opcode::V_NOP:
@@ -1279,7 +1281,7 @@ void Translator::V_MUL_LO_U32(const GcnInst& inst) {
 void Translator::V_MUL_HI_U32(bool is_signed, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 hi{ir.CompositeExtract(ir.IMulExt(src0, src1, is_signed), 1)};
+    const IR::U32 hi{ir.IMulHi(src0, src1, is_signed)};
     SetDst(inst.dst[0], hi);
 }
 
