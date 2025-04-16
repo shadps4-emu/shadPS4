@@ -1388,8 +1388,8 @@ U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
     }
 }
 
-IR::Value IREmitter::IMulExt(const U32& a, const U32& b, bool is_signed) {
-    return Inst(is_signed ? Opcode::SMulExt : Opcode::UMulExt, a, b);
+U32 IREmitter::IMulHi(const U32& a, const U32& b, bool is_signed) {
+    return Inst<U32>(is_signed ? Opcode::SMulHi : Opcode::UMulHi, a, b);
 }
 
 U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {
