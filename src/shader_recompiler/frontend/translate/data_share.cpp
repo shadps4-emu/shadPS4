@@ -13,6 +13,18 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         // DS
     case Opcode::DS_ADD_U32:
         return DS_ADD_U32(inst, false);
+    case Opcode::DS_SUB_U32:
+        return DS_SUB_U32(inst, false);
+    case Opcode::DS_INC_U32:
+        return DS_INC_U32(inst, false);
+    case Opcode::DS_DEC_U32:
+        return DS_DEC_U32(inst, false);
+    case Opcode::DS_WRITE_SRC2_B32:
+        return DS_WRITE_SRC2_B32(inst, true);
+    case Opcode::DS_WRITE_SRC2_B64:
+        return DS_WRITE_SRC2_B64(inst, true);
+    case Opcode::DS_SUB_RTN_U32:
+        return DS_SUB_U32(inst, true);
     case Opcode::DS_MIN_I32:
         return DS_MIN_U32(inst, true, false);
     case Opcode::DS_MAX_I32:
@@ -226,6 +238,57 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
     const IR::U32 index = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
     SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+}
+
+void Translator::DS_INC_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, ir.Imm32(1));
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_DEC_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, ir.Imm32(-1));
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_WRITE_SRC2_B32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+    const IR::U32 addr_offset = ir.IAdd(addr, ir.Imm32(offset));
+    ir.WriteShared(32, addr_offset, data);
+}
+
+void Translator::DS_WRITE_SRC2_B64(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data0{GetSrc(inst.src[1])};
+    const IR::U32 data1{GetSrc(inst.src[2])};
+    const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
+    const IR::U32 addr_offset = ir.IAdd(addr, ir.Imm32(offset));
+    ir.WriteShared(64, ir.CompositeConstruct(data0, data1), addr_offset);
+}
+
+void Translator::DS_SUB_U32(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 data{GetSrc(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
+    if (rtn) {
+        SetDst(inst.dst[0], IR::U32{original_val});
+    }
 }
 
 void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64,
