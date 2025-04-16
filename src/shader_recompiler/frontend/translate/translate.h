@@ -80,6 +80,7 @@ public:
     // SOP2
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
+    void S_SUBB_U32(const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_SUB_I32(const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
