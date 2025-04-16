@@ -248,7 +248,7 @@ bool Instance::CreateDevice() {
     ASSERT(add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME));
     ASSERT(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME));
     ASSERT(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME));
-    ASSERT(add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME) || driver_id == vk::DriverId::eIntelProprietaryWindows);
     ASSERT(add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME));
 
     // Required
