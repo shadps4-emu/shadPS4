@@ -323,9 +323,28 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
     return CreateBuffer(device_addr, size);
 }
 
-void BufferCache::MapMemory(VAddr device_addr, u64 size) {
-    const u64 page_start = device_addr >> CACHING_PAGEBITS;
-    const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
+void BufferCache::QueueCoverage(VAddr device_addr, u64 size) {
+    std::scoped_lock lk{mutex};
+    const u64 start = device_addr;
+    const u64 end = device_addr + size;
+    auto queue_range = decltype(covered_regions)::interval_type::right_open(start, end);
+    queued_coverage += queue_range;
+}
+
+void BufferCache::CoverQueuedRegions() {
+    std::scoped_lock lk{mutex};
+    if (queued_coverage.empty()) {
+        return;
+    }
+    for (const auto& range : queued_coverage) {
+        CoverMemory(range.lower(), range.upper());
+    }
+    queued_coverage.clear();
+}
+
+void BufferCache::CoverMemory(u64 start, u64 end) {
+    const u64 page_start = start >> CACHING_PAGEBITS;
+    const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
     auto interval = decltype(covered_regions)::interval_type::right_open(page_start, page_end);
     auto interval_set = boost::icl::interval_set<u64>{interval};
     auto uncovered_ranges = interval_set - covered_regions;

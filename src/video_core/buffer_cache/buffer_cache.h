@@ -119,7 +119,14 @@ public:
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
+    /// Return buffer id for the specified region
     [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
+
+    /// Queue a region for coverage for DMA.
+    void QueueCoverage(VAddr device_addr, u64 size);
+
+    /// Covers all queued regions.
+    void CoverQueuedRegions();
 
 private:
     template <typename Func>
@@ -164,7 +171,7 @@ private:
 
     void DeleteBuffer(BufferId buffer_id);
 
-    void MapMemory(VAddr device_addr, u64 size);
+    void CoverMemory(u64 start, u64 end);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
@@ -176,6 +183,7 @@ private:
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
+    boost::icl::interval_set<VAddr> queued_coverage;
     boost::icl::interval_set<u64> covered_regions;
     std::vector<ImportedHostBuffer> imported_buffers;
     std::shared_mutex mutex;
