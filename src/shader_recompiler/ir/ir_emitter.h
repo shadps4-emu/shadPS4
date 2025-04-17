@@ -106,6 +106,10 @@ public:
     [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
     [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
 
+    [[nodiscard]] U32 SharedAtomicIIncrement(const U32& address);
+    [[nodiscard]] U32 SharedAtomicIDecrement(const U32& address);
+    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
+
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
@@ -240,7 +244,7 @@ public:
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
     [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
-    [[nodiscard]] Value IMulExt(const U32& a, const U32& b, bool is_signed = false);
+    [[nodiscard]] U32 IMulHi(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 IMul(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 IDiv(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32 IMod(const U32& a, const U32& b, bool is_signed = false);

@@ -104,6 +104,11 @@ public:
         return depth_clip_control;
     }
 
+    /// Returns true when VK_EXT_depth_range_unrestricted is supported
+    bool IsDepthRangeUnrestrictedSupported() const {
+        return depth_range_unrestricted;
+    }
+
     /// Returns true when the extendedDynamicState3ColorWriteMask feature of
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
@@ -340,6 +345,7 @@ private:
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool depth_clip_control{};
+    bool depth_range_unrestricted{};
     bool dynamic_state_3{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};

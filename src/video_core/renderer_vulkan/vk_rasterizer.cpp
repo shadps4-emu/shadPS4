@@ -1018,32 +1018,37 @@ void Rasterizer::UpdateViewportScissorState() const {
 
         const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
         const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
+
+        vk::Viewport viewport = {
+            .minDepth = zoffset - zscale * reduce_z,
+            .maxDepth = zscale + zoffset,
+        };
+        if (!instance.IsDepthRangeUnrestrictedSupported()) {
+            // Unrestricted depth range not supported by device. Make best attempt
+            // by restricting to valid range.
+            viewport.minDepth = std::max(viewport.minDepth, 0.f);
+            viewport.maxDepth = std::min(viewport.maxDepth, 1.f);
+        }
         if (regs.IsClipDisabled()) {
             // In case if clipping is disabled we patch the shader to convert vertex position
             // from screen space coordinates to NDC by defining a render space as full hardware
             // window range [0..16383, 0..16383] and setting the viewport to its size.
-            viewports.push_back({
-                .x = 0.f,
-                .y = 0.f,
-                .width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB)),
-                .height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB)),
-                .minDepth = zoffset - zscale * reduce_z,
-                .maxDepth = zscale + zoffset,
-            });
+            viewport.x = 0.f;
+            viewport.y = 0.f;
+            viewport.width = float(std::min<u32>(instance.GetMaxViewportWidth(), 16_KB));
+            viewport.height = float(std::min<u32>(instance.GetMaxViewportHeight(), 16_KB));
         } else {
             const auto xoffset = vp_ctl.xoffset_enable ? vp.xoffset : 0.f;
             const auto xscale = vp_ctl.xscale_enable ? vp.xscale : 1.f;
             const auto yoffset = vp_ctl.yoffset_enable ? vp.yoffset : 0.f;
             const auto yscale = vp_ctl.yscale_enable ? vp.yscale : 1.f;
-            viewports.push_back({
-                .x = xoffset - xscale,
-                .y = yoffset - yscale,
-                .width = xscale * 2.0f,
-                .height = yscale * 2.0f,
-                .minDepth = zoffset - zscale * reduce_z,
-                .maxDepth = zscale + zoffset,
-            });
+
+            viewport.x = xoffset - xscale;
+            viewport.y = yoffset - yscale;
+            viewport.width = xscale * 2.0f;
+            viewport.height = yscale * 2.0f;
         }
+        viewports.push_back(viewport);
 
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {

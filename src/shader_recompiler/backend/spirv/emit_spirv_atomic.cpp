@@ -21,6 +21,15 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
+Id SharedAtomicU32_IncDec(EmitContext& ctx, Id offset,
+                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
+    const Id shift_id{ctx.ConstU32(2U)};
+    const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
+}
+
 Id BufferAtomicU32BoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto emit_func) {
     if (Sirit::ValidId(buffer_size)) {
         // Bounds checking enabled, wrap in a conditional branch to make sure that
@@ -97,6 +106,18 @@ Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value) {
 
 Id EmitSharedAtomicXor32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicXor);
+}
+
+Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicISub);
+}
+
+Id EmitSharedAtomicIIncrement32(EmitContext& ctx, Id offset) {
+    return SharedAtomicU32_IncDec(ctx, offset, &Sirit::Module::OpAtomicIIncrement);
+}
+
+Id EmitSharedAtomicIDecrement32(EmitContext& ctx, Id offset) {
+    return SharedAtomicU32_IncDec(ctx, offset, &Sirit::Module::OpAtomicIDecrement);
 }
 
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
