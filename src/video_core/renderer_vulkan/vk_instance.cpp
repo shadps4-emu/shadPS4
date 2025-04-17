@@ -242,18 +242,22 @@ bool Instance::CreateDevice() {
 
     // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
     // with extensions.
-    add_extension(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
-    add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-    add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-    add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
-    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME);
-    add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    ASSERT(add_extension(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME));
+    ASSERT(add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME));
+    ASSERT(add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME) ||
+           driver_id == vk::DriverId::eIntelProprietaryWindows);
+    ASSERT(add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME));
 
-    add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-    add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
+    // Required
+    ASSERT(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+    ASSERT(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
+
+    // Optional
+    depth_range_unrestricted = add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     if (dynamic_state_3) {
         dynamic_state_3_features =
@@ -422,9 +426,6 @@ bool Instance::CreateDevice() {
 #endif
     };
 
-    if (!maintenance4) {
-        device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
-    }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
     }
