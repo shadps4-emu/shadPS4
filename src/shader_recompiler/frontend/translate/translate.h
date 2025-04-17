@@ -80,6 +80,7 @@ public:
     // SOP2
     void S_ADD_U32(const GcnInst& inst);
     void S_SUB_U32(const GcnInst& inst);
+    void S_SUBB_U32(const GcnInst& inst);
     void S_ADD_I32(const GcnInst& inst);
     void S_SUB_I32(const GcnInst& inst);
     void S_ADDC_U32(const GcnInst& inst);
@@ -119,6 +120,7 @@ public:
     void S_BCNT1_I32_B64(const GcnInst& inst);
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B64(const GcnInst& inst);
+    void S_FLBIT_I32_B32(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
@@ -273,6 +275,9 @@ public:
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_APPEND(const GcnInst& inst);
     void DS_CONSUME(const GcnInst& inst);
+    void DS_SUB_U32(const GcnInst& inst, bool rtn);
+    void DS_INC_U32(const GcnInst& inst, bool rtn);
+    void DS_DEC_U32(const GcnInst& inst, bool rtn);
 
     // Buffer Memory
     // MUBUF / MTBUF

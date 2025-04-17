@@ -44,6 +44,9 @@ OPCODE(SharedAtomicUMax32,                                  U32,            U32,
 OPCODE(SharedAtomicAnd32,                                   U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicOr32,                                    U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicXor32,                                   U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicISub32,                                  U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicIIncrement32,                            U32,            U32,                                                                            )
+OPCODE(SharedAtomicIDecrement32,                            U32,            U32,                                                                            )
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
@@ -317,8 +320,8 @@ OPCODE(ISub32,                                              U32,            U32,
 OPCODE(ISub64,                                              U64,            U64,            U64,                                                            )
 OPCODE(IMul32,                                              U32,            U32,            U32,                                                            )
 OPCODE(IMul64,                                              U64,            U64,            U64,                                                            )
-OPCODE(SMulExt,                                             U32x2,          U32,            U32,                                                            )
-OPCODE(UMulExt,                                             U32x2,          U32,            U32,                                                            )
+OPCODE(SMulHi,                                              U32,            U32,            U32,                                                            )
+OPCODE(UMulHi,                                              U32,            U32,            U32,                                                            )
 OPCODE(SDiv32,                                              U32,            U32,            U32,                                                            )
 OPCODE(UDiv32,                                              U32,            U32,            U32,                                                            )
 OPCODE(SMod32,                                              U32,            U32,            U32,                                                            )

@@ -30,6 +30,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_SUB_I32(inst);
         case Opcode::S_ADDC_U32:
             return S_ADDC_U32(inst);
+        case Opcode::S_SUBB_U32:
+            return S_SUBB_U32(inst);
         case Opcode::S_MIN_I32:
             return S_MIN_U32(true, inst);
         case Opcode::S_MIN_U32:
@@ -110,6 +112,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_FF1_I32_B32(inst);
         case Opcode::S_FF1_I32_B64:
             return S_FF1_I32_B64(inst);
+        case Opcode::S_FLBIT_I32_B32:
+            return S_FLBIT_I32_B32(inst);
         case Opcode::S_BITSET0_B32:
             return S_BITSET_B32(inst, 0);
         case Opcode::S_BITSET1_B32:
@@ -234,6 +238,17 @@ void Translator::S_SUB_U32(const GcnInst& inst) {
 
     // SCC = S1.u > S0.u ? 1'1U : 1'0U;
     ir.SetScc(ir.IGreaterThan(src1, src0, false));
+}
+
+void Translator::S_SUBB_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 borrow{ir.Select(ir.GetScc(), ir.Imm32(1U), ir.Imm32(0U))};
+    const IR::U32 result{ir.ISub(ir.ISub(src0, src1), borrow)};
+    SetDst(inst.dst[0], result);
+
+    const IR::U32 sum_with_borrow{ir.IAdd(src1, borrow)};
+    ir.SetScc(ir.ILessThan(src0, sum_with_borrow, false));
 }
 
 void Translator::S_ADD_I32(const GcnInst& inst) {
@@ -658,6 +673,17 @@ void Translator::S_FF1_I32_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U32 result{ir.FindILsb(src0)};
     SetDst(inst.dst[0], result);
+}
+
+void Translator::S_FLBIT_I32_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
+    const IR::U32 msb_pos = ir.FindUMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 
 void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
