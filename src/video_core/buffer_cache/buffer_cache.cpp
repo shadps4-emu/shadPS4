@@ -27,6 +27,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
       gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
       bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, BDA_PAGETABLE_SIZE},
+      fault_readback_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, FAULT_READBACK_SIZE),
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
 
@@ -323,36 +324,36 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
     return CreateBuffer(device_addr, size);
 }
 
-void BufferCache::QueueCoverage(VAddr device_addr, u64 size) {
+void BufferCache::QueueMemoryImport(VAddr device_addr, u64 size) {
     std::scoped_lock lk{mutex};
     const u64 start = device_addr;
     const u64 end = device_addr + size;
-    auto queue_range = decltype(covered_regions)::interval_type::right_open(start, end);
-    queued_coverage += queue_range;
+    auto queue_range = decltype(imported_regions)::interval_type::right_open(start, end);
+    queued_imports += queue_range;
 }
 
-void BufferCache::CoverQueuedRegions() {
+void BufferCache::ImportQueuedRegions() {
     std::scoped_lock lk{mutex};
-    if (queued_coverage.empty()) {
+    if (queued_imports.empty()) {
         return;
     }
-    for (const auto& range : queued_coverage) {
-        CoverMemory(range.lower(), range.upper());
+    for (const auto& range : queued_imports) {
+        ImportMemory(range.lower(), range.upper());
     }
-    queued_coverage.clear();
+    queued_imports.clear();
 }
 
-void BufferCache::CoverMemory(u64 start, u64 end) {
+void BufferCache::ImportMemory(u64 start, u64 end) {
     const u64 page_start = start >> CACHING_PAGEBITS;
     const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
-    auto interval = decltype(covered_regions)::interval_type::right_open(page_start, page_end);
+    auto interval = decltype(imported_regions)::interval_type::right_open(page_start, page_end);
     auto interval_set = boost::icl::interval_set<u64>{interval};
-    auto uncovered_ranges = interval_set - covered_regions;
+    auto uncovered_ranges = interval_set - imported_regions;
     if (uncovered_ranges.empty()) {
         return;
     }
     // We fill any holes within the given range
-    boost::container::small_vector<u64, 1024> bda_addrs;
+    boost::container::small_vector<vk::DeviceAddress, 128> bda_addrs;
     for (const auto& range : uncovered_ranges) {
         // import host memory
         const u64 range_start = range.lower();
@@ -371,19 +372,19 @@ void BufferCache::CoverMemory(u64 start, u64 end) {
         bda_addrs.clear();
         bda_addrs.reserve(range_pages);
         for (u64 i = 0; i < range_pages; ++i) {
-            // TODO: we may want to mark the page as host imported
-            // to let the shader know so that it can notify us if it
-            // accesses the page, so we can create a GPU local buffer.
+            // Mark the page as host imported to let the shader know
+            // so that it can notify us if it accesses the page, so we can
+            // create a GPU local buffer.
             bda_addrs.push_back((bda_addr + (i << CACHING_PAGEBITS)) | 0x1);
         }
-        WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(u64), bda_addrs.data(),
-                        bda_addrs.size() * sizeof(u64));
+        WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(vk::DeviceAddress), bda_addrs.data(),
+                        bda_addrs.size() * sizeof(vk::DeviceAddress));
         {
             std::scoped_lock lk{mutex};
             imported_buffers.emplace_back(std::move(buffer));
         }
         // Mark the pages as covered
-        covered_regions += range;
+        imported_regions += range;
     }
 }
 
@@ -525,9 +526,25 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const BufferId new_buffer_id = [&] {
         std::scoped_lock lk{mutex};
         return slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, overlap.begin,
-                                   AllFlags, size);
+                                   AllFlags | vk::BufferUsageFlagBits::eShaderDeviceAddress, size);
     }();
     auto& new_buffer = slot_buffers[new_buffer_id];
+    boost::container::small_vector<vk::DeviceAddress, 128> bda_addrs;
+    const u64 start_page = overlap.begin >> CACHING_PAGEBITS;
+    const u64 size_pages = size >> CACHING_PAGEBITS;
+    bda_addrs.reserve(size_pages);
+    for (u64 i = 0; i < size_pages; ++i) {
+        // Here, we do not set the host imported bit.
+        bda_addrs.push_back(new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS));
+    }
+    WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
+                    bda_addrs.size() * sizeof(vk::DeviceAddress));
+    {
+        // Mark the pages as covered
+        std::scoped_lock lk{mutex};
+        imported_regions += boost::icl::interval_set<u64>::interval_type::right_open(
+            start_page, start_page + size_pages);
+    }
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
     scheduler.EndRendering();
@@ -537,6 +554,44 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     }
     Register(new_buffer_id);
     return new_buffer_id;
+}
+
+void BufferCache::CreateFaultBuffers() {
+    // Download the fault readback buffer
+    const auto [mapped, offset] = staging_buffer.Map(FAULT_READBACK_SIZE);
+    vk::BufferCopy copy = {
+        .srcOffset = 0,
+        .dstOffset = offset,
+        .size = FAULT_READBACK_SIZE,
+    };
+    staging_buffer.Commit();
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyBuffer(fault_readback_buffer.buffer, staging_buffer.Handle(), copy);
+    scheduler.Finish();
+    std::array<u8, FAULT_READBACK_SIZE> buffer{};
+    std::memcpy(buffer.data(), mapped, FAULT_READBACK_SIZE);
+    // Reset the fault readback buffer
+    cmdbuf.fillBuffer(fault_readback_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
+    // Create the fault buffers batched
+    boost::icl::interval_set<VAddr> fault_ranges;
+    for (u64 i = 0; i < FAULT_READBACK_SIZE / sizeof(vk::DeviceAddress); ++i) {
+        if (buffer[i] != 0) {
+            // Each byte contains information for 8 pages.
+            // We are oing to create an aligned buffer of
+            // 8 * 64 KB = 512 KB arround the fault address.
+            const VAddr fault_addr = buffer[i] << CACHING_PAGEBITS;
+            const u32 fault_end = mapped[i + 1] << CACHING_PAGEBITS;
+            auto range = decltype(fault_ranges)::interval_type::right_open(
+                fault_addr, fault_end);
+            fault_ranges += range;
+        }
+    }
+    for (const auto& range : fault_ranges) {
+        const VAddr start = range.lower();
+        const u32 size = range.upper() - start;
+        CreateBuffer(start, size);
+    }
 }
 
 void BufferCache::Register(BufferId buffer_id) {
@@ -738,6 +793,18 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         });
     }
     return true;
+}
+
+void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
+    if (device_addr == 0) {
+        return;
+    }
+    ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
+        if (buffer.is_deleted) {
+            return;
+        }
+        SynchronizeBuffer(buffer, buffer.CpuAddr(), buffer.SizeBytes(), false);
+    });
 }
 
 void BufferCache::InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes) {

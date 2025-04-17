@@ -43,7 +43,9 @@ public:
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
     static constexpr u64 DEVICE_PAGESIZE = 64_KB;
     static constexpr u64 CACHING_NUMPAGES = u64{1} << (40 - CACHING_PAGEBITS);
-    static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(u64);
+
+    static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(vk::DeviceAddress);
+    static constexpr u64 FAULT_READBACK_SIZE = CACHING_NUMPAGES / 8;  // Bit per page
 
     struct Traits {
         using Entry = BufferId;
@@ -79,6 +81,11 @@ public:
     /// Retrieves the device local DBA page table buffer.
     [[nodiscard]] Buffer& GetBdaPageTableBuffer() noexcept {
         return bda_pagetable_buffer;
+    }
+
+    /// Retrieves the fault readback buffer.
+    [[nodiscard]] Buffer& GetFaultReadbackBuffer() noexcept {
+        return fault_readback_buffer;
     }
 
     /// Retrieves the buffer with the specified id.
@@ -123,10 +130,16 @@ public:
     [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
 
     /// Queue a region for coverage for DMA.
-    void QueueCoverage(VAddr device_addr, u64 size);
+    void QueueMemoryImport(VAddr device_addr, u64 size);
 
     /// Covers all queued regions.
-    void CoverQueuedRegions();
+    void ImportQueuedRegions();
+
+    /// Creates buffers for "faulted" shader accesses to host memory.
+    void CreateFaultBuffers();
+
+    /// Synchronizes all buffers in the specified range.
+    void SynchronizeRange(VAddr device_addr, u32 size);
 
 private:
     template <typename Func>
@@ -171,7 +184,7 @@ private:
 
     void DeleteBuffer(BufferId buffer_id);
 
-    void CoverMemory(u64 start, u64 end);
+    void ImportMemory(u64 start, u64 end);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
@@ -183,8 +196,9 @@ private:
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
-    boost::icl::interval_set<VAddr> queued_coverage;
-    boost::icl::interval_set<u64> covered_regions;
+    Buffer fault_readback_buffer;
+    boost::icl::interval_set<VAddr> queued_imports;
+    boost::icl::interval_set<u64> imported_regions;
     std::vector<ImportedHostBuffer> imported_buffers;
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
