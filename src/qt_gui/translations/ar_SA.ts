@@ -7,34 +7,34 @@
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation>حول shadPS4</translation>
+      <translation>حول محاكي الظل PS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 هو محاكي تجريبي مفتوح المصدر لجهاز PlayStation 4.</translation>
+      <translation>محاكي الظل هو محاكي تجريبي مفتوح المصدر مخصص لـ PS4</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>يجب عدم استخدام هذا البرنامج لتشغيل الألعاب التي لم تحصل عليها بشكل قانوني.</translation>
+      <translation>لا تستخدم هذا البرنامج لتشغيل الألعاب بطريقة غير قانونية.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>الغِشّ / التصحيحات </translation>
+      <translation>شفرات / إصلاحات لـ </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>الغش والتصحيحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الغش بشكل فردي عن طريق اختيار المستودع والنقر على زر التنزيل.\nفي علامة تبويب التصحيحات، يمكنك تنزيل جميع التصحيحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الغش/التصحيحات،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الغش.\n\nهل قمت بإنشاء غش جديد؟ قم بزيارة:\n</translation>
+      <translation>الشفرات والإصلاحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الشفرات بشكل فردي عن طريق اختيار المستودع والضغط على تنزيل.\nفي علامة تبويب الإصلاحات، يمكنك تنزيل جميع الإصلاحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الشفرات والإصلاحات ،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الشفرات.\n\nهل قمت بإنشاء شفرة جديد؟ قم بزيارة:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>لا تتوفر صورة</translation>
+      <translation>الصورة غير موجودة</translation>
     </message>
     <message>
       <source>Serial: </source>
-      <translation>الرقم التسلسلي: </translation>
+      <translation>الرَّقَم التسلسلي: </translation>
     </message>
     <message>
       <source>Version: </source>
@@ -46,7 +46,7 @@
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>اختر ملف الغش:</translation>
+      <translation>حدد مِلَفّ الشفرات:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,7 +54,7 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>تنزيل الغش</translation>
+      <translation>تحميل الشفرات</translation>
     </message>
     <message>
       <source>Delete File</source>
@@ -66,19 +66,19 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>يمكنك حذف الغش الذي لا تريده بعد تنزيله.</translation>
+      <translation>يمكنك حذف الشفرات التي لا تريدها بعد تنزيلها.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>هل تريد حذف الملف المحدد؟\n%1</translation>
+      <translation>هل ترغب في حذف الملف المحدد؟\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>اختر ملف التصحيح:</translation>
+      <translation>إختر ملف الباتش:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>تنزيل التصحيحات</translation>
+      <translation>تحميل الباتشات</translation>
     </message>
     <message>
       <source>Save</source>
@@ -86,7 +86,7 @@
     </message>
     <message>
       <source>Cheats</source>
-      <translation>الغش</translation>
+      <translation>الشفرات</translation>
     </message>
     <message>
       <source>Patches</source>
@@ -106,7 +106,7 @@
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>لم يتم العثور على ملف تصحيح للرقم التسلسلي الحالي.</translation>
+      <translation>لم يتم العثور على مِلَفّ باتش للسيريال الحالي.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
@@ -142,7 +142,7 @@
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>الملف موجود بالفعل. هل تريد استبداله؟</translation>
+      <translation>يوجد ملف بنفس الاسم. هل ترغب في استبداله؟</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -154,19 +154,19 @@
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>لم يتم العثور على الغش</translation>
+      <translation>لم يتم العثور على أي شفرات</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>لم يتم العثور على غش لهذه اللعبة في هذا الإصدار من المستودع المحدد. حاول استخدام مستودع آخر أو إصدار آخر من اللعبة.</translation>
+      <translation>لم يتم العثور على شفرات لهذه اللعبة في هذه النسخة من المستودع المحدد. حاول استخدام مستودع آخر أو نسخة مختلفة من اللعبة.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>تم تنزيل الغش بنجاح</translation>
+      <translation>تم تحميل الشفرات بنجاح</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>لقد نجحت في تنزيل الغش لهذا الإصدار من اللعبة من المستودع المحدد. يمكنك محاولة التنزيل من مستودع آخر. إذا كان متاحًا، يمكنك اختياره عن طريق تحديد الملف من القائمة.</translation>
+      <translation>تم تحميل الشفرات بنجاح لهذه النسخة من اللعبة من المستودع الذي اخترته. إذا أردت، يمكنك تجربة مستودع آخر، وإذا كان متاحًا، يمكنك استخدام الشفرات عن طريق اختيار الملف من القائمة.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -194,7 +194,7 @@
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>اللعبة في الإصدار: %1</translation>
+      <translation>النسخة الحالية للعبة هي: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
@@ -329,7 +329,7 @@
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>حدث خطأ في الشبكة أثناء محاولة الوصول إلى عنوان URL</translation>
+      <translation>حدث خطأ في الشبكة عند محاولة الوصول إلى الموقع</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -388,11 +388,11 @@
     </message>
     <message>
       <source>Boots</source>
-      <translation>أحذية</translation>
+      <translation>إقلاع</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>قوائم</translation>
+      <translation>القائمة</translation>
     </message>
     <message>
       <source>Ingame</source>
@@ -407,7 +407,7 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>تعديل عناصر التحكم</translation>
+      <translation>إعدادات التحكم</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -431,11 +431,11 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>مدى تسجيل الإدخال للعصا اليسرى (التلقائي:2 حد أقصى:127)</translation>
+      <translation>النقطة العمياء للعصا اليسرى (الافتراضي: 2، الحد الأقصى: 127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>إعدادات مدى تسجيل الإدخال لعصا التحكم اليسرى</translation>
+      <translation>النقطة العمياء لليسار</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -507,11 +507,11 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation>مدى تسجيل الإدخال للعصا اليمنى (التلقائي:2 حد أقصى:127)</translation>
+      <translation>النقطة العمياء للعصا اليمنى (الافتراضي: 2، الحد الأقصى: 127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation>إعدادات مدى تسجيل الإدخال لعصا التحكم اليمنى</translation>
+      <translation>النقطة العمياء اليمنى</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -617,7 +617,7 @@
     <name>ElfViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>فتح المجلد</translation>
+      <translation>افتح مجلد</translation>
     </message>
   </context>
   <context>
@@ -647,7 +647,7 @@
     </message>
     <message>
       <source>Browse</source>
-      <translation>تصفح</translation>
+      <translation>استعراض</translation>
     </message>
     <message>
       <source>Error</source>
@@ -718,15 +718,15 @@
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation>التوافق غير مختبر</translation>
+      <translation>لم يتم اختبار التوافق</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>اللعبة لا تهيئ بشكل صحيح / تعطل المحاكي</translation>
+      <translation>اللعبة لا تبدأ بشكل صحيح / تتسبب في انهيار المحاكي</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation>اللعبة تبدأ بالعمل، ولكن فقط تعرض شاشة فارغة</translation>
+      <translation>اللعبة تبدأ بالإقلاع، لكنها تعرض شاشة فارغة فقط</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
@@ -734,15 +734,15 @@
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>اللعبة بها قلتشات أو أداء غير قابل للتشغيل</translation>
+      <translation>اللعبة بها أخطاء جسيمة أو أداء يجعلها غير قابلة للعب</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation>يمكن الانتهاء من اللعبة مع الأداء القابل للتشغيل و لا توجد قلتشات كبيرة</translation>
+      <translation>يمكن إنهاء اللعبة بأداء جيد وبدون أعطال رئيسية</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>انقر لرؤية التفاصيل على GitHub</translation>
+      <translation>اضغط لعرض التفاصيل على GitHub</translation>
     </message>
     <message>
       <source>Last updated</source>
@@ -780,15 +780,15 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>الغش / التصحيحات</translation>
+      <translation>الشفرات / التصحيحات</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation>عارض SFO</translation>
+      <translation>عارض معلومات اللعبة (SFO)</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>عارض الجوائز</translation>
+      <translation>عارض الكؤوس</translation>
     </message>
     <message>
       <source>Open Folder...</source>
@@ -820,11 +820,11 @@
     </message>
     <message>
       <source>Copy Version</source>
-      <translation>إصدار النسخة</translation>
+      <translation>نسخ الإصدار</translation>
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>حجم النسخة</translation>
+      <translation>نسخ حجم</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -864,7 +864,7 @@
     </message>
     <message>
       <source>Submit a report</source>
-      <translation>إرسال بلاغ</translation>
+      <translation>إرسال تقرير</translation>
     </message>
     <message>
       <source>Shortcut creation</source>
@@ -888,7 +888,7 @@
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation>لا تحتوي اللعبة على تحديث لحذفه!</translation>
+      <translation>لا يوجد تحديث لهذه اللعبة لحذفه!</translation>
     </message>
     <message>
       <source>Update</source>
@@ -896,7 +896,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>لا تحتوي اللعبة على DLC لحذفه!</translation>
+      <translation>لا توجد محتويات إضافية (DLC) لهذه اللعبة لحذفها!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -916,11 +916,11 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>حذف التخزينه</translation>
+      <translation>حذف بيانات الحفظ</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>لا تحتوي اللعبة على تحديث لفتحه!</translation>
+      <translation>لا يوجد مجلد تحديث لهذه اللعبة لفتحه!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
@@ -932,15 +932,15 @@
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation>هذه اللعبة لا تحتوي على أي تخزينات لحذفها!</translation>
+      <translation>لا توجد بيانات حفظ لهذه اللعبة لحذفها!</translation>
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation>هذه اللعبة ليس لديها كؤوس محفوظة للحذف!</translation>
+      <translation>لا توجد كؤوس محفوظة لهذه اللعبة لحذفها!</translation>
     </message>
     <message>
       <source>Save Data</source>
-      <translation>حفظ البيانات</translation>
+      <translation>بيانات الحفظ</translation>
     </message>
     <message>
       <source>Trophy</source>
@@ -955,7 +955,7 @@
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation>التشغيل السريع</translation>
+      <translation>البدء السريع</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -963,22 +963,22 @@
     </message>
     <message>
       <source>Syntax</source>
-      <translation>الصّيغة</translation>
+      <translation>البنية</translation>
     </message>
     <message>
       <source>Special Bindings</source>
-      <translation>إدخالات خاصة</translation>
+      <translation>الارتباطات الخاصة</translation>
     </message>
     <message>
       <source>Keybindings</source>
-      <translation>أزرار التحكم</translation>
+      <translation>تعيين الأزرار</translation>
     </message>
   </context>
   <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>تعديل عناصر التحكم</translation>
+      <translation>إعدادات جهاز التحكم</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -1026,7 +1026,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>استخدام إعدادات كل لُعْبَة</translation>
+      <translation>استخدام إعدادات خاصة لكل لعبه</translation>
     </message>
     <message>
       <source>L1</source>
@@ -1038,7 +1038,7 @@
     </message>
     <message>
       <source>Text Editor</source>
-      <translation>محرر النص</translation>
+      <translation>محرّر النصوص</translation>
     </message>
     <message>
       <source>Help</source>
@@ -1058,15 +1058,15 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation>النقر على لوحة اللمس</translation>
+      <translation>زر لوحة اللمس</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
-      <translation>الفأرة إلى عصا التحكم</translation>
+      <translation>تحويل الماوس إلى عصا التحكم</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation>* اضغط على F7 للتفعيل</translation>
+      <translation>* اضغط F7 داخل اللعبة للتفعيل</translation>
     </message>
     <message>
       <source>R3</source>
@@ -1078,15 +1078,15 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation>معطيات حركة الفأرة</translation>
+      <translation>إعدادات حركة الماوس</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>ملاحظة: انقر فوق زر المساعدة/روابط المفاتيح الخاصة للحصول على مزيد من المعلومات</translation>
+      <translation>ملاحظة: لمزيد من المعلومات عن التعيينات الخاصة، اضغط على زر المساعدة</translation>
     </message>
     <message>
       <source>Face Buttons</source>
-      <translation>أزرار الوجه</translation>
+      <translation>الأزرار الأمامية</translation>
     </message>
     <message>
       <source>Triangle</source>
@@ -1106,11 +1106,11 @@
     </message>
     <message>
       <source>Right Analog Halfmode</source>
-      <translation>تقليل سرعة عصا التحكم اليمنى للنصف</translation>
+      <translation>وضع النصف للعصا اليمنى (نصف الحساسية أو نصف الحركة)</translation>
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation>الضغط باستمرار لتحريك العصا اليمنى بنصف السرعة</translation>
+      <translation>اضغط مع الاستمرار لتحريك العصا اليمنى بسرعة منخفضة</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -1118,15 +1118,15 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation>إزاحة السرعة (تلقائي 0.125):</translation>
+      <translation>تعويض السرعة (الافتراضي 0.125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation>نسخ من الإعدادات الشائعة</translation>
+      <translation>نسخ من الإعدادات العامة</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation> إزاحة المدى الغير فعال (الأصل ٠.٥٠).</translation>
+      <translation>تعويض منطقة الخمول (الافتراضي 0.50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
@@ -1134,39 +1134,39 @@
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation>الإعدادات الشائعة محدده</translation>
+      <translation>تم اختيار الإعدادات العامة</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>هذا الزر يقوم بنسخ تعيينات الأزرار من إعدادات المستخدم العامة لإعدادات المستخدم المحددة حالياً، ولا يمكن استعماله عندما تكون الإعدادات المستخدمة هي الإعدادات العامة.</translation>
+      <translation>يقوم هذا الزر بنسخ التعيينات من الإعدادات العامة إلى الملف الشخصي المحدد حاليًا، ولا يمكن استخدامه إذا كانت الإعدادات العامة هي الملف المحدد.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>نسخ من الإعدادات الشائعة</translation>
+      <translation>نسخ القيم من الإعدادات العامة</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation>هل تريد استبدال التعيينات الحالية بالتعيينات العامة؟</translation>
+      <translation>هل تريد استبدال التعيينات الحالية بالتعيينات من الإعدادات العامة؟</translation>
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation>غير قادر على الحفظ</translation>
+      <translation>تعذّر الحفظ</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
-      <translation>لا يمكن ربط أي إدخال فريد أكثر من مرة</translation>
+      <translation>لا يمكن تعيين نفس الزر لأكثر من وظيفة</translation>
     </message>
     <message>
       <source>Press a key</source>
-      <translation>اضغط على مفتاح</translation>
+      <translation>اضغط زرًا</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
-      <translation>لا يمكن تعيين الأزرار</translation>
+      <translation>تعذّر تعيين الزر</translation>
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation>عجلة الفأرة لا يمكن تعيينها لعصا التحكم</translation>
+      <translation>لا يمكن تعيين عجلة الفأرة لمخرجات العصا</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1189,7 +1189,7 @@
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation>Elf فتح/إضافة مجلد</translation>
+      <translation>فتح / إضافة مجلد Elf</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -1225,11 +1225,11 @@
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation>الخروج من التطبيق.</translation>
+      <translation>إغلاق التطبيق</translation>
     </message>
     <message>
       <source>Show Game List</source>
-      <translation>إظهار قائمة الألعاب</translation>
+      <translation>عرض قائمة الألعاب</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
@@ -1281,7 +1281,7 @@
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
-      <translation>لم يتم العثور على ألعاب. الرجاء إضافة ألعابك إلى مكتبتك أولاً.</translation>
+      <translation>لم يتم العثور على ألعاب. يرجى إضافة ألعابك إلى المكتبة أولاً.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1345,7 +1345,7 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>ققائمة الألعاب</translation>
+      <translation>قائمة الألعاب</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
@@ -1353,7 +1353,7 @@
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>تنزيل الغش لجميع الألعاب المثبتة</translation>
+      <translation>تحميل الشفرات لجميع الألعاب المثبتة</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
@@ -1365,7 +1365,7 @@
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>لقد قمت بتنزيل الغش لجميع الألعاب التي قمت بتثبيتها.</translation>
+      <translation>تم تحميل الشفرات لجميع الألعاب المثبتة.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
@@ -1409,11 +1409,11 @@
     </message>
     <message>
       <source>Play</source>
-      <translation>أبدأ اللعب</translation>
+      <translation>تشغيل</translation>
     </message>
     <message>
       <source>Pause</source>
-      <translation>توقف مؤقت</translation>
+      <translation>إيقاف مؤقت</translation>
     </message>
     <message>
       <source>Stop</source>
@@ -1425,11 +1425,11 @@
     </message>
     <message>
       <source>Full Screen</source>
-      <translation>وضع ملء الشاشة</translation>
+      <translation>الشاشة الكاملة</translation>
     </message>
     <message>
       <source>Controllers</source>
-      <translation>أذرعة التحكم</translation>
+      <translation>وحدات التحكم</translation>
     </message>
     <message>
       <source>Keyboard</source>
@@ -1445,7 +1445,7 @@
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation>إظهار العلامات أسفل الأيقونات</translation>
+      <translation>إظهار التسميات تحت الأيقونات</translation>
     </message>
   </context>
   <context>
@@ -1464,7 +1464,7 @@
     </message>
     <message>
       <source>Console Language</source>
-      <translation>لغة وحدة التحكم</translation>
+      <translation>لغة النظام</translation>
     </message>
     <message>
       <source>Emulator Language</source>
@@ -1476,11 +1476,11 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>علامة التبويب الافتراضية عند فتح الإعدادات</translation>
+      <translation>التبويب الافتراضي عند فتح الإعدادات</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>عرض حجم اللعبة في القائمة</translation>
+      <translation>إظهار حجم اللعبة في القائمة</translation>
     </message>
     <message>
       <source>Show Splash</source>
@@ -1496,7 +1496,7 @@
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation>زر الميداليات</translation>
+      <translation>مفتاح الكأس</translation>
     </message>
     <message>
       <source>Trophy</source>
@@ -1504,11 +1504,11 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation>افتح مجلد تخصيص اصوات/صور الميداليات</translation>
+      <translation>فتح مجلد الصور/الأصوات المخصصة للكؤوس</translation>
     </message>
     <message>
       <source>Logger</source>
-      <translation>المسجل</translation>
+      <translation>سجل الأحداث</translation>
     </message>
     <message>
       <source>Log Type</source>
@@ -1520,23 +1520,23 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>افتح موقع السجل</translation>
+      <translation>فتح موقع السجل</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation>إدخال</translation>
+      <translation>إعدادات المدخلات</translation>
     </message>
     <message>
       <source>Cursor</source>
-      <translation>مؤشر</translation>
+      <translation>مؤشر الماوس</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>إخفاء المؤشر</translation>
+      <translation>إخفاء مؤشر الماوس</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>مهلة إخفاء المؤشر عند الخمول</translation>
+      <translation>إخفاء المؤشر بعد فترة الخمول</translation>
     </message>
     <message>
       <source>s</source>
@@ -1552,7 +1552,7 @@
     </message>
     <message>
       <source>Graphics</source>
-      <translation>الرسومات</translation>
+      <translation>الرسوميات</translation>
     </message>
     <message>
       <source>GUI</source>
@@ -1564,7 +1564,7 @@
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>جهاز الرسومات</translation>
+      <translation>جهاز الرسوميات</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
@@ -1572,15 +1572,15 @@
     </message>
     <message>
       <source>Advanced</source>
-      <translation>متقدم</translation>
+      <translation>الإعدادات المتقدمة</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>تمكين تفريغ الشيدرات</translation>
+      <translation>تمكين تصدير الشيدرات</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation>تمكين وحدة معالجة الرسومات الفارغة</translation>
+      <translation>تمكين GPU فارغ</translation>
     </message>
     <message>
       <source>Enable HDR</source>
@@ -1604,23 +1604,23 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation>تصحيح الأخطاء</translation>
+      <translation>التصحيح</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>تمكين تفريغ التصحيح</translation>
+      <translation>تمكين تصدير بيانات التصحيح</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation>Vulkan تمكين طبقات التحقق من</translation>
+      <translation>تمكين طبقات التحقق لـ Vulkan</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>Vulkan تمكين التحقق من تزامن</translation>
+      <translation>تمكين التحقق من تزامن Vulkan</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation>RenderDoc تمكين تصحيح أخطاء</translation>
+      <translation>تمكين التصحيح باستخدام RenderDoc</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
@@ -1628,19 +1628,19 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>اجمع برامج التظليل</translation>
+      <translation>جمع الشيدرات</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation>انسخ التخزين المؤقت لوحدة معالجة الرُسوم</translation>
+      <translation>نسخ مخازن الرسوميات</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
-      <translation>استضافة علامات التصحيح</translation>
+      <translation>علامات التصحيح على المضيف</translation>
     </message>
     <message>
       <source>Guest Debug Markers</source>
-      <translation>ضيف علامات التصحيح</translation>
+      <translation>علامات التصحيح على الضيف</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1648,11 +1648,11 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>تحقق من التحديثات عند بدء التشغيل</translation>
+      <translation>التحقق من التحديثات عند بدء التشغيل</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>اظهر سجل التغيرات دائماً</translation>
+      <translation>عرض سجل التغييرات دائمًا</translation>
     </message>
     <message>
       <source>Update Channel</source>
@@ -1672,7 +1672,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation>إغلاق إشعارات الميداليات</translation>
+      <translation>تعطيل إشعار التروفي</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1684,7 +1684,7 @@
     </message>
     <message>
       <source>Opacity</source>
-      <translation>درجة السواد</translation>
+      <translation>الشفافية</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1692,7 +1692,7 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>تحديث قاعدة بيانات التوافق عند التشغيل</translation>
+      <translation>تحديث بيانات التوافق تلقائيًا عند التشغيل</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
@@ -1700,7 +1700,7 @@
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation>إظهار معلومات التوافق</translation>
+      <translation>عرض بيانات التوافق</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
@@ -1728,7 +1728,7 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>وجّه الماوس نحو خيار لعرض وصفه.</translation>
+      <translation>✅ مرّر مؤشر الماوس على أي خِيار لعرض وصفه.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
@@ -1736,11 +1736,11 @@
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>لغة المحاكي:\nتحدد لغة واجهة المستخدم الخاصة بالمحاكي.</translation>
+      <translation>لغة المحاكي:\nتحدد اللغة المستخدمة في واجهة المحاكي.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>إظهار شاشة البداية:\nيعرض شاشة البداية الخاصة باللعبة (صورة خاصة) أثناء بدء التشغيل.</translation>
+      <translation>عرض شاشة البداية:\nيعرض شاشة البداية الخاصة باللعبة (صورة مميزة) أثناء بدء التشغيل.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
@@ -1748,59 +1748,60 @@
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>اسم المستخدم:\nيضبط اسم حساب PS4، الذي قد يتم عرضه في بعض الألعاب.</translation>
+      <translation>اسم المستخدم:\nيحدد اسم حساب&apos;PS4، وقد يظهر في بعض الألعاب.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation>مفتاح الميداليات:\nمفتاح يستخدم لفتح تشفير الميداليات. يجب أن يكون من جهاز مكسور الحماية.\nيجي أن يحتوي على أحرف نظام العد السداسي.</translation>
+      <translation>مفتاح الكؤوس:\nيُستخدم لفك تشفير الجوائز داخل الألعاب. يُستخرج من جهاز معدل.\nيجب أن يُكتب باستخدام رموز ست عشرية فقط.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>نوع السجل:\nيضبط ما إذا كان سيتم مزامنة مخرجات نافذة السجل للأداء. قد يؤثر سلبًا على المحاكاة.</translation>
+      <translation>نوع السجل:\nييحدد ما إذا كان سيتم مزامنة مخرجات نافذة السجل لتحسين الأداء. قد يؤدي ذلك إلى تأثيرات سلبية على المحاكاة.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>فلتر السجل:\nيقوم بتصفية السجل لطباعة معلومات محددة فقط.\nأمثلة: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; المستويات: Trace, Debug, Info, Warning, Error, Critical - بالترتيب، مستوى محدد يخفي جميع المستويات التي تسبقه ويعرض جميع المستويات بعده.</translation>
+      <translation>تصفية السجل:\nيمكنك تحديد نوع المعلومات التي سيتم عرضها في السجل فقط.\nأمثلة: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; االمستويات حسب الترتيب:: Trace, Debug, Info, Warning, Error, Critical - عند اختيار مستوى معين، يتم تجاهل كل ما قبله، وتسجيل كل ما بعده.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>تحديث: Release: إصدارات رسمية تصدر شهريًا، قد تكون قديمة بعض الشيء، لكنها أكثر استقرارًا واختبارًا. Nightly: إصدارات تطوير تحتوي على أحدث الميزات والإصلاحات، لكنها قد تحتوي على أخطاء وأقل استقرارًا.</translation>
+      <translation>تحديث: Release: نُسخ شهرية مستقرة وخضعت للاختبار، لكنها قد تكون قديمة.
+Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل استقرارًا وقد تحتوي على أخطاء.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>صورة الخلفية:\nيتحكم في درجة سواد صورة خلفية اللعبة.</translation>
+      <translation>صورة الخلفية:\nتحكم في شفافية صورة خلفية اللعبة.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>تشغيل موسيقى العنوان:\nإذا كانت اللعبة تدعم ذلك، قم بتمكين تشغيل موسيقى خاصة عند اختيار اللعبة في واجهة المستخدم.</translation>
+      <translation>تشغيل موسيقى العنوان:\nفي حال كانت اللعبة تدعم ذلك، يتم تشغيل موسيقى خاصة عند تحديدها في الواجهة.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>إغلاق نوافذ الميداليات المنبثقة:\n إغلاق إشعارات الميداليات داخل اللعبة. تقدم الميداليات يمكن تتبعه باستخدام عارض الميداليات (قم بالضغط على زر الفأرة الأيمن داخل النافذة الرئيسية).</translation>
+      <translation>تعطيل إشعارات التروفي:\nيمنع ظهور إشعارات الجوائز أثناء اللعب، بينما يظل بإمكانك متابعة التقدم من خلال "عارض التروفي" (انقر بزر الفأرة الأيمن على اللعبة في النافذة الرئيسية).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>إخفاء المؤشر:\nاختر متى سيختفي المؤشر:\nأبداً: سترى الفأرة دائماً.\nعاطل: حدد وقتاً لاختفائه بعد أن يكون غير مستخدم.\nدائماً: لن ترى الفأرة أبداً.</translation>
+      <translation>إخفاء المؤشر:\nاختر متى يتم إخفاء مؤشر الماوس:\nأبدًا: يظهر دائمًا.\nعند الخمول: يختفي بعد فترة من عدم الحركة.\nدائمًا: لا يظهر إطلاقًا.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>حدد وقتاً لاختفاء الفأرة بعد أن تكون غير مستخدم.</translation>
+      <translation>مدة إخفاء المؤشر عند الخمول:\nالوقت (بالثواني) الذي ينتظره المؤشر قبل أن يختفي تلقائيًا عند عدم استخدامه.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>سلوك زر العودة:\nيضبط زر العودة في وحدة التحكم ليحاكي الضغط على الموضع المحدد على لوحة اللمس في PS4.</translation>
+      <translation>سلوك زر الرجوع:\nيحدد وظيفة زر&apos; الرجوع في وحدة التحكم لمحاكاة اللمس في موقع معيّن على لوحة اللمس الخاصة بـ PS4.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>عرض بيانات التوافق:\nيقوم بإظهار معلومات توافق اللعبة في طريقة عرض الطاولة. تشغيل&quot;تحديث التوافق عند التشغيل&quot; للحصول على معلومات محدثة.</translation>
+      <translation>عرض بيانات التوافق:\nيعرض معلومات توافق الألعاب في عرض جدولي. فعّل &quot;"تحديث التوافق عند بدء التشغيل&quot;" للحصول على أحدث المعلومات.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>تحديث التوافق عند التشغيل:\nتحديث قاعدة بيانات التوافق تلقائياً عند تشغيل shadps4.</translation>
+      <translation>تحديث التوافق عند بدء التشغيل:\nيتم تحديث قاعدة بيانات التوافق تلقائيًا عند بدء تشغيل shadPS4.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>تحديث قاعدة بيانات التوافق:\nقم بتحديث قاعدة بيانات التوافق حالاً.</translation>
+      <translation>تحديث قاعدة بيانات التوافق:\nتحديث فوري لقاعدة بيانات التوافق.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1816,15 +1817,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>لوحة اللمس اليسرى</translation>
+      <translation>الجانب الأيسر من لوحة اللمس</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>لوحة اللمس اليمنى</translation>
+      <translation>الجانب الأيمن من لوحة اللمس</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>وسط لوحة اللمس</translation>
+      <translation>مركز لوحة اللمس</translation>
     </message>
     <message>
       <source>None</source>
@@ -1832,11 +1833,11 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>جهاز الرسومات:\nعلى الأنظمة متعددة وحدات معالجة الرسومات، اختر وحدة معالجة الرسومات التي سيستخدمها المحاكي من قائمة منسدلة،\nأو اختر &quot;Auto Select&quot; لتحديدها تلقائيًا.</translation>
+      <translation>جهاز الرسوميات:\nفي الأنظمة التي تحتوي على أكثر من معالج رسومي، اختر وحدة المعالجة الرسومية GPU التي سيستخدمها المحاكي من القائمة المنسدلة،\nأو اختر "&quot;تحديد تلقائي&quot;" ليتم اختيارها تلقائيًا.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>العرض / الارتفاع:\nيضبط حجم نافذة المحاكي عند التشغيل، والذي يمكن تغيير حجمه أثناء اللعب.\nهذا يختلف عن دقة اللعبة نفسها.</translation>
+      <translation>العرض/الارتفاع:\nتحدد حجم نافذة المحاكي عند التشغيل، ويمكن تغيير حجمها أثناء اللعب.\nيختلف هذا عن دقة اللعبة داخل اللعبة.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
@@ -1844,11 +1845,11 @@
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>تمكين تفريغ الـ Shaders:\nلأغراض تصحيح الأخطاء التقنية، يحفظ الـ Shaders الخاصة باللعبة في مجلد أثناء التشغيل.</translation>
+      <translation>تمكين تفريغ الشيدرات:\nلأغراض تصحيح الأخطاء التقنية، يقوم بحفظ شيدرات اللعبة في مجلد أثناء عرضها.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>تمكين GPU الافتراضية:\nلأغراض تصحيح الأخطاء التقنية، يقوم بتعطيل عرض اللعبة كما لو لم يكن هناك بطاقة رسومات.</translation>
+      <translation>تمكين GPU فارغ:\nلأغراض تصحيح الأخطاء التقنية، يتم تعطيل عرض اللعبة كما لو لم يكن هناك كرت شاشة.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1856,7 +1857,7 @@
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>مجلدات اللعبة:\nقائمة بالمجلدات للتحقق من الألعاب المثبتة.</translation>
+      <translation>مجلدات اللعبة:\nقائمة المجلدات التي يتم فحصها للبحث عن الألعاب المثبتة.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
@@ -1868,7 +1869,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>تمكين تفريغ التصحيح:\nيحفظ رموز الاستيراد والتصدير ومعلومات رأس الملف للبرنامج الحالي لجهاز PS4 إلى دليل.</translation>
+      <translation>تمكين تفريغ التصحيح:\nيقوم بحفظ الرموز المستوردة والمصدرة، بالإضافة إلى معلومات رأس الملف للبرنامج الجاري تشغيله على PS4 في مجلد.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
@@ -1980,11 +1981,11 @@
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>العرض:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>الارتفاع:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
@@ -2055,7 +2056,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>عارض الجوائز</translation>
+      <translation>عارض التروفي</translation>
     </message>
     <message>
       <source>Select Game:</source>
