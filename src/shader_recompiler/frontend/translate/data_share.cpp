@@ -19,8 +19,6 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_INC_U32(inst, false);
     case Opcode::DS_DEC_U32:
         return DS_DEC_U32(inst, false);
-    case Opcode::DS_SUB_RTN_U32:
-        return DS_SUB_U32(inst, true);
     case Opcode::DS_MIN_I32:
         return DS_MIN_U32(inst, true, false);
     case Opcode::DS_MAX_I32:
@@ -43,6 +41,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_WRITE(32, false, true, true, inst);
     case Opcode::DS_ADD_RTN_U32:
         return DS_ADD_U32(inst, true);
+    case Opcode::DS_SUB_RTN_U32:
+        return DS_SUB_U32(inst, true);
     case Opcode::DS_MIN_RTN_U32:
         return DS_MIN_U32(inst, false, true);
     case Opcode::DS_MAX_RTN_U32:

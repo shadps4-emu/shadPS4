@@ -521,21 +521,6 @@ void Translator::S_BFE(const GcnInst& inst, bool is_signed) {
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }
 
-void Translator::S_BFE_I32(const GcnInst& inst) {
-    const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{GetSrc(inst.src[1])};
-
-    const IR::U32 offset{ir.BitwiseAnd(src1, ir.Imm32(0x1F))};
-
-    const IR::U32 count{ir.BitFieldExtract(src1, ir.Imm32(16), ir.Imm32(7))};
-
-    const IR::U32 result{ir.BitFieldExtract(src0, offset, count, false)};
-
-    SetDst(inst.dst[0], result);
-
-    ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
-}
-
 void Translator::S_ABSDIFF_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
