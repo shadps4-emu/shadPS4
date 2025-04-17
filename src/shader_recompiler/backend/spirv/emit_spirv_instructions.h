@@ -130,6 +130,10 @@ Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicXor32(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicIIncrement32(EmitContext& ctx, Id offset);
+Id EmitSharedAtomicIDecrement32(EmitContext& ctx, Id offset);
+Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value);
+
 Id EmitCompositeConstructU32x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2);
 Id EmitCompositeConstructU32x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3);
 Id EmitCompositeConstructU32x4(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3, Id e4);

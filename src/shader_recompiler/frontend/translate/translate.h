@@ -275,6 +275,9 @@ public:
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_APPEND(const GcnInst& inst);
     void DS_CONSUME(const GcnInst& inst);
+    void DS_SUB_U32(const GcnInst& inst, bool rtn);
+    void DS_INC_U32(const GcnInst& inst, bool rtn);
+    void DS_DEC_U32(const GcnInst& inst, bool rtn);
 
     // Buffer Memory
     // MUBUF / MTBUF
