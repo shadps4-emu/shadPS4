@@ -278,8 +278,6 @@ public:
     void DS_SUB_U32(const GcnInst& inst, bool);
     void DS_INC_U32(const GcnInst& inst, bool rtn);
     void DS_DEC_U32(const GcnInst& inst, bool rtn);
-    void DS_WRITE_SRC2_B32(const GcnInst& inst, bool rtn);
-    void DS_WRITE_SRC2_B64(const GcnInst& inst, bool rtn);
 
     // Buffer Memory
     // MUBUF / MTBUF

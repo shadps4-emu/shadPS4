@@ -106,6 +106,10 @@ public:
     [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
     [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
 
+    [[nodiscard]] U32 SharedAtomicIIncrement(const U32& address);
+    [[nodiscard]] U32 SharedAtomicIDecrement(const U32& address);
+    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
+
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
