@@ -29,8 +29,8 @@ SPDX-License-Identifier: GPL-2.0-or-later
 ### GPU
 
 - A graphics card with at least 1GB of VRAM
-- Keep your graphics drivers up to date
-- Vulkan 1.3 support (required)
+- Up-to-date graphics drivers
+- Vulkan 1.3 with the `VK_KHR_swapchain` and `VK_KHR_push_descriptor` extensions
 
 ### RAM
 

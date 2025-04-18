@@ -19,7 +19,7 @@
 namespace Libraries::Kernel {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
-    LOG_WARNING(Kernel_Vmm, "called");
+    LOG_TRACE(Kernel_Vmm, "called");
     const auto* memory = Core::Memory::Instance();
     return memory->GetTotalDirectSize();
 }

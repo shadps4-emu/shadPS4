@@ -139,35 +139,35 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     alignment = alignment > 0 ? alignment : 16_KB;
 
     auto dmem_area = FindDmemArea(search_start);
+    auto mapping_start = search_start > dmem_area->second.base
+                             ? Common::AlignUp(search_start, alignment)
+                             : Common::AlignUp(dmem_area->second.base, alignment);
+    auto mapping_end = Common::AlignUp(mapping_start + size, alignment);
 
-    const auto is_suitable = [&] {
-        if (dmem_area == dmem_map.end()) {
-            return false;
-        }
-        const auto aligned_base = Common::AlignUp(dmem_area->second.base, alignment);
-        const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
-            dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
-        return dmem_area->second.is_free && remaining_size >= size;
-    };
-    while (dmem_area != dmem_map.end() && !is_suitable() &&
-           dmem_area->second.GetEnd() <= search_end) {
-        ++dmem_area;
+    // Find the first free, large enough dmem area in the range.
+    while ((!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) &&
+           dmem_area != dmem_map.end()) {
+        // The current dmem_area isn't suitable, move to the next one.
+        dmem_area++;
+
+        // Update local variables based on the new dmem_area
+        mapping_start = search_start > dmem_area->second.base
+                            ? Common::AlignUp(search_start, alignment)
+                            : Common::AlignUp(dmem_area->second.base, alignment);
+        mapping_end = Common::AlignUp(mapping_start + size, alignment);
     }
-    if (!is_suitable()) {
+
+    if (dmem_area == dmem_map.end()) {
+        // There are no suitable mappings in this range
         LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
         return -1;
     }
 
-    // Align free position
-    PAddr free_addr = dmem_area->second.base;
-    free_addr = Common::AlignUp(free_addr, alignment);
-
     // Add the allocated region to the list and commit its pages.
-    auto& area = CarveDmemArea(free_addr, size)->second;
+    auto& area = CarveDmemArea(mapping_start, size)->second;
     area.memory_type = memory_type;
     area.is_free = false;
-    return free_addr;
+    return mapping_start;
 }
 
 void MemoryManager::Free(PAddr phys_addr, size_t size) {
@@ -632,17 +632,34 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     auto dmem_area = FindDmemArea(search_start);
     PAddr paddr{};
     size_t max_size{};
-    while (dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end) {
+
+    while (dmem_area != dmem_map.end()) {
         if (!dmem_area->second.is_free) {
             dmem_area++;
             continue;
         }
 
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
-                                                : dmem_area->second.base;
+        auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
+                                          : dmem_area->second.base;
         const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
+        auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
+
+        if (dmem_area->second.base < search_start) {
+            // We need to trim remaining_size to ignore addresses before search_start
+            remaining_size = remaining_size > (search_start - dmem_area->second.base)
+                                 ? remaining_size - (search_start - dmem_area->second.base)
+                                 : 0;
+            aligned_base = alignment > 0 ? Common::AlignUp(search_start, alignment) : search_start;
+        }
+
+        if (dmem_area->second.GetEnd() > search_end) {
+            // We need to trim remaining_size to ignore addresses beyond search_end
+            remaining_size = remaining_size > (search_start - dmem_area->second.base)
+                                 ? remaining_size - (dmem_area->second.GetEnd() - search_end)
+                                 : 0;
+        }
+
         if (remaining_size > max_size) {
             paddr = aligned_base;
             max_size = remaining_size;

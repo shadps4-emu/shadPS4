@@ -235,9 +235,12 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
     return {prod2, true};
 }
 
-SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
+SharpLocation AttemptTrackSharp(const IR::Inst* inst, auto& visited_insts) {
     // Search until we find a potential sharp source.
-    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+    const auto pred = [&visited_insts](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+        if (std::ranges::find(visited_insts, inst) != visited_insts.end()) {
+            return std::nullopt;
+        }
         if (inst->GetOpcode() == IR::Opcode::GetUserData ||
             inst->GetOpcode() == IR::Opcode::ReadConst) {
             return inst;
@@ -247,6 +250,7 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
     const auto result = IR::BreadthFirstSearch(inst, pred);
     ASSERT_MSG(result, "Unable to track sharp source");
     inst = result.value();
+    visited_insts.emplace_back(inst);
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<u32>(inst->Arg(0).ScalarReg());
     } else {
@@ -254,6 +258,29 @@ SharpLocation TrackSharp(const IR::Inst* inst, const Shader::Info& info) {
                    "Sharp load not from constant memory");
         return inst->Flags<u32>();
     }
+}
+
+/// Tracks a sharp with validation of the chosen data type.
+template <typename DataType>
+std::pair<SharpLocation, DataType> TrackSharp(const IR::Inst* inst, const Info& info) {
+    boost::container::small_vector<const IR::Inst*, 4> visited_insts{};
+    while (true) {
+        const auto prev_size = visited_insts.size();
+        const auto sharp = AttemptTrackSharp(inst, visited_insts);
+        if (const auto data = info.ReadUdSharp<DataType>(sharp); data.Valid()) {
+            return std::make_pair(sharp, data);
+        }
+        if (prev_size == visited_insts.size()) {
+            // No change in visited instructions, we've run out of paths.
+            UNREACHABLE_MSG("Unable to find valid sharp.");
+        }
+    }
+}
+
+/// Tracks a sharp without data validation.
+SharpLocation TrackSharp(const IR::Inst* inst, const Info& info) {
+    boost::container::static_vector<const IR::Inst*, 1> visited_insts{};
+    return AttemptTrackSharp(inst, visited_insts);
 }
 
 s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
@@ -293,8 +320,8 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
     if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
-        const auto sharp = TrackSharp(producer, info);
-        buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp);
+        SharpLocation sharp;
+        std::tie(sharp, buffer) = TrackSharp<AmdGpu::Buffer>(producer, info);
         binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
