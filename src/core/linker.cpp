@@ -118,7 +118,7 @@ void Linker::Execute(const std::vector<std::string> args) {
     ret = Libraries::Kernel::sceKernelAllocateDirectMemory(
         0, Libraries::Kernel::sceKernelGetDirectMemorySize(), 0x10000, 0x10000, 3, &phys_addr);
     if (ret == 0) {
-        void* addr{};
+        void* addr{reinterpret_cast<void*>(0xfe0000000)};
         ret = Libraries::Kernel::sceKernelMapNamedDirectMemory(&addr, 0x10000, 0x13, 0, phys_addr,
                                                                0x10000, "SceGnmDriver");
     }
