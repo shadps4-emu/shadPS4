@@ -16,7 +16,7 @@ s32 PS4_SYSV_ABI sceNpAuthGetIdToken();
 s32 PS4_SYSV_ABI sceNpAuthAbortRequest();
 s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest();
 s32 PS4_SYSV_ABI sceNpAuthCreateRequest();
-s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(u32 id);
+s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 id);
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeA();
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeV3();
 s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA();

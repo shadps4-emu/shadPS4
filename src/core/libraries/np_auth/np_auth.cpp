@@ -33,7 +33,7 @@ s32 PS4_SYSV_ABI sceNpAuthCreateRequest() {
     return 1;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(u32 id) {
+s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 id) {
     LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
     return ORBIS_OK;
 }
