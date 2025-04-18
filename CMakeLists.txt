@@ -200,7 +200,14 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-set(APP_VERSION "0.7.1 WIP")
+# Set Version
+set(EMULATOR_VERSION_MAJOR "0")
+set(EMULATOR_VERSION_MINOR "7")
+set(EMULATOR_VERSION_PATCH "1")
+
+set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
+
+set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH} WIP")
 set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
@@ -213,7 +220,7 @@ find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.7 CONFIG)
-find_package(PNG 1.6.47 MODULE)
+find_package(PNG 1.6 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)

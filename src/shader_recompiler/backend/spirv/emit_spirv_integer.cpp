@@ -72,12 +72,17 @@ Id EmitISub64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpISub(ctx.U64, a, b);
 }
 
-Id EmitSMulExt(EmitContext& ctx, Id a, Id b) {
-    return ctx.OpSMulExtended(ctx.full_result_i32x2, a, b);
+Id EmitSMulHi(EmitContext& ctx, Id a, Id b) {
+    const auto signed_a{ctx.OpBitcast(ctx.S32[1], a)};
+    const auto signed_b{ctx.OpBitcast(ctx.S32[1], b)};
+    const auto mul_ext{ctx.OpSMulExtended(ctx.full_result_i32x2, signed_a, signed_b)};
+    const auto signed_hi{ctx.OpCompositeExtract(ctx.S32[1], mul_ext, 1)};
+    return ctx.OpBitcast(ctx.U32[1], signed_hi);
 }
 
-Id EmitUMulExt(EmitContext& ctx, Id a, Id b) {
-    return ctx.OpUMulExtended(ctx.full_result_u32x2, a, b);
+Id EmitUMulHi(EmitContext& ctx, Id a, Id b) {
+    const auto mul_ext{ctx.OpUMulExtended(ctx.full_result_u32x2, a, b)};
+    return ctx.OpCompositeExtract(ctx.U32[1], mul_ext, 1);
 }
 
 Id EmitIMul32(EmitContext& ctx, Id a, Id b) {
