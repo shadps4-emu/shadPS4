@@ -76,8 +76,7 @@ s32 PS4_SYSV_ABI sceNpAuthWaitAsync() {
 void RegisterlibSceNpAuth(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("KxGkOrQJTqY", "libSceNpAuthCompat", 1, "libSceNpAuth", 1, 1,
                  sceNpAuthGetAuthorizationCode);
-    LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuthCompat", 1, "libSceNpAuth", 1, 1,
-                 sceNpAuthGetIdToken);
+    LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuthCompat", 1, "libSceNpAuth", 1, 1, sceNpAuthGetIdToken);
     LIB_FUNCTION("cE7wIsqXdZ8", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthAbortRequest);
     LIB_FUNCTION("N+mr7GjTvr8", "libSceNpAuth", 1, "libSceNpAuth", 1, 1,
                  sceNpAuthCreateAsyncRequest);
