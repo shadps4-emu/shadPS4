@@ -8,8 +8,6 @@
 
 namespace Libraries::NpAuth {
 
-static u32 auth_id = 1;
-
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
@@ -31,13 +29,12 @@ s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest() {
 }
 
 s32 PS4_SYSV_ABI sceNpAuthCreateRequest() {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return auth_id++;
+    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
+    return 1;
 }
 
 s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(u32 id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    auth_id--;
+    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
     return ORBIS_OK;
 }
 
@@ -97,7 +94,6 @@ void RegisterlibSceNpAuth(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("gjSyfzSsDcE", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthPollAsync);
     LIB_FUNCTION("PM3IZCw-7m0", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthSetTimeout);
     LIB_FUNCTION("SK-S7daqJSE", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthWaitAsync);
-    LOG_INFO(Lib_NpAuth, "linking done");
 };
 
 } // namespace Libraries::NpAuth
