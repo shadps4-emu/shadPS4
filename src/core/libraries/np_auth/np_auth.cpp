@@ -8,6 +8,8 @@
 
 namespace Libraries::NpAuth {
 
+static u32 auth_id = 1;
+
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
@@ -30,11 +32,12 @@ s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest() {
 
 s32 PS4_SYSV_ABI sceNpAuthCreateRequest() {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    return auth_id++;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthDeleteRequest() {
+s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(u32 id) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    auth_id--;
     return ORBIS_OK;
 }
 
