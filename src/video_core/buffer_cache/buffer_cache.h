@@ -79,13 +79,13 @@ public:
     }
 
     /// Retrieves the device local DBA page table buffer.
-    [[nodiscard]] Buffer& GetBdaPageTableBuffer() noexcept {
-        return bda_pagetable_buffer;
+    [[nodiscard]] Buffer* GetBdaPageTableBuffer() noexcept {
+        return &bda_pagetable_buffer;
     }
 
     /// Retrieves the fault readback buffer.
-    [[nodiscard]] Buffer& GetFaultReadbackBuffer() noexcept {
-        return fault_readback_buffer;
+    [[nodiscard]] Buffer* GetFaultReadbackBuffer() noexcept {
+        return &fault_readback_buffer;
     }
 
     /// Retrieves the buffer with the specified id.

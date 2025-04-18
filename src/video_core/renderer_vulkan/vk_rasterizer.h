@@ -95,6 +95,13 @@ private:
             texture_cache.GetImage(image_id).binding.Reset();
         }
         bound_images.clear();
+
+        if (dma_enabled) {
+            dma_enabled = false;
+            // If a shader accesses a buffer that is not cached, we need to
+            // cache it.
+            buffer_cache.CreateFaultBuffers();
+        }
     }
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
@@ -126,6 +133,7 @@ private:
     boost::container::static_vector<BufferBindingInfo, Shader::NumBuffers> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NumImages> image_bindings;
+    bool dma_enabled{false};
 };
 
 } // namespace Vulkan

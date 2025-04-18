@@ -87,6 +87,21 @@ void Visit(Info& info, const IR::Inst& inst) {
             });
             info.has_readconst = true;
         }
+        if (!info.uses_dma) {
+            // For now, we only need U32, but we may need
+            // to add more types in the future for other porposes.
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .inline_cbuf = AmdGpu::Buffer::Null(),
+                .buffer_type = BufferType::BdaPagetable,
+            });
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .inline_cbuf = AmdGpu::Buffer::Null(),
+                .buffer_type = BufferType::FaultReadback,
+            });
+            info.uses_dma = true;
+        }
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;

@@ -459,9 +459,24 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
+        
+        dma_enabled |= stage->uses_dma;
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
+
+    if (dma_enabled) {
+        // First, import any queued host memory, then sync every mapped
+        // region that is cached on GPU memory.
+        buffer_cache.ImportQueuedRegions();
+        {
+            std::shared_lock lock(mapped_ranges_mutex);
+            for (const auto& range : mapped_ranges) {
+                buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
+            }
+        }
+    }
+
     return true;
 }
 
@@ -526,6 +541,12 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size,
                                                   instance.UniformMinAlignment());
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
+            } else if (desc.buffer_type == Shader::BufferType::BdaPagetable) {
+                const auto* bda_buffer = buffer_cache.GetBdaPageTableBuffer();
+                buffer_infos.emplace_back(bda_buffer->Handle(), 0, bda_buffer->SizeBytes());
+            } else if (desc.buffer_type == Shader::BufferType::FaultReadback) {
+                const auto* fault_buffer = buffer_cache.GetFaultReadbackBuffer();
+                buffer_infos.emplace_back(fault_buffer->Handle(), 0, fault_buffer->SizeBytes());
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
                 auto& lds_buffer = buffer_cache.GetStreamBuffer();
                 const auto& cs_program = liverpool->GetCsRegs();

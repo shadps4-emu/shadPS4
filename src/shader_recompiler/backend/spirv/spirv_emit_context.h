@@ -269,6 +269,10 @@ public:
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
 
+    size_t flatbuf_index{};
+    size_t bda_pagetable_index{};
+    size_t fault_readback_index{};
+
     Id sampler_type{};
     Id sampler_pointer_type{};
 

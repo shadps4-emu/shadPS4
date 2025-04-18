@@ -195,7 +195,8 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 }
 
 Id EmitContext::GetBufferSize(const u32 sharp_idx) {
-    const auto& srt_flatbuf = buffers.back();
+    // Can this be done with memory access? Like we do now with ReadConst
+    const auto& srt_flatbuf = buffers[flatbuf_index];
     ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
     const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
 
@@ -693,6 +694,12 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
     case Shader::BufferType::ReadConstUbo:
         Name(id, "srt_flatbuf_ubo");
         break;
+    case Shader::BufferType::BdaPagetable:
+        Name(id, "bda_pagetable");
+        break;
+    case Shader::BufferType::FaultReadback:
+        Name(id, "fault_readback");
+        break;
     case Shader::BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
@@ -717,6 +724,15 @@ void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
+
+        // Set indexes for special buffers.
+        if (desc.buffer_type == BufferType::ReadConstUbo) {
+            flatbuf_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::BdaPagetable) {
+            bda_pagetable_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::FaultReadback) {
+            fault_readback_index = buffers.size();
+        }
 
         // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);

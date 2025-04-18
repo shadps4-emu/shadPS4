@@ -379,10 +379,7 @@ void BufferCache::ImportMemory(u64 start, u64 end) {
         }
         WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(vk::DeviceAddress), bda_addrs.data(),
                         bda_addrs.size() * sizeof(vk::DeviceAddress));
-        {
-            std::scoped_lock lk{mutex};
-            imported_buffers.emplace_back(std::move(buffer));
-        }
+        imported_buffers.emplace_back(std::move(buffer));
         // Mark the pages as covered
         imported_regions += range;
     }
@@ -850,7 +847,7 @@ void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* val
     vk::Buffer src_buffer = staging_buffer.Handle();
     if (num_bytes < StagingBufferSize) {
         const auto [staging, offset] = staging_buffer.Map(num_bytes);
-        std::memcpy(staging + offset, value, num_bytes);
+        std::memcpy(staging, value, num_bytes);
         copy.srcOffset = offset;
         staging_buffer.Commit();
     } else {
