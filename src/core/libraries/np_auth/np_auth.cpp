@@ -97,6 +97,7 @@ void RegisterlibSceNpAuth(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("gjSyfzSsDcE", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthPollAsync);
     LIB_FUNCTION("PM3IZCw-7m0", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthSetTimeout);
     LIB_FUNCTION("SK-S7daqJSE", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthWaitAsync);
+    LOG_INFO(Lib_NpAuth, "linking done");
 };
 
 } // namespace Libraries::NpAuth
