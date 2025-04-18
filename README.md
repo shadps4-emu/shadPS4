@@ -146,16 +146,13 @@ The following firmware modules are supported and must be placed in shadPS4's `us
 # Main team
 
 - [**georgemoralis**](https://github.com/georgemoralis)
-- [**raphaelthegreat**](https://github.com/raphaelthegreat)
 - [**psucien**](https://github.com/psucien)
-- [**skmp**](https://github.com/skmp)
-- [**wheremyfoodat**](https://github.com/wheremyfoodat)
-- [**raziel1000**](https://github.com/raziel1000)
 - [**viniciuslrangel**](https://github.com/viniciuslrangel)
 - [**roamic**](https://github.com/vladmikhalin)
-- [**poly**](https://github.com/polybiusproxy)
 - [**squidbus**](https://github.com/squidbus)
 - [**frodo**](https://github.com/baggins183)
+- [**Stephen Miller**](https://github.com/StevenMiller123)
+- [**kalaposfos13**](https://github.com/kalaposfos13)
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
@@ -166,11 +163,11 @@ Open a PR and we'll check it :)
 
 # Translations
 
-If you want to translate shadPS4 to your language we use [**crowdin**](https://crowdin.com/project/shadps4-emulator).
+If you want to translate shadPS4 to your language we use [**Crowdin**](https://crowdin.com/project/shadps4-emulator).
 # Contributors
 
 <a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
+  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=24">
 </a>
 
 

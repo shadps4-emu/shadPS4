@@ -655,7 +655,7 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
 
         if (dmem_area->second.GetEnd() > search_end) {
             // We need to trim remaining_size to ignore addresses beyond search_end
-            remaining_size = remaining_size > (search_start - dmem_area->second.base)
+            remaining_size = remaining_size > (dmem_area->second.GetEnd() - search_end)
                                  ? remaining_size - (dmem_area->second.GetEnd() - search_end)
                                  : 0;
         }
