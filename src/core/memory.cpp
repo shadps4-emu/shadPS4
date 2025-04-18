@@ -139,16 +139,21 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     alignment = alignment > 0 ? alignment : 16_KB;
 
     auto dmem_area = FindDmemArea(search_start);
-    auto mapping_start = search_start > dmem_area->second.base ? Common::AlignUp(search_start, alignment) : Common::AlignUp(dmem_area->second.base, alignment);
+    auto mapping_start = search_start > dmem_area->second.base
+                             ? Common::AlignUp(search_start, alignment)
+                             : Common::AlignUp(dmem_area->second.base, alignment);
     auto mapping_end = Common::AlignUp(mapping_start + size, alignment);
 
     // Find the first free, large enough dmem area in the range.
-    while ((!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) && dmem_area != dmem_map.end()) {
+    while ((!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) &&
+           dmem_area != dmem_map.end()) {
         // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
 
         // Update local variables based on the new dmem_area
-        mapping_start = search_start > dmem_area->second.base ? Common::AlignUp(search_start, alignment) : Common::AlignUp(dmem_area->second.base, alignment);
+        mapping_start = search_start > dmem_area->second.base
+                            ? Common::AlignUp(search_start, alignment)
+                            : Common::AlignUp(dmem_area->second.base, alignment);
         mapping_end = Common::AlignUp(mapping_start + size, alignment);
     }
 
@@ -637,19 +642,21 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
         const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
                                                 : dmem_area->second.base;
         const auto alignment_size = aligned_base - dmem_area->second.base;
-        auto remaining_size = 
+        auto remaining_size =
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
 
         if (dmem_area->second.base < search_start) {
             // We need to trim remaining_size to ignore addresses before search_start
-            remaining_size = remaining_size > (search_start - dmem_area->second.base) ?
-                             remaining_size - (search_start - dmem_area->second.base) : 0;
+            remaining_size = remaining_size > (search_start - dmem_area->second.base)
+                                 ? remaining_size - (search_start - dmem_area->second.base)
+                                 : 0;
         }
 
         if (dmem_area->second.GetEnd() > search_end) {
             // We need to trim remaining_size to ignore addresses beyond search_end
-            remaining_size = remaining_size > (search_start - dmem_area->second.base) ?
-                             remaining_size - (dmem_area->second.GetEnd() - search_end) : 0;
+            remaining_size = remaining_size > (search_start - dmem_area->second.base)
+                                 ? remaining_size - (dmem_area->second.GetEnd() - search_end)
+                                 : 0;
         }
 
         if (remaining_size > max_size) {
