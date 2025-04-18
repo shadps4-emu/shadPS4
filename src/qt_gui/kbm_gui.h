@@ -49,7 +49,7 @@ private:
     void EnableMappingButtons();
     void SetMapping(QString input);
 
-    QSet<QString> pressedNonInt;
+    QSet<QString> pressedKeys;
     bool EnableMapping = false;
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
