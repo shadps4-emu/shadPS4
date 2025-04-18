@@ -627,7 +627,8 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     auto dmem_area = FindDmemArea(search_start);
     PAddr paddr{};
     size_t max_size{};
-    while (dmem_area != dmem_map.end() && dmem_area->second.GetEnd() <= search_end) {
+
+    while (dmem_area != dmem_map.end()) {
         if (!dmem_area->second.is_free) {
             dmem_area++;
             continue;
@@ -636,8 +637,21 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
         const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
                                                 : dmem_area->second.base;
         const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
+        auto remaining_size = 
             dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
+
+        if (dmem_area->second.base < search_start) {
+            // We need to trim remaining_size to ignore addresses before search_start
+            remaining_size = remaining_size > (search_start - dmem_area->second.base) ?
+                             remaining_size - (search_start - dmem_area->second.base) : 0;
+        }
+
+        if (dmem_area->second.GetEnd() > search_end) {
+            // We need to trim remaining_size to ignore addresses beyond search_end
+            remaining_size = remaining_size > (search_start - dmem_area->second.base) ?
+                             remaining_size - (dmem_area->second.GetEnd() - search_end) : 0;
+        }
+
         if (remaining_size > max_size) {
             paddr = aligned_base;
             max_size = remaining_size;
