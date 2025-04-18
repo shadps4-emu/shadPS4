@@ -639,7 +639,7 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
             continue;
         }
 
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
+        auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
                                                 : dmem_area->second.base;
         const auto alignment_size = aligned_base - dmem_area->second.base;
         auto remaining_size =
@@ -650,6 +650,7 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
             remaining_size = remaining_size > (search_start - dmem_area->second.base)
                                  ? remaining_size - (search_start - dmem_area->second.base)
                                  : 0;
+            aligned_base = Common::AlignUp(search_start, alignment);
         }
 
         if (dmem_area->second.GetEnd() > search_end) {
