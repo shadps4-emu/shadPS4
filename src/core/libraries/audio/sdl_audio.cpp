@@ -15,10 +15,11 @@ class SDLPortBackend : public PortBackend {
 public:
     explicit SDLPortBackend(const PortOut& port)
         : frame_size(port.format_info.FrameSize()), guest_buffer_size(port.BufferSize()) {
-        const SDL_AudioSpec fmt = {
+        SDL_AudioSpec fmt = {
             .format = port.format_info.is_float ? SDL_AUDIO_F32LE : SDL_AUDIO_S16LE,
             .channels = port.format_info.num_channels,
             .freq = static_cast<int>(port.sample_rate),
+            // .samples = 8192, // Increased buffer size to reduce queue pressure
         };
         stream =
             SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, nullptr, nullptr);
@@ -55,15 +56,12 @@ public:
         if (!stream) {
             return;
         }
-        // AudioOut library manages timing, but we still need to guard against the SDL
-        // audio queue stalling, which may happen during device changes, for example.
-        // Otherwise, latency may grow over time unbounded.
-        if (const auto queued = SDL_GetAudioStreamQueued(stream); queued >= queue_threshold) {
+        const auto queued = SDL_GetAudioStreamQueued(stream);
+        if (queued >= queue_threshold) {
             LOG_WARNING(Lib_AudioOut,
                         "SDL audio queue backed up ({} queued, {} threshold), clearing.", queued,
                         queue_threshold);
             SDL_ClearAudioStream(stream);
-            // Recalculate the threshold in case this happened because of a device change.
             CalculateQueueThreshold();
         }
         if (!SDL_PutAudioStreamData(stream, ptr, static_cast<int>(guest_buffer_size))) {
@@ -75,7 +73,6 @@ public:
         if (!stream) {
             return;
         }
-        // SDL does not have per-channel volumes, for now just take the maximum of the channels.
         const auto vol = *std::ranges::max_element(ch_volumes);
         if (!SDL_SetAudioStreamGain(stream, static_cast<float>(vol) / SCE_AUDIO_OUT_VOLUME_0DB)) {
             LOG_WARNING(Lib_AudioOut, "Failed to change SDL audio stream volume: {}",
@@ -94,7 +91,7 @@ private:
             sdl_buffer_frames = 0;
         }
         const auto sdl_buffer_size = sdl_buffer_frames * frame_size;
-        const auto new_threshold = std::max(guest_buffer_size, sdl_buffer_size) * 4;
+        const auto new_threshold = std::max(guest_buffer_size, sdl_buffer_size) * 8; // Increased multiplier to 8
         if (host_buffer_size != sdl_buffer_size || queue_threshold != new_threshold) {
             host_buffer_size = sdl_buffer_size;
             queue_threshold = new_threshold;

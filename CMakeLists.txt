@@ -570,6 +570,8 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_web_api/np_web_api.h
             src/core/libraries/np_party/np_party.cpp
             src/core/libraries/np_party/np_party.h
+            src/core/libraries/np_auth/np_auth.cpp
+            src/core/libraries/np_auth/np_auth.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
