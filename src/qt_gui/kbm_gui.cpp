@@ -127,7 +127,7 @@ tr("Do you want to overwrite existing mappings with the mappings from the Common
 }
 
 void KBMSettings::ButtonConnects() {
-        for (auto& button : ButtonsList) {
+    for (auto& button : ButtonsList) {
         connect(button, &QPushButton::clicked, this, [this, &button]() { StartTimer(button); });
     }
 }
