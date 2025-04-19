@@ -60,6 +60,9 @@ void SetOverrideControllerColor(bool enable);
 int* GetControllerCustomColor();
 void SetControllerCustomColor(int r, int b, int g);
 
+bool muteAudio();
+int getAudioVolume();
+
 u32 getScreenWidth();
 u32 getScreenHeight();
 s32 getGpuId();
