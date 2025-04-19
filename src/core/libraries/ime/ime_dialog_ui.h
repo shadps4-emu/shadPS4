@@ -158,18 +158,6 @@ private:
     ShiftState shift_state = ShiftState::None;
     u64 kb_language = 0;
     KeyboardStyle kb_style;
-    /* KeyboardStyle kb_style{
-        .layout_width  = 500.0f,
-        .layout_height = 250.0f,
-        .key_spacing   = 5.0f,
-        .color_text             = IM_COL32(225,225,225,255),
-        .color_line             = IM_COL32( 88, 88, 88,255),
-        .color_button_default   = IM_COL32( 35, 35, 35,255),
-        .color_button_function  = IM_COL32( 50, 50, 50,255),
-        .color_special          = IM_COL32(  0,140,200,255),
-        .use_button_symbol_color= false,
-        .color_button_symbol    = IM_COL32( 60, 60, 60,255),
-    };*/
 
     void DrawVirtualKeyboardSection();
     void DrawPredictionBarAnCancelButton();

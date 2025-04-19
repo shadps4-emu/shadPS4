@@ -8,28 +8,6 @@
 #include <imgui.h>
 #include "common/types.h"
 
-/*
-enum class OrbisImeKeyEntryType : u8 {
-    ORBIS_IME_KEY_TYPE_CHARACTER = 0,
-    ORBIS_IME_KEY_TYPE_FUNCTION = 1,
-    ORBIS_IME_KEY_TYPE_DISABLED = 2
-};
-*/
-/*
-struct OrbisImeKeyEntry {
-    u16 keycode;
-    char16_t character;
-    OrbisImeKeyEntryType type;
-    u8 row;
-    u8 col;
-    u8 colspan;
-    u8 rowspan;
-    const char* label;
-    const char* controller_hint;
-    OrbisPadButtonDataOffset bound_buttons[2];
-};
-*/
-
 enum class KeyType : u8 { Character = 0, Function = 1, Disabled = 2 };
 
 struct KeyEntry {

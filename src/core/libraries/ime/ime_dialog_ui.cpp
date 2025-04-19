@@ -517,7 +517,6 @@ void ImeDialogUi::OnVirtualKeyEvent(const VirtualKeyEvent* evt) {
     /* Up is available if you need it later; currently ignored */
 }
 
-/* draw keyboard in a sub‑ID scope */
 void ImeDialogUi::DrawVirtualKeyboardSection() {
     ImGui::PushID("VirtualKeyboardSection");
     DrawVirtualKeyboard(kb_mode, state->type, shift_state, kb_language, KeyboardCallbackBridge,
