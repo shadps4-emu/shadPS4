@@ -13,7 +13,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <h1 align="center">
  <a href="https://discord.gg/bFJxfftGW6">
-        <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4 Discord&logo=Discord&logoColor=white" width="240">
+        <img src="https://img.shields.io/discord/1080089157554155590?color=5865F2&label=shadPS4%20Discord&logo=Discord&logoColor=white" width="275">
  <a href="https://github.com/shadps4-emu/shadPS4/releases/latest">
         <img src="https://img.shields.io/github/downloads/shadps4-emu/shadPS4/total.svg" width="140">
  <a href="https://shadps4.net/">
@@ -71,7 +71,7 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
 
 > [!IMPORTANT]
-> macOS users need at least macOS 15 on Apple Silicon-based Mac devices and at least macOS 14 on Intel-based Mac devices.
+> macOS users need at least macOS 15.4 to run shadPS4. Due to GPU issues there are currently heavy bugs on Intel Macs.
 
 # Debugging and reporting issues
 
@@ -122,19 +122,37 @@ R3 | M |
 Keyboard and mouse inputs can be customized in the settings menu by clicking the Controller button, and further details and help on controls are  also found there. Custom bindings are saved per-game. Inputs support up to three keys per binding, mouse buttons, mouse movement mapped to joystick input, and more.
 
 
+# Firmware files
+
+shadPS4 can load some PlayStation 4 firmware files, these must be dumped from your legally owned PlayStation 4 console.\
+The following firmware modules are supported and must be placed in shadPS4's `user/sys_modules` folder.
+
+<div align="center">
+
+| Modules                 | Modules                 | Modules                 | Modules                 |  
+|-------------------------|-------------------------|-------------------------|-------------------------|  
+| libSceCesCs.sprx        | libSceFont.sprx         | libSceFontFt.sprx       | libSceFreeTypeOt.sprx   |
+| libSceJson.sprx         | libSceJson2.sprx        | libSceLibcInternal.sprx | libSceNgs2.sprx         |  
+| libSceRtc.sprx          | libSceUlt.sprx          |                         |                         |
+
+</div>
+
+> [!Caution]
+> The above modules are required to run the games properly and must be extracted from your PlayStation 4.\
+> **We do not provide any information or support on how to do this**.
+
+
+
 # Main team
 
 - [**georgemoralis**](https://github.com/georgemoralis)
-- [**raphaelthegreat**](https://github.com/raphaelthegreat)
 - [**psucien**](https://github.com/psucien)
-- [**skmp**](https://github.com/skmp)
-- [**wheremyfoodat**](https://github.com/wheremyfoodat)
-- [**raziel1000**](https://github.com/raziel1000)
 - [**viniciuslrangel**](https://github.com/viniciuslrangel)
 - [**roamic**](https://github.com/vladmikhalin)
-- [**poly**](https://github.com/polybiusproxy)
 - [**squidbus**](https://github.com/squidbus)
 - [**frodo**](https://github.com/baggins183)
+- [**Stephen Miller**](https://github.com/StevenMiller123)
+- [**kalaposfos13**](https://github.com/kalaposfos13)
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
@@ -145,11 +163,11 @@ Open a PR and we'll check it :)
 
 # Translations
 
-If you want to translate shadPS4 to your language we use [**crowdin**](https://crowdin.com/project/shadps4-emulator).
+If you want to translate shadPS4 to your language we use [**Crowdin**](https://crowdin.com/project/shadps4-emulator).
 # Contributors
 
 <a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=15">
+  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=24">
 </a>
 
 

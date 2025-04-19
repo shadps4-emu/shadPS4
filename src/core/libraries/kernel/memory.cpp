@@ -19,7 +19,7 @@
 namespace Libraries::Kernel {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
-    LOG_WARNING(Kernel_Vmm, "called");
+    LOG_TRACE(Kernel_Vmm, "called");
     const auto* memory = Core::Memory::Instance();
     return memory->GetTotalDirectSize();
 }
@@ -105,12 +105,6 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
 
     if (physAddrOut == nullptr || sizeOut == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-    if (searchEnd > sceKernelGetDirectMemorySize()) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-    if (searchEnd <= searchStart) {
-        return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
     auto* memory = Core::Memory::Instance();

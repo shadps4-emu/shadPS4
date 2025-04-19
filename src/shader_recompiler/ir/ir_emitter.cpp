@@ -357,6 +357,18 @@ U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
     return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
 }
 
+U32 IREmitter::SharedAtomicIIncrement(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicIIncrement32, address);
+}
+
+U32 IREmitter::SharedAtomicIDecrement(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicIDecrement32, address);
+}
+
+U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicISub32, address, data);
+}
+
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
@@ -1336,6 +1348,18 @@ F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
     }
 }
 
+F32F64 IREmitter::FPMinTri(const F32F64& a, const F32F64& b, const F32F64& c) {
+    return Inst<F32>(Opcode::FPMinTri32, a, b, c);
+}
+
+F32F64 IREmitter::FPMaxTri(const F32F64& a, const F32F64& b, const F32F64& c) {
+    return Inst<F32>(Opcode::FPMaxTri32, a, b, c);
+}
+
+F32F64 IREmitter::FPMedTri(const F32F64& a, const F32F64& b, const F32F64& c) {
+    return Inst<F32>(Opcode::FPMedTri32, a, b, c);
+}
+
 U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
@@ -1376,8 +1400,8 @@ U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
     }
 }
 
-IR::Value IREmitter::IMulExt(const U32& a, const U32& b, bool is_signed) {
-    return Inst(is_signed ? Opcode::SMulExt : Opcode::UMulExt, a, b);
+U32 IREmitter::IMulHi(const U32& a, const U32& b, bool is_signed) {
+    return Inst<U32>(is_signed ? Opcode::SMulHi : Opcode::UMulHi, a, b);
 }
 
 U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {
@@ -1565,6 +1589,42 @@ U32 IREmitter::UMax(const U32& a, const U32& b) {
 
 U32 IREmitter::IMax(const U32& a, const U32& b, bool is_signed) {
     return is_signed ? SMax(a, b) : UMax(a, b);
+}
+
+U32 IREmitter::SMinTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::SMinTri32, a, b, c);
+}
+
+U32 IREmitter::UMinTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::UMinTri32, a, b, c);
+}
+
+U32 IREmitter::IMinTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMinTri(a, b, c) : UMinTri(a, b, c);
+}
+
+U32 IREmitter::SMaxTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::SMaxTri32, a, b, c);
+}
+
+U32 IREmitter::UMaxTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::UMaxTri32, a, b, c);
+}
+
+U32 IREmitter::IMaxTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMaxTri(a, b, c) : UMaxTri(a, b, c);
+}
+
+U32 IREmitter::SMedTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::SMedTri32, a, b, c);
+}
+
+U32 IREmitter::UMedTri(const U32& a, const U32& b, const U32& c) {
+    return Inst<U32>(Opcode::UMedTri32, a, b, c);
+}
+
+U32 IREmitter::IMedTri(const U32& a, const U32& b, const U32& c, bool is_signed) {
+    return is_signed ? SMedTri(a, b, c) : UMedTri(a, b, c);
 }
 
 U32 IREmitter::SClamp(const U32& value, const U32& min, const U32& max) {

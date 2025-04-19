@@ -97,7 +97,7 @@
 	shallow = true
 [submodule "externals/MoltenVK/SPIRV-Cross"]
 	path = externals/MoltenVK/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross
+	url = https://github.com/billhollings/SPIRV-Cross
 	shallow = true
 [submodule "externals/MoltenVK/MoltenVK"]
 	path = externals/MoltenVK/MoltenVK
@@ -107,3 +107,6 @@
 	path = externals/MoltenVK/cereal
 	url = https://github.com/USCiLab/cereal
 	shallow = true
+[submodule "externals/libusb"]
+	path = externals/libusb
+	url = https://github.com/libusb/libusb-cmake.git

@@ -27,6 +27,7 @@
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
+#include "core/libraries/np_auth/np_auth.h"
 #include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_party/np_party.h"
@@ -50,6 +51,7 @@
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
+#include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
@@ -87,6 +89,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::NpWebApi::RegisterlibSceNpWebApi(sym);
+    Libraries::NpAuth::RegisterlibSceNpAuth(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
@@ -116,6 +119,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Zlib::RegisterlibSceZlib(sym);
     Libraries::Hmd::RegisterlibSceHmd(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
+    Libraries::Ulobjmgr::RegisterlibSceUlobjmgr(sym);
 }
 
 } // namespace Libraries
