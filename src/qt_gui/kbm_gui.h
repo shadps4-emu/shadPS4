@@ -25,6 +25,22 @@ private:
     std::unique_ptr<Ui::KBMSettings> ui;
     std::shared_ptr<GameInfoClass> m_game_info;
 
+#ifdef _WIN32
+    const int lctrl = 29;
+    const int rctrl = 57373;
+    const int lalt = 56;
+    const int ralt = 57400;
+    const int lshift = 42;
+    const int rshift = 54;
+#else
+    const int lctrl = 37;
+    const int rctrl = 105;
+    const int lalt = 64;
+    const int ralt = 108;
+    const int lshift = 50;
+    const int rshift = 62;
+#endif
+
     bool eventFilter(QObject* obj, QEvent* event) override;
     void ButtonConnects();
     void SetUIValuestoMappings(std::string config_id);
@@ -33,6 +49,7 @@ private:
     void EnableMappingButtons();
     void SetMapping(QString input);
 
+    QSet<QString> pressedKeys;
     bool EnableMapping = false;
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
