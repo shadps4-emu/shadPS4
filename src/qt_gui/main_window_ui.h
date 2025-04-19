@@ -411,7 +411,8 @@ public:
         setThemeTokyoNight->setText("Tokyo Night");
         setThemeOled->setText("OLED");
         toolBar->setWindowTitle(QCoreApplication::translate("MainWindow", "toolBar", nullptr));
-        toggleLabelsAct->setText(QCoreApplication::translate("MainWindow", "Show Labels Under Icons"));
+        toggleLabelsAct->setText(
+            QCoreApplication::translate("MainWindow", "Show Labels Under Icons"));
     } // retranslateUi
 };
 
