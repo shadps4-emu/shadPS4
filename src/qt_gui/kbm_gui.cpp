@@ -127,58 +127,9 @@ tr("Do you want to overwrite existing mappings with the mappings from the Common
 }
 
 void KBMSettings::ButtonConnects() {
-    connect(ui->CrossButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->CrossButton); });
-    connect(ui->CircleButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->CircleButton); });
-    connect(ui->TriangleButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->TriangleButton); });
-    connect(ui->SquareButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->SquareButton); });
-
-    connect(ui->L1Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->L1Button); });
-    connect(ui->L2Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->L2Button); });
-    connect(ui->L3Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->L3Button); });
-    connect(ui->R1Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->R1Button); });
-    connect(ui->R2Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->R2Button); });
-    connect(ui->R3Button, &QPushButton::clicked, this, [this]() { StartTimer(ui->R3Button); });
-
-    connect(ui->TouchpadButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->TouchpadButton); });
-    connect(ui->OptionsButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->OptionsButton); });
-
-    connect(ui->DpadUpButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->DpadUpButton); });
-    connect(ui->DpadDownButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->DpadDownButton); });
-    connect(ui->DpadLeftButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->DpadLeftButton); });
-    connect(ui->DpadRightButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->DpadRightButton); });
-
-    connect(ui->LStickUpButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->LStickUpButton); });
-    connect(ui->LStickDownButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->LStickDownButton); });
-    connect(ui->LStickLeftButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->LStickLeftButton); });
-    connect(ui->LStickRightButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->LStickRightButton); });
-
-    connect(ui->RStickUpButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->RStickUpButton); });
-    connect(ui->RStickDownButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->RStickDownButton); });
-    connect(ui->RStickLeftButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->RStickLeftButton); });
-    connect(ui->RStickRightButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->RStickRightButton); });
-
-    connect(ui->LHalfButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->LHalfButton); });
-    connect(ui->RHalfButton, &QPushButton::clicked, this,
-            [this]() { StartTimer(ui->RHalfButton); });
+    for (auto& button : ButtonsList) {
+        connect(button, &QPushButton::clicked, this, [this, &button]() { StartTimer(button); });
+    }
 }
 
 void KBMSettings::DisableMappingButtons() {
