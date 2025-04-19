@@ -792,6 +792,21 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             case Qt::Key_Enter:
                 pressedKeys.insert("kpenter");
                 break;
+            case Qt::Key_Home:
+                pressedKeys.insert("home");
+                break;
+            case Qt::Key_End:
+                pressedKeys.insert("end");
+                break;
+            case Qt::Key_PageDown:
+                pressedKeys.insert("pgdown");
+                break;
+            case Qt::Key_PageUp:
+                pressedKeys.insert("pgup");
+                break;
+            case Qt::Key_CapsLock:
+                pressedKeys.insert("capslock");
+                break;
             case Qt::Key_Escape:
                 pressedKeys.insert("unmapped");
                 break;
