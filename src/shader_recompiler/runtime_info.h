@@ -40,27 +40,14 @@ constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
     return static_cast<Stage>(index);
 }
 
-struct LocalRuntimeInfo {
-    u32 ls_stride;
-    bool links_with_tcs;
-
-    auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
-};
-
-struct ExportRuntimeInfo {
-    u32 vertex_data_size;
-
-    auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
-};
-
-enum class VsOutput : u8 {
+enum class Output : u8 {
     None,
     PointSprite,
     EdgeFlag,
     KillFlag,
     GsCutFlag,
-    GsMrtIndex,
-    GsVpIndex,
+    MrtIndex,
+    VpIndex,
     CullDist0,
     CullDist1,
     CullDist2,
@@ -78,11 +65,23 @@ enum class VsOutput : u8 {
     ClipDist6,
     ClipDist7,
 };
-using VsOutputMap = std::array<VsOutput, 4>;
+using OutputMap = std::array<Output, 4>;
+
+struct LocalRuntimeInfo {
+    u32 ls_stride;
+    bool links_with_tcs;
+
+    auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
+};
+
+struct ExportRuntimeInfo {
+    u32 vertex_data_size;
+
+    auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
+};
 
 struct VertexRuntimeInfo {
-    u32 num_outputs;
-    std::array<VsOutputMap, 3> outputs;
+    std::array<OutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
     // Domain
@@ -143,6 +142,7 @@ struct HullRuntimeInfo {
 static constexpr auto GsMaxOutputStreams = 4u;
 using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
 struct GeometryRuntimeInfo {
+    std::array<OutputMap, 3> outputs;
     u32 num_invocations{};
     u32 output_vertices{};
     u32 in_vertex_data_size{};
@@ -241,6 +241,14 @@ struct RuntimeInfo {
     void Initialize(Stage stage_) {
         memset(this, 0, sizeof(*this));
         stage = stage_;
+    }
+
+    const auto& GetOutputs() const noexcept {
+        return stage == Stage::Vertex ? vs_info.outputs : gs_info.outputs;
+    }
+
+    auto& GetOutputs() noexcept {
+        return stage == Stage::Vertex ? vs_info.outputs : gs_info.outputs;
     }
 
     bool operator==(const RuntimeInfo& other) const noexcept {
