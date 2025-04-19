@@ -372,10 +372,10 @@ void BufferCache::ImportMemory(u64 start, u64 end) {
         bda_addrs.clear();
         bda_addrs.reserve(range_pages);
         for (u64 i = 0; i < range_pages; ++i) {
-            // Mark the page as host imported to let the shader know
+            // Don't mark the page as GPU local to let the shader know
             // so that it can notify us if it accesses the page, so we can
             // create a GPU local buffer.
-            bda_addrs.push_back((bda_addr + (i << CACHING_PAGEBITS)) | 0x1);
+            bda_addrs.push_back(bda_addr + (i << CACHING_PAGEBITS));
         }
         WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(vk::DeviceAddress), bda_addrs.data(),
                         bda_addrs.size() * sizeof(vk::DeviceAddress));
@@ -531,8 +531,8 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const u64 size_pages = size >> CACHING_PAGEBITS;
     bda_addrs.reserve(size_pages);
     for (u64 i = 0; i < size_pages; ++i) {
-        // Here, we do not set the host imported bit.
-        bda_addrs.push_back(new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS));
+        // Here, we mark the page as backed by a GPU local buffer
+        bda_addrs.push_back((new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS)) | 0x1);
     }
     WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
                     bda_addrs.size() * sizeof(vk::DeviceAddress));

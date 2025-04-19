@@ -133,11 +133,23 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    inline Id OpLabel(std::string_view label_name) {
+        last_label = Module::OpLabel(label_name);
+        return last_label;
+    }
+
+    inline Id OpLabel() {
+        last_label = Module::OpLabel();
+        return last_label;
+    }
+
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage;
     LogicalStage l_stage{};
+
+    Id last_label{};
 
     Id void_id{};
     Id U8{};
@@ -231,11 +243,14 @@ public:
         bool is_storage = false;
     };
 
-    enum class BufferAlias : u32 {
+    enum class PointerType : u32 {
         U8,
         U16,
+        F16,
         U32,
         F32,
+        U64,
+        F64,
         NumAlias,
     };
 
@@ -252,14 +267,26 @@ public:
         Id size;
         Id size_shorts;
         Id size_dwords;
-        std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
+        std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
-        const BufferSpv& operator[](BufferAlias alias) const {
+        const BufferSpv& operator[](PointerType alias) const {
             return aliases[u32(alias)];
         }
 
-        BufferSpv& operator[](BufferAlias alias) {
+        BufferSpv& operator[](PointerType alias) {
             return aliases[u32(alias)];
+        }
+    };
+
+    struct PhysicalPointerTypes {
+        std::array<Id, u32(PointerType::NumAlias)> types;
+
+        const Id& operator[](PointerType type) const {
+            return types[u32(type)];
+        }
+
+        Id& operator[](PointerType type) {
+            return types[u32(type)];
         }
     };
 
@@ -268,6 +295,7 @@ public:
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
+    PhysicalPointerTypes physical_pointer_types;
 
     size_t flatbuf_index{};
     size_t bda_pagetable_index{};

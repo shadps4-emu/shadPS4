@@ -211,7 +211,7 @@ struct Info {
     bool stores_tess_level_inner{};
     bool translation_failed{};
     bool has_readconst{};
-    bool uses_dma{};
+    IR::Type dma_types{IR::Type::Void};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};

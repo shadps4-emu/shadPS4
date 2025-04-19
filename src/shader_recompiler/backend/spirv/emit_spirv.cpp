@@ -298,6 +298,10 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
     }
+    if (info.dma_types != IR::Type::Void) {
+        ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
+        ctx.AddExtension("SPV_KHR_physical_storage_buffer");
+    }
 }
 
 void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
