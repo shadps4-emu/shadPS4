@@ -5,6 +5,7 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
@@ -76,8 +77,18 @@ public:
             return;
         }
         // SDL does not have per-channel volumes, for now just take the maximum of the channels.
-        const auto vol = *std::ranges::max_element(ch_volumes);
-        if (!SDL_SetAudioStreamGain(stream, static_cast<float>(vol) / SCE_AUDIO_OUT_VOLUME_0DB)) {
+        // const auto vol = *std::ranges::max_element(ch_volumes);
+
+        float volume = 0;
+        if (Config::muteAudio()) {
+            volume = 0;
+        } else {
+            // For the user the volume is from 0 to 100 but for us it is from 0 to 10000.
+            // So let's multiply by 100.
+            volume = Config::getAudioVolume() * 100;
+        }
+
+        if (!SDL_SetAudioStreamGain(stream, volume / SCE_AUDIO_OUT_VOLUME_0DB)) {
             LOG_WARNING(Lib_AudioOut, "Failed to change SDL audio stream volume: {}",
                         SDL_GetError());
         }

@@ -71,6 +71,8 @@ static bool isFpsColor = true;
 static bool isSeparateLogFilesEnabled = false;
 static s16 cursorState = HideCursorState::Idle;
 static int cursorHideTimeout = 5; // 5 seconds (default)
+static bool muteVolume = false;
+static int audioVolume = 100;
 static double trophyNotificationDuration = 6.0;
 static bool useUnifiedInputConfig = true;
 static bool overrideControllerColor = false;
@@ -209,6 +211,14 @@ s16 getCursorState() {
 
 int getCursorHideTimeout() {
     return cursorHideTimeout;
+}
+
+bool muteAudio() {
+    return muteVolume;
+}
+
+int getAudioVolume() {
+    return audioVolume;
 }
 
 double getTrophyNotificationDuration() {
@@ -790,6 +800,13 @@ void load(const std::filesystem::path& path) {
         useUnifiedInputConfig = toml::find_or<bool>(input, "useUnifiedInputConfig", true);
     }
 
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        muteVolume = toml::find_or<bool>(audio, "muteAudio", false);
+        audioVolume = toml::find_or<int>(audio, "audioVolume", 100);
+    }
+
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
@@ -900,8 +917,8 @@ void load(const std::filesystem::path& path) {
 
 void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
-    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                              "Debug",   "Keys",  "GUI", "Settings"};
+    std::vector<std::string> section_order = {"General", "Input", "Audio", "GPU",     "Vulkan",
+                                              "Debug",   "Keys",  "GUI",   "Settings"};
 
     for (const auto& section : section_order) {
         if (data.contains(section)) {
@@ -976,6 +993,8 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
+    data["Audio"]["muteAudio"] = muteVolume;
+    data["Audio"]["audioVolume"] = audioVolume;
     data["GPU"]["screenWidth"] = screenWidth;
     data["GPU"]["screenHeight"] = screenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
