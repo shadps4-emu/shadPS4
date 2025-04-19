@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "ime_keyboard_ui.h"
 #include "ime_ui.h"
 #include "imgui/imgui_std.h"
 
@@ -151,7 +150,6 @@ void ImeUi::Draw() {
         DrawPrettyBackground();
 
         DrawInputText();
-        DrawKeyboard();
         SetCursorPosY(GetCursorPosY() + 10.0f);
 
         const char* button_text;
@@ -186,47 +184,6 @@ void ImeUi::DrawInputText() {
     }
     if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
                     input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
-    }
-}
-
-void ImeUi::DrawKeyboard() {
-    static KeyboardMode kb_mode = KeyboardMode::Letters1;
-    static bool shift_enabled = false;
-
-    static bool has_logged = false;
-    if (!has_logged) {
-        LOG_INFO(Lib_Ime, "Virtual keyboard used from ImeUi");
-        has_logged = true;
-    }
-
-    bool input_changed = false;
-    bool done_pressed = false;
-
-    DrawVirtualKeyboard(state->current_text.begin(), state->current_text.capacity(), &input_changed,
-                        kb_mode, shift_enabled, &done_pressed);
-
-    if (input_changed) {
-        OrbisImeEditText eventParam{};
-        eventParam.str = reinterpret_cast<char16_t*>(ime_param->work);
-        eventParam.caret_index = std::strlen(state->current_text.begin());
-        eventParam.area_num = 1;
-        eventParam.text_area[0].mode = 1;
-        eventParam.text_area[0].index = 0;
-        eventParam.text_area[0].length = eventParam.caret_index;
-
-        state->ConvertUTF8ToOrbis(state->current_text.begin(), eventParam.caret_index,
-                                  eventParam.str, ime_param->maxTextLength);
-        state->ConvertUTF8ToOrbis(state->current_text.begin(), eventParam.caret_index,
-                                  ime_param->inputTextBuffer, ime_param->maxTextLength);
-
-        OrbisImeEvent event{};
-        event.id = OrbisImeEventId::UpdateText;
-        event.param.text = eventParam;
-        state->SendEvent(&event);
-    }
-
-    if (done_pressed) {
-        state->SendEnterEvent();
     }
 }
 

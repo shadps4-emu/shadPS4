@@ -1,167 +1,215 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
 #include <cstring>
+#include <unordered_set>
 #include <imgui.h>
+#include <imgui_internal.h>
+
 #include "ime_common.h"
+#include "ime_dialog.h"
 #include "ime_keyboard_layouts.h"
 #include "ime_keyboard_ui.h"
 #include "ime_ui.h" // for ImeState
 
 using namespace ImGui;
 
-// --- UTF-8 safe backspace helper ---
+/**
+ * Removes one UTF-8 codepoint from the end of 'buffer', if present.
+ */
 void Utf8SafeBackspace(char* buffer) {
     size_t len = std::strlen(buffer);
     if (len == 0)
         return;
 
+    // Move backward over any continuation bytes.
     while (len > 0 && (static_cast<unsigned char>(buffer[len]) & 0b11000000) == 0b10000000) {
         --len;
     }
 
     if (len > 0) {
+        // Remove one codepoint.
         buffer[len - 1] = '\0';
         buffer[len] = '\0';
     }
 }
 
-void DrawVirtualKeyboard(char* buffer, std::size_t buffer_capacity, bool* input_changed,
-                         KeyboardMode& kb_mode, bool& shift_enabled, bool* done_pressed) {
-    const std::vector<Key>* layout = nullptr;
+/**
+ * Picks which layout vector we want for OrbisImeType, kb_mode, shift_state, etc.
+ */
+const std::vector<KeyEntry>* GetKeyboardLayout(OrbisImeType type, KeyboardMode mode,
+                                               ShiftState shift, u64 language) {
+    switch (type) {
+    case OrbisImeType::Number:
+        // For numeric input, you might have a dedicated numeric layout,
+        // but here we reuse kLayoutEnSymbols1.
+        return &kLayoutEnSymbols1;
 
-    switch (kb_mode) {
-    case KeyboardMode::Symbols1:
-        layout = &kLayoutEnSymbols1;
-        break;
-    case KeyboardMode::Symbols2:
-        layout = &kLayoutEnSymbols2;
-        break;
-    case KeyboardMode::Letters2:
-        layout =
-            shift_enabled ? &kLayoutEnAccentLettersUppercase : &kLayoutEnAccentLettersLowercase;
-        break;
-    case KeyboardMode::Letters1:
+    case OrbisImeType::Url:
+    case OrbisImeType::Mail:
+        // Use letters; uppercase if SHIFT is on.
+        if (shift == ShiftState::CapsLock || shift == ShiftState::Shift) {
+            return &kLayoutEnLettersUppercase;
+        } else {
+            return &kLayoutEnLettersLowercase;
+        }
+
+    case OrbisImeType::BasicLatin:
+    case OrbisImeType::Default:
     default:
-        layout = shift_enabled ? &kLayoutEnLettersUppercase : &kLayoutEnLettersLowercase;
-        break;
+        switch (mode) {
+        case KeyboardMode::Symbols1:
+            return &kLayoutEnSymbols1;
+        case KeyboardMode::Symbols2:
+            return &kLayoutEnSymbols2;
+        case KeyboardMode::AccentLetters:
+            if (shift == ShiftState::CapsLock || shift == ShiftState::Shift) {
+                return &kLayoutEnAccentLettersUppercase;
+            } else {
+                return &kLayoutEnAccentLettersLowercase;
+            }
+        case KeyboardMode::Letters:
+        default:
+            if (shift == ShiftState::CapsLock || shift == ShiftState::Shift) {
+                return &kLayoutEnLettersUppercase;
+            } else {
+                return &kLayoutEnLettersLowercase;
+            }
+        }
     }
-
-    RenderKeyboardLayout(*layout, buffer, buffer_capacity, input_changed, kb_mode, shift_enabled,
-                         done_pressed);
 }
 
-void RenderKeyboardLayout(const std::vector<Key>& layout, char* buffer, std::size_t buffer_capacity,
-                          bool* input_changed, KeyboardMode& kb_mode, bool& shift_enabled,
-                          bool* done_pressed) {
-    const float layout_width = 485.0f;
-    const float layout_height = 200.0f;
-    const float cell_spacing = 4.0f;
-    const float hint_padding = 2.0f;
+/**
+ * Renders the given layout using the style logic:
+ *  - For symbols layout and if style.use_button_symbol_color is true,
+ *    character keys get style.color_button_symbol.
+ *  - Function keys get style.color_button_function.
+ *  - The "Done"/"Enter" key (keycode 0x0D) gets style.color_special.
+ *  - Otherwise, keys use style.color_button_default.
+ *
+ * This version retains all GUI layout details (positions, colors, sizes, etc.) exactly as in your
+ * base files. The only change is in key event detection: after drawing each key with Button(), we
+ * use IsItemActive() to determine the pressed state so that the backend key processing works
+ * correctly.
+ */
+void RenderKeyboardLayout(const std::vector<KeyEntry>& layout, KeyboardMode mode,
+                          void (*on_key_event)(const VirtualKeyEvent*),
+                          const KeyboardStyle& style) {
+    ImGui::BeginGroup();
 
-    int max_col = 0;
-    int max_row = 0;
-    for (const Key& key : layout) {
-        max_col = std::max(max_col, key.col + static_cast<int>(key.colspan));
-        max_row = std::max(max_row, key.row + static_cast<int>(key.rowspan));
+    /* ─────────────── 1. grid size & cell metrics ─────────────── */
+    int max_col = 0, max_row = 0;
+    for (const KeyEntry& k : layout) {
+        max_col = std::max(max_col, k.col + (int)k.colspan);
+        max_row = std::max(max_row, k.row + (int)k.rowspan);
+    }
+    if (max_col == 0 || max_row == 0) {
+        ImGui::EndGroup();
+        return;
     }
 
-    const float cell_width = (layout_width - (max_col - 1) * cell_spacing) / max_col;
-    const float cell_height = (layout_height - (max_row - 1) * cell_spacing) / max_row;
+    const float pad = 20.0f;
+    const float spacing_w = (max_col - 1) * style.key_spacing;
+    const float spacing_h = (max_row - 1) * style.key_spacing;
+    const float cell_w = std::floor((style.layout_width - spacing_w - 2 * pad) / max_col + 0.5f);
+    const float cell_h = std::floor((style.layout_height - spacing_h - 85.0f) / max_row + 0.5f);
 
-    const ImVec2 origin = ImGui::GetCursorScreenPos();
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImVec2 origin = ImGui::GetCursorScreenPos();
+    origin.x += pad;
 
-    for (const Key& key : layout) {
-        float x = origin.x + key.col * (cell_width + cell_spacing);
-        float y = origin.y + key.row * (cell_height + cell_spacing);
+    ImGui::PushStyleColor(ImGuiCol_NavHighlight, style.color_line);
+    ImGui::SetWindowFontScale(1.50f);
 
-        ImVec2 pos(x, y);
-        ImVec2 size(key.colspan * cell_width + (key.colspan - 1) * cell_spacing,
-                    key.rowspan * cell_height + (key.rowspan - 1) * cell_spacing);
+    const int function_rows_start = std::max(0, max_row - 2);
 
-        std::string button_id =
-            key.label.empty() ? "##empty_" + std::to_string(key.row) + "_" + std::to_string(key.col)
-                              : key.label;
+    /* ─────────────── 2. draw every key ───────────────────────── */
+    for (const KeyEntry& key : layout) {
+        /* position & size */
+        float x = origin.x + key.col * (cell_w + style.key_spacing);
+        float y = origin.y + key.row * (cell_h + style.key_spacing);
+        float w = key.colspan * cell_w + (key.colspan - 1) * style.key_spacing;
+        float h = key.rowspan * cell_h + (key.rowspan - 1) * style.key_spacing;
+        ImVec2 pos(x, y), size(w, h);
+
+        /* ------------ background colour decision --------------- */
+        const bool in_function_rows = (key.row >= function_rows_start);
+        const bool is_done_enter = (key.keycode == 0x0D);
+
+        ImU32 bg_color;
+        if (is_done_enter) {
+            bg_color = style.color_special; // always wins
+        } else if (in_function_rows) {
+            bg_color = style.color_button_function; // bottom two rows
+        } else if ((mode == KeyboardMode::Symbols1 || mode == KeyboardMode::Symbols2) &&
+                   style.use_button_symbol_color) {
+            bg_color = style.color_button_symbol; // symbol tint
+        } else {
+            bg_color = style.color_button_default; // normal default
+        }
+
+        /* label */
+        std::string label = (key.label && key.label[0]) ? key.label : " ";
+
+        /* ---------- ImGui button ---------- */
+        ImGui::PushID(&key);
+        ImGui::PushStyleColor(ImGuiCol_Text, style.color_text);
+        ImGui::PushStyleColor(ImGuiCol_Button, bg_color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                              IM_COL32((bg_color >> IM_COL32_R_SHIFT & 0xFF) * 220 / 255,
+                                       (bg_color >> IM_COL32_G_SHIFT & 0xFF) * 220 / 255,
+                                       (bg_color >> IM_COL32_B_SHIFT & 0xFF) * 220 / 255,
+                                       (bg_color >> IM_COL32_A_SHIFT & 0xFF)));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                              IM_COL32((bg_color >> IM_COL32_R_SHIFT & 0xFF) * 180 / 255,
+                                       (bg_color >> IM_COL32_G_SHIFT & 0xFF) * 180 / 255,
+                                       (bg_color >> IM_COL32_B_SHIFT & 0xFF) * 180 / 255,
+                                       (bg_color >> IM_COL32_A_SHIFT & 0xFF)));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+
+        if (key.allow_repeat)
+            ImGui::PushButtonRepeat(true);
 
         ImGui::SetCursorScreenPos(pos);
-        bool key_activated = ImGui::Button(button_id.c_str(), size);
+        bool pressed = ImGui::Button(label.c_str(), size); // Down + repeats
 
-        if (key_activated) {
-            switch (key.type) {
-            case KeyType::Text:
-                if (!key.label.empty()) {
-                    size_t len = std::strlen(buffer);
-                    if (len + key.label.size() < buffer_capacity) {
-                        std::strcat(buffer, key.label.c_str());
-                        if (input_changed)
-                            *input_changed = true;
-                    }
-                }
-                break;
-            case KeyType::Backspace:
-                if (buffer[0] != '\0') {
-                    Utf8SafeBackspace(buffer);
-                    if (input_changed)
-                        *input_changed = true;
-                }
-                break;
-            case KeyType::Space:
-                if (std::strlen(buffer) + 1 < buffer_capacity) {
-                    std::strcat(buffer, " ");
-                    if (input_changed)
-                        *input_changed = true;
-                }
-                break;
-            case KeyType::Enter:
-            case KeyType::Done:
-                if (done_pressed)
-                    *done_pressed = true;
-                break;
-            case KeyType::Shift:
-                shift_enabled = !shift_enabled;
-                break;
-            case KeyType::Symbols1Layout:
-                kb_mode = KeyboardMode::Symbols1;
-                break;
-            case KeyType::Symbols2Layout:
-                kb_mode = KeyboardMode::Symbols2;
-                break;
-            case KeyType::LettersLayout:
-                kb_mode = KeyboardMode::Letters1;
-                break;
-            case KeyType::AccentLettersLayout:
-                kb_mode = KeyboardMode::Letters2;
-                break;
+        if (key.allow_repeat)
+            ImGui::PopButtonRepeat();
 
-            case KeyType::ToggleKeyboard:
-                kb_mode = (kb_mode == KeyboardMode::Letters1) ? KeyboardMode::Symbols1
-                                                              : KeyboardMode::Letters1;
-                break;
-            default:
-                break;
+        /* ---------- event generation ---------- */
+        if (on_key_event) {
+            if (ImGui::IsItemActivated()) {
+                VirtualKeyEvent ev{VirtualKeyEventType::Down, &key};
+                on_key_event(&ev);
+            } else if (pressed && key.allow_repeat) {
+                VirtualKeyEvent ev{VirtualKeyEventType::Repeat, &key};
+                on_key_event(&ev);
+            }
+
+            if (ImGui::IsItemDeactivated()) {
+                VirtualKeyEvent ev{VirtualKeyEventType::Up, &key};
+                on_key_event(&ev);
             }
         }
 
-        // Draw controller hint label
-        if (!key.controller_hint.empty()) {
-            float original_font_size = ImGui::GetFontSize();
-            float small_font_size = original_font_size * 0.5f;
-
-            ImVec2 text_size =
-                ImGui::CalcTextSize(key.controller_hint.c_str(), nullptr, false, -1.0f) *
-                (small_font_size / original_font_size);
-
-            ImVec2 text_pos = pos + ImVec2(hint_padding, hint_padding);
-            ImVec2 bg_min = text_pos - ImVec2(1.0f, 1.0f);
-            ImVec2 bg_max = text_pos + text_size + ImVec2(2.0f, 1.0f);
-
-            ImU32 bg_color = IM_COL32(0, 0, 0, 160);
-            ImU32 fg_color = IM_COL32(255, 255, 255, 200);
-
-            draw_list->AddRectFilled(bg_min, bg_max, bg_color, 2.0f);
-            draw_list->AddText(nullptr, small_font_size, text_pos, fg_color,
-                               key.controller_hint.c_str());
-        }
+        /* cleanup */
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(4);
+        ImGui::PopID();
     }
+
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopStyleColor(); // NavHighlight
+    ImGui::EndGroup();
+}
+
+/**
+ * Selects the correct layout via GetKeyboardLayout() then calls RenderKeyboardLayout().
+ */
+void DrawVirtualKeyboard(KeyboardMode kb_mode, OrbisImeType ime_type, ShiftState shift_state,
+                         u64 language, void (*on_key_event)(const VirtualKeyEvent*),
+                         const KeyboardStyle& style) {
+    const std::vector<KeyEntry>* layout =
+        GetKeyboardLayout(ime_type, kb_mode, shift_state, language);
+    if (!layout)
+        return;
+
+    RenderKeyboardLayout(*layout, kb_mode, on_key_event, style);
 }

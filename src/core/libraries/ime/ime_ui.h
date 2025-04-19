@@ -70,8 +70,6 @@ private:
 
     void DrawInputText();
 
-    void DrawKeyboard();
-
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };
 

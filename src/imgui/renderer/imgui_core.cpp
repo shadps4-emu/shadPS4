@@ -80,7 +80,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     rb.AddChar(U'→');
     rb.AddChar(U'⊗');
     rb.AddChar(U'⮾');
-    rb.AddChar(U'🗙');
+    rb.AddChar(U'╳');
     rb.AddChar(U'◀');
     rb.AddChar(U'▲');
     rb.AddChar(U'▶');
