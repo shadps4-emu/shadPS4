@@ -18,6 +18,8 @@ namespace Shader::IR {
 class IREmitter {
 public:
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
+    explicit IREmitter(IR::Inst& inst)
+        : block{inst.GetParent()}, insertion_point{Block::InstructionList::s_iterator_to(inst)} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
 
@@ -39,6 +41,7 @@ public:
     U1 ConditionRef(const U1& value);
     void Reference(const Value& value);
 
+    [[nodiscard]] Value Phi(IR::Type type);
     void PhiMove(IR::Inst& phi, const Value& value);
 
     void Prologue();
@@ -52,6 +55,7 @@ public:
     void DeviceMemoryBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
+    void SetUserData(const U32& offset, const U32& data);
     [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
     void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
 

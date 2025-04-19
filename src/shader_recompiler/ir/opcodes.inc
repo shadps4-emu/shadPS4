@@ -50,6 +50,8 @@ OPCODE(SharedAtomicIDecrement32,                            U32,            U32,
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
+// We don't use ScalarReg since we do arithmetics on the register index
+OPCODE(SetUserData,                                         Void,           U32,            U32                                                             )
 OPCODE(GetThreadBitScalarReg,                               U1,             ScalarReg,                                                                      )
 OPCODE(SetThreadBitScalarReg,                               Void,           ScalarReg,      U1,                                                             )
 OPCODE(GetScalarRegister,                                   U32,            ScalarReg,                                                                      )

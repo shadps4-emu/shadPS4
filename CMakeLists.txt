@@ -635,6 +635,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/assert.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
+           src/common/cartesian_invoke.h
            src/common/concepts.h
            src/common/config.cpp
            src/common/config.h
@@ -783,6 +784,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
                       src/shader_recompiler/info.h
+                      src/shader_recompiler/pools.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
                       src/shader_recompiler/specialization.h
@@ -847,15 +849,39 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
+                      src/shader_recompiler/ir/compute_value/compute.cpp
+                      src/shader_recompiler/ir/compute_value/compute.h
+                      src/shader_recompiler/ir/compute_value/do_bitcast.cpp
+                      src/shader_recompiler/ir/compute_value/do_bitcast.h
+                      src/shader_recompiler/ir/compute_value/do_composite.cpp
+                      src/shader_recompiler/ir/compute_value/do_composite.h
+                      src/shader_recompiler/ir/compute_value/do_convert.cpp
+                      src/shader_recompiler/ir/compute_value/do_convert.h
+                      src/shader_recompiler/ir/compute_value/do_float_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_float_operations.h
+                      src/shader_recompiler/ir/compute_value/do_integer_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_integer_operations.h
+                      src/shader_recompiler/ir/compute_value/do_logical_operations.cpp
+                      src/shader_recompiler/ir/compute_value/do_logical_operations.h
+                      src/shader_recompiler/ir/compute_value/do_nop_functions.h
+                      src/shader_recompiler/ir/compute_value/do_packing.cpp
+                      src/shader_recompiler/ir/compute_value/do_packing.h
+                      src/shader_recompiler/ir/compute_value/imm_value.cpp
+                      src/shader_recompiler/ir/compute_value/imm_value.h
+                      src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp
                       src/shader_recompiler/ir/attribute.h
                       src/shader_recompiler/ir/basic_block.cpp
                       src/shader_recompiler/ir/basic_block.h
                       src/shader_recompiler/ir/condition.h
+                      src/shader_recompiler/ir/conditional_tree.cpp
+                      src/shader_recompiler/ir/conditional_tree.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
                       src/shader_recompiler/ir/microinstruction.cpp
+                      src/shader_recompiler/ir/num_executions.cpp
+                      src/shader_recompiler/ir/num_executions.cpp
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
@@ -865,13 +891,42 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp
                       src/shader_recompiler/ir/program.h
-                      src/shader_recompiler/ir/reinterpret.h
                       src/shader_recompiler/ir/reg.h
+                      src/shader_recompiler/ir/reinterpret.h
+                      src/shader_recompiler/ir/srt_gvn_table.h
+                      src/shader_recompiler/ir/subprogram.cpp
+                      src/shader_recompiler/ir/subprogram.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h
                       src/shader_recompiler/ir/value.cpp
                       src/shader_recompiler/ir/value.h
 )
+
+if (ARCHITECTURE STREQUAL "x86_64")
+    set(SHADER_RECOMPILER ${SHADER_RECOMPILER}
+                          src/shader_recompiler/backend/asm_x64/emit_x64_atomic.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_barrier.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_bitwise_conversion.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_composite.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_context_get_set.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_convert.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_floating_point.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_image.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_instructions.h
+                          src/shader_recompiler/backend/asm_x64/emit_x64_integer.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_logical.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_select.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_shared_memory.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_special.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_undefined.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64_warp.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64.cpp
+                          src/shader_recompiler/backend/asm_x64/emit_x64.h
+                          src/shader_recompiler/backend/asm_x64/x64_emit_context.cpp
+                          src/shader_recompiler/backend/asm_x64/x64_emit_context.h
+                          src/shader_recompiler/backend/asm_x64/x64_utils.cpp
+                          src/shader_recompiler/backend/asm_x64/x64_utils.h)
+endif()
 
 set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h

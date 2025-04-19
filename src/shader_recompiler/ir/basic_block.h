@@ -11,6 +11,7 @@
 
 #include "common/object_pool.h"
 #include "common/types.h"
+#include "shader_recompiler/ir/abstract_syntax_list.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -18,6 +19,12 @@ namespace Shader::IR {
 
 class Block {
 public:
+    struct ConditionalData {
+        u32 depth;
+        const ConditionalData* parent;
+        const AbstractSyntaxNode* asl_node;
+    };
+
     using InstructionList = boost::intrusive::list<Inst>;
     using size_type = InstructionList::size_type;
     using iterator = InstructionList::iterator;
@@ -39,6 +46,9 @@ public:
 
     /// Prepends a copy of an instruction to this basic block before the insertion point.
     iterator PrependNewInst(iterator insertion_point, const Inst& base_inst);
+
+    /// Prepends a new instruction to this basic block before the insertion point (without args).
+    iterator PrependNewInst(iterator insertion_point, Opcode op, u32 flags);
 
     /// Prepends a new instruction to this basic block before the insertion point.
     iterator PrependNewInst(iterator insertion_point, Opcode op,
@@ -63,6 +73,24 @@ public:
     /// Gets an immutable span to the immediate successors.
     [[nodiscard]] std::span<Block* const> ImmSuccessors() const noexcept {
         return imm_successors;
+    }
+    // Returns if the block has a given immediate predecessor.
+    [[nodiscard]] bool HasImmPredecessor(const Block* block) const noexcept {
+        return std::ranges::find(imm_predecessors, block) != imm_predecessors.end();
+    }
+    // Returns if the block has a given immediate successor.
+    [[nodiscard]] bool HasImmSuccessor(const Block* block) const noexcept {
+        return std::ranges::find(imm_successors, block) != imm_successors.end();
+    }
+
+    // Set the conditional data for this block.
+    void SetConditionalData(const ConditionalData& data) {
+        cond_data = data;
+    }
+
+    // Get the conditional data for this block.
+    [[nodiscard]] const ConditionalData& CondData() const {
+        return cond_data;
     }
 
     /// Intrusively store the host definition of this instruction.
@@ -163,6 +191,9 @@ private:
     std::vector<Block*> imm_predecessors;
     /// Block immediate successors
     std::vector<Block*> imm_successors;
+
+    // Conditional data
+    Block::ConditionalData cond_data;
 
     /// Intrusively store if the block is sealed in the SSA pass.
     bool is_ssa_sealed{false};

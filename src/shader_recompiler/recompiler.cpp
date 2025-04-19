@@ -4,6 +4,7 @@
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
+#include "shader_recompiler/ir/conditional_tree.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/recompiler.h"
@@ -59,6 +60,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
+    Shader::IR::AddConditionalTreeFromASL(program.syntax_list);
+
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
@@ -72,7 +75,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info);
     Shader::Optimization::ReadLaneEliminationPass(program);
-    Shader::Optimization::FlattenExtendedUserdataPass(program);
+    Shader::Optimization::FlattenExtendedUserdataPass(program, pools);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::LowerBufferFormatToRaw(program);
     Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
@@ -81,6 +84,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
+
+    Shader::IR::DumpProgram(program, info);
 
     return program;
 }
