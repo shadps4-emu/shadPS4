@@ -108,9 +108,21 @@ void Linker::Execute(const std::vector<std::string> args) {
     static constexpr s64 InternalMemorySize = 0x1000000;
     void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
 
-    const s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
-        &addr_out, InternalMemorySize, 3, 0, "SceKernelInternalMemory");
+    s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(&addr_out, InternalMemorySize, 3,
+                                                                 0, "SceKernelInternalMemory");
     ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
+
+    // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
+    // Some games fail without accurately emulating this behavior.
+    s64 phys_addr{};
+    ret = Libraries::Kernel::sceKernelAllocateDirectMemory(
+        0, Libraries::Kernel::sceKernelGetDirectMemorySize(), 0x10000, 0x10000, 3, &phys_addr);
+    if (ret == 0) {
+        void* addr{reinterpret_cast<void*>(0xfe0000000)};
+        ret = Libraries::Kernel::sceKernelMapNamedDirectMemory(&addr, 0x10000, 0x13, 0, phys_addr,
+                                                               0x10000, "SceGnmDriver");
+    }
+    ASSERT_MSG(ret == 0, "Unable to emulate libSceGnmDriver initialization");
 
     main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
