@@ -27,6 +27,7 @@
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
+#include "core/libraries/np_auth/np_auth.h"
 #include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_party/np_party.h"
@@ -88,6 +89,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterlibSceNpScore(sym);
     Libraries::NpTrophy::RegisterlibSceNpTrophy(sym);
     Libraries::NpWebApi::RegisterlibSceNpWebApi(sym);
+    Libraries::NpAuth::RegisterlibSceNpAuth(sym);
     Libraries::ScreenShot::RegisterlibSceScreenShot(sym);
     Libraries::AppContent::RegisterlibSceAppContent(sym);
     Libraries::PngDec::RegisterlibScePngDec(sym);
