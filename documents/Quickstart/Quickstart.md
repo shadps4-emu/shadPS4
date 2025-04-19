@@ -24,13 +24,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 - A CPU supporting the following instruction sets: MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, F16C, CLMUL, AES, BMI1, MOVBE, XSAVE, ABM
   - **Intel**: Haswell generation or newer
   - **AMD**: Jaguar generation or newer
-  - **Apple**: Rosetta 2 on macOS 15 or newer
+  - **Apple**: Rosetta 2 on macOS 15.4 or newer
 
 ### GPU
 
 - A graphics card with at least 1GB of VRAM
-- Keep your graphics drivers up to date
-- Vulkan 1.3 support (required)
+- Up-to-date graphics drivers
+- Vulkan 1.3 with the `VK_KHR_swapchain` and `VK_KHR_push_descriptor` extensions
 
 ### RAM
 

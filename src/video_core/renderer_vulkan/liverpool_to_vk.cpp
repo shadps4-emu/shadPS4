@@ -156,6 +156,18 @@ vk::CullModeFlags CullMode(Liverpool::CullMode mode) {
     }
 }
 
+vk::FrontFace FrontFace(Liverpool::FrontFace face) {
+    switch (face) {
+    case Liverpool::FrontFace::Clockwise:
+        return vk::FrontFace::eClockwise;
+    case Liverpool::FrontFace::CounterClockwise:
+        return vk::FrontFace::eCounterClockwise;
+    default:
+        UNREACHABLE();
+        return vk::FrontFace::eClockwise;
+    }
+}
+
 vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor) {
     using BlendFactor = Liverpool::BlendControl::BlendFactor;
     switch (factor) {

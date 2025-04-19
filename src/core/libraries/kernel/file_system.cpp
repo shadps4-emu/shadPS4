@@ -190,15 +190,15 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 }
 
 s32 PS4_SYSV_ABI close(s32 fd) {
-    if (fd < 3) {
-        // This is technically possible, but it's usually caused by some stubbed function instead.
-        LOG_WARNING(Kernel_Fs, "called on an std handle, fd = {}", fd);
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
+    }
+    if (fd < 3) {
+        // This is technically possible, but it's usually caused by some stubbed function instead.
+        LOG_WARNING(Kernel_Fs, "called on an std handle, fd = {}", fd);
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
