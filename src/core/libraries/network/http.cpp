@@ -278,7 +278,9 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
 #if 0
       uint uVar1;
-  int iVar2;
+#endif
+    int returnCode;
+#if 0
   undefined8 uVar3;
   long local_60;
   undefined1 local_58 [8];
@@ -291,35 +293,38 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
   local_40 = 0;
   local_48 = 0;
   if (g_isHttpInitialized == 0) {
-    iVar2 = -0x7fbcefff;
+    returnCode = -0x7fbcefff;
   }
-  else if (statusCode == (int *)0x0) {
-    iVar2 = -0x7fbcee02;
-  }
+#endif
+    if (statusCode == nullptr) {
+        // returnCode = ORBIS_HTTP_ERROR_INVALID_VALUE; //TODO
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+#if 0
   else {
     uVar1 = getSdkVersion();
-    iVar2 = scePthreadAttrInit(local_50);
-    if ((-1 < iVar2) || (uVar1 < 0x3000000)) {
+    returnCode = scePthreadAttrInit(local_50);
+    if ((-1 < returnCode) || (uVar1 < 0x3000000)) {
       uVar3 = scePthreadSelf();
-      iVar2 = scePthreadAttrGet(uVar3,local_50);
-      if ((iVar2 < 0) && (0x2ffffff < uVar1)) {
+      returnCode = scePthreadAttrGet(uVar3,local_50);
+      if ((returnCode < 0) && (0x2ffffff < uVar1)) {
         scePthreadAttrDestroy(local_50);
       }
       else {
-        iVar2 = scePthreadAttrGetstack(local_50,&local_60,local_58);
+        returnCode = scePthreadAttrGetstack(local_50,&local_60,local_58);
         scePthreadAttrDestroy(local_50);
-        if (((-1 < iVar2) || (uVar1 < 0x3000000)) &&
+        if (((-1 < returnCode) || (uVar1 < 0x3000000)) &&
            ((uVar1 < 0x1000000 ||
-            (iVar2 = -0x7fbcef8a, 0x3fcf < (ulong)((long)&local_40 - local_60))))) {
-          iVar2 = FUN_01018c20(&local_48,reqId);
-          if ((-1 < iVar2) && (iVar2 = scePthreadMutexLock(local_48 + 0x530), -1 < iVar2)) {
-            iVar2 = -0x7fbcef9b;
+            (returnCode = -0x7fbcef8a, 0x3fcf < (ulong)((long)&local_40 - local_60))))) {
+          returnCode = FUN_01018c20(&local_48,reqId);
+          if ((-1 < returnCode) && (returnCode = scePthreadMutexLock(local_48 + 0x530), -1 < returnCode)) {
+            returnCode = -0x7fbcef9b;
             if (0x11 < *(int *)(local_48 + 0x20)) {
               if (*(int *)(local_48 + 0x20) == 0x16) {
-                iVar2 = *(int *)(local_48 + 0x28);
+                returnCode = *(int *)(local_48 + 0x28);
               }
               else {
-                iVar2 = 0;
+                returnCode = 0;
                 *statusCode = *(int *)(local_48 + 0x20c);
               }
             }
@@ -336,7 +341,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
                     /* WARNING: Subroutine does not return */
     __stack_chk_fail();
   }
-  return iVar2;
+  return returnCode;
 #endif
     *statusCode = 404; // not found
     return ORBIS_OK;
