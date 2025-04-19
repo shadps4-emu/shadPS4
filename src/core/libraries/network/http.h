@@ -59,7 +59,7 @@ int PS4_SYSV_ABI sceHttpDeleteRequest();
 int PS4_SYSV_ABI sceHttpDeleteTemplate();
 int PS4_SYSV_ABI sceHttpDestroyEpoll();
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled();
-int PS4_SYSV_ABI sceHttpGetAllResponseHeaders();
+int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize);
 int PS4_SYSV_ABI sceHttpGetAuthEnabled();
 int PS4_SYSV_ABI sceHttpGetAutoRedirect();
 int PS4_SYSV_ABI sceHttpGetConnectionStat();
@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sceHttpGetMemoryPoolStats();
 int PS4_SYSV_ABI sceHttpGetNonblock();
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
 int PS4_SYSV_ABI sceHttpGetResponseContentLength();
-int PS4_SYSV_ABI sceHttpGetStatusCode();
+int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode);
 int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize);
 int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
                                             const char** fieldValue, u64* valueLen);

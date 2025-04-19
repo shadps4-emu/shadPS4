@@ -204,7 +204,7 @@ int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetAllResponseHeaders() {
+int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -274,8 +274,71 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetStatusCode() {
+int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+#if 0
+      uint uVar1;
+  int iVar2;
+  undefined8 uVar3;
+  long local_60;
+  undefined1 local_58 [8];
+  undefined1 local_50 [8];
+  long local_48;
+  undefined8 local_40;
+  long local_38;
+  
+  local_38 = ___stack_chk_guard;
+  local_40 = 0;
+  local_48 = 0;
+  if (g_isHttpInitialized == 0) {
+    iVar2 = -0x7fbcefff;
+  }
+  else if (statusCode == (int *)0x0) {
+    iVar2 = -0x7fbcee02;
+  }
+  else {
+    uVar1 = getSdkVersion();
+    iVar2 = scePthreadAttrInit(local_50);
+    if ((-1 < iVar2) || (uVar1 < 0x3000000)) {
+      uVar3 = scePthreadSelf();
+      iVar2 = scePthreadAttrGet(uVar3,local_50);
+      if ((iVar2 < 0) && (0x2ffffff < uVar1)) {
+        scePthreadAttrDestroy(local_50);
+      }
+      else {
+        iVar2 = scePthreadAttrGetstack(local_50,&local_60,local_58);
+        scePthreadAttrDestroy(local_50);
+        if (((-1 < iVar2) || (uVar1 < 0x3000000)) &&
+           ((uVar1 < 0x1000000 ||
+            (iVar2 = -0x7fbcef8a, 0x3fcf < (ulong)((long)&local_40 - local_60))))) {
+          iVar2 = FUN_01018c20(&local_48,reqId);
+          if ((-1 < iVar2) && (iVar2 = scePthreadMutexLock(local_48 + 0x530), -1 < iVar2)) {
+            iVar2 = -0x7fbcef9b;
+            if (0x11 < *(int *)(local_48 + 0x20)) {
+              if (*(int *)(local_48 + 0x20) == 0x16) {
+                iVar2 = *(int *)(local_48 + 0x28);
+              }
+              else {
+                iVar2 = 0;
+                *statusCode = *(int *)(local_48 + 0x20c);
+              }
+            }
+            scePthreadMutexUnlock(local_48 + 0x530);
+          }
+          if (local_48 != 0) {
+            FUN_010195c0();
+          }
+        }
+      }
+    }
+  }
+  if (___stack_chk_guard != local_38) {
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+  return iVar2;
+#endif
+    *statusCode = 404; // not found
     return ORBIS_OK;
 }
 
