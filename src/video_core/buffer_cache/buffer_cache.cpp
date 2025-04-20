@@ -566,18 +566,17 @@ void BufferCache::CreateFaultBuffers() {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(fault_readback_buffer.buffer, staging_buffer.Handle(), copy);
     scheduler.Finish();
-    std::array<u8, FAULT_READBACK_SIZE> buffer{};
-    std::memcpy(buffer.data(), mapped, FAULT_READBACK_SIZE);
+    std::memcpy(fault_readback_cpu.data(), mapped, FAULT_READBACK_SIZE);
     // Create the fault buffers batched
     boost::icl::interval_set<VAddr> fault_ranges;
     for (u64 i = 0; i < FAULT_READBACK_SIZE; ++i) {
-        if (buffer[i] == 0) {
+        if (fault_readback_cpu[i] == 0) {
             continue;
         }
         // Each bit is a page
         const u64 page = i * 8;
         for (u8 j = 0; j < 8; ++j) {
-            if ((buffer[i] & (1 << j)) == 0) {
+            if ((fault_readback_cpu[i] & (1 << j)) == 0) {
                 continue;
             }
             const VAddr start = (page + j) << CACHING_PAGEBITS;

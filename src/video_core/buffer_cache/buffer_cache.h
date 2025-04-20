@@ -39,9 +39,9 @@ class TextureCache;
 
 class BufferCache {
 public:
-    static constexpr u32 CACHING_PAGEBITS = 16;
+    static constexpr u32 CACHING_PAGEBITS = 14;
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
-    static constexpr u64 DEVICE_PAGESIZE = 64_KB;
+    static constexpr u64 DEVICE_PAGESIZE = 16_KB;
     static constexpr u64 CACHING_NUMPAGES = u64{1} << (40 - CACHING_PAGEBITS);
 
     static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(vk::DeviceAddress);
@@ -50,7 +50,7 @@ public:
     struct Traits {
         using Entry = BufferId;
         static constexpr size_t AddressSpaceBits = 40;
-        static constexpr size_t FirstLevelBits = 18;
+        static constexpr size_t FirstLevelBits = 16;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
     };
     using PageTable = MultiLevelPageTable<Traits>;
@@ -200,6 +200,8 @@ private:
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
     Buffer fault_readback_buffer;
+    // We need to define here to avoid stack overflow
+    std::array<u8, FAULT_READBACK_SIZE> fault_readback_cpu;
     boost::icl::interval_set<VAddr> queued_imports;
     boost::icl::interval_set<u64> imported_regions;
     std::vector<ImportedHostBuffer> imported_buffers;
