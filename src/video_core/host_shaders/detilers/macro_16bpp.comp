@@ -1,0 +1,73 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf  { uint in_data[];  };
+layout(std430, binding = 1) buffer output_buf { uint out_data[]; };
+
+layout(push_constant) uniform image_info {
+    uint num_levels;
+    uint pitch;
+    uint height;
+    uint c0;
+    uint c1;
+} info;
+
+#define MICRO_TILE_DIM  8u
+#define BPP             16u        
+#define MICRO_TILE_SZ   512u        
+shared uint scratch[32];            
+
+uint calc_micro_idx(uint col, uint row, uint slice2)
+{
+    uint idx = 0u;
+    idx |= (col & 1u) << 0u;
+    idx |= (row & 1u) << 1u;
+    idx |= (col & 2u) << 1u;
+    idx |= (row & 2u) << 2u;
+    idx |= (col & 4u) << 2u;
+    idx |= (row & 4u) << 3u;
+    idx |=  slice2     << 6u;
+    return idx;
+}
+
+void main()
+{
+    uint lane      = gl_LocalInvocationID.x;   
+    uint slot      = lane >> 1u;              
+    uint halfIdx   = lane & 1u;               
+
+    if (halfIdx == 0u) scratch[slot] = 0u;
+    barrier();                         
+
+    uint linear = gl_GlobalInvocationID.x;
+    uint x =  linear % info.pitch;
+    uint y = (linear / info.pitch) % info.height;
+    uint z =  linear / (info.pitch * info.height);
+
+    uint col = x & 7u;
+    uint row = y & 7u;
+    uint idx = calc_micro_idx(col, row, z & 3u);
+
+    uint slice_offs = (z >> 2u) * info.c1 * MICRO_TILE_SZ;
+    uint tile_row   = y / MICRO_TILE_DIM;
+    uint tile_col   = x / MICRO_TILE_DIM;
+    uint tile_offs  = ((tile_row * info.c0) + tile_col) * MICRO_TILE_SZ;
+    uint offs       = slice_offs + tile_offs + idx * 2u;   // 2 B/Texel
+
+    uint word   = in_data[offs >> 2u];
+    int  shift  = int((offs & 2u) * 8u);      // 0 oder 16
+    uint tex16  = bitfieldExtract(word, shift, 16);
+
+
+    uint mask = tex16 << (halfIdx * 16u);
+    scratch[slot] |= mask;
+
+    barrier();                               
+
+    if (halfIdx == 0u)
+        out_data[linear >> 1u] = scratch[slot];
+}

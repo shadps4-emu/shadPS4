@@ -9,6 +9,7 @@
 #include "video_core/texture_cache/tile_manager.h"
 
 #include "video_core/host_shaders/detilers/display_micro_64bpp_comp.h"
+#include "video_core/host_shaders/detilers/macro_16bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_32bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_64bpp_comp.h"
 #include "video_core/host_shaders/detilers/macro_8bpp_comp.h"
@@ -46,6 +47,10 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
         switch (bpp) {
         case 8:
             return &detilers[DetilerType::Macro8];
+        case 16:
+            LOG_INFO(Render_Vulkan, "Using 16bpp detiler for volume texture: {} ({})",
+                     vk::to_string(info.pixel_format), NameOf(info.tiling_mode));
+            return &detilers[DetilerType::Macro16];
         case 32:
             return &detilers[DetilerType::Macro32];
         case 64:
@@ -77,11 +82,11 @@ struct DetilerParams {
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
     : instance{instance}, scheduler{scheduler} {
     static const std::array detiler_shaders{
-        HostShaders::MICRO_8BPP_COMP,          HostShaders::MICRO_16BPP_COMP,
-        HostShaders::MICRO_32BPP_COMP,         HostShaders::MICRO_64BPP_COMP,
-        HostShaders::MICRO_128BPP_COMP,        HostShaders::MACRO_8BPP_COMP,
-        HostShaders::MACRO_32BPP_COMP,         HostShaders::MACRO_64BPP_COMP,
-        HostShaders::DISPLAY_MICRO_64BPP_COMP,
+        HostShaders::MICRO_8BPP_COMP,   HostShaders::MICRO_16BPP_COMP,
+        HostShaders::MICRO_32BPP_COMP,  HostShaders::MICRO_64BPP_COMP,
+        HostShaders::MICRO_128BPP_COMP, HostShaders::MACRO_8BPP_COMP,
+        HostShaders::MACRO_16BPP_COMP,  HostShaders::MACRO_32BPP_COMP,
+        HostShaders::MACRO_64BPP_COMP,  HostShaders::DISPLAY_MICRO_64BPP_COMP,
     };
 
     boost::container::static_vector<vk::DescriptorSetLayoutBinding, 2> bindings{
