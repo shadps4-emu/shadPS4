@@ -48,7 +48,8 @@
 	shallow = true
 [submodule "externals/sirit"]
 	path = externals/sirit
-	url = https://github.com/shadps4-emu/sirit.git
+	url = https://github.com/LNDF/sirit.git
+	branch = uwu
 	shallow = true
 [submodule "externals/xxhash"]
 	path = externals/xxhash

@@ -7,6 +7,7 @@
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/types.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -146,6 +147,7 @@ void EmitContext::DefineArithmeticTypes() {
     u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
+    u64_zero_value = Constant(U64, 0ULL);
 
     pi_x2 = ConstF32(2.0f * float{std::numbers::pi});
 
@@ -180,12 +182,24 @@ void EmitContext::DefineArithmeticTypes() {
         physical_pointer_types[PointerType::F16] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, F16[1]);
     }
     if (True(info.dma_types & IR::Type::U16)) {
-        physical_pointer_types[PointerType::U32] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
+        physical_pointer_types[PointerType::U16] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
+    }
+    if (True(info.dma_types & IR::Type::U8)) {
+        physical_pointer_types[PointerType::U8] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
     }
     
-    // We allways want U8 if using DMA, for the fault readback buffer
     if (info.dma_types != IR::Type::Void) {
-        physical_pointer_types[PointerType::U32] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
+        constexpr u64 host_access_mask = 0x1UL;
+        constexpr u64 host_access_inv_mask = ~host_access_mask;
+
+        caching_pagebits_value = Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
+        caching_pagemask_value = Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1);
+        host_access_mask_value = Constant(U64, host_access_mask);
+        host_access_inv_mask_value = Constant(U64, host_access_inv_mask);
+
+        // Used to calculate fault readback buffer position and mask
+        u32_three_value = ConstU32(3U);
+        u32_seven_value = ConstU32(7U);
     }
 }
 
@@ -227,7 +241,7 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 Id EmitContext::GetBufferSize(const u32 sharp_idx) {
     // Can this be done with memory access? Like we do now with ReadConst
     const auto& srt_flatbuf = buffers[flatbuf_index];
-    ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    ASSERT(srt_flatbuf.buffer_type == BufferType::Flatbuf);
     const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
 
     const auto rsrc1{
@@ -721,8 +735,8 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
     case Shader::BufferType::GdsBuffer:
         Name(id, "gds_buffer");
         break;
-    case Shader::BufferType::ReadConstUbo:
-        Name(id, "srt_flatbuf_ubo");
+    case Shader::BufferType::Flatbuf:
+        Name(id, "srt_flatbuf");
         break;
     case Shader::BufferType::BdaPagetable:
         Name(id, "bda_pagetable");
@@ -743,12 +757,14 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 
 void EmitContext::DefineBuffers() {
     if (!profile.supports_robust_buffer_access && !info.has_readconst) {
-        // In case ReadConstUbo has not already been bound by IR and is needed
+        // In case Flatbuf has not already been bound by IR and is needed
         // to query buffer sizes, bind it now.
         info.buffers.push_back({
             .used_types = IR::Type::U32,
-            .inline_cbuf = AmdGpu::Buffer::Null(),
-            .buffer_type = BufferType::ReadConstUbo,
+            // We can't guarantee that flatbuf will now grow bast UBO
+            // limit if there are a lot of ReadConsts. (We could specialize)
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
+            .buffer_type = BufferType::Flatbuf,
         });
     }
     for (const auto& desc : info.buffers) {
@@ -756,7 +772,7 @@ void EmitContext::DefineBuffers() {
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
 
         // Set indexes for special buffers.
-        if (desc.buffer_type == BufferType::ReadConstUbo) {
+        if (desc.buffer_type == BufferType::Flatbuf) {
             flatbuf_index = buffers.size();
         } else if (desc.buffer_type == BufferType::BdaPagetable) {
             bda_pagetable_index = buffers.size();

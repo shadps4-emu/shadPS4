@@ -37,9 +37,21 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
+
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
+
+    enum class PointerType : u32 {
+        U8,
+        U16,
+        F16,
+        U32,
+        F32,
+        U64,
+        F64,
+        NumAlias,
+    };
 
     Id Def(const IR::Value& value);
 
@@ -133,14 +145,90 @@ public:
         return ConstantComposite(type, constituents);
     }
 
-    inline Id OpLabel(std::string_view label_name) {
-        last_label = Module::OpLabel(label_name);
+    inline Id AddLabel() {
+        last_label = Module::AddLabel();
         return last_label;
     }
 
-    inline Id OpLabel() {
-        last_label = Module::OpLabel();
+    inline Id AddLabel(Id label) {
+        last_label = Module::AddLabel(label);
         return last_label;
+    }
+
+    PointerType PointerTypeFromType(Id type) {
+        if (type.value == U8.value) return PointerType::U8;
+        if (type.value == U16.value) return PointerType::U16;
+        if (type.value == F16[1].value) return PointerType::F16;
+        if (type.value == U32[1].value) return PointerType::U32;
+        if (type.value == F32[1].value) return PointerType::F32;
+        if (type.value == U64.value) return PointerType::U64;
+        if (type.value == F64[1].value) return PointerType::F64;
+        UNREACHABLE_MSG("Unknown type for pointer");
+    }
+
+    template <typename Func>
+    Id EmitMemoryAccess(Id type, Id address, Func&& fallback) {
+        const Id host_access_label = OpLabel();
+        const Id after_host_access_label = OpLabel();
+        const Id fallback_label = OpLabel();
+        const Id available_label = OpLabel();
+        const Id merge_label = OpLabel();
+
+        // Get page BDA
+        const Id page = OpShiftRightLogical(U64, address, caching_pagebits_value);
+        const Id page32 = OpUConvert(U32[1], page);
+        const auto& bda_buffer = buffers[bda_pagetable_index];
+        const auto [bda_buffer_id, bda_pointer_type] = bda_buffer[PointerType::U64];
+        const Id bda_ptr = OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32);
+        const Id bda = OpLoad(U64, bda_ptr);
+
+        // Check if it's a host memory access
+        const Id bda_and_host_access_mask = OpBitwiseAnd(U64, bda, host_access_mask_value);
+        const Id bda_host_access = OpINotEqual(U1[1], bda_and_host_access_mask, host_access_mask_value);
+        OpSelectionMerge(after_host_access_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(bda_host_access, host_access_label, after_host_access_label);
+
+        // Host access, set bit in fault readback buffer
+        AddLabel(host_access_label);
+        const auto& fault_buffer = buffers[fault_readback_index];
+        const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
+        const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
+        const Id page_mod8 = OpBitwiseAnd(U32[1], page32, u32_seven_value);
+        const Id page_mask = OpShiftLeftLogical(U32[1], u32_one_value, page_mod8);
+        const Id fault_ptr = OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value,
+                                           page_div8);
+        const Id fault_value = OpLoad(U8, fault_ptr);
+        const Id page_mask8 = OpUConvert(U8, page_mask);
+        const Id fault_value_masked = OpBitwiseOr(U8, fault_value, page_mask8);
+        OpStore(fault_ptr, fault_value_masked);
+        OpBranch(after_host_access_label);
+
+        // Check if the value is available
+        AddLabel(after_host_access_label);
+        const Id bda_eq_zero = OpIEqual(U1[1], bda, u64_zero_value);
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(bda_eq_zero, fallback_label, available_label);
+
+        // Fallback
+        AddLabel(fallback_label);
+        const Id fallback_result = fallback();
+        OpBranch(merge_label);
+
+        // Get value from memory
+        AddLabel(available_label);
+        const Id untagged_bda = OpBitwiseAnd(U64, bda, host_access_inv_mask_value);
+        const Id offset_in_bda = OpBitwiseAnd(U64, address, caching_pagemask_value);
+        const Id addr = OpIAdd(U64, untagged_bda, offset_in_bda);
+        const PointerType pointer_type = PointerTypeFromType(type);
+        const Id pointer_type_id = physical_pointer_types[pointer_type];
+        const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
+        const Id result = OpLoad(type, addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
+        OpBranch(merge_label);
+
+        // Merge
+        AddLabel(merge_label);
+        const Id final_result = OpPhi(type, fallback_result, fallback_label, result, available_label);
+        return final_result;
     }
 
     Info& info;
@@ -173,9 +261,17 @@ public:
 
     Id true_value{};
     Id false_value{};
+    Id u32_seven_value{};
+    Id u32_three_value{};
     Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
+    Id u64_zero_value{};
+
+    Id caching_pagebits_value{};
+    Id caching_pagemask_value{};
+    Id host_access_mask_value{};
+    Id host_access_inv_mask_value{};
 
     Id shared_u8{};
     Id shared_u16{};
@@ -241,17 +337,6 @@ public:
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
-    };
-
-    enum class PointerType : u32 {
-        U8,
-        U16,
-        F16,
-        U32,
-        F32,
-        U64,
-        F64,
-        NumAlias,
     };
 
     struct BufferSpv {

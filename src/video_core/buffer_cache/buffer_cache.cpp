@@ -568,20 +568,22 @@ void BufferCache::CreateFaultBuffers() {
     scheduler.Finish();
     std::array<u8, FAULT_READBACK_SIZE> buffer{};
     std::memcpy(buffer.data(), mapped, FAULT_READBACK_SIZE);
-    // Reset the fault readback buffer
-    cmdbuf.fillBuffer(fault_readback_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
     // Create the fault buffers batched
     boost::icl::interval_set<VAddr> fault_ranges;
-    for (u64 i = 0; i < FAULT_READBACK_SIZE / sizeof(vk::DeviceAddress); ++i) {
-        if (buffer[i] != 0) {
-            // Each byte contains information for 8 pages.
-            // We are oing to create an aligned buffer of
-            // 8 * 64 KB = 512 KB arround the fault address.
-            const VAddr fault_addr = buffer[i] << CACHING_PAGEBITS;
-            const u32 fault_end = mapped[i + 1] << CACHING_PAGEBITS;
-            auto range = decltype(fault_ranges)::interval_type::right_open(
-                fault_addr, fault_end);
-            fault_ranges += range;
+    for (u64 i = 0; i < FAULT_READBACK_SIZE; ++i) {
+        if (buffer[i] == 0) {
+            continue;
+        }
+        // Each bit is a page
+        const u64 page = i * 8;
+        for (u8 j = 0; j < 8; ++j) {
+            if ((buffer[i] & (1 << j)) == 0) {
+                continue;
+            }
+            const VAddr start = (page + j) << CACHING_PAGEBITS;
+            const VAddr end = start + CACHING_PAGESIZE;
+            fault_ranges += boost::icl::interval_set<VAddr>::interval_type::right_open(start, end);
+            LOG_WARNING(Render_Vulkan, "Accessed non GPU-local memory at {:#x}", start);
         }
     }
     for (const auto& range : fault_ranges) {
@@ -589,6 +591,41 @@ void BufferCache::CreateFaultBuffers() {
         const u32 size = range.upper() - start;
         CreateBuffer(start, size);
     }
+}
+
+void BufferCache::ResetFaultReadbackBuffer() {
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = fault_readback_buffer.Handle(),
+        .offset = 0,
+        .size = FAULT_READBACK_SIZE,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = fault_readback_buffer.Handle(),
+        .offset = 0,
+        .size = FAULT_READBACK_SIZE,
+    };
+    // Reset the fault readback buffer
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+    });
+    cmdbuf.fillBuffer(fault_readback_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
 }
 
 void BufferCache::Register(BufferId buffer_id) {

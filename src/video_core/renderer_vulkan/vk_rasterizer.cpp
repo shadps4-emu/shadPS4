@@ -475,6 +475,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
             }
         }
+        buffer_cache.ResetFaultReadbackBuffer();
     }
 
     return true;
@@ -535,7 +536,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
-            } else if (desc.buffer_type == Shader::BufferType::ReadConstUbo) {
+            } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
                 const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
                 const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size,

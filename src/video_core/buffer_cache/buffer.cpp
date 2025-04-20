@@ -195,6 +195,7 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
                     "Failed to import host memory at {} size {:#x}, Reason: {}",
                     cpu_addr, size_bytes, vk::to_string(device_memory_result.result));
         instance->GetDevice().destroyBuffer(buffer);
+        buffer = VK_NULL_HANDLE;
         has_failed = true;
         return;
     }

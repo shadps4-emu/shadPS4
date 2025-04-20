@@ -37,6 +37,13 @@ struct Buffer {
         return buffer;
     }
 
+    static constexpr Buffer Placeholder(u32 size) {
+        Buffer buffer{};
+        buffer.base_address = 1;
+        buffer.num_records = size;
+        return buffer;
+    }
+
     bool Valid() const {
         return type == 0u;
     }

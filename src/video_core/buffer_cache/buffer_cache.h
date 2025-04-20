@@ -50,7 +50,7 @@ public:
     struct Traits {
         using Entry = BufferId;
         static constexpr size_t AddressSpaceBits = 40;
-        static constexpr size_t FirstLevelBits = 14;
+        static constexpr size_t FirstLevelBits = 18;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
     };
     using PageTable = MultiLevelPageTable<Traits>;
@@ -137,6 +137,9 @@ public:
 
     /// Creates buffers for "faulted" shader accesses to host memory.
     void CreateFaultBuffers();
+
+    /// Reset the fault readback buffer.
+    void ResetFaultReadbackBuffer();
 
     /// Synchronizes all buffers in the specified range.
     void SynchronizeRange(VAddr device_addr, u32 size);
