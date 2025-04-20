@@ -165,9 +165,8 @@ public:
 class ImportedHostBuffer {
 public:
     ImportedHostBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                        void* cpu_addr_, u64 size_bytes_, vk::BufferUsageFlags flags);
+                       void* cpu_addr_, u64 size_bytes_, vk::BufferUsageFlags flags);
     ~ImportedHostBuffer();
-
 
     ImportedHostBuffer& operator=(const ImportedHostBuffer&) = delete;
     ImportedHostBuffer(const ImportedHostBuffer&) = delete;
@@ -175,9 +174,8 @@ public:
     ImportedHostBuffer(ImportedHostBuffer&& other)
         : size_bytes{std::exchange(other.size_bytes, 0)},
           cpu_addr{std::exchange(other.cpu_addr, nullptr)},
-          bda_addr{std::exchange(other.bda_addr, 0)},
-          instance{other.instance}, scheduler{other.scheduler},
-          buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
+          bda_addr{std::exchange(other.bda_addr, 0)}, instance{other.instance},
+          scheduler{other.scheduler}, buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
           device_memory{std::exchange(other.device_memory, VK_NULL_HANDLE)},
           has_failed{std::exchange(other.has_failed, false)} {}
     ImportedHostBuffer& operator=(ImportedHostBuffer&& other) {
@@ -217,6 +215,7 @@ public:
         ASSERT_MSG(bda_addr != 0, "Can't get BDA from a non BDA buffer");
         return bda_addr;
     }
+
 private:
     size_t size_bytes = 0;
     void* cpu_addr = 0;
