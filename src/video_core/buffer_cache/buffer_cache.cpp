@@ -835,9 +835,6 @@ void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
         return;
     }
     ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
-        if (buffer.is_deleted) {
-            return;
-        }
         SynchronizeBuffer(buffer, buffer.CpuAddr(), buffer.SizeBytes(), false);
     });
 }
