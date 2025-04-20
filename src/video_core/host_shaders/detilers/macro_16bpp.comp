@@ -56,10 +56,10 @@ void main()
     uint tile_row   = y / MICRO_TILE_DIM;
     uint tile_col   = x / MICRO_TILE_DIM;
     uint tile_offs  = ((tile_row * info.c0) + tile_col) * MICRO_TILE_SZ;
-    uint offs       = slice_offs + tile_offs + idx * 2u;   // 2 B/Texel
+    uint offs       = slice_offs + tile_offs + idx * 2u;
 
     uint word   = in_data[offs >> 2u];
-    int  shift  = int((offs & 2u) * 8u);      // 0 oder 16
+    int  shift  = int((offs & 2u) * 8u); 
     uint tex16  = bitfieldExtract(word, shift, 16);
 
 
