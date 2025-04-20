@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -24,12 +25,19 @@ struct OrbisHttpUriElement {
     u8 reserved[10];
 };
 
+struct HttpRequestInternal {
+    int state;          // +0x20
+    int errorCode;      // +0x28
+    int httpStatusCode; // +0x20C
+    std::mutex m_mutex;
+};
+
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
 int PS4_SYSV_ABI sceHttpAbortWaitRequest();
 int PS4_SYSV_ABI sceHttpAddCookie();
 int PS4_SYSV_ABI sceHttpAddQuery();
-int PS4_SYSV_ABI sceHttpAddRequestHeader();
+int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode);
 int PS4_SYSV_ABI sceHttpAddRequestHeaderRaw();
 int PS4_SYSV_ABI sceHttpAuthCacheExport();
 int PS4_SYSV_ABI sceHttpAuthCacheFlush();
@@ -39,11 +47,12 @@ int PS4_SYSV_ABI sceHttpCookieExport();
 int PS4_SYSV_ABI sceHttpCookieFlush();
 int PS4_SYSV_ABI sceHttpCookieImport();
 int PS4_SYSV_ABI sceHttpCreateConnection();
-int PS4_SYSV_ABI sceHttpCreateConnectionWithURL();
+int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, bool enableKeepalive);
 int PS4_SYSV_ABI sceHttpCreateEpoll();
 int PS4_SYSV_ABI sceHttpCreateRequest();
 int PS4_SYSV_ABI sceHttpCreateRequest2();
-int PS4_SYSV_ABI sceHttpCreateRequestWithURL();
+int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char* url,
+                                             u64 contentLength);
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL2();
 int PS4_SYSV_ABI sceHttpCreateTemplate();
 int PS4_SYSV_ABI sceHttpDbgEnableProfile();
@@ -88,7 +97,7 @@ int PS4_SYSV_ABI sceHttpsDisableOption();
 int PS4_SYSV_ABI sceHttpsDisableOptionPrivate();
 int PS4_SYSV_ABI sceHttpsEnableOption();
 int PS4_SYSV_ABI sceHttpsEnableOptionPrivate();
-int PS4_SYSV_ABI sceHttpSendRequest();
+int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled();
 int PS4_SYSV_ABI sceHttpSetAuthEnabled();
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback();
