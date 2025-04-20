@@ -45,7 +45,7 @@ public:
     static constexpr u64 CACHING_NUMPAGES = u64{1} << (40 - CACHING_PAGEBITS);
 
     static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(vk::DeviceAddress);
-    static constexpr u64 FAULT_READBACK_SIZE = CACHING_NUMPAGES / 8;  // Bit per page
+    static constexpr u64 FAULT_READBACK_SIZE = CACHING_NUMPAGES / 8; // Bit per page
 
     struct Traits {
         using Entry = BufferId;

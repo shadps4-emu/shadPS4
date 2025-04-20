@@ -71,7 +71,8 @@ UniqueBuffer::~UniqueBuffer() {
 void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usage,
                           VmaAllocationInfo* out_alloc_info) {
     const bool with_bda = bool(buffer_ci.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress);
-    const VmaAllocationCreateFlags bda_flag = with_bda ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT : 0;
+    const VmaAllocationCreateFlags bda_flag =
+        with_bda ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT : 0;
     const VmaAllocationCreateInfo alloc_ci = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | bda_flag | MemoryUsageVmaFlags(usage),
         .usage = MemoryUsageVma(usage),
@@ -145,8 +146,9 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
     u32 memory_type_index = UINT32_MAX;
     for (u32 i = 0; i < mem_props.memoryTypeCount; ++i) {
         if ((ptr_props.memoryTypeBits & (1 << i)) != 0) {
-            if (mem_props.memoryTypes[i].propertyFlags & (vk::MemoryPropertyFlagBits::eHostVisible |
-                                                        vk::MemoryPropertyFlagBits::eHostCoherent)) {
+            if (mem_props.memoryTypes[i].propertyFlags &
+                (vk::MemoryPropertyFlagBits::eHostVisible |
+                 vk::MemoryPropertyFlagBits::eHostCoherent)) {
                 memory_type_index = i;
                 // We prefer cache coherent memory types.
                 if (mem_props.memoryTypes[i].propertyFlags &
@@ -181,7 +183,7 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
         .allocationSize = size_bytes,
         .memoryTypeIndex = memory_type_index,
     };
-    
+
     auto buffer_result = instance->GetDevice().createBuffer(buffer_ci);
     ASSERT_MSG(buffer_result.result == vk::Result::eSuccess,
                "Failed creating imported host buffer with error {}",
@@ -191,8 +193,7 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
     auto device_memory_result = instance->GetDevice().allocateMemory(alloc_ci);
     if (device_memory_result.result != vk::Result::eSuccess) {
         // May fail to import the host memory if it is backed by a file. (AMD on Linux)
-        LOG_WARNING(Render_Vulkan,
-                    "Failed to import host memory at {} size {:#x}, Reason: {}",
+        LOG_WARNING(Render_Vulkan, "Failed to import host memory at {} size {:#x}, Reason: {}",
                     cpu_addr, size_bytes, vk::to_string(device_memory_result.result));
         instance->GetDevice().destroyBuffer(buffer);
         buffer = VK_NULL_HANDLE;
@@ -202,8 +203,7 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
     device_memory = device_memory_result.value;
 
     auto result = instance->GetDevice().bindBufferMemory(buffer, device_memory, 0);
-    ASSERT_MSG(result == vk::Result::eSuccess,
-               "Failed binding imported host buffer with error {}",
+    ASSERT_MSG(result == vk::Result::eSuccess, "Failed binding imported host buffer with error {}",
                vk::to_string(result));
 
     if (with_bda) {

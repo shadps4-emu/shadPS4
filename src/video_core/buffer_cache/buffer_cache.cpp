@@ -26,8 +26,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
       gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
-      bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, BDA_PAGETABLE_SIZE},
-      fault_readback_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, FAULT_READBACK_SIZE),
+      bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal,
+                           0,        AllFlags,  BDA_PAGETABLE_SIZE},
+      fault_readback_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags,
+                            FAULT_READBACK_SIZE),
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
 
@@ -362,7 +364,7 @@ void BufferCache::ImportMemory(u64 start, u64 end) {
         const u64 range_size = (range_end - range_start) << CACHING_PAGEBITS;
         ImportedHostBuffer buffer(instance, scheduler, cpu_addr, range_size,
                                   vk::BufferUsageFlagBits::eShaderDeviceAddress |
-                                  vk::BufferUsageFlagBits::eStorageBuffer);
+                                      vk::BufferUsageFlagBits::eStorageBuffer);
         if (buffer.HasFailed()) {
             continue;
         }
@@ -377,8 +379,8 @@ void BufferCache::ImportMemory(u64 start, u64 end) {
             // create a GPU local buffer.
             bda_addrs.push_back(bda_addr + (i << CACHING_PAGEBITS));
         }
-        WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(vk::DeviceAddress), bda_addrs.data(),
-                        bda_addrs.size() * sizeof(vk::DeviceAddress));
+        WriteDataBuffer(bda_pagetable_buffer, range_start * sizeof(vk::DeviceAddress),
+                        bda_addrs.data(), bda_addrs.size() * sizeof(vk::DeviceAddress));
         imported_buffers.emplace_back(std::move(buffer));
         // Mark the pages as covered
         imported_regions += range;
@@ -840,7 +842,8 @@ void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
     });
 }
 
-void BufferCache::InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes) {
+void BufferCache::InlineDataBuffer(Buffer& buffer, VAddr address, const void* value,
+                                   u32 num_bytes) {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     const vk::BufferMemoryBarrier2 pre_barrier = {
@@ -889,12 +892,9 @@ void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* val
     } else {
         // For large one time transfers use a temporary host buffer.
         // RenderDoc can lag quite a bit if the stream buffer is too large.
-        Buffer temp_buffer{instance,
-                           scheduler,
-                           MemoryUsage::Upload,
-                           0,
-                           vk::BufferUsageFlagBits::eTransferSrc,
-                           num_bytes};
+        Buffer temp_buffer{
+            instance, scheduler, MemoryUsage::Upload, 0, vk::BufferUsageFlagBits::eTransferSrc,
+            num_bytes};
         src_buffer = temp_buffer.Handle();
         u8* const staging = temp_buffer.mapped_data.data();
         std::memcpy(staging, value, num_bytes);

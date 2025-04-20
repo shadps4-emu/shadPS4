@@ -168,20 +168,19 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const Id base_sift = ctx.OpShiftLeftLogical(ctx.U64, base_hi, ctx.ConstU32(32u));
     const Id base = ctx.OpBitwiseOr(ctx.U64, base_lo, base_sift);
     const Id address = ctx.OpIAdd(ctx.U64, base, ctx.OpUConvert(ctx.U64, offset));
-    return ctx.EmitMemoryAccess(
-        ctx.U32[1], address, [&]() {
-            const u32 flatbuf_off_dw = inst->Flags<u32>();
-            if (flatbuf_off_dw == 0) {
-                return ctx.u32_zero_value;
-            } else {
-                const auto& srt_flatbuf = ctx.buffers[ctx.flatbuf_index];
-                ASSERT(srt_flatbuf.binding >= 0 > 0 && srt_flatbuf.buffer_type == BufferType::Flatbuf);
-                const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
-                const Id ptr{
-                    ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
-                return ctx.OpLoad(ctx.U32[1], ptr);
-            }
-        });
+    return ctx.EmitMemoryAccess(ctx.U32[1], address, [&]() {
+        const u32 flatbuf_off_dw = inst->Flags<u32>();
+        if (flatbuf_off_dw == 0) {
+            return ctx.u32_zero_value;
+        } else {
+            const auto& srt_flatbuf = ctx.buffers[ctx.flatbuf_index];
+            ASSERT(srt_flatbuf.binding >= 0 > 0 && srt_flatbuf.buffer_type == BufferType::Flatbuf);
+            const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
+            const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value,
+                                           ctx.ConstU32(flatbuf_off_dw))};
+            return ctx.OpLoad(ctx.U32[1], ptr);
+        }
+    });
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {

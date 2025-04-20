@@ -37,7 +37,6 @@ struct VectorIds {
 
 class EmitContext final : public Sirit::Module {
 public:
-
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
@@ -156,13 +155,20 @@ public:
     }
 
     PointerType PointerTypeFromType(Id type) {
-        if (type.value == U8.value) return PointerType::U8;
-        if (type.value == U16.value) return PointerType::U16;
-        if (type.value == F16[1].value) return PointerType::F16;
-        if (type.value == U32[1].value) return PointerType::U32;
-        if (type.value == F32[1].value) return PointerType::F32;
-        if (type.value == U64.value) return PointerType::U64;
-        if (type.value == F64[1].value) return PointerType::F64;
+        if (type.value == U8.value)
+            return PointerType::U8;
+        if (type.value == U16.value)
+            return PointerType::U16;
+        if (type.value == F16[1].value)
+            return PointerType::F16;
+        if (type.value == U32[1].value)
+            return PointerType::U32;
+        if (type.value == F32[1].value)
+            return PointerType::F32;
+        if (type.value == U64.value)
+            return PointerType::U64;
+        if (type.value == F64[1].value)
+            return PointerType::F64;
         UNREACHABLE_MSG("Unknown type for pointer");
     }
 
@@ -184,7 +190,8 @@ public:
 
         // Check if it's a host memory access
         const Id bda_and_host_access_mask = OpBitwiseAnd(U64, bda, host_access_mask_value);
-        const Id bda_host_access = OpINotEqual(U1[1], bda_and_host_access_mask, host_access_mask_value);
+        const Id bda_host_access =
+            OpINotEqual(U1[1], bda_and_host_access_mask, host_access_mask_value);
         OpSelectionMerge(after_host_access_label, spv::SelectionControlMask::MaskNone);
         OpBranchConditional(bda_host_access, host_access_label, after_host_access_label);
 
@@ -195,8 +202,8 @@ public:
         const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
         const Id page_mod8 = OpBitwiseAnd(U32[1], page32, u32_seven_value);
         const Id page_mask = OpShiftLeftLogical(U32[1], u32_one_value, page_mod8);
-        const Id fault_ptr = OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value,
-                                           page_div8);
+        const Id fault_ptr =
+            OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div8);
         const Id fault_value = OpLoad(U8, fault_ptr);
         const Id page_mask8 = OpUConvert(U8, page_mask);
         const Id fault_value_masked = OpBitwiseOr(U8, fault_value, page_mask8);
@@ -227,7 +234,8 @@ public:
 
         // Merge
         AddLabel(merge_label);
-        const Id final_result = OpPhi(type, fallback_result, fallback_label, result, available_label);
+        const Id final_result =
+            OpPhi(type, fallback_result, fallback_label, result, available_label);
         return final_result;
     }
 

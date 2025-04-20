@@ -459,7 +459,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
-        
+
         dma_enabled |= stage->dma_types != Shader::IR::Type::Void;
     }
 

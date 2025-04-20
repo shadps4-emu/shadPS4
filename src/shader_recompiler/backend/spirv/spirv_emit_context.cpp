@@ -76,7 +76,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
     }
-    
+
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -167,32 +167,40 @@ void EmitContext::DefineArithmeticTypes() {
     }
 
     if (True(info.dma_types & IR::Type::F64)) {
-        physical_pointer_types[PointerType::F64] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, F64[1]);
+        physical_pointer_types[PointerType::F64] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F64[1]);
     }
     if (True(info.dma_types & IR::Type::U64)) {
-        physical_pointer_types[PointerType::U64] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U64);
+        physical_pointer_types[PointerType::U64] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U64);
     }
     if (True(info.dma_types & IR::Type::F32)) {
-        physical_pointer_types[PointerType::F32] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, F32[1]);
+        physical_pointer_types[PointerType::F32] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F32[1]);
     }
     if (True(info.dma_types & IR::Type::U32)) {
-        physical_pointer_types[PointerType::U32] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
+        physical_pointer_types[PointerType::U32] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
     }
     if (True(info.dma_types & IR::Type::F16)) {
-        physical_pointer_types[PointerType::F16] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, F16[1]);
+        physical_pointer_types[PointerType::F16] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F16[1]);
     }
     if (True(info.dma_types & IR::Type::U16)) {
-        physical_pointer_types[PointerType::U16] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
+        physical_pointer_types[PointerType::U16] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
     }
     if (True(info.dma_types & IR::Type::U8)) {
-        physical_pointer_types[PointerType::U8] = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
+        physical_pointer_types[PointerType::U8] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
     }
-    
+
     if (info.dma_types != IR::Type::Void) {
         constexpr u64 host_access_mask = 0x1UL;
         constexpr u64 host_access_inv_mask = ~host_access_mask;
 
-        caching_pagebits_value = Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
+        caching_pagebits_value =
+            Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
         caching_pagemask_value = Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1);
         host_access_mask_value = Constant(U64, host_access_mask);
         host_access_inv_mask_value = Constant(U64, host_access_inv_mask);
