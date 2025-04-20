@@ -1,0 +1,9 @@
+Date:   Fri Mar 28 16:15:31 2025 +0200
+D	src/core/crypto/crypto.cpp
+D	src/core/crypto/crypto.h
+D	src/core/crypto/keys.h
+D	src/core/file_format/pkg.h
+D	src/core/file_format/pkg_type.cpp
+D	src/core/file_format/pkg_type.h
+D	src/qt_gui/pkg_viewer.cpp
+D	src/qt_gui/pkg_viewer.h

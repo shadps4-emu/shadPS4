@@ -1,0 +1,7 @@
+Date:   Fri Mar 28 10:32:17 2025 -0700
+D	documents/Quickstart/2.png
+D	src/core/file_format/pkg.cpp
+D	src/core/loader.cpp
+D	src/core/loader.h
+D	src/qt_gui/install_dir_select.cpp
+D	src/qt_gui/install_dir_select.h
