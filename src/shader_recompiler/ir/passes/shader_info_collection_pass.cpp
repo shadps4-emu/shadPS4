@@ -71,6 +71,10 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::ImageQueryLod:
         info.has_image_query = true;
         break;
+    case IR::Opcode::ImageAtomicFMax32:
+    case IR::Opcode::ImageAtomicFMin32:
+        info.uses_atomic_float_min_max = true;
+        break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
