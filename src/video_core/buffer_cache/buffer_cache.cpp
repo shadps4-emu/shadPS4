@@ -330,7 +330,7 @@ void BufferCache::QueueMemoryImport(VAddr device_addr, u64 size) {
     std::scoped_lock lk{mutex};
     const VAddr start = device_addr;
     const VAddr end = device_addr + size;
-    auto queue_range = decltype(imported_regions)::interval_type::right_open(start, end);
+    auto queue_range = decltype(queued_imports)::interval_type::right_open(start, end);
     queued_imports += queue_range;
 }
 
