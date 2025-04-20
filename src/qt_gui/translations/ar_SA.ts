@@ -66,7 +66,7 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>يمكنك حذف الشفرات التي لا تريدها بعد تنزيلها.</translation>
+      <translation>يمكنك حذف الشفرات التي لا &apos;تريدها بعد تنزيلها.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
@@ -74,11 +74,11 @@
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>إختر ملف الباتش:</translation>
+      <translation>اختر مِلَف التصحيح:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>تحميل الباتشات</translation>
+      <translation>تحميل ملفات التصحيح</translation>
     </message>
     <message>
       <source>Save</source>
@@ -98,15 +98,15 @@
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation>لم يتم اختيار أي تصحيح.</translation>
+      <translation>لم يتم تحديد أي مِلَف تصحيح.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>تعذر فتح files.json للقراءة.</translation>
+      <translation>تعذّر فتح مِلَف files.json للقراءة.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>لم يتم العثور على مِلَفّ باتش للسيريال الحالي.</translation>
+      <translation>لم يتم العثور على مِلَف تصحيح للسيريال الحالي.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
@@ -126,11 +126,11 @@
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation>تم حفظ الخيارات بنجاح.</translation>
+      <translation>تم حفظ الإعدادات.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation>مصدر غير صالح</translation>
+      <translation>المصدر غير صالح</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
@@ -138,11 +138,11 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>الملف موجود</translation>
+      <translation>المِلَف موجود مسبقًا</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>يوجد ملف بنفس الاسم. هل ترغب في استبداله؟</translation>
+      <translation>المِلَف موجود مسبقًا. هل ترغب في استبداله؟</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -158,7 +158,7 @@
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>لم يتم العثور على شفرات لهذه اللعبة في هذه النسخة من المستودع المحدد. حاول استخدام مستودع آخر أو نسخة مختلفة من اللعبة.</translation>
+      <translation>لم يتم العثور على شفرات لهذه اللعبة في هذا الإصدار من المستودع المحدد. جرّب مستودعًا آخر أو إصدارًا مختلفًا من اللعبة.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>تم تنزيل التصحيحات بنجاح! تم تنزيل جميع التصحيحات لجميع الألعاب، ولا داعي لتنزيلها بشكل فردي لكل لعبة كما هو الحال مع الغش. إذا لم يظهر التحديث، قد يكون السبب أنه غير متوفر للإصدار وسيريال اللعبة المحدد.</translation>
+      <translation>تم تنزيل التصحيحات بنجاح! تم تنزيل جميع التصحيحات المتوفرة لجميع الألعاب، ولا حاجة إلى تنزيلها بشكل فردي لكل لعبة كما هو الحال مع الشفرات. إذا لم يظهر التصحيح، فقد لا يكون متوفرًا للسيريال أو الإصدار المحدد من اللعبة.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -190,15 +190,15 @@
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>.HTML فشل في استرجاع صفحة</translation>
+      <translation>فشل في جلب صفحة HTML.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>النسخة الحالية للعبة هي: %1</translation>
+      <translation>إصدار اللعبة الحالي: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation>الباتش الذي تم تنزيله يعمل فقط على الإصدار: %1</translation>
+      <translation>التصحيح الذي تم تنزيله يعمل فقط مع الإصدار:%1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
@@ -206,7 +206,7 @@
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>إشعار عدم التوافق</translation>
+      <translation>إشعار بعدم التوافق</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
@@ -238,7 +238,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>لا يمكن تطبيق الغش قبل بدء اللعبة.</translation>
+      <translation>لا &apos;يمكن تطبيق الشفرات قبل بَدْء اللعبة</translation>
     </message>
     <message>
       <source>Close</source>
@@ -249,7 +249,7 @@
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>محدث تلقائي</translation>
+      <translation>التحديثات التلقائية</translation>
     </message>
     <message>
       <source>Error</source>
@@ -261,7 +261,7 @@
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>يتيح التحديث التلقائي ما يصل إلى 60 عملية تحقق من التحديث في الساعة.\nلقد وصلت إلى هذا الحد. الرجاء المحاولة مرة أخرى لاحقًا.</translation>
+      <translation>تسمح التحديثات التلقائية بـ 60 عملية تحقق من التحديث في الساعة.\nلقد وصلت إلى الحد المسموح به. الرجاء المحاولة لاحقًا.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
