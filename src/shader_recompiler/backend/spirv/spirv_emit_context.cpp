@@ -792,7 +792,7 @@ void EmitContext::DefineBuffers() {
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U64)) {
             spv_buffer[PointerType::U64] =
-                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U64);
+                DefineBuffer(is_storage, desc.is_written, 3, desc.buffer_type, U64);
         }
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer[PointerType::U32] =
