@@ -1,4 +1,4 @@
-Fri
+Date:   Fri Mar 28 16:15:31 2025 +0200
 src/core/crypto/crypto.cpp
 src/core/crypto/crypto.h
 src/core/crypto/keys.h
