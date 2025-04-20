@@ -100,13 +100,14 @@ static inline bool IsFormatStencilCompatible(vk::Format fmt) {
     }
 }
 
-static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
+static inline vk::Format PromoteFormatToDepth(vk::Format fmt, bool& valid) {
     if (fmt == vk::Format::eR32Sfloat || fmt == vk::Format::eR32Uint) {
         return vk::Format::eD32Sfloat;
     } else if (fmt == vk::Format::eR16Unorm) {
         return vk::Format::eD16Unorm;
     }
-    UNREACHABLE_MSG("Unexpected depth format {}", vk::to_string(fmt));
+    valid = false;
+    return fmt; // move the unreachable one step up to be able to print more info
 }
 
 } // namespace Vulkan::LiverpoolToVK

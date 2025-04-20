@@ -126,9 +126,15 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
 ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
-    // Override format if image is forced to be a depth target
-    if (desc.is_depth) {
-        pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
+    // Override format if image is forced to be a depth target, except if the image is a dummy one
+    if (desc.is_depth && (image.width != 0 && image.height != 0)) {
+        bool valid = true;
+        pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format, valid);
+        ASSERT_MSG(
+            valid,
+            "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
+            vk::to_string(pixel_format), image.width + 1, image.height + 1,
+            AmdGpu::NameOf(image.GetDataFmt()));
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
