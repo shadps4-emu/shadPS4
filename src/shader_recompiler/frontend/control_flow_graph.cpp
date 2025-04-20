@@ -67,6 +67,42 @@ static bool IgnoresExecMask(const GcnInst& inst) {
     return false;
 }
 
+static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 setpc_index,
+                                             std::span<const u32> pc_map) {
+    if (setpc_index < 3)
+        return std::nullopt;
+
+    const auto& getpc = list[setpc_index - 3];
+    const auto& arith = list[setpc_index - 2];
+    const auto& setpc = list[setpc_index];
+
+    if (getpc.opcode != Opcode::S_GETPC_B64 ||
+        !(arith.opcode == Opcode::S_ADD_U32 || arith.opcode == Opcode::S_SUB_U32) ||
+        setpc.opcode != Opcode::S_SETPC_B64)
+        return std::nullopt;
+
+    // Register‑Paar prüfen
+    if (getpc.dst[0].code != setpc.src[0].code || arith.dst[0].code != setpc.src[0].code)
+        return std::nullopt;
+
+    // Sofortwert holen
+    if (arith.src_count < 2 || arith.src[1].field != OperandField::LiteralConst)
+        return std::nullopt;
+
+    const u32 imm = arith.src[1].code;
+
+    // Vorzeichenbehafteter Offset
+    const s32 signed_offset =
+        (arith.opcode == Opcode::S_ADD_U32) ? static_cast<s32>(imm) : -static_cast<s32>(imm);
+
+    const u32 base_pc = pc_map[setpc_index - 3] + getpc.length;
+
+    const u32 result_pc = static_cast<u32>(static_cast<s32>(base_pc) + signed_offset);
+    return result_pc & ~0x3u; // DWORD-aligned PC
+}
+
+
+
 static constexpr size_t LabelReserveSize = 32;
 
 CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
@@ -89,19 +125,22 @@ void CFG::EmitLabels() {
         index_to_pc[i] = pc;
         const GcnInst inst = inst_list[i];
         if (inst.IsUnconditionalBranch()) {
-            const u32 target = inst.BranchTarget(pc);
-            AddLabel(target);
-            // Emit this label so that the block ends with s_branch instruction
-            AddLabel(pc + inst.length);
+            u32 target = inst.BranchTarget(pc);
+            if (inst.opcode == Opcode::S_SETPC_B64) {
+                if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc))
+                    target = *t;
+            }
+            AddLabel(target);           // Ziel
+            AddLabel(pc + inst.length); // Fall‑through‑Label
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
             const u32 false_label = pc + inst.length;
             AddLabel(true_label);
             AddLabel(false_label);
         } else if (inst.opcode == Opcode::S_ENDPGM) {
-            const u32 next_label = pc + inst.length;
-            AddLabel(next_label);
+            AddLabel(pc + inst.length);
         }
+
         pc += inst.length;
     }
     index_to_pc[inst_list.size()] = pc;
@@ -280,7 +319,18 @@ void CFG::LinkBlocks() {
         // Find the branch targets from the instruction and link the blocks.
         // Note: Block end address is one instruction after end_inst.
         const u32 branch_pc = block.end - end_inst.length;
-        const u32 target_pc = end_inst.BranchTarget(branch_pc);
+        u32 target_pc = 0;
+        if (end_inst.opcode == Opcode::S_SETPC_B64) {
+            auto tgt = ResolveSetPcTarget(inst_list, block.end_index, index_to_pc);
+            ASSERT_MSG(tgt,
+                       "S_SETPC_B64 ohne auflösbaren Offset bei PC {:#x} (Index {}): Beteiligte "
+                       "Instruktionen nicht erkannt oder ungültiges Muster",
+                       branch_pc, block.end_index);
+            target_pc = *tgt;
+        } else {
+            target_pc = end_inst.BranchTarget(branch_pc);
+        }
+
         if (end_inst.IsUnconditionalBranch()) {
             auto* target_block = get_block(target_pc);
             ++target_block->num_predecessors;
