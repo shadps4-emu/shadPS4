@@ -328,8 +328,8 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
 
 void BufferCache::QueueMemoryImport(VAddr device_addr, u64 size) {
     std::scoped_lock lk{mutex};
-    const u64 start = device_addr;
-    const u64 end = device_addr + size;
+    const VAddr start = device_addr;
+    const VAddr end = device_addr + size;
     auto queue_range = decltype(imported_regions)::interval_type::right_open(start, end);
     queued_imports += queue_range;
 }
