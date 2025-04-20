@@ -200,7 +200,14 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-set(APP_VERSION "0.7.1 WIP")
+# Set Version
+set(EMULATOR_VERSION_MAJOR "0")
+set(EMULATOR_VERSION_MINOR "7")
+set(EMULATOR_VERSION_PATCH "1")
+
+set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
+
+set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH} WIP")
 set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
@@ -563,6 +570,8 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_web_api/np_web_api.h
             src/core/libraries/np_party/np_party.cpp
             src/core/libraries/np_party/np_party.h
+            src/core/libraries/np_auth/np_auth.cpp
+            src/core/libraries/np_auth/np_auth.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp

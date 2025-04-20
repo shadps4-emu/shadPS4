@@ -999,16 +999,13 @@ void Rasterizer::UpdateViewportScissorState() const {
     boost::container::static_vector<vk::Viewport, Liverpool::NumViewports> viewports;
     boost::container::static_vector<vk::Rect2D, Liverpool::NumViewports> scissors;
 
-    const auto& vp_ctl = regs.viewport_control;
-    const float reduce_z =
-        regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW ? 1.0f : 0.0f;
-
     if (regs.polygon_control.enable_window_offset &&
         (regs.window_offset.window_x_offset != 0 || regs.window_offset.window_y_offset != 0)) {
         LOG_ERROR(Render_Vulkan,
                   "PA_SU_SC_MODE_CNTL.VTX_WINDOW_OFFSET_ENABLE support is not yet implemented.");
     }
 
+    const auto& vp_ctl = regs.viewport_control;
     for (u32 i = 0; i < Liverpool::NumViewports; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];
@@ -1019,16 +1016,32 @@ void Rasterizer::UpdateViewportScissorState() const {
         const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
         const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
 
-        vk::Viewport viewport = {
-            .minDepth = zoffset - zscale * reduce_z,
-            .maxDepth = zscale + zoffset,
-        };
+        vk::Viewport viewport{};
+
+        // https://gitlab.freedesktop.org/mesa/mesa/-/blob/209a0ed/src/amd/vulkan/radv_pipeline_graphics.c#L688-689
+        // https://gitlab.freedesktop.org/mesa/mesa/-/blob/209a0ed/src/amd/vulkan/radv_cmd_buffer.c#L3103-3109
+        // When the clip space is ranged [-1...1], the zoffset is centered.
+        // By reversing the above viewport calculations, we get the following:
+        if (regs.clipper_control.clip_space == AmdGpu::Liverpool::ClipSpace::MinusWToW) {
+            viewport.minDepth = zoffset - zscale;
+            viewport.maxDepth = zoffset + zscale;
+        } else {
+            viewport.minDepth = zoffset;
+            viewport.maxDepth = zoffset + zscale;
+        }
+
+        if (!regs.depth_render_override.disable_viewport_clamp) {
+            // Apply depth clamp.
+            viewport.minDepth = std::max(viewport.minDepth, vp_d.zmin);
+            viewport.maxDepth = std::min(viewport.maxDepth, vp_d.zmax);
+        }
+
         if (!instance.IsDepthRangeUnrestrictedSupported()) {
-            // Unrestricted depth range not supported by device. Make best attempt
-            // by restricting to valid range.
+            // Unrestricted depth range not supported by device. Restrict to valid range.
             viewport.minDepth = std::max(viewport.minDepth, 0.f);
             viewport.maxDepth = std::min(viewport.maxDepth, 1.f);
         }
+
         if (regs.IsClipDisabled()) {
             // In case if clipping is disabled we patch the shader to convert vertex position
             // from screen space coordinates to NDC by defining a render space as full hardware
@@ -1048,6 +1061,7 @@ void Rasterizer::UpdateViewportScissorState() const {
             viewport.width = xscale * 2.0f;
             viewport.height = yscale * 2.0f;
         }
+
         viewports.push_back(viewport);
 
         auto vp_scsr = scsr;

@@ -101,6 +101,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Ssl2)                                                                                 \
     SUB(Lib, SysModule)                                                                            \
     SUB(Lib, Move)                                                                                 \
+    SUB(Lib, NpAuth)                                                                               \
     SUB(Lib, NpCommon)                                                                             \
     SUB(Lib, NpManager)                                                                            \
     SUB(Lib, NpScore)                                                                              \
