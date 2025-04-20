@@ -128,10 +128,9 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     // Override format if image is forced to be a depth target, except if the image is a dummy one
     if (desc.is_depth && (image.width != 0 && image.height != 0)) {
-        bool valid = true;
-        pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format, valid);
+        pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format);
         ASSERT_MSG(
-            valid,
+            pixel_format != vk::Format::eUndefined,
             "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
             vk::to_string(pixel_format), image.width + 1, image.height + 1,
             AmdGpu::NameOf(image.GetDataFmt()));
