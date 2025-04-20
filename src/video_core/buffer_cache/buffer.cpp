@@ -135,11 +135,10 @@ ImportedHostBuffer::ImportedHostBuffer(const Vulkan::Instance& instance_,
                "CPU address {:#x} is not aligned to {:#x}", cpu_addr, alignment);
     ASSERT_MSG(size_bytes % alignment == 0, "Size {:#x} is not aligned to {:#x}", size_bytes,
                alignment);
-    
+
     // Test log, should be removed
-    LOG_WARNING(Render_Vulkan,
-               "Creating imported host buffer at {} size {:#x}",
-               cpu_addr, size_bytes);
+    LOG_WARNING(Render_Vulkan, "Creating imported host buffer at {} size {:#x}", cpu_addr,
+                size_bytes);
 
     const auto& mem_props = instance->GetMemoryProperties();
     auto ptr_props_result = instance->GetDevice().getMemoryHostPointerPropertiesEXT(
