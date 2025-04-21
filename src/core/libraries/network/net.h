@@ -155,7 +155,7 @@ int PS4_SYSV_ABI sceNetGetIfnameNumList();
 int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr, int flags);
 int PS4_SYSV_ABI sceNetGetMemoryPoolStats();
 int PS4_SYSV_ABI sceNetGetNameToIndex();
-int PS4_SYSV_ABI sceNetGetpeername();
+int PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetGetRandom();
 int PS4_SYSV_ABI sceNetGetRouteInfo();
 int PS4_SYSV_ABI sceNetGetSockInfo();

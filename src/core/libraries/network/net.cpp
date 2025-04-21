@@ -781,9 +781,46 @@ int PS4_SYSV_ABI sceNetGetNameToIndex() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetpeername() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = sys_getpeername(s, addr, paddrlen);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
 int PS4_SYSV_ABI sceNetGetRandom() {
@@ -807,8 +844,45 @@ int PS4_SYSV_ABI sceNetGetSockInfo6() {
 }
 
 int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = sys_getsockname(s, addr, paddrlen);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
 int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
