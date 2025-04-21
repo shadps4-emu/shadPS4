@@ -70,8 +70,9 @@ static bool IgnoresExecMask(const GcnInst& inst) {
 
 static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 setpc_index,
                                              std::span<const u32> pc_map) {
-    if (setpc_index < 3)
+    if (setpc_index < 3) {
         return std::nullopt;
+    }
 
     const auto& getpc = list[setpc_index - 3];
     const auto& arith = list[setpc_index - 2];
@@ -96,7 +97,7 @@ static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 
     const u32 base_pc = pc_map[setpc_index - 3] + getpc.length;
 
     const u32 result_pc = static_cast<u32>(static_cast<s32>(base_pc) + signed_offset);
-    LOG_INFO(Render_Recompiler, "SetPC target: {} + {} = {}", base_pc, signed_offset, result_pc);
+    LOG_DEBUG(Render_Recompiler, "SetPC target: {} + {} = {}", base_pc, signed_offset, result_pc);
     return result_pc & ~0x3u;
 }
 
@@ -124,10 +125,18 @@ void CFG::EmitLabels() {
         if (inst.IsUnconditionalBranch()) {
             u32 target = inst.BranchTarget(pc);
             if (inst.opcode == Opcode::S_SETPC_B64) {
-                if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc))
+                if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc)) {
                     target = *t;
+                } else {
+                    ASSERT_MSG(
+                        false,
+                        "S_SETPC_B64 without a resolvable offset at PC {:#x} (Index {}): Involved "
+                        "instructions not recognized or invalid pattern",
+                        pc, i);
+                }
             }
             AddLabel(target);
+            // Emit this label so that the block ends with the branching instruction
             AddLabel(pc + inst.length);
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
@@ -135,7 +144,8 @@ void CFG::EmitLabels() {
             AddLabel(true_label);
             AddLabel(false_label);
         } else if (inst.opcode == Opcode::S_ENDPGM) {
-            AddLabel(pc + inst.length);
+            const u32 next_label = pc + inst.length;
+            AddLabel(next_label);
         }
 
         pc += inst.length;
