@@ -333,7 +333,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
             LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),
                      game_serial);
             if (linker->LoadModule(entry.path()) == -1) {
-                entry.path().string();
+                LOG_ERROR(Loader, "Failed to load module: {}", entry.path().string());
             }
         }
     }
