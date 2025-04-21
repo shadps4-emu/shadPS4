@@ -13,8 +13,8 @@
 #include "core/tls.h"
 #include "imgui/imgui_std.h"
 
-#include "ime_keyboard_layouts.h" // c16rtomb, layout tables
-#include "ime_keyboard_ui.h"      // DrawVirtualKeyboard, Utf8SafeBackspace
+#include "core/libraries/ime/ime_keyboard_layouts.h" // c16rtomb, layout tables
+#include "core/libraries/ime/ime_keyboard_ui.h"      // DrawVirtualKeyboard, Utf8SafeBackspace
 
 using namespace ImGui;
 

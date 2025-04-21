@@ -10,7 +10,7 @@
 #include "common/cstring.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_dialog.h"
-#include "ime_keyboard_ui.h"
+#include "core/libraries/ime/ime_keyboard_ui.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -104,8 +104,6 @@ public:
         Utf8SafeBackspace(current_text.begin());
         input_changed = true;
     }
-
-
 
 private:
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);

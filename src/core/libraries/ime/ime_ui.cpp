@@ -249,4 +249,5 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
 void ImeUi::Free() {
     RemoveLayer(this);
 }
+
 }; // namespace Libraries::Ime

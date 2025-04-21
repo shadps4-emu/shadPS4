@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <imgui.h>
-#include "ime_keyboard_layouts.h"
+#include "core/libraries/ime/ime_keyboard_layouts.h"
 
 int c16rtomb(char* out, char16_t ch) {
     if (ch <= 0x7F) {

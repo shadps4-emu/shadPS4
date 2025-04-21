@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <string>
 #include <vector>
 #include <imgui.h>
 #include "common/types.h"
@@ -44,12 +43,11 @@ constexpr ImGuiKey Up = ImGuiKey::ImGuiKey_GamepadDpadUp;
 constexpr ImGuiKey Down = ImGuiKey::ImGuiKey_GamepadDpadDown;
 constexpr ImGuiKey Left = ImGuiKey::ImGuiKey_GamepadDpadLeft;
 constexpr ImGuiKey Right = ImGuiKey::ImGuiKey_GamepadDpadRight;
-constexpr ImGuiKey Cross = ImGuiKey::ImGuiKey_GamepadFaceDown; // X button
+constexpr ImGuiKey Cross = ImGuiKey::ImGuiKey_GamepadFaceDown;   // X button
 constexpr ImGuiKey Circle = ImGuiKey::ImGuiKey_GamepadFaceRight; // O button
 constexpr ImGuiKey Square = ImGuiKey::ImGuiKey_GamepadFaceLeft;  // [] button
 constexpr ImGuiKey Triangle = ImGuiKey::ImGuiKey_GamepadFaceUp;  // /\ button
-constexpr ImGuiKey Options = ImGuiKey::ImGuiKey_GraveAccent;   // Options button
-
+constexpr ImGuiKey Options = ImGuiKey::ImGuiKey_GraveAccent;     // Options button
 
 // Fake function keycodes
 constexpr u16 KC_SYM1 = 0xF100;

@@ -72,4 +72,5 @@ private:
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };
+
 }; // namespace Libraries::Ime

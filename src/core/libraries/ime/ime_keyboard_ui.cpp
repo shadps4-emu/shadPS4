@@ -1,13 +1,12 @@
-#include <cstring>
-#include <unordered_set>
-#include <imgui.h>
-#include <imgui_internal.h>
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "ime_common.h"
-#include "ime_dialog.h"
-#include "ime_keyboard_layouts.h"
-#include "ime_keyboard_ui.h"
-#include "ime_ui.h" // for ImeState
+// #include <cstring>
+#include <imgui.h>
+#include "common/cstring.h"
+#include "core/libraries/ime/ime_common.h"
+#include "core/libraries/ime/ime_keyboard_layouts.h"
+#include "core/libraries/ime/ime_keyboard_ui.h"
 
 using namespace ImGui;
 
