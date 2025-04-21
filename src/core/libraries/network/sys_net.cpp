@@ -14,10 +14,10 @@ int sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
 int sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
-int sys_geetpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
+int sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
-int sys_geetsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
+int sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
 } // namespace Libraries::Net
