@@ -308,19 +308,23 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
     for (const auto& [module_name, init_func] : ModulesToLoad) {
         const auto it = std::ranges::find_if(
             found_modules, [&](const auto& path) { return path.filename() == module_name; });
+        bool loaded = false;
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
             if (linker->LoadModule(*it) != -1) {
+                loaded = true;
                 if (init_func) {
                     init_func(&linker->GetHLESymbols());
                 }
             }
         }
-        if (init_func) {
-            LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
-            init_func(&linker->GetHLESymbols());
-        } else {
-            LOG_INFO(Loader, "No HLE available for {} module", module_name);
+        if (!loaded) {
+            if (init_func) {
+                LOG_INFO(Loader, "Can't Load {} switching to HLE", module_name);
+                init_func(&linker->GetHLESymbols());
+            } else {
+                LOG_INFO(Loader, "No HLE available for {} module", module_name);
+            }
         }
     }
     if (!game_serial.empty() && std::filesystem::exists(sys_module_path / game_serial)) {
@@ -328,7 +332,9 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
              std::filesystem::directory_iterator(sys_module_path / game_serial)) {
             LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),
                      game_serial);
-            linker->LoadModule(entry.path());
+            if (linker->LoadModule(entry.path()) == -1) {
+                entry.path().string();
+            }
         }
     }
 }
