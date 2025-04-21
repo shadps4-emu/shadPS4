@@ -3,8 +3,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-
-#include "core/libraries/ime/ime_keyboard_layouts.h"
+#include "core/libraries/ime/ime.h"
+#include "core/libraries/ime/ime_common.h"
+#include "core/libraries/ime/ime_error.h"
+#include "core/libraries/ime/ime_ui.h"
+#include "core/libraries/pad/pad.h"
+#include "ime_keyboard_layouts.h"
 
 /**
  * KeyboardMode: which layout we show (letters, accents, symbols, etc.)

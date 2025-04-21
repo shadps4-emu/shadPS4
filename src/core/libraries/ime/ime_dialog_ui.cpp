@@ -1,8 +1,5 @@
-// ime_dialog_ui.cpp
-// ----------------------------------------------------------
-// Full implementation of IME dialog UI with on‑screen keyboard
-// (all original logic intact, bugs fixed).
-// ----------------------------------------------------------
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cwchar>
 #include <string>
@@ -52,13 +49,14 @@ static void KeyboardCallbackBridge(const VirtualKeyEvent* evt) {
  *─────────────────────────────────────────────────────────────*/
 ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
                                const OrbisImeParamExtended* extended) {
-    if (!param)
+    if (!param) {
         return;
+    }
 
     /* basic param copy */
     user_id = param->user_id;
     is_multi_line = True(param->option & OrbisImeDialogOption::Multiline);
-    is_numeric = (param->type == OrbisImeType::Number);
+    is_numeric = param->type == OrbisImeType::Number;
     type = param->type;
     enter_label = param->enter_label;
     text_filter = param->filter;
@@ -262,7 +260,7 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
     other.status = nullptr;
     other.result = nullptr;
 
-    if (state && status && *status == OrbisImeDialogStatus::Running) {
+    if (state && *status == OrbisImeDialogStatus::Running) {
         AddLayer(this);
         ImeDialogUi::g_activeImeDialogUi = this;
     }
@@ -276,12 +274,11 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     status = other.status;
     result = other.result;
     first_render = other.first_render;
-
     other.state = nullptr;
     other.status = nullptr;
     other.result = nullptr;
 
-    if (state && status && *status == OrbisImeDialogStatus::Running) {
+    if (state && *status == OrbisImeDialogStatus::Running) {
         AddLayer(this);
         ImeDialogUi::g_activeImeDialogUi = this;
     }
@@ -329,6 +326,7 @@ void ImeDialogUi::Draw() {
     if (Begin("IME Dialog##ImeDialog", nullptr,
               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         DrawPrettyBackground();
+
         /* ---------- title ---------- */
         if (!state->title.empty()) {
             SetCursorPosX(20.0f);
@@ -351,41 +349,47 @@ void ImeDialogUi::Draw() {
         DrawVirtualKeyboardSection();
 
         /* ---------- OK / Cancel buttons ---------- */
-        /* {
-            SetCursorPosY(GetCursorPosY() + 10.0f);
-            const char* ok_lbl = "OK##ImeDialogOK";
-            switch (state->enter_label) {
-            case OrbisImeEnterLabel::Go:
-                ok_lbl = "Go##ImeDialogOK";
-                break;
-            case OrbisImeEnterLabel::Search:
-                ok_lbl = "Search##ImeDialogOK";
-                break;
-            case OrbisImeEnterLabel::Send:
-                ok_lbl = "Send##ImeDialogOK";
-                break;
-            default:
-                break;
-            }
+        /*
+        SetCursorPosY(GetCursorPosY() + 10.0f);
 
-            float spacing = 10.0f;
-            float total_w = BUTTON_SIZE.x * 2 + spacing;
-            float x_start = (window_size.x - total_w) / 2.0f;
-            SetCursorPosX(x_start);
+        const char* button_text;
 
-            if (Button(ok_lbl, BUTTON_SIZE) ||
-                (!state->is_multi_line && IsKeyPressed(ImGuiKey_Enter))) {
-                *status = OrbisImeDialogStatus::Finished;
-                result->endstatus = OrbisImeDialogEndStatus::Ok;
-            }
+        switch (state->enter_label) {
+        case OrbisImeEnterLabel::Go:
+            button_text = "Go##ImeDialogOK";
+            break;
+        case OrbisImeEnterLabel::Search:
+            button_text = "Search##ImeDialogOK";
+            break;
+        case OrbisImeEnterLabel::Send:
+            button_text = "Send##ImeDialogOK";
+            break;
+        case OrbisImeEnterLabel::Default:
+        default:
+            button_text = "OK##ImeDialogOK";
+            break;
+        }
 
-            SameLine(0.0f, spacing);
+        float button_spacing = 10.0f;
+        float total_button_width = BUTTON_SIZE.x * 2 + button_spacing;
+        float button_start_pos = (window_size.x - total_button_width) / 2.0f;
 
-            if (Button("Cancel##ImeDialogCancel", BUTTON_SIZE)) {
-                *status = OrbisImeDialogStatus::Finished;
-                result->endstatus = OrbisImeDialogEndStatus::UserCanceled;
-            }
-        }*/
+        SetCursorPosX(button_start_pos);
+
+        if (Button(button_text, BUTTON_SIZE) ||
+            (!state->is_multi_line && IsKeyPressed(ImGuiKey_Enter))) {
+            *status = OrbisImeDialogStatus::Finished;
+            result->endstatus = OrbisImeDialogEndStatus::Ok;
+        }
+
+        SameLine(0.0f, button_spacing);
+
+        if (Button("Cancel##ImeDialogCancel", BUTTON_SIZE)) {
+            *status = OrbisImeDialogStatus::Finished;
+            result->endstatus = OrbisImeDialogEndStatus::UserCanceled;
+        }
+    }
+    */
 
         End();
     }
@@ -397,63 +401,129 @@ void ImeDialogUi::Draw() {
  *  helper draw functions (unchanged)
  *─────────────────────────────────────────────────────────────*/
 void ImeDialogUi::DrawInputText() {
-    ImVec2 size(GetWindowWidth() - 40.0f, 0.0f);
+    ImVec2 input_size = {GetWindowWidth() - 40.0f, 0.0f};
     SetCursorPosX(20.0f);
-    if (first_render)
+    if (first_render) {
         SetKeyboardFocusHere();
-
-    const char* ph = state->placeholder.empty() ? nullptr : state->placeholder.data();
-    if (InputTextEx("##ImeDialogInput", ph, state->current_text.begin(), state->max_text_length,
-                    size, ImGuiInputTextFlags_CallbackCharFilter, InputTextCallback, this))
+    }
+    const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
+                    state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter,
+                    InputTextCallback, this)) {
         state->input_changed = true;
+    }
 }
 
 void ImeDialogUi::DrawMultiLineInputText() {
-    ImVec2 size(GetWindowWidth() - 40.0f, 200.0f);
+    ImVec2 input_size = {GetWindowWidth() - 40.0f, 200.0f};
     SetCursorPosX(20.0f);
     ImGuiInputTextFlags flags = ImGuiInputTextFlags_CallbackCharFilter |
                                 static_cast<ImGuiInputTextFlags>(ImGuiInputTextFlags_Multiline);
-    if (first_render)
+    if (first_render) {
         SetKeyboardFocusHere();
-
-    const char* ph = state->placeholder.empty() ? nullptr : state->placeholder.data();
-    if (InputTextEx("##ImeDialogInput", ph, state->current_text.begin(), state->max_text_length,
-                    size, flags, InputTextCallback, this))
+    }
+    const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
+    if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
+                    state->max_text_length, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
+    }
 }
 
 int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeDialogUi* ui = static_cast<ImeDialogUi*>(data->UserData);
     ASSERT(ui);
 
-    /* numeric filter */
+    // Should we filter punctuation?
     if (ui->state->is_numeric && (data->EventChar < '0' || data->EventChar > '9') &&
-        data->EventChar != '\b' && data->EventChar != ',' && data->EventChar != '.')
+        data->EventChar != '\b' && data->EventChar != ',' && data->EventChar != '.') {
         return 1;
+    }
 
-    if (!ui->state->keyboard_filter)
+    if (!ui->state->keyboard_filter) {
         return 0;
+    }
 
-    char* ev_char = reinterpret_cast<char*>(&data->EventChar);
+    // ImGui encodes ImWchar32 as multi-byte UTF-8 characters
+    char* event_char = reinterpret_cast<char*>(&data->EventChar);
 
-    OrbisImeKeycode src{
+    // Call the keyboard filter
+    OrbisImeKeycode src_keycode = {
         .keycode = 0,
         .character = 0,
-        .status = 1,
-        .type = OrbisImeKeyboardType::ENGLISH_US,
+        .status = 1,                              // ??? 1 = key pressed, 0 = key released
+        .type = OrbisImeKeyboardType::ENGLISH_US, // TODO set this to the correct value (maybe use
+                                                  // the current language?)
         .user_id = ui->state->user_id,
         .resource_id = 0,
         .timestamp = 0,
     };
 
-    if (!ui->state->ConvertUTF8ToOrbis(ev_char, 4, &src.character, 1))
+    if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
+        LOG_ERROR(Lib_ImeDialog, "Failed to convert orbis char to utf8");
         return 0;
-    src.keycode = src.character;
+    }
+    src_keycode.keycode = src_keycode.character; // TODO set this to the correct value
 
-    u16 out_code;
-    u32 out_stat;
-    ui->state->CallKeyboardFilter(&src, &out_code, &out_stat);
+    u16 out_keycode;
+    u32 out_status;
+
+    ui->state->CallKeyboardFilter(&src_keycode, &out_keycode, &out_status);
+
+    // TODO. set the keycode
+
     return 0;
+}
+
+/* draw keyboard in a sub‑ID scope */
+void ImeDialogUi::DrawVirtualKeyboardSection() {
+    ImGui::PushID("VirtualKeyboardSection");
+    DrawVirtualKeyboard(kb_mode, state->type, shift_state, kb_language, KeyboardCallbackBridge,
+                        kb_style);
+    ImGui::PopID();
+}
+
+void ImeDialogUi::DrawPredictionBarAnCancelButton() {
+    const float pad = 5.0f;
+    const float width = kb_style.layout_width;
+    const float bar_h = 25.0f;
+
+    SetCursorPosX(0.0f);
+    ImVec2 p0 = GetCursorScreenPos();
+    ImVec2 p1 = ImVec2(p0.x + width - bar_h - 2 * pad, p0.y + bar_h);
+    // GetWindowDrawList()->AddRectFilled(p0, p1, IM_COL32(0, 0, 0, 255));
+
+    /* label */
+    // ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y));
+    // ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
+    // Selectable("dummy prediction", false, 0, ImVec2(width - bar_h, bar_h));
+    // ImGui::PopStyleColor();
+
+    SetCursorPosX(pad);
+    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(0, 0, 0, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(0, 0, 0, 255));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(0, 0, 0, 255));
+    ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
+
+    if (ImGui::Button("predict", ImVec2(width - bar_h - 3 * pad, bar_h))) {
+    }
+    ImGui::PopStyleColor(4);
+
+    /* X button */
+    // ImGui::SameLine(width - bar_h);
+    ImGui::SetCursorScreenPos(ImVec2(p0.x + width - bar_h - pad, p0.y));
+
+    ImGui::PushStyleColor(ImGuiCol_Button, kb_style.color_button_function);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kb_style.color_button_function);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, kb_style.color_button_function);
+    ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
+
+    if (ImGui::Button("╳", ImVec2(bar_h, bar_h))) {
+        *status = OrbisImeDialogStatus::Finished;
+        result->endstatus = OrbisImeDialogEndStatus::UserCanceled;
+    }
+    ImGui::PopStyleColor(4);
+    SetCursorPosX(0.0f);
+    SetCursorPosY(GetCursorPosY() + 5.0f);
 }
 
 /*─────────────────────────────────────────────────────────────*
@@ -516,56 +586,4 @@ void ImeDialogUi::OnVirtualKeyEvent(const VirtualKeyEvent* evt) {
     }
     /* Up is available if you need it later; currently ignored */
 }
-
-void ImeDialogUi::DrawVirtualKeyboardSection() {
-    ImGui::PushID("VirtualKeyboardSection");
-    DrawVirtualKeyboard(kb_mode, state->type, shift_state, kb_language, KeyboardCallbackBridge,
-                        kb_style);
-    ImGui::PopID();
-}
-
-void ImeDialogUi::DrawPredictionBarAnCancelButton() {
-    const float pad = 5.0f;
-    const float width = kb_style.layout_width;
-    const float bar_h = 25.0f;
-
-    SetCursorPosX(0.0f);
-    ImVec2 p0 = GetCursorScreenPos();
-    ImVec2 p1 = ImVec2(p0.x + width - bar_h - 2 * pad, p0.y + bar_h);
-    // GetWindowDrawList()->AddRectFilled(p0, p1, IM_COL32(0, 0, 0, 255));
-
-    /* label */
-    // ImGui::SetCursorScreenPos(ImVec2(p0.x, p0.y));
-    // ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
-    // Selectable("dummy prediction", false, 0, ImVec2(width - bar_h, bar_h));
-    // ImGui::PopStyleColor();
-
-    SetCursorPosX(pad);
-    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32(0, 0, 0, 255));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, IM_COL32(0, 0, 0, 255));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, IM_COL32(0, 0, 0, 255));
-    ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
-
-    if (ImGui::Button("predict", ImVec2(width - bar_h - 3 * pad, bar_h))) {
-    }
-    ImGui::PopStyleColor(4);
-
-    /* X button */
-    // ImGui::SameLine(width - bar_h);
-    ImGui::SetCursorScreenPos(ImVec2(p0.x + width - bar_h - pad, p0.y));
-
-    ImGui::PushStyleColor(ImGuiCol_Button, kb_style.color_button_function);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kb_style.color_button_function);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, kb_style.color_button_function);
-    ImGui::PushStyleColor(ImGuiCol_Text, kb_style.color_text);
-
-    if (ImGui::Button("╳", ImVec2(bar_h, bar_h))) {
-        *status = OrbisImeDialogStatus::Finished;
-        result->endstatus = OrbisImeDialogEndStatus::UserCanceled;
-    }
-    ImGui::PopStyleColor(4);
-    SetCursorPosX(0.0f);
-    SetCursorPosY(GetCursorPosY() + 5.0f);
-}
-
 } // namespace Libraries::ImeDialog

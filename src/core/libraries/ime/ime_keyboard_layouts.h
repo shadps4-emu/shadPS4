@@ -20,7 +20,7 @@ struct KeyEntry {
     u8 rowspan;
     const char* label;
     const char* controller_hint;
-    ImGuiNavInput bound_buttons[2];
+    ImGuiKey bound_buttons[2];
     bool allow_repeat{false};
 };
 
@@ -33,22 +33,23 @@ extern const std::vector<KeyEntry> kLayoutEnAccentLettersLowercase;
 extern const std::vector<KeyEntry> kLayoutEnSymbols1;
 extern const std::vector<KeyEntry> kLayoutEnSymbols2;
 
-constexpr ImGuiNavInput None = ImGuiNavInput_COUNT;
-constexpr auto L1 = ImGuiNavInput_FocusPrev;
-constexpr auto R1 = ImGuiNavInput_FocusNext;
-constexpr auto L2 = ImGuiNavInput_TweakSlow;
-constexpr auto R2 = ImGuiNavInput_TweakFast;
-constexpr auto L3 = ImGuiNavInput_DpadLeft;  // adjust if needed
-constexpr auto R3 = ImGuiNavInput_DpadRight; // adjust if needed
-constexpr auto Up = ImGuiNavInput_DpadUp;
-constexpr auto Down = ImGuiNavInput_DpadDown;
-constexpr auto Left = ImGuiNavInput_DpadLeft;
-constexpr auto Right = ImGuiNavInput_DpadRight;
-constexpr auto Cross = ImGuiNavInput_Activate;
-constexpr auto Circle = ImGuiNavInput_Menu;
-constexpr auto Square = ImGuiNavInput_Cancel;
-constexpr auto Triangle = ImGuiNavInput_Input;
-constexpr auto TouchPad = ImGuiNavInput_Menu; // reuse if needed
+constexpr ImGuiKey None = ImGuiKey::ImGuiKey_None;
+constexpr ImGuiKey L1 = ImGuiKey::ImGuiKey_GamepadL1;
+constexpr ImGuiKey R1 = ImGuiKey::ImGuiKey_GamepadR1;
+constexpr ImGuiKey L2 = ImGuiKey::ImGuiKey_GamepadL2;
+constexpr ImGuiKey R2 = ImGuiKey::ImGuiKey_GamepadR2;
+constexpr ImGuiKey L3 = ImGuiKey::ImGuiKey_GamepadL3;
+constexpr ImGuiKey R3 = ImGuiKey::ImGuiKey_GamepadR3;
+constexpr ImGuiKey Up = ImGuiKey::ImGuiKey_GamepadDpadUp;
+constexpr ImGuiKey Down = ImGuiKey::ImGuiKey_GamepadDpadDown;
+constexpr ImGuiKey Left = ImGuiKey::ImGuiKey_GamepadDpadLeft;
+constexpr ImGuiKey Right = ImGuiKey::ImGuiKey_GamepadDpadRight;
+constexpr ImGuiKey Cross = ImGuiKey::ImGuiKey_GamepadFaceDown; // X button
+constexpr ImGuiKey Circle = ImGuiKey::ImGuiKey_GamepadFaceRight; // O button
+constexpr ImGuiKey Square = ImGuiKey::ImGuiKey_GamepadFaceLeft;  // [] button
+constexpr ImGuiKey Triangle = ImGuiKey::ImGuiKey_GamepadFaceUp;  // /\ button
+constexpr ImGuiKey Options = ImGuiKey::ImGuiKey_GraveAccent;   // Options button
+
 
 // Fake function keycodes
 constexpr u16 KC_SYM1 = 0xF100;

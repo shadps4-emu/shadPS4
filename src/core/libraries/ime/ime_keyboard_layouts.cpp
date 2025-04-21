@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <imgui.h>
-
 #include "ime_keyboard_layouts.h"
 
 int c16rtomb(char* out, char16_t ch) {

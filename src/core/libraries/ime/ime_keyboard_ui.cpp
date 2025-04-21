@@ -7,6 +7,8 @@
 #include "ime_dialog.h"
 #include "ime_keyboard_layouts.h"
 #include "ime_keyboard_ui.h"
+#include "ime_ui.h" // for ImeState
+
 using namespace ImGui;
 
 /**

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <cstring> // for strncpy / memcpy
@@ -9,8 +12,6 @@
 #include "core/libraries/ime/ime_dialog.h"
 #include "ime_keyboard_ui.h"
 #include "imgui/imgui_layer.h"
-
-#include <unordered_set>
 
 namespace Libraries::ImeDialog {
 
@@ -35,11 +36,10 @@ class ImeDialogState final {
     OrbisImeExtKeyboardFilter keyboard_filter{};
     u32 max_text_length{};
     char16_t* text_buffer{};
-
     std::vector<char> title;
     std::vector<char> placeholder;
 
-    // One UTF‑8 code‑point may take up to 4 bytes
+    // A character can hold up to 4 bytes in UTF-8
     Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
 
     // Optional custom keyboard style (from extended params)
@@ -49,11 +49,13 @@ class ImeDialogState final {
 public:
     /*──────────────── constructors / rule‑of‑five ────────────────*/
     ImeDialogState(const OrbisImeDialogParam* param = nullptr,
-                   const OrbisImeParamExtended* ext = nullptr);
-    ImeDialogState(const ImeDialogState&) = delete;
-    ImeDialogState(ImeDialogState&&) noexcept;
-    ImeDialogState& operator=(ImeDialogState&&);
+                   const OrbisImeParamExtended* extended = nullptr);
+    ImeDialogState(const ImeDialogState& other) = delete;
+    ImeDialogState(ImeDialogState&& other) noexcept;
+    ImeDialogState& operator=(ImeDialogState&& other);
 
+    bool CopyTextToOrbisBuffer();
+    bool CallTextFilter();
     /*──────────────────── public read helpers ───────────────────*/
     bool IsMultiLine() const {
         return is_multi_line;
@@ -103,17 +105,15 @@ public:
         input_changed = true;
     }
 
-    /*──────────────────────── IME support ───────────────────────*/
-    bool CopyTextToOrbisBuffer();
-    bool CallTextFilter();
+
 
 private:
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
 
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,
-                            std::size_t utf8_text_len);
-    bool ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_len, char16_t* orbis_text,
-                            std::size_t orbis_text_len);
+                            std::size_t native_text_len);
+    bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len,
+                            char16_t* orbis_text, std::size_t orbis_text_len);
 };
 
 //---------------------------------------------------------------------
@@ -136,9 +136,9 @@ public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
                          OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
-    ImeDialogUi(const ImeDialogUi&) = delete;
-    ImeDialogUi(ImeDialogUi&&) noexcept;
-    ImeDialogUi& operator=(ImeDialogUi&&);
+    ImeDialogUi(const ImeDialogUi& other) = delete;
+    ImeDialogUi(ImeDialogUi&& other) noexcept;
+    ImeDialogUi& operator=(ImeDialogUi&& other);
 
     /*────────── main draw ───────────*/
     void Draw() override;
@@ -149,8 +149,10 @@ public:
 private:
     /*── helpers ─*/
     void Free();
+
     void DrawInputText();
     void DrawMultiLineInputText();
+
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 
     /*── keyboard section ─*/
@@ -158,6 +160,18 @@ private:
     ShiftState shift_state = ShiftState::None;
     u64 kb_language = 0;
     KeyboardStyle kb_style;
+    /* KeyboardStyle kb_style{
+        .layout_width  = 500.0f,
+        .layout_height = 250.0f,
+        .key_spacing   = 5.0f,
+        .color_text             = IM_COL32(225,225,225,255),
+        .color_line             = IM_COL32( 88, 88, 88,255),
+        .color_button_default   = IM_COL32( 35, 35, 35,255),
+        .color_button_function  = IM_COL32( 50, 50, 50,255),
+        .color_special          = IM_COL32(  0,140,200,255),
+        .use_button_symbol_color= false,
+        .color_button_symbol    = IM_COL32( 60, 60, 60,255),
+    };*/
 
     void DrawVirtualKeyboardSection();
     void DrawPredictionBarAnCancelButton();
