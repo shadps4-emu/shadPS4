@@ -312,7 +312,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
             LOG_INFO(Loader, "Loading {}", it->string());
             if (linker->LoadModule(*it) != -1) {
                 if (init_func) {
-                    init_func();
+                    init_func(&linker->GetHLESymbols());
                 }
             }
         }
