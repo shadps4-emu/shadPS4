@@ -7,10 +7,13 @@
 
 namespace Libraries::Net {
 
-int sys_connect(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen) {
+int sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     return -1;
 }
-int sys_bind(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen) {
+int sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
+    return -1;
+}
+int sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
 } // namespace Libraries::Net
