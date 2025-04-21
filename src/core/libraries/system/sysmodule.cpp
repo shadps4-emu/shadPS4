@@ -24,6 +24,9 @@ s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags, void*
     Kernel::OrbisModuleInfoForUnwind module_info;
     module_info.st_size = 0x130;
     s32 res = Kernel::sceKernelGetModuleInfoForUnwind(addr, flags, &module_info);
+    if (res == 0) {
+        std::memcpy(info, &module_info, sizeof(module_info));
+    }
     return res;
 }
 
@@ -57,7 +60,7 @@ int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
 
 int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     auto color_name = magic_enum::enum_name(id);
-    LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
+    LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", color_name);
     return ORBIS_OK;
 }
 
