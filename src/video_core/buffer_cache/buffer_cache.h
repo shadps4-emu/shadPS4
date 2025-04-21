@@ -130,10 +130,10 @@ public:
     [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
 
     /// Queue a region for coverage for DMA.
-    void QueueMemoryImport(VAddr device_addr, u64 size);
+    void QueueMemoryCoverage(VAddr device_addr, u64 size);
 
     /// Covers all queued regions.
-    void ImportQueuedRegions();
+    void CoverQueuedRegions();
 
     /// Creates buffers for "faulted" shader accesses to host memory.
     void CreateFaultBuffers();
@@ -187,7 +187,7 @@ private:
 
     void DeleteBuffer(BufferId buffer_id);
 
-    void ImportMemory(u64 start, u64 end);
+    void CoverMemory(u64 start, u64 end);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
@@ -200,11 +200,10 @@ private:
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
     Buffer fault_readback_buffer;
-    // We need to define here to avoid stack overflow
+    // We need to define here to avoid stack underflow
     std::array<u8, FAULT_READBACK_SIZE> fault_readback_cpu;
-    boost::icl::interval_set<VAddr> queued_imports;
-    boost::icl::interval_set<u64> imported_regions;
-    std::vector<ImportedHostBuffer> imported_buffers;
+    boost::icl::interval_set<VAddr> queued_converages;
+    boost::icl::interval_set<u64> convered_regions;
     std::shared_mutex mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;

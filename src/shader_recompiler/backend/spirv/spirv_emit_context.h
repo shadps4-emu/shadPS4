@@ -175,8 +175,6 @@ public:
 
     template <typename Func>
     Id EmitMemoryAccess(Id type, Id address, Func&& fallback) {
-        const Id host_access_label = OpLabel();
-        const Id after_host_access_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id available_label = OpLabel();
         const Id merge_label = OpLabel();
@@ -189,15 +187,13 @@ public:
         const Id bda_ptr = OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32);
         const Id bda = OpLoad(U64, bda_ptr);
 
-        // Check if it's a host memory access
-        const Id bda_and_host_access_mask = OpBitwiseAnd(U64, bda, host_access_mask_value);
-        const Id bda_host_access =
-            OpINotEqual(U1[1], bda_and_host_access_mask, host_access_mask_value);
-        OpSelectionMerge(after_host_access_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(bda_host_access, host_access_label, after_host_access_label);
+        // Check if the value is available
+        const Id bda_eq_zero = OpIEqual(U1[1], bda, u64_zero_value);
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(bda_eq_zero, fallback_label, available_label);
 
-        // Host access, set bit in fault readback buffer
-        AddLabel(host_access_label);
+        // Fallback (and mark on faul buffer)
+        AddLabel(fallback_label);
         const auto& fault_buffer = buffers[fault_readback_index];
         const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
         const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
@@ -209,24 +205,13 @@ public:
         const Id page_mask8 = OpUConvert(U8, page_mask);
         const Id fault_value_masked = OpBitwiseOr(U8, fault_value, page_mask8);
         OpStore(fault_ptr, fault_value_masked);
-        OpBranch(after_host_access_label);
-
-        // Check if the value is available
-        AddLabel(after_host_access_label);
-        const Id bda_eq_zero = OpIEqual(U1[1], bda, u64_zero_value);
-        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(bda_eq_zero, fallback_label, available_label);
-
-        // Fallback
-        AddLabel(fallback_label);
         const Id fallback_result = fallback();
         OpBranch(merge_label);
 
         // Get value from memory
         AddLabel(available_label);
-        const Id untagged_bda = OpBitwiseAnd(U64, bda, host_access_inv_mask_value);
         const Id offset_in_bda = OpBitwiseAnd(U64, address, caching_pagemask_value);
-        const Id addr = OpIAdd(U64, untagged_bda, offset_in_bda);
+        const Id addr = OpIAdd(U64, bda, offset_in_bda);
         const PointerType pointer_type = PointerTypeFromType(type);
         const Id pointer_type_id = physical_pointer_types[pointer_type];
         const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
@@ -279,8 +264,6 @@ public:
 
     Id caching_pagebits_value{};
     Id caching_pagemask_value{};
-    Id host_access_mask_value{};
-    Id host_access_inv_mask_value{};
 
     Id shared_u8{};
     Id shared_u16{};

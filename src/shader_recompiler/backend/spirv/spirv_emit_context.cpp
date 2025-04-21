@@ -196,14 +196,10 @@ void EmitContext::DefineArithmeticTypes() {
     }
 
     if (info.dma_types != IR::Type::Void) {
-        constexpr u64 host_access_mask = 0x1UL;
-        constexpr u64 host_access_inv_mask = ~host_access_mask;
 
         caching_pagebits_value =
             Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
         caching_pagemask_value = Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1);
-        host_access_mask_value = Constant(U64, host_access_mask);
-        host_access_inv_mask_value = Constant(U64, host_access_inv_mask);
 
         // Used to calculate fault readback buffer position and mask
         u32_three_value = ConstU32(3U);

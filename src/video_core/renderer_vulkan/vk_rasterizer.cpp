@@ -468,7 +468,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (dma_enabled) {
         // First, import any queued host memory, then sync every mapped
         // region that is cached on GPU memory.
-        buffer_cache.ImportQueuedRegions();
+        buffer_cache.CoverQueuedRegions();
         {
             std::shared_lock lock(mapped_ranges_mutex);
             for (const auto& range : mapped_ranges) {
@@ -968,7 +968,7 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
     page_manager.OnGpuMap(addr, size);
-    buffer_cache.QueueMemoryImport(addr, size);
+    buffer_cache.QueueMemoryCoverage(addr, size);
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {

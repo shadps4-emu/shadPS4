@@ -313,11 +313,6 @@ public:
                properties.limits.framebufferStencilSampleCounts;
     }
 
-    /// Returns the minimum alignment for imported host memory.
-    vk::DeviceSize GetExternalHostMemoryHostAlignment() const {
-        return external_memory_host_props.minImportedHostPointerAlignment;
-    }
-
     /// Returns whether disabling primitive restart is supported.
     bool IsPrimitiveRestartDisableSupported() const {
         return driver_id != vk::DriverId::eMoltenvk;
@@ -349,7 +344,6 @@ private:
     vk::PhysicalDeviceVulkan11Properties vk11_props;
     vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
-    vk::PhysicalDeviceExternalMemoryHostPropertiesEXT external_memory_host_props;
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
