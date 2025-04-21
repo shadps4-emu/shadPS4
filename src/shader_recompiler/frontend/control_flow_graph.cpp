@@ -100,8 +100,6 @@ static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 
     return result_pc & ~0x3u;
 }
 
-
-
 static constexpr size_t LabelReserveSize = 32;
 
 CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
