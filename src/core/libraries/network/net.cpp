@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include <core/libraries/kernel/kernel.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -19,10 +20,13 @@
 #include "net_error.h"
 #include "net_util.h"
 #include "netctl.h"
+#include "sys_net.h"
 
 namespace Libraries::Net {
 
 static thread_local int32_t net_errno = 0;
+
+static bool g_isNetInitialized = true; // TODO init it properly
 
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
@@ -469,9 +473,46 @@ int PS4_SYSV_ABI sceNetConfigWlanSetDeviceConfig() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetConnect() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetConnect(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = posix_connect(s, addr, addrlen);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
 int PS4_SYSV_ABI sceNetControl() {

@@ -79,6 +79,7 @@ constexpr int ORBIS_NET_ENOMEM = 12;
 constexpr int ORBIS_NET_ENOBUFS = 55;
 
 // error codes
+constexpr int ORBIS_NET_ERROR_BASE = 0x80410100; // not existed used for calculation
 constexpr int ORBIS_NET_ERROR_EPERM = 0x80410101;
 constexpr int ORBIS_NET_ERROR_ENOENT = 0x80410102;
 constexpr int ORBIS_NET_ERROR_EINTR = 0x80410104;
