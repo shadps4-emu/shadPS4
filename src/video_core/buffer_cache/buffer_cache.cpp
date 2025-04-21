@@ -33,9 +33,9 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
     Vulkan::SetObjectName(instance.GetDevice(), bda_pagetable_buffer.Handle(),
-                       "BDA Page Table Buffer");
+                          "BDA Page Table Buffer");
     Vulkan::SetObjectName(instance.GetDevice(), fault_readback_buffer.Handle(),
-                       "Fault Readback Buffer");
+                          "Fault Readback Buffer");
 
     // Ensure the first slot is used for the null buffer
     const auto null_id =
@@ -544,7 +544,7 @@ void BufferCache::CreateFaultBuffers() {
         .dstOffset = offset,
         .size = FAULT_READBACK_SIZE,
     };
-    vk::BufferMemoryBarrier2 barrier {
+    vk::BufferMemoryBarrier2 barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
