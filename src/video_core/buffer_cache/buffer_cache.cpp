@@ -836,7 +836,7 @@ void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
         VAddr start = std::max(buffer_start, device_addr);
         VAddr end = std::min(buffer_end, device_addr_end);
         u32 size = static_cast<u32>(end - start);
-        SynchronizeBuffer(buffer, start, end, false);
+        SynchronizeBuffer(buffer, start, size, false);
     });
 }
 
