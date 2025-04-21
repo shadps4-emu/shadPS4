@@ -167,7 +167,8 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const Id base_hi = ctx.OpUConvert(ctx.U64, ctx.OpCompositeExtract(ctx.U32[1], addr, 1));
     const Id base_sift = ctx.OpShiftLeftLogical(ctx.U64, base_hi, ctx.ConstU32(32u));
     const Id base = ctx.OpBitwiseOr(ctx.U64, base_lo, base_sift);
-    const Id address = ctx.OpIAdd(ctx.U64, base, ctx.OpUConvert(ctx.U64, offset));
+    const Id offset_bytes = ctx.OpShiftLeftLogical(ctx.U32[1], offset, ctx.ConstU32(2u));
+    const Id address = ctx.OpIAdd(ctx.U64, base, ctx.OpUConvert(ctx.U64, offset_bytes));
     return ctx.EmitMemoryAccess(ctx.U32[1], address, [&]() {
         const u32 flatbuf_off_dw = inst->Flags<u32>();
         if (flatbuf_off_dw == 0) {
