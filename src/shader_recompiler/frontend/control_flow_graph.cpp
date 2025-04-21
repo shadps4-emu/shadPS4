@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
+#include "common/logging/log.h"
 
 namespace Shader::Gcn {
 
@@ -81,24 +82,22 @@ static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 
         setpc.opcode != Opcode::S_SETPC_B64)
         return std::nullopt;
 
-    // Register‑Paar prüfen
     if (getpc.dst[0].code != setpc.src[0].code || arith.dst[0].code != setpc.src[0].code)
         return std::nullopt;
 
-    // Sofortwert holen
     if (arith.src_count < 2 || arith.src[1].field != OperandField::LiteralConst)
         return std::nullopt;
 
     const u32 imm = arith.src[1].code;
 
-    // Vorzeichenbehafteter Offset
     const s32 signed_offset =
         (arith.opcode == Opcode::S_ADD_U32) ? static_cast<s32>(imm) : -static_cast<s32>(imm);
 
     const u32 base_pc = pc_map[setpc_index - 3] + getpc.length;
 
     const u32 result_pc = static_cast<u32>(static_cast<s32>(base_pc) + signed_offset);
-    return result_pc & ~0x3u; // DWORD-aligned PC
+    LOG_INFO(Render_Recompiler, "SetPC target: {} + {} = {}", base_pc, signed_offset, result_pc);
+    return result_pc & ~0x3u;
 }
 
 
@@ -130,8 +129,8 @@ void CFG::EmitLabels() {
                 if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc))
                     target = *t;
             }
-            AddLabel(target);           // Ziel
-            AddLabel(pc + inst.length); // Fall‑through‑Label
+            AddLabel(target);
+            AddLabel(pc + inst.length);
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
             const u32 false_label = pc + inst.length;
@@ -323,8 +322,8 @@ void CFG::LinkBlocks() {
         if (end_inst.opcode == Opcode::S_SETPC_B64) {
             auto tgt = ResolveSetPcTarget(inst_list, block.end_index, index_to_pc);
             ASSERT_MSG(tgt,
-                       "S_SETPC_B64 ohne auflösbaren Offset bei PC {:#x} (Index {}): Beteiligte "
-                       "Instruktionen nicht erkannt oder ungültiges Muster",
+                       "S_SETPC_B64 without a resolvable offset at PC {:#x} (Index {}): Involved "
+                       "instructions not recognized or invalid pattern",
                        branch_pc, block.end_index);
             target_pc = *tgt;
         } else {
