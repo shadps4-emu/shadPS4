@@ -9,5 +9,6 @@
 namespace Libraries::Net {
 
 int sys_connect(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen);
+int sys_bind(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen);
 
-}
+} // namespace Libraries::Net

@@ -117,7 +117,7 @@ int PS4_SYSV_ABI sceNetConfigWlanInfraLeave();
 int PS4_SYSV_ABI sceNetConfigWlanInfraScanJoin();
 int PS4_SYSV_ABI sceNetConfigWlanScan();
 int PS4_SYSV_ABI sceNetConfigWlanSetDeviceConfig();
-int PS4_SYSV_ABI sceNetConnect(OrbisNetId s, OrbisNetSockaddr* addr, u32 addrlen);
+int PS4_SYSV_ABI sceNetConnect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetControl();
 int PS4_SYSV_ABI sceNetDhcpdStart();
 int PS4_SYSV_ABI sceNetDhcpdStop();
