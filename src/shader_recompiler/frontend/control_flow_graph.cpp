@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include "common/assert.h"
-#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "common/logging/log.h"
+#include "shader_recompiler/frontend/control_flow_graph.h"
 
 namespace Shader::Gcn {
 
