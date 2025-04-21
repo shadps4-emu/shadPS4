@@ -29,4 +29,16 @@ int sys_listen(OrbisNetId s, int backlog) {
 int sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval, u32 optlen) {
     return -1;
 }
+int sys_shutdown(OrbisNetId s, int how) {
+    return -1;
+}
+int sys_socketex(const char* name, int family, int type, int protocol) {
+    return -1;
+}
+int sys_netabort(OrbisNetId s, int flags) {
+    return -1;
+}
+int sys_socketclose(OrbisNetId s) {
+    return -1;
+}
 } // namespace Libraries::Net

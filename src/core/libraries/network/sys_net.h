@@ -16,4 +16,8 @@ int sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen);
 int sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen);
 int sys_listen(OrbisNetId s, int backlog);
 int sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval, u32 optlen);
+int sys_shutdown(OrbisNetId s, int how);
+int sys_socketex(const char* name, int family, int type, int protocol);
+int sys_netabort(OrbisNetId s, int flags);
+int sys_socketclose(OrbisNetId s);
 } // namespace Libraries::Net
