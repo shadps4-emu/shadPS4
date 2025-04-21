@@ -178,7 +178,7 @@ int PS4_SYSV_ABI sceNetInfoDumpStop();
 int PS4_SYSV_ABI sceNetInit();
 int PS4_SYSV_ABI sceNetInitParam();
 int PS4_SYSV_ABI sceNetIoctl();
-int PS4_SYSV_ABI sceNetListen();
+int PS4_SYSV_ABI sceNetListen(OrbisNetId s, int backlog);
 int PS4_SYSV_ABI sceNetMemoryAllocate();
 int PS4_SYSV_ABI sceNetMemoryFree();
 u32 PS4_SYSV_ABI sceNetNtohl(u32 net32);
@@ -213,7 +213,8 @@ int PS4_SYSV_ABI sceNetSetDns6Info();
 int PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
 int PS4_SYSV_ABI sceNetSetDnsInfo();
 int PS4_SYSV_ABI sceNetSetDnsInfoToKernel();
-int PS4_SYSV_ABI sceNetSetsockopt();
+int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
+                                  u32 optlen);
 int PS4_SYSV_ABI sceNetShowIfconfig();
 int PS4_SYSV_ABI sceNetShowIfconfigForBuffer();
 int PS4_SYSV_ABI sceNetShowIfconfigWithMemory();

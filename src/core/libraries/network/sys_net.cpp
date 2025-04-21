@@ -20,4 +20,13 @@ int sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
 int sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
+int sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
+    return -1;
+}
+int sys_listen(OrbisNetId s, int backlog) {
+    return -1;
+}
+int sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval, u32 optlen) {
+    return -1;
+}
 } // namespace Libraries::Net

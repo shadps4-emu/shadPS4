@@ -13,5 +13,7 @@ int sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen);
 int sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen);
 int sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen);
 int sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen);
-
+int sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen);
+int sys_listen(OrbisNetId s, int backlog);
+int sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval, u32 optlen);
 } // namespace Libraries::Net
