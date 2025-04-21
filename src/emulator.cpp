@@ -311,7 +311,9 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
         if (it != found_modules.end()) {
             LOG_INFO(Loader, "Loading {}", it->string());
             if (linker->LoadModule(*it) != -1) {
-                continue;
+                if (init_func) {
+                    init_func();
+                }
             }
         }
         if (init_func) {
