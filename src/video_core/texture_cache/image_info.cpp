@@ -129,13 +129,14 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     // Override format if image is forced to be a depth target, except if the image is a dummy one
     if (desc.is_depth && (image.width != 0 && image.height != 0)) {
         pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format);
-        ASSERT_MSG(
-            pixel_format != vk::Format::eUndefined,
-            "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
-            vk::to_string(pixel_format), image.width + 1, image.height + 1,
-            AmdGpu::NameOf(image.GetDataFmt()));
-    } else if (image.width == 0 && image.height == 0) {
-        pixel_format = vk::Format::eD32Sfloat;
+        if (pixel_format == vk::Format::eUndefined) {
+            ASSERT_MSG(
+                image.width == 0 && image.height == 0,
+                "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
+                vk::to_string(pixel_format), image.width, image.height,
+                AmdGpu::NameOf(image.GetDataFmt()));
+            pixel_format = vk::Format::eD32Sfloat;
+        }
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();
