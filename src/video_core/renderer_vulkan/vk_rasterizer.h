@@ -115,7 +115,9 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
+    // use 2 mutexes to avoid undefined behavior when using shared lock
     std::shared_mutex mapped_ranges_mutex;
+    std::shared_mutex mapped_ranges_ismapped_mutex;
     PipelineCache pipeline_cache;
 
     boost::container::static_vector<

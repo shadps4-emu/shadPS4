@@ -469,13 +469,11 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         // First, import any queued host memory, then sync every mapped
         // region that is cached on GPU memory.
         buffer_cache.CoverQueuedRegions();
-        // I feel bad for doing this copy
-        auto mapped_ranges_copy = ([this]() {
-            std::shared_lock lock(mapped_ranges_mutex);
-            return mapped_ranges;
-        })();
-        for (const auto& range : mapped_ranges_copy) {
-            buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
+        {
+            std::shared_lock lock{mapped_ranges_mutex};
+            for (const auto& range : mapped_ranges) {
+                buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
+            }
         }
         buffer_cache.ResetFaultReadbackBuffer();
     }
@@ -960,13 +958,13 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     }
     const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
 
-    std::shared_lock lock{mapped_ranges_mutex};
+    std::shared_lock lock{mapped_ranges_ismapped_mutex};
     return boost::icl::contains(mapped_ranges, range);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
-        std::scoped_lock lock{mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex, mapped_ranges_ismapped_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
     page_manager.OnGpuMap(addr, size);
@@ -978,7 +976,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
-        std::scoped_lock lock{mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex, mapped_ranges_ismapped_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
 }
