@@ -175,7 +175,7 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
             return ctx.u32_zero_value;
         } else {
             const auto& srt_flatbuf = ctx.buffers[ctx.flatbuf_index];
-            ASSERT(srt_flatbuf.binding >= && srt_flatbuf.buffer_type == BufferType::Flatbuf);
+            ASSERT(srt_flatbuf.binding >= 0 && srt_flatbuf.buffer_type == BufferType::Flatbuf);
             const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
             const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value,
                                            ctx.ConstU32(flatbuf_off_dw))};

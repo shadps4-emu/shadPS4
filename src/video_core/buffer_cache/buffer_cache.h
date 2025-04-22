@@ -204,7 +204,8 @@ private:
     std::array<u8, FAULT_READBACK_SIZE> fault_readback_cpu;
     boost::icl::interval_set<VAddr> queued_converages;
     boost::icl::interval_set<u64> convered_regions;
-    std::shared_mutex mutex;
+    std::shared_mutex covered_regions_mutex;
+    std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
     RangeSet gpu_modified_ranges;
     MemoryTracker memory_tracker;

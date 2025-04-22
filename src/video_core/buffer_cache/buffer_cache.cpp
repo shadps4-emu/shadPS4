@@ -294,7 +294,7 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
             ++page;
             continue;
         }
-        std::shared_lock lk{mutex};
+        std::shared_lock lk{slot_buffers_mutex};
         Buffer& buffer = slot_buffers[buffer_id];
         const VAddr buf_start_addr = buffer.CpuAddr();
         const VAddr buf_end_addr = buf_start_addr + buffer.SizeBytes();
@@ -331,7 +331,7 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
 }
 
 void BufferCache::QueueMemoryCoverage(VAddr device_addr, u64 size) {
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{covered_regions_mutex};
     const VAddr start = device_addr;
     const VAddr end = device_addr + size;
     auto queue_range = decltype(queued_converages)::interval_type::right_open(start, end);
@@ -339,7 +339,7 @@ void BufferCache::QueueMemoryCoverage(VAddr device_addr, u64 size) {
 }
 
 void BufferCache::CoverQueuedRegions() {
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{covered_regions_mutex};
     if (queued_converages.empty()) {
         return;
     }
@@ -505,7 +505,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
     const BufferId new_buffer_id = [&] {
-        std::scoped_lock lk{mutex};
+        std::scoped_lock lk{slot_buffers_mutex};
         return slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, overlap.begin,
                                    AllFlags | vk::BufferUsageFlagBits::eShaderDeviceAddress, size);
     }();
@@ -521,7 +521,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
                     bda_addrs.size() * sizeof(vk::DeviceAddress));
     {
         // Mark the pages as covered
-        std::scoped_lock lk{mutex};
+        std::scoped_lock lk{covered_regions_mutex};
         convered_regions += boost::icl::interval_set<u64>::interval_type::right_open(
             start_page, start_page + size_pages);
     }

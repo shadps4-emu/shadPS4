@@ -964,7 +964,7 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
-        std::unique_lock lock{mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
     page_manager.OnGpuMap(addr, size);
@@ -976,7 +976,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
-        std::unique_lock lock{mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
 }
