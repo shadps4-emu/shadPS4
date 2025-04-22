@@ -134,6 +134,8 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
             "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
             vk::to_string(pixel_format), image.width + 1, image.height + 1,
             AmdGpu::NameOf(image.GetDataFmt()));
+    } else if (image.width == 0 && image.height == 0) {
+        pixel_format = vk::Format::eD32Sfloat;
     }
     type = ConvertImageType(image.GetType());
     props.is_tiled = image.IsTiled();

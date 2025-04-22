@@ -44,6 +44,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
             format != vk::Format::eUndefined,
             "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
             vk::to_string(format), image.width, image.height, AmdGpu::NameOf(image.GetDataFmt()));
+    } else if (image.width == 0 && image.height == 0) {
+        format = vk::Format::eD32Sfloat;
     }
 
     range.base.level = image.base_level;
