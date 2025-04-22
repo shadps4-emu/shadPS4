@@ -326,13 +326,11 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             info.pixel_format != cache_image.info.pixel_format) {
             continue;
         }
-        if (!(cache_image.info.type == info.type || info.size == Extent3D{1, 1, 1} ||
-              static_cast<bool>(flags & FindFlags::RelaxFmt))) {
-            ASSERT_MSG(false, "Image cache type mismatch: cache={}, info={}",
-                       int(cache_image.info.type), int(info.type));
-            image_id = cache_id;
-            break;
-        }
+        ASSERT_MSG((cache_image.info.type == info.type || info.size == Extent3D{1, 1, 1} ||
+                    True(flags & FindFlags::RelaxFmt)),
+                   "Image cache type mismatch: cache={}, info={}",
+                   vk::to_string(cache_image.info.type), vk::to_string(info.type));
+        image_id = cache_id;
     }
 
     if (True(flags & FindFlags::NoCreate) && !image_id) {
