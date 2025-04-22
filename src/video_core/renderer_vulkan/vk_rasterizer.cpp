@@ -469,11 +469,13 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         // First, import any queued host memory, then sync every mapped
         // region that is cached on GPU memory.
         buffer_cache.CoverQueuedRegions();
-        {
+        // I feel bad for doing this copy
+        auto mapped_ranges_copy = ([this]() {
             std::shared_lock lock(mapped_ranges_mutex);
-            for (const auto& range : mapped_ranges) {
-                buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
-            }
+            return mapped_ranges;
+        })();
+        for (const auto& range : mapped_ranges_copy) {
+            buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
         }
         buffer_cache.ResetFaultReadbackBuffer();
     }
