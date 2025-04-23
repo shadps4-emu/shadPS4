@@ -223,6 +223,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
 #ifdef __APPLE__
+#ifdef ENABLE_QT_GUI
     // If the Vulkan loader exists in /usr/local/lib, give it priority. The Vulkan SDK
     // installs it here by default but it is not in the default library search path.
     // The loader has a clause to check for it, but at a lower priority than the bundled
@@ -231,6 +232,10 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     static vk::detail::DynamicLoader dl = std::filesystem::exists(usr_local_path)
                                               ? vk::detail::DynamicLoader(usr_local_path)
                                               : vk::detail::DynamicLoader();
+#else
+    // TODO: Support layer loading in SDL build. For now just make sure we load the right MoltenVK.
+    static vk::detail::DynamicLoader dl("libMoltenVK.dylib");
+#endif
 #else
     static vk::detail::DynamicLoader dl;
 #endif
