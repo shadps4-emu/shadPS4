@@ -1101,7 +1101,7 @@ if (APPLE)
     cmake_path(GET MVK_ICD_DST PARENT_PATH MVK_ICD_DST_PARENT)
     cmake_path(GET MVK_DYLIB_DST PARENT_PATH MVK_DYLIB_DST_PARENT)
 
-    set(MVK_ICD "\\\{ \\\"file_format_version\\\": \\\"1.0.0\\\", \\\"ICD\\\": \\\{ \\\"library_path\\\": \\\"${MVK_DYLIB_ICD_PATH}\\\", \\\"api_version\\\": \\\"1.2.0\\\", \\\"is_portability_driver\\\": true \\\} \\\}")
+    set(MVK_ICD "\\\{ \\\"file_format_version\\\": \\\"1.0.0\\\", \\\"ICD\\\": \\\{ \\\"library_path\\\": \\\"${MVK_DYLIB_ICD_PATH}\\\", \\\"api_version\\\": \\\"1.3.0\\\", \\\"is_portability_driver\\\": true \\\} \\\}")
     add_custom_command(
         OUTPUT ${MVK_ICD_DST}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_ICD_DST_PARENT} && ${CMAKE_COMMAND} -E echo ${MVK_ICD} > ${MVK_ICD_DST})
