@@ -170,29 +170,29 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf) {
     if (dirty_state.viewports) {
         dirty_state.viewports = false;
-        cmdbuf.setViewportWithCountEXT(viewports);
+        cmdbuf.setViewportWithCount(viewports);
     }
     if (dirty_state.scissors) {
         dirty_state.scissors = false;
-        cmdbuf.setScissorWithCountEXT(scissors);
+        cmdbuf.setScissorWithCount(scissors);
     }
     if (dirty_state.depth_test_enabled) {
         dirty_state.depth_test_enabled = false;
-        cmdbuf.setDepthTestEnableEXT(depth_test_enabled);
+        cmdbuf.setDepthTestEnable(depth_test_enabled);
     }
     if (dirty_state.depth_write_enabled) {
         dirty_state.depth_write_enabled = false;
         // Note that this must be set in a command buffer even if depth test is disabled.
-        cmdbuf.setDepthWriteEnableEXT(depth_write_enabled);
+        cmdbuf.setDepthWriteEnable(depth_write_enabled);
     }
     if (depth_test_enabled && dirty_state.depth_compare_op) {
         dirty_state.depth_compare_op = false;
-        cmdbuf.setDepthCompareOpEXT(depth_compare_op);
+        cmdbuf.setDepthCompareOp(depth_compare_op);
     }
     if (dirty_state.depth_bounds_test_enabled) {
         dirty_state.depth_bounds_test_enabled = false;
         if (instance.IsDepthBoundsSupported()) {
-            cmdbuf.setDepthBoundsTestEnableEXT(depth_bounds_test_enabled);
+            cmdbuf.setDepthBoundsTestEnable(depth_bounds_test_enabled);
         }
     }
     if (depth_bounds_test_enabled && dirty_state.depth_bounds) {
@@ -203,7 +203,7 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     }
     if (dirty_state.depth_bias_enabled) {
         dirty_state.depth_bias_enabled = false;
-        cmdbuf.setDepthBiasEnableEXT(depth_bias_enabled);
+        cmdbuf.setDepthBiasEnable(depth_bias_enabled);
     }
     if (depth_bias_enabled && dirty_state.depth_bias) {
         dirty_state.depth_bias = false;
@@ -211,28 +211,28 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     }
     if (dirty_state.stencil_test_enabled) {
         dirty_state.stencil_test_enabled = false;
-        cmdbuf.setStencilTestEnableEXT(stencil_test_enabled);
+        cmdbuf.setStencilTestEnable(stencil_test_enabled);
     }
     if (stencil_test_enabled) {
         if (dirty_state.stencil_front_ops && dirty_state.stencil_back_ops &&
             stencil_front_ops == stencil_back_ops) {
             dirty_state.stencil_front_ops = false;
             dirty_state.stencil_back_ops = false;
-            cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFrontAndBack,
-                                   stencil_front_ops.fail_op, stencil_front_ops.pass_op,
-                                   stencil_front_ops.depth_fail_op, stencil_front_ops.compare_op);
+            cmdbuf.setStencilOp(vk::StencilFaceFlagBits::eFrontAndBack, stencil_front_ops.fail_op,
+                                stencil_front_ops.pass_op, stencil_front_ops.depth_fail_op,
+                                stencil_front_ops.compare_op);
         } else {
             if (dirty_state.stencil_front_ops) {
                 dirty_state.stencil_front_ops = false;
-                cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eFront, stencil_front_ops.fail_op,
-                                       stencil_front_ops.pass_op, stencil_front_ops.depth_fail_op,
-                                       stencil_front_ops.compare_op);
+                cmdbuf.setStencilOp(vk::StencilFaceFlagBits::eFront, stencil_front_ops.fail_op,
+                                    stencil_front_ops.pass_op, stencil_front_ops.depth_fail_op,
+                                    stencil_front_ops.compare_op);
             }
             if (dirty_state.stencil_back_ops) {
                 dirty_state.stencil_back_ops = false;
-                cmdbuf.setStencilOpEXT(vk::StencilFaceFlagBits::eBack, stencil_back_ops.fail_op,
-                                       stencil_back_ops.pass_op, stencil_back_ops.depth_fail_op,
-                                       stencil_back_ops.compare_op);
+                cmdbuf.setStencilOp(vk::StencilFaceFlagBits::eBack, stencil_back_ops.fail_op,
+                                    stencil_back_ops.pass_op, stencil_back_ops.depth_fail_op,
+                                    stencil_back_ops.compare_op);
             }
         }
         if (dirty_state.stencil_front_reference && dirty_state.stencil_back_reference &&
@@ -291,16 +291,16 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     if (dirty_state.primitive_restart_enable) {
         dirty_state.primitive_restart_enable = false;
         if (instance.IsPrimitiveRestartDisableSupported()) {
-            cmdbuf.setPrimitiveRestartEnableEXT(primitive_restart_enable);
+            cmdbuf.setPrimitiveRestartEnable(primitive_restart_enable);
         }
     }
     if (dirty_state.cull_mode) {
         dirty_state.cull_mode = false;
-        cmdbuf.setCullModeEXT(cull_mode);
+        cmdbuf.setCullMode(cull_mode);
     }
     if (dirty_state.front_face) {
         dirty_state.front_face = false;
-        cmdbuf.setFrontFaceEXT(front_face);
+        cmdbuf.setFrontFace(front_face);
     }
     if (dirty_state.blend_constants) {
         dirty_state.blend_constants = false;

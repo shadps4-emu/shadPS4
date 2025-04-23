@@ -319,15 +319,14 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             continue;
         }
         if (False(flags & FindFlags::RelaxFmt) &&
-            !IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format)) {
+            (!IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format) ||
+             (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1}))) {
             continue;
         }
         if (True(flags & FindFlags::ExactFmt) &&
             info.pixel_format != cache_image.info.pixel_format) {
             continue;
         }
-        ASSERT((cache_image.info.type == info.type || info.size == Extent3D{1, 1, 1} ||
-                True(flags & FindFlags::RelaxFmt)));
         image_id = cache_id;
     }
 

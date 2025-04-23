@@ -122,21 +122,21 @@ GraphicsPipeline::GraphicsPipeline(
     };
 
     boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
-        vk::DynamicState::eViewportWithCountEXT, vk::DynamicState::eScissorWithCountEXT,
-        vk::DynamicState::eBlendConstants,       vk::DynamicState::eDepthTestEnableEXT,
-        vk::DynamicState::eDepthWriteEnableEXT,  vk::DynamicState::eDepthCompareOpEXT,
-        vk::DynamicState::eDepthBiasEnableEXT,   vk::DynamicState::eDepthBias,
-        vk::DynamicState::eStencilTestEnableEXT, vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilCompareMask,   vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eStencilOpEXT,         vk::DynamicState::eCullModeEXT,
-        vk::DynamicState::eFrontFaceEXT,
+        vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
+        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthTestEnable,
+        vk::DynamicState::eDepthWriteEnable,   vk::DynamicState::eDepthCompareOp,
+        vk::DynamicState::eDepthBiasEnable,    vk::DynamicState::eDepthBias,
+        vk::DynamicState::eStencilTestEnable,  vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
+        vk::DynamicState::eFrontFace,
     };
 
     if (instance.IsPrimitiveRestartDisableSupported()) {
-        dynamic_states.push_back(vk::DynamicState::ePrimitiveRestartEnableEXT);
+        dynamic_states.push_back(vk::DynamicState::ePrimitiveRestartEnable);
     }
     if (instance.IsDepthBoundsSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnableEXT);
+        dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnable);
         dynamic_states.push_back(vk::DynamicState::eDepthBounds);
     }
     if (instance.IsDynamicColorWriteMaskSupported()) {
@@ -145,7 +145,7 @@ GraphicsPipeline::GraphicsPipeline(
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
     } else if (!vertex_bindings.empty()) {
-        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
+        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStride);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
@@ -212,7 +212,7 @@ GraphicsPipeline::GraphicsPipeline(
         });
     }
 
-    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
+    const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,

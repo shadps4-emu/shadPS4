@@ -205,12 +205,12 @@ jobs:
       run: |
         mkdir upload
         mv ${{github.workspace}}/build/shadps4 upload
-        cp ${{github.workspace}}/build/externals/MoltenVK/libMoltenVK.dylib upload
-        tar cf shadps4-macos-sdl.tar.gz -C upload .
+        mv ${{github.workspace}}/build/MoltenVK_icd.json upload
+        mv ${{github.workspace}}/build/libMoltenVK.dylib upload
     - uses: actions/upload-artifact@v4
       with:
         name: shadps4-macos-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: shadps4-macos-sdl.tar.gz
+        path: upload/
 
   macos-qt:
     runs-on: macos-15

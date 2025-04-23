@@ -78,7 +78,7 @@ void PostProcessingPass::Create(vk::Device device) {
     const std::array pp_color_formats{
         vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
     };
-    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci{
+    const vk::PipelineRenderingCreateInfo pipeline_rendering_ci{
         .colorAttachmentCount = pp_color_formats.size(),
         .pColorAttachmentFormats = pp_color_formats.data(),
     };

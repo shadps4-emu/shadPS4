@@ -18,7 +18,7 @@ bool GcnInst::IsTerminateInstruction() const {
 }
 
 bool GcnInst::IsUnconditionalBranch() const {
-    return opcode == Opcode::S_BRANCH;
+    return opcode == Opcode::S_BRANCH || opcode == Opcode::S_SETPC_B64;
 }
 
 bool GcnInst::IsFork() const {
