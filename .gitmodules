@@ -97,7 +97,7 @@
 	shallow = true
 [submodule "externals/MoltenVK/SPIRV-Cross"]
 	path = externals/MoltenVK/SPIRV-Cross
-	url = https://github.com/billhollings/SPIRV-Cross
+	url = https://github.com/KhronosGroup/SPIRV-Cross
 	shallow = true
 [submodule "externals/MoltenVK/MoltenVK"]
 	path = externals/MoltenVK/MoltenVK

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 
 namespace Shader::Gcn {
@@ -67,6 +68,39 @@ static bool IgnoresExecMask(const GcnInst& inst) {
     return false;
 }
 
+static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 setpc_index,
+                                             std::span<const u32> pc_map) {
+    if (setpc_index < 3) {
+        return std::nullopt;
+    }
+
+    const auto& getpc = list[setpc_index - 3];
+    const auto& arith = list[setpc_index - 2];
+    const auto& setpc = list[setpc_index];
+
+    if (getpc.opcode != Opcode::S_GETPC_B64 ||
+        !(arith.opcode == Opcode::S_ADD_U32 || arith.opcode == Opcode::S_SUB_U32) ||
+        setpc.opcode != Opcode::S_SETPC_B64)
+        return std::nullopt;
+
+    if (getpc.dst[0].code != setpc.src[0].code || arith.dst[0].code != setpc.src[0].code)
+        return std::nullopt;
+
+    if (arith.src_count < 2 || arith.src[1].field != OperandField::LiteralConst)
+        return std::nullopt;
+
+    const u32 imm = arith.src[1].code;
+
+    const s32 signed_offset =
+        (arith.opcode == Opcode::S_ADD_U32) ? static_cast<s32>(imm) : -static_cast<s32>(imm);
+
+    const u32 base_pc = pc_map[setpc_index - 3] + getpc.length;
+
+    const u32 result_pc = static_cast<u32>(static_cast<s32>(base_pc) + signed_offset);
+    LOG_DEBUG(Render_Recompiler, "SetPC target: {} + {} = {}", base_pc, signed_offset, result_pc);
+    return result_pc & ~0x3u;
+}
+
 static constexpr size_t LabelReserveSize = 32;
 
 CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
@@ -89,9 +123,20 @@ void CFG::EmitLabels() {
         index_to_pc[i] = pc;
         const GcnInst inst = inst_list[i];
         if (inst.IsUnconditionalBranch()) {
-            const u32 target = inst.BranchTarget(pc);
+            u32 target = inst.BranchTarget(pc);
+            if (inst.opcode == Opcode::S_SETPC_B64) {
+                if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc)) {
+                    target = *t;
+                } else {
+                    ASSERT_MSG(
+                        false,
+                        "S_SETPC_B64 without a resolvable offset at PC {:#x} (Index {}): Involved "
+                        "instructions not recognized or invalid pattern",
+                        pc, i);
+                }
+            }
             AddLabel(target);
-            // Emit this label so that the block ends with s_branch instruction
+            // Emit this label so that the block ends with the branching instruction
             AddLabel(pc + inst.length);
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
@@ -102,6 +147,7 @@ void CFG::EmitLabels() {
             const u32 next_label = pc + inst.length;
             AddLabel(next_label);
         }
+
         pc += inst.length;
     }
     index_to_pc[inst_list.size()] = pc;
@@ -280,7 +326,18 @@ void CFG::LinkBlocks() {
         // Find the branch targets from the instruction and link the blocks.
         // Note: Block end address is one instruction after end_inst.
         const u32 branch_pc = block.end - end_inst.length;
-        const u32 target_pc = end_inst.BranchTarget(branch_pc);
+        u32 target_pc = 0;
+        if (end_inst.opcode == Opcode::S_SETPC_B64) {
+            auto tgt = ResolveSetPcTarget(inst_list, block.end_index, index_to_pc);
+            ASSERT_MSG(tgt,
+                       "S_SETPC_B64 without a resolvable offset at PC {:#x} (Index {}): Involved "
+                       "instructions not recognized or invalid pattern",
+                       branch_pc, block.end_index);
+            target_pc = *tgt;
+        } else {
+            target_pc = end_inst.BranchTarget(branch_pc);
+        }
+
         if (end_inst.IsUnconditionalBranch()) {
             auto* target_block = get_block(target_pc);
             ++target_block->num_predecessors;
