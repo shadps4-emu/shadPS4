@@ -60,7 +60,7 @@ static CFURLRef UntranslocateBundlePath(const CFURLRef bundle_path) {
     return nullptr;
 }
 
-static std::filesystem::path GetBundleParentDirectory() {
+static std::optional<std::filesystem::path> GetBundleParentDirectory() {
     if (CFBundleRef bundle_ref = CFBundleGetMainBundle()) {
         if (CFURLRef bundle_url_ref = CFBundleCopyBundleURL(bundle_ref)) {
             SCOPE_EXIT {
@@ -83,14 +83,16 @@ static std::filesystem::path GetBundleParentDirectory() {
             }
         }
     }
-    return std::filesystem::current_path();
+    return std::nullopt;
 }
 #endif
 
 static auto UserPaths = [] {
 #ifdef __APPLE__
     // Set the current path to the directory containing the app bundle.
-    std::filesystem::current_path(GetBundleParentDirectory());
+    if (const auto bundle_dir = GetBundleParentDirectory()) {
+        std::filesystem::current_path(*bundle_dir);
+    }
 #endif
 
     // Try the portable user directory first.
