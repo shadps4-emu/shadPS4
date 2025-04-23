@@ -4,9 +4,11 @@
 // #include <cstring>
 #include <imgui.h>
 #include "common/cstring.h"
+#include "common/types.h"
 #include "core/libraries/ime/ime_common.h"
 #include "core/libraries/ime/ime_keyboard_layouts.h"
 #include "core/libraries/ime/ime_keyboard_ui.h"
+#include "imgui/imgui_std.h"
 
 using namespace ImGui;
 
@@ -168,6 +170,12 @@ void RenderKeyboardLayout(const std::vector<KeyEntry>& layout, KeyboardMode mode
 
         ImGui::SetCursorScreenPos(pos);
         bool pressed = ImGui::Button(label.c_str(), size); // Down + repeats
+
+        // ——— use ImGui’s built‑in hover highlight ———
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetItemCurrentNavFocus();
+            ImGui::KeepNavHighlight();
+        }
 
         if (key.allow_repeat)
             ImGui::PopButtonRepeat();

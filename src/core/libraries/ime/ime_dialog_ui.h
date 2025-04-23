@@ -38,12 +38,12 @@ class ImeDialogState final {
     char16_t* text_buffer{};
     std::vector<char> title;
     std::vector<char> placeholder;
-
+    const OrbisImeParamExtended* extended_param_ = nullptr;
     // A character can hold up to 4 bytes in UTF-8
     Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
 
     // Optional custom keyboard style (from extended params)
-    bool has_custom_kb_style = false;
+    bool has_custom_style = false;
     KeyboardStyle custom_kb_style{};
 
 public:
@@ -75,6 +75,10 @@ public:
     }
     const char* CurrentTextUtf8() const {
         return current_text.begin();
+    }
+
+    const OrbisImeParamExtended* GetExtendedParam() const {
+        return extended_param_;
     }
 
     /*─────────────────── public write helpers ───────────────────*/
@@ -126,6 +130,8 @@ class ImeDialogUi final : public ImGui::Layer {
     bool first_render = true;
     std::mutex draw_mutex;
 
+    OrbisImeParamExtended ext_;
+
 public:
     // Global pointer to the active dialog‑UI (used by the callback bridge)
     static ImeDialogUi* g_activeImeDialogUi;
@@ -153,23 +159,15 @@ private:
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 
+    void DrawTitle();
+
+    void DrawOkAndCancelButtons();
+
     /*── keyboard section ─*/
     KeyboardMode kb_mode = KeyboardMode::Letters;
     ShiftState shift_state = ShiftState::None;
     u64 kb_language = 0;
     KeyboardStyle kb_style;
-    /* KeyboardStyle kb_style{
-        .layout_width  = 500.0f,
-        .layout_height = 250.0f,
-        .key_spacing   = 5.0f,
-        .color_text             = IM_COL32(225,225,225,255),
-        .color_line             = IM_COL32( 88, 88, 88,255),
-        .color_button_default   = IM_COL32( 35, 35, 35,255),
-        .color_button_function  = IM_COL32( 50, 50, 50,255),
-        .color_special          = IM_COL32(  0,140,200,255),
-        .use_button_symbol_color= false,
-        .color_button_symbol    = IM_COL32( 60, 60, 60,255),
-    };*/
 
     void DrawVirtualKeyboardSection();
     void DrawPredictionBarAnCancelButton();
