@@ -22,6 +22,10 @@
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 namespace Vulkan {
 
 static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
@@ -223,19 +227,25 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
 #ifdef __APPLE__
-#ifdef ENABLE_QT_GUI
+#ifndef ENABLE_QT_GUI
+    // Initialize the environment with the path to the MoltenVK ICD, so that the loader will
+    // find it.
+    static const auto icd_path = [] {
+        char path[PATH_MAX];
+        u32 length = PATH_MAX;
+        _NSGetExecutablePath(path, &length);
+        return std::filesystem::path(path).parent_path() / "MoltenVK_icd.json";
+    }();
+    setenv("VK_DRIVER_FILES", icd_path.c_str(), true);
+#endif
     // If the Vulkan loader exists in /usr/local/lib, give it priority. The Vulkan SDK
-    // installs it here by default but it is not in the default library search path.
+    // installs it here by default, but it is not in the default library search path.
     // The loader has a clause to check for it, but at a lower priority than the bundled
     // libMoltenVK.dylib, so we need to handle it ourselves to give it priority.
     static const std::string usr_local_path = "/usr/local/lib/libvulkan.dylib";
     static vk::detail::DynamicLoader dl = std::filesystem::exists(usr_local_path)
                                               ? vk::detail::DynamicLoader(usr_local_path)
                                               : vk::detail::DynamicLoader();
-#else
-    // TODO: Support layer loading in SDL build. For now just make sure we load the right MoltenVK.
-    static vk::detail::DynamicLoader dl("libMoltenVK.dylib");
-#endif
 #else
     static vk::detail::DynamicLoader dl;
 #endif
