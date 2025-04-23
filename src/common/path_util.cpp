@@ -88,7 +88,7 @@ static std::optional<std::filesystem::path> GetBundleParentDirectory() {
 #endif
 
 static auto UserPaths = [] {
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(ENABLE_QT_GUI)
     // Set the current path to the directory containing the app bundle.
     if (const auto bundle_dir = GetBundleParentDirectory()) {
         std::filesystem::current_path(*bundle_dir);
