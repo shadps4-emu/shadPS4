@@ -20,12 +20,40 @@ int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal() {
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags, void* info) {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    Kernel::OrbisModuleInfoForUnwind module_info;
-    module_info.st_size = 0x130;
-    s32 res = Kernel::sceKernelGetModuleInfoForUnwind(addr, flags, &module_info);
-    if (res == 0) {
-        std::memcpy(info, &module_info, sizeof(module_info));
+    LOG_TRACE(Lib_SysModule, "sceSysmoduleGetModuleInfoForUnwind(addr=0x{:X}, flags=0x{:X})", addr,
+              flags);
+
+    auto* module_info = static_cast<Kernel::OrbisModuleInfoForUnwind*>(info);
+    module_info->st_size = sizeof(Kernel::OrbisModuleInfoForUnwind);
+
+    s32 res = Kernel::sceKernelGetModuleInfoForUnwind(addr, flags, module_info);
+    if (res != 0) {
+        return res;
+    }
+
+    static constexpr const char* modules_to_hide[] = {"libc.prx",
+                                                      "libc.sprx",
+                                                      "libSceAudioLatencyEstimation.prx",
+                                                      "libSceFace.prx",
+                                                      "libSceFaceTracker.prx",
+                                                      "libSceFios2.prx",
+                                                      "libSceFios2.sprx",
+                                                      "libSceFontGsm.prx",
+                                                      "libSceHand.prx",
+                                                      "libSceHandTracker.prx",
+                                                      "libSceHeadTracker.prx",
+                                                      "libSceJobManager.prx",
+                                                      "libSceNpCppWebApi.prx",
+                                                      "libSceNpToolkit.prx",
+                                                      "libSceNpToolkit2.prx",
+                                                      "libSceS3DConversion.prx",
+                                                      "libSceSmart.prx"};
+
+    for (const char* hidden_name : modules_to_hide) {
+        if (std::strcmp(module_info->name.data(), hidden_name) == 0) {
+            std::memset(module_info->name.data(), 0, module_info->name.size());
+            break;
+        }
     }
     return res;
 }
