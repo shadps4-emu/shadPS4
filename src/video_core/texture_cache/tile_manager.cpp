@@ -264,13 +264,13 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-    DetilerParams params;
+    DetilerParams params{};
     params.num_levels = info.resources.levels;
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
     if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
         info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
-        ASSERT(info.resources.levels == 1);
+        ASSERT(in_buffer != out_buffer.first);
         const auto tiles_per_row = info.pitch / 8u;
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;
