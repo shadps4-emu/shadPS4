@@ -19,8 +19,8 @@ int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal() {
     return ORBIS_OK;
 }
 
-static s32 PS4_SYSV_ABI OrbisModuleInfoForUnwind(VAddr addr, s32 flags,
-                                                 Kernel::OrbisModuleInfoForUnwind* info) {
+s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
+                                                    Kernel::OrbisModuleInfoForUnwind* info) {
     LOG_TRACE(Lib_SysModule, "sceSysmoduleGetModuleInfoForUnwind(addr=0x{:X}, flags=0x{:X})", addr,
               flags);
 
@@ -138,7 +138,7 @@ void RegisterlibSceSysmodule(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("D8cuU4d72xM", "libSceSysmodule", 1, "libSceSysmodule", 1, 1,
                  sceSysmoduleGetModuleHandleInternal);
     LIB_FUNCTION("4fU5yvOkVG4", "libSceSysmodule", 1, "libSceSysmodule", 1, 1,
-                 Kernel::sceKernelGetModuleInfoForUnwind);
+                 sceSysmoduleGetModuleInfoForUnwind);
     LIB_FUNCTION("ctfO7dQ7geg", "libSceSysmodule", 1, "libSceSysmodule", 1, 1,
                  sceSysmoduleIsCalledFromSysModule);
     LIB_FUNCTION("no6T3EfiS3E", "libSceSysmodule", 1, "libSceSysmodule", 1, 1,
