@@ -108,6 +108,16 @@ Id EmitUnpackSnorm2x16(EmitContext& ctx, Id value) {
     return ctx.OpUnpackSnorm2x16(ctx.F32[2], value);
 }
 
+Id EmitUnpackSnormNz2x16(EmitContext& ctx, Id value) {
+    const auto [x, y] = ExtractBitFields<true>(ctx, value, R(0, 16), R(16, 16));
+    const auto unpacked{ctx.OpCompositeConstruct(ctx.S32[2], x, y)};
+    constexpr s32 N = std::numeric_limits<u16>::max();
+    const Id numerator = ctx.OpIAdd(ctx.S32[2], unpacked, ctx.ConstS32(N / 2, N / 2));
+    const Id denom = ctx.ConstS32(N - 1, N - 1);
+    const Id result = ctx.OpConvertSToF(ctx.F32[2], ctx.OpUDiv(ctx.S32[2], numerator, denom));
+    return ctx.OpFma(ctx.F32[2], result, ctx.ConstF32(2.0f, 2.0f), ctx.ConstF32(-1.0f, -1.0f));
+}
+
 Id EmitPackUint2x16(EmitContext& ctx, Id value) {
     const auto unpacked{ctx.OpBitcast(ctx.U32[2], value)};
     const auto [x, y] = ExtractComposite<2>(ctx, ctx.U32, unpacked);
