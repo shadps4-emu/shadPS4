@@ -281,7 +281,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
             params.sizes[level * 2 + 0] = tiles_per_row;
             params.sizes[level * 2 + 1] = tiles_per_slice;
         }
-    } else{
+    } else {
         ASSERT(params.num_levels <= 14);
         for (uint32_t m = 0; m < info.resources.levels; ++m) {
             params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
