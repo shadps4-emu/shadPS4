@@ -103,8 +103,8 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
         }
         break;
     case OrbisImeType::Number:
-        *width = 370;  // original: 370
-        *height = 402; // original: 470
+        *width = 370;
+        *height = 470;
         break;
     default:
         LOG_ERROR(Lib_ImeDialog, "Unknown OrbisImeType: {}", (u32)param->type);
