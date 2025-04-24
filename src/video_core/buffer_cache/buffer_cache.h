@@ -147,18 +147,17 @@ public:
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
-        const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
-        for (u64 page = device_addr >> CACHING_PAGEBITS; page < page_end;) {
-            const BufferId buffer_id = page_table[page];
-            if (!buffer_id) {
-                ++page;
+        std::shared_lock lk{slot_buffers_mutex};
+        const VAddr device_addr_end = device_addr + size;
+        for (auto& buffer : slot_buffers) {
+            if (buffer.is_deleted) {
                 continue;
             }
-            Buffer& buffer = slot_buffers[buffer_id];
-            func(buffer_id, buffer);
-
-            const VAddr end_addr = buffer.CpuAddr() + buffer.SizeBytes();
-            page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
+            const VAddr start = std::max(buffer.CpuAddr(), device_addr);
+            const VAddr end = std::min(buffer.CpuAddr() + buffer.SizeBytes(), device_addr_end);
+            if (start < end) {
+                func(buffer, start, end - start);
+            }
         }
     }
 

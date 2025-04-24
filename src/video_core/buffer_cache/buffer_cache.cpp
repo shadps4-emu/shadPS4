@@ -830,13 +830,8 @@ void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
         return;
     }
     VAddr device_addr_end = device_addr + size;
-    ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
-        VAddr buffer_start = buffer.CpuAddr();
-        VAddr buffer_end = buffer_start + buffer.SizeBytes();
-        VAddr start = std::max(buffer_start, device_addr);
-        VAddr end = std::min(buffer_end, device_addr_end);
-        u32 size = static_cast<u32>(end - start);
-        SynchronizeBuffer(buffer, start, size, false);
+    ForEachBufferInRange(device_addr, size, [&](Buffer& buffer, VAddr addr, u32 size) {
+        SynchronizeBuffer(buffer, addr, size, false);
     });
 }
 
