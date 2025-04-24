@@ -90,25 +90,25 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
     if (!width || !height) {
         return Error::INVALID_ADDRESS;
     }
-
     switch (param->type) {
     case OrbisImeType::Default:
     case OrbisImeType::BasicLatin:
     case OrbisImeType::Url:
     case OrbisImeType::Mail:
-        *width = 500;
+        *width = 500; // original: 793
         if (True(param->option & OrbisImeDialogOption::Multiline)) {
-            *height = 300;
+            *height = 300;// original: 576
         } else {
-            *height = 150;
+            *height = 150;// original: 476
         }
         break;
     case OrbisImeType::Number:
-        *width = 370;
-        *height = 402;
+        *width = 370; // original: 370
+        *height = 402;  // original: 470
         break;
     default:
         LOG_ERROR(Lib_ImeDialog, "Unknown OrbisImeType: {}", (u32)param->type);
+        return Error::INVALID_PARAM;
     }
 
     return Error::OK;
