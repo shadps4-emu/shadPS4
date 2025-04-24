@@ -275,22 +275,31 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
-    } else {
-        ASSERT(info.resources.levels <= 14);
+        if (info.resources.levels > 14) {
+            LOG_WARNING(Render_Vulkan, "Mip level count {} exceeds max supported 14; clamping.",
+                        info.resources.levels);
+        }
+        const u32 num_levels = std::min<u32>(info.resources.levels, 14);
         std::memset(&params.sizes, 0, sizeof(params.sizes));
-        for (int m = 0; m < info.resources.levels; ++m) {
+        for (u32 m = 0; m < num_levels; ++m) {
             params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
         }
+        params.num_levels = num_levels;
+
+        cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u,
+                             sizeof(params), &params);
+
+        const u32 tile_size = 64;
+        if ((image_size % tile_size) != 0) {
+            LOG_WARNING(Render_Vulkan, "Image size {} is not tile-aligned; rounding up to {}",
+                        image_size, image_size, tile_size);
+        }
+        const u32 aligned_size = (image_size + (tile_size - 1)) & ~(tile_size - 1);
+        const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
+        const auto num_tiles = aligned_size / (tile_size * (bpp / 8));
+        cmdbuf.dispatch(num_tiles, 1, 1);
+        return {out_buffer.first, 0};
     }
-
-    cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
-                         &params);
-
-    ASSERT((image_size % 64) == 0);
-    const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
-    const auto num_tiles = image_size / (64 * (bpp / 8));
-    cmdbuf.dispatch(num_tiles, 1, 1);
-    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore
