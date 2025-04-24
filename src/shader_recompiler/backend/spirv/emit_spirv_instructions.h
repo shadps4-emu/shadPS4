@@ -213,6 +213,7 @@ Id EmitPackUnorm2x16(EmitContext& ctx, Id value);
 Id EmitUnpackUnorm2x16(EmitContext& ctx, Id value);
 Id EmitPackSnorm2x16(EmitContext& ctx, Id value);
 Id EmitUnpackSnorm2x16(EmitContext& ctx, Id value);
+Id EmitUnpackSnormNz2x16(EmitContext& ctx, Id value);
 Id EmitPackUint2x16(EmitContext& ctx, Id value);
 Id EmitUnpackUint2x16(EmitContext& ctx, Id value);
 Id EmitPackSint2x16(EmitContext& ctx, Id value);
