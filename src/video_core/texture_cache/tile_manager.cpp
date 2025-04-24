@@ -264,42 +264,42 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-    DetilerParams params{};
-    params.num_levels = info.resources.levels;
+    DetilerParams params;
+    std::memset(&params, 0, sizeof(params));
+    params.num_levels = std::min(7u, info.resources.levels);
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
     if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
         info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
-        ASSERT(in_buffer != out_buffer.first);
-        const auto tiles_per_row = info.pitch / 8u;
-        const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
-        params.sizes[0] = tiles_per_row;
-        params.sizes[1] = tiles_per_slice;
-        if (info.resources.levels > 14) {
-            LOG_WARNING(Render_Vulkan, "Mip level count {} exceeds max supported 14; clamping.",
-                        info.resources.levels);
+
+        for (uint32_t level = 0; level < params.num_levels; ++level) {
+            const uint32_t pitch_bytes = info.pitch >> level;
+            const uint32_t tiles_per_row = pitch_bytes / 8u;
+            const uint32_t mip_height = std::max(1u, info.size.height >> level);
+            const uint32_t tiles_per_slice = tiles_per_row * ((mip_height + 7u) / 8u);
+
+            params.sizes[level * 2 + 0] = tiles_per_row;
+            params.sizes[level * 2 + 1] = tiles_per_slice;
         }
-        const u32 num_levels = std::min<u32>(info.resources.levels, 14);
-        std::memset(&params.sizes, 0, sizeof(params.sizes));
-        for (u32 m = 0; m < num_levels; ++m) {
+    } else{
+        ASSERT(params.num_levels <= 14);
+        for (uint32_t m = 0; m < info.resources.levels; ++m) {
             params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
         }
-        params.num_levels = num_levels;
-
-        cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u,
-                             sizeof(params), &params);
-
-        const u32 tile_size = 64;
-        if ((image_size % tile_size) != 0) {
-            LOG_WARNING(Render_Vulkan, "Image size {} is not tile-aligned; rounding up to {}",
-                        image_size, image_size, tile_size);
-        }
-        const u32 aligned_size = (image_size + (tile_size - 1)) & ~(tile_size - 1);
-        const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
-        const auto num_tiles = aligned_size / (tile_size * (bpp / 8));
-        cmdbuf.dispatch(num_tiles, 1, 1);
-        return {out_buffer.first, 0};
     }
+
+    cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
+                         &params);
+
+    const u32 tile_size = 64;
+    if ((image_size % tile_size) != 0) {
+        const u32 aligned_size = (image_size + 63) & ~63u;
+    }
+    const u32 aligned_size = (image_size + (tile_size - 1)) & ~(tile_size - 1);
+    const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
+    const auto num_tiles = image_size / (64 * (bpp / 8));
+    cmdbuf.dispatch(num_tiles, 1, 1);
+    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore
