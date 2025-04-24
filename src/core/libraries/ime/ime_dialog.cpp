@@ -83,7 +83,8 @@ int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm() {
     return ORBIS_OK;
 }
 
-Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u32* width, u32* height) {
+Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u32* width,
+                                            u32* height) {
     LOG_INFO(Lib_ImeDialog, "called");
 
     if (!width || !height) {
