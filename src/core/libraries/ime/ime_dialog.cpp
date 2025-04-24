@@ -96,9 +96,12 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
     case OrbisImeType::BasicLatin:
     case OrbisImeType::Url:
     case OrbisImeType::Mail:
-        // We set our custom sizes, commented sizes are the original ones
-        *width = 500;  // 793
-        *height = 100; // 408
+        *width = 500;
+        if (True(param->option & OrbisImeDialogOption::Multiline)) {
+            *height = 300;
+        } else {
+            *height = 150;
+        }
         break;
     case OrbisImeType::Number:
         *width = 370;
