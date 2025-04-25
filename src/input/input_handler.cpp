@@ -468,11 +468,11 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        gamepad = GetGamepadIndexFromJoystickId(e.gbutton.which);
+        gamepad = GameControllers::GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
         return InputEvent({InputType::Controller, (u32)e.gbutton.button, gamepad}, e.gbutton.down,
                           0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        gamepad = GetGamepadIndexFromJoystickId(e.gaxis.which);
+        gamepad = GameControllers::GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
         return InputEvent({InputType::Axis, (u32)e.gaxis.axis, gamepad}, true, e.gaxis.value / 256);
     default:
         return InputEvent();
@@ -751,14 +751,6 @@ void ActivateOutputsFromInputs() {
             it.FinalizeUpdate(i);
         }
     }
-}
-
-u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
-    u8 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
-    if (index > 3) [[unlikely]] {
-        UNREACHABLE_MSG("Index out of bounds: {}", index);
-    }
-    return index;
 }
 
 } // namespace Input

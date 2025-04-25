@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include "SDL3/SDL_joystick.h"
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
@@ -89,6 +90,7 @@ private:
     std::array<StateInternal, MAX_STATES> m_private;
 
     SDL_Gamepad* m_sdl_gamepad = nullptr;
+    u8 player_index = -1;
 };
 
 class GameControllers {
@@ -106,6 +108,7 @@ public:
         return controllers[i];
     }
     static void TryOpenSDLControllers(GameControllers& controllers);
+    static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
 };
 
 } // namespace Input

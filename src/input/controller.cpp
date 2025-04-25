@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 #include <SDL3/SDL.h>
+#include <common/singleton.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
@@ -287,10 +288,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 controllers[i]->m_sdl_gamepad = pad;
                 controllers[i]->user_id = i + 1;
                 slot_taken[i] = true;
-                bool err = SDL_SetGamepadPlayerIndex(pad, i);
-                if (!err) {
-                    LOG_ERROR(Input, "Failed to set controller index: {}", SDL_GetError());
-                }
+                controllers[i]->player_index = i;
                 AddUserServiceEvent(
                     {OrbisUserServiceEventType::Login, SDL_GetGamepadPlayerIndex(pad) + 1});
 
@@ -345,6 +343,17 @@ u32 GameController::Poll() {
         }
     }
     return 100;
+}
+
+u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
+    auto& controllers = *Common::Singleton<GameControllers>::Instance();
+    auto gamepad = SDL_GetGamepadFromID(id);
+    for (int i = 0; i < 4; i++) {
+        if (controllers[i]->m_sdl_gamepad == gamepad) {
+            return controllers[i]->player_index;
+        }
+    }
+    UNREACHABLE_MSG("Gamepad not registered!");
 }
 
 } // namespace Input
