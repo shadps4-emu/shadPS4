@@ -351,7 +351,7 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
         UNREACHABLE_MSG("Gamepad is null!");
     }
     for (int i = 0; i < 4; i++) {
-        if (controllers[i]->m_sdl_gamepad == gamepad) {
+        if (SDL_GetGamepadID(controllers[i]->m_sdl_gamepad) == id) {
             return controllers[i]->player_index;
         }
     }
