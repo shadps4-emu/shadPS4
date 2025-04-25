@@ -143,7 +143,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    // default login
+    Input::GameControllers::TryOpenSDLControllers(controllers);
     using namespace Libraries::UserService;
 }
 

@@ -240,6 +240,8 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
     }
 }
 
+bool is_first_check = true;
+
 void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     using namespace Libraries::UserService;
     int controller_count;
@@ -311,6 +313,13 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 }
                 break;
             }
+        }
+    }
+    if (is_first_check) [[unlikely]] {
+        is_first_check = false;
+        if (controller_count == 0) {
+            controllers[0]->user_id = 1;
+            AddUserServiceEvent({OrbisUserServiceEventType::Login, 1});
         }
     }
 }

@@ -586,8 +586,8 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
     // TODO only first user, do the others as well
+    auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
     for (int i = 0; i < 4; i++) {
-        auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
         userIdList->user_id[i] = controllers[i]->user_id;
     }
     return ORBIS_OK;
