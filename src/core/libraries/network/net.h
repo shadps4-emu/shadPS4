@@ -28,6 +28,21 @@ struct OrbisNetSockaddr {
     char sa_data[14];
 };
 
+struct OrbisNetIovec {
+    void* iov_base;
+    u64 iov_len;
+};
+
+struct OrbisNetMsghdr {
+    void* msg_name;
+    u32 msg_namelen;
+    OrbisNetIovec* msg_iov;
+    int msg_iovlen;
+    void* msg_control;
+    u32 msg_controllen;
+    int msg_flags;
+};
+
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
 int PS4_SYSV_ABI sce_net_dummy();
@@ -206,9 +221,10 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa();
 int PS4_SYSV_ABI sceNetResolverStartNtoa6();
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords();
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
-int PS4_SYSV_ABI sceNetSend();
-int PS4_SYSV_ABI sceNetSendmsg();
-int PS4_SYSV_ABI sceNetSendto();
+int PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, int flags);
+int PS4_SYSV_ABI sceNetSendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
+int PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u64 len, int flags,
+                              const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sceNetSetDns6Info();
 int PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
 int PS4_SYSV_ABI sceNetSetDnsInfo();

@@ -20,4 +20,8 @@ int sys_shutdown(OrbisNetId s, int how);
 int sys_socketex(const char* name, int family, int type, int protocol);
 int sys_netabort(OrbisNetId s, int flags);
 int sys_socketclose(OrbisNetId s);
+int sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags, const OrbisNetSockaddr* addr,
+               u32 addrlen);
+int sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
+
 } // namespace Libraries::Net

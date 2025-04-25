@@ -41,4 +41,11 @@ int sys_netabort(OrbisNetId s, int flags) {
 int sys_socketclose(OrbisNetId s) {
     return -1;
 }
+int sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags, const OrbisNetSockaddr* addr,
+               u32 addrlen) {
+    return -1;
+}
+int sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
+    return -1;
+}
 } // namespace Libraries::Net
