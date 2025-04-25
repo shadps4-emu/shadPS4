@@ -311,7 +311,7 @@ private:
 
     /// Collects telemetry information from the device.
     void CollectDeviceParameters();
-    void CollectToolingInfo();
+    void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
     [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
