@@ -263,10 +263,14 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-    DetilerParams params;
-    params.num_levels = info.resources.levels;
+DetilerParams params{};
+    std::memset(&params, 0, sizeof(params));
+
+    params.num_levels = std::min(15u, info.resources.levels);
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
+    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
+        info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
 
     const bool is_volume = info.tiling_mode == AmdGpu::TilingMode::Texture_Volume;
     const bool is_display = info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled;
@@ -276,15 +280,14 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
             LOG_ERROR(Lib_Videodec, "Display tiling with multiple mip levels is not supported.");
             return {};
         }
-
-        ASSERT(in_buffer != out_buffer.first);
-
-        const auto tiles_per_row = info.pitch / 8u;
-        const auto tiles_per_slice = tiles_per_row * (Common::AlignUp(info.size.height, 8u) / 8u);
-
+    } else if (is_display_tiled) {
+        ASSERT(info.resources.levels == 1);
+        params.num_levels = 1;
+        const uint32_t tiles_per_row = info.pitch / 8u;
+        const uint32_t tiles_per_slice = (info.size.height + 7u) / 8u;
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
-        for (size_t i = 2; i < params.sizes.size(); ++i)
+        for (size_t i = 2; i < std::size(params.sizes); ++i)
             params.sizes[i] = 0;
     } else {
         if (info.resources.levels > params.sizes.size()) {
@@ -312,7 +315,8 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     LOG_DEBUG(Lib_Videodec, "Dispatch: image_size={}, aligned={}, info.num_bits={}, num_tiles={}",
               image_size, aligned_image_size, info.num_bits, num_tiles);
     cmdbuf.dispatch(num_tiles, 1, 1);
-    return std::make_pair(out_buffer.first, 0u);
+
+    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore
