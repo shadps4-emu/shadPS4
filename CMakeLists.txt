@@ -1084,33 +1084,31 @@ endif()
 
 if (APPLE)
     # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
-
     if (ENABLE_QT_GUI)
-        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
-        set(MVK_ICD_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/Resources/vulkan/icd.d/MoltenVK_icd.json)
-        set(MVK_DYLIB_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/Frameworks/libMoltenVK.dylib)
-        set(MVK_DYLIB_ICD_PATH "../../../Frameworks/libMoltenVK.dylib")
+        set(MVK_BUNDLE_PATH "Resources/vulkan/icd.d")
+        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
+        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/${MVK_BUNDLE_PATH})
     else()
         set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
-        set(MVK_ICD_DST ${CMAKE_CURRENT_BINARY_DIR}/MoltenVK_icd.json)
-        set(MVK_DYLIB_DST ${CMAKE_CURRENT_BINARY_DIR}/libMoltenVK.dylib)
-        set(MVK_DYLIB_ICD_PATH "./libMoltenVK.dylib")
+        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 
-    cmake_path(GET MVK_ICD_DST PARENT_PATH MVK_ICD_DST_PARENT)
-    cmake_path(GET MVK_DYLIB_DST PARENT_PATH MVK_DYLIB_DST_PARENT)
+    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
+    set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
+    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
+    set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
 
-    set(MVK_ICD "\\\{ \\\"file_format_version\\\": \\\"1.0.0\\\", \\\"ICD\\\": \\\{ \\\"library_path\\\": \\\"${MVK_DYLIB_ICD_PATH}\\\", \\\"api_version\\\": \\\"1.3.0\\\", \\\"is_portability_driver\\\": true \\\} \\\}")
+    add_custom_command(
+        OUTPUT ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
     add_custom_command(
         OUTPUT ${MVK_ICD_DST}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_ICD_DST_PARENT} && ${CMAKE_COMMAND} -E echo ${MVK_ICD} > ${MVK_ICD_DST})
-
+        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
     add_custom_command(
         OUTPUT ${MVK_DYLIB_DST}
-        DEPENDS ${MVK_DYLIB_SRC}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DYLIB_DST_PARENT} && ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-
+        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
     add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
     add_dependencies(CopyMoltenVK MoltenVK)
     add_dependencies(shadps4 CopyMoltenVK)
