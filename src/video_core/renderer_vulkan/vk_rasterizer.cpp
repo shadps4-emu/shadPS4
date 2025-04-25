@@ -476,6 +476,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
             }
         }
         buffer_cache.ResetFaultReadbackBuffer();
+        buffer_cache.MemoryBarrier();
     }
 
     return true;

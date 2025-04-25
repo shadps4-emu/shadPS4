@@ -584,8 +584,12 @@ void BufferCache::CreateFaultBuffers() {
     }
     for (const auto& range : fault_ranges) {
         const VAddr start = range.lower();
-        const u32 size = range.upper() - start;
-        CreateBuffer(start, size);
+        const u64 size = range.upper() - start;
+        // Buffer size is 32 bits
+        for (VAddr addr = start; addr < size; addr += std::numeric_limits<u32>::max()) {
+            const u32 size_buffer = std::min<u32>(size, std::numeric_limits<u32>::max());
+            CreateBuffer(addr, size_buffer);
+        }
     }
 }
 
@@ -825,7 +829,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     return true;
 }
 
-void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
+void BufferCache::SynchronizeRange(VAddr device_addr, u64 size) {
     if (device_addr == 0) {
         return;
     }
@@ -837,6 +841,25 @@ void BufferCache::SynchronizeRange(VAddr device_addr, u32 size) {
         VAddr end = std::min(buffer_end, device_addr_end);
         u32 size = static_cast<u32>(end - start);
         SynchronizeBuffer(buffer, start, size, false);
+    });
+}
+
+void BufferCache::MemoryBarrier() {
+    // Vulkan doesn't know which buffer we access in a shader if we use
+    // BufferDeviceAddress. We need a full memory barrier.
+    // For now, we only read memory using BDA. If we want to write to it,
+    // we might need to change this.
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    vk::MemoryBarrier2 barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers = &barrier,
     });
 }
 

@@ -142,7 +142,10 @@ public:
     void ResetFaultReadbackBuffer();
 
     /// Synchronizes all buffers in the specified range.
-    void SynchronizeRange(VAddr device_addr, u32 size);
+    void SynchronizeRange(VAddr device_addr, u64 size);
+
+    /// Record memory barrier. Used for buffers when accessed via BDA.
+    void MemoryBarrier();
 
 private:
     template <typename Func>
