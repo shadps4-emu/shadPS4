@@ -521,9 +521,11 @@ void Instance::CollectDeviceParameters() {
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
 }
 
-void Instance::CollectToolingInfo() {
-    if (GetDriverID() == vk::DriverId::eAmdProprietary) {
-        // Currently causes issues with Reshade on AMD proprietary, disabled until fix released.
+void Instance::CollectToolingInfo() const {
+    if (driver_id == vk::DriverId::eAmdProprietary ||
+        driver_id == vk::DriverId::eIntelProprietaryWindows) {
+        // AMD: Causes issues with Reshade.
+        // Intel: Causes crash on start.
         return;
     }
     const auto [tools_result, tools] = physical_device.getToolProperties();

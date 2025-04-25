@@ -83,9 +83,35 @@ int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogGetPanelSize() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u32* width,
+                                            u32* height) {
+    LOG_INFO(Lib_ImeDialog, "called");
+
+    if (!width || !height) {
+        return Error::INVALID_ADDRESS;
+    }
+    switch (param->type) {
+    case OrbisImeType::Default:
+    case OrbisImeType::BasicLatin:
+    case OrbisImeType::Url:
+    case OrbisImeType::Mail:
+        *width = 500; // original: 793
+        if (True(param->option & OrbisImeDialogOption::Multiline)) {
+            *height = 300; // original: 576
+        } else {
+            *height = 150; // original: 476
+        }
+        break;
+    case OrbisImeType::Number:
+        *width = 370;
+        *height = 470;
+        break;
+    default:
+        LOG_ERROR(Lib_ImeDialog, "Unknown OrbisImeType: {}", (u32)param->type);
+        return Error::INVALID_PARAM;
+    }
+
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
