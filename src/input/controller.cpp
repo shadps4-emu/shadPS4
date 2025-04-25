@@ -287,7 +287,10 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 controllers[i]->m_sdl_gamepad = pad;
                 controllers[i]->user_id = i + 1;
                 slot_taken[i] = true;
-                SDL_SetGamepadPlayerIndex(pad, i);
+                bool err = SDL_SetGamepadPlayerIndex(pad, i);
+                if (!err) {
+                    LOG_ERROR(Input, "Failed to set controller index: {}", SDL_GetError());
+                }
                 AddUserServiceEvent(
                     {OrbisUserServiceEventType::Login, SDL_GetGamepadPlayerIndex(pad) + 1});
 
