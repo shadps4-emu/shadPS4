@@ -2804,7 +2804,7 @@ void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym) {
     liverpool = std::make_unique<AmdGpu::Liverpool>();
     presenter = std::make_unique<Vulkan::Presenter>(*g_window, liverpool.get());
 
-    const int result = sceKernelGetCompiledSdkVersion(&sdk_version);
+    const s32 result = sceKernelGetCompiledSdkVersion(&sdk_version);
     if (result != ORBIS_OK) {
         sdk_version = 0;
     }

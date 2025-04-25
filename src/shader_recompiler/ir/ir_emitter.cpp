@@ -357,6 +357,18 @@ U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
     return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
 }
 
+U32 IREmitter::SharedAtomicIIncrement(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicIIncrement32, address);
+}
+
+U32 IREmitter::SharedAtomicIDecrement(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicIDecrement32, address);
+}
+
+U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
+    return Inst<U32>(Opcode::SharedAtomicISub32, address, data);
+}
+
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
@@ -1388,8 +1400,8 @@ U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
     }
 }
 
-IR::Value IREmitter::IMulExt(const U32& a, const U32& b, bool is_signed) {
-    return Inst(is_signed ? Opcode::SMulExt : Opcode::UMulExt, a, b);
+U32 IREmitter::IMulHi(const U32& a, const U32& b, bool is_signed) {
+    return Inst<U32>(is_signed ? Opcode::SMulHi : Opcode::UMulHi, a, b);
 }
 
 U32U64 IREmitter::IMul(const U32U64& a, const U32U64& b) {

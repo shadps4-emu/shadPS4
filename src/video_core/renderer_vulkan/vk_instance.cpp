@@ -203,12 +203,14 @@ std::string Instance::GetDriverVersionName() {
 }
 
 bool Instance::CreateDevice() {
-    const vk::StructureChain feature_chain = physical_device.getFeatures2<
-        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
-        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceRobustness2FeaturesEXT,
-        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-        vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+    const vk::StructureChain feature_chain =
+        physical_device
+            .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+                          vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+                          vk::PhysicalDeviceRobustness2FeaturesEXT,
+                          vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
+                          vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+                          vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -240,20 +242,12 @@ bool Instance::CreateDevice() {
         return false;
     };
 
-    // These extensions are promoted by Vulkan 1.3, but for greater compatibility we use Vulkan 1.2
-    // with extensions.
-    add_extension(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
-    add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-    add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-    add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
-    add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME);
-    add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    const bool maintenance4 = add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+    // Required
+    ASSERT(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+    ASSERT(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
 
-    add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-    add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
+    // Optional
+    depth_range_unrestricted = add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     if (dynamic_state_3) {
         dynamic_state_3_features =
@@ -320,6 +314,7 @@ bool Instance::CreateDevice() {
         feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
+    const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
             .queueCreateInfoCount = 1u,
@@ -368,26 +363,14 @@ bool Instance::CreateDevice() {
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
         },
-        // Vulkan 1.3 promoted extensions
-        vk::PhysicalDeviceDynamicRenderingFeaturesKHR{
-            .dynamicRendering = true,
+        vk::PhysicalDeviceVulkan13Features{
+            .robustImageAccess = vk13_features.robustImageAccess,
+            .shaderDemoteToHelperInvocation = vk13_features.shaderDemoteToHelperInvocation,
+            .synchronization2 = vk13_features.synchronization2,
+            .dynamicRendering = vk13_features.dynamicRendering,
+            .maintenance4 = vk13_features.maintenance4,
         },
-        vk::PhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT{
-            .shaderDemoteToHelperInvocation = true,
-        },
-        vk::PhysicalDeviceSynchronization2Features{
-            .synchronization2 = true,
-        },
-        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{
-            .extendedDynamicState = true,
-        },
-        vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT{
-            .extendedDynamicState2 = true,
-        },
-        vk::PhysicalDeviceMaintenance4FeaturesKHR{
-            .maintenance4 = true,
-        },
-        // Other extensions
+        // Extensions
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
             .customBorderColorWithoutFormat = true,
@@ -422,9 +405,6 @@ bool Instance::CreateDevice() {
 #endif
     };
 
-    if (!maintenance4) {
-        device_chain.unlink<vk::PhysicalDeviceMaintenance4FeaturesKHR>();
-    }
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
     }
@@ -541,12 +521,14 @@ void Instance::CollectDeviceParameters() {
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
 }
 
-void Instance::CollectToolingInfo() {
-    if (GetDriverID() == vk::DriverId::eAmdProprietary) {
-        // Currently causes issues with Reshade on AMD proprietary, disabled until fix released.
+void Instance::CollectToolingInfo() const {
+    if (driver_id == vk::DriverId::eAmdProprietary ||
+        driver_id == vk::DriverId::eIntelProprietaryWindows) {
+        // AMD: Causes issues with Reshade.
+        // Intel: Causes crash on start.
         return;
     }
-    const auto [tools_result, tools] = physical_device.getToolPropertiesEXT();
+    const auto [tools_result, tools] = physical_device.getToolProperties();
     if (tools_result != vk::Result::eSuccess) {
         LOG_ERROR(Render_Vulkan, "Could not get Vulkan tool properties: {}",
                   vk::to_string(tools_result));

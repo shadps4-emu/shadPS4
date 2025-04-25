@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Il file è presente</translation>
+      <translation>Il file esiste già </translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
