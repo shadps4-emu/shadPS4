@@ -1103,20 +1103,131 @@ int PS4_SYSV_ABI sceNetPppoeStop() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetRecv() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetRecv(OrbisNetId s, void* buf, u64 len, int flags) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = sys_recvfrom(s, buf, len, flags | 0x40000000, nullptr, 0);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
-int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
-                                OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                                u32* paddrlen) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = sys_recvfrom(s, buf, len, flags | 0x40000000, addr, paddrlen);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
-int PS4_SYSV_ABI sceNetRecvmsg() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetRecvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+    int result;
+    int err;
+    int positiveErr;
+
+    do {
+        result = sys_recvmsg(s, msg, flags | 0x40000000);
+
+        if (result >= 0) {
+            return result; // Success
+        }
+
+        err = *Libraries::Kernel::__Error(); // Standard errno
+
+        // Convert to positive error for comparison
+        int positiveErr = (err < 0) ? -err : err;
+
+        if ((positiveErr & 0xfff0000) != 0) {
+            // Unknown/fatal error range
+            *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+            return -positiveErr;
+        }
+
+        // Retry if interrupted
+    } while (positiveErr == ORBIS_NET_EINTR);
+
+    if (positiveErr == ORBIS_NET_EADDRINUSE) {
+        result = -ORBIS_NET_EBADF;
+    } else if (positiveErr == ORBIS_NET_EALREADY) {
+        result = -ORBIS_NET_EINTR;
+    } else {
+        result = -positiveErr;
+    }
+
+    *sceNetErrnoLoc() = -result;
+
+    return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
 }
 
 int PS4_SYSV_ABI sceNetResolverAbort() {

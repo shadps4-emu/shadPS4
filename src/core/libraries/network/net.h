@@ -203,10 +203,10 @@ int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags);
 int PS4_SYSV_ABI sceNetPoolDestroy();
 int PS4_SYSV_ABI sceNetPppoeStart();
 int PS4_SYSV_ABI sceNetPppoeStop();
-int PS4_SYSV_ABI sceNetRecv();
-int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, size_t len, int flags,
-                                OrbisNetSockaddr* addr, u32* paddrlen);
-int PS4_SYSV_ABI sceNetRecvmsg();
+int PS4_SYSV_ABI sceNetRecv(OrbisNetId s, void* buf, u64 len, int flags);
+int PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                                u32* paddrlen);
+int PS4_SYSV_ABI sceNetRecvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags);
 int PS4_SYSV_ABI sceNetResolverAbort();
 int PS4_SYSV_ABI sceNetResolverConnect();
 int PS4_SYSV_ABI sceNetResolverConnectAbort();

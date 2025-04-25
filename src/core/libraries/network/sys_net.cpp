@@ -48,4 +48,11 @@ int sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags, const OrbisNet
 int sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
     return -1;
 }
+int sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                 u32* paddrlen) {
+    return -1;
+}
+int sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
+    return -1;
+}
 } // namespace Libraries::Net

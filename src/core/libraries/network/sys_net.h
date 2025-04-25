@@ -23,5 +23,7 @@ int sys_socketclose(OrbisNetId s);
 int sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags, const OrbisNetSockaddr* addr,
                u32 addrlen);
 int sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
-
+int sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                 u32* paddrlen);
+int sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags);
 } // namespace Libraries::Net
