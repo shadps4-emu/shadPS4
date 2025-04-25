@@ -191,7 +191,7 @@ void WindowSDL::WaitEvent() {
         OnGamepadEvent(&event);
         break;
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
-        int controller_id = Input::GetGamepadIndexFromJoystickId(event.gsensor.which) - 1;
+        int controller_id = Input::GetGamepadIndexFromJoystickId(event.gsensor.which);
         switch ((SDL_SensorType)event.gsensor.sensor) {
         case SDL_SENSOR_GYRO:
             controllers[controller_id]->Gyro(0, event.gsensor.data);

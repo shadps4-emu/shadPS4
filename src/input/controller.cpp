@@ -285,6 +285,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 controllers[i]->m_sdl_gamepad = pad;
                 controllers[i]->user_id = i + 1;
                 slot_taken[i] = true;
+                SDL_SetGamepadPlayerIndex(pad, i);
                 AddUserServiceEvent(
                     {OrbisUserServiceEventType::Login, SDL_GetGamepadPlayerIndex(pad) + 1});
 
@@ -312,30 +313,6 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
             }
         }
     }
-
-    // if (m_sdl_gamepad == nullptr || !SDL_GamepadConnected(m_sdl_gamepad)) {
-    //     int gamepad_count;
-    //     SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
-    //     m_sdl_gamepad = gamepad_count > 0 ? SDL_OpenGamepad(gamepads[0]) : nullptr;
-    //     if (Config::getIsMotionControlsEnabled()) {
-    //         if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
-    //             gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_GYRO);
-    //             LOG_INFO(Input, "Gyro initialized, poll rate: {}", gyro_poll_rate);
-    //         } else {
-    //             LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
-    //         }
-    //         if (SDL_SetGamepadSensorEnabled(m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
-    //             accel_poll_rate = SDL_GetGamepadSensorDataRate(m_sdl_gamepad, SDL_SENSOR_ACCEL);
-    //             LOG_INFO(Input, "Accel initialized, poll rate: {}", accel_poll_rate);
-    //         } else {
-    //             LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
-    //         }
-    //     }
-
-    //     SDL_free(gamepads);
-
-    //     SetLightBarRGB(0, 0, 255);
-    // }
 }
 
 u32 GameController::Poll() {

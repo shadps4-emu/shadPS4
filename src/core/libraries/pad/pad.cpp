@@ -289,8 +289,7 @@ int PS4_SYSV_ABI scePadOutputReport() {
 }
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
-    LOG_TRACE(Lib_Pad, "called");
-    LOG_DEBUG(Lib_Pad, "handle: {}", handle);
+    LOG_TRACE(Lib_Pad, "handle: {}", handle);
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
@@ -356,8 +355,7 @@ int PS4_SYSV_ABI scePadReadHistory() {
 }
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
-    LOG_TRACE(Lib_Pad, "called");
-    LOG_DEBUG(Lib_Pad, "handle: {}", handle);
+    LOG_TRACE(Lib_Pad, "handle: {}", handle);
     if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }

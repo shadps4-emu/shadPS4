@@ -754,7 +754,11 @@ void ActivateOutputsFromInputs() {
 }
 
 u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
-    return SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id)) + 1;
+    u8 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
+    if (index > 3) [[unlikely]] {
+        UNREACHABLE_MSG("Index out of bounds: {}", index);
+    }
+    return index;
 }
 
 } // namespace Input
