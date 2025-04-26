@@ -46,7 +46,7 @@ s64 PS4_SYSV_ABI sceUsbdGetDeviceList(SceUsbdDevice*** list) {
     LOG_DEBUG(Lib_Usbd, "called");
     *list = nullptr;
 
-    return libusb_to_orbis_error(libusb_init(&g_libusb_context));
+    return ORBIS_OK;
 }
 
 void PS4_SYSV_ABI sceUsbdFreeDeviceList(SceUsbdDevice** list, s32 unref_devices) {
