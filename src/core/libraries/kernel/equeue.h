@@ -5,7 +5,6 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <bit>
 #include <string>
 #include <vector>
 #include <boost/asio/steady_timer.hpp>
