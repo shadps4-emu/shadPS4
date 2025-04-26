@@ -11,5 +11,4 @@ find_package_handle_standard_args(libusb
 
 if (libusb_FOUND AND NOT TARGET libusb::usb)
     add_library(libusb::usb ALIAS PkgConfig::LIBUSB)
-
 endif()
