@@ -580,15 +580,21 @@ int PS4_SYSV_ABI sceUserServiceGetLoginFlag() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList) {
-    LOG_DEBUG(Lib_UserService, "called");
+    // LOG_DEBUG(Lib_UserService, "called");
     if (userIdList == nullptr) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
     // TODO only first user, do the others as well
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-    for (int i = 0; i < 4; i++) {
-        userIdList->user_id[i] = controllers[i]->user_id;
+    int li = 0;
+    for (int ci = 0; ci < 4; ci++) {
+        if (controllers[ci]->user_id != -1) {
+            userIdList->user_id[li++] = controllers[ci]->user_id;
+        }
+    }
+    for (; li < 4; li++) {
+        userIdList->user_id[li] = -1;
     }
     return ORBIS_OK;
 }

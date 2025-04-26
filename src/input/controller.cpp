@@ -269,6 +269,9 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 SDL_CloseGamepad(pad);
                 controllers[i]->m_sdl_gamepad = nullptr;
                 controllers[i]->user_id = -1;
+                slot_taken[i] = false;
+            } else {
+                controllers[i]->player_index = i;
             }
         }
     }
@@ -285,7 +288,8 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         for (int i = 0; i < 4; i++) {
             if (!slot_taken[i]) {
                 controllers[i]->m_sdl_gamepad = pad;
-                LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i, (void*)pad);
+                LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
+                         SDL_GetGamepadID(pad));
                 controllers[i]->user_id = i + 1;
                 slot_taken[i] = true;
                 controllers[i]->player_index = i;
@@ -346,16 +350,12 @@ u32 GameController::Poll() {
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    auto gamepad = SDL_GetGamepadFromID(id);
-    if (!gamepad) {
-        UNREACHABLE_MSG("Gamepad is null!");
-    }
     for (int i = 0; i < 4; i++) {
         if (SDL_GetGamepadID(controllers[i]->m_sdl_gamepad) == id) {
             return controllers[i]->player_index;
         }
     }
-    UNREACHABLE_MSG("Gamepad not registered! Handle: {}", (void*)gamepad);
+    UNREACHABLE_MSG("Handle {} is not registered!", id);
 }
 
 } // namespace Input
