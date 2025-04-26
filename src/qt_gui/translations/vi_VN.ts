@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
@@ -447,7 +447,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Cài Đặt Chung</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -551,7 +551,7 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Lưu</translation>
     </message>
     <message>
       <source>Apply</source>
