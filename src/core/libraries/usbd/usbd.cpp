@@ -7,6 +7,7 @@
 #include "core/libraries/libs.h"
 #include "usbd.h"
 
+#include <thread>
 #include <fmt/format.h>
 #include <libusb.h>
 
@@ -38,19 +39,20 @@ s32 PS4_SYSV_ABI sceUsbdInit() {
 void PS4_SYSV_ABI sceUsbdExit() {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_exit(g_libusb_context);
+    return libusb_exit(g_libusb_context);
 }
 
 s64 PS4_SYSV_ABI sceUsbdGetDeviceList(SceUsbdDevice*** list) {
     LOG_DEBUG(Lib_Usbd, "called");
+    *list = nullptr;
 
-    return libusb_to_orbis_error(libusb_get_device_list(g_libusb_context, list));
+    return libusb_to_orbis_error(libusb_init(&g_libusb_context));
 }
 
 void PS4_SYSV_ABI sceUsbdFreeDeviceList(SceUsbdDevice** list, s32 unref_devices) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_free_device_list(list, unref_devices);
+    return libusb_free_device_list(list, unref_devices);
 }
 
 SceUsbdDevice* PS4_SYSV_ABI sceUsbdRefDevice(SceUsbdDevice* device) {
@@ -62,7 +64,7 @@ SceUsbdDevice* PS4_SYSV_ABI sceUsbdRefDevice(SceUsbdDevice* device) {
 void PS4_SYSV_ABI sceUsbdUnrefDevice(SceUsbdDevice* device) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_unref_device(device);
+    return libusb_unref_device(device);
 }
 
 s32 PS4_SYSV_ABI sceUsbdGetConfiguration(SceUsbdDeviceHandle* dev_handle, s32* config) {
@@ -102,7 +104,7 @@ s32 PS4_SYSV_ABI sceUsbdGetConfigDescriptorByValue(SceUsbdDevice* device, u8 bCo
 void PS4_SYSV_ABI sceUsbdFreeConfigDescriptor(SceUsbdConfigDescriptor* config) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_free_config_descriptor(config);
+    return libusb_free_config_descriptor(config);
 }
 
 u8 PS4_SYSV_ABI sceUsbdGetBusNumber(SceUsbdDevice* device) {
@@ -144,7 +146,7 @@ s32 PS4_SYSV_ABI sceUsbdOpen(SceUsbdDevice* device, SceUsbdDeviceHandle** dev_ha
 void PS4_SYSV_ABI sceUsbdClose(SceUsbdDeviceHandle* dev_handle) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_close(dev_handle);
+    return libusb_close(dev_handle);
 }
 
 SceUsbdDevice* PS4_SYSV_ABI sceUsbdGetDevice(SceUsbdDeviceHandle* dev_handle) {
@@ -429,21 +431,71 @@ s32 PS4_SYSV_ABI sceUsbdWaitForEvent(timeval* tv) {
 }
 
 s32 PS4_SYSV_ABI sceUsbdHandleEventsTimeout(timeval* tv) {
-    LOG_DEBUG(Lib_Usbd, "called");
+    LOG_DEBUG(Lib_Usbd, "sceUsbdHandleEventsTimeout called");
 
-    return libusb_to_orbis_error(libusb_handle_events_timeout(g_libusb_context, tv));
+    if (!g_libusb_context) {
+        LOG_WARNING(Lib_Usbd, "g_libusb_context is NULL");
+        return ORBIS_OK;
+    }
+
+    int r = libusb_handle_events(g_libusb_context);
+    if (r != 0) {
+        LOG_WARNING(Lib_Usbd, "libusb_handle_events returned error {}, ignoring", r);
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceUsbdHandleEvents() {
-    LOG_DEBUG(Lib_Usbd, "called");
+    LOG_DEBUG(Lib_Usbd, "sceUsbdHandleEvents called");
 
-    return libusb_to_orbis_error(libusb_handle_events(g_libusb_context));
+    if (!g_libusb_context) {
+        LOG_WARNING(Lib_Usbd, "g_libusb_context is NULL");
+        return ORBIS_OK;
+    }
+
+    int r = libusb_handle_events(g_libusb_context);
+    if (r != 0) {
+        LOG_WARNING(Lib_Usbd, "libusb_handle_events returned error {}, ignoring", r);
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceUsbdHandleEventsLocked(timeval* tv) {
-    LOG_DEBUG(Lib_Usbd, "called");
+    LOG_DEBUG(Lib_Usbd, "sceUsbdHandleEventsLocked called");
 
-    return libusb_to_orbis_error(libusb_handle_events_locked(g_libusb_context, tv));
+    if (!g_libusb_context) {
+        LOG_WARNING(Lib_Usbd, "g_libusb_context is NULL");
+        return ORBIS_OK;
+    }
+
+    int r = libusb_handle_events(g_libusb_context);
+    if (r != 0) {
+        LOG_WARNING(Lib_Usbd, "libusb_handle_events returned error {}, ignoring", r);
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceUsbdHandleTransferEvents(timeval* tv) {
+    LOG_DEBUG(Lib_Usbd, "sceUsbdHandleTransferEvents called");
+
+    if (!g_libusb_context) {
+        LOG_WARNING(Lib_Usbd, "g_libusb_context is NULL");
+        return ORBIS_OK;
+    }
+
+    int r = libusb_handle_events(g_libusb_context);
+    if (r != 0) {
+        LOG_WARNING(Lib_Usbd, "libusb_handle_events returned error {}, ignoring", r);
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceUsbdCheckConnected(SceUsbdDeviceHandle* dev_handle) {
