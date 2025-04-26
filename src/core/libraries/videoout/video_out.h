@@ -111,6 +111,12 @@ struct SceVideoOutColorSettings {
     u32 reserved[3];
 };
 
+struct VideoOutEventData {
+    u64 time : 12;
+    u64 count : 4;
+    u64 flip_arg : 48;
+};
+
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);
