@@ -579,7 +579,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
 void Translator::V_ADD_I32(const GcnInst& inst) {
     // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
-    const IR::U32 src1{ir.GetVectorReg(IR::VectorReg(inst.src[1].code))};
+    const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.IAdd(src0, src1)};
     SetDst(inst.dst[0], result);
 
