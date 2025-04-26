@@ -5,54 +5,55 @@
 
 namespace Libraries::Net {
 
-int sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
+int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     return -1;
 }
-int sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
+int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     return -1;
 }
-int sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
+int PS4_SYSV_ABI sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
-int sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
+int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
-int sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
+int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     return -1;
 }
-int sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
+int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
     return -1;
 }
-int sys_listen(OrbisNetId s, int backlog) {
+int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     return -1;
 }
-int sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval, u32 optlen) {
+int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval,
+                                u32 optlen) {
     return -1;
 }
-int sys_shutdown(OrbisNetId s, int how) {
+int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how) {
     return -1;
 }
-int sys_socketex(const char* name, int family, int type, int protocol) {
+int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protocol) {
     return -1;
 }
-int sys_netabort(OrbisNetId s, int flags) {
+int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     return -1;
 }
-int sys_socketclose(OrbisNetId s) {
+int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     return -1;
 }
-int sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags, const OrbisNetSockaddr* addr,
-               u32 addrlen) {
+int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
+                            const OrbisNetSockaddr* addr, u32 addrlen) {
     return -1;
 }
-int sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
+int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
     return -1;
 }
-int sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
-                 u32* paddrlen) {
+int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                              u32* paddrlen) {
     return -1;
 }
-int sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
+int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
     return -1;
 }
 } // namespace Libraries::Net
