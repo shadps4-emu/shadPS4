@@ -706,15 +706,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>giờ</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>phút</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>giây</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -722,19 +722,19 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>Trò chơi không được khởi chạy đúng cách / khiến giả lập bị văng</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>Trò chơi có thể khởi chạy, nhưng chẳng hiện gì cả</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>Trò chơi hiển thị được hình ảnh, nhưng không thể tiếp tục từ menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>Trò chơi có lỗi lớn hoặc hiệu năng khi chơi không ổn định</translation>
+      <translation>Trò chơi có lỗi ảnh hưởng đến trải nghiệm, hoặc hiệu năng khi chơi không ổn định</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
@@ -1170,19 +1170,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Lưu</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Áp dụng</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Khôi Phục Mặc Định</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Hủy</translation>
     </message>
   </context>
   <context>
@@ -1193,7 +1193,7 @@
     </message>
     <message>
       <source>Boot Game</source>
-      <translation type="unfinished">Boot Game</translation>
+      <translation>Khởi Chạy Trò Chơi</translation>
     </message>
     <message>
       <source>Check for Updates</source>
@@ -1201,7 +1201,7 @@
     </message>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>Thông Tin Về shadPS4</translation>
     </message>
     <message>
       <source>Configure...</source>
@@ -1213,23 +1213,23 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Mở Thư Mục Của shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
-      <translation type="unfinished">Exit</translation>
+      <translation>Thoát</translation>
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation type="unfinished">Exit shadPS4</translation>
+      <translation>Thoát shadPS4</translation>
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation type="unfinished">Exit the application.</translation>
+      <translation>Thoát ứng dụng.</translation>
     </message>
     <message>
       <source>Show Game List</source>
-      <translation type="unfinished">Show Game List</translation>
+      <translation>Hiển Thị Danh Sách Trò Chơi</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
