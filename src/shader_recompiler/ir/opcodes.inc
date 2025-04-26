@@ -204,7 +204,6 @@ OPCODE(PackUnorm2x16,                                       U32,            F32x
 OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )
 OPCODE(PackSnorm2x16,                                       U32,            F32x2,                                                                          )
 OPCODE(UnpackSnorm2x16,                                     F32x2,          U32,                                                                            )
-OPCODE(UnpackSnormNz2x16,                                   F32x2,          U32,                                                                            )
 OPCODE(PackUint2x16,                                        U32,            F32x2,                                                                          )
 OPCODE(UnpackUint2x16,                                      F32x2,          U32,                                                                            )
 OPCODE(PackSint2x16,                                        U32,            F32x2,                                                                          )

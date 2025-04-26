@@ -197,6 +197,7 @@ enum class NumberConversion : u32 {
     UintToUscaled = 1,
     SintToSscaled = 2,
     UnormToUbnorm = 3,
+    SintToSnormNz = 4,
 };
 
 struct CompMapping {
@@ -287,6 +288,7 @@ inline NumberFormat RemapNumberFormat(const NumberFormat format, const DataForma
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
     case NumberFormat::Sscaled:
+    case NumberFormat::SnormNz:
         return NumberFormat::Sint;
     case NumberFormat::Ubnorm:
         return NumberFormat::Unorm;
@@ -344,6 +346,8 @@ inline NumberConversion MapNumberConversion(const NumberFormat format) {
         return NumberConversion::SintToSscaled;
     case NumberFormat::Ubnorm:
         return NumberConversion::UnormToUbnorm;
+    case NumberFormat::SnormNz:
+        return NumberConversion::SintToSnormNz;
     default:
         return NumberConversion::None;
     }
