@@ -384,23 +384,23 @@
     </message>
     <message>
       <source>Nothing</source>
-      <translation>Không có gì</translation>
+      <translation>Không chạy được</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>Giày ủng</translation>
+      <translation>Chạy được</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>Menu</translation>
+      <translation>Vào được menu</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>Trong game</translation>
+      <translation>Vào được trò chơi</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>Có thể chơi</translation>
+      <translation>Chơi được</translation>
     </message>
   </context>
   <context>
