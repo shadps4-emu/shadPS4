@@ -197,7 +197,8 @@ enum class NumberConversion : u32 {
     UintToUscaled = 1,
     SintToSscaled = 2,
     UnormToUbnorm = 3,
-    SintToSnormNz = 4,
+    Sint16ToSnormNz = 5,
+    Sint8ToSnormNz = 6,
 };
 
 struct CompMapping {
@@ -338,16 +339,29 @@ inline CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizz
     }
 }
 
-inline NumberConversion MapNumberConversion(const NumberFormat format) {
-    switch (format) {
+inline NumberConversion MapNumberConversion(const NumberFormat num_fmt, const DataFormat data_fmt) {
+    switch (num_fmt) {
     case NumberFormat::Uscaled:
         return NumberConversion::UintToUscaled;
     case NumberFormat::Sscaled:
         return NumberConversion::SintToSscaled;
     case NumberFormat::Ubnorm:
         return NumberConversion::UnormToUbnorm;
-    case NumberFormat::SnormNz:
-        return NumberConversion::SintToSnormNz;
+    case NumberFormat::SnormNz: {
+        switch (data_fmt) {
+        case DataFormat::Format8:
+        case DataFormat::Format8_8:
+        case DataFormat::Format8_8_8_8:
+            return NumberConversion::Sint8ToSnormNz;
+        case DataFormat::Format16:
+        case DataFormat::Format16_16:
+        case DataFormat::Format16_16_16_16:
+            return NumberConversion::Sint16ToSnormNz;
+        default:
+            UNREACHABLE_MSG("data_fmt = {}", u32(data_fmt));
+            break;
+        }
+    }
     default:
         return NumberConversion::None;
     }
