@@ -131,42 +131,88 @@ static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
 }
 
 int PosixSocket::Close() {
-    return 0;
-}
-int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
-    return 0;
-}
-int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
-    return 0;
+#ifdef _WIN32
+    auto out = closesocket(sock);
+#else
+    auto out = ::close(sock);
+#endif
+    return ConvertReturnErrorCode(out);
 }
 
 int PosixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
-    return 0;
+    sockaddr addr2;
+    convertOrbisNetSockaddrToPosix(addr, &addr2);
+    return ConvertReturnErrorCode(::bind(sock, &addr2, sizeof(sockaddr_in)));
 }
 
 int PosixSocket::Listen(int backlog) {
-    return 0;
+    return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
-    return 0;
+    if (to != nullptr) {
+        sockaddr addr;
+        convertOrbisNetSockaddrToPosix(to, &addr);
+        return ConvertReturnErrorCode(
+            sendto(sock, (const char*)msg, len, flags, &addr, sizeof(sockaddr_in)));
+    } else {
+        return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
+    }
 }
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                                u32* fromlen) {
-    return 0;
+    if (from != nullptr) {
+        sockaddr addr;
+        int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
+        convertPosixSockaddrToOrbis(&addr, from);
+        *fromlen = sizeof(OrbisNetSockaddrIn);
+        return ConvertReturnErrorCode(res);
+    } else {
+        return ConvertReturnErrorCode(recv(sock, (char*)buf, len, flags));
+    }
 }
 
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
-    return SocketPtr();
+    sockaddr addr2;
+    net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
+#ifdef _WIN32
+    if (new_socket != INVALID_SOCKET) {
+#else
+    if (new_socket >= 0) {
+#endif
+        convertPosixSockaddrToOrbis(&addr2, addr);
+        *addrlen = sizeof(OrbisNetSockaddrIn);
+        return std::make_shared<PosixSocket>(new_socket);
+    }
+    return nullptr;
 }
 
 int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
-    return 0;
+    sockaddr addr2;
+    convertOrbisNetSockaddrToPosix(addr, &addr2);
+    return ::connect(sock, &addr2, sizeof(sockaddr_in));
 }
 
 int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
+    sockaddr addr;
+    convertOrbisNetSockaddrToPosix(name, &addr);
+    if (name != nullptr) {
+        *namelen = sizeof(sockaddr_in);
+    }
+    int res = getsockname(sock, &addr, (socklen_t*)namelen);
+    if (res >= 0) {
+        convertPosixSockaddrToOrbis(&addr, name);
+        *namelen = sizeof(OrbisNetSockaddrIn);
+    }
+    return res;
+}
+
+int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
+    return 0;
+}
+int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
     return 0;
 }
 
