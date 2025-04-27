@@ -732,9 +732,17 @@ void EmitContext::DefineBuffers() {
             spv_buffer[BufferAlias::U16] =
                 DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
         }
+        if (True(desc.used_types & IR::Type::S16)) {
+            spv_buffer[BufferAlias::S16] =
+                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, S16);
+        }
         if (True(desc.used_types & IR::Type::U8)) {
             spv_buffer[BufferAlias::U8] =
                 DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+        }
+        if (True(desc.used_types & IR::Type::S8)) {
+            spv_buffer[BufferAlias::S8] =
+                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, S8);
         }
         ++binding.unified;
     }

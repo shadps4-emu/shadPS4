@@ -36,7 +36,9 @@ bool IsBufferAtomic(const IR::Inst& inst) {
 bool IsBufferStore(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::StoreBufferU8:
+    case IR::Opcode::StoreBufferS8:
     case IR::Opcode::StoreBufferU16:
+    case IR::Opcode::StoreBufferS16:
     case IR::Opcode::StoreBufferU32:
     case IR::Opcode::StoreBufferU32x2:
     case IR::Opcode::StoreBufferU32x3:
@@ -55,7 +57,9 @@ bool IsBufferStore(const IR::Inst& inst) {
 bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::LoadBufferS8:
     case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::LoadBufferS16:
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::LoadBufferU32x2:
     case IR::Opcode::LoadBufferU32x3:
@@ -317,14 +321,39 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
 void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     s32 binding{};
     AmdGpu::Buffer buffer;
+    IR::Type used_types;
+
+    // Handle some aliasing cases from sub-dword accesses we generate up front in translation
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::StoreBufferU8:
+        used_types |= IR::Type::U8;
+        break;
+    case IR::Opcode::LoadBufferS8:
+    case IR::Opcode::StoreBufferS8:
+        used_types |= IR::Type::S8;
+        break;
+    case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::StoreBufferU16:
+        used_types |= IR::Type::U16;
+        break;
+    case IR::Opcode::LoadBufferS16:
+    case IR::Opcode::StoreBufferS16:
+        used_types |= IR::Type::S16;
+        break;
+    default:
+        break;
+    }
+
     if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         SharpLocation sharp;
         std::tie(sharp, buffer) = TrackSharp<AmdGpu::Buffer>(producer, info);
+        used_types |= BufferDataType(inst, buffer.GetNumberFmt());
         binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp,
-            .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
+            .used_types = used_types,
             .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||

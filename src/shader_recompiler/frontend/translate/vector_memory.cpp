@@ -28,6 +28,15 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_LOAD_FORMAT_XYZW:
         return BUFFER_LOAD(4, false, true, inst);
 
+    case Opcode::BUFFER_LOAD_UBYTE:
+        return BUFFER_LOAD_subdword(8, false, inst);
+    case Opcode::BUFFER_LOAD_SBYTE:
+        return BUFFER_LOAD_subdword(8, true, inst);
+    case Opcode::BUFFER_LOAD_USHORT:
+        return BUFFER_LOAD_subdword(16, false, inst);
+    case Opcode::BUFFER_LOAD_SSHORT:
+        return BUFFER_LOAD_subdword(16, true, inst);
+
     case Opcode::BUFFER_LOAD_DWORD:
         return BUFFER_LOAD(1, false, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX2:
@@ -224,6 +233,51 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
             ir.SetVectorReg(dst_reg + i, IR::U32{ir.CompositeExtract(value, i)});
         }
     }
+}
+
+void Translator::BUFFER_LOAD_subdword(u32 bitwidth, bool is_signed, const GcnInst& inst) {
+    const auto& mubuf = inst.control.mubuf;
+    const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+    const IR::U32 soffset{GetSrc(inst.src[3])};
+
+    ASSERT(!mubuf.idxen);              // Some nfmt conversion is necessary?
+    ASSERT(!(mubuf.glc && mubuf.slc)); // ring access?
+
+    IR::BufferInstInfo buffer_info{};
+    buffer_info.index_enable.Assign(mubuf.idxen);
+    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.inst_offset.Assign(mubuf.offset);
+    buffer_info.globally_coherent.Assign(mubuf.glc);
+    buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(false);
+
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    const IR::Value addr = ir.IAdd(ir.GetVectorReg(vaddr), soffset);
+    IR::U32 result;
+
+    switch (bitwidth) {
+    case 8:
+        if (is_signed) {
+            result = ir.LoadBufferS8(handle, addr, buffer_info);
+        } else {
+            result = ir.LoadBufferU8(handle, addr, buffer_info);
+        }
+    case 16:
+        if (is_signed) {
+            result = ir.LoadBufferS16(handle, addr, buffer_info);
+        } else {
+            result = ir.LoadBufferU16(handle, addr, buffer_info);
+        }
+        break;
+
+    default:
+        UNREACHABLE();
+    }
+
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,

@@ -37,6 +37,8 @@ enum class Type {
     F64x3 = 1 << 23,
     F64x4 = 1 << 24,
     StringLiteral = 1 << 25,
+    S8 = 1 << 26,  // dummy for tracking buffer alias uses
+    S16 = 1 << 27, // same as S8
 };
 DECLARE_ENUM_FLAG_OPERATORS(Type)
 

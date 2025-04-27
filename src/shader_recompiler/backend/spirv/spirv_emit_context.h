@@ -232,7 +232,9 @@ public:
 
     enum class BufferAlias : u32 {
         U8,
+        S8,
         U16,
+        S16,
         U32,
         F32,
         NumAlias,
