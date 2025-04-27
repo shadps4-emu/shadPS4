@@ -13,7 +13,7 @@ class SymbolsResolver;
 
 namespace Libraries::ImeDialog {
 
-constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 0x78;
+constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 0x3FF; // 0x78;
 
 enum class Error : u32 {
     OK = 0x0,

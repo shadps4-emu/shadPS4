@@ -122,7 +122,91 @@ OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
     return g_ime_dlg_status;
 }
 
+#include <string>
+
+#include <string>
+
+static std::string ConvertUtf16ToUtf8(const char16_t* src) {
+    if (!src) {
+        return "(null)";
+    }
+
+    std::string result;
+    while (*src) {
+        char16_t c = *src++;
+
+        if (c < 0x80) {
+            result += static_cast<char>(c);
+        } else if (c < 0x800) {
+            result += static_cast<char>(0xC0 | (c >> 6));
+            result += static_cast<char>(0x80 | (c & 0x3F));
+        } else {
+            result += static_cast<char>(0xE0 | (c >> 12));
+            result += static_cast<char>(0x80 | ((c >> 6) & 0x3F));
+            result += static_cast<char>(0x80 | (c & 0x3F));
+        }
+    }
+
+    return result;
+}
+
+void DumpImeDialogParam(const Libraries::ImeDialog::OrbisImeDialogParam* param,
+                        const Libraries::ImeDialog::OrbisImeParamExtended* ext_param) {
+    if (!param) {
+        LOG_INFO(Lib_ImeDialog, "OpenImeDialog called with null param.");
+        return;
+    }
+
+    // UTF-16 to UTF-8 conversion using your safe method
+    std::string title_utf8 = "(null)";
+    std::string placeholder_utf8 = "(null)";
+    title_utf8 = ConvertUtf16ToUtf8(param->title);
+    placeholder_utf8 = ConvertUtf16ToUtf8(param->placeholder);
+
+    LOG_INFO(
+        Lib_ImeDialog,
+        "OpenImeDialog:\n"
+        "  user_id={}, type={}, option=0x{:X}, max_text_length={}, supported_languages=0x{:X}\n"
+        "  title=\"{}\", placeholder=\"{}\", input_text_buffer={}",
+        param->user_id, static_cast<int>(param->type), static_cast<u32>(param->option),
+        param->max_text_length, param->supported_languages, title_utf8, placeholder_utf8,
+        param->input_text_buffer ? reinterpret_cast<uintptr_t>(param->input_text_buffer) : 0);
+
+    if (ext_param) {
+        LOG_INFO(Lib_ImeDialog,
+                 "ExtendedParam:\n"
+                 "  color_base=({}, {}, {}, {}) color_line=({}, {}, {}, {}) color_text_field=({}, "
+                 "{}, {}, {})\n"
+                 "  color_preedit=({}, {}, {}, {}) color_button_default=({}, {}, {}, {}) "
+                 "color_button_function=({}, {}, {}, {})\n"
+                 "  color_button_symbol=({}, {}, {}, {}) color_text=({}, {}, {}, {}) "
+                 "color_special=({}, {}, {}, {})\n"
+                 "  priority={}",
+                 ext_param->color_base.r, ext_param->color_base.g, ext_param->color_base.b,
+                 ext_param->color_base.a, ext_param->color_line.r, ext_param->color_line.g,
+                 ext_param->color_line.b, ext_param->color_line.a, ext_param->color_text_field.r,
+                 ext_param->color_text_field.g, ext_param->color_text_field.b,
+                 ext_param->color_text_field.a, ext_param->color_preedit.r,
+                 ext_param->color_preedit.g, ext_param->color_preedit.b, ext_param->color_preedit.a,
+                 ext_param->color_button_default.r, ext_param->color_button_default.g,
+                 ext_param->color_button_default.b, ext_param->color_button_default.a,
+                 ext_param->color_button_function.r, ext_param->color_button_function.g,
+                 ext_param->color_button_function.b, ext_param->color_button_function.a,
+                 ext_param->color_button_symbol.r, ext_param->color_button_symbol.g,
+                 ext_param->color_button_symbol.b, ext_param->color_button_symbol.a,
+                 ext_param->color_text.r, ext_param->color_text.g, ext_param->color_text.b,
+                 ext_param->color_text.a, ext_param->color_special.r, ext_param->color_special.g,
+                 ext_param->color_special.b, ext_param->color_special.a,
+                 static_cast<int>(ext_param->priority));
+    } else {
+        LOG_INFO(Lib_ImeDialog, "ExtendedParam: (none)");
+    }
+}
+
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
+
+    DumpImeDialogParam(param, extended);
+
     if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog is already running");
         return Error::BUSY;
@@ -195,7 +279,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     }
 
     if (param->max_text_length > ORBIS_IME_DIALOG_MAX_TEXT_LENGTH) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->maxTextLength");
+        LOG_INFO(Lib_ImeDialog, "Invalid param->maxTextLength ({})", param->max_text_length);
         return Error::INVALID_MAX_TEXT_LENGTH;
     }
 

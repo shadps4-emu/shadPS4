@@ -214,7 +214,7 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
         ext_.color_line = {255, 255, 255, 255};
         ext_.color_text_field = {26, 26, 28, 240};
         ext_.color_preedit = {0, 0, 0, 255};
-        ext_.color_button_default = {35, 35, 35, 255};
+        ext_.color_button_default = {45, 45, 45, 255};
         ext_.color_button_function = {72, 72, 74, 255};
         ext_.color_button_symbol = {96, 96, 98, 255};
         ext_.color_text = {255, 255, 255, 255};
@@ -445,8 +445,8 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         .keycode = 0,
         .character = 0,
         .status = 1,                              // ??? 1 = key pressed, 0 = key released
-        .type = OrbisImeKeyboardType::ENGLISH_US, // TODO set this to the correct value (maybe use
-                                                  // the current language?)
+        .type = OrbisImeKeyboardType::ENGLISH_US, // TODO set this to the correct value (maybe
+                                                  // use the current language?)
         .user_id = ui->state->user_id,
         .resource_id = 0,
         .timestamp = 0,
