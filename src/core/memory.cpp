@@ -142,7 +142,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     auto mapping_start = search_start > dmem_area->second.base
                              ? Common::AlignUp(search_start, alignment)
                              : Common::AlignUp(dmem_area->second.base, alignment);
-    auto mapping_end = Common::AlignUp(mapping_start + size, alignment);
+    auto mapping_end = mapping_start + size;
 
     // Find the first free, large enough dmem area in the range.
     while ((!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) &&
@@ -151,10 +151,8 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
         dmem_area++;
 
         // Update local variables based on the new dmem_area
-        mapping_start = search_start > dmem_area->second.base
-                            ? Common::AlignUp(search_start, alignment)
-                            : Common::AlignUp(dmem_area->second.base, alignment);
-        mapping_end = Common::AlignUp(mapping_start + size, alignment);
+        mapping_start = Common::AlignUp(dmem_area->second.base, alignment);
+        mapping_end = mapping_start + size;
     }
 
     if (dmem_area == dmem_map.end()) {
