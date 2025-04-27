@@ -94,33 +94,57 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
+    file->m_guest_name = path;
+    file->m_host_name = mnt->GetHostPath(file->m_guest_name);
+    bool exists = std::filesystem::exists(file->m_host_name);
+    s32 e = 0;
+
     if (directory) {
         file->type = Core::FileSys::FileType::Directory;
-        file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
-        if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
+
+        if (create) {
+            if (excl && exists) {
+                // Error if file exists
+                h->DeleteHandle(handle);
+                *__Error() = POSIX_EEXIST;
+                return -1;
+            }
+            if (!std::filesystem::create_directory(file->m_host_name)) {
+                // Directory creation failed
+                *__Error() = POSIX_EIO;
+                return -1;
+            }
+        } else if (!exists) {
+            // File to open doesn't exist, return ENOENT
             h->DeleteHandle(handle);
             *__Error() = POSIX_ENOENT;
             return -1;
+        }
+
+        if (read) {
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (write || rdwr || append || truncate) {
+            // Cannot open directories with any type of write access
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EISDIR;
+            return -1;
         } else {
-            if (create) {
-                return handle; // dir already exists
-            } else {
-                mnt->IterateDirectory(file->m_guest_name,
-                                      [&file](const auto& ent_path, const auto ent_is_file) {
-                                          auto& dir_entry = file->dirents.emplace_back();
-                                          dir_entry.name = ent_path.filename().string();
-                                          dir_entry.isFile = ent_is_file;
-                                      });
-                file->dirents_index = 0;
-            }
+            // Invalid flags
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+
+        // If opening is a success, iterate through contents
+        if (e == 0) {
+            mnt->IterateDirectory(file->m_guest_name,
+                [&file](const auto& ent_path, const auto ent_is_file) {
+                    auto& dir_entry = file->dirents.emplace_back();
+                    dir_entry.name = ent_path.filename().string();
+                    dir_entry.isFile = ent_is_file;
+                });
+            file->dirents_index = 0;
         }
     } else {
-        file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
-        bool exists = std::filesystem::exists(file->m_host_name);
-        int e = 0;
-
         if (create) {
             if (excl && exists) {
                 // Error if file exists
@@ -140,20 +164,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (append) {
+            // Append can be specified with rdwr or write, but we treat it as a separate mode.
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
         } else if (write) {
             // Write only
-            if (append) {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-            } else {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-            }
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
         } else if (rdwr) {
             // Read and write
-            if (append) {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-            } else {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            }
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
         } else {
             // Invalid flags
             *__Error() = POSIX_EINVAL;
@@ -164,14 +183,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // If the file was opened successfully and truncate was enabled, reduce size to 0
             file->f.SetSize(0);
         }
-
-        if (e != 0) {
-            // Open failed in platform-specific code, errno needs to be converted.
-            h->DeleteHandle(handle);
-            SetPosixErrno(e);
-            return -1;
-        }
     }
+
+    if (e != 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        h->DeleteHandle(handle);
+        SetPosixErrno(e);
+        return -1;
+    }
+
     file->is_opened = true;
     return handle;
 }
