@@ -149,7 +149,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoInternal(s32 handle, Core::OrbisKernelMod
 
 s32 PS4_SYSV_ABI sceKernelGetModuleList(s32* handles, u64 num_array, u64* out_count) {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    
+
     u64 count = 0;
     auto* module = linker->GetModule(count);
     while (module != nullptr && count < num_array) {
