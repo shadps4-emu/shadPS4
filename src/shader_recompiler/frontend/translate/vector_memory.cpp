@@ -247,7 +247,7 @@ void Translator::BufferAccessSmallType(u32 bitwidth, bool is_signed, bool is_wri
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::U32 soffset{GetSrc(inst.src[3])};
 
-    ASSERT(!mubuf.idxen);              // Some dfmt conversion is necessary?
+    // ASSERT(!mubuf.idxen);              // Some dfmt conversion is necessary?
     ASSERT(!(mubuf.glc && mubuf.slc)); // ring access?
 
     IR::BufferInstInfo buffer_info{};
@@ -261,6 +261,8 @@ void Translator::BufferAccessSmallType(u32 bitwidth, bool is_signed, bool is_wri
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
                               ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    // TODO when idxen==1, this is probably a hack.
+    // I think we need to check DFMT in the sharp. This assumes DFMT is r16
     const IR::Value addr = ir.IAdd(ir.GetVectorReg(vaddr), soffset);
     IR::U32 result;
     IR::U32 write_data;

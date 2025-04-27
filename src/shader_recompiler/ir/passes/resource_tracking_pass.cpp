@@ -321,7 +321,6 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
 void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     s32 binding{};
     AmdGpu::Buffer buffer;
-
     if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
         IR::Inst* handle = inst.Arg(0).InstRecursive();
         IR::Inst* producer = handle->Arg(0).InstRecursive();
