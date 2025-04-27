@@ -43,9 +43,23 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
     return -1;
 }
-int PS4_SYSV_ABI sys_accept(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    auto new_sock = sock->Accept(addr, paddrlen);
+    if (!new_sock) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "error creating new socket for accepting");
+        return -1;
+    }
+    auto id = ++netcall->next_sock_id;
+    netcall->socks.emplace(id, new_sock);
+    return id;
 }
 int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
