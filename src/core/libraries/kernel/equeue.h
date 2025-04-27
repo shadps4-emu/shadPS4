@@ -106,8 +106,8 @@ struct EqueueEvent {
                 if (counter != 0xf) {
                     counter++;
                 }
-                event.data = (time & 0xfff) | (counter << 0xc) |
-                             (event_hint_raw & 0xffffffffffff0000);
+                event.data =
+                    (time & 0xfff) | (counter << 0xc) | (event_hint_raw & 0xffffffffffff0000);
             }
         }
     }
