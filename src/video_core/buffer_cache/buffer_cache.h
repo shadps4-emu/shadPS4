@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <bitset>
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
 #include "common/div_ceil.h"
@@ -200,11 +199,10 @@ private:
     PageManager& tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
+    StreamBuffer download_buffer;
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
     Buffer fault_readback_buffer;
-    // We need to define here to avoid stack underflow
-    std::array<u8, FAULT_READBACK_SIZE> fault_readback_cpu;
     boost::icl::interval_set<VAddr> queued_converages;
     boost::icl::interval_set<u64> convered_regions;
     std::shared_mutex covered_regions_mutex;
@@ -213,6 +211,9 @@ private:
     RangeSet gpu_modified_ranges;
     MemoryTracker memory_tracker;
     PageTable page_table;
+    vk::UniqueDescriptorSetLayout fault_parse_desc_layout;
+    vk::UniquePipeline fault_parse_pipeline;
+    vk::UniquePipelineLayout fault_parse_pipeline_layout;
 };
 
 } // namespace VideoCore
