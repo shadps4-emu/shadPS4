@@ -63,7 +63,7 @@ static int ConvertReturnErrorCode(int retval) {
             // ERROR_CASE(EBADMSG)
             ERROR_CASE(ENODATA)
             // ERROR_CASE(ENOSR)
-            ERROR_CASE(ENOSTR)
+            // ERROR_CASE(ENOSTR)
             // ERROR_CASE(ETIME)
 #endif
             ERROR_CASE(EINTR)
