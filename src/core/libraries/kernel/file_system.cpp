@@ -365,10 +365,10 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         origin = Common::FS::SeekOrigin::CurrentPosition;
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
-    } else if (whence == 3) {
-        origin = Common::FS::SeekOrigin::SeekHole;
-    } else if (whence == 4) {
-        origin = Common::FS::SeekOrigin::SeekData;
+    } else if (whence == 3 || whence == 4) {
+        // whence parameter belongs to an unsupported POSIX extension
+        *__Error() = POSIX_ENOTTY;
+        return -1;
     } else {
         // whence parameter is invalid
         *__Error() = POSIX_EINVAL;
