@@ -109,7 +109,9 @@ void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
     U8 = Name(TypeUInt(8), "u8_id");
+    S8 = Name(TypeSInt(8), "i8_id");
     U16 = Name(TypeUInt(16), "u16_id");
+    S16 = Name(TypeSInt(16), "i16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");
@@ -732,17 +734,9 @@ void EmitContext::DefineBuffers() {
             spv_buffer[BufferAlias::U16] =
                 DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
         }
-        if (True(desc.used_types & IR::Type::S16)) {
-            spv_buffer[BufferAlias::S16] =
-                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, S16);
-        }
         if (True(desc.used_types & IR::Type::U8)) {
             spv_buffer[BufferAlias::U8] =
                 DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
-        }
-        if (True(desc.used_types & IR::Type::S8)) {
-            spv_buffer[BufferAlias::S8] =
-                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, S8);
         }
         ++binding.unified;
     }

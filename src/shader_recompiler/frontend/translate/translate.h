@@ -282,9 +282,10 @@ public:
     // Buffer Memory
     // MUBUF / MTBUF
     void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst);
-    void BUFFER_LOAD_subdword(u32 bitwidth, bool is_signed, const GcnInst& inst); // MUBUF
     void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                       const GcnInst& inst);
+    void BufferAccessSmallType(u32 bitwidth, bool is_signed, bool is_write,
+                               const GcnInst& inst); // MUBUF
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Image Memory

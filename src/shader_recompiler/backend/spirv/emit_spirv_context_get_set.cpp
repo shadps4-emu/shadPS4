@@ -480,9 +480,10 @@ Id EmitLoadBufferS8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     if (Sirit::ValidId(spv_buffer.offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
     }
-    const auto [id, pointer_type] = spv_buffer[BufferAlias::S8];
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
-    Id result{ctx.OpLoad(ctx.S8, ptr)};
+    Id result{ctx.OpLoad(ctx.U8, ptr)};
+    result = ctx.OpBitcast(ctx.S8, result);
     result = ctx.OpSConvert(ctx.S32[1], result);
     result = ctx.OpBitcast(ctx.U32[1], result);
     return EmitLoadBufferBoundsCheck<1>(ctx, address, spv_buffer.size, result, false);
@@ -505,10 +506,11 @@ Id EmitLoadBufferS16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     if (Sirit::ValidId(spv_buffer.offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
     }
-    const auto [id, pointer_type] = spv_buffer[BufferAlias::S16];
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
-    Id result{ctx.OpLoad(ctx.S16, ptr)};
+    Id result{ctx.OpLoad(ctx.U16, ptr)};
+    result = ctx.OpBitcast(ctx.S16, result);
     result = ctx.OpSConvert(ctx.S32[1], result);
     result = ctx.OpBitcast(ctx.U32[1], result);
     return EmitLoadBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts, result, false);
@@ -619,17 +621,6 @@ void EmitStoreBufferU8(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id v
     EmitStoreBufferBoundsCheck<1>(ctx, address, spv_buffer.size, [&] { ctx.OpStore(ptr, result); });
 }
 
-void EmitStoreBufferS8(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    const auto& spv_buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(spv_buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
-    }
-    const auto [id, pointer_type] = spv_buffer[BufferAlias::S8];
-    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
-    const Id result{ctx.OpBitcast(ctx.S8, ctx.OpUConvert(ctx.U8, value))};
-    EmitStoreBufferBoundsCheck<1>(ctx, address, spv_buffer.size, [&] { ctx.OpStore(ptr, result); });
-}
-
 void EmitStoreBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
     const auto& spv_buffer = ctx.buffers[handle];
     if (Sirit::ValidId(spv_buffer.offset)) {
@@ -639,19 +630,6 @@ void EmitStoreBufferU16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id 
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
     const Id result{ctx.OpUConvert(ctx.U16, value)};
-    EmitStoreBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts,
-                                  [&] { ctx.OpStore(ptr, result); });
-}
-
-void EmitStoreBufferS16(EmitContext& ctx, IR::Inst*, u32 handle, Id address, Id value) {
-    const auto& spv_buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(spv_buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
-    }
-    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
-    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
-    const Id result{ctx.OpBitcast(ctx.S16, ctx.OpUConvert(ctx.U16, value))};
     EmitStoreBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts,
                                   [&] { ctx.OpStore(ptr, result); });
 }
