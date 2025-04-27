@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-find_library(LIBUSB_LIBRARY NAMES libusb-1.0.27)
+find_package(PkgConfig QUIET)
+pkg_search_module(LIBUSB QUIET IMPORTED_TARGET libusb-1.0)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(libusb
