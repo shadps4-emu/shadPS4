@@ -128,6 +128,13 @@ int PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, int flags,
 }
 
 s32 PS4_SYSV_ABI sceKernelGetModuleInfo(s32 handle, Core::OrbisKernelModuleInfo* info) {
+    if (info == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (info->st_size != sizeof(Core::OrbisKernelModuleInfo)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
@@ -138,6 +145,13 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfo(s32 handle, Core::OrbisKernelModuleInfo*
 }
 
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoInternal(s32 handle, Core::OrbisKernelModuleInfoEx* info) {
+    if (info == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (info->st_size != sizeof(Core::OrbisKernelModuleInfoEx)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
