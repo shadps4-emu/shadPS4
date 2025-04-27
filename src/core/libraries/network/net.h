@@ -20,6 +20,14 @@ class SymbolsResolver;
 
 namespace Libraries::Net {
 
+enum OrbisNetSocketType : u32 {
+    ORBIS_NET_SOCK_STREAM = 1,
+    ORBIS_NET_SOCK_DGRAM = 2,
+    ORBIS_NET_SOCK_RAW = 3,
+    ORBIS_NET_SOCK_DGRAM_P2P = 6,
+    ORBIS_NET_SOCK_STREAM_P2P = 10
+};
+
 using OrbisNetId = s32;
 
 struct OrbisNetSockaddr {
