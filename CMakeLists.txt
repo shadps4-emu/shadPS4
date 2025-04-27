@@ -381,6 +381,9 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/ssl2.h
                  src/core/libraries/network/sys_net.cpp
                  src/core/libraries/network/sys_net.h
+                 src/core/libraries/network/posix_sockets.cpp
+                 src/core/libraries/network/p2p_sockets.cpp
+                 src/core/libraries/network/sockets.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
