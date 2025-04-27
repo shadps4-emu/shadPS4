@@ -49,13 +49,11 @@ void SaveDialogResult::CopyTo(OrbisSaveDataDialogResult& result) const {
     result.mode = this->mode;
     result.result = this->result;
     result.buttonId = this->button_id;
-    if (mode == SaveDataDialogMode::LIST || ElfInfo::Instance().FirmwareVer() >= ElfInfo::FW_45) {
-        if (result.dirName != nullptr) {
-            result.dirName->data.FromString(this->dir_name);
-        }
-        if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
-            result.param->FromSFO(this->param);
-        }
+    if (result.dirName != nullptr) {
+        result.dirName->data.FromString(this->dir_name);
+    }
+    if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
+        result.param->FromSFO(this->param);
     }
     result.userData = this->user_data;
 }
