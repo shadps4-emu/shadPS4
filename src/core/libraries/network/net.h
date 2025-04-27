@@ -28,6 +28,15 @@ struct OrbisNetSockaddr {
     char sa_data[14];
 };
 
+struct OrbisNetSockaddrIn {
+    u8 sin_len;
+    u8 sin_family;
+    u16 sin_port;
+    u32 sin_addr;
+    u16 sin_vport;
+    char sin_zero[6];
+};
+
 struct OrbisNetIovec {
     void* iov_base;
     u64 iov_len;
