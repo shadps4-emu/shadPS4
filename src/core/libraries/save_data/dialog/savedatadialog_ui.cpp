@@ -345,12 +345,15 @@ SaveDialogUi::SaveDialogUi(SaveDialogUi&& other) noexcept
     }
 }
 
-SaveDialogUi& SaveDialogUi::operator=(SaveDialogUi other) {
+SaveDialogUi& SaveDialogUi::operator=(SaveDialogUi&& other) noexcept {
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
     using std::swap;
-    swap(state, other.state);
-    swap(status, other.status);
-    swap(result, other.result);
+    state = other.state;
+    other.state = nullptr;
+    status = other.status;
+    other.status = nullptr;
+    result = other.result;
+    other.result = nullptr;
     if (status && *status == Status::RUNNING) {
         first_render = true;
         AddLayer(this);
