@@ -553,7 +553,6 @@ void BufferCache::CreateFaultBuffers() {
         .offset = 0,
         .size = FAULT_READBACK_SIZE,
     };
-    staging_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
@@ -562,35 +561,39 @@ void BufferCache::CreateFaultBuffers() {
         .pBufferMemoryBarriers = &barrier,
     });
     cmdbuf.copyBuffer(fault_readback_buffer.buffer, staging_buffer.Handle(), copy);
-    scheduler.Finish();
-    std::memcpy(fault_readback_cpu.data(), mapped, FAULT_READBACK_SIZE);
-    // Create the fault buffers batched
-    boost::icl::interval_set<VAddr> fault_ranges;
-    for (u64 i = 0; i < FAULT_READBACK_SIZE; ++i) {
-        if (fault_readback_cpu[i] == 0) {
-            continue;
-        }
-        // Each bit is a page
-        const u64 page = i * 8;
-        for (u8 j = 0; j < 8; ++j) {
-            if ((fault_readback_cpu[i] & (1 << j)) == 0) {
+    staging_buffer.Commit();
+    scheduler.DeferOperation([this, mapped]() {
+        std::memcpy(fault_readback_cpu.data(), mapped, FAULT_READBACK_SIZE);
+        // Create the fault buffers batched
+        boost::icl::interval_set<VAddr> fault_ranges;
+        for (u64 i = 0; i < FAULT_READBACK_SIZE; ++i) {
+            if (fault_readback_cpu[i] == 0) {
                 continue;
             }
-            const VAddr start = (page + j) << CACHING_PAGEBITS;
-            const VAddr end = start + CACHING_PAGESIZE;
-            fault_ranges += boost::icl::interval_set<VAddr>::interval_type::right_open(start, end);
-            LOG_WARNING(Render_Vulkan, "Accessed non GPU-local memory at {:#x}", start);
+            // Each bit is a page
+            const u64 page = i * 8;
+            for (u8 j = 0; j < 8; ++j) {
+                if ((fault_readback_cpu[i] & (1 << j)) == 0) {
+                    continue;
+                }
+                const VAddr start = (page + j) << CACHING_PAGEBITS;
+                const VAddr end = start + CACHING_PAGESIZE;
+                fault_ranges +=
+                    boost::icl::interval_set<VAddr>::interval_type::right_open(start, end);
+                 LOG_WARNING(Render_Vulkan, "Accessed non GPU-local memory at {:#x}", start);
+            }
         }
-    }
-    for (const auto& range : fault_ranges) {
-        const VAddr start = range.lower();
-        const u64 size = range.upper() - start;
-        // Buffer size is 32 bits
-        for (VAddr addr = start; addr < size; addr += std::numeric_limits<u32>::max()) {
-            const u32 size_buffer = std::min<u32>(size, std::numeric_limits<u32>::max());
-            CreateBuffer(addr, size_buffer);
+        for (const auto& range : fault_ranges) {
+            const VAddr start = range.lower();
+            const VAddr end = range.upper();
+            // Buffer size is 32 bits
+            for (VAddr addr = start; addr < end; addr += std::numeric_limits<u32>::max()) {
+                const u32 size_buffer = std::min<u32>(end - addr, std::numeric_limits<u32>::max());
+                CreateBuffer(addr, size_buffer);
+            }
         }
-    }
+    });
+    scheduler.Flush();
 }
 
 void BufferCache::ResetFaultReadbackBuffer() {
