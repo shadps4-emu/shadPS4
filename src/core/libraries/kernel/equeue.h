@@ -61,13 +61,13 @@ struct SceKernelEvent {
     void* udata = nullptr; /* opaque user data identifier */
 };
 
-struct DceHint {
+struct OrbisVideoOutEventHint {
     u64 event_id : 8;
     u64 video_id : 8;
     u64 flip_arg : 48;
 };
 
-struct DceData {
+struct OrbisVideoOutEventData {
     u64 time : 12;
     u64 count : 4;
     u64 flip_arg : 48;
@@ -97,9 +97,9 @@ struct EqueueEvent {
     void TriggerDisplay(void* data) {
         is_triggered = true;
         if (data != nullptr) {
-            auto event_data = static_cast<DceData>(event.data);
+            auto event_data = static_cast<OrbisVideoOutEventData>(event.data);
             auto event_hint_raw = reinterpret_cast<u64>(data);
-            auto event_hint = static_cast<DceHint>(event_hint_raw);
+            auto event_hint = static_cast<OrbisVideoOutEventHint>(event_hint_raw);
             if (event_hint.event_id == event.ident && event.ident != 0xfe) {
                 auto time = Common::FencedRDTSC();
                 auto counter = event_data.count;

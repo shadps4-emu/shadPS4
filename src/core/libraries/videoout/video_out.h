@@ -111,7 +111,7 @@ struct SceVideoOutColorSettings {
     u32 reserved[3];
 };
 
-struct VideoOutEventData {
+struct OrbisVideoOutEventData {
     u64 time : 12;
     u64 count : 4;
     u64 flip_arg : 48;

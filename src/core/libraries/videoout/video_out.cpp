@@ -233,7 +233,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetEventCount(const Kernel::SceKernelEvent* ev) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
     }
 
-    auto event_data = static_cast<VideoOutEventData>(ev->data);
+    auto event_data = static_cast<OrbisVideoOutEventData>(ev->data);
     return event_data.count;
 }
 
