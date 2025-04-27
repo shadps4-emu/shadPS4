@@ -197,8 +197,8 @@ enum class NumberConversion : u32 {
     UintToUscaled = 1,
     SintToSscaled = 2,
     UnormToUbnorm = 3,
-    Sint16ToSnormNz = 5,
-    Sint8ToSnormNz = 6,
+    Sint8ToSnormNz = 5,
+    Sint16ToSnormNz = 6,
 };
 
 struct CompMapping {
