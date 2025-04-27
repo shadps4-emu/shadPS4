@@ -134,7 +134,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfo(s32 handle, Core::OrbisKernelModuleInfo*
     if (info->st_size != sizeof(Core::OrbisKernelModuleInfo)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    
+
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
