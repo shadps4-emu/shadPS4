@@ -99,28 +99,23 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool exists = std::filesystem::exists(file->m_host_name);
     s32 e = 0;
 
-    if (directory) {
-        file->type = Core::FileSys::FileType::Directory;
-
-        if (create) {
-            if (excl && exists) {
-                // Error if file exists
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EEXIST;
-                return -1;
-            }
-            if (!std::filesystem::create_directory(file->m_host_name)) {
-                // Directory creation failed
-                *__Error() = POSIX_EIO;
-                return -1;
-            }
-        } else if (!exists) {
-            // File to open doesn't exist, return ENOENT
+    if (create) {
+        if (excl && exists) {
+            // Error if file exists
             h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOENT;
+            *__Error() = POSIX_EEXIST;
             return -1;
         }
+        // Create file if it doesn't exist
+        Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+    } else if (!exists) {
+        // File to open doesn't exist, return ENOENT
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
 
+    if (directory) {
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (write || rdwr || append || truncate) {
@@ -134,8 +129,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        // If opening is a success, iterate through contents
-        if (e == 0) {
+        // Non-directories can be opened when the directory flag is specified
+        if (std::filesystem::is_directory(file->m_host_name)) {
+            file->type = Core::FileSys::FileType::Directory;
+        } else {
+            file->type = Core::FileSys::FileType::Regular;
+        }
+
+        // If opening is a success, and the file is a directory, iterate through contents
+        if (e == 0 && file->type == Core::FileSys::FileType::Directory) {
             mnt->IterateDirectory(file->m_guest_name,
                 [&file](const auto& ent_path, const auto ent_is_file) {
                     auto& dir_entry = file->dirents.emplace_back();
@@ -145,22 +147,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             file->dirents_index = 0;
         }
     } else {
-        if (create) {
-            if (excl && exists) {
-                // Error if file exists
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EEXIST;
-                return -1;
-            }
-            // Create file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (!exists) {
-            // File to open doesn't exist, return ENOENT
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOENT;
-            return -1;
-        }
-
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
