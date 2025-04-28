@@ -439,6 +439,13 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
+void Rasterizer::ProcessFaults() {
+    if (fault_process_pending) {
+        fault_process_pending = false;
+        buffer_cache.ProcessFaultBuffer();
+    }
+}
+
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (IsComputeMetaClear(pipeline)) {
         return false;
@@ -460,12 +467,13 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
 
-        dma_enabled |= stage->dma_types != Shader::IR::Type::Void;
+        fault_process_pending |= stage->dma_types != Shader::IR::Type::Void;
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
-    if (dma_enabled) {
+    if (fault_process_pending) {
+        // We only use fault buffer for DMA right now.
         // First, import any queued host memory, then sync every mapped
         // region that is cached on GPU memory.
         buffer_cache.CoverQueuedRegions();
@@ -475,7 +483,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
             }
         }
-        buffer_cache.ResetFaultReadbackBuffer();
         buffer_cache.MemoryBarrier();
     }
 

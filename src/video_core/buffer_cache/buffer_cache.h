@@ -84,7 +84,7 @@ public:
 
     /// Retrieves the fault readback buffer.
     [[nodiscard]] Buffer* GetFaultReadbackBuffer() noexcept {
-        return &fault_readback_buffer;
+        return &fault_buffer;
     }
 
     /// Retrieves the buffer with the specified id.
@@ -134,11 +134,8 @@ public:
     /// Covers all queued regions.
     void CoverQueuedRegions();
 
-    /// Creates buffers for "faulted" shader accesses to host memory.
-    void CreateFaultBuffers();
-
-    /// Reset the fault readback buffer.
-    void ResetFaultReadbackBuffer();
+    /// Processes the fault buffer.
+    void ProcessFaultBuffer();
 
     /// Synchronizes all buffers in the specified range.
     void SynchronizeRange(VAddr device_addr, u64 size);
@@ -202,7 +199,7 @@ private:
     StreamBuffer download_buffer;
     Buffer gds_buffer;
     Buffer bda_pagetable_buffer;
-    Buffer fault_readback_buffer;
+    Buffer fault_buffer;
     boost::icl::interval_set<VAddr> queued_converages;
     boost::icl::interval_set<u64> convered_regions;
     std::shared_mutex covered_regions_mutex;
@@ -211,9 +208,9 @@ private:
     RangeSet gpu_modified_ranges;
     MemoryTracker memory_tracker;
     PageTable page_table;
-    vk::UniqueDescriptorSetLayout fault_parse_desc_layout;
-    vk::UniquePipeline fault_parse_pipeline;
-    vk::UniquePipelineLayout fault_parse_pipeline_layout;
+    vk::UniqueDescriptorSetLayout fault_process_desc_layout;
+    vk::UniquePipeline fault_process_pipeline;
+    vk::UniquePipelineLayout fault_process_pipeline_layout;
 };
 
 } // namespace VideoCore

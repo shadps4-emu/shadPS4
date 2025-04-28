@@ -7,7 +7,7 @@
 #include "common/types.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
-#include "video_core/host_shaders/fault_buffer_parser_comp.h"
+#include "video_core/host_shaders/fault_buffer_process_comp.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -33,14 +33,14 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
       bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal,
                            0,        AllFlags,  BDA_PAGETABLE_SIZE},
-      fault_readback_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags,
+      fault_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags,
                             FAULT_READBACK_SIZE),
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
     Vulkan::SetObjectName(instance.GetDevice(), bda_pagetable_buffer.Handle(),
                           "BDA Page Table Buffer");
-    Vulkan::SetObjectName(instance.GetDevice(), fault_readback_buffer.Handle(),
-                          "Fault Readback Buffer");
+    Vulkan::SetObjectName(instance.GetDevice(), fault_buffer.Handle(),
+                          "Fault Buffer");
 
     // Ensure the first slot is used for the null buffer
     const auto null_id =
@@ -75,10 +75,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     ASSERT_MSG(desc_layout_result == vk::Result::eSuccess,
                "Failed to create descriptor set layout: {}",
                vk::to_string(desc_layout_result));
-    fault_parse_desc_layout = std::move(desc_layout);
+    fault_process_desc_layout = std::move(desc_layout);
     
     const auto& module = Vulkan::Compile(
-        HostShaders::FAULT_BUFFER_PARSER_COMP, vk::ShaderStageFlagBits::eCompute,
+        HostShaders::FAULT_BUFFER_PROCESS_COMP, vk::ShaderStageFlagBits::eCompute,
         instance.GetDevice());
     Vulkan::SetObjectName(instance.GetDevice(), module, "Fault Buffer Parser");
 
@@ -96,7 +96,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 1U,
-        .pSetLayouts = &(*fault_parse_desc_layout),
+        .pSetLayouts = &(*fault_process_desc_layout),
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &push_constants,
     };
@@ -105,19 +105,19 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     ASSERT_MSG(layout_result == vk::Result::eSuccess,
                "Failed to create pipeline layout: {}",
                vk::to_string(layout_result));
-    fault_parse_pipeline_layout = std::move(layout);
+    fault_process_pipeline_layout = std::move(layout);
 
     const vk::ComputePipelineCreateInfo pipeline_info = {
         .stage = shader_ci,
-        .layout = *fault_parse_pipeline_layout,
+        .layout = *fault_process_pipeline_layout,
     };
     auto [pipeline_result, pipeline] =
         instance.GetDevice().createComputePipelineUnique({}, pipeline_info);
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess,
                "Failed to create compute pipeline: {}",
                vk::to_string(pipeline_result));
-    fault_parse_pipeline = std::move(pipeline);
-    Vulkan::SetObjectName(instance.GetDevice(), *fault_parse_pipeline, "Fault Buffer Parser Pipeline");
+    fault_process_pipeline = std::move(pipeline);
+    Vulkan::SetObjectName(instance.GetDevice(), *fault_process_pipeline, "Fault Buffer Parser Pipeline");
 
     instance.GetDevice().destroyShaderModule(module);
 }
@@ -614,14 +614,15 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     return new_buffer_id;
 }
 
-void BufferCache::CreateFaultBuffers() {
+void BufferCache::ProcessFaultBuffer() {
+    // Run fault processing shader
     const auto [mapped, offset] = download_buffer.Map(MaxPageFaults * sizeof(u64));
     vk::BufferMemoryBarrier2 fault_readback_barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
         .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
-        .buffer = fault_readback_buffer.Handle(),
+        .buffer = fault_buffer.Handle(),
         .offset = 0,
         .size = FAULT_READBACK_SIZE,
     };
@@ -629,14 +630,14 @@ void BufferCache::CreateFaultBuffers() {
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
         .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-        .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+        .dstAccessMask = vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
         .buffer = download_buffer.Handle(),
         .offset = offset,
         .size = MaxPageFaults * sizeof(u64),
     };
     std::array<vk::BufferMemoryBarrier2, 2> barriers{fault_readback_barrier, download_barrier};
     vk::DescriptorBufferInfo fault_readback_info{
-        .buffer = fault_readback_buffer.Handle(),
+        .buffer = fault_buffer.Handle(),
         .offset = 0,
         .range = FAULT_READBACK_SIZE,
     };
@@ -672,12 +673,45 @@ void BufferCache::CreateFaultBuffers() {
         .bufferMemoryBarrierCount = 2,
         .pBufferMemoryBarriers = barriers.data(),
     });
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *fault_parse_pipeline);
-    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_parse_pipeline_layout, 0, writes);
-    cmdbuf.pushConstants(*fault_parse_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(u32), &CACHING_PAGEBITS);
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *fault_process_pipeline);
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0, writes);
+    cmdbuf.pushConstants(*fault_process_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(u32), &CACHING_PAGEBITS);
     constexpr u32 num_threads = CACHING_NUMPAGES / 32; // 1 bit per page, 32 pages per workgroup
     constexpr u32 num_workgroups = Common::DivCeil(num_threads, 64u);
     cmdbuf.dispatch(num_workgroups, 1, 1);
+
+    // Reset fault buffer
+    const vk::BufferMemoryBarrier2 reset_pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = fault_buffer.Handle(),
+        .offset = 0,
+        .size = FAULT_READBACK_SIZE,
+    };
+    const vk::BufferMemoryBarrier2 reset_post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = fault_buffer.Handle(),
+        .offset = 0,
+        .size = FAULT_READBACK_SIZE,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &reset_pre_barrier,
+    });
+    cmdbuf.fillBuffer(fault_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &reset_post_barrier,
+    });
+
+    // Defer creating buffers
     scheduler.DeferOperation([this, mapped]() {
         // Create the fault buffers batched
         boost::icl::interval_set<VAddr> fault_ranges;
@@ -699,41 +733,6 @@ void BufferCache::CreateFaultBuffers() {
                 CreateBuffer(addr, size_buffer);
             }
         }
-    });
-}
-
-void BufferCache::ResetFaultReadbackBuffer() {
-    const vk::BufferMemoryBarrier2 pre_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .buffer = fault_readback_buffer.Handle(),
-        .offset = 0,
-        .size = FAULT_READBACK_SIZE,
-    };
-    const vk::BufferMemoryBarrier2 post_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .buffer = fault_readback_buffer.Handle(),
-        .offset = 0,
-        .size = FAULT_READBACK_SIZE,
-    };
-    // Reset the fault readback buffer
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-    });
-    cmdbuf.fillBuffer(fault_readback_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
     });
 }
 
