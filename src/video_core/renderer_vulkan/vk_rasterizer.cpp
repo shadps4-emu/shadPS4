@@ -456,6 +456,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     buffer_infos.clear();
     image_infos.clear();
 
+    bool fault_enable = false;
+
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
     Shader::PushData push_data = MakeUserData(liverpool->regs);
@@ -467,12 +469,13 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
 
-        fault_process_pending |= stage->dma_types != Shader::IR::Type::Void;
+        fault_enable |= stage->dma_types != Shader::IR::Type::Void;
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
-    if (fault_process_pending) {
+    if (!fault_process_pending && fault_enable) {
+        fault_process_pending = true;
         // We only use fault buffer for DMA right now.
         // First, import any queued host memory, then sync every mapped
         // region that is cached on GPU memory.
