@@ -202,7 +202,7 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
         .data_format = data_format,
         .num_format = num_format,
         .swizzle = is_inst_typed ? AmdGpu::IdentityMapping : buffer.DstSelect(),
-        .num_conversion = AmdGpu::MapNumberConversion(num_format, data_format),
+        .num_conversion = AmdGpu::MapNumberConversion(num_format),
         .num_components = AmdGpu::NumComponents(data_format),
     };
 

@@ -68,7 +68,7 @@ struct Buffer {
     }
 
     NumberConversion GetNumberConversion() const noexcept {
-        return MapNumberConversion(NumberFormat(num_format), DataFormat(data_format));
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     u32 GetStride() const noexcept {
@@ -292,7 +292,7 @@ struct Image {
     }
 
     NumberConversion GetNumberConversion() const noexcept {
-        return MapNumberConversion(NumberFormat(num_format), DataFormat(data_format));
+        return MapNumberConversion(NumberFormat(num_format));
     }
 
     TilingMode GetTilingMode() const {
