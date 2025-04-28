@@ -134,16 +134,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         file->type = Core::FileSys::FileType::Directory;
 
-        // If opening is a success, iterate through contents
-        if (e == 0) {
-            mnt->IterateDirectory(file->m_guest_name,
-                                  [&file](const auto& ent_path, const auto ent_is_file) {
-                                      auto& dir_entry = file->dirents.emplace_back();
-                                      dir_entry.name = ent_path.filename().string();
-                                      dir_entry.isFile = ent_is_file;
-                                  });
-            file->dirents_index = 0;
-        }
+        // Populate directory contents
+        mnt->IterateDirectory(file->m_guest_name,
+                              [&file](const auto& ent_path, const auto ent_is_file) {
+                                  auto& dir_entry = file->dirents.emplace_back();
+                                  dir_entry.name = ent_path.filename().string();
+                                  dir_entry.isFile = ent_is_file;
+                              });
+        file->dirents_index = 0;
 
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
@@ -159,6 +157,12 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
+        if (e == EACCES) {
+            // Windows-specific hack, ignore the error and continue as normal.
+            LOG_WARNING(Kernel_Fs, "Trying to open a directory on Windows");
+            e = 0;
+        }
+
         if (truncate) {
             // Cannot open directories with truncate
             h->DeleteHandle(handle);
@@ -166,6 +170,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
     } else {
+        if (std::filesystem::is_directory(file->m_host_name)) {
+            // Directories can be opened even if the directory flag isn't set.
+            file->type = Core::FileSys::FileType::Directory;
+        } else {
+            file->type = Core::FileSys::FileType::Regular;
+        }
+
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
@@ -185,9 +196,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
+        if (file->type == Core::FileSys::FileType::Directory && e == EACCES) {
+            // Windows-specific hack, ignore the error and continue as normal.
+            LOG_WARNING(Kernel_Fs, "Tried to open a directory on Windows");
+            e = 0;
+        }
+
         if (truncate && e == 0) {
             // If the file was opened successfully and truncate was enabled, reduce size to 0
-            file->f.SetSize(file->m_host_name.c_str(), 0);
+            file->f.SetSize(file->m_host_name.string().c_str(), 0);
         }
     }
 
@@ -683,7 +700,7 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         return -1;
     }
 
-    file->f.SetSize(file->m_host_name.c_str(), length);
+    file->f.SetSize(file->m_host_name.string().c_str(), length);
     return ORBIS_OK;
 }
 
