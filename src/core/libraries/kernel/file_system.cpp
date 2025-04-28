@@ -124,9 +124,30 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     }
 
     if (directory) {
+        if (!std::filesystem::is_directory(file->m_host_name)) {
+            // If the opened file is not a directory, return ENOTDIR.
+            // This will trigger when create & directory is specified, this is expected.
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_ENOTDIR;
+            return -1;
+        }
+
+        file->type = Core::FileSys::FileType::Directory;
+
+        // If opening is a success, iterate through contents
+        if (e == 0) {
+            mnt->IterateDirectory(file->m_guest_name,
+                                  [&file](const auto& ent_path, const auto ent_is_file) {
+                                      auto& dir_entry = file->dirents.emplace_back();
+                                      dir_entry.name = ent_path.filename().string();
+                                      dir_entry.isFile = ent_is_file;
+                                  });
+            file->dirents_index = 0;
+        }
+
         if (read) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write || rdwr || append || truncate) {
+        } else if (write || rdwr) {
             // Cannot open directories with any type of write access
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
@@ -138,22 +159,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        // Non-directories can be opened when the directory flag is specified
-        if (std::filesystem::is_directory(file->m_host_name)) {
-            file->type = Core::FileSys::FileType::Directory;
-        } else {
-            file->type = Core::FileSys::FileType::Regular;
-        }
-
-        // If opening is a success, and the file is a directory, iterate through contents
-        if (e == 0 && file->type == Core::FileSys::FileType::Directory) {
-            mnt->IterateDirectory(file->m_guest_name,
-                                  [&file](const auto& ent_path, const auto ent_is_file) {
-                                      auto& dir_entry = file->dirents.emplace_back();
-                                      dir_entry.name = ent_path.filename().string();
-                                      dir_entry.isFile = ent_is_file;
-                                  });
-            file->dirents_index = 0;
+        if (truncate) {
+            // Cannot open directories with truncate
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EISDIR;
+            return -1;
         }
     } else {
         if (read) {
