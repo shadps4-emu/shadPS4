@@ -44,7 +44,8 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BitCastF16U16:
         info.uses_fp16 = true;
         break;
-    case IR::Opcode::BitCastU64F64:
+    case IR::Opcode::PackDouble2x32:
+    case IR::Opcode::UnpackDouble2x32:
         info.uses_fp64 = true;
         break;
     case IR::Opcode::ImageWrite:
