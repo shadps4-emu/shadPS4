@@ -500,13 +500,13 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
 
     const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
 
-    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
-        *__Error() = POSIX_ENOTDIR;
+    if (ro) {
+        *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (ro) {
-        *__Error() = POSIX_EROFS;
+    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
+        *__Error() = POSIX_ENOTDIR;
         return -1;
     }
 
