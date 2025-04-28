@@ -1,3 +1,4 @@
+#include "sys_net.h"
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -159,6 +160,9 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     auto id = ++netcall->next_sock_id;
     netcall->socks.emplace(id, sock);
     return id;
+}
+int PS4_SYSV_ABI sys_socket(int family, int type, int protocol) {
+    return sys_socketex(nullptr, family, type, protocol);
 }
 int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
