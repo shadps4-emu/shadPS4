@@ -336,7 +336,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         const auto value_lo = ir.GetVectorReg(IR::VectorReg(operand.code));
         const auto value_hi = ir.GetVectorReg(IR::VectorReg(operand.code + 1));
         if constexpr (is_float) {
-            value = ir.PackFloat2x32(ir.CompositeConstruct(value_lo, value_hi));
+            value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
@@ -444,10 +444,9 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
             value_untyped = ir.FPSaturate(value_raw);
         }
     }
-    const IR::U64 value =
-        is_float ? ir.BitCast<IR::U64>(IR::F64{value_untyped}) : IR::U64{value_untyped};
 
-    const IR::Value unpacked{ir.UnpackUint2x32(value)};
+    const IR::Value unpacked{is_float ? ir.UnpackDouble2x32(IR::F64{value_untyped})
+                                      : ir.UnpackUint2x32(IR::U64{value_untyped})};
     const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
     const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
     switch (operand.field) {
