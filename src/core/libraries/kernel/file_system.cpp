@@ -133,6 +133,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         } else {
             // Invalid flags
+            h->DeleteHandle(handle);
             *__Error() = POSIX_EINVAL;
             return -1;
         }
@@ -169,6 +170,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
         } else {
             // Invalid flags
+            h->DeleteHandle(handle);
             *__Error() = POSIX_EINVAL;
             return -1;
         }
