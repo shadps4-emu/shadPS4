@@ -94,8 +94,9 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
+    bool read_only = false;
     file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostPath(file->m_guest_name);
+    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
     bool exists = std::filesystem::exists(file->m_host_name);
     s32 e = 0;
 
@@ -104,6 +105,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Error if file exists
             h->DeleteHandle(handle);
             *__Error() = POSIX_EEXIST;
+            return -1;
+        }
+
+        if (read_only) {
+            // Can't create files in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
             return -1;
         }
         // Create file if it doesn't exist
