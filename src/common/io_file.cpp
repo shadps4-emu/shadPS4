@@ -330,7 +330,7 @@ bool IOFile::Commit() const {
     return commit_result;
 }
 
-bool IOFile::SetSize(u64 size) const {
+bool IOFile::SetSize(const char* host_path, u64 size) const {
     if (!IsOpen()) {
         return false;
     }
@@ -340,7 +340,7 @@ bool IOFile::SetSize(u64 size) const {
 #ifdef _WIN32
     const auto set_size_result = _chsize_s(fileno(file), static_cast<s64>(size)) == 0;
 #else
-    const auto set_size_result = ftruncate(fileno(file), static_cast<s64>(size)) == 0;
+    const auto set_size_result = truncate(host_path, static_cast<s64>(size)) == 0;
 #endif
 
     if (!set_size_result) {

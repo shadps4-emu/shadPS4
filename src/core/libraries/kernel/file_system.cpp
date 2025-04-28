@@ -187,7 +187,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         if (truncate && e == 0) {
             // If the file was opened successfully and truncate was enabled, reduce size to 0
-            file->f.SetSize(0);
+            file->f.SetSize(file->m_host_name.c_str(), 0);
         }
     }
 
@@ -683,7 +683,7 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         return -1;
     }
 
-    file->f.SetSize(length);
+    file->f.SetSize(file->m_host_name.c_str(), length);
     return ORBIS_OK;
 }
 
