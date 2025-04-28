@@ -149,6 +149,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSDLWindow()); dpi > 0.0f) {
         GetIO().FontGlobalScale = dpi;
     }
+
+    std::at_quick_exit([] { SaveIniSettingsToDisk(GetIO().IniFilename); });
 }
 
 void OnResize() {
