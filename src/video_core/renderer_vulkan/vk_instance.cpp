@@ -331,6 +331,7 @@ bool Instance::CreateDevice() {
                 .tessellationShader = features.tessellationShader,
                 .logicOp = features.logicOp,
                 .depthBiasClamp = features.depthBiasClamp,
+                .depthBounds = features.depthBounds,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
