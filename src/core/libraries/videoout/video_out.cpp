@@ -220,7 +220,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, s64* 
     if (ev->ident != static_cast<s32>(OrbisVideoOutInternalEventId::Flip) || ev->data == 0) {
         *data = event_data;
     } else {
-        *data = event_data | 0xFFFF000000000000;
+        *data = event_data | 0xffff000000000000;
     }
     return ORBIS_OK;
 }
@@ -233,7 +233,8 @@ s32 PS4_SYSV_ABI sceVideoOutGetEventCount(const Kernel::SceKernelEvent* ev) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT;
     }
 
-    return (ev->data >> 0xc) & 0xf;
+    auto event_data = static_cast<OrbisVideoOutEventData>(ev->data);
+    return event_data.count;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
