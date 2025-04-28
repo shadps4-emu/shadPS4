@@ -88,8 +88,12 @@ Id EmitUnpackUint2x32(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.U32[2], value);
 }
 
-Id EmitPackFloat2x32(EmitContext& ctx, Id value) {
+Id EmitPackDouble2x32(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.F64[1], value);
+}
+
+Id EmitUnpackDouble2x32(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.F32[2], value);
 }
 
 Id EmitPackUnorm2x16(EmitContext& ctx, Id value) {
