@@ -25,7 +25,7 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
@@ -41,7 +41,7 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
@@ -79,7 +79,7 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
@@ -95,7 +95,7 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
@@ -111,7 +111,7 @@ int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval,
@@ -128,7 +128,7 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how) {
@@ -181,7 +181,7 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
@@ -198,7 +198,7 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
@@ -219,7 +219,7 @@ int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
