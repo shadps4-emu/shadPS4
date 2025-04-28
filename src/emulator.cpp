@@ -91,9 +91,9 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(game_folder, "/app0");
+    mnt->Mount(game_folder, "/app0", true);
     // Certain games may use /hostapp as well such as CUSA001100
-    mnt->Mount(game_folder, "/hostapp");
+    mnt->Mount(game_folder, "/hostapp", true);
 
     auto& game_info = Common::ElfInfo::Instance();
 
