@@ -169,7 +169,19 @@ int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     return -1;
 }
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    auto* netcall = Common::Singleton<NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    int returncode = sock->Close();
+    if (returncode >= 0) {
+        return returncode;
+    }
+    *Libraries::Kernel::__Error() = returncode;
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
