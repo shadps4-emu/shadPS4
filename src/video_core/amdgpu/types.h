@@ -359,7 +359,6 @@ inline NumberConversion MapNumberConversion(const NumberFormat num_fmt, const Da
             return NumberConversion::Sint16ToSnormNz;
         default:
             UNREACHABLE_MSG("data_fmt = {}", u32(data_fmt));
-            break;
         }
     }
     default:
