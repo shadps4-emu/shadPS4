@@ -196,8 +196,8 @@ OPCODE(BitCastF32U32,                                       F32,            U32,
 
 OPCODE(PackUint2x32,                                        U64,            U32x2,                                                                          )
 OPCODE(UnpackUint2x32,                                      U32x2,          U64,                                                                            )
-OPCODE(PackDouble2x32,                                      F64,            F32x2,                                                                          )
-OPCODE(UnpackDouble2x32,                                    F32x2,          F64,                                                                            )
+OPCODE(PackDouble2x32,                                      F64,            U32x2,                                                                          )
+OPCODE(UnpackDouble2x32,                                    U32x2,          F64,                                                                            )
 
 OPCODE(PackUnorm2x16,                                       U32,            F32x2,                                                                          )
 OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )

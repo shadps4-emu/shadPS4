@@ -447,8 +447,8 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 
     const IR::Value unpacked{is_float ? ir.UnpackDouble2x32(IR::F64{value_untyped})
                                       : ir.UnpackUint2x32(IR::U64{value_untyped})};
-    const IR::U32F32 lo{ir.CompositeExtract(unpacked, 0U)};
-    const IR::U32F32 hi{ir.CompositeExtract(unpacked, 1U)};
+    const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+    const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
     switch (operand.field) {
     case OperandField::ScalarGPR:
         ir.SetScalarReg(IR::ScalarReg(operand.code + 1), hi);
