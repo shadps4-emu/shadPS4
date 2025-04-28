@@ -84,13 +84,15 @@ inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
         const IR::F32 max = ir.Imm32(float(std::numeric_limits<u8>::max()));
         const IR::F32 mul = ir.FPMul(ir.FPClamp(value, ir.Imm32(-1.f), ir.Imm32(1.f)), max);
         const IR::F32 left = ir.FPSub(mul, ir.Imm32(1.f));
-        return ir.BitCast<F32>(U32{ir.FPDiv(left, ir.Imm32(2.f))});
+        const IR::U32 raw = ir.ConvertFToS(32, ir.FPDiv(left, ir.Imm32(2.f)));
+        return ir.BitCast<F32>(raw);
     }
     case AmdGpu::NumberConversion::Sint16ToSnormNz: {
         const IR::F32 max = ir.Imm32(float(std::numeric_limits<u16>::max()));
         const IR::F32 mul = ir.FPMul(ir.FPClamp(value, ir.Imm32(-1.f), ir.Imm32(1.f)), max);
         const IR::F32 left = ir.FPSub(mul, ir.Imm32(1.f));
-        return ir.BitCast<F32>(U32{ir.FPDiv(left, ir.Imm32(2.f))});
+        const IR::U32 raw = ir.ConvertFToS(32, ir.FPDiv(left, ir.Imm32(2.f)));
+        return ir.BitCast<F32>(raw);
     }                        
     default:
         UNREACHABLE();
