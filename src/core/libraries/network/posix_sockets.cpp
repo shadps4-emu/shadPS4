@@ -108,6 +108,18 @@ static int ConvertReturnErrorCode(int retval) {
     return retval;
 }
 
+static int ConvertLevels(int level) {
+    switch (level) {
+    case ORBIS_NET_SOL_SOCKET:
+        return SOL_SOCKET;
+    case ORBIS_NET_IPPROTO_IP:
+        return IPPROTO_IP;
+    case ORBIS_NET_IPPROTO_TCP:
+        return IPPROTO_TCP;
+    }
+    return -1;
+}
+
 static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst) {
     if (src == nullptr || dst == nullptr)
         return;
@@ -209,10 +221,78 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     return res;
 }
 
+#define CASE_SETSOCKOPT(opt)                                                                       \
+    case ORBIS_NET_##opt:                                                                          \
+        return ConvertReturnErrorCode(setsockopt(sock, level, opt, (const char*)optval, optlen))
+
+#define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
+    case opt:                                                                                      \
+        if (optlen != sizeof(*value)) {                                                            \
+            return ORBIS_NET_ERROR_EFAULT;                                                         \
+        }                                                                                          \
+        memcpy(value, optval, optlen);                                                             \
+        return 0
+
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
+    level = ConvertLevels(level);
+    if (level == SOL_SOCKET) {
+        switch (optname) {
+            CASE_SETSOCKOPT(SO_REUSEADDR);
+            CASE_SETSOCKOPT(SO_KEEPALIVE);
+            CASE_SETSOCKOPT(SO_BROADCAST);
+            CASE_SETSOCKOPT(SO_LINGER);
+            CASE_SETSOCKOPT(SO_SNDBUF);
+            CASE_SETSOCKOPT(SO_RCVBUF);
+            CASE_SETSOCKOPT(SO_SNDTIMEO);
+            CASE_SETSOCKOPT(SO_RCVTIMEO);
+            CASE_SETSOCKOPT(SO_ERROR);
+            CASE_SETSOCKOPT(SO_TYPE);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_NAME:
+            return ORBIS_NET_ERROR_EINVAL; // don't support set for name
+        case ORBIS_NET_SO_NBIO: {
+            if (optlen != sizeof(sockopt_so_nbio)) {
+                return ORBIS_NET_ERROR_EFAULT;
+            }
+            memcpy(&sockopt_so_nbio, optval, optlen);
+#ifdef _WIN32
+            static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio),
+                          "type used for ioctlsocket value does not have the expected size");
+            return ConvertReturnErrorCode(ioctlsocket(sock, FIONBIO, (u_long*)&sockopt_so_nbio));
+#else
+            return ConvertReturnErrorCode(ioctl(sock, FIONBIO, &sockopt_so_nbio));
+#endif
+        }
+        }
+    } else if (level == IPPROTO_IP) {
+        switch (optname) {
+            CASE_SETSOCKOPT(IP_HDRINCL);
+            CASE_SETSOCKOPT(IP_TOS);
+            CASE_SETSOCKOPT(IP_TTL);
+            CASE_SETSOCKOPT(IP_MULTICAST_IF);
+            CASE_SETSOCKOPT(IP_MULTICAST_TTL);
+            CASE_SETSOCKOPT(IP_MULTICAST_LOOP);
+            CASE_SETSOCKOPT(IP_ADD_MEMBERSHIP);
+            CASE_SETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, &sockopt_ip_ttlchk);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
+        }
+    } else if (level == IPPROTO_TCP) {
+        switch (optname) {
+            CASE_SETSOCKOPT(TCP_NODELAY);
+            CASE_SETSOCKOPT(TCP_MAXSEG);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_TCP_MSS_TO_ADVERTISE, &sockopt_tcp_mss_to_advertise);
+        }
+    }
+
+    UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }
 int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
+    UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }
 
