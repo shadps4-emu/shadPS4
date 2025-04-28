@@ -89,6 +89,11 @@ public:
         return features.depthBounds;
     }
 
+    /// Returns true if 64-bit floats are supported in shaders
+    bool IsShaderFloat64Supported() const {
+        return features.shaderFloat64;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;
