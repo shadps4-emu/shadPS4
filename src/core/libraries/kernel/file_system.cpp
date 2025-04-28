@@ -147,11 +147,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         // If opening is a success, and the file is a directory, iterate through contents
         if (e == 0 && file->type == Core::FileSys::FileType::Directory) {
             mnt->IterateDirectory(file->m_guest_name,
-                [&file](const auto& ent_path, const auto ent_is_file) {
-                    auto& dir_entry = file->dirents.emplace_back();
-                    dir_entry.name = ent_path.filename().string();
-                    dir_entry.isFile = ent_is_file;
-                });
+                                  [&file](const auto& ent_path, const auto ent_is_file) {
+                                      auto& dir_entry = file->dirents.emplace_back();
+                                      dir_entry.name = ent_path.filename().string();
+                                      dir_entry.isFile = ent_is_file;
+                                  });
             file->dirents_index = 0;
         }
     } else {
