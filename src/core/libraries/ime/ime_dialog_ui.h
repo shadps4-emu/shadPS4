@@ -45,6 +45,7 @@ class ImeDialogState final {
     // Optional custom keyboard style (from extended params)
     bool has_custom_style = false;
     KeyboardStyle custom_kb_style{};
+    int caret_index = 0;
 
 public:
     /*──────────────── constructors / rule‑of‑five ────────────────*/
@@ -91,21 +92,52 @@ public:
         input_changed = true;
     }
 
-    // Append raw UTF‑8 sequence of length 'len'
-    void AppendUtf8(const char* utf8, std::size_t len) {
+    void InsertUtf8AtCaret(const char* utf8, std::size_t len) {
         if (!utf8 || len == 0)
             return;
-        std::size_t old = std::strlen(current_text.begin());
-        if (old + len >= current_text.capacity())
-            return; // full: silently ignore
-        std::memcpy(current_text.begin() + old, utf8, len);
-        current_text[old + len] = '\0';
+
+        std::size_t old_len = std::strlen(current_text.begin());
+        if (old_len + len >= current_text.capacity())
+            return; // full, silently ignore
+
+        // Move the text after caret forward
+        char* text_begin = current_text.begin();
+        std::memmove(text_begin + caret_index + len, text_begin + caret_index,
+                     old_len - caret_index + 1); // +1 for null-terminator
+
+        // Copy the inserted text at caret position
+        std::memcpy(text_begin + caret_index, utf8, len);
+
+        caret_index += (int)len; // Move caret after inserted text
         input_changed = true;
     }
 
     // Remove one UTF‑8 code‑point from the end (safe backspace)
     void BackspaceUtf8() {
         Utf8SafeBackspace(current_text.begin());
+        input_changed = true;
+    }
+
+    void BackspaceUtf8AtCaret() {
+        char* buf = current_text.begin();
+        size_t len = std::strlen(buf);
+
+        if (caret_index == 0 || len == 0)
+            return;
+
+        // Find byte index just before caret (start of previous codepoint)
+        int remove_start = caret_index - 1;
+        while (remove_start > 0 &&
+               (static_cast<unsigned char>(buf[remove_start]) & 0b11000000) == 0b10000000)
+            --remove_start;
+
+        int remove_len = caret_index - remove_start;
+
+        // Shift everything after caret to the left
+        std::memmove(buf + remove_start, buf + caret_index,
+                     len - caret_index + 1); // +1 to move null terminator
+        caret_index = remove_start;
+
         input_changed = true;
     }
 

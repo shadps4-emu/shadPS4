@@ -379,6 +379,16 @@ void ImeDialogUi::DrawInputText() {
                     InputTextCallback, this)) {
         state->input_changed = true;
     }
+
+    // CARET: manually render even if not focused
+    if (!ImGui::IsItemActive()) {
+        // Calculate input field position
+        ImVec2 input_pos = ImGui::GetItemRectMin();
+
+        // Find where to draw the caret
+        DrawCaretForInputText(state->current_text.begin(), state->caret_index, input_pos);
+    }
+
     // ────── replicate keyboard’s hover→nav focus highlight ──────
     if (ImGui::IsItemHovered()) {
         ImGui::SetItemCurrentNavFocus();
@@ -601,14 +611,25 @@ void ImeDialogUi::OnVirtualKeyEvent(const VirtualKeyEvent* evt) {
         case KeyType::Character: {
             char utf8[8]{};
             int n = c16rtomb(utf8, key->character);
-            if (n > 0)
-                state->AppendUtf8(utf8, (size_t)n);
+            if (n > 0) {
+                state->InsertUtf8AtCaret(utf8, (size_t)n);
+            }
             break;
         }
         case KeyType::Function:
             switch (key->keycode) {
+            case KC_LEFT: // Your custom code for ◀ button
+                if (state->caret_index > 0)
+                    state->caret_index--;
+                LOG_INFO(Lib_ImeDialog, "Caret index = {}", state->caret_index);
+                break;
+            case KC_RIGHT: // Your custom code for ▶ button
+                if (state->caret_index < (int)state->current_text.size())
+                    state->caret_index++;
+                LOG_INFO(Lib_ImeDialog, "Caret index = {}", state->caret_index);
+                break;
             case 0x08:
-                state->BackspaceUtf8();
+                state->BackspaceUtf8AtCaret();
                 break; // Backspace
             case 0x0D:
                 *status = OrbisImeDialogStatus::Finished; // Enter

@@ -57,3 +57,7 @@ constexpr u16 KC_LETTERS = 0xF103;
 constexpr u16 KC_KB = 0xF104;
 constexpr u16 KC_GYRO = 0xF105;
 constexpr u16 KC_OPT = 0xF106;
+constexpr u16 KC_UP = 0xF020;
+constexpr u16 KC_DOWN = 0xF021;
+constexpr u16 KC_LEFT = 0xF022;
+constexpr u16 KC_RIGHT = 0xF023;
