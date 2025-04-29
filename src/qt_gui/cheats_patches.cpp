@@ -1387,7 +1387,7 @@ void CheatsPatches::applyPatch(const QString& patchName, bool enabled) {
             if (type == "mask_jump32")
                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-            if (type == "mask" || type == "mask_jump32" && !maskOffsetStr.toStdString().empty()) {
+            if ((type == "mask" || type == "mask_jump32") && !maskOffsetStr.toStdString().empty()) {
                 maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
             }
 
