@@ -721,8 +721,8 @@ void BufferCache::ProcessFaultBuffer() {
         // Create the fault buffers batched
         boost::icl::interval_set<VAddr> fault_ranges;
         const u64* fault_ptr = std::bit_cast<const u64*>(mapped);
-        u64 fault_count = *(fault_ptr++);
-        for (u64 i = 0; i < fault_count; ++i) {
+        const u32 fault_count = static_cast<u32>(*(fault_ptr++));
+        for (u32 i = 0; i < fault_count; ++i) {
             const VAddr fault = *(fault_ptr++);
             const VAddr fault_end = fault + CACHING_PAGESIZE; // This can be adjusted
             fault_ranges +=
