@@ -207,8 +207,8 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
                        ? AmdGpu::RemapSwizzle(flags.inst_data_fmt.Value(), AmdGpu::IdentityMapping)
                        : buffer.DstSelect(),
         .num_conversion = is_inst_typed 
-                            ? AmdGpu::MapNumberConversion(flags.inst_num_fmt.Value(), flags.inst_data_fmt.Value())
-                                        : buffer.GetNumberConversion(),
+                              ? AmdGpu::MapNumberConversion(flags.inst_num_fmt.Value(), flags.inst_data_fmt.Value())
+                              : buffer.GetNumberConversion(),
         .num_components = AmdGpu::NumComponents(data_format),
     };
 
