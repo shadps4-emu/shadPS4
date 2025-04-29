@@ -57,6 +57,14 @@ public:
                             });
     }
 
+    void UnmarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
+        IteratePages<false>(dirty_cpu_addr, query_size,
+                            [](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::GPU, false>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
+    }
+
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
     void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
         IteratePages<true>(query_cpu_range, query_size,

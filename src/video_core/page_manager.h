@@ -37,9 +37,8 @@ public:
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) const;
 
-    /// Updates watches in the pages touching the specified region
-    /// using a mask.
-    template <bool track>
+    /// Updates watches in the pages touching the specified region using a mask.
+    template <bool track, bool is_read = false>
     void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const;
 
     /// Returns page aligned address.

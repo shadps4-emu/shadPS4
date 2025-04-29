@@ -1542,6 +1542,7 @@ public:
         u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
+    std::thread::id gpu_id;
 
 private:
     struct Task {
@@ -1583,6 +1584,7 @@ private:
     template <bool is_indirect = false>
     Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
 
+    void ProcessCommands();
     void Process(std::stop_token stoken);
 
     struct GpuQueue {
