@@ -82,23 +82,29 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         instance.GetDevice());
     Vulkan::SetObjectName(instance.GetDevice(), module, "Fault Buffer Parser");
 
+    const vk::SpecializationMapEntry specialization_map_entry = {
+        .constantID = 0,
+        .offset = 0,
+        .size = sizeof(u32),
+    };
+
+    const vk::SpecializationInfo specialization_info = {
+        .mapEntryCount = 1,
+        .pMapEntries = &specialization_map_entry,
+        .dataSize = sizeof(u32),
+        .pData = &CACHING_PAGEBITS,
+    };
+
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
         .pName = "main",
-    };
-
-    const vk::PushConstantRange push_constants = {
-        .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        .offset = 0,
-        .size = sizeof(u32),
+        .pSpecializationInfo = &specialization_info,
     };
 
     const vk::PipelineLayoutCreateInfo layout_info = {
         .setLayoutCount = 1U,
         .pSetLayouts = &(*fault_process_desc_layout),
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges = &push_constants,
     };
     auto [layout_result, layout] =
         instance.GetDevice().createPipelineLayoutUnique(layout_info);
@@ -675,7 +681,6 @@ void BufferCache::ProcessFaultBuffer() {
     });
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *fault_process_pipeline);
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0, writes);
-    cmdbuf.pushConstants(*fault_process_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(u32), &CACHING_PAGEBITS);
     constexpr u32 num_threads = CACHING_NUMPAGES / 32; // 1 bit per page, 32 pages per workgroup
     constexpr u32 num_workgroups = Common::DivCeil(num_threads, 64u);
     cmdbuf.dispatch(num_workgroups, 1, 1);
