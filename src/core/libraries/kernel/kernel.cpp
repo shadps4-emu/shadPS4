@@ -240,6 +240,15 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("TU-d9PfIHPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
     LIB_FUNCTION("oBr313PppNE", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
     LIB_FUNCTION("lUk6wrGXyMw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
+    LIB_FUNCTION("fFxGkxF2bVo", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_setsockopt);
+    LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_getsockname);
+    LIB_FUNCTION("KuOmgKoqCdY", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
+    LIB_FUNCTION("5jRCs2axtr4", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sceNetInetNtop); // TODO fix it to sys_ ...
+    LIB_FUNCTION("4n51s0zEf0c", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sceNetInetPton); // TODO fix it to sys_ ...
 }
 
 } // namespace Libraries::Kernel
