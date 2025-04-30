@@ -115,6 +115,7 @@ void CollectShaderInfoPass(IR::Program& program) {
             .used_types = IR::Type::U64,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
             .buffer_type = BufferType::BdaPagetable,
+            .is_written = true,
         });
         program.info.buffers.push_back({
             .used_types = IR::Type::U8,

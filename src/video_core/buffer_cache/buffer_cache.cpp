@@ -10,6 +10,7 @@
 #include "video_core/host_shaders/fault_buffer_process_comp.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -350,7 +351,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
 std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, bool prefer_gpu) {
     // Check if any buffer contains the full requested range.
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
-    const BufferId buffer_id = page_table[page];
+    const BufferId buffer_id = page_table[page].buffer_id;
     if (buffer_id) {
         Buffer& buffer = slot_buffers[buffer_id];
         if (buffer.IsInBounds(gpu_addr, size)) {
@@ -373,7 +374,7 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     const VAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
     for (u64 page = addr >> CACHING_PAGEBITS; page < page_end;) {
-        const BufferId buffer_id = page_table[page];
+        const BufferId buffer_id = page_table[page].buffer_id;
         if (!buffer_id) {
             ++page;
             continue;
@@ -403,7 +404,7 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
         return NULL_BUFFER_ID;
     }
     const u64 page = device_addr >> CACHING_PAGEBITS;
-    const BufferId buffer_id = page_table[page];
+    const BufferId buffer_id = page_table[page].buffer_id;
     if (!buffer_id) {
         return CreateBuffer(device_addr, size);
     }
@@ -488,7 +489,7 @@ BufferCache::OverlapResult BufferCache::ResolveOverlaps(VAddr device_addr, u32 w
     }
     for (; device_addr >> CACHING_PAGEBITS < Common::DivCeil(end, CACHING_PAGESIZE);
          device_addr += CACHING_PAGESIZE) {
-        const BufferId overlap_id = page_table[device_addr >> CACHING_PAGEBITS];
+        const BufferId overlap_id = page_table[device_addr >> CACHING_PAGEBITS].buffer_id;
         if (!overlap_id) {
             continue;
         }
@@ -599,7 +600,11 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     const u64 size_pages = size >> CACHING_PAGEBITS;
     bda_addrs.reserve(size_pages);
     for (u64 i = 0; i < size_pages; ++i) {
-        bda_addrs.push_back(new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS));
+        vk::DeviceAddress addr = new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS);
+        const bool is_dma_synced = page_table[start_page + i].is_dma_synced;
+        // Use LSB to mark if the page is DMA synced. If it is not synced, it
+        // we haven't accessed it yet.
+        bda_addrs.push_back(addr | (is_dma_synced ? 0x1 : 0x0));
     }
     WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
                     bda_addrs.size() * sizeof(vk::DeviceAddress));
@@ -727,17 +732,24 @@ void BufferCache::ProcessFaultBuffer() {
             const VAddr fault_end = fault + CACHING_PAGESIZE; // This can be adjusted
             fault_ranges +=
                 boost::icl::interval_set<VAddr>::interval_type::right_open(fault, fault_end);
-            LOG_WARNING(Render_Vulkan, "Accessed non GPU-local memory at page {:#x}", fault);
+            LOG_WARNING(Render_Vulkan, "First time DMA access to memory at page {:#x}", fault);
         }
         for (const auto& range : fault_ranges) {
             const VAddr start = range.lower();
             const VAddr end = range.upper();
-            // Buffer size is 32 bits
-            for (VAddr addr = start; addr < end; addr += std::numeric_limits<u32>::max()) {
-                const u32 size_buffer = std::min<u32>(end - addr, std::numeric_limits<u32>::max());
-                CreateBuffer(addr, size_buffer);
+            const VAddr page_start = start >> CACHING_PAGEBITS;
+            const VAddr page_end = Common::DivCeil(end, CACHING_PAGESIZE);
+            // Mark the pages as synced
+            for (u64 page = page_start; page < page_end; ++page) {
+                page_table[page].is_dma_synced = true;
             }
+            // Buffer size is in 32 bits
+            ASSERT_MSG((range.upper() - range.lower()) <= std::numeric_limits<u32>::max(),
+                    "Buffer size is too large");
+            // Only create a buffer is the current range doesn't fit in an existing one
+            FindBuffer(start, static_cast<u32>(end - start));
         }
+        rasterizer.AddDmaSyncRanges(fault_ranges);
     });
 }
 
@@ -759,9 +771,9 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     const u64 page_end = Common::DivCeil(device_addr_end, CACHING_PAGESIZE);
     for (u64 page = page_begin; page != page_end; ++page) {
         if constexpr (insert) {
-            page_table[page] = buffer_id;
+            page_table[page].buffer_id = buffer_id;
         } else {
-            page_table[page] = BufferId{};
+            page_table[page].buffer_id = BufferId{};
         }
     }
 }

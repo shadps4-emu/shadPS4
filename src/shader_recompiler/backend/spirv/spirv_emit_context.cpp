@@ -204,6 +204,8 @@ void EmitContext::DefineArithmeticTypes() {
         // Used to calculate fault readback buffer position and mask
         u32_three_value = ConstU32(3U);
         u32_seven_value = ConstU32(7U);
+        bda_first_time_mask = Constant(U64, 0x1ULL);
+        bda_first_time_inv_mask = Constant(U64, ~0x1ULL);
     }
 }
 
