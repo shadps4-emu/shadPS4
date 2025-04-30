@@ -33,7 +33,7 @@ void main() {
         uint bit = findLSB(word);
         word &= word - 1;
         uint page = base_bit + bit;
-        uint store_index = atomicAdd(download_buffer32[0], 1u);
+        uint store_index = atomicAdd(download_buffer32[0], 1u) + 1u;
         // It is very unlikely, but should we check for overflow?
         if (store_index < 1024u) { // only support 1024 page faults
             download_buffer[store_index] = uint64_t(page) << CACHING_PAGEBITS;
