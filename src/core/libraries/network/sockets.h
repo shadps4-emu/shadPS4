@@ -55,7 +55,6 @@ struct PosixSocket : public Socket {
     int sockopt_so_onesbcast = 0;
     int sockopt_so_usecrypto = 0;
     int sockopt_so_usesignature = 0;
-    int sockopt_so_tppolicy = 0;
     int sockopt_so_nbio = 0;
     int sockopt_ip_ttlchk = 0;
     int sockopt_ip_maxttl = 0;

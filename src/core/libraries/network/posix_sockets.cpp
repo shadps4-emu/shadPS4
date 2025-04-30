@@ -291,7 +291,67 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }
+
+#define CASE_GETSOCKOPT(opt)                                                                       \
+    case ORBIS_NET_##opt: {                                                                        \
+        socklen_t optlen_temp = *optlen;                                                           \
+        auto retval =                                                                              \
+            ConvertReturnErrorCode(getsockopt(sock, level, opt, (char*)optval, &optlen_temp));     \
+        *optlen = optlen_temp;                                                                     \
+        return retval;                                                                             \
+    }
+#define CASE_GETSOCKOPT_VALUE(opt, value)                                                          \
+    case opt:                                                                                      \
+        if (*optlen < sizeof(value)) {                                                             \
+            *optlen = sizeof(value);                                                               \
+            return ORBIS_NET_ERROR_EFAULT;                                                         \
+        }                                                                                          \
+        *optlen = sizeof(value);                                                                   \
+        *(decltype(value)*)optval = value;                                                         \
+        return 0;
+
 int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
+    level = ConvertLevels(level);
+    if (level == SOL_SOCKET) {
+        switch (optname) {
+            CASE_GETSOCKOPT(SO_REUSEADDR);
+            CASE_GETSOCKOPT(SO_KEEPALIVE);
+            CASE_GETSOCKOPT(SO_BROADCAST);
+            CASE_GETSOCKOPT(SO_LINGER);
+            CASE_GETSOCKOPT(SO_SNDBUF);
+            CASE_GETSOCKOPT(SO_RCVBUF);
+            CASE_GETSOCKOPT(SO_SNDTIMEO);
+            CASE_GETSOCKOPT(SO_RCVTIMEO);
+            CASE_GETSOCKOPT(SO_ERROR);
+            CASE_GETSOCKOPT(SO_TYPE);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NBIO, sockopt_so_nbio);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, sockopt_so_reuseport);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, sockopt_so_onesbcast);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, sockopt_so_usecrypto);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, sockopt_so_usesignature);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
+                                  (char)0); // writes an empty string to the output buffer
+        }
+    } else if (level == IPPROTO_IP) {
+        switch (optname) {
+            CASE_GETSOCKOPT(IP_HDRINCL);
+            CASE_GETSOCKOPT(IP_TOS);
+            CASE_GETSOCKOPT(IP_TTL);
+            CASE_GETSOCKOPT(IP_MULTICAST_IF);
+            CASE_GETSOCKOPT(IP_MULTICAST_TTL);
+            CASE_GETSOCKOPT(IP_MULTICAST_LOOP);
+            CASE_GETSOCKOPT(IP_ADD_MEMBERSHIP);
+            CASE_GETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, sockopt_ip_ttlchk);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, sockopt_ip_maxttl);
+        }
+    } else if (level == IPPROTO_TCP) {
+        switch (optname) {
+            CASE_GETSOCKOPT(TCP_NODELAY);
+            CASE_GETSOCKOPT(TCP_MAXSEG);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_TCP_MSS_TO_ADVERTISE, sockopt_tcp_mss_to_advertise);
+        }
+    }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
 }
