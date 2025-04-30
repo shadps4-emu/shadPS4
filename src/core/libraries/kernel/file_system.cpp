@@ -136,7 +136,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     if (std::filesystem::is_directory(file->m_host_name) || directory) {
         // Directories can be opened even if the directory flag isn't set.
         // In these cases, error behavior is identical to the directory code path.
-        directory = true;   
+        directory = true;
     }
 
     if (directory) {
