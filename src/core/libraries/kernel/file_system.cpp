@@ -123,6 +123,16 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
+    if (std::filesystem::is_directory(file->m_host_name) || directory) {
+        // Directories can be opened even if the directory flag isn't set.
+        // In these cases, error behavior is identical to the directory code path.
+        directory = true;
+        file->type = Core::FileSys::FileType::Directory;
+    } else {
+        file->type = Core::FileSys::FileType::Regular;
+    }
+
+
     if (directory) {
         if (!std::filesystem::is_directory(file->m_host_name)) {
             // If the opened file is not a directory, return ENOTDIR.
@@ -131,8 +141,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             *__Error() = POSIX_ENOTDIR;
             return -1;
         }
-
-        file->type = Core::FileSys::FileType::Directory;
 
         // Populate directory contents
         mnt->IterateDirectory(file->m_guest_name,
@@ -170,16 +178,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
     } else {
-        if (std::filesystem::is_directory(file->m_host_name)) {
-            // Directories can be opened even if the directory flag isn't set.
-            file->type = Core::FileSys::FileType::Directory;
-        } else {
-            file->type = Core::FileSys::FileType::Regular;
-        }
-
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (read_only) {
+            // Can't open files with write/read-write access in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
         } else if (append) {
             // Append can be specified with rdwr or write, but we treat it as a separate mode.
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
@@ -196,13 +202,12 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        if (file->type == Core::FileSys::FileType::Directory && e == EACCES) {
-            // Windows-specific hack, ignore the error and continue as normal.
-            LOG_WARNING(Kernel_Fs, "Tried to open a directory on Windows");
-            e = 0;
-        }
-
-        if (truncate && e == 0) {
+        if (truncate && read_only) {
+            // Can't open files with truncate flag in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        } else if (truncate && e == 0) {
             // If the file was opened successfully and truncate was enabled, reduce size to 0
             file->f.SetSize(file->m_host_name.string().c_str(), 0);
         }
