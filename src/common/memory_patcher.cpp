@@ -169,7 +169,8 @@ void OnGameLoaded() {
                             if (type == "mask_jump32")
                                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-                            if (type == "mask" || type == "mask_jump32" && !maskOffsetStr.empty()) {
+                            if ((type == "mask" || type == "mask_jump32") &&
+                                !maskOffsetStr.empty()) {
                                 maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
                             }
 
