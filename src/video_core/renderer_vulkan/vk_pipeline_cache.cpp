@@ -493,11 +493,11 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
-    std::ostringstream info_dump, profile_dump;
-    ::ShaderCache::DumpInfo(info_dump, info);
-    ::ShaderCache::DumpProfile(profile_dump, profile);
-    std::string shader_id = ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_dump, profile_dump);
-    ::ShaderCache::AddShader(shader_id, std::vector<u32>{}, info_dump, profile_dump);
+    std::ostringstream info_serialized, profile_serialized;
+    ::ShaderCache::SerializeInfo(info_serialized, info);
+    ::ShaderCache::SerializeProfile(profile_serialized, profile);
+    std::string shader_id = ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_serialized, profile_serialized);
+    ::ShaderCache::AddShader(shader_id, std::vector<u32>{}, info_serialized, profile_serialized);
     LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
