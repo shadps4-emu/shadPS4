@@ -224,15 +224,15 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         std::filesystem::create_directory(mount_data_dir);
     }
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
+
+    // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    if (!std::filesystem::exists(mount_temp_dir)) {
-        std::filesystem::create_directory(mount_temp_dir);
-    } else {
-        // Temportary directory should be cleared on each boot.
+    if (std::filesystem::exists(mount_temp_dir)) {
+        // Temp folder should be cleared on each boot.
         std::filesystem::remove_all(mount_temp_dir);
-        std::filesystem::create_directory(mount_temp_dir);
     }
-    mnt->Mount(mount_temp_dir, "/temp0"); // called in app_content ==> stat/mkdir
+    std::filesystem::create_directory(mount_temp_dir);
+    mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
