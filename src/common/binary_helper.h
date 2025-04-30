@@ -1,4 +1,6 @@
-#include <iostream>  
+#pragma once 
+
+#include <iostream>
 #include <vector>  
 
 using u32 = uint32_t;

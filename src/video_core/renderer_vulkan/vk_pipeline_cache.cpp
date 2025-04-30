@@ -12,6 +12,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/renderer_vulkan/shader_cache.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
@@ -492,30 +493,30 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
+    std::ostringstream info_dump, profile_dump;
+    ::ShaderCache::DumpInfo(info_dump, info);
+    ::ShaderCache::DumpProfile(profile_dump, profile);
+    std::string shader_id = ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_dump, profile_dump);
+    ::ShaderCache::AddShader(shader_id, std::vector<u32>{}, info_dump, profile_dump);
+    LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
+
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     
     std::string shader_name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
-    std::string spirv_cache_filename =
-        shader_name + "_" + Common::g_scm_rev + ".spv ";
 
 
-    std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
 
     std::vector<u32> spv;
 
-    if (std::filesystem::exists(spirv_cache_file_path)) {
-        Common::FS::IOFile spirv_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
-        spv.resize(spirv_cache_file.GetSize() / sizeof(u32));
-        spirv_cache_file.Read(spv);
-        LOG_INFO(Render_Vulkan, "Loaded SPIR-V from cache: {}", spirv_cache_file_path.string());
+    if (::ShaderCache::CheckShaderCache(shader_id)) {
+        LOG_INFO(Render_Vulkan, "Loaded SPIR-V from cache");
     } else {
         spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
 
         DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
-        Common::FS::IOFile shader_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Write);
-        shader_cache_file.WriteSpan(std::span<const u32>(spv));
-        LOG_INFO(Render_Vulkan, "Compiled SPIR-V and stored in cache: {}", spirv_cache_file_path.string());
+
+        LOG_INFO(Render_Vulkan, "Compiled SPIR-V and stored in cache");
     }
 
     vk::ShaderModule module;
