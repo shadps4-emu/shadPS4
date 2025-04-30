@@ -734,7 +734,7 @@ void Rasterizer::AddDmaSyncRanges(const boost::icl::interval_set<VAddr>& ranges)
     {
         std::scoped_lock lock{dma_sync_mapped_ranges_mutex};
         std::shared_lock lock2(mapped_ranges_mutex);
-        dma_sync_mapped_ranges = mapped_ranges & ranges;
+        dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
     }
 }
 

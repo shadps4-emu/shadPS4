@@ -179,8 +179,8 @@ public:
         const Id after_first_time_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id available_label = OpLabel();
-        const Id save_unmasked_label = OpLabel();
-        const Id after_save_unmasked_label = OpLabel();
+        const Id save_masked_label = OpLabel();
+        const Id after_save_masked_label = OpLabel();
         const Id merge_label = OpLabel();
 
         // Get page BDA
@@ -225,22 +225,20 @@ public:
 
         // Value is available
         AddLabel(available_label);
-        const Id unmasked_bda = OpBitwiseAnd(U64, bda, bda_first_time_inv_mask);
-
-        // Check if BDA was masked
-        const Id had_mask = OpIEqual(U1[1], bda, unmasked_bda);
-        OpSelectionMerge(save_unmasked_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(had_mask, save_unmasked_label, after_save_unmasked_label);
-
+        OpSelectionMerge(after_save_masked_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(first_time, save_masked_label, after_save_masked_label);
+        
         // Save unmasked BDA
-        AddLabel(save_unmasked_label);
-        OpStore(bda_ptr, unmasked_bda);
-        OpBranch(after_save_unmasked_label);
-
+        AddLabel(save_masked_label);
+        const Id masked_bda = OpBitwiseOr(U64, bda, bda_first_time_mask);
+        OpStore(bda_ptr, masked_bda);
+        OpBranch(after_save_masked_label);
+        
         // Load value
-        AddLabel(after_save_unmasked_label);
+        AddLabel(after_save_masked_label);
+        const Id unmasked_bda = OpBitwiseAnd(U64, bda, bda_first_time_inv_mask);
         const Id offset_in_bda = OpBitwiseAnd(U64, address, caching_pagemask_value);
-        const Id addr = OpIAdd(U64, bda, offset_in_bda);
+        const Id addr = OpIAdd(U64, unmasked_bda, offset_in_bda);
         const PointerType pointer_type = PointerTypeFromType(type);
         const Id pointer_type_id = physical_pointer_types[pointer_type];
         const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
