@@ -13,7 +13,6 @@ SPDX-License-Identifier: GPL-2.0-or-later
    - [**RAM**](#ram)
    - [**OS**](#os)
 - [**Have the latest WIP version**](#how-to-run-the-latest-work-in-progress-builds-of-shadps4)
-- [**Install PKG files (Games and Updates)**](#install-pkg-files)
 - [**Configure the emulator**](#configure-the-emulator)
 
 ## Minimum PC requirements
@@ -25,13 +24,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
 - A CPU supporting the following instruction sets: MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, F16C, CLMUL, AES, BMI1, MOVBE, XSAVE, ABM
   - **Intel**: Haswell generation or newer
   - **AMD**: Jaguar generation or newer
-  - **Apple**: Rosetta 2 on macOS 15 or newer
+  - **Apple**: Rosetta 2 on macOS 15.4 or newer
 
 ### GPU
 
 - A graphics card with at least 1GB of VRAM
-- Keep your graphics drivers up to date
-- Vulkan 1.3 support (required)
+- Up-to-date graphics drivers
+- Vulkan 1.3 with the `VK_KHR_swapchain` and `VK_KHR_push_descriptor` extensions
 
 ### RAM
 
@@ -48,13 +47,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 2. Once downloaded, extract to its own folder, and run shadPS4's executable from the extracted folder.
 
-3. Upon first launch, shadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that shadPS4 can use to install your PKG files to.
-
-## Install PKG files
-
-To install PKG files (game and updates), you will need the Qt application (with UI). You will have to go to "File" then to "Install Packages (PKG)", a window will open then you will have to select the files. You can install multiple PKG files at once. Once finished, the game should appear in the application.
-
-<img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/2.png" width="800">
+3. Upon first launch, shadPS4 will prompt you to select a folder to store your installed games in. Select "Browse" and then select a folder that contains your dumped games.
 
 ## Configure the emulator
 

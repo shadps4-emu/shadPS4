@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
+#include "http_error.h"
 
 namespace Libraries::Http {
 
@@ -566,17 +567,277 @@ int PS4_SYSV_ABI sceHttpUriMerge() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriParse() {
+int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
+                                 size_t* require, size_t prepare) {
+    LOG_INFO(Lib_Http, "srcUri = {}", std::string(srcUri));
+    if (!srcUri) {
+        LOG_ERROR(Lib_Http, "invalid url");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+    if (!out && !pool && !require) {
+        LOG_ERROR(Lib_Http, "invalid values");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    if (out && pool) {
+        memset(out, 0, sizeof(OrbisHttpUriElement));
+        out->scheme = (char*)pool;
+    }
+
+    // Track the total required buffer size
+    size_t requiredSize = 0;
+
+    // Parse the scheme (e.g., "http:", "https:", "file:")
+    size_t schemeLength = 0;
+    while (srcUri[schemeLength] && srcUri[schemeLength] != ':') {
+        if (!isalnum(srcUri[schemeLength])) {
+            LOG_ERROR(Lib_Http, "invalid url");
+            return ORBIS_HTTP_ERROR_INVALID_URL;
+        }
+        schemeLength++;
+    }
+
+    if (pool && prepare < schemeLength + 1) {
+        LOG_ERROR(Lib_Http, "out of memory");
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    if (out && pool) {
+        memcpy(out->scheme, srcUri, schemeLength);
+        out->scheme[schemeLength] = '\0';
+    }
+
+    requiredSize += schemeLength + 1;
+
+    // Move past the scheme and ':' character
+    size_t offset = schemeLength + 1;
+
+    // Check if "//" appears after the scheme
+    if (strncmp(srcUri + offset, "//", 2) == 0) {
+        // "//" is present
+        if (out) {
+            out->opaque = false;
+        }
+        offset += 2; // Move past "//"
+    } else {
+        // "//" is not present
+        if (out) {
+            out->opaque = true;
+        }
+    }
+
+    // Handle "file" scheme
+    if (strncmp(srcUri, "file", 4) == 0) {
+        // File URIs typically start with "file://"
+        if (out && !out->opaque) {
+            // Skip additional slashes (e.g., "////")
+            while (srcUri[offset] == '/') {
+                offset++;
+            }
+
+            // Parse the path (everything after the slashes)
+            char* pathStart = (char*)srcUri + offset;
+            size_t pathLength = 0;
+            while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
+                   pathStart[pathLength] != '#') {
+                pathLength++;
+            }
+
+            // Ensure the path starts with '/'
+            if (pathLength > 0 && pathStart[0] != '/') {
+                // Prepend '/' to the path
+                requiredSize += pathLength + 2; // Include '/' and null terminator
+
+                if (pool && prepare < requiredSize) {
+                    LOG_ERROR(Lib_Http, "out of memory");
+                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+                }
+
+                if (out && pool) {
+                    out->path = (char*)pool + (requiredSize - pathLength - 2);
+                    out->path[0] = '/'; // Add leading '/'
+                    memcpy(out->path + 1, pathStart, pathLength);
+                    out->path[pathLength + 1] = '\0';
+                }
+            } else {
+                // Path already starts with '/'
+                requiredSize += pathLength + 1;
+
+                if (pool && prepare < requiredSize) {
+                    LOG_ERROR(Lib_Http, "out of memory");
+                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+                }
+
+                if (out && pool) {
+                    memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
+                    out->path = (char*)pool + (requiredSize - pathLength - 1);
+                    out->path[pathLength] = '\0';
+                }
+            }
+
+            // Move past the path
+            offset += pathLength;
+        }
+    }
+
+    // Handle non-file schemes (e.g., "http", "https")
+    else {
+        // Parse the host and port
+        char* hostStart = (char*)srcUri + offset;
+        while (*hostStart == '/') {
+            hostStart++;
+        }
+
+        size_t hostLength = 0;
+        while (hostStart[hostLength] && hostStart[hostLength] != '/' &&
+               hostStart[hostLength] != '?' && hostStart[hostLength] != ':') {
+            hostLength++;
+        }
+
+        requiredSize += hostLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - hostLength - 1), hostStart, hostLength);
+            out->hostname = (char*)pool + (requiredSize - hostLength - 1);
+            out->hostname[hostLength] = '\0';
+        }
+
+        // Move past the host
+        offset += hostLength;
+
+        // Parse the port (if present)
+        if (hostStart[hostLength] == ':') {
+            char* portStart = hostStart + hostLength + 1;
+            size_t portLength = 0;
+            while (portStart[portLength] && isdigit(portStart[portLength])) {
+                portLength++;
+            }
+
+            requiredSize += portLength + 1;
+
+            if (pool && prepare < requiredSize) {
+                LOG_ERROR(Lib_Http, "out of memory");
+                return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+            }
+
+            // Convert the port string to a uint16_t
+            char portStr[6]; // Max length for a port number (65535)
+            if (portLength > 5) {
+                LOG_ERROR(Lib_Http, "invalid url");
+                return ORBIS_HTTP_ERROR_INVALID_URL;
+            }
+            memcpy(portStr, portStart, portLength);
+            portStr[portLength] = '\0';
+
+            uint16_t port = (uint16_t)atoi(portStr);
+            if (port == 0 && portStr[0] != '0') {
+                LOG_ERROR(Lib_Http, "invalid url");
+                return ORBIS_HTTP_ERROR_INVALID_URL;
+            }
+
+            // Set the port in the output structure
+            if (out) {
+                out->port = port;
+            }
+
+            // Move past the port
+            offset += portLength + 1;
+        }
+    }
+
+    // Parse the path (if present)
+    if (srcUri[offset] == '/') {
+        char* pathStart = (char*)srcUri + offset;
+        size_t pathLength = 0;
+        while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
+               pathStart[pathLength] != '#') {
+            pathLength++;
+        }
+
+        requiredSize += pathLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
+            out->path = (char*)pool + (requiredSize - pathLength - 1);
+            out->path[pathLength] = '\0';
+        }
+
+        // Move past the path
+        offset += pathLength;
+    }
+
+    // Parse the query (if present)
+    if (srcUri[offset] == '?') {
+        char* queryStart = (char*)srcUri + offset + 1;
+        size_t queryLength = 0;
+        while (queryStart[queryLength] && queryStart[queryLength] != '#') {
+            queryLength++;
+        }
+
+        requiredSize += queryLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - queryLength - 1), queryStart, queryLength);
+            out->query = (char*)pool + (requiredSize - queryLength - 1);
+            out->query[queryLength] = '\0';
+        }
+
+        // Move past the query
+        offset += queryLength + 1;
+    }
+
+    // Parse the fragment (if present)
+    if (srcUri[offset] == '#') {
+        char* fragmentStart = (char*)srcUri + offset + 1;
+        size_t fragmentLength = 0;
+        while (fragmentStart[fragmentLength]) {
+            fragmentLength++;
+        }
+
+        requiredSize += fragmentLength + 1;
+
+        if (pool && prepare < requiredSize) {
+            LOG_ERROR(Lib_Http, "out of memory");
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+
+        if (out && pool) {
+            memcpy((char*)pool + (requiredSize - fragmentLength - 1), fragmentStart,
+                   fragmentLength);
+            out->fragment = (char*)pool + (requiredSize - fragmentLength - 1);
+            out->fragment[fragmentLength] = '\0';
+        }
+    }
+
+    // Calculate the total required buffer size
+    if (require) {
+        *require = requiredSize; // Update with actual required size
+    }
+
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriSweepPath() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpUriUnescape() {
+int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }

@@ -13,8 +13,12 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
     case Opcode::S_TTRACEDATA:
         LOG_WARNING(Render_Vulkan, "S_TTRACEDATA instruction!");
         return;
+    case Opcode::S_SETPRIO:
+        LOG_WARNING(Render_Vulkan, "S_SETPRIO instruction!");
+        return;
     case Opcode::S_GETPC_B64:
         return S_GETPC_B64(pc, inst);
+    case Opcode::S_SETPC_B64:
     case Opcode::S_WAITCNT:
     case Opcode::S_NOP:
     case Opcode::S_ENDPGM:

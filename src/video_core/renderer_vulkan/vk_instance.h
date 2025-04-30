@@ -84,6 +84,16 @@ public:
         return features.samplerAnisotropy;
     }
 
+    /// Returns true if depth bounds testing is supported
+    bool IsDepthBoundsSupported() const {
+        return features.depthBounds;
+    }
+
+    /// Returns true if 64-bit floats are supported in shaders
+    bool IsShaderFloat64Supported() const {
+        return features.shaderFloat64;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;
@@ -97,6 +107,11 @@ public:
     /// Returns true when VK_EXT_depth_clip_control is supported
     bool IsDepthClipControlSupported() const {
         return depth_clip_control;
+    }
+
+    /// Returns true when VK_EXT_depth_range_unrestricted is supported
+    bool IsDepthRangeUnrestrictedSupported() const {
+        return depth_range_unrestricted;
     }
 
     /// Returns true when the extendedDynamicState3ColorWriteMask feature of
@@ -143,6 +158,11 @@ public:
     /// Returns true when VK_AMD_gcn_shader is supported.
     bool IsAmdGcnShaderSupported() const {
         return amd_gcn_shader;
+    }
+
+    /// Returns true when VK_AMD_shader_trinary_minmax is supported.
+    bool IsAmdShaderTrinaryMinMaxSupported() const {
+        return amd_shader_trinary_minmax;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -282,6 +302,11 @@ public:
                properties.limits.framebufferStencilSampleCounts;
     }
 
+    /// Returns whether disabling primitive restart is supported.
+    bool IsPrimitiveRestartDisableSupported() const {
+        return driver_id != vk::DriverId::eMoltenvk;
+    }
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();
@@ -291,7 +316,7 @@ private:
 
     /// Collects telemetry information from the device.
     void CollectDeviceParameters();
-    void CollectToolingInfo();
+    void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
     [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
@@ -325,6 +350,7 @@ private:
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool depth_clip_control{};
+    bool depth_range_unrestricted{};
     bool dynamic_state_3{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
@@ -333,6 +359,7 @@ private:
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
+    bool amd_shader_trinary_minmax{};
     bool portability_subset{};
 };
 

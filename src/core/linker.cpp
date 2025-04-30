@@ -101,6 +101,17 @@ void Linker::Execute(const std::vector<std::string> args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
+    // Simulate sceKernelInternalMemory mapping, a mapping usually performed during libkernel init.
+    // Due to the large size of this mapping, failing to emulate it causes issues in some titles.
+    // This mapping belongs in the system reserved area, which starts at address 0x880000000.
+    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
+    static constexpr s64 InternalMemorySize = 0x1000000;
+    void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
+
+    s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(&addr_out, InternalMemorySize, 3,
+                                                                 0, "SceKernelInternalMemory");
+    ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
+
     main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         LoadSharedLibraries();
@@ -137,6 +148,35 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
     return m_modules.size() - 1;
+}
+
+s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
+                               int* pRes) {
+    u32 handle = FindByName(path);
+    if (handle != -1) {
+        return handle;
+    }
+    handle = LoadModule(path, true);
+    if (handle == -1) {
+        return -1;
+    }
+    auto* module = GetModule(handle);
+    RelocateAnyImports(module);
+
+    // If the new module has a TLS image, trigger its load when TlsGetAddr is called.
+    if (module->tls.image_size != 0) {
+        AdvanceGenerationCounter();
+    }
+
+    // Retrieve and verify proc param according to libkernel.
+    u64* param = module->GetProcParam<u64*>();
+    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    s32 ret = module->Start(args, argp, param);
+    if (pRes) {
+        *pRes = ret;
+    }
+
+    return handle;
 }
 
 Module* Linker::FindByAddress(VAddr address) {
@@ -343,7 +383,8 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 
     // If sceKernelMapNamedFlexibleMemory is being called from libkernel and addr = 0
     // it automatically places mappings in system reserved area instead of managed.
-    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
+    // Since the system reserved area already has a mapping in it, this address is slightly higher.
+    static constexpr VAddr KernelAllocBase = 0x881000000ULL;
 
     // The kernel module has a few different paths for TLS allocation.
     // For SDK < 1.7 it allocates both main and secondary thread blocks using libc mspace/malloc.

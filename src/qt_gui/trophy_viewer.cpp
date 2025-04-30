@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QDockWidget>
 #include <QMessageBox>
+#include <QPushButton>
 #include <cmrc/cmrc.hpp>
 #include <common/config.h>
 #include "common/path_util.h"
@@ -103,8 +104,10 @@ void TrophyViewer::updateTableFilters() {
     }
 }
 
-TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindow() {
-    this->setWindowTitle(tr("Trophy Viewer"));
+TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath, QString gameName,
+                           const QVector<TrophyGameInfo>& allTrophyGames)
+    : QMainWindow(), allTrophyGames_(allTrophyGames), currentGameName_(gameName) {
+    this->setWindowTitle(tr("Trophy Viewer") + " - " + currentGameName_);
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);
 
@@ -126,10 +129,39 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
             << "PID";
     PopulateTrophyWidget(trophyPath);
 
-    QDockWidget* trophyInfoDock = new QDockWidget("", this);
+    trophyInfoDock = new QDockWidget("", this);
     QWidget* dockWidget = new QWidget(trophyInfoDock);
     QVBoxLayout* dockLayout = new QVBoxLayout(dockWidget);
     dockLayout->setAlignment(Qt::AlignTop);
+
+    // ComboBox for game selection
+    if (!allTrophyGames_.isEmpty()) {
+        QLabel* gameSelectionLabel = new QLabel(tr("Select Game:"), dockWidget);
+        dockLayout->addWidget(gameSelectionLabel);
+
+        gameSelectionComboBox = new QComboBox(dockWidget);
+        for (const auto& game : allTrophyGames_) {
+            gameSelectionComboBox->addItem(game.name);
+        }
+
+        // Select current game in ComboBox
+        if (!currentGameName_.isEmpty()) {
+            int index = gameSelectionComboBox->findText(currentGameName_);
+            if (index >= 0) {
+                gameSelectionComboBox->setCurrentIndex(index);
+            }
+        }
+
+        dockLayout->addWidget(gameSelectionComboBox);
+
+        connect(gameSelectionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                &TrophyViewer::onGameSelectionChanged);
+
+        QFrame* line = new QFrame(dockWidget);
+        line->setFrameShape(QFrame::HLine);
+        line->setFrameShadow(QFrame::Sunken);
+        dockLayout->addWidget(line);
+    }
 
     trophyInfoLabel = new QLabel(tr("Progress") + ": 0% (0/0)", dockWidget);
     trophyInfoLabel->setStyleSheet(
@@ -157,6 +189,15 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
     // Adds the dock to the left area
     this->addDockWidget(Qt::LeftDockWidgetArea, trophyInfoDock);
 
+    expandButton = new QPushButton(">>", this);
+    expandButton->setGeometry(80, 0, 27, 27);
+    expandButton->hide();
+
+    connect(expandButton, &QPushButton::clicked, this, [this] {
+        trophyInfoDock->setVisible(true);
+        expandButton->hide();
+    });
+
     // Connects checkbox signals to update trophy display
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
     connect(showEarnedCheck, &QCheckBox::stateChanged, this, &TrophyViewer::updateTableFilters);
@@ -173,6 +214,54 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath) : QMainWindo
 
     updateTrophyInfo();
     updateTableFilters();
+
+    connect(trophyInfoDock, &QDockWidget::topLevelChanged, this, [this] {
+        if (!trophyInfoDock->isVisible()) {
+            expandButton->show();
+        }
+    });
+
+    connect(trophyInfoDock, &QDockWidget::visibilityChanged, this, [this] {
+        if (!trophyInfoDock->isVisible()) {
+            expandButton->show();
+        } else {
+            expandButton->hide();
+        }
+    });
+}
+
+void TrophyViewer::onGameSelectionChanged(int index) {
+    if (index < 0 || index >= allTrophyGames_.size()) {
+        return;
+    }
+
+    while (tabWidget->count() > 0) {
+        QWidget* widget = tabWidget->widget(0);
+        tabWidget->removeTab(0);
+        delete widget;
+    }
+
+    const TrophyGameInfo& selectedGame = allTrophyGames_[index];
+    currentGameName_ = selectedGame.name;
+    gameTrpPath_ = selectedGame.gameTrpPath;
+
+    this->setWindowTitle(tr("Trophy Viewer") + " - " + currentGameName_);
+
+    PopulateTrophyWidget(selectedGame.trophyPath);
+
+    updateTrophyInfo();
+    updateTableFilters();
+}
+
+void TrophyViewer::onDockClosed() {
+    if (!trophyInfoDock->isVisible()) {
+        reopenButton->setVisible(true);
+    }
+}
+
+void TrophyViewer::reopenLeftDock() {
+    trophyInfoDock->show();
+    reopenButton->setVisible(false);
 }
 
 void TrophyViewer::PopulateTrophyWidget(QString title) {
@@ -354,10 +443,15 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tabWidget->addTab(tableWidget,
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
 
-        this->showMaximized();
+        if (!this->isMaximized()) {
+            this->resize(width + 400, 720);
+            QSize mainWindowSize = QApplication::activeWindow()->size();
+            this->resize(mainWindowSize.width() * 0.8, mainWindowSize.height() * 0.8);
+        }
+        this->show();
 
         tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-        tableWidget->setColumnWidth(3, 650);
+        tableWidget->setColumnWidth(3, 500);
     }
     this->setCentralWidget(tabWidget);
 }

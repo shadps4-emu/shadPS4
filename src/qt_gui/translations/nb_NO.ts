@@ -22,11 +22,11 @@
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation>Juks / Programrettelser for </translation>
+      <translation>Juks og programrettelser for </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Juks/programrettelse er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og klikke på nedlastingsknappen.\nPå fanen programrettelse kan du laste ned alle programrettelser samtidig, velge hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler Juks/Programrettelse,\nvær vennlig å rapportere problemer til juks/programrettelse utvikleren.\n\nHar du laget en ny juks? Besøk:\n</translation>
+      <translation>Juks og programrettelser er eksperimentelle.\nBruk med forsiktighet.\n\nLast ned juks individuelt ved å velge pakkebrønn og trykke på nedlastingsknappen.\nPå fanen programrettelser kan du laste ned alle programrettelser samtidig, velg hvilke du ønsker å bruke, og lagre valget ditt.\n\nSiden vi ikke utvikler juks eller programrettelser,\nmeld fra om feil til jukse eller programrettelse utvikleren.\n\nHar du utviklet en ny juks? Besøk:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -90,7 +90,7 @@
     </message>
     <message>
       <source>Patches</source>
-      <translation>Programrettelse</translation>
+      <translation>Programrettelser</translation>
     </message>
     <message>
       <source>Error</source>
@@ -102,7 +102,7 @@
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>Kan ikke åpne files.json for lesing.</translation>
+      <translation>Klarte ikke åpne files.json for lesing.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
@@ -110,11 +110,11 @@
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>Kan ikke åpne fila for lesing.</translation>
+      <translation>Klarte ikke åpne fila for lesing.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>Kan ikke åpne fila for skriving.</translation>
+      <translation>Klarte ikke åpne fila for skriving.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
@@ -146,11 +146,11 @@
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>Kunne ikke lagre fila:</translation>
+      <translation>Klarte ikke lagre fila:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>Kunne ikke laste ned fila:</translation>
+      <translation>Klarte ikke laste ned fila:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
@@ -170,11 +170,11 @@
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>Kunne ikke lagre:</translation>
+      <translation>Klarte ikke lagre:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>Kunne ikke laste ned:</translation>
+      <translation>Klarte ikke laste ned:</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -186,11 +186,11 @@
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Kunne ikke analysere JSON-data fra HTML.</translation>
+      <translation>Klarte ikke analysere JSON-data fra HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>Kunne ikke hente HTML-side.</translation>
+      <translation>Klarte ikke hente HTML-siden.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
@@ -210,7 +210,7 @@
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>Kunne ikke åpne fila:</translation>
+      <translation>Klarte ikke åpne fila:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
@@ -230,7 +230,7 @@
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>Kunne ikke åpne files.json for lesing.</translation>
+      <translation>Klarte ikke åpne files.json for lesing.</translation>
     </message>
     <message>
       <source>Name:</source>
@@ -265,7 +265,7 @@
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>Kunne ikke analysere oppdaterings-informasjonen.</translation>
+      <translation>Klarte ikke analysere oppdateringsinformasjon.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
@@ -337,26 +337,26 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Oppdateringen har blitt lastet ned, trykk OK for å installere.</translation>
+      <translation>Oppdateringen ble lastet ned, trykk OK for å installere.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>Kunne ikke lagre oppdateringsfila på</translation>
+      <translation>Klarte ikke lagre oppdateringsfila på</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Starter oppdatering...</translation>
+      <translation>Starter oppdatering …</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>Kunne ikke opprette oppdateringsskriptfila</translation>
+      <translation>Klarte ikke opprette oppdateringsskriptfila</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>Henter kompatibilitetsdata, vennligst vent</translation>
+      <translation>Henter kompatibilitetsdata, vent litt.</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -364,7 +364,7 @@
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Laster...</translation>
+      <translation>Laster …</translation>
     </message>
     <message>
       <source>Error</source>
@@ -372,11 +372,11 @@
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>Kan ikke oppdatere kompatibilitetsdata! Prøv igjen senere.</translation>
+      <translation>Klarte ikke oppdatere kompatibilitetsdata! Prøv igjen senere.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Kan ikke åpne compatibility_data.json for skriving.</translation>
+      <translation>Klarte ikke åpne compatibility_data.json for skriving.</translation>
     </message>
     <message>
       <source>Unknown</source>
@@ -407,11 +407,11 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>Sett opp kontroller</translation>
+      <translation>Kontrolleroppsett</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation>Navigasjonsknapper</translation>
     </message>
     <message>
       <source>Up</source>
@@ -443,7 +443,7 @@
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>Utvalg av oppsett</translation>
+      <translation>Valg av oppsett</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -541,6 +541,77 @@
       <source>Override Color</source>
       <translation>Overstyr farge</translation>
     </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Klarte ikke lagre</translation>
+    </message>
+    <message>
+      <source>Cannot bind axis values more than once</source>
+      <translation>Kan ikke tildele akseverdier mer enn en gang</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+  </context>
+  <context>
+    <name>EditorDialog</name>
+    <message>
+      <source>Edit Keyboard + Mouse and Controller input bindings</source>
+      <translation>Rediger oppsett for tastatur, mus og kontroller</translation>
+    </message>
+    <message>
+      <source>Use Per-Game configs</source>
+      <translation>Bruk oppsett per spill</translation>
+    </message>
+    <message>
+      <source>Error</source>
+      <translation>Feil</translation>
+    </message>
+    <message>
+      <source>Could not open the file for reading</source>
+      <translation>Klarte ikke åpne fila for lesing</translation>
+    </message>
+    <message>
+      <source>Could not open the file for writing</source>
+      <translation>Klarte ikke åpne fila for skriving</translation>
+    </message>
+    <message>
+      <source>Save Changes</source>
+      <translation>Lagre endringer</translation>
+    </message>
+    <message>
+      <source>Do you want to save changes?</source>
+      <translation>Vil du lagre endringene?</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hjelp</translation>
+    </message>
+    <message>
+      <source>Do you want to reset your custom default config to the original default config?</source>
+      <translation>Vil du tilbakestille alle dine tilpassede innstillinger til standarden?</translation>
+    </message>
+    <message>
+      <source>Do you want to reset this config to your custom default config?</source>
+      <translation>Vil du tilbakestille dette oppsettet til standard oppsett?</translation>
+    </message>
+    <message>
+      <source>Reset to Default</source>
+      <translation>Tilbakestill</translation>
+    </message>
   </context>
   <context>
     <name>ElfViewer</name>
@@ -553,7 +624,7 @@
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation>Laster spilliste, vennligst vent :3</translation>
+      <translation>Laster spilliste, vent litt :3</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -561,7 +632,7 @@
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Laster...</translation>
+      <translation>Laster …</translation>
     </message>
   </context>
   <context>
@@ -651,7 +722,7 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>Spillet initialiseres ikke riktig / krasjer emulatoren</translation>
+      <translation>Spillet initialiseres ikke riktig eller krasjer emulatoren</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
@@ -671,7 +742,7 @@
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>Klikk for å se detaljer på GitHub</translation>
+      <translation>Trykk for å se detaljer på GitHub</translation>
     </message>
     <message>
       <source>Last updated</source>
@@ -709,11 +780,11 @@
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>Juks / Programrettelse</translation>
+      <translation>Juks og programrettelser</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation>SFO viser</translation>
+      <translation>SFO-viser</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
@@ -721,7 +792,7 @@
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>Åpne mappe...</translation>
+      <translation>Åpne mappe …</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
@@ -737,7 +808,7 @@
     </message>
     <message>
       <source>Copy info...</source>
-      <translation>Kopier info...</translation>
+      <translation>Kopier info …</translation>
     </message>
     <message>
       <source>Copy Name</source>
@@ -761,7 +832,7 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation>Slett...</translation>
+      <translation>Slett …</translation>
     </message>
     <message>
       <source>Delete Game</source>
@@ -776,8 +847,12 @@
       <translation>Slett DLC</translation>
     </message>
     <message>
+      <source>Delete Trophy</source>
+      <translation>Slett trofé</translation>
+    </message>
+    <message>
       <source>Compatibility...</source>
-      <translation>Kompatibilitet...</translation>
+      <translation>Kompatibilitet …</translation>
     </message>
     <message>
       <source>Update database</source>
@@ -808,10 +883,6 @@
       <translation>Feil ved opprettelse av snarvei!</translation>
     </message>
     <message>
-      <source>Install PKG</source>
-      <translation>Installer PKG</translation>
-    </message>
-    <message>
       <source>Game</source>
       <translation>Spill</translation>
     </message>
@@ -837,7 +908,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation>Er du sikker på at du vil slette %1&apos;s %2 directory?</translation>
+      <translation>Er du sikker på at du vil slette %1&apos;s %2 mappa?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -852,6 +923,10 @@
       <translation>Dette spillet har ingen oppdateringsmappe å åpne!</translation>
     </message>
     <message>
+      <source>No log file found for this game!</source>
+      <translation>Fant ingen loggfil for dette spillet!</translation>
+    </message>
+    <message>
       <source>Failed to convert icon.</source>
       <translation>Klarte ikke konvertere ikon.</translation>
     </message>
@@ -860,8 +935,16 @@
       <translation>Dette spillet har ingen lagret data å slette!</translation>
     </message>
     <message>
+      <source>This game has no saved trophies to delete!</source>
+      <translation>Dette spillet har ingen lagrede trofeer å slette!</translation>
+    </message>
+    <message>
       <source>Save Data</source>
       <translation>Lagret data</translation>
+    </message>
+    <message>
+      <source>Trophy</source>
+      <translation>Trofé</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -869,33 +952,244 @@
     </message>
   </context>
   <context>
-    <name>InstallDirSelect</name>
+    <name>HelpDialog</name>
     <message>
-      <source>shadPS4 - Choose directory</source>
-      <translation>shadPS4 - Velg mappe</translation>
+      <source>Quickstart</source>
+      <translation>Hurtigstart</translation>
     </message>
     <message>
-      <source>Select which directory you want to install to.</source>
-      <translation>Velg hvilken mappe du vil installere til.</translation>
+      <source>FAQ</source>
+      <translation>Ofte stilte spørsmål</translation>
     </message>
     <message>
-      <source>Install All Queued to Selected Folder</source>
-      <translation>Installer alle i kø til den valgte mappa</translation>
+      <source>Syntax</source>
+      <translation>Syntaks</translation>
     </message>
     <message>
-      <source>Delete PKG File on Install</source>
-      <translation>Slett PKG-fila ved installering</translation>
+      <source>Special Bindings</source>
+      <translation>Spesielle hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Keybindings</source>
+      <translation>Hurtigtast</translation>
+    </message>
+  </context>
+  <context>
+    <name>KBMSettings</name>
+    <message>
+      <source>Configure Controls</source>
+      <translation>Tastaturoppsett</translation>
+    </message>
+    <message>
+      <source>D-Pad</source>
+      <translation>Navigasjonsknapper</translation>
+    </message>
+    <message>
+      <source>Up</source>
+      <translation>Opp</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>Ikke satt opp</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Venstre</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Høyre</translation>
+    </message>
+    <message>
+      <source>Down</source>
+      <translation>Ned</translation>
+    </message>
+    <message>
+      <source>Left Analog Halfmode</source>
+      <translation>Venstre analog halvmodus</translation>
+    </message>
+    <message>
+      <source>hold to move left stick at half-speed</source>
+      <translation>Hold for å bevege venstre analog med halv hastighet</translation>
+    </message>
+    <message>
+      <source>Left Stick</source>
+      <translation>Venstre analog</translation>
+    </message>
+    <message>
+      <source>Config Selection</source>
+      <translation>Valg av oppsett</translation>
+    </message>
+    <message>
+      <source>Common Config</source>
+      <translation>Felles oppsett</translation>
+    </message>
+    <message>
+      <source>Use per-game configs</source>
+      <translation>Bruk oppsett per spill</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Text Editor</source>
+      <translation>Skriveprogram</translation>
+    </message>
+    <message>
+      <source>Help</source>
+      <translation>Hjelp</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>L3</source>
+      <translation>L3</translation>
+    </message>
+    <message>
+      <source>Touchpad Click</source>
+      <translation>Berøringsplateknapp</translation>
+    </message>
+    <message>
+      <source>Mouse to Joystick</source>
+      <translation>Mus til styrespak</translation>
+    </message>
+    <message>
+      <source>*press F7 ingame to activate</source>
+      <translation>Trykk F7 i spillet for å bruke</translation>
+    </message>
+    <message>
+      <source>R3</source>
+      <translation>R3</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>Mouse Movement Parameters</source>
+      <translation>Oppsett av musebevegelse</translation>
+    </message>
+    <message>
+      <source>note: click Help Button/Special Keybindings for more information</source>
+      <translation>Merk: Trykk på hjelpeknappen for mer informasjon</translation>
+    </message>
+    <message>
+      <source>Face Buttons</source>
+      <translation>Handlingsknapper</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangel</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Firkant</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Sirkel</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kryss</translation>
+    </message>
+    <message>
+      <source>Right Analog Halfmode</source>
+      <translation>Høyre analog halvmodus</translation>
+    </message>
+    <message>
+      <source>hold to move right stick at half-speed</source>
+      <translation>Hold for å bevege høyre analog med halv hastighet</translation>
+    </message>
+    <message>
+      <source>Right Stick</source>
+      <translation>Høyre analog</translation>
+    </message>
+    <message>
+      <source>Speed Offset (def 0.125):</source>
+      <translation>Hastighetsforskyvning (def 0.125):</translation>
+    </message>
+    <message>
+      <source>Copy from Common Config</source>
+      <translation>Kopier fra felles oppsettet</translation>
+    </message>
+    <message>
+      <source>Deadzone Offset (def 0.50):</source>
+      <translation>Dødsoneforskyvning (def 0.50):</translation>
+    </message>
+    <message>
+      <source>Speed Multiplier (def 1.0):</source>
+      <translation>Hastighetsmultiplikator (def 1.0):</translation>
+    </message>
+    <message>
+      <source>Common Config Selected</source>
+      <translation>Felles oppsett valgt</translation>
+    </message>
+    <message>
+      <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
+      <translation>Denne knappen kopierer oppsettet fra felles oppsettet til den valgte profilen, og kan ikke brukes når den gjeldende brukte profilen er felles oppsettet.</translation>
+    </message>
+    <message>
+      <source>Copy values from Common Config</source>
+      <translation>Kopier verdier fra felles oppsettet</translation>
+    </message>
+    <message>
+      <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
+      <translation>Vil du overskrive eksisterende valg av oppsett med felles oppsettet?</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Klarte ikke lagre</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once</source>
+      <translation>Kan ikke tildele unike oppsett mer enn en gang</translation>
+    </message>
+    <message>
+      <source>Press a key</source>
+      <translation>Trykk på en tast</translation>
+    </message>
+    <message>
+      <source>Cannot set mapping</source>
+      <translation>Klarte ikke tildele</translation>
+    </message>
+    <message>
+      <source>Mousewheel cannot be mapped to stick outputs</source>
+      <translation>Musehjulet kan ikke tildeles analogstikkene</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
     </message>
   </context>
   <context>
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation>Åpne/Legg til Elf-mappe</translation>
-    </message>
-    <message>
-      <source>Install Packages (PKG)</source>
-      <translation>Installer pakker (PKG)</translation>
+      <translation>Åpne eller legg til Elf-mappe</translation>
     </message>
     <message>
       <source>Boot Game</source>
@@ -911,11 +1205,7 @@
     </message>
     <message>
       <source>Configure...</source>
-      <translation>Sett opp...</translation>
-    </message>
-    <message>
-      <source>Install application from a .pkg file</source>
-      <translation>Installer fra en .pkg fil</translation>
+      <translation>Sett opp …</translation>
     </message>
     <message>
       <source>Recent Games</source>
@@ -979,19 +1269,23 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Last ned juks/programrettelse</translation>
+      <translation>Last ned juks og programrettelser</translation>
     </message>
     <message>
       <source>Dump Game List</source>
       <translation>Dump spilliste</translation>
     </message>
     <message>
-      <source>PKG Viewer</source>
-      <translation>PKG-viser</translation>
+      <source>Trophy Viewer</source>
+      <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>No games found. Please add your games to your library first.</source>
+      <translation>Fant ingen spill. Legg til spillene dine i biblioteket først.</translation>
     </message>
     <message>
       <source>Search...</source>
-      <translation>Søk...</translation>
+      <translation>Søk …</translation>
     </message>
     <message>
       <source>File</source>
@@ -1098,84 +1392,12 @@
       <translation>Kun én fil kan velges!</translation>
     </message>
     <message>
-      <source>PKG Extraction</source>
-      <translation>PKG-utpakking</translation>
-    </message>
-    <message>
-      <source>Patch detected!</source>
-      <translation>Programrettelse oppdaget!</translation>
-    </message>
-    <message>
-      <source>PKG and Game versions match: </source>
-      <translation>PKG og spillversjoner stemmer overens: </translation>
-    </message>
-    <message>
-      <source>Would you like to overwrite?</source>
-      <translation>Ønsker du å overskrive?</translation>
-    </message>
-    <message>
-      <source>PKG Version %1 is older than installed version: </source>
-      <translation>PKG-versjon %1 er eldre enn installert versjon: </translation>
-    </message>
-    <message>
-      <source>Game is installed: </source>
-      <translation>Spillet er installert: </translation>
-    </message>
-    <message>
-      <source>Would you like to install Patch: </source>
-      <translation>Ønsker du å installere programrettelsen: </translation>
-    </message>
-    <message>
-      <source>DLC Installation</source>
-      <translation>DLC installasjon</translation>
-    </message>
-    <message>
-      <source>Would you like to install DLC: %1?</source>
-      <translation>Ønsker du å installere DLC: %1?</translation>
-    </message>
-    <message>
-      <source>DLC already installed:</source>
-      <translation>DLC allerede installert:</translation>
-    </message>
-    <message>
-      <source>Game already installed</source>
-      <translation>Spillet er allerede installert</translation>
-    </message>
-    <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEIL</translation>
-    </message>
-    <message>
-      <source>Extracting PKG %1/%2</source>
-      <translation>Pakker ut PKG %1/%2</translation>
-    </message>
-    <message>
-      <source>Extraction Finished</source>
-      <translation>Utpakking fullført</translation>
-    </message>
-    <message>
-      <source>Game successfully installed at %1</source>
-      <translation>Spillet ble installert i %1</translation>
-    </message>
-    <message>
-      <source>File doesn&apos;t appear to be a valid PKG file</source>
-      <translation>Fila ser ikke ut til å være en gyldig PKG-fil</translation>
-    </message>
-    <message>
       <source>Run Game</source>
       <translation>Kjør spill</translation>
     </message>
     <message>
       <source>Eboot.bin file not found</source>
       <translation>Klarte ikke finne Eboot.bin-fila</translation>
-    </message>
-    <message>
-      <source>PKG File (*.PKG *.pkg)</source>
-      <translation>PKG-fil (*.PKG *.pkg)</translation>
-    </message>
-    <message>
-      <source>PKG is a patch or DLC, please install the game first!</source>
-      <translation>PKG er en programrettelse eller DLC. Installer spillet først!</translation>
     </message>
     <message>
       <source>Game is already running!</source>
@@ -1185,72 +1407,45 @@
       <source>shadPS4</source>
       <translation>shadPS4</translation>
     </message>
-  </context>
-  <context>
-    <name>PKGViewer</name>
     <message>
-      <source>Open Folder</source>
-      <translation>Åpne mappe</translation>
+      <source>Play</source>
+      <translation>Spill</translation>
     </message>
     <message>
-      <source>PKG ERROR</source>
-      <translation>PKG FEIL</translation>
+      <source>Pause</source>
+      <translation>Pause</translation>
     </message>
     <message>
-      <source>Name</source>
-      <translation>Navn</translation>
+      <source>Stop</source>
+      <translation>Stopp</translation>
     </message>
     <message>
-      <source>Serial</source>
-      <translation>Serienummer</translation>
+      <source>Restart</source>
+      <translation>Start på nytt</translation>
     </message>
     <message>
-      <source>Installed</source>
-      <translation>Installert</translation>
+      <source>Full Screen</source>
+      <translation>Fullskjerm</translation>
     </message>
     <message>
-      <source>Size</source>
-      <translation>Størrelse</translation>
+      <source>Controllers</source>
+      <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Category</source>
-      <translation>Kategori</translation>
+      <source>Keyboard</source>
+      <translation>Tastatur</translation>
     </message>
     <message>
-      <source>Type</source>
-      <translation>Type</translation>
+      <source>Refresh List</source>
+      <translation>Oppdater lista</translation>
     </message>
     <message>
-      <source>App Ver</source>
-      <translation>Programversjon</translation>
+      <source>Resume</source>
+      <translation>Gjenoppta</translation>
     </message>
     <message>
-      <source>FW</source>
-      <translation>FV</translation>
-    </message>
-    <message>
-      <source>Region</source>
-      <translation>Region</translation>
-    </message>
-    <message>
-      <source>Flags</source>
-      <translation>Flagg</translation>
-    </message>
-    <message>
-      <source>Path</source>
-      <translation>Adresse</translation>
-    </message>
-    <message>
-      <source>File</source>
-      <translation>Fil</translation>
-    </message>
-    <message>
-      <source>Unknown</source>
-      <translation>Ukjent</translation>
-    </message>
-    <message>
-      <source>Package</source>
-      <translation>Pakke</translation>
+      <source>Show Labels Under Icons</source>
+      <translation>Vis merkelapp under ikoner</translation>
     </message>
   </context>
   <context>
@@ -1261,7 +1456,7 @@
     </message>
     <message>
       <source>General</source>
-      <translation>Generell</translation>
+      <translation>Generelt</translation>
     </message>
     <message>
       <source>System</source>
@@ -1278,10 +1473,6 @@
     <message>
       <source>Emulator</source>
       <translation>Emulator</translation>
-    </message>
-    <message>
-      <source>Enable Separate Update Folder</source>
-      <translation>Bruk seperat oppdateringsmappe</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
@@ -1310,6 +1501,10 @@
     <message>
       <source>Trophy</source>
       <translation>Trofé</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder</source>
+      <translation>Åpne mappa med tilpassede bilder og lyder for trofé</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1401,7 +1596,7 @@
     </message>
     <message>
       <source>Add...</source>
-      <translation>Legg til...</translation>
+      <translation>Legg til …</translation>
     </message>
     <message>
       <source>Remove</source>
@@ -1409,11 +1604,11 @@
     </message>
     <message>
       <source>Debug</source>
-      <translation>Feilretting</translation>
+      <translation>Feilsøking</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>Bruk feilrettingsdumping</translation>
+      <translation>Bruk feilsøkingsdumping</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -1476,8 +1671,8 @@
       <translation>Tittelmusikk</translation>
     </message>
     <message>
-      <source>Disable Trophy Pop-ups</source>
-      <translation>Deaktiver trofé hurtigmeny</translation>
+      <source>Disable Trophy Notification</source>
+      <translation>Slå av trofévarsler</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1493,7 +1688,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Spill tittelmusikk</translation>
+      <translation>Spill av tittelmusikk</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1544,10 +1739,6 @@
       <translation>Emulatorspråket:\nAngir språket for emulatorens brukergrensesnitt.</translation>
     </message>
     <message>
-      <source>Enable Separate Update Folder:\nEnables installing game updates into a separate folder for easy management.\nThis can be manually created by adding the extracted update to the game folder with the name &quot;CUSA00000-UPDATE&quot; where the CUSA ID matches the game&apos;s ID.</source>
-      <translation>Bruk separat oppdateringsmappe:\n Gjør det mulig å installere spilloppdateringer i en egen mappe for enkel administrasjon.\nDette kan gjøres manuelt ved å legge til den utpakkede oppdateringen, til spillmappa med navnet &quot;CUSA00000-UPDATE&quot; der CUSA-ID-en samsvarer med spillets-ID.</translation>
-    </message>
-    <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
       <translation>Vis velkomstbilde:\nViser spillets velkomstbilde (et spesialbilde) når spillet starter.</translation>
     </message>
@@ -1585,7 +1776,7 @@
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>Deaktiver trofé hurtigmeny:\nDeaktiver trofévarsler i spillet. Trofé-fremgang kan fortsatt ved help av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
+      <translation>Slå av trofévarsler:\nFjerner trofévarsler i spillet. Troféfremgang kan fortsatt vises ved hjelp av troféviseren (høyreklikk på spillet i hovedvinduet).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
@@ -1625,15 +1816,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Berøringsplate Venstre</translation>
+      <translation>Berøringsplate venstre</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Berøringsplate Høyre</translation>
+      <translation>Berøringsplate høyre</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Berøringsplate Midt</translation>
+      <translation>Berøringsplate midten</translation>
     </message>
     <message>
       <source>None</source>
@@ -1641,11 +1832,11 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkenhet:\nI systemer med flere GPU-er, velg GPU-en emulatoren skal bruke fra rullegardinlista,\neller &quot;Velg automatisk&amp;quot.</translation>
+      <translation>Grafikkenhet:\nSystemer med flere GPU-er, kan emulatoren velge hvilken enhet som skal brukes fra rullegardinlista,\neller velg &quot;Velg automatisk&quot;.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Bredde/Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er forskjellig fra oppløsningen i spillet.</translation>
+      <translation>Bredde / Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er annerledes fra oppløsningen i spillet.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
@@ -1677,7 +1868,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Bruk feilrettingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
+      <translation>Bruk feilsøkingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
@@ -1733,7 +1924,7 @@
     </message>
     <message>
       <source>Enable Motion Controls</source>
-      <translation>Bruk bevegelseskontroller</translation>
+      <translation>Bruk bevegelsesstyring</translation>
     </message>
     <message>
       <source>Save Data Path</source>
@@ -1757,7 +1948,7 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>Mappe for å installere spill</translation>
+      <translation>Mappe for installering av spill</translation>
     </message>
     <message>
       <source>Directory to save data</source>
@@ -1803,12 +1994,88 @@
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
       <translation>Separate loggfiler:\nOppretter en separat loggfil for hvert spill.</translation>
     </message>
+    <message>
+      <source>Trophy Notification Position</source>
+      <translation>Trofévarsel plassering</translation>
+    </message>
+    <message>
+      <source>Left</source>
+      <translation>Venstre</translation>
+    </message>
+    <message>
+      <source>Right</source>
+      <translation>Høyre</translation>
+    </message>
+    <message>
+      <source>Top</source>
+      <translation>Øverst</translation>
+    </message>
+    <message>
+      <source>Bottom</source>
+      <translation>Nederst</translation>
+    </message>
+    <message>
+      <source>Notification Duration</source>
+      <translation>Varslingsvarighet</translation>
+    </message>
+    <message>
+      <source>Portable User Folder</source>
+      <translation>Separat brukermappe</translation>
+    </message>
+    <message>
+      <source>Create Portable User Folder from Common User Folder</source>
+      <translation>Lag ny separat brukermappe fra fellesbrukermappa</translation>
+    </message>
+    <message>
+      <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
+      <translation>Separat brukermappe:\n Lagrer shadPS4-innstillinger og data som kun brukes til shadPS4 programmet i gjeldende mappe. Start programmet på nytt etter opprettelsen av mappa for å ta den i bruk.</translation>
+    </message>
+    <message>
+      <source>Cannot create portable user folder</source>
+      <translation>Klarte ikke opprette separat brukermappe</translation>
+    </message>
+    <message>
+      <source>%1 already exists</source>
+      <translation>%1 finnes allerede</translation>
+    </message>
+    <message>
+      <source>Portable user folder created</source>
+      <translation>Separat brukermappe opprettet</translation>
+    </message>
+    <message>
+      <source>%1 successfully created.</source>
+      <translation>%1 opprettet.</translation>
+    </message>
+    <message>
+      <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
+      <translation>Åpne mappa med tilpassede bilder og lyder for trofé:\nDu kan legge til tilpassede bilder til trofeer og en lyd.\nLegg filene til custom_trophy med følgende navn:\ntrophy.wav ELLER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nMerk: Lyden avspilles kun i Qt-versjonen.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
       <translation>Troféviser</translation>
+    </message>
+    <message>
+      <source>Select Game:</source>
+      <translation>Velg spill:</translation>
+    </message>
+    <message>
+      <source>Progress</source>
+      <translation>Fremdrift</translation>
+    </message>
+    <message>
+      <source>Show Earned Trophies</source>
+      <translation>Vis opptjente trofeer</translation>
+    </message>
+    <message>
+      <source>Show Not Earned Trophies</source>
+      <translation>Vis ikke opptjente trofeer</translation>
+    </message>
+    <message>
+      <source>Show Hidden Trophies</source>
+      <translation>Vis skjulte trofeer</translation>
     </message>
   </context>
 </TS>

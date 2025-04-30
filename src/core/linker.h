@@ -83,7 +83,7 @@ public:
     }
 
     Module* GetModule(s32 index) const {
-        if (index >= 0 || index < m_modules.size()) {
+        if (index >= 0 && index < m_modules.size()) {
             return m_modules.at(index).get();
         }
         return nullptr;
@@ -144,6 +144,8 @@ public:
     void FreeTlsForNonPrimaryThread(void* pointer);
 
     s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
+    s32 LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
+                           int* pRes);
     Module* FindByAddress(VAddr address);
 
     void Relocate(Module* module);

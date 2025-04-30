@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/kernel/process.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -152,7 +153,8 @@ enum class OrbisSysModuleInternal : u32 {
 };
 
 int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal();
-int PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind();
+s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
+                                                    Kernel::OrbisModuleInfoForUnwind* info);
 int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule();
 int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded();
 int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id);

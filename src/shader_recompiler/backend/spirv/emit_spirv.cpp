@@ -32,6 +32,8 @@ static constexpr spv::ExecutionMode GetInputPrimitiveType(AmdGpu::PrimitiveType 
         return spv::ExecutionMode::Triangles;
     case AmdGpu::PrimitiveType::AdjTriangleList:
         return spv::ExecutionMode::InputTrianglesAdjacency;
+    case AmdGpu::PrimitiveType::AdjLineList:
+        return spv::ExecutionMode::InputLinesAdjacency;
     default:
         UNREACHABLE_MSG("Unknown input primitive type {}", u32(type));
     }
@@ -333,8 +335,7 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
         if (info.has_discard) {
-            ctx.AddExtension("SPV_EXT_demote_to_helper_invocation");
-            ctx.AddCapability(spv::Capability::DemoteToHelperInvocationEXT);
+            ctx.AddCapability(spv::Capability::DemoteToHelperInvocation);
         }
         if (info.stores.GetAny(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);

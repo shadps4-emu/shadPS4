@@ -20,7 +20,7 @@ void ScanDirectoryRecursively(const QString& dir, QStringList& filePaths, int cu
     QFileInfoList entries = directory.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
 
     for (const auto& entry : entries) {
-        if (entry.fileName().endsWith("-UPDATE")) {
+        if (entry.fileName().endsWith("-UPDATE") || entry.fileName().endsWith("-patch")) {
             continue;
         }
 

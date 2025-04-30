@@ -7,6 +7,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/system_error.h"
@@ -18,9 +19,41 @@ int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
+                                                    Kernel::OrbisModuleInfoForUnwind* info) {
+    LOG_TRACE(Lib_SysModule, "sceSysmoduleGetModuleInfoForUnwind(addr=0x{:X}, flags=0x{:X})", addr,
+              flags);
+
+    s32 res = Kernel::sceKernelGetModuleInfoForUnwind(addr, flags, info);
+    if (res != 0) {
+        return res;
+    }
+
+    static constexpr std::array<std::string_view, 17> modules_to_hide = {
+        "libc.prx",
+        "libc.sprx",
+        "libSceAudioLatencyEstimation.prx",
+        "libSceFace.prx",
+        "libSceFaceTracker.prx",
+        "libSceFios2.prx",
+        "libSceFios2.sprx",
+        "libSceFontGsm.prx",
+        "libSceHand.prx",
+        "libSceHandTracker.prx",
+        "libSceHeadTracker.prx",
+        "libSceJobManager.prx",
+        "libSceNpCppWebApi.prx",
+        "libSceNpToolkit.prx",
+        "libSceNpToolkit2.prx",
+        "libSceS3DConversion.prx",
+        "libSceSmart.prx",
+    };
+
+    const std::string_view module_name = info->name.data();
+    if (std::ranges::find(modules_to_hide, module_name) != modules_to_hide.end()) {
+        std::ranges::fill(info->name, '\0');
+    }
+    return res;
 }
 
 int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule() {
@@ -52,7 +85,6 @@ int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
 }
 
 int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
-    auto color_name = magic_enum::enum_name(id);
     LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
     return ORBIS_OK;
 }

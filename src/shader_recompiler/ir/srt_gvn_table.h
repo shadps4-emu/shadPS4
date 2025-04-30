@@ -52,24 +52,16 @@ private:
 
         switch (inst->GetOpcode()) {
         case IR::Opcode::Phi: {
-            // hack to get to parity with main
-            // Need to fix ssa_rewrite pass to remove certain phis
-            std::optional<IR::Value> source = TryRemoveTrivialPhi(inst);
-            if (!source) {
-                const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst) {
-                        return inst;
-                    }
-                    return std::nullopt;
-                };
-                source = IR::BreadthFirstSearch(inst, pred).transform([](auto inst) {
-                    return IR::Value{inst};
-                });
-                ASSERT(source);
-            }
-            vn = GetValueNumber(source.value());
+            const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
+                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                    inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
+                    inst->GetOpcode() == IR::Opcode::ReadConst) {
+                    return inst;
+                }
+                return std::nullopt;
+            };
+            IR::Inst* source = IR::BreadthFirstSearch(inst, pred).value();
+            vn = GetValueNumber(source);
             value_numbers[IR::Value(inst)] = vn;
             break;
         }
@@ -115,30 +107,6 @@ private:
             iv.push_back(GetValueNumber(inst->Arg(i)));
         }
         return iv;
-    }
-
-    // Temp workaround for something like this:
-    // [0000555558a5baf8] %297   = Phi [ %24, {Block $1} ], [ %297, {Block $5} ] (uses: 4)
-    // [0000555558a4e038] %305   = CompositeConstructU32x2 %297, %296 (uses: 4)
-    // [0000555558a4e0a8] %306   = ReadConst %305, #0 (uses: 2)
-    // Should probably be fixed in ssa_rewrite
-    std::optional<IR::Value> TryRemoveTrivialPhi(IR::Inst* phi) {
-        IR::Value single_source{};
-
-        for (auto i = 0; i < phi->NumArgs(); i++) {
-            IR::Value v = phi->Arg(i).Resolve();
-            if (v == IR::Value(phi)) {
-                continue;
-            }
-            if (!single_source.IsEmpty() && single_source != v) {
-                return std::nullopt;
-            }
-            single_source = v;
-        }
-
-        ASSERT(!single_source.IsEmpty());
-        phi->ReplaceUsesWith(single_source);
-        return single_source;
     }
 
     struct HashInstVector {

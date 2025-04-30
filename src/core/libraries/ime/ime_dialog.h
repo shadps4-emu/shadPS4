@@ -13,7 +13,7 @@ class SymbolsResolver;
 
 namespace Libraries::ImeDialog {
 
-constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 0x78;
+constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
 enum class Error : u32 {
     OK = 0x0,
@@ -155,7 +155,8 @@ Error PS4_SYSV_ABI sceImeDialogForceClose();
 Error PS4_SYSV_ABI sceImeDialogForTestFunction();
 int PS4_SYSV_ABI sceImeDialogGetCurrentStarState();
 int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm();
-int PS4_SYSV_ABI sceImeDialogGetPanelSize();
+Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u32* width,
+                                            u32* height);
 int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended();
 Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result);
 OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus();

@@ -28,6 +28,11 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
         }
     });
 
+    ui->buttonBox->button(QDialogButtonBox::Save)->setText(tr("Save"));
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setText(tr("Apply"));
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
+    ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
 
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
@@ -100,8 +105,8 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     if (count_axis_left_x > 1 | count_axis_left_y > 1 | count_axis_right_x > 1 |
         count_axis_right_y > 1) {
         QMessageBox::StandardButton nosave;
-        nosave = QMessageBox::information(this, "Unable to Save",
-                                          "Cannot bind axis values more than once");
+        nosave = QMessageBox::information(this, tr("Unable to Save"),
+                                          tr("Cannot bind axis values more than once"));
         return;
     }
 

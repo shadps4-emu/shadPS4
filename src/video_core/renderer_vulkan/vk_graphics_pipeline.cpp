@@ -28,6 +28,15 @@ static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eCompute,
 };
 
+static bool IsPrimitiveTopologyList(const vk::PrimitiveTopology topology) {
+    return topology == vk::PrimitiveTopology::ePointList ||
+           topology == vk::PrimitiveTopology::eLineList ||
+           topology == vk::PrimitiveTopology::eTriangleList ||
+           topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
+           topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
+           topology == vk::PrimitiveTopology::ePatchList;
+}
+
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
@@ -75,19 +84,15 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexAttributeDescriptions = vertex_attributes.data(),
     };
 
-    auto prim_restart = key.enable_primitive_restart != 0;
-    if (prim_restart && IsPrimitiveListTopology() && !instance.IsListRestartSupported()) {
-        LOG_WARNING(Render_Vulkan,
-                    "Primitive restart is enabled for list topology but not supported by driver.");
-        prim_restart = false;
-    }
+    const auto topology = LiverpoolToVK::PrimitiveType(key.prim_type);
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
-        .topology = LiverpoolToVK::PrimitiveType(key.prim_type),
-        .primitiveRestartEnable = prim_restart,
+        .topology = topology,
+        // Avoid warning spam on all pipelines about unsupported restart disable, if not supported.
+        // However, must be false for list topologies to avoid validation errors.
+        .primitiveRestartEnable =
+            !instance.IsPrimitiveRestartDisableSupported() && !IsPrimitiveTopologyList(topology),
     };
-    ASSERT_MSG(!prim_restart || key.primitive_restart_index == 0xFFFF ||
-                   key.primitive_restart_index == 0xFFFFFFFF,
-               "Primitive restart index other than -1 is not supported yet");
+
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
     const bool is_quad_list = key.prim_type == AmdGpu::PrimitiveType::QuadList;
     const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
@@ -99,13 +104,6 @@ GraphicsPipeline::GraphicsPipeline(
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .cullMode = LiverpoolToVK::IsPrimitiveCulled(key.prim_type)
-                        ? LiverpoolToVK::CullMode(key.cull_mode)
-                        : vk::CullModeFlagBits::eNone,
-        .frontFace = key.front_face == Liverpool::FrontFace::Clockwise
-                         ? vk::FrontFace::eClockwise
-                         : vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = key.depth_bias_enable,
         .lineWidth = 1.0f,
     };
 
@@ -123,38 +121,36 @@ GraphicsPipeline::GraphicsPipeline(
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
     };
 
-    boost::container::static_vector<vk::DynamicState, 14> dynamic_states = {
-        vk::DynamicState::eViewportWithCountEXT,
-        vk::DynamicState::eScissorWithCountEXT,
-        vk::DynamicState::eBlendConstants,
-        vk::DynamicState::eDepthBounds,
-        vk::DynamicState::eDepthBias,
-        vk::DynamicState::eStencilReference,
-        vk::DynamicState::eStencilCompareMask,
-        vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eStencilOpEXT,
+    boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
+        vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
+        vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthTestEnable,
+        vk::DynamicState::eDepthWriteEnable,   vk::DynamicState::eDepthCompareOp,
+        vk::DynamicState::eDepthBiasEnable,    vk::DynamicState::eDepthBias,
+        vk::DynamicState::eStencilTestEnable,  vk::DynamicState::eStencilReference,
+        vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
+        vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
+        vk::DynamicState::eFrontFace,
     };
 
+    if (instance.IsPrimitiveRestartDisableSupported()) {
+        dynamic_states.push_back(vk::DynamicState::ePrimitiveRestartEnable);
+    }
+    if (instance.IsDepthBoundsSupported()) {
+        dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnable);
+        dynamic_states.push_back(vk::DynamicState::eDepthBounds);
+    }
     if (instance.IsDynamicColorWriteMaskSupported()) {
         dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
     }
     if (instance.IsVertexInputDynamicState()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
     } else if (!vertex_bindings.empty()) {
-        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStrideEXT);
+        dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStride);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
         .pDynamicStates = dynamic_states.data(),
-    };
-
-    const vk::PipelineDepthStencilStateCreateInfo depth_info = {
-        .depthTestEnable = key.depth_test_enable,
-        .depthWriteEnable = key.depth_write_enable,
-        .depthCompareOp = key.depth_compare_op,
-        .depthBoundsTestEnable = key.depth_bounds_test_enable,
-        .stencilTestEnable = key.stencil_test_enable,
     };
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
@@ -216,7 +212,7 @@ GraphicsPipeline::GraphicsPipeline(
         });
     }
 
-    const vk::PipelineRenderingCreateInfoKHR pipeline_rendering_ci = {
+    const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
@@ -292,7 +288,6 @@ GraphicsPipeline::GraphicsPipeline(
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_state,
         .pMultisampleState = &multisampling,
-        .pDepthStencilState = &depth_info,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = *pipeline_layout,

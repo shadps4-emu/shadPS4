@@ -113,6 +113,8 @@ static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usag
     return feature_flags;
 }
 
+UniqueImage::UniqueImage() {}
+
 UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
     : device{device_}, allocator{allocator_} {}
 
@@ -123,6 +125,9 @@ UniqueImage::~UniqueImage() {
 }
 
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
+    if (image) {
+        vmaDestroyImage(allocator, image, allocation);
+    }
     const VmaAllocationCreateInfo alloc_info = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
