@@ -84,6 +84,10 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
 
+    if (sync || direct || dsync || nonblock) {
+        LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
+    }
+
     std::string_view path{raw_path};
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
