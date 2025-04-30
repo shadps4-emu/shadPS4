@@ -75,7 +75,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
     bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
     bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
-    // Flags fsync and sync do the same thing
+    // Flags fsync and sync behave the same
     bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0 || (flags & ORBIS_KERNEL_O_FSYNC) != 0;
     bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
     bool truncate = (flags & ORBIS_KERNEL_O_TRUNC) != 0;
