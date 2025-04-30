@@ -132,7 +132,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         file->type = Core::FileSys::FileType::Regular;
     }
 
-
     if (directory) {
         if (!std::filesystem::is_directory(file->m_host_name)) {
             // If the opened file is not a directory, return ENOTDIR.
