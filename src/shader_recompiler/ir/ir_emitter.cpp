@@ -1870,6 +1870,16 @@ Value IREmitter::ImageAtomicUMax(const Value& handle, const Value& coords, const
     return Inst(Opcode::ImageAtomicUMax32, Flags{info}, handle, coords, value);
 }
 
+Value IREmitter::ImageAtomicFMax(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicFMax32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicFMin(const Value& handle, const Value& coords, const Value& value,
+                                 TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicFMin32, Flags{info}, handle, coords, value);
+}
+
 Value IREmitter::ImageAtomicIMax(const Value& handle, const Value& coords, const Value& value,
                                  bool is_signed, TextureInstInfo info) {
     return is_signed ? ImageAtomicSMax(handle, coords, value, info)

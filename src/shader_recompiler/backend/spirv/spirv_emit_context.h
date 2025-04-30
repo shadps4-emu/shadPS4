@@ -207,6 +207,7 @@ public:
     Id invocation_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};
+    Id image_f32{};
 
     Id shared_memory_u8{};
     Id shared_memory_u16{};
