@@ -181,7 +181,8 @@ public:
 
     [[nodiscard]] U64 PackUint2x32(const Value& vector);
     [[nodiscard]] Value UnpackUint2x32(const U64& value);
-    [[nodiscard]] F64 PackFloat2x32(const Value& vector);
+    [[nodiscard]] F64 PackDouble2x32(const Value& vector);
+    [[nodiscard]] Value UnpackDouble2x32(const F64& value);
 
     [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector);
     [[nodiscard]] Value Unpack2x16(AmdGpu::NumberFormat number_format, const U32& value);

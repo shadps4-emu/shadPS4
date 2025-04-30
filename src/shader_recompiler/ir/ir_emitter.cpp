@@ -84,16 +84,6 @@ IR::F16 IREmitter::BitCast<IR::F16, IR::U16>(const IR::U16& value) {
     return Inst<IR::F16>(Opcode::BitCastF16U16, value);
 }
 
-template <>
-IR::U64 IREmitter::BitCast<IR::U64, IR::F64>(const IR::F64& value) {
-    return Inst<IR::U64>(Opcode::BitCastU64F64, value);
-}
-
-template <>
-IR::F64 IREmitter::BitCast<IR::F64, IR::U64>(const IR::U64& value) {
-    return Inst<IR::F64>(Opcode::BitCastF64U64, value);
-}
-
 U1 IREmitter::ConditionRef(const U1& value) {
     return Inst<U1>(Opcode::ConditionRef, value);
 }
@@ -841,8 +831,12 @@ Value IREmitter::UnpackUint2x32(const U64& value) {
     return Inst<Value>(Opcode::UnpackUint2x32, value);
 }
 
-F64 IREmitter::PackFloat2x32(const Value& vector) {
-    return Inst<F64>(Opcode::PackFloat2x32, vector);
+F64 IREmitter::PackDouble2x32(const Value& vector) {
+    return Inst<F64>(Opcode::PackDouble2x32, vector);
+}
+
+Value IREmitter::UnpackDouble2x32(const F64& value) {
+    return Inst<Value>(Opcode::UnpackDouble2x32, value);
 }
 
 U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& vector) {

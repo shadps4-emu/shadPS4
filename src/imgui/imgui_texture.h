@@ -4,7 +4,10 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 #include <imgui.h>
+
+#include "common/types.h"
 
 namespace ImGui {
 

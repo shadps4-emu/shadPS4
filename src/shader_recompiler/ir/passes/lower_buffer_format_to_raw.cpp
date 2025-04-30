@@ -196,13 +196,18 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
     const auto buffer{desc.GetSharp(info)};
 
     const auto is_inst_typed = flags.inst_data_fmt != AmdGpu::DataFormat::FormatInvalid;
-    const auto data_format = is_inst_typed ? flags.inst_data_fmt.Value() : buffer.GetDataFmt();
-    const auto num_format = is_inst_typed ? flags.inst_num_fmt.Value() : buffer.GetNumberFmt();
+    const auto data_format =
+        is_inst_typed ? AmdGpu::RemapDataFormat(flags.inst_data_fmt.Value()) : buffer.GetDataFmt();
     const auto format_info = FormatInfo{
         .data_format = data_format,
-        .num_format = num_format,
-        .swizzle = is_inst_typed ? AmdGpu::IdentityMapping : buffer.DstSelect(),
-        .num_conversion = AmdGpu::MapNumberConversion(num_format),
+        .num_format = is_inst_typed
+                          ? AmdGpu::RemapNumberFormat(flags.inst_num_fmt.Value(), data_format)
+                          : buffer.GetNumberFmt(),
+        .swizzle = is_inst_typed
+                       ? AmdGpu::RemapSwizzle(flags.inst_data_fmt.Value(), AmdGpu::IdentityMapping)
+                       : buffer.DstSelect(),
+        .num_conversion = is_inst_typed ? AmdGpu::MapNumberConversion(flags.inst_num_fmt.Value())
+                                        : buffer.GetNumberConversion(),
         .num_components = AmdGpu::NumComponents(data_format),
     };
 

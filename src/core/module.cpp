@@ -135,10 +135,14 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         if (do_map) {
             elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
         }
-        auto& segment = info.segments[info.num_segments++];
-        segment.address = segment_addr;
-        segment.prot = phdr.p_flags;
-        segment.size = GetAlignedSize(phdr);
+        if (info.num_segments < 4) {
+            auto& segment = info.segments[info.num_segments++];
+            segment.address = segment_addr;
+            segment.prot = phdr.p_flags;
+            segment.size = GetAlignedSize(phdr);
+        } else {
+            LOG_ERROR(Core_Linker, "Attempting to add too many segments!");
+        }
     };
 
     for (u16 i = 0; i < elf_header.e_phnum; i++) {

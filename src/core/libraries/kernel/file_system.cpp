@@ -877,7 +877,7 @@ s32 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, s32 nbytes, s64* base
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
@@ -893,7 +893,7 @@ s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
     std::scoped_lock lk{file->m_mutex};
 
     if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->pwrite(buf, nbytes, offset);
+        s64 result = file->device->pwritev(iov, iovcnt, offset);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -908,11 +908,29 @@ s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
         *__Error() = POSIX_EIO;
         return -1;
     }
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    size_t total_written = 0;
+    for (int i = 0; i < iovcnt; i++) {
+        total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+    }
+    return total_written;
+}
+
+s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+    SceKernelIovec iovec{buf, nbytes};
+    return posix_pwritev(fd, &iovec, 1, offset);
 }
 
 s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
     s64 result = posix_pwrite(fd, buf, nbytes, offset);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+    s64 result = posix_pwritev(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -1017,7 +1035,10 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", 1, 1, getdirentries);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", 1, 1, sceKernelGetdirentries);
     LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", 1, 1, posix_pwrite);
+    LIB_FUNCTION("FCcmRZhWtOk", "libScePosix", 1, "libkernel", 1, 1, posix_pwritev);
+    LIB_FUNCTION("FCcmRZhWtOk", "libkernel", 1, "libkernel", 1, 1, posix_pwritev);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
+    LIB_FUNCTION("mBd4AfLP+u8", "libkernel", 1, "libkernel", 1, 1, sceKernelPwritev);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
 }
 

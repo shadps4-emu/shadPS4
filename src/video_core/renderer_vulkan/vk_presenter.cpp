@@ -130,7 +130,7 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     }
 
     fsr_pass.Create(device, instance.GetAllocator(), num_images);
-    pp_pass.Create(device);
+    pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
 
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 }

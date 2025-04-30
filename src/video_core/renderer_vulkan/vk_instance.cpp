@@ -332,6 +332,7 @@ bool Instance::CreateDevice() {
                 .logicOp = features.logicOp,
                 .depthBiasClamp = features.depthBiasClamp,
                 .fillModeNonSolid = features.fillModeNonSolid,
+                .depthBounds = features.depthBounds,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,

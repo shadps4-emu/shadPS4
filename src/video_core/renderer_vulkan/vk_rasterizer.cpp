@@ -696,14 +696,19 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
 void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& state) {
     int cb_index = 0;
-    for (auto& [image_id, desc] : cb_descs) {
+    for (auto attach_idx = 0u; attach_idx < state.num_color_attachments; ++attach_idx) {
+        if (state.color_attachments[attach_idx].imageView == VK_NULL_HANDLE) {
+            continue;
+        }
+
+        auto& [image_id, desc] = cb_descs[cb_index++];
         if (auto& old_img = texture_cache.GetImage(image_id); old_img.binding.needs_rebind) {
             auto& view = texture_cache.FindRenderTarget(desc);
             ASSERT(view.image_id != image_id);
             image_id = bound_images.emplace_back(view.image_id);
             auto& image = texture_cache.GetImage(view.image_id);
-            state.color_attachments[cb_index].imageView = *view.image_view;
-            state.color_attachments[cb_index].imageLayout = image.last_state.layout;
+            state.color_attachments[attach_idx].imageView = *view.image_view;
+            state.color_attachments[attach_idx].imageLayout = image.last_state.layout;
 
             const auto mip = view.info.range.base.level;
             state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
@@ -722,8 +727,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
                           desc.view_info.range);
         }
         image.usage.render_target = 1u;
-        state.color_attachments[cb_index].imageLayout = image.last_state.layout;
-        ++cb_index;
+        state.color_attachments[attach_idx].imageLayout = image.last_state.layout;
     }
 
     if (db_desc) {

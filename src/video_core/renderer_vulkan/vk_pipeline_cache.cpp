@@ -196,6 +196,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     profile = Shader::Profile{
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
+        .support_float64 = instance.IsShaderFloat64Supported(),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_fp32_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat32),

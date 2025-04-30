@@ -38,6 +38,7 @@ Id BufferAtomicU32BoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto e
         const Id ib_label = ctx.OpLabel();
         const Id oob_label = ctx.OpLabel();
         const Id end_label = ctx.OpLabel();
+        ctx.OpSelectionMerge(end_label, spv::SelectionControlMask::MaskNone);
         ctx.OpBranchConditional(in_bounds, ib_label, oob_label);
         ctx.AddLabel(ib_label);
         const Id ib_result = emit_func();
