@@ -16,6 +16,9 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
 #include "common/elf_info.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -46,6 +49,10 @@ Emulator::Emulator() {
 #ifdef _WIN32
     Common::NtApi::Initialize();
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
+    // need to init this in order for winsock2 to work
+    WORD versionWanted = MAKEWORD(2, 2);
+    WSADATA wsaData;
+    WSAStartup(versionWanted, &wsaData);
 #endif
 
     // Create stdin/stdout/stderr

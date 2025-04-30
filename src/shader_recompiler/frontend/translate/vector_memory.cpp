@@ -115,8 +115,12 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return IMAGE_ATOMIC(AtomicOp::Smin, inst);
     case Opcode::IMAGE_ATOMIC_UMIN:
         return IMAGE_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::IMAGE_ATOMIC_FMIN:
+        return IMAGE_ATOMIC(AtomicOp::Fmin, inst);
     case Opcode::IMAGE_ATOMIC_SMAX:
         return IMAGE_ATOMIC(AtomicOp::Smax, inst);
+    case Opcode::IMAGE_ATOMIC_FMAX:
+        return IMAGE_ATOMIC(AtomicOp::Fmax, inst);
     case Opcode::IMAGE_ATOMIC_UMAX:
         return IMAGE_ATOMIC(AtomicOp::Umax, inst);
     case Opcode::IMAGE_ATOMIC_AND:
@@ -466,6 +470,10 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
             return ir.ImageAtomicIMax(handle, body, value, true, info);
         case AtomicOp::Umax:
             return ir.ImageAtomicUMax(handle, body, value, info);
+        case AtomicOp::Fmax:
+            return ir.ImageAtomicFMax(handle, body, value, info);
+        case AtomicOp::Fmin:
+            return ir.ImageAtomicFMin(handle, body, value, info);
         case AtomicOp::And:
             return ir.ImageAtomicAnd(handle, body, value, info);
         case AtomicOp::Or:
