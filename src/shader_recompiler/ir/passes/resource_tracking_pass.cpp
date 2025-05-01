@@ -101,6 +101,8 @@ bool IsImageAtomicInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageAtomicUMin32:
     case IR::Opcode::ImageAtomicSMax32:
     case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicFMax32:
+    case IR::Opcode::ImageAtomicFMin32:
     case IR::Opcode::ImageAtomicInc32:
     case IR::Opcode::ImageAtomicDec32:
     case IR::Opcode::ImageAtomicAnd32:
