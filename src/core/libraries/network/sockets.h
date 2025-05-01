@@ -32,6 +32,10 @@ struct Socket;
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
+struct OrbisNetLinger {
+    s32 l_onoff;
+    s32 l_linger;
+};
 struct Socket {
     explicit Socket(int domain, int type, int protocol) {}
     virtual ~Socket() = default;

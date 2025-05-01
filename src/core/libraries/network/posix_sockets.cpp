@@ -235,12 +235,13 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
 
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
     level = ConvertLevels(level);
+    ::linger native_linger;
     if (level == SOL_SOCKET) {
         switch (optname) {
             CASE_SETSOCKOPT(SO_REUSEADDR);
             CASE_SETSOCKOPT(SO_KEEPALIVE);
             CASE_SETSOCKOPT(SO_BROADCAST);
-            CASE_SETSOCKOPT(SO_LINGER);
+            // CASE_SETSOCKOPT(SO_LINGER);
             CASE_SETSOCKOPT(SO_SNDBUF);
             CASE_SETSOCKOPT(SO_RCVBUF);
             CASE_SETSOCKOPT(SO_SNDTIMEO);
@@ -251,6 +252,19 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_LINGER: {
+            if (optlen < sizeof(OrbisNetLinger))
+                return ORBIS_NET_ERROR_EINVAL;
+
+            int native_opt = SO_LINGER;
+            const void* native_val = &native_linger;
+            u32 native_len = sizeof(native_linger);
+            native_linger.l_onoff = reinterpret_cast<const OrbisNetLinger*>(optval)->l_onoff;
+            native_linger.l_linger = reinterpret_cast<const OrbisNetLinger*>(optval)->l_linger;
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, SO_LINGER, (const char*)native_val, native_len));
+        }
+
         case ORBIS_NET_SO_NAME:
             return ORBIS_NET_ERROR_EINVAL; // don't support set for name
         case ORBIS_NET_SO_NBIO: {
