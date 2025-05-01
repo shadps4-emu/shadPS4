@@ -45,7 +45,7 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
         const IR::F32 left = ir.ConvertSToF(32, 32, additon);
         const IR::F32 max = ir.Imm32(float(std::numeric_limits<u16>::max()));
         return ir.FPDiv(left, max);
-    }                 
+    }
     default:
         UNREACHABLE();
     }
@@ -91,7 +91,7 @@ inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
         const IR::F32 left = ir.FPSub(mul, ir.Imm32(1.f));
         const IR::U32 raw = ir.ConvertFToS(32, ir.FPDiv(left, ir.Imm32(2.f)));
         return ir.BitCast<F32>(raw);
-    }                        
+    }
     default:
         UNREACHABLE();
     }
