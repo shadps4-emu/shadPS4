@@ -81,26 +81,29 @@ void GetShader(std::string shader_id, Shader::Info& info, Shader::Profile& profi
 }
 
 void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized, std::ostream& profile_serialized) {
-    std::string spirv_cache_filename = shader_id + ".spv ";
+    // SPIR-V-Datei speichern
+    std::string spirv_cache_filename = shader_id + ".spv";
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
     Common::FS::IOFile shader_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Write);
     shader_cache_file.WriteSpan(std::span<const u32>(spv));
+    shader_cache_file.Close();
 
+    // Resources-Datei vorbereiten
     std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
-    Common::FS::IOFile resources_dump_file(resources_dump_file_path, Common::FS::FileAccessMode::Write);
-    // Schreibe beide Streams nacheinander in die Ressourcen-Datei
-    std::ostringstream info_stream, profile_stream;
-    info_stream << info_serialized.rdbuf();
-    profile_stream << profile_serialized.rdbuf();
+    Common::FS::IOFile resources_dump_file(resources_dump_file_path,
+                                           Common::FS::FileAccessMode::Write);
 
-    // Schreibe zuerst die Größe des info-Dumps, dann die Daten
-    u32 info_size = static_cast<u32>(info_stream.str().size());
-    resources_dump_file.WriteString(std::span<const char>(info_stream.str().data(), info_size));
+    // Die Streams müssen zurückgesetzt werden, bevor wir sie lesen können
+    if (std::ostringstream* info_oss = dynamic_cast<std::ostringstream*>(&info_serialized)) {
+        std::string info_data = info_oss->str();
+        resources_dump_file.WriteSpan(std::span<const char>(info_data.data(), info_data.size()));
+    }
 
-    // Schreibe danach die Größe des profile-Dumps, dann die Daten
-    u32 profile_size = static_cast<u32>(profile_stream.str().size());
-    resources_dump_file.WriteString(
-        std::span<const char>(profile_stream.str().data(), profile_size));
+    if (std::ostringstream* profile_oss = dynamic_cast<std::ostringstream*>(&profile_serialized)) {
+        std::string profile_data = profile_oss->str();
+        resources_dump_file.WriteSpan(
+            std::span<const char>(profile_data.data(), profile_data.size()));
+    }
 
     resources_dump_file.Close();
 }
