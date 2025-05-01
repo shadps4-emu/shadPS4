@@ -928,7 +928,7 @@ struct Liverpool {
         }
 
         [[nodiscard]] NumberConversion GetNumberConversion() const {
-            return MapNumberConversion(GetFixedNumberFormat());
+            return MapNumberConversion(GetFixedNumberFormat(), info.format);
         }
 
         [[nodiscard]] CompMapping Swizzle() const {
