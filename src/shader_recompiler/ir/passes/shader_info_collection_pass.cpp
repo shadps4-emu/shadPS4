@@ -119,8 +119,8 @@ void CollectShaderInfoPass(IR::Program& program) {
         });
         program.info.buffers.push_back({
             .used_types = IR::Type::U8,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_READBACK_SIZE),
-            .buffer_type = BufferType::FaultReadback,
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
+            .buffer_type = BufferType::FaultBuffer,
             .is_written = true,
         });
     }

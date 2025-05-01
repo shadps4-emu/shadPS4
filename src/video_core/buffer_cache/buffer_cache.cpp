@@ -35,7 +35,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal,
                            0,        AllFlags,  BDA_PAGETABLE_SIZE},
       fault_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags,
-                            FAULT_READBACK_SIZE),
+                            FAULT_BUFFER_SIZE),
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
     Vulkan::SetObjectName(instance.GetDevice(), bda_pagetable_buffer.Handle(),
@@ -628,14 +628,14 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
 void BufferCache::ProcessFaultBuffer() {
     // Run fault processing shader
     const auto [mapped, offset] = download_buffer.Map(MaxPageFaults * sizeof(u64));
-    vk::BufferMemoryBarrier2 fault_readback_barrier{
+    vk::BufferMemoryBarrier2 fault_buffer_barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
         .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
         .buffer = fault_buffer.Handle(),
         .offset = 0,
-        .size = FAULT_READBACK_SIZE,
+        .size = FAULT_BUFFER_SIZE,
     };
     vk::BufferMemoryBarrier2 download_barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
@@ -646,11 +646,11 @@ void BufferCache::ProcessFaultBuffer() {
         .offset = offset,
         .size = MaxPageFaults * sizeof(u64),
     };
-    std::array<vk::BufferMemoryBarrier2, 2> barriers{fault_readback_barrier, download_barrier};
-    vk::DescriptorBufferInfo fault_readback_info{
+    std::array<vk::BufferMemoryBarrier2, 2> barriers{fault_buffer_barrier, download_barrier};
+    vk::DescriptorBufferInfo fault_buffer_info{
         .buffer = fault_buffer.Handle(),
         .offset = 0,
-        .range = FAULT_READBACK_SIZE,
+        .range = FAULT_BUFFER_SIZE,
     };
     vk::DescriptorBufferInfo download_info{
         .buffer = download_buffer.Handle(),
@@ -664,7 +664,7 @@ void BufferCache::ProcessFaultBuffer() {
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .pBufferInfo = &fault_readback_info,
+            .pBufferInfo = &fault_buffer_info,
         },
         {
             .dstSet = VK_NULL_HANDLE,
@@ -698,7 +698,7 @@ void BufferCache::ProcessFaultBuffer() {
         .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
         .buffer = fault_buffer.Handle(),
         .offset = 0,
-        .size = FAULT_READBACK_SIZE,
+        .size = FAULT_BUFFER_SIZE,
     };
     const vk::BufferMemoryBarrier2 reset_post_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
@@ -707,14 +707,14 @@ void BufferCache::ProcessFaultBuffer() {
         .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
         .buffer = fault_buffer.Handle(),
         .offset = 0,
-        .size = FAULT_READBACK_SIZE,
+        .size = FAULT_BUFFER_SIZE,
     };
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &reset_pre_barrier,
     });
-    cmdbuf.fillBuffer(fault_buffer.buffer, 0, FAULT_READBACK_SIZE, 0);
+    cmdbuf.fillBuffer(fault_buffer.buffer, 0, FAULT_BUFFER_SIZE, 0);
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,
@@ -737,8 +737,8 @@ void BufferCache::ProcessFaultBuffer() {
         for (const auto& range : fault_ranges) {
             const VAddr start = range.lower();
             const VAddr end = range.upper();
-            const VAddr page_start = start >> CACHING_PAGEBITS;
-            const VAddr page_end = Common::DivCeil(end, CACHING_PAGESIZE);
+            const u64 page_start = start >> CACHING_PAGEBITS;
+            const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
             // Mark the pages as synced
             for (u64 page = page_start; page < page_end; ++page) {
                 page_table[page].is_dma_synced = true;

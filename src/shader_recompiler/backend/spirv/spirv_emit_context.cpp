@@ -201,7 +201,7 @@ void EmitContext::DefineArithmeticTypes() {
             Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
         caching_pagemask_value = Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1);
 
-        // Used to calculate fault readback buffer position and mask
+        // Used to calculate fault buffer position and mask
         u32_three_value = ConstU32(3U);
         u32_seven_value = ConstU32(7U);
         bda_first_time_mask = Constant(U64, 0x1ULL);
@@ -747,8 +747,8 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
     case Shader::BufferType::BdaPagetable:
         Name(id, "bda_pagetable");
         break;
-    case Shader::BufferType::FaultReadback:
-        Name(id, "fault_readback");
+    case Shader::BufferType::FaultBuffer:
+        Name(id, "fault_buffer");
         break;
     case Shader::BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
@@ -782,8 +782,8 @@ void EmitContext::DefineBuffers() {
             flatbuf_index = buffers.size();
         } else if (desc.buffer_type == BufferType::BdaPagetable) {
             bda_pagetable_index = buffers.size();
-        } else if (desc.buffer_type == BufferType::FaultReadback) {
-            fault_readback_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::FaultBuffer) {
+            fault_buffer_index = buffers.size();
         }
 
         // Define aliases depending on the shader usage.

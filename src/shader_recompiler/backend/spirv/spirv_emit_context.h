@@ -199,7 +199,7 @@ public:
 
         // First time access
         AddLabel(first_time_label);
-        const auto& fault_buffer = buffers[fault_readback_index];
+        const auto& fault_buffer = buffers[fault_buffer_index];
         const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
         const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
         const Id page_mod8 = OpBitwiseAnd(U32[1], page32, u32_seven_value);
@@ -248,7 +248,7 @@ public:
         // Merge
         AddLabel(merge_label);
         const Id final_result =
-            OpPhi(type, fallback_result, fallback_label, result, available_label);
+            OpPhi(type, fallback_result, fallback_label, result, after_save_masked_label);
         return final_result;
     }
 
@@ -407,7 +407,7 @@ public:
 
     size_t flatbuf_index{};
     size_t bda_pagetable_index{};
-    size_t fault_readback_index{};
+    size_t fault_buffer_index{};
 
     Id sampler_type{};
     Id sampler_pointer_type{};
