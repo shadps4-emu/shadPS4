@@ -181,7 +181,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
     } else {
-        // Start by opening as read-write so we can truncate on all platforms.
+        // Start by opening as read-write so we can truncate regardless of flags.
         // Since open starts by closing the file, this won't interfere with later open calls.
         e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
 
@@ -194,7 +194,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         } else if (truncate && e == 0) {
             // If the file was opened successfully and truncate was enabled, reduce size to 0
-            file->f.SetSize(file->m_host_name.string().c_str(), 0);
+            file->f.SetSize(0);
         }
 
         if (read) {
@@ -705,7 +705,7 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         return -1;
     }
 
-    file->f.SetSize(file->m_host_name.string().c_str(), length);
+    file->f.SetSize(length);
     return ORBIS_OK;
 }
 
