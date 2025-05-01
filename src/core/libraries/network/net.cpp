@@ -886,6 +886,7 @@ int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* pa
 }
 
 int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
+    LOG_INFO(Lib_Net, "s={} level={} optname={}", s, level, optname);
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
