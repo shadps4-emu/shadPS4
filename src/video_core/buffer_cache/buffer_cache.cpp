@@ -415,45 +415,6 @@ BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
     return CreateBuffer(device_addr, size);
 }
 
-void BufferCache::QueueMemoryCoverage(VAddr device_addr, u64 size) {
-    std::scoped_lock lk{covered_regions_mutex};
-    const VAddr start = device_addr;
-    const VAddr end = device_addr + size;
-    auto queue_range = decltype(queued_converages)::interval_type::right_open(start, end);
-    queued_converages += queue_range;
-}
-
-void BufferCache::CoverQueuedRegions() {
-    std::scoped_lock lk{covered_regions_mutex};
-    if (queued_converages.empty()) {
-        return;
-    }
-    for (const auto& range : queued_converages) {
-        CoverMemory(range.lower(), range.upper());
-    }
-    queued_converages.clear();
-}
-
-void BufferCache::CoverMemory(u64 start, u64 end) {
-    const u64 page_start = start >> CACHING_PAGEBITS;
-    const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
-    auto interval = decltype(convered_regions)::interval_type::right_open(page_start, page_end);
-    auto interval_set = boost::icl::interval_set<u64>{interval};
-    auto uncovered_ranges = interval_set - convered_regions;
-    if (uncovered_ranges.empty()) {
-        return;
-    }
-    // We fill any holes within the given range
-    for (const auto& range : uncovered_ranges) {
-        const u64 range_start = range.lower();
-        const u64 range_end = range.upper();
-        void* cpu_addr = reinterpret_cast<void*>(range_start << CACHING_PAGEBITS);
-        const u64 range_size = (range_end - range_start) << CACHING_PAGEBITS;
-        // Here to implement import of the mapped region
-        convered_regions += range;
-    }
-}
-
 BufferCache::OverlapResult BufferCache::ResolveOverlaps(VAddr device_addr, u32 wanted_size) {
     static constexpr int STREAM_LEAP_THRESHOLD = 16;
     boost::container::small_vector<BufferId, 16> overlap_ids;
@@ -608,12 +569,6 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     }
     WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
                     bda_addrs.size() * sizeof(vk::DeviceAddress));
-    {
-        // Mark the pages as covered
-        std::scoped_lock lk{covered_regions_mutex};
-        convered_regions += boost::icl::interval_set<u64>::interval_type::right_open(
-            start_page, start_page + size_pages);
-    }
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
     scheduler.EndRendering();

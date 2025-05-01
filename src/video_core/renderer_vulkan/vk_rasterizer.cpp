@@ -477,9 +477,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (uses_dma) {
         fault_process_pending = true;
         // We only use fault buffer for DMA right now.
-        // First, import any queued host memory, then sync every mapped
-        // region that is cached on GPU memory.
-        buffer_cache.CoverQueuedRegions();
         {
             std::shared_lock lock{dma_sync_mapped_ranges_mutex};
             for (const auto& range : dma_sync_mapped_ranges) {
@@ -991,7 +988,6 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
         dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
     }
     page_manager.OnGpuMap(addr, size);
-    buffer_cache.QueueMemoryCoverage(addr, size);
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
