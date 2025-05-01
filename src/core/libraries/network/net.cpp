@@ -1449,6 +1449,7 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
 
 int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                   u32 optlen) {
+    LOG_INFO(Lib_Net, "s={} level={} optname={} optlen={}", s, level, optname, optlen);
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
