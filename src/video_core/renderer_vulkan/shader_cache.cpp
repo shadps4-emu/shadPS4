@@ -46,7 +46,7 @@ bool CheckShaderCache(std::string shader_id) {
     return 0;
 }
 
-bool GetShader(std::string shader_id) {
+void GetShader(std::string shader_id, Shader::Info& info, Shader::Profile& profile) {
     std::string spirv_cache_filename = shader_id + ".spv ";
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
     Common::FS::IOFile spirv_cache_file(spirv_cache_file_path,
@@ -54,6 +54,30 @@ bool GetShader(std::string shader_id) {
     std::vector<u32> spv;
     spv.resize(spirv_cache_file.GetSize() / sizeof(u32));
     spirv_cache_file.Read(spv);
+    spirv_cache_file.Close();
+
+    std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
+    Common::FS::IOFile resources_dump_file(resources_dump_file_path,
+                                           Common::FS::FileAccessMode::Read);
+    
+       // Lese die Ressourcendaten
+    std::vector<char> resources_data;
+    resources_data.resize(resources_dump_file.GetSize());
+    resources_dump_file.Read(resources_data);
+    resources_dump_file.Close();
+
+    // Verarbeite die gespeicherten Daten
+    std::istringstream combined_stream(std::string(resources_data.begin(), resources_data.end()));
+
+    // Deserialisiere info und profile
+    std::istringstream info_stream;
+    info_stream.str(std::string(resources_data.begin(), resources_data.end()));
+    DeserializeInfo(info_stream, info);
+
+    std::istringstream profile_stream;
+    profile_stream.str(
+        std::string(resources_data.begin() + info_stream.tellg(), resources_data.end()));
+    DeserializeProfile(profile_stream, profile);
 }
 
 void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized, std::ostream& profile_serialized) {
@@ -77,6 +101,8 @@ void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_s
     u32 profile_size = static_cast<u32>(profile_stream.str().size());
     resources_dump_file.WriteString(
         std::span<const char>(profile_stream.str().data(), profile_size));
+
+    resources_dump_file.Close();
 }
 
 } // namespace ShaderCache
