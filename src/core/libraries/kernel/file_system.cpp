@@ -177,6 +177,20 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
     } else {
+        // Start by opening as read-write so we can truncate on all platforms.
+        // Since open starts by closing the file, this won't interfere with later open calls.
+        e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+
+        if (truncate && read_only) {
+            // Can't open files with truncate flag in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        } else if (truncate && e == 0) {
+            // If the file was opened successfully and truncate was enabled, reduce size to 0
+            file->f.SetSize(file->m_host_name.string().c_str(), 0);
+        }
+
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
@@ -199,16 +213,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             h->DeleteHandle(handle);
             *__Error() = POSIX_EINVAL;
             return -1;
-        }
-
-        if (truncate && read_only) {
-            // Can't open files with truncate flag in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (truncate && e == 0) {
-            // If the file was opened successfully and truncate was enabled, reduce size to 0
-            file->f.SetSize(file->m_host_name.string().c_str(), 0);
         }
     }
 
