@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <ctime>
 #include "common/logging/log.h"
 #include "urandom_device.h"
 
