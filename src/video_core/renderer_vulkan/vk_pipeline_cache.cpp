@@ -493,12 +493,6 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
-    std::ostringstream info_serialized, profile_serialized;
-    ::ShaderCache::SerializeInfo(info_serialized, info);
-    ::ShaderCache::SerializeProfile(profile_serialized, profile);
-    std::string shader_id = ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_serialized, profile_serialized);
-    ::ShaderCache::AddShader(shader_id, std::vector<u32>{}, info_serialized, profile_serialized);
-    LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     
@@ -508,11 +502,16 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
     std::vector<u32> spv;
 
-    if (::ShaderCache::CheckShaderCache(shader_id)) {
+    if (false){ //(::ShaderCache::CheckShaderCache(shader_id)) {
         LOG_INFO(Render_Vulkan, "Loaded SPIR-V from cache");
     } else {
         spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
-
+        std::ostringstream info_serialized;
+        ::ShaderCache::SerializeInfo(info_serialized, info);
+        std::string shader_id =
+            ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_serialized);
+        ::ShaderCache::AddShader(shader_id, spv, info_serialized);
+        LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
         DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
 
