@@ -196,6 +196,7 @@ struct Info {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool uses_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
