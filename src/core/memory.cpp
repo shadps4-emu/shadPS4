@@ -571,7 +571,15 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
                                 ::Libraries::Kernel::OrbisVirtualQueryInfo* info) {
     std::scoped_lock lk{mutex};
 
-    auto it = FindVMA(addr);
+    // FindVMA on addresses before the vma_map return garbage data.
+    auto query_addr = addr < impl.SystemManagedVirtualBase() ?
+                             impl.SystemManagedVirtualBase() : addr;
+    if (addr < query_addr && flags == 0) {
+        LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
+        return ORBIS_KERNEL_ERROR_EACCES;
+    } 
+    auto it = FindVMA(query_addr);
+
     if (it->second.type == VMAType::Free && flags == 1) {
         ++it;
     }

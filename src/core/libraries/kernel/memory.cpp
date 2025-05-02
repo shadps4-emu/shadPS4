@@ -126,9 +126,6 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
                                        size_t infoSize) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}", fmt::ptr(addr), flags);
-    if (!addr) {
-        return ORBIS_KERNEL_ERROR_EACCES;
-    }
     auto* memory = Core::Memory::Instance();
     return memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
 }
