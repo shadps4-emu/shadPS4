@@ -253,10 +253,15 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
-            if (optlen < sizeof(OrbisNetLinger))
+            if (socket_type ! = ORBIS_NET_SOCK_STREAM) {
+                return ORBIS_NET_EPROCUNAVAIL;
+            }
+            if (optlen < sizeof(OrbisNetLinger)) {
+                LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
+                          sizeof(OrbisNetLinger));
                 return ORBIS_NET_ERROR_EINVAL;
+            }
 
-            int native_opt = SO_LINGER;
             const void* native_val = &native_linger;
             u32 native_len = sizeof(native_linger);
             native_linger.l_onoff = reinterpret_cast<const OrbisNetLinger*>(optval)->l_onoff;
@@ -283,7 +288,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         }
     } else if (level == IPPROTO_IP) {
         switch (optname) {
-            CASE_SETSOCKOPT(IP_HDRINCL);
+            // CASE_SETSOCKOPT(IP_HDRINCL);
             CASE_SETSOCKOPT(IP_TOS);
             CASE_SETSOCKOPT(IP_TTL);
             CASE_SETSOCKOPT(IP_MULTICAST_IF);
@@ -293,6 +298,13 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(IP_DROP_MEMBERSHIP);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, &sockopt_ip_ttlchk);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
+        case ORBIS_NET_IP_HDRINCL: {
+            if (socket_type != ORBIS_NET_SOCK_RAW) {
+                return ORBIS_NET_EPROCUNAVAIL;
+            }
+            return ConvertReturnErrorCode(
+                setsockopt(sock, level, optname, (const char*)optval, optlen));
+        }
         }
     } else if (level == IPPROTO_TCP) {
         switch (optname) {
