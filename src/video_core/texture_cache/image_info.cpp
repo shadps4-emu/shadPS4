@@ -127,14 +127,18 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     tiling_mode = image.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     // Override format if image is forced to be a depth target, except if the image is a dummy one
-    if (desc.is_depth && (image.width != 0 && image.height != 0)) {
-        pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format);
-        if (pixel_format == vk::Format::eUndefined) {
-            ASSERT_MSG(
-                image.width == 0 && image.height == 0,
-                "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
-                vk::to_string(pixel_format), image.width, image.height,
-                AmdGpu::NameOf(image.GetDataFmt()));
+    if (desc.is_depth) {
+        if (image.width != 0 && image.height != 0) {
+            pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format);
+            if (pixel_format == vk::Format::eUndefined) {
+                ASSERT_MSG(image.width == 0 && image.height == 0,
+                           "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, "
+                           "data_format: {}",
+                           vk::to_string(pixel_format), image.width, image.height,
+                           AmdGpu::NameOf(image.GetDataFmt()));
+                pixel_format = vk::Format::eD32Sfloat;
+            }
+        } else {
             pixel_format = vk::Format::eD32Sfloat;
         }
     }

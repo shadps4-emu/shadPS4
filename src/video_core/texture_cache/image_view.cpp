@@ -38,14 +38,18 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
     format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
     // Override format if image is forced to be a depth target, except if the image is a dummy one
-    if (desc.is_depth && (image.width != 0 && image.height != 0)) {
-        format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
-        if (format == vk::Format::eUndefined) {
-            ASSERT_MSG(
-                image.width == 0 && image.height == 0,
-                "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, data_format: {}",
-                vk::to_string(format), image.width, image.height,
-                AmdGpu::NameOf(image.GetDataFmt()));
+    if (desc.is_depth) {
+        if (image.width != 0 && image.height != 0) {
+            format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
+            if (format == vk::Format::eUndefined) {
+                ASSERT_MSG(image.width == 0 && image.height == 0,
+                           "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, "
+                           "data_format: {}",
+                           vk::to_string(format), image.width, image.height,
+                           AmdGpu::NameOf(image.GetDataFmt()));
+                format = vk::Format::eD32Sfloat;
+            }
+        } else {
             format = vk::Format::eD32Sfloat;
         }
     }
