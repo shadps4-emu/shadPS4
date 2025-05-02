@@ -233,7 +233,7 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
     auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = MemoryProt::NoAccess;
-    new_vma.name = "";
+    new_vma.name = "anon";
     new_vma.type = VMAType::PoolReserved;
     MergeAdjacent(vma_map, new_vma_handle);
 
@@ -275,7 +275,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = MemoryProt::NoAccess;
-    new_vma.name = "";
+    new_vma.name = "anon";
     new_vma.type = VMAType::Reserved;
     MergeAdjacent(vma_map, new_vma_handle);
 

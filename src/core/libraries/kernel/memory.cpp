@@ -185,8 +185,8 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
 
     auto* memory = Core::Memory::Instance();
     const auto ret =
-        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "", false,
-                          directMemoryStart, alignment);
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
+                          false, directMemoryStart, alignment);
 
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     return ret;
@@ -195,7 +195,8 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
                                           s64 directMemoryStart, u64 alignment) {
     LOG_INFO(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
-    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment, "");
+    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment,
+                                         "anon");
 }
 
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
@@ -232,7 +233,7 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
 
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                             int flags) {
-    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "");
+    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "anon");
 }
 
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot) {
@@ -300,7 +301,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT: {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
-                                                   static_cast<s64>(entries[i].offset), 0, "");
+                                                   static_cast<s64>(entries[i].offset), 0, "anon");
             LOG_INFO(Kernel_Vmm,
                      "entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
                      "result = {}",
@@ -322,7 +323,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
-                                                     entries[i].protection, flags, "");
+                                                     entries[i].protection, flags, "anon");
             LOG_INFO(Kernel_Vmm,
                      "entry = {}, operation = {}, len = {:#x}, type = {}, "
                      "result = {}",
