@@ -186,7 +186,7 @@ public:
     int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                  MemoryMapFlags flags, VMAType type, std::string_view name = "",
+                  MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
