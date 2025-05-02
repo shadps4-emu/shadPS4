@@ -720,6 +720,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
     // If the requested address is beyond the maximum our code can handle, return an error.
     auto max_search_address = 0x10000000000;
     if (virtual_addr >= max_search_address) {
+        LOG_ERROR(Kernel_Vmm, "Address {:#x} is too high", virtual_addr);
         return -1;
     }
 
@@ -748,6 +749,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
 
         // Make sure the address is within our defined bounds
         if (virtual_addr >= max_search_address) {
+            LOG_ERROR(Kernel_Vmm, "Address {:#x} is too high", virtual_addr);
             return -1;
         }
 
@@ -760,6 +762,8 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
     }
 
     // Couldn't find a suitable VMA, return an error.
+    LOG_ERROR(Kernel_Vmm, "Couldn't find a free mapping for address {:#x}, size {:#x}",
+              virtual_addr, size);
     return -1;
 }
 
