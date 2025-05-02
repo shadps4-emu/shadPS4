@@ -47,6 +47,8 @@ enum MemoryOpTypes : u32 {
     ORBIS_KERNEL_MAP_OP_TYPE_PROTECT = 4
 };
 
+constexpr u32 ORBIS_KERNEL_MAXIMUM_NAME_LENGTH = 32;
+
 struct OrbisQueryInfo {
     uintptr_t start;
     uintptr_t end;
@@ -64,7 +66,7 @@ struct OrbisVirtualQueryInfo {
     u32 is_stack : 1;
     u32 is_pooled : 1;
     u32 is_committed : 1;
-    char name[32];
+    char name[ORBIS_KERNEL_MAXIMUM_NAME_LENGTH];
 };
 
 struct OrbisKernelBatchMapEntry {

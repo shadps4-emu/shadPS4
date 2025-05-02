@@ -168,15 +168,22 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+
     if (!Common::Is16KBAligned(directMemoryStart)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+
     if (alignment != 0) {
         if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
+    }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
@@ -207,15 +214,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    static constexpr size_t MaxNameSize = 32;
-    if (std::strlen(name) > MaxNameSize) {
-        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
-        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
-    }
-
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
@@ -353,16 +359,16 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 }
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
-    static constexpr size_t MaxNameSize = 32;
-    if (std::strlen(name) > MaxNameSize) {
-        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
-        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
-    }
-
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
+    }
+
     auto* memory = Core::Memory::Instance();
     memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
     return ORBIS_OK;

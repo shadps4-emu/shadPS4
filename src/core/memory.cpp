@@ -615,7 +615,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->is_pooled = vma.type == VMAType::PoolReserved || vma.type == VMAType::Pooled ? 1 : 0;
     info->is_committed = vma.IsMapped() ? 1 : 0;
 
-    strncpy(info->name, vma.name.data(), 32);
+    strncpy(info->name, vma.name.data(), ::Libraries::Kernel::ORBIS_KERNEL_MAXIMUM_NAME_LENGTH);
 
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
