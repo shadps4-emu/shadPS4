@@ -253,7 +253,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
-            if (socket_type ! = ORBIS_NET_SOCK_STREAM) {
+            if (socket_type != ORBIS_NET_SOCK_STREAM) {
                 return ORBIS_NET_EPROCUNAVAIL;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
