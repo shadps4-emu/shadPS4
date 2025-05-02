@@ -152,9 +152,8 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     auto* memory = Core::Memory::Instance();
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    memory->Reserve(addr, in_addr, len, map_flags, alignment);
 
-    return ORBIS_OK;
+    return memory->Reserve(addr, in_addr, len, map_flags, alignment);
 }
 
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,

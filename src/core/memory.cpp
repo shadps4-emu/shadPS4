@@ -222,6 +222,10 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
         mapped_addr = SearchFree(mapped_addr, size, alignment);
+        if (mapped_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Add virtual memory area
@@ -260,6 +264,10 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
         mapped_addr = SearchFree(mapped_addr, size, alignment);
+        if (mapped_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Add virtual memory area
@@ -334,6 +342,10 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
         mapped_addr = SearchFree(mapped_addr, size, alignment);
+        if (mapped_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Perform the mapping.
@@ -366,6 +378,10 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
         mapped_addr = SearchFree(mapped_addr, size_aligned, 1);
+        if (mapped_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     if (True(flags & MemoryMapFlags::Fixed)) {
@@ -701,6 +717,12 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
         virtual_addr = min_search_address;
     }
 
+    // If the requested address is beyond the maximum our code can handle, return an error.
+    auto max_search_address = 0x10000000000;
+    if (virtual_addr >= max_search_address) {
+        return -1;
+    }
+
     auto it = FindVMA(virtual_addr);
     ASSERT_MSG(it != vma_map.end(), "Specified mapping address was not found!");
 
@@ -708,24 +730,37 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
     if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
         return virtual_addr;
     }
+
     // Search for the first free VMA that fits our mapping.
-    const auto is_suitable = [&] {
+    while (it != vma_map.end()) {
         if (!it->second.IsFree()) {
-            return false;
+            it++;
+            continue;
         }
+
         const auto& vma = it->second;
         virtual_addr = Common::AlignUp(vma.base, alignment);
         // Sometimes the alignment itself might be larger than the VMA.
         if (virtual_addr > vma.base + vma.size) {
-            return false;
+            it++;
+            continue;
         }
+
+        // Make sure the address is within our defined bounds
+        if (virtual_addr >= max_search_address) {
+            return -1;
+        }
+
+        // If there's enough space in the VMA, return the address.
         const size_t remaining_size = vma.base + vma.size - virtual_addr;
-        return remaining_size >= size;
-    };
-    while (!is_suitable()) {
-        ++it;
+        if (remaining_size >= size) {
+            return virtual_addr;
+        }
+        it++;
     }
-    return virtual_addr;
+
+    // Couldn't find a suitable VMA, return an error.
+    return -1;
 }
 
 MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {
