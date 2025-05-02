@@ -593,12 +593,14 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     info->end = vma.base + vma.size;
     info->offset = vma.phys_base;
     info->protection = static_cast<s32>(vma.prot);
-    info->is_flexible.Assign(vma.type == VMAType::Flexible);
-    info->is_direct.Assign(vma.type == VMAType::Direct);
-    info->is_stack.Assign(vma.type == VMAType::Stack);
-    info->is_pooled.Assign(vma.type == VMAType::PoolReserved || vma.type == VMAType::Pooled);
-    info->is_committed.Assign(vma.IsMapped());
-    vma.name.copy(info->name.data(), std::min(info->name.size(), vma.name.size()));
+    info->is_flexible = vma.type == VMAType::Flexible ? 1 : 0;
+    info->is_direct = vma.type == VMAType::Direct ? 1 : 0;
+    info->is_stack = vma.type == VMAType::Stack ? 1 : 0;
+    info->is_pooled = vma.type == VMAType::PoolReserved || vma.type == VMAType::Pooled ? 1 : 0;
+    info->is_committed = vma.IsMapped() ? 1 : 0;
+
+    strcpy(info->name, vma.name.data());
+
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
         ASSERT(dmem_it != dmem_map.end());

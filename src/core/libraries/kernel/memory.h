@@ -59,14 +59,12 @@ struct OrbisVirtualQueryInfo {
     size_t offset;
     s32 protection;
     s32 memory_type;
-    union {
-        BitField<0, 1, u32> is_flexible;
-        BitField<1, 1, u32> is_direct;
-        BitField<2, 1, u32> is_stack;
-        BitField<3, 1, u32> is_pooled;
-        BitField<4, 1, u32> is_committed;
-    };
-    std::array<char, 32> name;
+    u32 is_flexible : 1;
+    u32 is_direct : 1;
+    u32 is_stack : 1;
+    u32 is_pooled : 1;
+    u32 is_committed : 1;
+    char name[32];
 };
 
 struct OrbisKernelBatchMapEntry {
