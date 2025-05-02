@@ -67,16 +67,26 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool write = (flags & 0x3) == ORBIS_KERNEL_O_WRONLY;
     bool rdwr = (flags & 0x3) == ORBIS_KERNEL_O_RDWR;
 
+    if (!read && !write && !rdwr) {
+        // Start by checking for invalid flags.
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
     bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
     bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
-    bool fsync = (flags & ORBIS_KERNEL_O_FSYNC) != 0;
-    bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0;
+    // Flags fsync and sync behave the same
+    bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0 || (flags & ORBIS_KERNEL_O_FSYNC) != 0;
     bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
     bool truncate = (flags & ORBIS_KERNEL_O_TRUNC) != 0;
     bool excl = (flags & ORBIS_KERNEL_O_EXCL) != 0;
     bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
+
+    if (sync || direct || dsync || nonblock) {
+        LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
+    }
 
     std::string_view path{raw_path};
     u32 handle = h->CreateHandle();
@@ -94,84 +104,126 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
-    if (directory) {
-        file->type = Core::FileSys::FileType::Directory;
-        file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
-        if (!std::filesystem::is_directory(file->m_host_name)) { // directory doesn't exist
+    bool read_only = false;
+    file->m_guest_name = path;
+    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
+    bool exists = std::filesystem::exists(file->m_host_name);
+    s32 e = 0;
+
+    if (create) {
+        if (excl && exists) {
+            // Error if file exists
             h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOENT;
+            *__Error() = POSIX_EEXIST;
             return -1;
-        } else {
-            if (create) {
-                return handle; // dir already exists
-            } else {
-                mnt->IterateDirectory(file->m_guest_name,
-                                      [&file](const auto& ent_path, const auto ent_is_file) {
-                                          auto& dir_entry = file->dirents.emplace_back();
-                                          dir_entry.name = ent_path.filename().string();
-                                          dir_entry.isFile = ent_is_file;
-                                      });
-                file->dirents_index = 0;
-            }
+        }
+
+        if (read_only) {
+            // Can't create files in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        // Create a file if it doesn't exist
+        Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+    } else if (!exists) {
+        // If we're not creating a file, and it doesn't exist, return ENOENT
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+
+    if (std::filesystem::is_directory(file->m_host_name) || directory) {
+        // Directories can be opened even if the directory flag isn't set.
+        // In these cases, error behavior is identical to the directory code path.
+        directory = true;
+    }
+
+    if (directory) {
+        if (!std::filesystem::is_directory(file->m_host_name)) {
+            // If the opened file is not a directory, return ENOTDIR.
+            // This will trigger when create & directory is specified, this is expected.
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_ENOTDIR;
+            return -1;
+        }
+
+        file->type = Core::FileSys::FileType::Directory;
+
+        // Populate directory contents
+        mnt->IterateDirectory(file->m_guest_name,
+                              [&file](const auto& ent_path, const auto ent_is_file) {
+                                  auto& dir_entry = file->dirents.emplace_back();
+                                  dir_entry.name = ent_path.filename().string();
+                                  dir_entry.isFile = ent_is_file;
+                              });
+        file->dirents_index = 0;
+
+        if (read) {
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (write || rdwr) {
+            // Cannot open directories with any type of write access
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EISDIR;
+            return -1;
+        }
+
+        if (e == EACCES) {
+            // Hack to bypass some platform limitations, ignore the error and continue as normal.
+            LOG_WARNING(Kernel_Fs, "Opening directories is not fully supported on this platform");
+            e = 0;
+        }
+
+        if (truncate) {
+            // Cannot open directories with truncate
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EISDIR;
+            return -1;
         }
     } else {
-        file->m_guest_name = path;
-        file->m_host_name = mnt->GetHostPath(file->m_guest_name);
-        bool exists = std::filesystem::exists(file->m_host_name);
-        int e = 0;
+        // Start by opening as read-write so we can truncate regardless of flags.
+        // Since open starts by closing the file, this won't interfere with later open calls.
+        e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
 
-        if (create) {
-            if (excl && exists) {
-                // Error if file exists
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EEXIST;
-                return -1;
-            }
-            // Create file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (!exists) {
-            // File to open doesn't exist, return ENOENT
+        file->type = Core::FileSys::FileType::Regular;
+
+        if (truncate && read_only) {
+            // Can't open files with truncate flag in a read only directory
             h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOENT;
+            *__Error() = POSIX_EROFS;
             return -1;
+        } else if (truncate && e == 0) {
+            // If the file was opened successfully and truncate was enabled, reduce size to 0
+            file->f.SetSize(0);
         }
 
         if (read) {
             // Read only
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+        } else if (read_only) {
+            // Can't open files with write/read-write access in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        } else if (append) {
+            // Append can be specified with rdwr or write, but we treat it as a separate mode.
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
         } else if (write) {
             // Write only
-            if (append) {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-            } else {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-            }
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
         } else if (rdwr) {
             // Read and write
-            if (append) {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-            } else {
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            }
-        } else {
-            // Invalid flags
-            *__Error() = POSIX_EINVAL;
-            return -1;
-        }
-
-        if (truncate && e == 0) {
-            // If the file was opened successfully and truncate was enabled, reduce size to 0
-            file->f.SetSize(0);
-        }
-
-        if (e != 0) {
-            // Open failed in platform-specific code, errno needs to be converted.
-            h->DeleteHandle(handle);
-            SetPosixErrno(e);
-            return -1;
+            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
         }
     }
+
+    if (e != 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        h->DeleteHandle(handle);
+        SetPosixErrno(e);
+        return -1;
+    }
+
     file->is_opened = true;
     return handle;
 }
@@ -365,10 +417,10 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         origin = Common::FS::SeekOrigin::CurrentPosition;
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
-    } else if (whence == 3) {
-        origin = Common::FS::SeekOrigin::SeekHole;
-    } else if (whence == 4) {
-        origin = Common::FS::SeekOrigin::SeekData;
+    } else if (whence == 3 || whence == 4) {
+        // whence parameter belongs to an unsupported POSIX extension
+        *__Error() = POSIX_ENOTTY;
+        return -1;
     } else {
         // whence parameter is invalid
         *__Error() = POSIX_EINVAL;
@@ -486,13 +538,13 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
 
     const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
 
-    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
-        *__Error() = POSIX_ENOTDIR;
+    if (ro) {
+        *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (ro) {
-        *__Error() = POSIX_EROFS;
+    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
+        *__Error() = POSIX_ENOTDIR;
         return -1;
     }
 
@@ -523,8 +575,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto path_name = mnt->GetHostPath(path, &ro);
+    const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
     const bool is_dir = std::filesystem::is_directory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
@@ -544,9 +595,6 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
-    }
-    if (ro) {
-        sb->st_mode &= ~0000555u;
     }
 
     return ORBIS_OK;
