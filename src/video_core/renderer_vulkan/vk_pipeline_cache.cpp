@@ -18,7 +18,6 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-#include <common/scm_rev.h>
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
