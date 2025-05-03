@@ -13,6 +13,10 @@ void writeBin(std::ostream& os, const T& v) {
 }  
 
 template <typename T>  
-void readBin(std::istream& is, T& v) {  
+void readBin(std::istream& is, T& v) {
+    if (is.eof()) {
+        LOG_WARNING(Render_Recompiler, "BinaryHelper: EOF");
+    }
+    LOG_WARNING
     is.read(reinterpret_cast<char*>(&v), sizeof(T));  
 }  
