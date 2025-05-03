@@ -488,34 +488,36 @@ bool PipelineCache::RefreshComputeKey() {
 
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                               std::span<const u32> code, size_t perm_idx,
-                                              Shader::Backend::Bindings& binding) {
+                                              Shader::Backend::Bindings& binding, Shader::StageSpecialization spec) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
+
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
-
-
-    const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     
     std::string shader_name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
 
-
-
     std::vector<u32> spv;
-
-    if (false){ //(::ShaderCache::CheckShaderCache(shader_id)) {
-        LOG_INFO(Render_Vulkan, "Loaded SPIR-V from cache");
+    std::string shader_id = std::to_string(::ShaderCache::CalculateSpecializationHash(spec));
+    if (::ShaderCache::CheckShaderCache(shader_id)) {
+        LOG_INFO(Render_Vulkan, "Loaded shader {} {:#x} {} from cache", info.stage, info.pgm_hash,
+                 perm_idx != 0 ? "(permutation)" : "");
+        ::ShaderCache::GetShader(shader_id, info, spv);
+        info.RefreshFlatBuf();
     } else {
+        LOG_INFO(Render_Vulkan, "Shader {} {:#x} {} not in cache", info.stage,
+                 info.pgm_hash, perm_idx != 0 ? "(permutation)" : "");
+        const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
         spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
         std::ostringstream info_serialized;
         ::ShaderCache::SerializeInfo(info_serialized, info);
-        std::string shader_id =
-            ::ShaderCache::CreateShaderID(info.pgm_hash, perm_idx, info_serialized);
+
         ::ShaderCache::AddShader(shader_id, spv, info_serialized);
         LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
         DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
 
-        LOG_INFO(Render_Vulkan, "Compiled SPIR-V and stored in cache");
+        LOG_INFO(Render_Vulkan, "Compiled shader {} {:#x} {} and saved it to cache", info.stage, info.pgm_hash,
+                 perm_idx != 0 ? "(permutation)" : "");
     }
 
     vk::ShaderModule module;
@@ -543,13 +545,14 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
                                                 Shader::ShaderParams params,
                                                 Shader::Backend::Bindings& binding) {
     auto runtime_info = BuildRuntimeInfo(stage, l_stage);
-    auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
+    auto [it_pgm, new_program] = program_cache.try_emplace(params.hash); // code in vs
     if (new_program) {
         it_pgm.value() = std::make_unique<Program>(stage, l_stage, params);
         auto& program = it_pgm.value();
         auto start = binding;
-        const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
+        Shader::StageSpecialization spec =
+            Shader::StageSpecialization(program->info, runtime_info, profile, start);
+        const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding, spec);
         program->AddPermut(module, std::move(spec));
         return std::make_tuple(&program->info, module, spec.fetch_shader_data,
                                HashCombine(params.hash, 0));
@@ -566,7 +569,7 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
     const auto it = std::ranges::find(program->modules, spec, &Program::Module::spec);
     if (it == program->modules.end()) {
         auto new_info = Shader::Info(stage, l_stage, params);
-        module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding);
+        module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding, spec);
         program->AddPermut(module, std::move(spec));
     } else {
         info.AddBindings(binding);
