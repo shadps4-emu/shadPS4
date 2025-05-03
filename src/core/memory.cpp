@@ -596,7 +596,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     }
     auto it = FindVMA(query_addr);
 
-    if (it->second.type == VMAType::Free && flags == 1) {
+    while (it->second.type == VMAType::Free && flags == 1 && it != vma_map.end()) {
         ++it;
     }
     if (it->second.type == VMAType::Free) {
