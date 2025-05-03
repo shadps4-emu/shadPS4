@@ -348,6 +348,8 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
         writeBin(info_serialized, res.num_dwords);
     }
 
+    writeBin(info_serialized, info.srt_info.flattened_bufsize_dw);
+
     // Flat UD
 
     u32 flatCount = static_cast<u32>(info.flattened_ud_buf.size());
@@ -645,12 +647,17 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
         readBin(info_serialized, res.num_dwords);
     }
 
+    readBin(info_serialized, info.srt_info.flattened_bufsize_dw);
+
     // Flat UD
+
     u32 flatCount;
     readBin(info_serialized, flatCount);
 
     info.flattened_ud_buf.clear();
-    info.flattened_ud_buf.resize(flatCount);
+    u32 required_size = std::max(flatCount, info.srt_info.flattened_bufsize_dw);
+    info.flattened_ud_buf.resize(required_size);
+
     for (u32 i = 0; i < flatCount; ++i) {
         readBin(info_serialized, info.flattened_ud_buf[i]);
     }
