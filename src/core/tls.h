@@ -44,9 +44,9 @@ Tcb* GetTcbBase();
 void EnsureThreadInitialized();
 
 template <size_t size>
-void ClearStack() {
-    void* buf = alloca(size);
-    memset(buf, 0, size);
+__attribute__((optnone)) void ClearStack() {
+    volatile void* buf = alloca(size);
+    memset(const_cast<void*>(buf), 0, size);
     buf = nullptr;
 }
 
