@@ -49,9 +49,9 @@ s64 PS4_SYSV_ABI sceUsbdGetDeviceList(SceUsbdDevice*** list) {
         return libusb_to_orbis_error((int)count);
 
     if (count > 2)
-        LOG_WARNING(Lib_Usbd, "Too Many USB Devices Connected");
+        LOG_WARNING(Lib_Usbd, "Too many USB devices connected to list: {}", count);
     libusb_unref_device((*list)[2]);
-    count = 0;
+    count = -1;
 
     return libusb_to_orbis_error((int)count);
 }
