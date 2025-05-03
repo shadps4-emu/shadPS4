@@ -16,6 +16,7 @@ using u32 = uint32_t;
 namespace ShaderCache {
 
 const auto shader_cache_dir = Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache";
+std::unordered_map<std::string, std::vector<u32>> g_ud_storage;
 
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     u64 hash = 0;
@@ -407,54 +408,16 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     for (size_t i = 0; i < info.stores.flags.size(); ++i) {
         writeBin(info_serialized, info.stores.flags[i]);
     }
-}
 
-bool CheckShaderCache(std::string shader_id) {
-    // Überprüfen, ob das Verzeichnis existiert
-    if (!std::filesystem::exists(shader_cache_dir)) {
-        LOG_INFO(Render_Vulkan, "Shader-Cache-Verzeichnis existiert nicht");
-        return false;
+    // UserData
+    u32 userDataSize = static_cast<u32>(info.user_data.size());
+    writeBin(info_serialized, userDataSize);
+    for (size_t i = 0; i < info.user_data.size(); ++i) {
+        writeBin(info_serialized, info.user_data[i]);
     }
 
-    // Überprüfen, ob sowohl die SPIR-V-Datei als auch die Ressourcendatei existieren
-    std::filesystem::path spirv_cache_file_path = shader_cache_dir / (shader_id + ".spv");
-    std::filesystem::path resources_file_path = shader_cache_dir / (shader_id + ".resources");
-
-    if (!std::filesystem::exists(spirv_cache_file_path)) {
-        LOG_DEBUG(Render_Vulkan, "SPIR-V-Datei nicht gefunden: {}", spirv_cache_file_path.string());
-        return false;
-    }
-
-    if (!std::filesystem::exists(resources_file_path)) {
-        LOG_DEBUG(Render_Vulkan, "Ressourcendatei nicht gefunden: {}",
-                  resources_file_path.string());
-        return false;
-    }
-
-    // Überprüfen, ob die Dateien lesbar und nicht leer sind
-    Common::FS::IOFile spirv_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
-    Common::FS::IOFile resources_file(resources_file_path, Common::FS::FileAccessMode::Read);
-
-    const bool spirv_valid = spirv_file.IsOpen() && spirv_file.GetSize() > 0;
-    const bool resources_valid = resources_file.IsOpen() && resources_file.GetSize() > 0;
-
-    spirv_file.Close();
-    resources_file.Close();
-
-    if (!spirv_valid || !resources_valid) {
-        LOG_WARNING(Render_Vulkan, "Ungueltige Dateien im Shader-Cache für ID: {}", shader_id);
-        // Fehlerhafte Dateien entfernen, um zukünftige Probleme zu vermeiden
-        if (std::filesystem::exists(spirv_cache_file_path)) {
-            std::filesystem::remove(spirv_cache_file_path);
-        }
-        if (std::filesystem::exists(resources_file_path)) {
-            std::filesystem::remove(resources_file_path);
-        }
-        return false;
-    }
-
-    LOG_INFO(Render_Vulkan, "Shader mit ID {} im Cache gefunden", shader_id);
-    return true;
+    // Pgm Base
+    writeBin(info_serialized, info.pgm_base);
 }
 
 void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
@@ -729,13 +692,77 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
         readBin(info_serialized, info.stores.flags[i]);
     }
 
+    // UserData
+    u32 userDataSize;
+    readBin(info_serialized, userDataSize);
+
+    static std::vector<u32> temp_user_data_storage;
+    temp_user_data_storage.clear();
+    temp_user_data_storage.resize(userDataSize);
+
+    for (u32 i = 0; i < userDataSize; ++i) {
+        readBin(info_serialized, temp_user_data_storage[i]);
+    }
+
+    info.user_data = std::span<const u32>(temp_user_data_storage);
+
+    // Pgm Base
+    readBin(info_serialized, info.pgm_base);
+
+
     // Check if there are any remaining bytes in the stream
     if (info_serialized.peek() != EOF) {
-        LOG_WARNING(Render_Vulkan, "Es sind noch {} Bytes im Stream übrig",
-                    info_serialized.gcount());
+        LOG_WARNING(Render_Vulkan, "Es sind noch Bytes im Stream übrig");
     }
 }
 
+bool CheckShaderCache(std::string shader_id) {
+    // Überprüfen, ob das Verzeichnis existiert
+    if (!std::filesystem::exists(shader_cache_dir)) {
+        LOG_INFO(Render_Vulkan, "Shader-Cache-Verzeichnis existiert nicht");
+        return false;
+    }
+
+    // Überprüfen, ob sowohl die SPIR-V-Datei als auch die Ressourcendatei existieren
+    std::filesystem::path spirv_cache_file_path = shader_cache_dir / (shader_id + ".spv");
+    std::filesystem::path resources_file_path = shader_cache_dir / (shader_id + ".resources");
+
+    if (!std::filesystem::exists(spirv_cache_file_path)) {
+        LOG_DEBUG(Render_Vulkan, "SPIR-V-Datei nicht gefunden: {}", spirv_cache_file_path.string());
+        return false;
+    }
+
+    if (!std::filesystem::exists(resources_file_path)) {
+        LOG_DEBUG(Render_Vulkan, "Ressourcendatei nicht gefunden: {}",
+                  resources_file_path.string());
+        return false;
+    }
+
+    // Überprüfen, ob die Dateien lesbar und nicht leer sind
+    Common::FS::IOFile spirv_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
+    Common::FS::IOFile resources_file(resources_file_path, Common::FS::FileAccessMode::Read);
+
+    const bool spirv_valid = spirv_file.IsOpen() && spirv_file.GetSize() > 0;
+    const bool resources_valid = resources_file.IsOpen() && resources_file.GetSize() > 0;
+
+    spirv_file.Close();
+    resources_file.Close();
+
+    if (!spirv_valid || !resources_valid) {
+        LOG_WARNING(Render_Vulkan, "Ungueltige Dateien im Shader-Cache für ID: {}", shader_id);
+        // Fehlerhafte Dateien entfernen, um zukünftige Probleme zu vermeiden
+        if (std::filesystem::exists(spirv_cache_file_path)) {
+            std::filesystem::remove(spirv_cache_file_path);
+        }
+        if (std::filesystem::exists(resources_file_path)) {
+            std::filesystem::remove(resources_file_path);
+        }
+        return false;
+    }
+
+    LOG_INFO(Render_Vulkan, "Shader mit ID {} im Cache gefunden", shader_id);
+    return true;
+}
 
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
     std::string spirv_cache_filename = shader_id + ".spv";
