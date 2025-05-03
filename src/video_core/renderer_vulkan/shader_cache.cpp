@@ -270,6 +270,25 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
         writeBin(info_serialized, buffer.instance_attrib);
         writeBin(info_serialized, static_cast<u8>(buffer.is_written ? 1 : 0));
         writeBin(info_serialized, static_cast<u8>(buffer.is_formatted ? 1 : 0));
+
+        writeBin(info_serialized, buffer.inline_cbuf.base_address);
+        writeBin(info_serialized, buffer.inline_cbuf._padding0);
+        writeBin(info_serialized, buffer.inline_cbuf.stride);
+        writeBin(info_serialized, buffer.inline_cbuf.cache_swizzle);
+        writeBin(info_serialized, buffer.inline_cbuf.swizzle_enable);
+        writeBin(info_serialized, buffer.inline_cbuf.num_records);
+        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_x);
+        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_y);
+        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_z);
+        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_w);
+        writeBin(info_serialized, buffer.inline_cbuf.num_format);
+        writeBin(info_serialized, buffer.inline_cbuf.data_format);
+        writeBin(info_serialized, buffer.inline_cbuf.element_size);
+        writeBin(info_serialized, buffer.inline_cbuf.index_stride);
+        writeBin(info_serialized, buffer.inline_cbuf.add_tid_enable);
+        writeBin(info_serialized, buffer.inline_cbuf._padding1);
+        writeBin(info_serialized, buffer.inline_cbuf.type);
+
     }
 
     // Image-Resources
@@ -290,6 +309,13 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
 
     for (const auto& sampler : info.samplers) {
         writeBin(info_serialized, sampler.sharp_idx);
+        writeBin(info_serialized, sampler.associated_image);
+        writeBin(info_serialized, sampler.disable_aniso);
+
+        writeBin(info_serialized, sampler.inline_sampler.raw0);
+        writeBin(info_serialized, sampler.inline_sampler.raw1);
+
+
     }
 
     // FMask-Resources
@@ -455,6 +481,73 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
         u8 is_formatted;
         readBin(info_serialized, is_formatted);
         buffer.is_formatted = (is_formatted == 1);
+        
+        u64 base_address;
+        readBin(info_serialized, base_address);
+        buffer.inline_cbuf.base_address = base_address;
+
+        u64 padding0;
+        readBin(info_serialized, padding0);
+        buffer.inline_cbuf._padding0 = padding0;
+
+        u64 stride;
+        readBin(info_serialized, stride);
+        buffer.inline_cbuf.stride = stride;
+
+        u64 cache_swizzle;
+        readBin(info_serialized, cache_swizzle);
+        buffer.inline_cbuf.cache_swizzle = cache_swizzle;
+
+        u64 swizzle_enable;
+        readBin(info_serialized, swizzle_enable);
+        buffer.inline_cbuf.swizzle_enable = swizzle_enable;
+
+        readBin(info_serialized, buffer.inline_cbuf.num_records);
+
+        u32 dst_sel_x;
+        readBin(info_serialized, dst_sel_x);
+        buffer.inline_cbuf.dst_sel_x = dst_sel_x;
+
+        u32 dst_sel_y;
+        readBin(info_serialized, dst_sel_y);
+        buffer.inline_cbuf.dst_sel_y = dst_sel_y;
+
+        u32 dst_sel_z;
+        readBin(info_serialized, dst_sel_z);
+        buffer.inline_cbuf.dst_sel_z = dst_sel_z;
+
+        u32 dst_sel_w;
+        readBin(info_serialized, dst_sel_w);
+        buffer.inline_cbuf.dst_sel_w = dst_sel_w;
+
+        u32 num_format;
+        readBin(info_serialized, num_format);
+        buffer.inline_cbuf.num_format = num_format;
+
+        u32 data_format;
+        readBin(info_serialized, data_format);
+        buffer.inline_cbuf.data_format = data_format;
+
+        u32 element_size;
+        readBin(info_serialized, element_size);
+        buffer.inline_cbuf.element_size = element_size;
+
+        u32 index_stride;
+        readBin(info_serialized, index_stride);
+        buffer.inline_cbuf.index_stride = index_stride;
+
+        u32 add_tid_enable;
+        readBin(info_serialized, add_tid_enable);
+        buffer.inline_cbuf.add_tid_enable = add_tid_enable;
+
+        u32 padding1;
+        readBin(info_serialized, padding1);
+        buffer.inline_cbuf._padding1 = padding1;
+
+        u32 type;
+        readBin(info_serialized, type);
+        buffer.inline_cbuf.type = type;
+
         info.buffers.push_back(std::move(buffer));
     }
 
@@ -491,6 +584,19 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     for (u32 i = 0; i < samplerCount; ++i) {
         Shader::SamplerResource sampler;
         readBin(info_serialized, sampler.sharp_idx);
+
+        u32 associated_image;
+        readBin(info_serialized, associated_image);
+        sampler.associated_image = associated_image;
+
+        u32 disable_aniso;
+        readBin(info_serialized, disable_aniso);
+        sampler.disable_aniso = disable_aniso;
+
+        // Inline-Sampler deserialisieren
+        readBin(info_serialized, sampler.inline_sampler.raw0);
+        readBin(info_serialized, sampler.inline_sampler.raw1);
+        
         info.samplers.push_back(std::move(sampler));
     }
 
@@ -605,14 +711,14 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     // AttributeFlags für loads
     u32 loads_size;
     readBin(info_serialized, loads_size);
-    for (size_t i = 0; i < loads_size && i < info.loads.flags.size(); ++i) {
+    for (size_t i = 0; i < loads_size; ++i) {
         readBin(info_serialized, info.loads.flags[i]);
     }
 
     // AttributeFlags für stores
     u32 stores_size;
     readBin(info_serialized, stores_size);
-    for (size_t i = 0; i < stores_size && i < info.stores.flags.size(); ++i) {
+    for (size_t i = 0; i < stores_size; ++i) {
         readBin(info_serialized, info.stores.flags[i]);
     }
 
