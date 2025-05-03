@@ -310,7 +310,10 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
 
-    rasterizer->MapMemory(mapped_addr, size);
+    if (IsValidGpuMapping(mapped_addr, size)) {
+        rasterizer->MapMemory(mapped_addr, size);
+    }
+
     return ORBIS_OK;
 }
 
@@ -365,7 +368,10 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
     if (type == VMAType::Flexible) {
         flexible_usage += size;
     }
-    rasterizer->MapMemory(mapped_addr, size);
+
+    if (IsValidGpuMapping(mapped_addr, size)) {
+        rasterizer->MapMemory(mapped_addr, size);
+    }
 
     return ORBIS_OK;
 }
@@ -420,7 +426,9 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto type = vma_base.type;
 
-    rasterizer->UnmapMemory(virtual_addr, size);
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
+    }
 
     // Mark region as free and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, size);
@@ -460,7 +468,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
     }
-    rasterizer->UnmapMemory(virtual_addr, adjusted_size);
+
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
+    }
 
     // Mark region as free and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, adjusted_size);
@@ -718,9 +729,9 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
     }
 
     // If the requested address is beyond the maximum our code can handle, return an error.
-    auto max_search_address = 0x10000000000;
+    auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
     if (virtual_addr >= max_search_address) {
-        LOG_ERROR(Kernel_Vmm, "Address {:#x} is too high", virtual_addr);
+        LOG_ERROR(Kernel_Vmm, "Input address {:#x} is too high", virtual_addr);
         return -1;
     }
 
@@ -749,8 +760,8 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
 
         // Make sure the address is within our defined bounds
         if (virtual_addr >= max_search_address) {
-            LOG_ERROR(Kernel_Vmm, "Address {:#x} is too high", virtual_addr);
-            return -1;
+            // There are no free mappings within our safely usable address space.
+            break;
         }
 
         // If there's enough space in the VMA, return the address.
