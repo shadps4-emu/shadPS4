@@ -563,7 +563,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::EventWrite: {
-                // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
                 break;
             }
             case PM4ItOpcode::EventWriteEos: {
@@ -655,7 +655,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::AcquireMem: {
-                // const auto* acquire_mem = reinterpret_cast<PM4CmdAcquireMem*>(header);
+                const auto* acquire_mem = reinterpret_cast<const PM4CmdAcquireMem*>(header);
                 break;
             }
             case PM4ItOpcode::Rewind: {
@@ -919,7 +919,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
             break;
         }
         case PM4ItOpcode::EventWrite: {
-            // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+            const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;
         }
         default:

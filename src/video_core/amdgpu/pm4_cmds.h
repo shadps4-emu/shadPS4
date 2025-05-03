@@ -282,11 +282,22 @@ enum class InterruptSelect : u32 {
 };
 
 static u64 GetGpuClock64() {
-    auto now = std::chrono::high_resolution_clock::now();
+    auto now = std::chrono::steady_clock::now();
     auto duration = now.time_since_epoch();
     auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
     return static_cast<u64>(ticks);
 }
+
+struct PM4CmdEventWrite {
+    PM4Type3Header header;
+    u32 event_type;
+    u32 event_index;
+    u32 address_lo;
+    u32 address_hi;
+    u32 data_sel;
+    u32 int_sel;
+    u32 value;
+};
 
 struct PM4CmdEventWriteEop {
     PM4Type3Header header;
@@ -307,7 +318,7 @@ struct PM4CmdEventWriteEop {
 
     template <typename T>
     T* Address() const {
-        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+        return reinterpret_cast<T*>((u64(address_hi) << 32) | address_lo);
     }
 
     u32 DataDWord() const {
