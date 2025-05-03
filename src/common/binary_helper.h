@@ -17,6 +17,5 @@ void readBin(std::istream& is, T& v) {
     if (is.eof()) {
         LOG_WARNING(Render_Recompiler, "BinaryHelper: EOF");
     }
-    LOG_WARNING
     is.read(reinterpret_cast<char*>(&v), sizeof(T));  
 }  
