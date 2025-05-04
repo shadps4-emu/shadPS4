@@ -474,7 +474,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
-    if (uses_dma) {
+    if (uses_dma && !fault_process_pending) {
         fault_process_pending = true;
         // We only use fault buffer for DMA right now.
         {
@@ -483,7 +483,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 buffer_cache.SynchronizeRange(range.lower(), range.upper() - range.lower());
             }
         }
-        buffer_cache.MemoryBarrier();
+        // buffer_cache.MemoryBarrier();
     }
 
     fault_process_pending |= uses_dma;
