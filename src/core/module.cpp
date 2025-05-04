@@ -226,7 +226,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
 
     if (MemoryPatcher::g_eboot_address == 0) {
-        if (name == "eboot") {
+        if (name == "eboot.bin") {
             MemoryPatcher::g_eboot_address = base_virtual_addr;
             MemoryPatcher::g_eboot_image_size = base_size;
             MemoryPatcher::OnGameLoaded();
