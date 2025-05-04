@@ -19,8 +19,7 @@ namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
-static u64 LoadOffset = CODE_BASE_OFFSET;
-static constexpr u64 CODE_BASE_INCR = 0x010000000u;
+static u64 LoadOffset = 0;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -116,7 +115,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     memory->MapMemory(out_addr, memory->SystemReservedVirtualBase() + LoadOffset,
                       aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
                       MemoryMapFlags::Fixed, VMAType::Code, name, true);
-    LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
+    LoadOffset += aligned_base_size + TrampolineSize;
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
