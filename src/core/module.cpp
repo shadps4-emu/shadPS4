@@ -20,7 +20,6 @@ namespace Core {
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
 static constexpr u64 ModuleLoadBase = 0x800000000;
-static u64 LoadOffset = 0;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -113,9 +112,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     // Map module segments (and possible TLS trampolines)
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, ModuleLoadBase + LoadOffset, aligned_base_size + TrampolineSize,
-                      MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);
-    LoadOffset += aligned_base_size + TrampolineSize;
+    memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
+                      MemoryProt::CpuReadWrite, MemoryMapFlags::NoFlags, VMAType::Code, name, true);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
