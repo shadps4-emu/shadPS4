@@ -91,8 +91,11 @@ void Scheduler::Wait(u64 tick) {
     }
     master_semaphore.Wait(tick);
 
-    // We should apply pending operations until the tick we are waiting for.
-    // but that may introduce unpredictable timing issues.
+    // Apply pending operations until the wait tick
+    while (!pending_ops.empty() && pending_ops.front().gpu_tick <= tick) {
+        pending_ops.front().callback();
+        pending_ops.pop();
+    }
 }
 
 void Scheduler::AllocateWorkerCommandBuffers() {
