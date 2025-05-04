@@ -113,9 +113,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     // Map module segments (and possible TLS trampolines)
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, ModuleLoadBase + LoadOffset,
-                      aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
-                      MemoryMapFlags::Fixed, VMAType::Code, name, true);
+    memory->MapMemory(out_addr, ModuleLoadBase + LoadOffset, aligned_base_size + TrampolineSize,
+                      MemoryProt::CpuReadWrite, MemoryMapFlags::Fixed, VMAType::Code, name, true);
     LoadOffset += aligned_base_size + TrampolineSize;
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
