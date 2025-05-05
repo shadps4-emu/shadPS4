@@ -909,18 +909,18 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     return true;
 }
 
-void BufferCache::SynchronizeRange(VAddr device_addr, u64 size) {
+void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
     if (device_addr == 0) {
         return;
     }
     VAddr device_addr_end = device_addr + size;
     ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
-        VAddr buffer_start = buffer.CpuAddr();
-        VAddr buffer_end = buffer_start + buffer.SizeBytes();
-        VAddr start = std::max(buffer_start, device_addr);
-        VAddr end = std::min(buffer_end, device_addr_end);
-        u32 size = static_cast<u32>(end - start);
-        SynchronizeBuffer(buffer, start, size, false);
+        // Note that this function synchronizes the whole buffer, not just the range.
+        // This is because this function is used to sync buffers before using a
+        // shader that uses DMA.
+        // The ideal solution would be to sync all the mapped regions but it is
+        // very slow.
+        SynchronizeBuffer(buffer, buffer.CpuAddr(), buffer.SizeBytes(), false);
     });
 }
 

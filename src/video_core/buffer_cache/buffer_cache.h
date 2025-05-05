@@ -137,7 +137,7 @@ public:
     void ProcessFaultBuffer();
 
     /// Synchronizes all buffers in the specified range.
-    void SynchronizeRange(VAddr device_addr, u64 size);
+    void SynchronizeBuffersInRange(VAddr device_addr, u64 size);
 
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
