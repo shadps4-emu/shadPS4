@@ -143,6 +143,7 @@ static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
 }
 
 int PosixSocket::Close() {
+    std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
     auto out = closesocket(sock);
 #else
@@ -152,17 +153,20 @@ int PosixSocket::Close() {
 }
 
 int PosixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
+    std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
     return ConvertReturnErrorCode(::bind(sock, &addr2, sizeof(sockaddr_in)));
 }
 
 int PosixSocket::Listen(int backlog) {
+    std::scoped_lock lock{m_mutex};
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
+    std::scoped_lock lock{m_mutex};
     if (to != nullptr) {
         sockaddr addr;
         convertOrbisNetSockaddrToPosix(to, &addr);
@@ -175,6 +179,7 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                                u32* fromlen) {
+    std::scoped_lock lock{m_mutex};
     if (from != nullptr) {
         sockaddr addr;
         int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
@@ -187,6 +192,7 @@ int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* 
 }
 
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
+    std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
 #ifdef _WIN32
@@ -202,12 +208,14 @@ SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
 }
 
 int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
+    std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
     return ::connect(sock, &addr2, sizeof(sockaddr_in));
 }
 
 int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
+    std::scoped_lock lock{m_mutex};
     sockaddr addr;
     convertOrbisNetSockaddrToPosix(name, &addr);
     if (name != nullptr) {
@@ -234,6 +242,7 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
         return 0
 
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
+    std::scoped_lock lock{m_mutex};
     level = ConvertLevels(level);
     ::linger native_linger;
     if (level == SOL_SOCKET) {
@@ -337,6 +346,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         return 0;
 
 int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
+    std::scoped_lock lock{m_mutex};
     level = ConvertLevels(level);
     if (level == SOL_SOCKET) {
         switch (optname) {

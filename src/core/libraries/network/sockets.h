@@ -51,6 +51,7 @@ struct Socket {
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    std::mutex m_mutex;
 };
 
 struct PosixSocket : public Socket {

@@ -218,13 +218,13 @@ int PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
     }
     int returncode = sock->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
+        LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
         return 0;
     }
     *Libraries::Kernel::__Error() = 0x20;
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
-
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
