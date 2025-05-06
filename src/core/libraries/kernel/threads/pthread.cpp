@@ -554,7 +554,7 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_EINVAL;
     }
 
-#else ifdef _LINUX
+#elif defined(__linux__)
     cpu_set_t cpu_set;
     CPU_ZERO(&cpu_set);
 
