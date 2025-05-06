@@ -668,6 +668,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/recursive_lock.cpp
+           src/common/recursive_lock.h
            src/common/sha1.h
            src/common/signal_context.h
            src/common/signal_context.cpp

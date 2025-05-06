@@ -3,6 +3,7 @@
 
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/recursive_lock.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -477,7 +478,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (uses_dma) {
         // We only use fault buffer for DMA right now.
         {
-            std::shared_lock lock{dma_sync_mapped_ranges_mutex};
+            Common::RecursiveSharedLock lock(mapped_ranges_mutex);
             for (const auto& range : dma_sync_mapped_ranges) {
                 buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
             }
@@ -728,8 +729,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 void Rasterizer::AddDmaSyncRanges(const boost::icl::interval_set<VAddr>& ranges) {
     dma_sync_ranges += ranges;
     {
-        std::scoped_lock lock{dma_sync_mapped_ranges_mutex};
-        std::shared_lock lock2(mapped_ranges_mutex);
+        std::scoped_lock lock(mapped_ranges_mutex);
         dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
     }
 }
@@ -976,13 +976,13 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     }
     const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
 
-    std::shared_lock lock{mapped_ranges_mutex};
+    Common::RecursiveSharedLock lock{mapped_ranges_mutex};
     return boost::icl::contains(mapped_ranges, range);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
-        std::scoped_lock lock{mapped_ranges_mutex, dma_sync_mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
         dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
     }
@@ -994,7 +994,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
-        std::scoped_lock lock{mapped_ranges_mutex, dma_sync_mapped_ranges_mutex};
+        std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
         dma_sync_mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }

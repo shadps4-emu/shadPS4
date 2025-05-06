@@ -115,9 +115,7 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     boost::icl::interval_set<VAddr> dma_sync_ranges;
     boost::icl::interval_set<VAddr> dma_sync_mapped_ranges;
-    // use 2 mutexes to avoid undefined behavior when using shared lock
     std::shared_mutex mapped_ranges_mutex;
-    std::shared_mutex dma_sync_mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 
     boost::container::static_vector<
