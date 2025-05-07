@@ -541,8 +541,8 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_ESRCH;
     }
 
-    //  We don't use this currently because some games gets performance problems
-    // when applying affinity event
+    // We don't use this currently because some games gets performance problems
+    // when applying affinity even on strong hardware
     /*
     #ifdef _WIN64
         DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
