@@ -541,31 +541,33 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_ESRCH;
     }
 
-/* We don't use this currently because some games gets performance problems when applying affinity even on strong hardware
-#ifdef _WIN64
-    DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
-    if (!SetThreadAffinityMask(reinterpret_cast<HANDLE>(handle), affinity_mask)) {
-        return POSIX_EINVAL;
-    }
-
-#elif defined(__linux__)
-    cpu_set_t cpu_set;
-    CPU_ZERO(&cpu_set);
-
-    u64 mask = cpuset->bits;
-    for (int cpu = 0; cpu < std::min(64, CPU_SETSIZE); ++cpu) {
-        if (mask & (1ULL << cpu)) {
-            CPU_SET(cpu, &cpu_set);
+    //  We don't use this currently because some games gets performance problems
+    // when applying affinity event
+    /*
+    #ifdef _WIN64
+        DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
+        if (!SetThreadAffinityMask(reinterpret_cast<HANDLE>(handle), affinity_mask)) {
+            return POSIX_EINVAL;
         }
-    }
 
-    int result =
-        pthread_setaffinity_np(static_cast<pthread_t>(handle), sizeof(cpu_set_t), &cpu_set);
-    if (result != 0) {
-        return POSIX_EINVAL;
-    }
-#endif
-*/
+    #elif defined(__linux__)
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
+
+        u64 mask = cpuset->bits;
+        for (int cpu = 0; cpu < std::min(64, CPU_SETSIZE); ++cpu) {
+            if (mask & (1ULL << cpu)) {
+                CPU_SET(cpu, &cpu_set);
+            }
+        }
+
+        int result =
+            pthread_setaffinity_np(static_cast<pthread_t>(handle), sizeof(cpu_set_t), &cpu_set);
+        if (result != 0) {
+            return POSIX_EINVAL;
+        }
+    #endif
+    */
     return 0;
 }
 
