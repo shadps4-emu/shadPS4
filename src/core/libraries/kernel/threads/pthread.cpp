@@ -523,6 +523,7 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
     if (oldstate) {
         *oldstate = oldval ? PthreadCancelState::Enable : PthreadCancelState::Disable;
     }
+    return 0;
 }
 
 int Pthread::SetAffinity(const Cpuset* cpuset) {
