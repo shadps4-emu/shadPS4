@@ -332,6 +332,7 @@ struct Pthread {
             return true;
         }
     }
+
     int SetAffinity(const Cpuset* cpuset);
 };
 using PthreadT = Pthread*;

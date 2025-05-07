@@ -291,7 +291,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     int ret = new_thread->native_thr.Create(RunThread, new_thread, &new_thread->attr);
 
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
-    if (ret == 0 && attr != nullptr && *attr != nullptr && (*attr)->cpuset != nullptr) {
+
+    if (attr != nullptr && *attr != nullptr && (*attr)->cpuset != nullptr) {
         new_thread->SetAffinity((*attr)->cpuset);
     }
     if (ret) {
@@ -523,6 +524,7 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
         *oldstate = oldval ? PthreadCancelState::Enable : PthreadCancelState::Disable;
     }
 }
+
 int Pthread::SetAffinity(const Cpuset* cpuset) {
     const auto processor_count = std::thread::hardware_concurrency();
     if (processor_count < 8) {
@@ -532,22 +534,14 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_EINVAL;
     }
 
-    std::vector<int> cpus;
     u64 mask = cpuset->bits;
-    for (int cpu = 0; cpu < 64; ++cpu) {
-        if (mask & (1ULL << cpu))
-            cpus.push_back(cpu);
-    }
-
-    if (cpus.empty()) {
-        return POSIX_EINVAL;
-    }
 
     uintptr_t handle = native_thr.GetHandle();
     if (handle == 0) {
         return POSIX_ESRCH;
     }
 
+/* We don't use this currently because some games gets performance problems when applying affinity even on strong hardware
 #ifdef _WIN64
     DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
     if (!SetThreadAffinityMask(reinterpret_cast<HANDLE>(handle), affinity_mask)) {
@@ -558,8 +552,9 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
     cpu_set_t cpu_set;
     CPU_ZERO(&cpu_set);
 
-    for (int cpu : cpus) {
-        if (cpu < CPU_SETSIZE) {
+    u64 mask = cpuset->bits;
+    for (int cpu = 0; cpu < std::min(64, CPU_SETSIZE); ++cpu) {
+        if (mask & (1ULL << cpu)) {
             CPU_SET(cpu, &cpu_set);
         }
     }
@@ -570,7 +565,7 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_EINVAL;
     }
 #endif
-
+*/
     return 0;
 }
 
@@ -584,7 +579,11 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
 }
 
 int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const Cpuset mask) {
-    return posix_pthread_setaffinity_np(thread, 0x10, &mask);
+    int result = posix_pthread_setaffinity_np(thread, 0x10, &mask);
+    if (result != 0) {
+        return ErrnoToSceKernelError(result);
+    }
+    return 0;
 }
 
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
