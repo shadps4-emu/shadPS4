@@ -154,7 +154,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
         if (dmem_area == dmem_map.end()) {
             break;
         }
-        
+
         // Update local variables based on the new dmem_area
         mapping_start = Common::AlignUp(dmem_area->second.base, alignment);
         mapping_end = mapping_start + size;
@@ -601,8 +601,8 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     do {
         auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
-        ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0),
-                   "Address {:#x} is out of bounds", addr + protected_bytes);
+        ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0), "Address {:#x} is out of bounds",
+                   addr + protected_bytes);
         auto result = 0;
         result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
@@ -751,7 +751,8 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
 
     // If the requested address is beyond the maximum our code can handle, throw an assert
     auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
-    ASSERT_MSG(virtual_addr <= max_search_address, "Input address {:#x} is out of bounds", virtual_addr);
+    ASSERT_MSG(virtual_addr <= max_search_address, "Input address {:#x} is out of bounds",
+               virtual_addr);
 
     auto it = FindVMA(virtual_addr);
 
