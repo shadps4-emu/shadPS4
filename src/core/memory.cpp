@@ -528,7 +528,10 @@ int MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
 
     const auto it = FindVMA(addr);
     const auto& vma = it->second;
-    ASSERT_MSG(vma.type != VMAType::Free, "Provided address is not mapped");
+    if (!vma.Contains(addr, 0) || vma.IsFree()) {
+        LOG_ERROR(Kernel_Vmm, "Address {:#x} is not mapped", addr);
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
 
     if (start != nullptr) {
         *start = reinterpret_cast<void*>(vma.base);
