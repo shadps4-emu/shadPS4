@@ -3,7 +3,6 @@
 
 #include "common/config.h"
 #include "common/debug.h"
-#include "common/recursive_lock.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
