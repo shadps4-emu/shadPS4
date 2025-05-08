@@ -75,7 +75,8 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
 
     // Clamp size to the remaining size of the current VMA.
     auto vma = FindVMA(virtual_addr);
-    ASSERT_MSG(vma != vma_map.end(), "Attempted to access invalid GPU address {:#x}", virtual_addr);
+    ASSERT_MSG(vma->second.Contains(virtual_addr, 0),
+               "Attempted to access invalid GPU address {:#x}", virtual_addr);
     u64 clamped_size = vma->second.base + vma->second.size - virtual_addr;
     ++vma;
 
@@ -96,6 +97,8 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
+    ASSERT_MSG(vma.Contains(virtual_addr, 0),
+               "Attempting to access out of bounds memory at address {:#x}", virtual_addr);
     if (vma.type != VMAType::Direct) {
         return false;
     }
@@ -145,11 +148,13 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     auto mapping_end = mapping_start + size;
 
     // Find the first free, large enough dmem area in the range.
-    while ((!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) &&
-           dmem_area != dmem_map.end()) {
+    while (!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) {
         // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
-
+        if (dmem_area == dmem_map.end()) {
+            break;
+        }
+        
         // Update local variables based on the new dmem_area
         mapping_start = Common::AlignUp(dmem_area->second.base, alignment);
         mapping_end = mapping_start + size;
@@ -172,7 +177,6 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
     auto dmem_area = CarveDmemArea(phys_addr, size);
-    ASSERT(dmem_area != dmem_map.end() && dmem_area->second.size >= size);
 
     // Release any dmem mappings that reference this physical block.
     std::vector<std::pair<VAddr, u64>> remove_list;
@@ -216,7 +220,9 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
             vma = FindVMA(mapped_addr)->second;
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
+        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
+                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
+                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
     // Find the first free area starting with provided virtual address.
@@ -258,7 +264,9 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
             vma = FindVMA(mapped_addr)->second;
         }
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size);
+        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
+                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
+                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
     // Find the first free area starting with provided virtual address.
@@ -296,7 +304,9 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
     const auto& vma = FindVMA(mapped_addr)->second;
     const size_t remaining_size = vma.base + vma.size - mapped_addr;
-    ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
+    ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
+               "Memory region  {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
+               vma.base, vma.base + size, virtual_addr, virtual_addr + size);
 
     // Perform the mapping.
     void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
@@ -339,7 +349,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
         const auto& vma = FindVMA(mapped_addr)->second;
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
+        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
+                   "Memory region  {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
+                   vma.base, vma.base + size, virtual_addr, virtual_addr + size);
     }
 
     // Find the first free area starting with provided virtual address.
@@ -393,7 +405,9 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     if (True(flags & MemoryMapFlags::Fixed)) {
         const auto& vma = FindVMA(virtual_addr)->second;
         const size_t remaining_size = vma.base + vma.size - virtual_addr;
-        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size);
+        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
+                   "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
+                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
     // Map the file.
@@ -498,6 +512,8 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
     do {
         auto it = FindVMA(virtual_addr + unmapped_bytes);
         auto& vma_base = it->second;
+        ASSERT_MSG(vma_base.Contains(virtual_addr + unmapped_bytes, 0),
+                   "Address {:#x} is out of bounds", virtual_addr + unmapped_bytes);
         auto unmapped =
             UnmapBytesFromEntry(virtual_addr + unmapped_bytes, vma_base, size - unmapped_bytes);
         ASSERT_MSG(unmapped > 0, "Failed to unmap memory, progress is impossible");
@@ -582,6 +598,8 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     do {
         auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
+        ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0),
+                   "Address {:#x} is out of bounds", addr + protected_bytes);
         auto result = 0;
         result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
@@ -607,7 +625,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
     }
     auto it = FindVMA(query_addr);
 
-    if (it->second.type == VMAType::Free && flags == 1) {
+    while (it->second.type == VMAType::Free && flags == 1 && it != --vma_map.end()) {
         ++it;
     }
     if (it->second.type == VMAType::Free) {
@@ -630,7 +648,7 @@ int MemoryManager::VirtualQuery(VAddr addr, int flags,
 
     if (vma.type == VMAType::Direct) {
         const auto dmem_it = FindDmemArea(vma.phys_base);
-        ASSERT(dmem_it != dmem_map.end());
+        ASSERT_MSG(vma.phys_base <= dmem_it->second.GetEnd(), "vma.phys_base is not in dmem_map!");
         info->memory_type = dmem_it->second.memory_type;
     } else {
         info->memory_type = ::Libraries::Kernel::SCE_KERNEL_WB_ONION;
@@ -644,11 +662,11 @@ int MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
     std::scoped_lock lk{mutex};
 
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != dmem_map.end() && dmem_area->second.is_free && find_next) {
+    while (dmem_area != --dmem_map.end() && dmem_area->second.is_free && find_next) {
         dmem_area++;
     }
 
-    if (dmem_area == dmem_map.end() || dmem_area->second.is_free) {
+    if (dmem_area->second.is_free) {
         LOG_ERROR(Core, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -728,15 +746,11 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
         virtual_addr = min_search_address;
     }
 
-    // If the requested address is beyond the maximum our code can handle, return an error.
+    // If the requested address is beyond the maximum our code can handle, throw an assert
     auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
-    if (virtual_addr >= max_search_address) {
-        LOG_ERROR(Kernel_Vmm, "Input address {:#x} is too high", virtual_addr);
-        return -1;
-    }
+    ASSERT_MSG(virtual_addr <= max_search_address, "Input address {:#x} is out of bounds", virtual_addr);
 
     auto it = FindVMA(virtual_addr);
-    ASSERT_MSG(it != vma_map.end(), "Specified mapping address was not found!");
 
     // If the VMA is free and contains the requested mapping we are done.
     if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
@@ -780,7 +794,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
 
 MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size) {
     auto vma_handle = FindVMA(virtual_addr);
-    ASSERT_MSG(vma_handle != vma_map.end(), "Virtual address not in vm_map");
+    ASSERT_MSG(vma_handle->second.Contains(virtual_addr, 0), "Virtual address not in vm_map");
 
     const VirtualMemoryArea& vma = vma_handle->second;
     ASSERT_MSG(vma.base <= virtual_addr, "Adding a mapping to already mapped region");
@@ -809,7 +823,7 @@ MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, size_t size
 
 MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, size_t size) {
     auto dmem_handle = FindDmemArea(addr);
-    ASSERT_MSG(dmem_handle != dmem_map.end(), "Physical address not in dmem_map");
+    ASSERT_MSG(addr <= dmem_handle->second.GetEnd(), "Physical address not in dmem_map");
 
     const DirectMemoryArea& area = dmem_handle->second;
     ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
@@ -864,7 +878,7 @@ int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
 
     auto dmem_area = FindDmemArea(addr);
 
-    if (dmem_area == dmem_map.end() || dmem_area->second.is_free) {
+    if (addr > dmem_area->second.GetEnd() || dmem_area->second.is_free) {
         LOG_ERROR(Core, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
