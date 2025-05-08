@@ -10,7 +10,6 @@
 #include "common/logging/log.h"
 #ifdef ENABLE_QT_GUI
 #include <QtCore>
-#include "common/memory_patcher.h"
 #endif
 #include "common/assert.h"
 #ifdef ENABLE_DISCORD_RPC
@@ -20,6 +19,7 @@
 #include <WinSock2.h>
 #endif
 #include "common/elf_info.h"
+#include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -54,27 +54,6 @@ Emulator::Emulator() {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
-
-    // Create stdin/stdout/stderr
-    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
-
-    // Defer until after logging is initialized.
-    memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
-    linker = Common::Singleton<Core::Linker>::Instance();
-
-    // Load renderdoc module.
-    VideoCore::LoadRenderDoc();
-
-    // Start the timer (Play Time)
-#ifdef ENABLE_QT_GUI
-    start_time = std::chrono::steady_clock::now();
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
-    QFile file(filePath);
-    ASSERT_MSG(file.open(QIODevice::ReadWrite | QIODevice::Text),
-               "Error opening or creating play_time.txt");
-#endif
 }
 
 Emulator::~Emulator() {
@@ -102,54 +81,89 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     // Certain games may use /hostapp as well such as CUSA001100
     mnt->Mount(game_folder, "/hostapp", true);
 
-    auto& game_info = Common::ElfInfo::Instance();
+    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
 
-    // Loading param.sfo file if exists
+    // Load param.sfo details if it exists
     std::string id;
     std::string title;
     std::string app_version;
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
-
-    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    if (!std::filesystem::exists(param_sfo_path) || !Config::getSeparateLogFilesEnabled()) {
-        Common::Log::Initialize();
-        Common::Log::Start();
-    }
-
-    if (std::filesystem::exists(param_sfo_path)) {
+    if (param_sfo_exists) {
         auto* param_sfo = Common::Singleton<PSF>::Instance();
-        const bool success = param_sfo->Open(param_sfo_path);
-        ASSERT_MSG(success, "Failed to open param.sfo");
+        ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
+
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
+
         id = std::string(*content_id, 7, 9);
-
-        if (Config::getSeparateLogFilesEnabled()) {
-            Common::Log::Initialize(id + ".log");
-            Common::Log::Start();
+        title = param_sfo->GetString("TITLE").value_or("Unknown title");
+        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+            psf_attributes.raw = *raw_attributes;
         }
-        LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
-        LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
-        LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
-        LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
-        LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
+    }
 
-        LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-        LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
-        LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
-        LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-        LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
-        LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
-        LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
-        LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
-        LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
-        LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
-        LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
-        LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
-        LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+    // Initialize logging as soon as possible
+    if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
+        Common::Log::Initialize(id + ".log");
+    } else {
+        Common::Log::Initialize();
+    }
+    Common::Log::Start();
 
+    LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
+    LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
+    LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
+    LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
+    LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
+
+    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
+    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
+    LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
+    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
+    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
+    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
+    LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
+    LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+
+    if (param_sfo_exists) {
+        LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
+        LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+    }
+    if (!args.empty()) {
+        const auto argc = std::min<size_t>(args.size(), 32);
+        for (auto i = 0; i < argc; i++) {
+            LOG_INFO(Loader, "Game argument {}: {}", i, args[i]);
+        }
+        if (args.size() > 32) {
+            LOG_ERROR(Loader, "Too many game arguments, only passing the first 32");
+        }
+    }
+
+    // Create stdin/stdout/stderr
+    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
+
+    // Initialize components
+    memory = Core::Memory::Instance();
+    controller = Common::Singleton<Input::GameController>::Instance();
+    linker = Common::Singleton<Core::Linker>::Instance();
+
+    // Load renderdoc module
+    VideoCore::LoadRenderDoc();
+
+    // Initialize patcher and trophies
+    if (!id.empty()) {
+        MemoryPatcher::g_game_serial = id;
         Libraries::NpTrophy::game_serial = id;
+
         const auto trophyDir =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
         if (!std::filesystem::exists(trophyDir)) {
@@ -158,41 +172,9 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
                 LOG_ERROR(Loader, "Couldn't extract trophies");
             }
         }
-#ifdef ENABLE_QT_GUI
-        MemoryPatcher::g_game_serial = id;
-
-        // Timer for 'Play Time'
-        QTimer* timer = new QTimer();
-        QObject::connect(timer, &QTimer::timeout, [this, id]() {
-            UpdatePlayTime(id);
-            start_time = std::chrono::steady_clock::now();
-        });
-        timer->start(60000); // 60000 ms = 1 minute
-#endif
-        title = param_sfo->GetString("TITLE").value_or("Unknown title");
-        LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-        LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
-            psf_attributes.raw = *raw_attributes;
-        }
-        if (!args.empty()) {
-            int argc = std::min<int>(args.size(), 32);
-            for (int i = 0; i < argc; i++) {
-                LOG_INFO(Loader, "Game argument {}: {}", i, args[i]);
-            }
-            if (args.size() > 32) {
-                LOG_ERROR(Loader, "Too many game arguments, only passing the first 32");
-            }
-        }
     }
 
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
-    }
-
+    auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
     game_info.game_serial = id;
     game_info.title = title;
@@ -200,6 +182,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
     game_info.psf_attributes = psf_attributes;
+
+    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
+    if (std::filesystem::exists(pic1_path)) {
+        game_info.splash_path = pic1_path;
+    }
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
@@ -281,6 +268,25 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             rpc->init();
         }
         rpc->setStatusPlaying(game_info.title, id);
+    }
+#endif
+
+    // Start the timer (Play Time)
+#ifdef ENABLE_QT_GUI
+    if (!id.empty()) {
+        auto* timer = new QTimer();
+        QObject::connect(timer, &QTimer::timeout, [this, id]() {
+            UpdatePlayTime(id);
+            start_time = std::chrono::steady_clock::now();
+        });
+        timer->start(60000); // 60000 ms = 1 minute
+
+        start_time = std::chrono::steady_clock::now();
+        const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+        QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
+        QFile file(filePath);
+        ASSERT_MSG(file.open(QIODevice::ReadWrite | QIODevice::Text),
+                   "Error opening or creating play_time.txt");
     }
 #endif
 
