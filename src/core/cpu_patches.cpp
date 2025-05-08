@@ -523,12 +523,12 @@ static bool Is4ByteExtrqOrInsertq(void* code_address) {
 }
 
 static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
-    // We need to decode the instruction to find out what it is. Normally we'd use a fully fleshed out decoder
-    // like Zydis, however Zydis does a bunch of stuff that impact performance that we don't care about.
-    // We can get information about the instruction a lot faster by writing a mini decoder here, since we know
-    // it is definitely an extrq or an insertq.
-    // If for some reason we need to interpret more instructions in the future (I don't see why we would), we can
-    // revert to using Zydis.
+    // We need to decode the instruction to find out what it is. Normally we'd use a fully fleshed
+    // out decoder like Zydis, however Zydis does a bunch of stuff that impact performance that we
+    // don't care about. We can get information about the instruction a lot faster by writing a mini
+    // decoder here, since we know it is definitely an extrq or an insertq. If for some reason we
+    // need to interpret more instructions in the future (I don't see why we would), we can revert
+    // to using Zydis.
     ZydisMnemonic mnemonic;
     u8* bytes = (u8*)code_address;
     if (bytes[0] == 0x66) {
@@ -541,13 +541,16 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         const auto status =
             Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
         LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
-                  fmt::ptr(code_address), ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic) : "Failed to decode");
+                  fmt::ptr(code_address),
+                  ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
+                                       : "Failed to decode");
         return false;
     }
 
     ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
 
-    // Note: It's guaranteed that there's no REX prefix in these instructions checked by Is4ByteExtrqOrInsertq
+    // Note: It's guaranteed that there's no REX prefix in these instructions checked by
+    // Is4ByteExtrqOrInsertq
     u8 modrm = bytes[3];
     u8 rm = modrm & 0b111;
     u8 reg = (modrm >> 3) & 0b111;
@@ -583,9 +586,9 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             // Undefined behavior if length + index is bigger than 64 according to the spec,
             // we'll warn and continue execution.
             LOG_TRACE(Core,
-                    "extrq at {} with length {} and index {} is bigger than 64, "
-                    "undefined behavior",
-                    fmt::ptr(code_address), length, index);
+                      "extrq at {} with length {} and index {} is bigger than 64, "
+                      "undefined behavior",
+                      fmt::ptr(code_address), length, index);
         }
 
         lowQWordDst >>= index;
@@ -622,9 +625,9 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             // Undefined behavior if length + index is bigger than 64 according to the spec,
             // we'll warn and continue execution.
             LOG_TRACE(Core,
-                    "insertq at {} with length {} and index {} is bigger than 64, "
-                    "undefined behavior",
-                    fmt::ptr(code_address), length, index);
+                      "insertq at {} with length {} and index {} is bigger than 64, "
+                      "undefined behavior",
+                      fmt::ptr(code_address), length, index);
         }
 
         lowQWordSrc &= mask;
@@ -647,8 +650,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 #elif defined(ARCH_ARM64)
 // These functions shouldn't be needed for ARM as it will use a JIT so there's no need to patch
 // instructions.
-static bool TryExecuteIllegalInstruction(void*, void*, ZydisDecodedInstruction&,
-                                         ZydisDecodedOperand*) {
+static bool TryExecuteIllegalInstruction(void*, void*) {
     return false;
 }
 #else
@@ -704,7 +706,8 @@ static bool PatchesIllegalInstructionHandler(void* context) {
             const auto status =
                 Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
             LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}", (u64)code_address,
-                      ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic) : "Failed to decode");
+                      ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
+                                           : "Failed to decode");
         }
     }
 
