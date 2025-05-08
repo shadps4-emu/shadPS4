@@ -464,9 +464,8 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
 
             if (needs_trampoline && instruction.length < 5) {
                 // Trampoline is needed but instruction is too short to patch.
-                // Return false and length to fall back to the illegal instruction handler,
-                // or to signal to AOT compilation that this instruction should be skipped and
-                // handled at runtime.
+                // Return false and length to signal to AOT compilation that this instruction
+                // should be skipped and handled at runtime.
                 return std::make_pair(false, instruction.length);
             }
 
@@ -512,12 +511,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
 
 #if defined(ARCH_X86_64)
 
-static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
-    ZydisDecodedInstruction instruction;
-    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status =
-        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
-
+static bool TryExecuteIllegalInstruction(void* ctx, void* code_address, ZydisDecodedInstruction& instruction, ZydisDecodedOperand* operands) {
     switch (instruction.mnemonic) {
     case ZYDIS_MNEMONIC_EXTRQ: {
         bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
@@ -650,7 +644,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 #elif defined(ARCH_ARM64)
 // These functions shouldn't be needed for ARM as it will use a JIT so there's no need to patch
 // instructions.
-static bool TryExecuteIllegalInstruction(void*, void*) {
+static bool TryExecuteIllegalInstruction(void*, void*, ZydisDecodedInstruction&, ZydisDecodedOperand*) {
     return false;
 }
 #else
@@ -695,9 +689,25 @@ static bool PatchesAccessViolationHandler(void* context, void* /* fault_address 
 
 static bool PatchesIllegalInstructionHandler(void* context) {
     void* code_address = Common::GetRip(context);
-    if (!TryPatchJit(code_address)) {
-        return TryExecuteIllegalInstruction(context, code_address);
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+    if (!ZYAN_SUCCESS(status)) {
+        return false;
     }
+
+    if (instruction.length < 5) {
+        // The instruction is not big enough for a relative jump, don't try to patch it and pass it to
+        // our illegal instruction interpreter directly
+        return TryExecuteIllegalInstruction(context, code_address, instruction, operands);
+    } else {
+        if (!TryPatchJit(code_address)) {
+            // Any instructions >= 5 bytes should get successfully patched and the above will return true
+            // Returning false would be an error as we previously check that the instruction is >= 5 to get here
+            LOG_ERROR(Core, "Failed to patch address %lx -- mnemonic: %d", (u64)code_address, (int)instruction.mnemonic);
+        }
+    }
+
     return true;
 }
 
