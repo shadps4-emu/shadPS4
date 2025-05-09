@@ -257,7 +257,7 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        auto& vma = FindVMA(mapped_addr)->second;
+        auto vma = FindVMA(mapped_addr)->second;
         // If the VMA is mapped, unmap the region first.
         if (vma.IsMapped()) {
             UnmapMemoryImpl(mapped_addr, size);
