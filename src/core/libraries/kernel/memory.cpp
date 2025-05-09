@@ -126,9 +126,6 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
                                        size_t infoSize) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}", fmt::ptr(addr), flags);
-    if (!addr) {
-        return ORBIS_KERNEL_ERROR_EACCES;
-    }
     auto* memory = Core::Memory::Instance();
     return memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
 }
@@ -136,7 +133,6 @@ s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtual
 s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u64 alignment) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}, alignment = {:#x}",
              fmt::ptr(*addr), len, flags, alignment);
-
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -155,9 +151,12 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     auto* memory = Core::Memory::Instance();
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    memory->Reserve(addr, in_addr, len, map_flags, alignment);
 
-    return ORBIS_OK;
+    s32 result = memory->Reserve(addr, in_addr, len, map_flags, alignment);
+    if (result == 0) {
+        LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
@@ -172,15 +171,22 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+
     if (!Common::Is16KBAligned(directMemoryStart)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+
     if (alignment != 0) {
         if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
+    }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
@@ -189,8 +195,8 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
 
     auto* memory = Core::Memory::Instance();
     const auto ret =
-        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "", false,
-                          directMemoryStart, alignment);
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
+                          false, directMemoryStart, alignment);
 
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     return ret;
@@ -199,7 +205,8 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
 int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
                                           s64 directMemoryStart, u64 alignment) {
     LOG_INFO(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
-    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment, "");
+    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment,
+                                         "anon");
 }
 
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
@@ -210,15 +217,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    static constexpr size_t MaxNameSize = 32;
-    if (std::strlen(name) > MaxNameSize) {
-        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
-        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
-    }
-
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
@@ -236,7 +242,7 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
 
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                             int flags) {
-    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "");
+    return sceKernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, "anon");
 }
 
 int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot) {
@@ -304,7 +310,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_DIRECT: {
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
-                                                   static_cast<s64>(entries[i].offset), 0, "");
+                                                   static_cast<s64>(entries[i].offset), 0, "anon");
             LOG_INFO(Kernel_Vmm,
                      "entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
                      "result = {}",
@@ -326,7 +332,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
-                                                     entries[i].protection, flags, "");
+                                                     entries[i].protection, flags, "anon");
             LOG_INFO(Kernel_Vmm,
                      "entry = {}, operation = {}, len = {:#x}, type = {}, "
                      "result = {}",
@@ -356,16 +362,16 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
 }
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
-    static constexpr size_t MaxNameSize = 32;
-    if (std::strlen(name) > MaxNameSize) {
-        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
-        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
-    }
-
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
+
+    if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
+        LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
+    }
+
     auto* memory = Core::Memory::Instance();
     memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
     return ORBIS_OK;
