@@ -346,9 +346,21 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
-        const auto& vma = FindVMA(mapped_addr)->second;
-        const size_t remaining_size = vma.base + vma.size - mapped_addr;
+        auto vma = FindVMA(mapped_addr)->second;
+        // There's a possible edge case where we're mapping to a partially reserved range.
+        // To account for this, unmap any reserved areas within this mapping range first.
+        auto unmap_addr = mapped_addr;
+        auto unmap_size = size;
+        while (!vma.IsMapped() && vma.base < mapped_addr + size) {
+            auto unmapped = UnmapBytesFromEntry(unmap_addr, vma, unmap_size);
+            unmap_addr += unmapped;
+            unmap_size -= unmapped;
+            vma = FindVMA(unmap_addr)->second;
+        }
+
+        // This should return SCE_KERNEL_ERROR_ENOMEM but rarely happens.
+        vma = FindVMA(mapped_addr)->second;
+        size_t remaining_size = vma.base + vma.size - mapped_addr;
         ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
                    "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
                    vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
