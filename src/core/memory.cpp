@@ -305,7 +305,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     const auto& vma = FindVMA(mapped_addr)->second;
     const size_t remaining_size = vma.base + vma.size - mapped_addr;
     ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-               "Memory region  {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
+               "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
                vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
 
     // Perform the mapping.
@@ -350,7 +350,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         const auto& vma = FindVMA(mapped_addr)->second;
         const size_t remaining_size = vma.base + vma.size - mapped_addr;
         ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-                   "Memory region  {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
+                   "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
                    vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
