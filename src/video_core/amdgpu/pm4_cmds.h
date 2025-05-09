@@ -872,16 +872,34 @@ struct PM4CmdDrawIndexIndirectMulti {
         BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
                                              ///< StartInstanceLocation it fetched from memory
     };
+    u32 count;          ///< Count of data structures to loop through before going to next packet
+    u32 stride;         ///< Stride in memory from one data structure to the next
+    u32 draw_initiator; ///< Draw Initiator Register
+};
+
+struct PM4CmdDrawIndexIndirectCountMulti {
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union {
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
     union {
         u32 dw4;
-        BitField<0, 16, u32> drawIndexLoc; ///< register offset to write the Draw Index count
+        BitField<0, 16, u32> draw_index_loc; ///< register offset to write the Draw Index count
         BitField<30, 1, u32>
-            countIndirectEnable; ///< Indicates the data structure count is in memory
+            count_indirect_enable; ///< Indicates the data structure count is in memory
         BitField<31, 1, u32>
-            drawIndexEnable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
+            draw_index_enable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
     };
     u32 count;          ///< Count of data structures to loop through before going to next packet
-    u64 countAddr;      ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
+    u64 count_addr;     ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
     u32 stride;         ///< Stride in memory from one data structure to the next
     u32 draw_initiator; ///< Draw Initiator Register
 };
