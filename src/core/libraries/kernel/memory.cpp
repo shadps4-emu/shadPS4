@@ -131,6 +131,8 @@ s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtual
 }
 
 s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u64 alignment) {
+    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}, alignment = {:#x}",
+             fmt::ptr(*addr), len, flags, alignment);
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -152,9 +154,7 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
 
     s32 result = memory->Reserve(addr, in_addr, len, map_flags, alignment);
     if (result == 0) {
-        LOG_INFO(Kernel_Vmm,
-                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, flags = {:#x}, alignment = {:#x}",
-                 in_addr, fmt::ptr(*addr), len, flags, alignment);
+        LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     }
     return result;
 }
