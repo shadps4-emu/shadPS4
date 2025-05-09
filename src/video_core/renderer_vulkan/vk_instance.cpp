@@ -338,6 +338,7 @@ bool Instance::CreateDevice() {
                 .geometryShader = features.geometryShader,
                 .tessellationShader = features.tessellationShader,
                 .logicOp = features.logicOp,
+                .multiDrawIndirect = features.multiDrawIndirect,
                 .depthBiasClamp = features.depthBiasClamp,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
