@@ -219,6 +219,19 @@ struct Image {
         return image;
     }
 
+    static constexpr Image NullDepth() {
+        Image image{};
+        image.data_format = u64(DataFormat::Format32);
+        image.num_format = u64(NumberFormat::Float);
+        image.dst_sel_x = u64(CompSwizzle::Red);
+        image.dst_sel_y = u64(CompSwizzle::Green);
+        image.dst_sel_z = u64(CompSwizzle::Blue);
+        image.dst_sel_w = u64(CompSwizzle::Alpha);
+        image.tiling_index = u64(TilingMode::Texture_MicroTiled);
+        image.type = u64(ImageType::Color2D);
+        return image;
+    }
+
     bool Valid() const {
         return (type & 0x8u) != 0;
     }

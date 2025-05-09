@@ -246,6 +246,9 @@ private:
         }
     }
 
+    /// Gets or creates a null image for a particular format.
+    ImageId GetNullImage(vk::Format format);
+
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -285,6 +288,7 @@ private:
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
+    tsl::robin_map<vk::Format, ImageId> null_images;
     PageTable page_table;
     std::mutex mutex;
 
