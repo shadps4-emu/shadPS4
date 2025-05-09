@@ -109,31 +109,38 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment) {
     std::scoped_lock lk{mutex};
+    alignment = alignment > 0 ? alignment : 64_KB;
 
     auto dmem_area = FindDmemArea(search_start);
+    auto mapping_start = search_start > dmem_area->second.base
+                             ? Common::AlignUp(search_start, alignment)
+                             : Common::AlignUp(dmem_area->second.base, alignment);
+    auto mapping_end = mapping_start + size;
 
-    const auto is_suitable = [&] {
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
-                                                : dmem_area->second.base;
-        const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
-            dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
-        return dmem_area->second.is_free && remaining_size >= size;
-    };
-    while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
+    // Find the first free, large enough dmem area in the range.
+    while (!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) {
+        // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
-    }
-    ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
+        if (dmem_area == dmem_map.end()) {
+            break;
+        }
 
-    // Align free position
-    PAddr free_addr = dmem_area->second.base;
-    free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
+        // Update local variables based on the new dmem_area
+        mapping_start = Common::AlignUp(dmem_area->second.base, alignment);
+        mapping_end = mapping_start + size;
+    }
+
+    if (dmem_area == dmem_map.end()) {
+        // There are no suitable mappings in this range
+        LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        return -1;
+    }
 
     // Add the allocated region to the list and commit its pages.
-    auto& area = CarveDmemArea(free_addr, size)->second;
+    auto& area = CarveDmemArea(mapping_start, size)->second;
     area.is_free = false;
     area.is_pooled = true;
-    return free_addr;
+    return mapping_start;
 }
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,

@@ -383,13 +383,12 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = searchEnd - searchStart >= len;
-    if (len <= 0 || !Common::Is64KBAligned(len) || !is_in_range) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+    if (len <= 0 || !Common::Is64KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Provided length {:#x} is invalid!", len);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is64KBAligned(alignment)) {
-        LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+        LOG_ERROR(Kernel_Vmm, "Alignment {:#x} is invalid!", alignment);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (physAddrOut == nullptr) {
@@ -397,8 +396,21 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (searchEnd <= searchStart || searchEnd < len || !is_in_range) {
+        LOG_ERROR(Kernel_Vmm,
+                  "Provided address range is too small!"
+                  " searchStart = {:#x}, searchEnd = {:#x}, length = {:#x}",
+                  searchStart, searchEnd, len);
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->PoolExpand(searchStart, searchEnd, len, alignment);
+    if (phys_addr == -1) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
     *physAddrOut = static_cast<s64>(phys_addr);
 
     LOG_INFO(Kernel_Vmm,
