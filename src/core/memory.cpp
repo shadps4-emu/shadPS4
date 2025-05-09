@@ -483,8 +483,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         flexible_usage -= adjusted_size;
     }
 
-    if (IsValidGpuMapping(virtual_addr, size)) {
-        rasterizer->UnmapMemory(virtual_addr, size);
+    if (IsValidGpuMapping(virtual_addr, adjusted_size)) {
+        rasterizer->UnmapMemory(virtual_addr, adjusted_size);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
