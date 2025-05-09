@@ -281,6 +281,11 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
         // Fall back to null image if unbound.
         return AmdGpu::Image::Null();
     }
+    const auto data_fmt = image.GetDataFmt();
+    if (is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
+        data_fmt != AmdGpu::DataFormat::Format32) {
+        return AmdGpu::Image::NullDepth();
+    }
     return image;
 }
 
