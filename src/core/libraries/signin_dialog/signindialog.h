@@ -8,12 +8,19 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+enum class Status : u32 {
+    NONE = 0,
+    INITIALIZED = 1,
+    RUNNING = 2,
+    FINISHED = 3,
+};
+
 namespace Libraries::SigninDialog {
 
 s32 PS4_SYSV_ABI sceSigninDialogInitialize();
 s32 PS4_SYSV_ABI sceSigninDialogOpen();
-s32 PS4_SYSV_ABI sceSigninDialogGetStatus();
-s32 PS4_SYSV_ABI sceSigninDialogUpdateStatus();
+Status PS4_SYSV_ABI sceSigninDialogGetStatus();
+Status PS4_SYSV_ABI sceSigninDialogUpdateStatus();
 s32 PS4_SYSV_ABI sceSigninDialogGetResult();
 s32 PS4_SYSV_ABI sceSigninDialogClose();
 s32 PS4_SYSV_ABI sceSigninDialogTerminate();

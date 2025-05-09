@@ -19,14 +19,14 @@ s32 PS4_SYSV_ABI sceSigninDialogOpen() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSigninDialogGetStatus() {
+Status PS4_SYSV_ABI sceSigninDialogGetStatus() {
     LOG_ERROR(Lib_SigninDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return Status::FINISHED;
 }
 
-s32 PS4_SYSV_ABI sceSigninDialogUpdateStatus() {
+Status PS4_SYSV_ABI sceSigninDialogUpdateStatus() {
     LOG_ERROR(Lib_SigninDialog, "(STUBBED) called");
-    return 3;
+    return Status::FINISHED;
 }
 
 s32 PS4_SYSV_ABI sceSigninDialogGetResult() {
