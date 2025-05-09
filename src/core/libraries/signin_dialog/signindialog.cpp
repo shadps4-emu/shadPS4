@@ -20,12 +20,12 @@ s32 PS4_SYSV_ABI sceSigninDialogOpen() {
 }
 
 Status PS4_SYSV_ABI sceSigninDialogGetStatus() {
-    LOG_ERROR(Lib_SigninDialog, "(STUBBED) called");
+    LOG_ERROR(Lib_SigninDialog, "(STUBBED) called, return 'finished' status");
     return Status::FINISHED;
 }
 
 Status PS4_SYSV_ABI sceSigninDialogUpdateStatus() {
-    LOG_ERROR(Lib_SigninDialog, "(STUBBED) called");
+    LOG_ERROR(Lib_SigninDialog, "(STUBBED) called, return 'finished' status");
     return Status::FINISHED;
 }
 
