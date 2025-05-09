@@ -56,7 +56,6 @@
 #include <stdio.h>
 
 #include <cstdarg>
-#include <cstdbool>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
