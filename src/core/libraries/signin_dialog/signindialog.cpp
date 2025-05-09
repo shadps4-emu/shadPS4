@@ -45,13 +45,20 @@ s32 PS4_SYSV_ABI sceSigninDialogTerminate() {
 }
 
 void RegisterlibSceSigninDialog(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("mlYGfmqE3fQ", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogInitialize);
-    LIB_FUNCTION("JlpJVoRWv7U", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogOpen);
-    LIB_FUNCTION("2m077aeC+PA", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogGetStatus);
-    LIB_FUNCTION("Bw31liTFT3A", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogUpdateStatus);
-    LIB_FUNCTION("nqG7rqnYw1U", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogGetResult);
-    LIB_FUNCTION("M3OkENHcyiU", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogClose);
-    LIB_FUNCTION("LXlmS6PvJdU", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1, sceSigninDialogTerminate);
+    LIB_FUNCTION("mlYGfmqE3fQ", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogInitialize);
+    LIB_FUNCTION("JlpJVoRWv7U", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogOpen);
+    LIB_FUNCTION("2m077aeC+PA", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogGetStatus);
+    LIB_FUNCTION("Bw31liTFT3A", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogUpdateStatus);
+    LIB_FUNCTION("nqG7rqnYw1U", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogGetResult);
+    LIB_FUNCTION("M3OkENHcyiU", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogClose);
+    LIB_FUNCTION("LXlmS6PvJdU", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
+                 sceSigninDialogTerminate);
 };
 
 } // namespace Libraries::SigninDialog
