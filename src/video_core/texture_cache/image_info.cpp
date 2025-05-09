@@ -124,43 +124,45 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
-    tiling_mode = image.GetTilingMode();
-    pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
-    // Override format if image is forced to be a depth target, except if the image is a dummy one
+    AmdGpu::Image i = image;
+    tiling_mode = i.GetTilingMode();
+    pixel_format = LiverpoolToVK::SurfaceFormat(i.GetDataFmt(), i.GetNumberFmt());
+    // Override format if i is forced to be a depth target, except if the i is a dummy one
     if (desc.is_depth) {
-        if (image.width != 0 && image.height != 0) {
+        if (i.width != 0 && i.height != 0) {
             pixel_format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(pixel_format);
             if (pixel_format == vk::Format::eUndefined) {
-                ASSERT_MSG(image.width == 0 && image.height == 0,
+                ASSERT_MSG(i.width == 0 && i.height == 0,
                            "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, "
                            "data_format: {}",
-                           vk::to_string(pixel_format), image.width, image.height,
-                           AmdGpu::NameOf(image.GetDataFmt()));
+                           vk::to_string(pixel_format), i.width, i.height,
+                           AmdGpu::NameOf(i.GetDataFmt()));
                 pixel_format = vk::Format::eD32Sfloat;
             }
         } else {
+            i = AmdGpu::Image::DummyDepth();
             pixel_format = vk::Format::eD32Sfloat;
         }
     }
-    type = ConvertImageType(image.GetType());
-    props.is_tiled = image.IsTiled();
-    props.is_volume = image.GetType() == AmdGpu::ImageType::Color3D;
-    props.is_pow2 = image.pow2pad;
+    type = ConvertImageType(i.GetType());
+    props.is_tiled = i.IsTiled();
+    props.is_volume = i.GetType() == AmdGpu::ImageType::Color3D;
+    props.is_pow2 = i.pow2pad;
     props.is_block = IsBlockCoded();
-    size.width = image.width + 1;
-    size.height = image.height + 1;
-    size.depth = props.is_volume ? image.depth + 1 : 1;
-    pitch = image.Pitch();
-    resources.levels = image.NumLevels();
-    resources.layers = image.NumLayers();
-    num_samples = image.NumSamples();
-    num_bits = NumBits(image.GetDataFmt());
+    size.width = i.width + 1;
+    size.height = i.height + 1;
+    size.depth = props.is_volume ? i.depth + 1 : 1;
+    pitch = i.Pitch();
+    resources.levels = i.NumLevels();
+    resources.layers = i.NumLayers();
+    num_samples = i.NumSamples();
+    num_bits = NumBits(i.GetDataFmt());
 
-    guest_address = image.Address();
+    guest_address = i.Address();
 
     mips_layout.reserve(resources.levels);
-    tiling_idx = image.tiling_index;
-    alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && image.alt_tile_mode;
+    tiling_idx = i.tiling_index;
+    alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && i.alt_tile_mode;
     UpdateSize();
 }
 

@@ -31,37 +31,39 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
     : is_storage{desc.is_written} {
-    const auto dfmt = image.GetDataFmt();
-    auto nfmt = image.GetNumberFmt();
+    AmdGpu::Image i = image;
+    const auto dfmt = i.GetDataFmt();
+    auto nfmt = i.GetNumberFmt();
     if (is_storage && nfmt == AmdGpu::NumberFormat::Srgb) {
         nfmt = AmdGpu::NumberFormat::Unorm;
     }
     format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
-    // Override format if image is forced to be a depth target, except if the image is a dummy one
+    // Override format if i is forced to be a depth target, except if the i is a dummy one
     if (desc.is_depth) {
-        if (image.width != 0 && image.height != 0) {
+        if (i.width != 0 && i.height != 0) {
             format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
             if (format == vk::Format::eUndefined) {
-                ASSERT_MSG(image.width == 0 && image.height == 0,
+                ASSERT_MSG(i.width == 0 && i.height == 0,
                            "PromoteFormatToDepth failed, info dump: format: {}, size: {}x{}, "
                            "data_format: {}",
-                           vk::to_string(format), image.width, image.height,
-                           AmdGpu::NameOf(image.GetDataFmt()));
+                           vk::to_string(format), i.width, i.height,
+                           AmdGpu::NameOf(i.GetDataFmt()));
                 format = vk::Format::eD32Sfloat;
             }
         } else {
+            i = AmdGpu::Image::DummyDepth();
             format = vk::Format::eD32Sfloat;
         }
     }
 
-    range.base.level = image.base_level;
-    range.base.layer = image.base_array;
-    range.extent.levels = image.NumViewLevels(desc.is_array);
-    range.extent.layers = image.NumViewLayers(desc.is_array);
-    type = ConvertImageViewType(image.GetViewType(desc.is_array));
+    range.base.level = i.base_level;
+    range.base.layer = i.base_array;
+    range.extent.levels = i.NumViewLevels(desc.is_array);
+    range.extent.layers = i.NumViewLayers(desc.is_array);
+    type = ConvertImageViewType(i.GetViewType(desc.is_array));
 
     if (!is_storage) {
-        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
+        mapping = Vulkan::LiverpoolToVK::ComponentMapping(i.DstSelect());
     }
 }
 
