@@ -352,7 +352,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         // To account for this, unmap any reserved areas within this mapping range first.
         auto unmap_addr = mapped_addr;
         auto unmap_size = size;
-        while (!vma.IsMapped() && vma.base < mapped_addr + size && remaining_size < size) {
+        while (!vma.IsMapped() && unmap_addr < mapped_addr + size && remaining_size < size) {
             auto unmapped = UnmapBytesFromEntry(unmap_addr, vma, unmap_size);
             unmap_addr += unmapped;
             unmap_size -= unmapped;
