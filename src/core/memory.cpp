@@ -473,13 +473,12 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     vma.name = "anon";
     MergeAdjacent(vma_map, new_it);
 
-    if (vma_base.type != VMAType::Reserved && type != VMAType::PoolReserved) {
+    if (vma_base.type != VMAType::Reserved && vma_base.type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
                    is_exec, false, false);
         TRACK_FREE(virtual_addr, "VMEM");
     }
-    
 }
 
 s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
