@@ -316,7 +316,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = false;
     new_vma.prot = prot;
-    new_vma.name = vma.name;
+    new_vma.name = "anon";
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
@@ -470,7 +470,7 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
     vma.disallow_merge = false;
-    vma.name = "";
+    vma.name = "anon";
     MergeAdjacent(vma_map, new_it);
 
     // Unmap the memory region.
