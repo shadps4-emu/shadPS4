@@ -307,7 +307,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
         // If the VMA isn't PoolReserved or if there's not enough space to commit, return EINVAL
         LOG_ERROR(Kernel_Vmm,
                   "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
-                  vma.base, vma.size, mapped_addr, size);
+                  vma.base, vma.base + vma.size, mapped_addr, mapped_addr + size);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
