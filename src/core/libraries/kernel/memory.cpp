@@ -477,9 +477,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) 
 
     const VAddr pool_addr = reinterpret_cast<VAddr>(addr);
     auto* memory = Core::Memory::Instance();
-    memory->PoolDecommit(pool_addr, len);
 
-    return ORBIS_OK;
+    return memory->PoolDecommit(pool_addr, len);
 }
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,

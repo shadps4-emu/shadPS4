@@ -140,6 +140,10 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t siz
     auto& area = CarveDmemArea(mapping_start, size)->second;
     area.is_free = false;
     area.is_pooled = true;
+
+    // Track how much dmem was allocated for pools.
+    pool_budget += size;
+
     return mapping_start;
 }
 
@@ -303,12 +307,27 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     auto& vma = FindVMA(mapped_addr)->second;
-    if (vma.type != VMAType::PoolReserved || !vma.Contains(mapped_addr, size)) {
-        // If the VMA isn't PoolReserved or if there's not enough space to commit, return EINVAL
+    if (vma.type != VMAType::PoolReserved) {
+        // If we're attempting to commit non-pooled memory, return EINVAL
+        LOG_ERROR(Kernel_Vmm, "Attempting to commit non-pooled memory at {:#x}", mapped_addr);
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (!vma.Contains(mapped_addr, size)) {
+        // If there's not enough space to commit, return EINVAL
         LOG_ERROR(Kernel_Vmm,
                   "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
                   vma.base, vma.base + vma.size, mapped_addr, mapped_addr + size);
         return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (pool_budget <= size) {
+        // If there isn't enough pooled memory to perform the mapping, return ENOMEM
+        LOG_ERROR(Kernel_Vmm, "Not enough pooled memory to perform mapping");
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    } else {
+        // Track how much pooled memory this commit will take
+        pool_budget -= size;
     }
 
     // Carve out the new VMA representing this mapping
@@ -443,7 +462,7 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
     return ORBIS_OK;
 }
 
-void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
+s32 MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
     const auto it = FindVMA(virtual_addr);
@@ -457,6 +476,16 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     const bool is_exec = vma_base.is_exec;
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto type = vma_base.type;
+
+    if (type != VMAType::PoolReserved && type != VMAType::Pooled) {
+        LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (type == VMAType::Pooled) {
+        // Track how much pooled memory is decommitted
+        pool_budget += size;
+    }
 
     if (IsValidGpuMapping(virtual_addr, size)) {
         rasterizer->UnmapMemory(virtual_addr, size);
@@ -472,12 +501,14 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     vma.name = "anon";
     MergeAdjacent(vma_map, new_it);
 
-    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
+    if (type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
                    is_exec, false, false);
         TRACK_FREE(virtual_addr, "VMEM");
     }
+
+    return ORBIS_OK;
 }
 
 s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
