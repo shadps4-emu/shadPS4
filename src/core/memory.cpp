@@ -475,8 +475,8 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
 
     if (vma_base.type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Unmap the memory region.
-        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-                   false, false);
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
+                   is_exec, false, false);
         TRACK_FREE(virtual_addr, "VMEM");
     }
     
