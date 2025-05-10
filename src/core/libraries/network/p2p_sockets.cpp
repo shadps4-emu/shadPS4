@@ -10,25 +10,25 @@ namespace Libraries::Net {
 
 int P2PSocket::Close() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 int P2PSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 int P2PSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 
 int P2PSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 
 int P2PSocket::Listen(int backlog) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 
 int P2PSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
@@ -49,12 +49,12 @@ SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
 
 int P2PSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 
 int P2PSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
+    return 0;
 }
 
 } // namespace Libraries::Net
