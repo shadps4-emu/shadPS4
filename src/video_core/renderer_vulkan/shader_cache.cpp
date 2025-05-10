@@ -1,6 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 #include "common/hash.h"
 #include "common/path_util.h"
 #include "common/io_file.h"
@@ -350,7 +356,33 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     }
 
     writeBin(info_serialized, info.srt_info.flattened_bufsize_dw);
+    bool has_walker_func = (info.srt_info.walker_func != nullptr);
+    writeBin(info_serialized, static_cast<u8>(has_walker_func ? 1 : 0));
 
+    if (has_walker_func) {
+        // Größe des JIT-Codes ermitteln
+        const u8* walker_start = reinterpret_cast<const u8*>(info.srt_info.walker_func);
+
+        // Wir müssen die Größe des generierten Codes bestimmen
+        // Dies kann aus der Xbyak::CodeGenerator Instanz extrahiert werden
+        // Alternativ können wir die Distanz zum nächsten Ret-Befehl berechnen
+        size_t walker_size = 0;
+        const u8* ptr = walker_start;
+        const u32 MAX_CODE_SIZE = 4096; // Sicherheitsbegrenzung
+
+        // Suche nach Ret-Befehl (C3 in x86/x64)
+        for (walker_size = 0; walker_size < MAX_CODE_SIZE; walker_size++) {
+            // Einfacher Ret-Befehl (C3)
+            if (ptr[walker_size] == 0xC3) {
+                walker_size++; // Ret einschließen
+                break;
+            }
+        }
+
+        // Speichere Größe und JIT-Code
+        writeBin(info_serialized, static_cast<u32>(walker_size));
+        info_serialized.write(reinterpret_cast<const char*>(walker_start), walker_size);
+    }
     // Flat UD
 
     u32 flatCount = static_cast<u32>(info.flattened_ud_buf.size());
@@ -611,7 +643,36 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     }
 
     readBin(info_serialized, info.srt_info.flattened_bufsize_dw);
+    // Laden des walker_func JIT-Codes
+    u8 has_walker_func;
+    readBin(info_serialized, has_walker_func);
 
+    if (has_walker_func == 1) {
+        // Größe des JIT-Codes lesen
+        u32 walker_size;
+        readBin(info_serialized, walker_size);
+
+        // Speicher für ausführbaren Code allokieren
+        void* code_memory = nullptr;
+#ifdef _WIN32
+        code_memory =
+            VirtualAlloc(nullptr, walker_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+        code_memory = mmap(nullptr, walker_size, PROT_READ | PROT_WRITE | PROT_EXEC,
+                           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
+
+        if (!code_memory) {
+            LOG_ERROR(Render_Vulkan, "Konnte keinen ausführbaren Speicher für JIT-Code allokieren");
+            return;
+        }
+
+        // JIT-Code laden
+        info_serialized.read(reinterpret_cast<char*>(code_memory), walker_size);
+
+        // JIT-Funktion zuweisen
+        info.srt_info.walker_func = reinterpret_cast<Shader::PFN_SrtWalker>(code_memory);
+    }
     // Flat UD
 
     u32 flatCount;
