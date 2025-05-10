@@ -302,7 +302,7 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     auto& vma = FindVMA(mapped_addr)->second;
-    if (vma.type != VMAType::PoolReserved || vma.base + vma.size < virtual_addr + size) {
+    if (vma.type != VMAType::PoolReserved || !vma.Contains(mapped_addr, size)) {
         // If the VMA isn't PoolReserved or if there's not enough space to commit, return EINVAL
         LOG_ERROR(Kernel_Vmm,
                   "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
