@@ -320,7 +320,6 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
-    MergeAdjacent(vma_map, new_vma_handle);
 
     // Perform the mapping
     void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
@@ -473,7 +472,7 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     vma.name = "anon";
     MergeAdjacent(vma_map, new_it);
 
-    if (vma_base.type != VMAType::Reserved && vma_base.type != VMAType::PoolReserved) {
+    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
                    is_exec, false, false);
