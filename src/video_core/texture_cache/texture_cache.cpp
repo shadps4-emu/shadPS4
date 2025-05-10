@@ -8,6 +8,7 @@
 #include "common/debug.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/host_compatibility.h"
@@ -23,30 +24,40 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
       tile_manager{instance, scheduler} {
+    // Create basic null image at fixed image ID.
+    const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
+    ASSERT(null_id.index == NULL_IMAGE_ID.index);
+}
+
+TextureCache::~TextureCache() = default;
+
+ImageId TextureCache::GetNullImage(const vk::Format format) {
+    const auto existing_image = null_images.find(format);
+    if (existing_image != null_images.end()) {
+        return existing_image->second;
+    }
+
     ImageInfo info{};
-    info.pixel_format = vk::Format::eR8G8B8A8Unorm;
+    info.pixel_format = format;
     info.type = vk::ImageType::e2D;
-    info.tiling_idx = u32(AmdGpu::TilingMode::Texture_MicroTiled);
+    info.tiling_idx = static_cast<u32>(AmdGpu::TilingMode::Texture_MicroTiled);
     info.num_bits = 32;
     info.UpdateSize();
+
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
-    ASSERT(null_id.index == NULL_IMAGE_ID.index);
     auto& img = slot_images[null_id];
+
     const vk::Image& null_image = img.image;
-    Vulkan::SetObjectName(instance.GetDevice(), null_image, "Null Image");
+    Vulkan::SetObjectName(instance.GetDevice(), null_image,
+                          fmt::format("Null Image ({})", vk::to_string(format)));
+
     img.flags = ImageFlagBits::Empty;
     img.track_addr = img.info.guest_address;
     img.track_addr_end = img.info.guest_address + img.info.guest_size;
 
-    ImageViewInfo view_info;
-    const auto null_view_id =
-        slot_image_views.insert(instance, view_info, slot_images[null_id], null_id);
-    ASSERT(null_view_id.index == NULL_IMAGE_VIEW_ID.index);
-    const vk::ImageView& null_image_view = slot_image_views[null_view_id].image_view.get();
-    Vulkan::SetObjectName(instance.GetDevice(), null_image_view, "Null Image View");
+    null_images.emplace(format, null_id);
+    return null_id;
 }
-
-TextureCache::~TextureCache() = default;
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
@@ -296,7 +307,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
     const auto& info = desc.info;
 
     if (info.guest_address == 0) [[unlikely]] {
-        return NULL_IMAGE_ID;
+        return GetNullImage(info.pixel_format);
     }
 
     std::scoped_lock lock{mutex};

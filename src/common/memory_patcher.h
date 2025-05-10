@@ -6,9 +6,15 @@
 #include <string>
 #include <vector>
 
+#if defined(WIN32)
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
 namespace MemoryPatcher {
 
-extern uintptr_t g_eboot_address;
+extern EXPORT uintptr_t g_eboot_address;
 extern uint64_t g_eboot_image_size;
 extern std::string g_game_serial;
 extern std::string patchFile;
