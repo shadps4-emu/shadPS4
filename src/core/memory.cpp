@@ -310,9 +310,6 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // Before mapping, the reserved VMA should have it's physical base incremented.
-    vma.phys_base += size;
-
     // Carve out the new VMA representing this mapping
     const auto new_vma_handle = CarveVMA(mapped_addr, size);
     auto& new_vma = new_vma_handle->second;
