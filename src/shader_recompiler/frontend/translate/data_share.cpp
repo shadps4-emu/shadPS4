@@ -77,6 +77,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_READ(64, false, true, false, inst);
     case Opcode::DS_READ2ST64_B64:
         return DS_READ(64, false, true, true, inst);
+    case Opcode::DS_ORDERED_COUNT:
+        return DS_ORDERED_COUNT(inst);
     default:
         LogMissingOpcode(inst);
     }
@@ -324,6 +326,15 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataConsume(gds_offset);
     SetDst(inst.dst[0], prev);
+}
+
+void Translator::DS_ORDERED_COUNT(const GcnInst& inst) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIIncrement(addr_offset);
+    SetDst(inst.dst[0], IR::U32{original_val});
 }
 
 } // namespace Shader::Gcn
