@@ -77,6 +77,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_READ(64, false, true, false, inst);
     case Opcode::DS_READ2ST64_B64:
         return DS_READ(64, false, true, true, inst);
+    case Opcode::DS_ORDERED_COUNT:
+        return DS_ORDERED_COUNT(inst);
     default:
         LogMissingOpcode(inst);
     }
