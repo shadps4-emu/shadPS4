@@ -45,6 +45,7 @@
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/share_play/shareplay.h"
+#include "core/libraries/signin_dialog/signindialog.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
@@ -120,6 +121,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Hmd::RegisterlibSceHmd(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
     Libraries::Ulobjmgr::RegisterlibSceUlobjmgr(sym);
+    Libraries::SigninDialog::RegisterlibSceSigninDialog(sym);
 }
 
 } // namespace Libraries

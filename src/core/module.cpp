@@ -19,8 +19,7 @@ namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
-static u64 LoadOffset = CODE_BASE_OFFSET;
-static constexpr u64 CODE_BASE_INCR = 0x010000000u;
+static constexpr u64 ModuleLoadBase = 0x800000000;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -84,7 +83,7 @@ static std::string StringToNid(std::string_view symbol) {
 }
 
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
-    : memory{memory_}, file{file_}, name{file.stem().string()} {
+    : memory{memory_}, file{file_}, name{file.filename().string()} {
     elf.Open(file);
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
@@ -113,10 +112,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     // Map module segments (and possible TLS trampolines)
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, memory->SystemReservedVirtualBase() + LoadOffset,
-                      aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
-                      MemoryMapFlags::Fixed, VMAType::Code, name, true);
-    LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
+    memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
+                      MemoryProt::CpuReadWrite, MemoryMapFlags::NoFlags, VMAType::Code, name, true);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
@@ -229,7 +226,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
 
     if (MemoryPatcher::g_eboot_address == 0) {
-        if (name == "eboot") {
+        if (name == "eboot.bin") {
             MemoryPatcher::g_eboot_address = base_virtual_addr;
             MemoryPatcher::g_eboot_image_size = base_size;
             MemoryPatcher::OnGameLoaded();

@@ -157,6 +157,12 @@ public:
         return impl.SystemReservedVirtualBase();
     }
 
+    bool IsValidGpuMapping(VAddr virtual_addr, u64 size) {
+        // The PS4's GPU can only handle 40 bit addresses.
+        const VAddr max_gpu_address{0x10000000000};
+        return virtual_addr + size < max_gpu_address;
+    }
+
     bool IsValidAddress(const void* addr) const noexcept {
         const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
         const auto end_it = std::prev(vma_map.end());
@@ -186,7 +192,7 @@ public:
     int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
     int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                  MemoryMapFlags flags, VMAType type, std::string_view name = "",
+                  MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,

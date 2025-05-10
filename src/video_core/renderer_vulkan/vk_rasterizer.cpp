@@ -618,8 +618,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             } else {
-                auto& null_image = texture_cache.GetImageView(VideoCore::NULL_IMAGE_VIEW_ID);
-                image_infos.emplace_back(VK_NULL_HANDLE, *null_image.image_view,
+                auto& null_image_view =
+                    texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc.view_info);
+                image_infos.emplace_back(VK_NULL_HANDLE, *null_image_view.image_view,
                                          vk::ImageLayout::eGeneral);
             }
         } else {
