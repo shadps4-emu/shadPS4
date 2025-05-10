@@ -326,4 +326,13 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     SetDst(inst.dst[0], prev);
 }
 
+void Translator::DS_ORDERED_COUNT(const GcnInst& inst) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIIncrement(addr_offset);
+    SetDst(inst.dst[0], IR::U32{original_val});
+}
+
 } // namespace Shader::Gcn
