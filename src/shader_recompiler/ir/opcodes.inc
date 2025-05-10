@@ -420,6 +420,8 @@ OPCODE(ImageAtomicSMin32,                                   U32,            Opaq
 OPCODE(ImageAtomicUMin32,                                   U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicSMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicUMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicFMax32,                                   F32,            Opaque,         Opaque,         F32,                                            )
+OPCODE(ImageAtomicFMin32,                                   F32,            Opaque,         Opaque,         F32,                                            )
 OPCODE(ImageAtomicInc32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicDec32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicAnd32,                                    U32,            Opaque,         Opaque,         U32,                                            )

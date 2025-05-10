@@ -29,6 +29,7 @@ struct Profile {
     bool supports_native_cube_calc{};
     bool supports_trinary_minmax{};
     bool supports_robust_buffer_access{};
+    bool supports_image_fp32_atomic_min_max{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
