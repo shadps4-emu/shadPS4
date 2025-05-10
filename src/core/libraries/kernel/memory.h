@@ -47,6 +47,8 @@ enum MemoryOpTypes : u32 {
     ORBIS_KERNEL_MAP_OP_TYPE_PROTECT = 4
 };
 
+constexpr u32 ORBIS_KERNEL_MAXIMUM_NAME_LENGTH = 32;
+
 struct OrbisQueryInfo {
     uintptr_t start;
     uintptr_t end;
@@ -59,14 +61,12 @@ struct OrbisVirtualQueryInfo {
     size_t offset;
     s32 protection;
     s32 memory_type;
-    union {
-        BitField<0, 1, u32> is_flexible;
-        BitField<1, 1, u32> is_direct;
-        BitField<2, 1, u32> is_stack;
-        BitField<3, 1, u32> is_pooled;
-        BitField<4, 1, u32> is_committed;
-    };
-    std::array<char, 32> name;
+    u32 is_flexible : 1;
+    u32 is_direct : 1;
+    u32 is_stack : 1;
+    u32 is_pooled : 1;
+    u32 is_committed : 1;
+    char name[ORBIS_KERNEL_MAXIMUM_NAME_LENGTH];
 };
 
 struct OrbisKernelBatchMapEntry {

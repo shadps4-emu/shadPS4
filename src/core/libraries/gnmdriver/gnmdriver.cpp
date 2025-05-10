@@ -505,9 +505,10 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
                                                    u32 flags) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if ((!sceKernelIsNeoMode() || !UseNeoCompatSequences) && !cmdbuf && (size == 16) &&
-        (shader_stage < ShaderStages::Max) && (vertex_sgpr_offset < 0x10u) &&
-        (instance_sgpr_offset < 0x10u)) {
+    if ((!sceKernelIsNeoMode() || !UseNeoCompatSequences) && cmdbuf && (size == 16) &&
+        (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u) &&
+        (shader_stage == ShaderStages::Vs || shader_stage == ShaderStages::Es ||
+         shader_stage == ShaderStages::Ls)) {
 
         cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 2);
         cmdbuf = WriteBody(cmdbuf, 0u);
@@ -535,10 +536,33 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    UNREACHABLE();
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti(u32* cmdbuf, u32 size, u32 data_offset, u32 max_count,
+                                              u32 shader_stage, u32 vertex_sgpr_offset,
+                                              u32 instance_sgpr_offset, u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && (size == 11) && (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u) &&
+        (shader_stage == ShaderStages::Vs || shader_stage == ShaderStages::Es ||
+         shader_stage == ShaderStages::Ls)) {
+
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexIndirectMulti>(
+            cmdbuf, 6, PM4ShaderType::ShaderGraphics, predicate);
+
+        const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
+
+        cmdbuf[0] = data_offset;
+        cmdbuf[1] = vertex_sgpr_offset == 0 ? 0 : (vertex_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[2] = instance_sgpr_offset == 0 ? 0 : (instance_sgpr_offset & 0xffffu) + sgpr_offset;
+        cmdbuf[3] = max_count;
+        cmdbuf[4] = sizeof(DrawIndexedIndirectArgs);
+        cmdbuf[5] = sceKernelIsNeoMode() ? flags & 0xe0000000u : 0;
+
+        cmdbuf += 6;
+        WriteTrailingNop<3>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced() {
