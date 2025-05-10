@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/ir/program.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 
 namespace Shader::Optimization {
 
@@ -82,11 +83,14 @@ void Visit(Info& info, const IR::Inst& inst) {
         if (!info.has_readconst) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
-                .inline_cbuf = AmdGpu::Buffer::Null(),
-                .buffer_type = BufferType::ReadConstUbo,
+                // We can't guarantee that flatbuf will now grow bast UBO
+                // limit if there are a lot of ReadConsts. (We could specialize)
+                .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
+                .buffer_type = BufferType::Flatbuf,
             });
             info.has_readconst = true;
         }
+        info.dma_types |= IR::Type::U32;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
@@ -104,6 +108,21 @@ void CollectShaderInfoPass(IR::Program& program) {
         for (IR::Inst& inst : block->Instructions()) {
             Visit(program.info, inst);
         }
+    }
+
+    if (program.info.dma_types != IR::Type::Void) {
+        program.info.buffers.push_back({
+            .used_types = IR::Type::U64,
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
+            .buffer_type = BufferType::BdaPagetable,
+            .is_written = true,
+        });
+        program.info.buffers.push_back({
+            .used_types = IR::Type::U8,
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
+            .buffer_type = BufferType::FaultBuffer,
+            .is_written = true,
+        });
     }
 }
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <unordered_map>
 #include <sirit/sirit.h>
 
 #include "shader_recompiler/backend/bindings.h"
@@ -40,6 +41,17 @@ public:
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
+
+    enum class PointerType : u32 {
+        U8,
+        U16,
+        F16,
+        U32,
+        F32,
+        U64,
+        F64,
+        NumAlias,
+    };
 
     Id Def(const IR::Value& value);
 
@@ -133,11 +145,120 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    inline Id AddLabel() {
+        last_label = Module::AddLabel();
+        return last_label;
+    }
+
+    inline Id AddLabel(Id label) {
+        last_label = Module::AddLabel(label);
+        return last_label;
+    }
+
+    PointerType PointerTypeFromType(Id type) {
+        if (type.value == U8.value)
+            return PointerType::U8;
+        if (type.value == U16.value)
+            return PointerType::U16;
+        if (type.value == F16[1].value)
+            return PointerType::F16;
+        if (type.value == U32[1].value)
+            return PointerType::U32;
+        if (type.value == F32[1].value)
+            return PointerType::F32;
+        if (type.value == U64.value)
+            return PointerType::U64;
+        if (type.value == F64[1].value)
+            return PointerType::F64;
+        UNREACHABLE_MSG("Unknown type for pointer");
+    }
+
+    template <typename Func>
+    Id EmitMemoryAccess(Id type, Id address, Func&& fallback) {
+        const Id first_time_label = OpLabel();
+        const Id after_first_time_label = OpLabel();
+        const Id fallback_label = OpLabel();
+        const Id available_label = OpLabel();
+        const Id save_masked_label = OpLabel();
+        const Id after_save_masked_label = OpLabel();
+        const Id merge_label = OpLabel();
+
+        // Get page BDA
+        const Id page = OpShiftRightLogical(U64, address, caching_pagebits_value);
+        const Id page32 = OpUConvert(U32[1], page);
+        const auto& bda_buffer = buffers[bda_pagetable_index];
+        const auto [bda_buffer_id, bda_pointer_type] = bda_buffer[PointerType::U64];
+        const Id bda_ptr = OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32);
+        const Id bda = OpLoad(U64, bda_ptr);
+
+        // Check if it is the first time we access this page
+        const Id bda_and_mask = OpBitwiseAnd(U64, bda, bda_first_time_mask);
+        const Id first_time = OpIEqual(U1[1], bda_and_mask, u64_zero_value);
+        OpSelectionMerge(after_first_time_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(first_time, first_time_label, after_first_time_label);
+
+        // First time access
+        AddLabel(first_time_label);
+        const auto& fault_buffer = buffers[fault_buffer_index];
+        const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
+        const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
+        const Id page_mod8 = OpBitwiseAnd(U32[1], page32, u32_seven_value);
+        const Id page_mask = OpShiftLeftLogical(U32[1], u32_one_value, page_mod8);
+        const Id fault_ptr =
+            OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div8);
+        const Id fault_value = OpLoad(U8, fault_ptr);
+        const Id page_mask8 = OpUConvert(U8, page_mask);
+        const Id fault_value_masked = OpBitwiseOr(U8, fault_value, page_mask8);
+        OpStore(fault_ptr, fault_value_masked);
+        OpBranch(after_first_time_label);
+
+        // Check if the value is available
+        AddLabel(after_first_time_label);
+        const Id bda_eq_zero = OpIEqual(U1[1], bda, u64_zero_value);
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(bda_eq_zero, fallback_label, available_label);
+
+        // Fallback (and mark on faul buffer)
+        AddLabel(fallback_label);
+        const Id fallback_result = fallback();
+        OpBranch(merge_label);
+
+        // Value is available
+        AddLabel(available_label);
+        OpSelectionMerge(after_save_masked_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(first_time, save_masked_label, after_save_masked_label);
+        
+        // Save unmasked BDA
+        AddLabel(save_masked_label);
+        const Id masked_bda = OpBitwiseOr(U64, bda, bda_first_time_mask);
+        OpStore(bda_ptr, masked_bda);
+        OpBranch(after_save_masked_label);
+        
+        // Load value
+        AddLabel(after_save_masked_label);
+        const Id unmasked_bda = OpBitwiseAnd(U64, bda, bda_first_time_inv_mask);
+        const Id offset_in_bda = OpBitwiseAnd(U64, address, caching_pagemask_value);
+        const Id addr = OpIAdd(U64, unmasked_bda, offset_in_bda);
+        const PointerType pointer_type = PointerTypeFromType(type);
+        const Id pointer_type_id = physical_pointer_types[pointer_type];
+        const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
+        const Id result = OpLoad(type, addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
+        OpBranch(merge_label);
+
+        // Merge
+        AddLabel(merge_label);
+        const Id final_result =
+            OpPhi(type, fallback_result, fallback_label, result, after_save_masked_label);
+        return final_result;
+    }
+
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage;
     LogicalStage l_stage{};
+
+    Id last_label{};
 
     Id void_id{};
     Id U8{};
@@ -161,9 +282,18 @@ public:
 
     Id true_value{};
     Id false_value{};
+    Id u32_seven_value{};
+    Id u32_three_value{};
     Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
+    Id u64_zero_value{};
+    Id u64_one_value{};
+
+    Id caching_pagebits_value{};
+    Id caching_pagemask_value{};
+    Id bda_first_time_mask{};
+    Id bda_first_time_inv_mask{};
 
     Id shared_u8{};
     Id shared_u16{};
@@ -231,14 +361,6 @@ public:
         bool is_storage = false;
     };
 
-    enum class BufferAlias : u32 {
-        U8,
-        U16,
-        U32,
-        F32,
-        NumAlias,
-    };
-
     struct BufferSpv {
         Id id;
         Id pointer_type;
@@ -252,14 +374,26 @@ public:
         Id size;
         Id size_shorts;
         Id size_dwords;
-        std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
+        std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
-        const BufferSpv& operator[](BufferAlias alias) const {
+        const BufferSpv& operator[](PointerType alias) const {
             return aliases[u32(alias)];
         }
 
-        BufferSpv& operator[](BufferAlias alias) {
+        BufferSpv& operator[](PointerType alias) {
             return aliases[u32(alias)];
+        }
+    };
+
+    struct PhysicalPointerTypes {
+        std::array<Id, u32(PointerType::NumAlias)> types;
+
+        const Id& operator[](PointerType type) const {
+            return types[u32(type)];
+        }
+
+        Id& operator[](PointerType type) {
+            return types[u32(type)];
         }
     };
 
@@ -268,6 +402,12 @@ public:
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
+    PhysicalPointerTypes physical_pointer_types;
+    std::unordered_map<u32, Id> first_to_last_label_map;
+
+    size_t flatbuf_index{};
+    size_t bda_pagetable_index{};
+    size_t fault_buffer_index{};
 
     Id sampler_type{};
     Id sampler_pointer_type{};

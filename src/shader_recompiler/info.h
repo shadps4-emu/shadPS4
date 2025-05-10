@@ -41,7 +41,9 @@ constexpr u32 NUM_TEXTURE_TYPES = 7;
 
 enum class BufferType : u32 {
     Guest,
-    ReadConstUbo,
+    Flatbuf,
+    BdaPagetable,
+    FaultBuffer,
     GdsBuffer,
     SharedMemory,
 };
@@ -209,6 +211,7 @@ struct Info {
     bool stores_tess_level_inner{};
     bool translation_failed{};
     bool has_readconst{};
+    IR::Type dma_types{IR::Type::Void};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
