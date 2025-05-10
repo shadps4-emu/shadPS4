@@ -455,14 +455,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::DrawIndirect: {
                 const auto* draw_indirect = reinterpret_cast<const PM4CmdDrawIndirect*>(header);
                 const auto offset = draw_indirect->data_offset;
-                const auto size = sizeof(DrawIndirectArgs);
+                const auto stride = sizeof(DrawIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
                     DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("gfx:{}:DrawIndirect", cmd_address));
-                    rasterizer->DrawIndirect(false, indirect_args_addr, offset, size, 1, 0);
+                    rasterizer->DrawIndirect(false, indirect_args_addr, offset, stride, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;
@@ -471,7 +471,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirect*>(header);
                 const auto offset = draw_index_indirect->data_offset;
-                const auto size = sizeof(DrawIndexedIndirectArgs);
+                const auto stride = sizeof(DrawIndexedIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
                     DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
@@ -479,12 +479,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("gfx:{}:DrawIndexIndirect", cmd_address));
-                    rasterizer->DrawIndirect(true, indirect_args_addr, offset, size, 1, 0);
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset, stride, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;
             }
-            case PM4ItOpcode::DrawIndexIndirectCountMulti: {
+            case PM4ItOpcode::DrawIndexIndirectMulti: {
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirectMulti*>(header);
                 const auto offset = draw_index_indirect->data_offset;
@@ -494,10 +494,31 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
+                        fmt::format("gfx:{}:DrawIndexIndirectMulti", cmd_address));
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                             draw_index_indirect->stride,
+                                             draw_index_indirect->count, 0);
+                    rasterizer->ScopeMarkerEnd();
+                }
+                break;
+            }
+            case PM4ItOpcode::DrawIndexIndirectCountMulti: {
+                const auto* draw_index_indirect =
+                    reinterpret_cast<const PM4CmdDrawIndexIndirectCountMulti*>(header);
+                const auto offset = draw_index_indirect->data_offset;
+                if (DebugState.DumpingCurrentReg()) {
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                }
+                if (rasterizer) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    rasterizer->ScopeMarkerBegin(
                         fmt::format("gfx:{}:DrawIndexIndirectCountMulti", cmd_address));
-                    rasterizer->DrawIndirect(
-                        true, indirect_args_addr, offset, draw_index_indirect->stride,
-                        draw_index_indirect->count, draw_index_indirect->countAddr);
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                             draw_index_indirect->stride,
+                                             draw_index_indirect->count,
+                                             draw_index_indirect->count_indirect_enable.Value()
+                                                 ? draw_index_indirect->count_addr
+                                                 : 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;

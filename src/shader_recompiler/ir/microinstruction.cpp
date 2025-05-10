@@ -94,6 +94,8 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::ImageAtomicUMin32:
     case Opcode::ImageAtomicSMax32:
     case Opcode::ImageAtomicUMax32:
+    case Opcode::ImageAtomicFMax32:
+    case Opcode::ImageAtomicFMin32:
     case Opcode::ImageAtomicInc32:
     case Opcode::ImageAtomicDec32:
     case Opcode::ImageAtomicAnd32:

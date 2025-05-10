@@ -924,15 +924,11 @@ struct Liverpool {
         }
 
         [[nodiscard]] NumberFormat GetNumberFmt() const {
-            // There is a small difference between T# and CB number types, account for it.
-            return RemapNumberFormat(info.number_type == NumberFormat::SnormNz
-                                         ? NumberFormat::Srgb
-                                         : info.number_type.Value(),
-                                     info.format);
+            return RemapNumberFormat(GetFixedNumberFormat(), info.format);
         }
 
         [[nodiscard]] NumberConversion GetNumberConversion() const {
-            return MapNumberConversion(info.number_type);
+            return MapNumberConversion(GetFixedNumberFormat(), info.format);
         }
 
         [[nodiscard]] CompMapping Swizzle() const {
@@ -972,6 +968,13 @@ struct Liverpool {
             const auto components_idx = NumComponents(info.format) - 1;
             const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
             return RemapSwizzle(info.format, mrt_swizzle);
+        }
+
+    private:
+        [[nodiscard]] NumberFormat GetFixedNumberFormat() const {
+            // There is a small difference between T# and CB number types, account for it.
+            return info.number_type == NumberFormat::SnormNz ? NumberFormat::Srgb
+                                                             : info.number_type.Value();
         }
     };
 
