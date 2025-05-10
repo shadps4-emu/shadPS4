@@ -227,7 +227,6 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
         if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
-            remaining_size = vma.base + vma.size - mapped_addr;
         }
     }
 
@@ -270,7 +269,6 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
         if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
-            remaining_size = vma.base + vma.size - mapped_addr;
         }
     }
 
