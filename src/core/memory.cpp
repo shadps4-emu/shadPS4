@@ -214,10 +214,13 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
                                MemoryMapFlags flags, u64 alignment) {
     std::scoped_lock lk{mutex};
     alignment = alignment > 0 ? alignment : 2_MB;
-    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+    VAddr min_address = Common::AlignUp(impl.SystemManagedVirtualBase(), alignment);
+    VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);    
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
+        // Make sure we're mapping to a valid address
+        mapped_addr = mapped_addr > min_address ? mapped_addr : min_address;
         auto vma = FindVMA(mapped_addr)->second;
         size_t remaining_size = vma.base + vma.size - mapped_addr;
         // If the VMA is mapped or there's not enough space, unmap the region first.
