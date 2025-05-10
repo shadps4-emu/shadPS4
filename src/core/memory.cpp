@@ -215,7 +215,7 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
     std::scoped_lock lk{mutex};
     alignment = alignment > 0 ? alignment : 2_MB;
     VAddr min_address = Common::AlignUp(impl.SystemManagedVirtualBase(), alignment);
-    VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);    
+    VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
