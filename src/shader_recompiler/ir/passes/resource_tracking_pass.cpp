@@ -249,17 +249,22 @@ SharpLocation AttemptTrackSharp(const IR::Inst* inst, auto& visited_insts) {
         }
         return std::nullopt;
     };
+    // Value may be modified between the ReadConst/GetUserData and inst.
+    // We don't take this into account.
     const auto result = IR::BreadthFirstSearch(inst, pred);
     ASSERT_MSG(result, "Unable to track sharp source");
     inst = result.value();
     visited_insts.emplace_back(inst);
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<u32>(inst->Arg(0).ScalarReg());
-    } else {
-        ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst,
-                   "Sharp load not from constant memory");
-        return inst->Flags<u32>();
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+        // Sharp is stored in the offset argument.
+        // The vale is not inmediate if ReadConst is inside of a loop
+        // and the base or offset is different in each iteration. (we don't support this)
+        ASSERT(inst->Arg(1).IsImmediate());
+        return inst->Arg(1).U32();
     }
+    UNREACHABLE_MSG("Sharp load not from constant memory or user data");
 }
 
 /// Tracks a sharp with validation of the chosen data type.

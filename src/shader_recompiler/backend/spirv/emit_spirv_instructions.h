@@ -52,6 +52,7 @@ void EmitBarrier(EmitContext& ctx);
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx);
 void EmitDeviceMemoryBarrier(EmitContext& ctx);
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg);
+void EmitSetUserData(EmitContext& ctx);
 void EmitGetThreadBitScalarReg(EmitContext& ctx);
 void EmitSetThreadBitScalarReg(EmitContext& ctx);
 void EmitGetScalarRegister(EmitContext& ctx);
