@@ -218,23 +218,20 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        auto& vma = FindVMA(mapped_addr)->second;
-        // If the VMA is mapped, unmap the region first.
-        if (vma.IsMapped()) {
+        auto vma = FindVMA(mapped_addr)->second;
+        size_t remaining_size = vma.base + vma.size - mapped_addr;
+        // If the VMA is mapped or there's not enough space, unmap the region first.
+        if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
+            remaining_size = vma.base + vma.size - mapped_addr;
         }
-        const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
-    // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        // When MemoryMapFlags::Fixed is not specified, mappings default to searching for
-        // a free area starting from address 0x200000000 instead.
-        mapped_addr = mapped_addr < 0x200000000 ? 0x200000000 : mapped_addr;
+        // When MemoryMapFlags::Fixed is not specified, and mapped_addr is 0,
+        // search from address 0x200000000 instead.
+        mapped_addr = mapped_addr == 0 ? 0x200000000 : mapped_addr;
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
@@ -265,15 +262,13 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
         auto vma = FindVMA(mapped_addr)->second;
-        // If the VMA is mapped, unmap the region first.
-        if (vma.IsMapped()) {
+        size_t remaining_size = vma.base + vma.size - mapped_addr;
+        // If the VMA is mapped or there's not enough space, unmap the region first.
+        if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
+            remaining_size = vma.base + vma.size - mapped_addr;
         }
-        const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
     // Find the first free area starting with provided virtual address.
