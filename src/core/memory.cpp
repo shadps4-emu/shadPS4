@@ -308,15 +308,16 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
 
     auto& vma = FindVMA(mapped_addr)->second;
     if (vma.type != VMAType::PoolReserved || vma.base + vma.size < virtual_addr + size) {
-        // If the VMA isn't PoolReserved or if there's not enough space
-        // to commit, this should return EINVAL
-        LOG_ERROR(Kernel_Vmm, "Trying to PoolCommit non-pooled memory!");
+        // If the VMA isn't PoolReserved or if there's not enough space to commit, return EINVAL
+        LOG_ERROR(Kernel_Vmm,
+                  "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
+                  vma.base, vma.size, mapped_addr, size);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    
+
     // Before mapping, the reserved VMA should have it's physical base incremented.
     vma.phys_base += size;
-    
+
     // Carve out the new VMA representing this mapping
     const auto new_vma_handle = CarveVMA(mapped_addr, size);
     auto& new_vma = new_vma_handle->second;
