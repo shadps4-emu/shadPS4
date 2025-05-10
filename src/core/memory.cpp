@@ -249,7 +249,6 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
     new_vma.prot = MemoryProt::NoAccess;
     new_vma.name = "anon";
     new_vma.type = VMAType::PoolReserved;
-    MergeAdjacent(vma_map, new_vma_handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
