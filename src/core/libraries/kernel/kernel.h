@@ -18,6 +18,7 @@ namespace Libraries::Kernel {
 void ErrSceToPosix(int result);
 int ErrnoToSceKernelError(int e);
 void SetPosixErrno(int e);
+int* PS4_SYSV_ABI __Error();
 
 template <StringLiteral name, class F, F f>
 struct WrapperImpl;

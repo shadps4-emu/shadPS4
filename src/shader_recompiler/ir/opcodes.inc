@@ -191,14 +191,13 @@ OPCODE(SelectF64,                                           F64,            U1, 
 // Bitwise conversions
 OPCODE(BitCastU16F16,                                       U16,            F16,                                                                            )
 OPCODE(BitCastU32F32,                                       U32,            F32,                                                                            )
-OPCODE(BitCastU64F64,                                       U64,            F64,                                                                            )
 OPCODE(BitCastF16U16,                                       F16,            U16,                                                                            )
 OPCODE(BitCastF32U32,                                       F32,            U32,                                                                            )
-OPCODE(BitCastF64U64,                                       F64,            U64,                                                                            )
 
 OPCODE(PackUint2x32,                                        U64,            U32x2,                                                                          )
 OPCODE(UnpackUint2x32,                                      U32x2,          U64,                                                                            )
-OPCODE(PackFloat2x32,                                       F64,            F32x2,                                                                          )
+OPCODE(PackDouble2x32,                                      F64,            U32x2,                                                                          )
+OPCODE(UnpackDouble2x32,                                    U32x2,          F64,                                                                            )
 
 OPCODE(PackUnorm2x16,                                       U32,            F32x2,                                                                          )
 OPCODE(UnpackUnorm2x16,                                     F32x2,          U32,                                                                            )
@@ -421,6 +420,8 @@ OPCODE(ImageAtomicSMin32,                                   U32,            Opaq
 OPCODE(ImageAtomicUMin32,                                   U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicSMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicUMax32,                                   U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicFMax32,                                   F32,            Opaque,         Opaque,         F32,                                            )
+OPCODE(ImageAtomicFMin32,                                   F32,            Opaque,         Opaque,         F32,                                            )
 OPCODE(ImageAtomicInc32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicDec32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicAnd32,                                    U32,            Opaque,         Opaque,         U32,                                            )

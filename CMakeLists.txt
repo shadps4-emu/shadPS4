@@ -202,7 +202,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "7")
+set(EMULATOR_VERSION_MINOR "8")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -371,11 +371,19 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_ctl_obj.cpp
                  src/core/libraries/network/net_ctl_obj.h
                  src/core/libraries/network/net_ctl_codes.h
+                 src/core/libraries/network/net_util.cpp
+                 src/core/libraries/network/net_util.h
+                 src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
                  src/core/libraries/network/ssl2.cpp
                  src/core/libraries/network/ssl2.h
+                 src/core/libraries/network/sys_net.cpp
+                 src/core/libraries/network/sys_net.h
+                 src/core/libraries/network/posix_sockets.cpp
+                 src/core/libraries/network/p2p_sockets.cpp
+                 src/core/libraries/network/sockets.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
@@ -589,6 +597,8 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/move/move.h
                src/core/libraries/ulobjmgr/ulobjmgr.cpp
                src/core/libraries/ulobjmgr/ulobjmgr.h
+               src/core/libraries/signin_dialog/signindialog.cpp
+               src/core/libraries/signin_dialog/signindialog.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -840,6 +850,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
+                      src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
@@ -1083,34 +1094,43 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND ENABLE_USERFAULTFD)
 endif()
 
 if (APPLE)
-  if (ENABLE_QT_GUI)
-      # Include MoltenVK in the app bundle, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-      set(MVK_ICD ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK_icd.json)
-      target_sources(shadps4 PRIVATE ${MVK_ICD})
-      set_source_files_properties(${MVK_ICD} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/vulkan/icd.d)
+    # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
+    if (ENABLE_QT_GUI)
+        set(MVK_BUNDLE_PATH "Resources/vulkan/icd.d")
+        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
+        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/${MVK_BUNDLE_PATH})
+    else()
+        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
+        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
 
-      set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
-      set(MVK_DYLIB_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/Frameworks/libMoltenVK.dylib)
-      add_custom_command(
-          OUTPUT ${MVK_DYLIB_DST}
-          DEPENDS ${MVK_DYLIB_SRC}
-          COMMAND cmake -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-      add_custom_target(CopyMoltenVK DEPENDS ${MVK_DYLIB_DST})
-      add_dependencies(CopyMoltenVK MoltenVK)
-      add_dependencies(shadps4 CopyMoltenVK)
-      set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../Frameworks")
-  else()
-      # For non-bundled SDL build, just do a normal library link.
-      target_link_libraries(shadps4 PRIVATE MoltenVK)
-  endif()
+    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
+    set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
+    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
+    set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
 
-  if (ARCHITECTURE STREQUAL "x86_64")
-      # Reserve system-managed memory space.
-      target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
-  endif()
+    add_custom_command(
+        OUTPUT ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
+    add_custom_command(
+        OUTPUT ${MVK_ICD_DST}
+        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
+    add_custom_command(
+        OUTPUT ${MVK_DYLIB_DST}
+        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
+        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
+    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
+    add_dependencies(CopyMoltenVK MoltenVK)
+    add_dependencies(shadps4 CopyMoltenVK)
 
-  # Replacement for std::chrono::time_zone
-  target_link_libraries(shadps4 PRIVATE date::date-tz)
+    if (ARCHITECTURE STREQUAL "x86_64")
+        # Reserve system-managed memory space.
+        target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+    endif()
+
+    # Replacement for std::chrono::time_zone
+    target_link_libraries(shadps4 PRIVATE date::date-tz)
 endif()
 
 if (NOT ENABLE_QT_GUI)
