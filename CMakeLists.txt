@@ -603,6 +603,7 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 
 set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
                  src/core/libraries/camera/camera.h
+                 src/core/libraries/camera/camera_error.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp

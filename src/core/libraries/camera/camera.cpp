@@ -3,6 +3,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/camera/camera.h"
+#include "core/libraries/camera/camera_error.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
