@@ -44,7 +44,15 @@ void PS4_SYSV_ABI sceUsbdExit() {
 s64 PS4_SYSV_ABI sceUsbdGetDeviceList(SceUsbdDevice*** list) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    return libusb_to_orbis_error(libusb_get_device_list(g_libusb_context, list));
+    static ssize_t device_count = 2;
+    ssize_t count = libusb_get_device_list(g_libusb_context, list);
+    if (count <= 0)
+        return libusb_to_orbis_error((int)count);
+
+    if (count != device_count) {
+        LOG_INFO(Lib_Usbd, "Found {} USB devices", count);
+    }
+    return ORBIS_FAIL;
 }
 
 void PS4_SYSV_ABI sceUsbdFreeDeviceList(SceUsbdDevice** list, s32 unref_devices) {
