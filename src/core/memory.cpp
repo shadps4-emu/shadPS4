@@ -109,31 +109,38 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment) {
     std::scoped_lock lk{mutex};
+    alignment = alignment > 0 ? alignment : 64_KB;
 
     auto dmem_area = FindDmemArea(search_start);
+    auto mapping_start = search_start > dmem_area->second.base
+                             ? Common::AlignUp(search_start, alignment)
+                             : Common::AlignUp(dmem_area->second.base, alignment);
+    auto mapping_end = mapping_start + size;
 
-    const auto is_suitable = [&] {
-        const auto aligned_base = alignment > 0 ? Common::AlignUp(dmem_area->second.base, alignment)
-                                                : dmem_area->second.base;
-        const auto alignment_size = aligned_base - dmem_area->second.base;
-        const auto remaining_size =
-            dmem_area->second.size >= alignment_size ? dmem_area->second.size - alignment_size : 0;
-        return dmem_area->second.is_free && remaining_size >= size;
-    };
-    while (!is_suitable() && dmem_area->second.GetEnd() <= search_end) {
+    // Find the first free, large enough dmem area in the range.
+    while (!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) {
+        // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
-    }
-    ASSERT_MSG(is_suitable(), "Unable to find free direct memory area: size = {:#x}", size);
+        if (dmem_area == dmem_map.end()) {
+            break;
+        }
 
-    // Align free position
-    PAddr free_addr = dmem_area->second.base;
-    free_addr = alignment > 0 ? Common::AlignUp(free_addr, alignment) : free_addr;
+        // Update local variables based on the new dmem_area
+        mapping_start = Common::AlignUp(dmem_area->second.base, alignment);
+        mapping_end = mapping_start + size;
+    }
+
+    if (dmem_area == dmem_map.end()) {
+        // There are no suitable mappings in this range
+        LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        return -1;
+    }
 
     // Add the allocated region to the list and commit its pages.
-    auto& area = CarveDmemArea(free_addr, size)->second;
+    auto& area = CarveDmemArea(mapping_start, size)->second;
     area.is_free = false;
     area.is_pooled = true;
-    return free_addr;
+    return mapping_start;
 }
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
@@ -206,27 +213,27 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
 int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
                                MemoryMapFlags flags, u64 alignment) {
     std::scoped_lock lk{mutex};
-
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 2_MB;
-    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+    VAddr min_address = Common::AlignUp(impl.SystemManagedVirtualBase(), alignment);
+    VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        auto& vma = FindVMA(mapped_addr)->second;
-        // If the VMA is mapped, unmap the region first.
-        if (vma.IsMapped()) {
+        // Make sure we're mapping to a valid address
+        mapped_addr = mapped_addr > min_address ? mapped_addr : min_address;
+        auto vma = FindVMA(mapped_addr)->second;
+        size_t remaining_size = vma.base + vma.size - mapped_addr;
+        // If the VMA is mapped or there's not enough space, unmap the region first.
+        if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
         }
-        const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
-    // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
+        // When MemoryMapFlags::Fixed is not specified, and mapped_addr is 0,
+        // search from address 0x200000000 instead.
+        mapped_addr = mapped_addr == 0 ? 0x200000000 : mapped_addr;
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
@@ -241,7 +248,6 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
     new_vma.prot = MemoryProt::NoAccess;
     new_vma.name = "anon";
     new_vma.type = VMAType::PoolReserved;
-    MergeAdjacent(vma_map, new_vma_handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -258,15 +264,12 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
         auto vma = FindVMA(mapped_addr)->second;
-        // If the VMA is mapped, unmap the region first.
-        if (vma.IsMapped()) {
+        size_t remaining_size = vma.base + vma.size - mapped_addr;
+        // If the VMA is mapped or there's not enough space, unmap the region first.
+        if (vma.IsMapped() || remaining_size < size) {
             UnmapMemoryImpl(mapped_addr, size);
             vma = FindVMA(mapped_addr)->second;
         }
-        const size_t remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(vma.type == VMAType::Free && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} is not large enough to reserve {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
     // Find the first free area starting with provided virtual address.
@@ -296,29 +299,31 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
 
     const u64 alignment = 64_KB;
 
-    // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
-    // flag so we will take the branch that searches for free (or reserved) mappings.
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
+    // Input addresses to PoolCommit are treated as fixed.
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
-    // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
-    const auto& vma = FindVMA(mapped_addr)->second;
-    const size_t remaining_size = vma.base + vma.size - mapped_addr;
-    ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-               "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
-               vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
+    auto& vma = FindVMA(mapped_addr)->second;
+    if (vma.type != VMAType::PoolReserved || !vma.Contains(mapped_addr, size)) {
+        // If the VMA isn't PoolReserved or if there's not enough space to commit, return EINVAL
+        LOG_ERROR(Kernel_Vmm,
+                  "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
+                  vma.base, vma.base + vma.size, mapped_addr, mapped_addr + size);
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
 
-    // Perform the mapping.
-    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
-    TRACK_ALLOC(out_addr, size, "VMEM");
-
-    auto& new_vma = CarveVMA(mapped_addr, size)->second;
+    // Carve out the new VMA representing this mapping
+    const auto new_vma_handle = CarveVMA(mapped_addr, size);
+    auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = false;
     new_vma.prot = prot;
-    new_vma.name = "";
+    new_vma.name = "anon";
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
+
+    // Perform the mapping
+    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
+    TRACK_ALLOC(out_addr, size, "VMEM");
 
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
@@ -464,13 +469,15 @@ void MemoryManager::PoolDecommit(VAddr virtual_addr, size_t size) {
     vma.prot = MemoryProt::NoAccess;
     vma.phys_base = 0;
     vma.disallow_merge = false;
-    vma.name = "";
+    vma.name = "anon";
     MergeAdjacent(vma_map, new_it);
 
-    // Unmap the memory region.
-    impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base, is_exec,
-               false, false);
-    TRACK_FREE(virtual_addr, "VMEM");
+    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
+        // Unmap the memory region.
+        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
+                   is_exec, false, false);
+        TRACK_FREE(virtual_addr, "VMEM");
+    }
 }
 
 s32 MemoryManager::UnmapMemory(VAddr virtual_addr, size_t size) {
