@@ -303,29 +303,34 @@ int MemoryManager::PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot) 
 
     const u64 alignment = 64_KB;
 
-    // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
-    // flag so we will take the branch that searches for free (or reserved) mappings.
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
+    // Input addresses to PoolCommit are treated as fixed.
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
-    // This should return SCE_KERNEL_ERROR_ENOMEM but shouldn't normally happen.
-    const auto& vma = FindVMA(mapped_addr)->second;
-    const size_t remaining_size = vma.base + vma.size - mapped_addr;
-    ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-               "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
-               vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
-
-    // Perform the mapping.
-    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
-    TRACK_ALLOC(out_addr, size, "VMEM");
-
-    auto& new_vma = CarveVMA(mapped_addr, size)->second;
+    auto& vma = FindVMA(mapped_addr)->second;
+    if (vma.type != VMAType::PoolReserved || vma.base + vma.size < virtual_addr + size) {
+        // If the VMA isn't PoolReserved or if there's not enough space
+        // to commit, this should return EINVAL
+        LOG_ERROR(Kernel_Vmm, "Trying to PoolCommit non-pooled memory!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    
+    // Before mapping, the reserved VMA should have it's physical base incremented.
+    vma.phys_base += size;
+    
+    // Carve out the new VMA representing this mapping
+    const auto new_vma_handle = CarveVMA(mapped_addr, size);
+    auto& new_vma = new_vma_handle->second;
     new_vma.disallow_merge = false;
     new_vma.prot = prot;
-    new_vma.name = "";
+    new_vma.name = vma.name;
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
     new_vma.phys_base = 0;
+    MergeAdjacent(vma_map, new_vma_handle);
+
+    // Perform the mapping
+    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
+    TRACK_ALLOC(out_addr, size, "VMEM");
 
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
