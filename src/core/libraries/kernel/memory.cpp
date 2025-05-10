@@ -425,10 +425,6 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
     LOG_INFO(Kernel_Vmm, "addrIn = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
              fmt::ptr(addrIn), len, alignment, flags);
 
-    if (addrIn == nullptr) {
-        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
     if (len == 0 || !Common::Is2MBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;

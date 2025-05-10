@@ -213,8 +213,6 @@ void MemoryManager::Free(PAddr phys_addr, size_t size) {
 int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
                                MemoryMapFlags flags, u64 alignment) {
     std::scoped_lock lk{mutex};
-
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 2_MB;
     VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
 
@@ -234,6 +232,9 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
+        // When MemoryMapFlags::Fixed is not specified, mappings default to searching for
+        // a free area starting from address 0x200000000 instead.
+        mapped_addr = mapped_addr < 0x200000000 ? 0x200000000 : mapped_addr;
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
