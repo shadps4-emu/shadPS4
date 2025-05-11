@@ -107,9 +107,6 @@ private:
     }
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
-
-    void AddDmaSyncRanges(const boost::icl::interval_set<VAddr>& ranges);
-
 private:
     friend class VideoCore::BufferCache;
 
@@ -121,8 +118,6 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
-    boost::icl::interval_set<VAddr> dma_sync_ranges;
-    boost::icl::interval_set<VAddr> dma_sync_mapped_ranges;
     std::shared_mutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 

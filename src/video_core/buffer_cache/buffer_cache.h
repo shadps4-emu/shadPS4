@@ -98,7 +98,7 @@ public:
     }
 
     /// Invalidates any buffer in the logical page range.
-    void InvalidateMemory(VAddr device_addr, u64 size);
+    void InvalidateMemory(VAddr device_addr, u64 size, bool unmap);
 
     /// Binds host vertex buffers for the current draw.
     void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
@@ -139,25 +139,21 @@ public:
     /// Synchronizes all buffers in the specified range.
     void SynchronizeBuffersInRange(VAddr device_addr, u64 size);
 
+    /// Synchronizes all buffers neede for DMA.
+    void SynchronizeDmaBuffers();
+
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
 
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
-        const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
-        for (u64 page = device_addr >> CACHING_PAGEBITS; page < page_end;) {
-            const BufferId buffer_id = page_table[page].buffer_id;
-            if (!buffer_id) {
-                ++page;
-                continue;
-            }
-            Buffer& buffer = slot_buffers[buffer_id];
-            func(buffer_id, buffer);
-
-            const VAddr end_addr = buffer.CpuAddr() + buffer.SizeBytes();
-            page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
-        }
+        const u64 page = device_addr >> CACHING_PAGEBITS;
+        const u64 page_size = Common::DivCeil(size, CACHING_PAGESIZE);
+        buffer_ranges.ForEachInRange(page, page_size, [&](u64 page_start, u64 page_end, BufferId id) {
+            Buffer& buffer = slot_buffers[id];
+            func(id, buffer);
+        });
     }
 
     void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
@@ -199,7 +195,10 @@ private:
     Buffer fault_buffer;
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    std::shared_mutex dma_sync_ranges_mutex;
+    RangeSet dma_sync_ranges;
     RangeSet gpu_modified_ranges;
+    SplitRangeMap<BufferId> buffer_ranges;
     MemoryTracker memory_tracker;
     PageTable page_table;
     vk::UniqueDescriptorSetLayout fault_process_desc_layout;

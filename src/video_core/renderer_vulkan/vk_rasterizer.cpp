@@ -477,10 +477,9 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (uses_dma) {
         // We only use fault buffer for DMA right now.
         {
-            Common::RecursiveSharedLock lock(mapped_ranges_mutex);
-            for (const auto& range : dma_sync_mapped_ranges) {
-                buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
-            }
+            // We don't want the mapped ranges to be modified while we are syncing
+            Common::RecursiveSharedLock lock{mapped_ranges_mutex};
+            buffer_cache.SynchronizeDmaBuffers();
         }
         buffer_cache.MemoryBarrier();
     }
@@ -726,14 +725,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     }
 }
 
-void Rasterizer::AddDmaSyncRanges(const boost::icl::interval_set<VAddr>& ranges) {
-    dma_sync_ranges += ranges;
-    {
-        std::scoped_lock lock(mapped_ranges_mutex);
-        dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
-    }
-}
-
 void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& state) {
     int cb_index = 0;
     for (auto attach_idx = 0u; attach_idx < state.num_color_attachments; ++attach_idx) {
@@ -964,7 +955,7 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.InvalidateMemory(addr, size);
+    buffer_cache.InvalidateMemory(addr, size, false);
     texture_cache.InvalidateMemory(addr, size);
     return true;
 }
@@ -984,19 +975,17 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
-        dma_sync_mapped_ranges = mapped_ranges & dma_sync_ranges;
     }
     page_manager.OnGpuMap(addr, size);
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
-    buffer_cache.InvalidateMemory(addr, size);
+    buffer_cache.InvalidateMemory(addr, size, true);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
-        dma_sync_mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
 }
 

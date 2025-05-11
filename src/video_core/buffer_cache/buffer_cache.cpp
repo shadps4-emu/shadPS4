@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include "common/alignment.h"
+#include "common/debug.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -131,11 +132,22 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
 BufferCache::~BufferCache() = default;
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool unmap) {
     const bool is_tracked = IsRegionRegistered(device_addr, size);
     if (is_tracked) {
         // Mark the page as CPU modified to stop tracking writes.
         memory_tracker.MarkRegionAsCpuModified(device_addr, size);
+
+        if (unmap) {
+            return;
+        }
+
+        {
+            std::scoped_lock lock(dma_sync_ranges_mutex);
+            const VAddr page_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
+            const u64 page_size = Common::AlignUp(size, CACHING_PAGESIZE);
+            dma_sync_ranges.Add(device_addr, size);
+        }
     }
 }
 
@@ -371,24 +383,10 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, 
 }
 
 bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
-    const VAddr end_addr = addr + size;
-    const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
-    for (u64 page = addr >> CACHING_PAGEBITS; page < page_end;) {
-        const BufferId buffer_id = page_table[page].buffer_id;
-        if (!buffer_id) {
-            ++page;
-            continue;
-        }
-        std::shared_lock lk{slot_buffers_mutex};
-        Buffer& buffer = slot_buffers[buffer_id];
-        const VAddr buf_start_addr = buffer.CpuAddr();
-        const VAddr buf_end_addr = buf_start_addr + buffer.SizeBytes();
-        if (buf_start_addr < end_addr && addr < buf_end_addr) {
-            return true;
-        }
-        page = Common::DivCeil(buf_end_addr, CACHING_PAGESIZE);
-    }
-    return false;
+    // Check if we are missing some edge case here
+    const u64 page = addr >> CACHING_PAGEBITS;
+    const u64 page_size = Common::DivCeil(size, CACHING_PAGESIZE);
+    return buffer_ranges.Intersects(page, page_size);
 }
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
@@ -577,6 +575,10 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
         JoinOverlap(new_buffer_id, overlap_id, !overlap.has_stream_leap);
     }
     Register(new_buffer_id);
+    {
+        std::scoped_lock lk(dma_sync_ranges_mutex);
+        dma_sync_ranges.Add(overlap.begin, overlap.end);
+    }
     return new_buffer_id;
 }
 
@@ -704,7 +706,6 @@ void BufferCache::ProcessFaultBuffer() {
             // Only create a buffer is the current range doesn't fit in an existing one
             FindBuffer(start, static_cast<u32>(end - start));
         }
-        rasterizer.AddDmaSyncRanges(fault_ranges);
     });
 }
 
@@ -730,6 +731,11 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
         } else {
             page_table[page].buffer_id = BufferId{};
         }
+    }
+    if constexpr (insert) {
+        buffer_ranges.Add(page_begin, page_end - page_begin, buffer_id);
+    } else {
+        buffer_ranges.Subtract(page_begin, page_end - page_begin);
     }
 }
 
@@ -915,6 +921,7 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
     }
     VAddr device_addr_end = device_addr + size;
     ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
+        RENDERER_TRACE;
         // Note that this function synchronizes the whole buffer, not just the range.
         // This is because this function is used to sync buffers before using a
         // shader that uses DMA.
@@ -922,6 +929,16 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
         // very slow.
         SynchronizeBuffer(buffer, buffer.CpuAddr(), buffer.SizeBytes(), false);
     });
+}
+
+void BufferCache::SynchronizeDmaBuffers() {
+    RENDERER_TRACE;
+    std::scoped_lock lk(dma_sync_ranges_mutex);
+    dma_sync_ranges.ForEach([&](VAddr device_addr, u64 end_addr) {
+        RENDERER_TRACE;
+        SynchronizeBuffersInRange(device_addr, end_addr - device_addr);
+    });
+    dma_sync_ranges.Clear();
 }
 
 void BufferCache::MemoryBarrier() {
