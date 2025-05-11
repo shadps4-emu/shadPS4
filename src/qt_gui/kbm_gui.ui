@@ -983,7 +983,7 @@
               <widget class="QLabel" name="l_controller">
                <property name="maximumSize">
                 <size>
-                 <width>500</width>
+                 <width>424</width>
                  <height>250</height>
                 </size>
                </property>
