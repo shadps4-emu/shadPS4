@@ -40,6 +40,9 @@ void SetTcbBase(void* image_address);
 /// Retrieves Tcb structure for the calling thread.
 Tcb* GetTcbBase();
 
+/// Swaps the TCB in or out of the fs register, if required by the platform.
+void SwapTcb();
+
 /// Makes sure TLS is initialized for the thread before entering guest.
 void EnsureThreadInitialized();
 
@@ -55,7 +58,17 @@ ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&
     EnsureThreadInitialized();
     // clear stack to avoid trash from EnsureThreadInitialized
     ClearStack<13_KB>();
-    return func(std::forward<CallArgs>(args)...);
+
+    if constexpr (std::is_same_v<ReturnType, void>) {
+        SwapTcb();
+        func(std::forward<CallArgs>(args)...);
+        SwapTcb();
+    } else {
+        SwapTcb();
+        auto ret = func(std::forward<CallArgs>(args)...);
+        SwapTcb();
+        return ret;
+    }
 }
 
 template <class F, F f>
@@ -64,7 +77,16 @@ struct HostCallWrapperImpl;
 template <class ReturnType, class... Args, PS4_SYSV_ABI ReturnType (*func)(Args...)>
 struct HostCallWrapperImpl<PS4_SYSV_ABI ReturnType (*)(Args...), func> {
     static ReturnType PS4_SYSV_ABI wrap(Args... args) {
-        return func(args...);
+        if constexpr (std::is_same_v<ReturnType, void>) {
+            SwapTcb();
+            func(args...);
+            SwapTcb();
+        } else {
+            SwapTcb();
+            auto ret = func(args...);
+            SwapTcb();
+            return ret;
+        }
     }
 };
 

@@ -163,11 +163,6 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
             add_segment(elf_pheader[i]);
-#ifdef ARCH_X86_64
-            if (elf_pheader[i].p_flags & PF_EXEC) {
-                PrePatchInstructions(segment_addr, segment_file_size);
-            }
-#endif
             break;
         }
         case PT_DYNAMIC:

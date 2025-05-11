@@ -46,6 +46,8 @@ Tcb* GetTcbBase() {
     return reinterpret_cast<Tcb*>(TlsGetValue(GetTcbKey()));
 }
 
+void SwapTcb() {}
+
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
 
 // Apple x86_64
@@ -151,6 +153,8 @@ Tcb* GetTcbBase() {
     return tcb;
 }
 
+void SwapTcb() {}
+
 #elif defined(ARCH_X86_64)
 
 // Other POSIX x86_64
@@ -163,6 +167,17 @@ Tcb* GetTcbBase() {
     Tcb* tcb;
     asm volatile("rdgsbase %0" : "=r"(tcb)::"memory");
     return tcb;
+}
+
+void SwapTcb() {
+    void* fs;
+    void* gs;
+    asm volatile("rdfsbase %0" : "=r"(fs)::"memory");
+    asm volatile("rdgsbase %0" : "=r"(gs)::"memory");
+
+    // Swap FS and GS
+    asm volatile("wrfsbase %0" ::"r"(gs) : "memory");
+    asm volatile("wrgsbase %0" ::"r"(fs) : "memory");
 }
 
 #else
@@ -190,6 +205,8 @@ void SetTcbBase(void* image_address) {
 Tcb* GetTcbBase() {
     return static_cast<Tcb*>(pthread_getspecific(GetTcbKey()));
 }
+
+void SwapTcb() {}
 
 #endif
 

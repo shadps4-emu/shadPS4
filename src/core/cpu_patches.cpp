@@ -402,10 +402,7 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
 
 #if defined(_WIN32)
-    // Windows needs a trampoline.
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, true}},
-#elif !defined(__APPLE__)
-    {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, false}},
 #endif
 };
 
@@ -674,24 +671,12 @@ static bool TryPatchJit(void* code_address) {
     return TryPatch(code, module).first;
 }
 
-static void TryPatchAot(void* code_address, u64 code_size) {
-    auto* code = static_cast<u8*>(code_address);
-    auto* module = GetModule(code);
-    if (module == nullptr) {
-        return;
-    }
-
-    std::unique_lock lock{module->mutex};
-
-    const auto* end = code + code_size;
-    while (code < end) {
-        code += TryPatch(code, module).second;
-    }
-}
-
+#ifdef _WIN32
+// Used for patching TCB accesses on Windows.
 static bool PatchesAccessViolationHandler(void* context, void* /* fault_address */) {
     return TryPatchJit(Common::GetRip(context));
 }
+#endif
 
 static bool PatchesIllegalInstructionHandler(void* context) {
     void* code_address = Common::GetRip(context);
@@ -719,7 +704,9 @@ static void PatchesInit() {
         auto* signals = Signals::Instance();
         // Should be called last.
         constexpr auto priority = std::numeric_limits<u32>::max();
+#ifdef _WIN32
         signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
+#endif
         signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
     }
 }
@@ -733,16 +720,6 @@ void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_are
                     std::forward_as_tuple(static_cast<u8*>(module_ptr), module_size,
                                           static_cast<u8*>(trampoline_area_ptr),
                                           trampoline_area_size));
-}
-
-void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    // Linux and others have an FS segment pointing to valid memory, so continue to do full
-    // ahead-of-time patching for now until a better solution is worked out.
-    if (!Patches.empty()) {
-        TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
-    }
-#endif
 }
 
 } // namespace Core
