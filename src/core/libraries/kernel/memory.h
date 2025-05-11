@@ -68,6 +68,8 @@ struct OrbisVirtualQueryInfo {
     u8 is_committed : 1;
     char name[ORBIS_KERNEL_MAXIMUM_NAME_LENGTH];
 };
+static_assert(sizeof(OrbisVirtualQueryInfo) == 72,
+              "OrbisVirtualQueryInfo struct size is incorrect");
 
 struct OrbisKernelBatchMapEntry {
     void* start;
