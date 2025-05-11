@@ -61,13 +61,15 @@ struct OrbisVirtualQueryInfo {
     size_t offset;
     s32 protection;
     s32 memory_type;
-    u32 is_flexible : 1;
-    u32 is_direct : 1;
-    u32 is_stack : 1;
-    u32 is_pooled : 1;
-    u32 is_committed : 1;
+    u8 is_flexible : 1;
+    u8 is_direct : 1;
+    u8 is_stack : 1;
+    u8 is_pooled : 1;
+    u8 is_committed : 1;
     char name[ORBIS_KERNEL_MAXIMUM_NAME_LENGTH];
 };
+static_assert(sizeof(OrbisVirtualQueryInfo) == 72,
+              "OrbisVirtualQueryInfo struct size is incorrect");
 
 struct OrbisKernelBatchMapEntry {
     void* start;
