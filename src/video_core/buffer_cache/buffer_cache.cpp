@@ -144,8 +144,8 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool unmap) {
 
         {
             std::scoped_lock lock(dma_sync_ranges_mutex);
-            const VAddr page_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
-            const u64 page_size = Common::AlignUp(size, CACHING_PAGESIZE);
+            const VAddr aligned_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
+            const u64 aligned_size = Common::AlignUp(device_addr + size, CACHING_PAGESIZE) - aligned_addr;
             dma_sync_ranges.Add(device_addr, size);
         }
     }
@@ -384,9 +384,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, 
 
 bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     // Check if we are missing some edge case here
-    const u64 page = addr >> CACHING_PAGEBITS;
-    const u64 page_size = Common::DivCeil(size, CACHING_PAGESIZE);
-    return buffer_ranges.Intersects(page, page_size);
+    return buffer_ranges.Intersects(addr, size);
 }
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
@@ -733,9 +731,9 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
         }
     }
     if constexpr (insert) {
-        buffer_ranges.Add(page_begin, page_end - page_begin, buffer_id);
+        buffer_ranges.Add(buffer.CpuAddr(), buffer.SizeBytes(), buffer_id);
     } else {
-        buffer_ranges.Subtract(page_begin, page_end - page_begin);
+        buffer_ranges.Subtract(buffer.CpuAddr(), buffer.SizeBytes());
     }
 }
 

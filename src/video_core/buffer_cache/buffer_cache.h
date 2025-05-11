@@ -148,9 +148,7 @@ public:
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
-        const u64 page = device_addr >> CACHING_PAGEBITS;
-        const u64 page_size = Common::DivCeil(size, CACHING_PAGESIZE);
-        buffer_ranges.ForEachInRange(page, page_size, [&](u64 page_start, u64 page_end, BufferId id) {
+        buffer_ranges.ForEachInRange(device_addr, size, [&](u64 page_start, u64 page_end, BufferId id) {
             Buffer& buffer = slot_buffers[id];
             func(id, buffer);
         });
