@@ -601,6 +601,11 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/signin_dialog/signindialog.h
 )
 
+set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
+                 src/core/libraries/camera/camera.h
+                 src/core/libraries/camera/camera_error.h
+)
+
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
               src/core/devtools/options.cpp
@@ -764,6 +769,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
+         ${CAMERA_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
