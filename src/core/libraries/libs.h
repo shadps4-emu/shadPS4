@@ -5,6 +5,7 @@
 
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
+#include "core/tls.h"
 
 #define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
     {                                                                                              \
@@ -16,7 +17,7 @@
         sr.module_version_major = moduleVersionMajor;                                              \
         sr.module_version_minor = moduleVersionMinor;                                              \
         sr.type = Core::Loader::SymbolType::Function;                                              \
-        auto func = reinterpret_cast<u64>(function);                                               \
+        auto func = reinterpret_cast<u64>(HOST_CALL(function));                                    \
         sym->AddSymbol(sr, func);                                                                  \
     }
 
