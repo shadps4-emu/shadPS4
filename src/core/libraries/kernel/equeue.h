@@ -152,10 +152,12 @@ public:
 
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
-private:
-    std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
+
+private:
+    std::string m_name;
+
     EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };

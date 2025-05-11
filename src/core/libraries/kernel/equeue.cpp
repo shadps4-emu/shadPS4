@@ -300,24 +300,62 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
     }
 }
 
+extern boost::asio::io_context io_context;
+
+static bool EventExists(SceKernelEqueue eq, u64 id, s16 filter) {
+    std::scoped_lock lock{eq->m_mutex}; 
+
+    const auto& it = std::ranges::find_if(eq->m_events, [id, filter](auto& ev) {
+        return ev.event.ident == id && ev.event.filter == filter;
+    });
+
+    return it != eq->m_events.cend();
+}
+
+static void TimerCallback(const boost::system::error_code& error, SceKernelEqueue eq,
+                          SceKernelEvent kevent, SceKernelUseconds interval_ms) {
+    if (EventExists(eq, kevent.ident, kevent.filter)) {
+        eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::Timer, kevent.udata);
+
+        if (!(kevent.flags & SceKernelEvent::Flags::OneShot)) {
+            auto timer = std::make_unique<boost::asio::steady_timer>(
+                io_context, std::chrono::milliseconds(interval_ms));
+
+            timer->async_wait([eq, kevent, interval_ms](const boost::system::error_code& ec) {
+                TimerCallback(ec, eq, kevent, interval_ms);
+            });
+        }
+    }
+}
+
 int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUseconds usec,
                                         void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
+    const u64 interval_ms = static_cast<u64>(usec & 0xFFFFFFFF) / 1000;
+
     EqueueEvent event{};
     event.event.ident = static_cast<u64>(id);
     event.event.filter = SceKernelEvent::Filter::Timer;
     event.event.flags = SceKernelEvent::Flags::Add;
     event.event.fflags = 0;
-    event.event.data = static_cast<u64>(usec & 0xFFFFFFFF) / 1000;
+    event.event.data = interval_ms;
     event.event.udata = udata;
     event.time_added = std::chrono::steady_clock::now();
     LOG_INFO(Kernel_Event,
              "Added timing event: queue name={}, queue id={}, ms-intevall={}, func pointer={:x}",
-             eq->GetName(), event.event.ident, event.event.data,
+             eq->GetName(), event.event.ident, interval_ms,
              reinterpret_cast<uintptr_t>(udata));
+
+    event.timer = std::make_unique<boost::asio::steady_timer>(
+        io_context, std::chrono::milliseconds(interval_ms));
+
+    event.timer->async_wait(
+        [eq, event_data = event.event, interval_ms](const boost::system::error_code& ec) {
+            TimerCallback(ec, eq, event_data, interval_ms);
+        });
 
     if (!eq->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
