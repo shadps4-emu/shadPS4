@@ -984,7 +984,7 @@
                <property name="maximumSize">
                 <size>
                  <width>500</width>
-                 <height>200</height>
+                 <height>250</height>
                 </size>
                </property>
                <property name="pixmap">
