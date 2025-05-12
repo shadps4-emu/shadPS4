@@ -9,6 +9,7 @@
 #include "core/libraries/audio3d/audio3d.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/camera/camera.h"
+#include "core/libraries/companion/companion_httpd.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
@@ -124,6 +125,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Ulobjmgr::RegisterlibSceUlobjmgr(sym);
     Libraries::SigninDialog::RegisterlibSceSigninDialog(sym);
     Libraries::Camera::RegisterlibSceCamera(sym);
+    Libraries::CompanionHttpd::RegisterlibSceCompanionHttpd(sym);
 }
 
 } // namespace Libraries
