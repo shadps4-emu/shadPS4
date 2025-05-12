@@ -348,6 +348,14 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
     event.event.data = interval_ms;
     event.event.udata = udata;
     event.time_added = std::chrono::steady_clock::now();
+
+    if (eq->EventExists(event.event.ident, event.event.filter)) {
+        eq->RemoveEvent(id, SceKernelEvent::Filter::Timer);
+        LOG_DEBUG(Kernel_Event,
+                  "Timer event already exists, removing it: queue name={}, queue id={}",
+                  eq->GetName(), event.event.ident);
+    }
+
     LOG_DEBUG(Kernel_Event,
               "Added timing event: queue name={}, queue id={}, ms-intevall={}, pointer={:x}",
               eq->GetName(), event.event.ident, interval_ms, reinterpret_cast<uintptr_t>(udata));
