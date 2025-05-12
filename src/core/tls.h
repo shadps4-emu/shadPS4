@@ -58,4 +58,16 @@ ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&
     return func(std::forward<CallArgs>(args)...);
 }
 
+template <class F, F f>
+struct HostCallWrapperImpl;
+
+template <class ReturnType, class... Args, PS4_SYSV_ABI ReturnType (*func)(Args...)>
+struct HostCallWrapperImpl<PS4_SYSV_ABI ReturnType (*)(Args...), func> {
+    static ReturnType PS4_SYSV_ABI wrap(Args... args) {
+        return func(args...);
+    }
+};
+
+#define HOST_CALL(func) (Core::HostCallWrapperImpl<decltype(&(func)), func>::wrap)
+
 } // namespace Core
