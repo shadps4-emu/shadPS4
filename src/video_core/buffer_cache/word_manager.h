@@ -169,7 +169,7 @@ public:
             func(cpu_addr + pending_offset * BYTES_PER_PAGE,
                  (pending_pointer - pending_offset) * BYTES_PER_PAGE);
         };
-        IterateWords(offset, size, [&](size_t index, u64 mask) {
+        IterateWords(offset, size - offset, [&](size_t index, u64 mask) {
             if constexpr (type == Type::GPU) {
                 mask &= ~untracked[index];
             }
