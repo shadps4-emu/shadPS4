@@ -554,12 +554,13 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     s64 protected_bytes = 0;
 
     auto aligned_addr = Common::AlignDown(addr, 16_KB);
-    auto aligned_size = Common::AlignUp(size, 16_KB);
+    auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
     do {
         auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         auto result = 0;
-        result = ProtectBytes(aligned_addr + protected_bytes, vma_base, aligned_size - protected_bytes, prot);
+        result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
+                              aligned_size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
