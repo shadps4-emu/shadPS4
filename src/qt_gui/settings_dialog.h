@@ -20,8 +20,7 @@ class SettingsDialog;
 class SettingsDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(std::span<const QString> physical_devices,
-                            std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+    explicit SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                             QWidget* parent = nullptr);
     ~SettingsDialog();
 

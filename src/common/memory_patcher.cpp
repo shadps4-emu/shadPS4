@@ -23,7 +23,7 @@
 
 namespace MemoryPatcher {
 
-uintptr_t g_eboot_address;
+EXPORT uintptr_t g_eboot_address;
 uint64_t g_eboot_image_size;
 std::string g_game_serial;
 std::string patchFile;

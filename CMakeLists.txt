@@ -371,11 +371,19 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_ctl_obj.cpp
                  src/core/libraries/network/net_ctl_obj.h
                  src/core/libraries/network/net_ctl_codes.h
+                 src/core/libraries/network/net_util.cpp
+                 src/core/libraries/network/net_util.h
+                 src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
                  src/core/libraries/network/ssl2.cpp
                  src/core/libraries/network/ssl2.h
+                 src/core/libraries/network/sys_net.cpp
+                 src/core/libraries/network/sys_net.h
+                 src/core/libraries/network/posix_sockets.cpp
+                 src/core/libraries/network/p2p_sockets.cpp
+                 src/core/libraries/network/sockets.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
@@ -589,6 +597,13 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/move/move.h
                src/core/libraries/ulobjmgr/ulobjmgr.cpp
                src/core/libraries/ulobjmgr/ulobjmgr.h
+               src/core/libraries/signin_dialog/signindialog.cpp
+               src/core/libraries/signin_dialog/signindialog.h
+)
+
+set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
+                 src/core/libraries/camera/camera.h
+                 src/core/libraries/camera/camera_error.h
 )
 
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -754,6 +769,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
+         ${CAMERA_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h

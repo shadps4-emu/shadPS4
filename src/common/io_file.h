@@ -61,8 +61,6 @@ enum class SeekOrigin : u32 {
     SetOrigin,       // Seeks from the start of the file.
     CurrentPosition, // Seeks from the current file pointer position.
     End,             // Seeks from the end of the file.
-    SeekHole,        // Seeks from the start of the next hole in the file.
-    SeekData,        // Seeks from the start of the next non-hole region in the file.
 };
 
 class IOFile final {

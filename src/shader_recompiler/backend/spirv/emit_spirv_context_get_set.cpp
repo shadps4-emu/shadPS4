@@ -529,7 +529,7 @@ void EmitStoreBufferBoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto
         // Bounds checking enabled, wrap in a conditional branch.
         auto compare_index = index;
         if (N > 1) {
-            index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(N - 1));
+            compare_index = ctx.OpIAdd(ctx.U32[1], index, ctx.ConstU32(N - 1));
         }
         const Id in_bounds = ctx.OpULessThan(ctx.U1[1], compare_index, buffer_size);
         const Id in_bounds_label = ctx.OpLabel();

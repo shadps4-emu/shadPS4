@@ -321,6 +321,10 @@ public:
                                         const Value& value, TextureInstInfo info);
     [[nodiscard]] Value ImageAtomicUMax(const Value& handle, const Value& coords,
                                         const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicFMax(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicFMin(const Value& handle, const Value& coords,
+                                        const Value& value, TextureInstInfo info);
     [[nodiscard]] Value ImageAtomicIMax(const Value& handle, const Value& coords,
                                         const Value& value, bool is_signed, TextureInstInfo info);
     [[nodiscard]] Value ImageAtomicInc(const Value& handle, const Value& coords, const Value& value,

@@ -70,11 +70,12 @@ public:
         auto desc = VideoCore::TextureCache::VideoOutDesc{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(desc);
         texture_cache.UpdateImage(image_id, is_eop ? nullptr : &flip_scheduler);
-        return PrepareFrameInternal(image_id, is_eop);
+        return PrepareFrameInternal(image_id, attribute.attrib.pixel_format, is_eop);
     }
 
     Frame* PrepareBlankFrame(bool is_eop) {
-        return PrepareFrameInternal(VideoCore::NULL_IMAGE_ID, is_eop);
+        return PrepareFrameInternal(VideoCore::NULL_IMAGE_ID,
+                                    Libraries::VideoOut::PixelFormat::Unknown, is_eop);
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
@@ -119,7 +120,8 @@ public:
     }
 
 private:
-    Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
+    Frame* PrepareFrameInternal(VideoCore::ImageId image_id,
+                                Libraries::VideoOut::PixelFormat format, bool is_eop = true);
     Frame* GetRenderFrame();
 
     void SetExpectedGameSize(s32 width, s32 height);

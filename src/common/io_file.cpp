@@ -131,9 +131,7 @@ namespace {
     case SeekOrigin::End:
         return SEEK_END;
     default:
-        LOG_ERROR(Common_Filesystem, "Unsupported origin {}, defaulting to SEEK_SET",
-                  static_cast<u32>(origin));
-        return SEEK_SET;
+        UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
     }
 }
 

@@ -270,7 +270,25 @@ Frame* Presenter::PrepareLastFrame() {
     return frame;
 }
 
-Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop) {
+static vk::Format GetFrameViewFormat(const Libraries::VideoOut::PixelFormat format) {
+    switch (format) {
+    case Libraries::VideoOut::PixelFormat::A8B8G8R8Srgb:
+        return vk::Format::eR8G8B8A8Srgb;
+    case Libraries::VideoOut::PixelFormat::A8R8G8B8Srgb:
+        return vk::Format::eB8G8R8A8Srgb;
+    case Libraries::VideoOut::PixelFormat::A2R10G10B10:
+    case Libraries::VideoOut::PixelFormat::A2R10G10B10Srgb:
+    case Libraries::VideoOut::PixelFormat::A2R10G10B10Bt2020Pq:
+        return vk::Format::eA2R10G10B10UnormPack32;
+    default:
+        break;
+    }
+    UNREACHABLE_MSG("Unknown format={}", static_cast<u32>(format));
+    return {};
+}
+
+Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id,
+                                       const Libraries::VideoOut::PixelFormat format, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
@@ -324,7 +342,7 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop)
                       cmdbuf);
 
         VideoCore::ImageViewInfo info{};
-        info.format = image.info.pixel_format;
+        info.format = GetFrameViewFormat(format);
         // Exclude alpha from output frame to avoid blending with UI.
         info.mapping = vk::ComponentMapping{
             .r = vk::ComponentSwizzle::eIdentity,

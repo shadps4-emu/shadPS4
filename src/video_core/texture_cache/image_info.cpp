@@ -16,14 +16,15 @@ using VideoOutFormat = Libraries::VideoOut::PixelFormat;
 
 static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     switch (format) {
-    case VideoOutFormat::A8R8G8B8Srgb:
-        return vk::Format::eB8G8R8A8Srgb;
     case VideoOutFormat::A8B8G8R8Srgb:
+    // Remaining formats are mapped to RGBA for internal consistency and changed to BGRA in the
+    // frame image view.
+    case VideoOutFormat::A8R8G8B8Srgb:
         return vk::Format::eR8G8B8A8Srgb;
     case VideoOutFormat::A2R10G10B10:
     case VideoOutFormat::A2R10G10B10Srgb:
     case VideoOutFormat::A2R10G10B10Bt2020Pq:
-        return vk::Format::eA2R10G10B10UnormPack32;
+        return vk::Format::eA2B10G10R10UnormPack32;
     default:
         break;
     }

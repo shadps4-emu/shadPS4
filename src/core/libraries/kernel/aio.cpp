@@ -19,7 +19,7 @@ namespace Libraries::Kernel {
 static s32* id_state;
 static s32 id_index;
 
-s32 sceKernelAioInitializeImpl(void* p, s32 size) {
+s32 PS4_SYSV_ABI sceKernelAioInitializeImpl(void* p, s32 size) {
 
     return 0;
 }

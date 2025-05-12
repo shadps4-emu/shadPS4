@@ -300,7 +300,8 @@ public:
     ~SaveDialogUi() override;
     SaveDialogUi(const SaveDialogUi& other) = delete;
     SaveDialogUi(SaveDialogUi&& other) noexcept;
-    SaveDialogUi& operator=(SaveDialogUi other);
+    SaveDialogUi& operator=(SaveDialogUi& other) = delete;
+    SaveDialogUi& operator=(SaveDialogUi&& other) noexcept;
 
     void Finish(ButtonId buttonId, CommonDialog::Result r = CommonDialog::Result::OK);
 

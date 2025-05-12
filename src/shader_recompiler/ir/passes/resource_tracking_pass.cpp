@@ -101,6 +101,8 @@ bool IsImageAtomicInstruction(const IR::Inst& inst) {
     case IR::Opcode::ImageAtomicUMin32:
     case IR::Opcode::ImageAtomicSMax32:
     case IR::Opcode::ImageAtomicUMax32:
+    case IR::Opcode::ImageAtomicFMax32:
+    case IR::Opcode::ImageAtomicFMin32:
     case IR::Opcode::ImageAtomicInc32:
     case IR::Opcode::ImageAtomicDec32:
     case IR::Opcode::ImageAtomicAnd32:
@@ -360,6 +362,12 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
         image = AmdGpu::Image::Null();
+    }
+    const auto data_fmt = image.GetDataFmt();
+    if (inst_info.is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
+        data_fmt != AmdGpu::DataFormat::Format32) {
+        LOG_ERROR(Render_Vulkan, "Shader compiled using non-depth image with depth instruction!");
+        image = AmdGpu::Image::NullDepth();
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;

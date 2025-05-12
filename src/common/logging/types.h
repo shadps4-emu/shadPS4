@@ -104,6 +104,8 @@ enum class Class : u8 {
     Lib_NpParty,           ///< The LibSceNpParty implementation
     Lib_Zlib,              ///< The LibSceZlib implementation.
     Lib_Hmd,               ///< The LibSceHmd implementation.
+    Lib_SigninDialog,      ///< The LibSigninDialog implementation.
+    Lib_Camera,            ///< The LibCamera implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend
