@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vector>
 #include <QCompleter>
 #include <QDirIterator>
 #include <QFileDialog>
@@ -25,6 +26,7 @@
 #include "common/logging/filter.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
+#include "video_core/renderer_vulkan/vk_instance.h"
 QStringList languageNames = {"Arabic",
                              "Czech",
                              "Danish",
@@ -67,8 +69,9 @@ QMap<QString, QString> chooseHomeTabMap;
 int backgroundImageOpacitySlider_backup;
 int bgm_volume_backup;
 
-SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
-                               std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+static std::vector<QString> m_physical_devices;
+
+SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                                QWidget* parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
     ui->setupUi(this);
@@ -89,9 +92,23 @@ SettingsDialog::SettingsDialog(std::span<const QString> physical_devices,
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
                         {tr("Debug"), "Debug"}};
 
+    if (m_physical_devices.empty()) {
+        // Populate cache of physical devices.
+        Vulkan::Instance instance(false, false);
+        auto physical_devices = instance.GetPhysicalDevices();
+        for (const vk::PhysicalDevice physical_device : physical_devices) {
+            auto prop = physical_device.getProperties();
+            QString name = QString::fromUtf8(prop.deviceName, -1);
+            if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
+                name += tr(" * Unsupported Vulkan Version");
+            }
+            m_physical_devices.push_back(name);
+        }
+    }
+
     // Add list of available GPUs
     ui->graphicsAdapterBox->addItem(tr("Auto Select")); // -1, auto selection
-    for (const auto& device : physical_devices) {
+    for (const auto& device : m_physical_devices) {
         ui->graphicsAdapterBox->addItem(device);
     }
 
