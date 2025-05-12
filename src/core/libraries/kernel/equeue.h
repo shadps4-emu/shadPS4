@@ -155,9 +155,9 @@ public:
     bool EventExists(u64 id, s16 filter);
 
 private:
+    std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
-    std::string m_name;
     EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };
