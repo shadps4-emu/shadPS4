@@ -481,6 +481,59 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) 
     return memory->PoolDecommit(pool_addr, len);
 }
 
+s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
+                                          s32* num_processed, s32 flags) {
+    if (entries == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    s32 result = ORBIS_OK;
+    s32 processed = 0;
+
+    for (s32 i = 0; i < count; i++, processed++) {
+        OrbisKernelMemoryPoolBatchEntry entry = entries[i];
+        switch (entry.opcode) {
+        case OrbisKernelMemoryPoolOpcode::Commit: {
+            result = sceKernelMemoryPoolCommit(entry.commit_params.addr, entry.commit_params.len,
+                                               entry.commit_params.type, entry.commit_params.prot,
+                                               entry.flags);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Decommit: {
+            result = sceKernelMemoryPoolDecommit(entry.decommit_params.addr,
+                                                 entry.decommit_params.len, entry.flags);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Protect: {
+            result = sceKernelMProtect(entry.protect_params.addr, entry.protect_params.len,
+                                       entry.protect_params.prot);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::TypeProtect: {
+            result = sceKernelMTypeProtect(
+                entry.type_protect_params.addr, entry.type_protect_params.len,
+                entry.type_protect_params.type, entry.type_protect_params.prot);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Move: {
+            UNREACHABLE_MSG("Unimplemented sceKernelMemoryPoolBatch opcode Move");
+        }
+        default: {
+            result = ORBIS_KERNEL_ERROR_EINVAL;
+            break;
+        }
+        }
+
+        if (result != ORBIS_OK) {
+            break;
+        }
+    }
+
+    if (num_processed != nullptr) {
+        *num_processed = processed;
+    }
+    return result;
+}
+
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
                                void** res) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",
@@ -612,6 +665,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pU-QydtGcGY", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolReserve);
     LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolCommit);
     LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolDecommit);
+    LIB_FUNCTION("YN878uKRBbE", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolBatch);
 
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
