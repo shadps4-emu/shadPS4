@@ -337,6 +337,7 @@ bool Instance::CreateDevice() {
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .tessellationShader = features.tessellationShader,
+                .dualSrcBlend = features.dualSrcBlend,
                 .logicOp = features.logicOp,
                 .multiDrawIndirect = features.multiDrawIndirect,
                 .depthBiasClamp = features.depthBiasClamp,
