@@ -3,9 +3,8 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/types.h"
-
-void* memset(void* ptr, int value, size_t num);
 
 namespace Xbyak {
 class CodeGenerator;
