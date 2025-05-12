@@ -864,6 +864,11 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
             }
             break;
         }
+        case PM4ItOpcode::SetQueueReg: {
+            const auto* set_data = reinterpret_cast<const PM4CmdSetQueueReg*>(header);
+            UNREACHABLE_MSG("Encountered compute SetQueueReg: vqid = {}, reg_offset = {:#x}",
+                            set_data->vqid.Value(), set_data->reg_offset.Value());
+        }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
             auto& cs_program = GetCsRegs();
