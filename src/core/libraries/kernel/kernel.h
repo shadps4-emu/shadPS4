@@ -3,9 +3,6 @@
 
 #pragma once
 
-#include <algorithm>
-#include <fmt/core.h>
-#include "common/string_literal.h"
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
 
@@ -20,26 +17,21 @@ int ErrnoToSceKernelError(int e);
 void SetPosixErrno(int e);
 int* PS4_SYSV_ABI __Error();
 
-template <StringLiteral name, class F, F f>
-struct WrapperImpl;
+template <class F, F f>
+struct OrbisWrapperImpl;
 
-template <StringLiteral name, class R, class... Args, PS4_SYSV_ABI R (*f)(Args...)>
-struct WrapperImpl<name, PS4_SYSV_ABI R (*)(Args...), f> {
-    static constexpr StringLiteral Name{name};
+template <class R, class... Args, PS4_SYSV_ABI R (*f)(Args...)>
+struct OrbisWrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
     static R PS4_SYSV_ABI wrap(Args... args) {
         u32 ret = f(args...);
         if (ret != 0) {
-            // LOG_ERROR(Lib_Kernel, "Function {} returned {}", std::string_view{name.value}, ret);
             ret += ORBIS_KERNEL_ERROR_UNKNOWN;
         }
         return ret;
     }
 };
 
-template <StringLiteral name, class F, F f>
-constexpr auto OrbisWrapper = WrapperImpl<name, F, f>::wrap;
-
-#define ORBIS(func) WrapperImpl<#func, decltype(&func), func>::wrap
+#define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<decltype(&(func)), func>::wrap)
 
 int* PS4_SYSV_ABI __Error();
 
