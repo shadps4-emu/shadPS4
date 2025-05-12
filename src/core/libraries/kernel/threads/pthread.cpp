@@ -581,12 +581,9 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
     return thread->SetAffinity(cpusetp);
 }
 
-int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const Cpuset mask) {
-    int result = posix_pthread_setaffinity_np(thread, 0x10, &mask);
-    if (result != 0) {
-        return ErrnoToSceKernelError(result);
-    }
-    return 0;
+int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
+    const Cpuset cpuset = {.bits = mask};
+    return posix_pthread_setaffinity_np(thread, sizeof(Cpuset), &cpuset);
 }
 
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
@@ -635,7 +632,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_setprio));
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
-    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, scePthreadSetaffinity)
+    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadSetaffinity));
 }
 
 } // namespace Libraries::Kernel

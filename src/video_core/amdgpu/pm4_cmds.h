@@ -211,6 +211,21 @@ struct PM4CmdSetData {
     }
 };
 
+struct PM4CmdSetQueueReg {
+    PM4Type3Header header;
+    union {
+        u32 raw;
+        BitField<0, 8, u32> reg_offset;  ///< Offset in DWords from the register base address
+        BitField<15, 1, u32> defer_exec; ///< Defer execution
+        BitField<16, 10, u32> vqid;      ///< Queue ID
+    };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
+};
+
 struct PM4CmdNop {
     PM4Type3Header header;
     u32 data_block[0];

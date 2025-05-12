@@ -61,13 +61,15 @@ struct OrbisVirtualQueryInfo {
     size_t offset;
     s32 protection;
     s32 memory_type;
-    u32 is_flexible : 1;
-    u32 is_direct : 1;
-    u32 is_stack : 1;
-    u32 is_pooled : 1;
-    u32 is_committed : 1;
+    u8 is_flexible : 1;
+    u8 is_direct : 1;
+    u8 is_stack : 1;
+    u8 is_pooled : 1;
+    u8 is_committed : 1;
     char name[ORBIS_KERNEL_MAXIMUM_NAME_LENGTH];
 };
+static_assert(sizeof(OrbisVirtualQueryInfo) == 72,
+              "OrbisVirtualQueryInfo struct size is incorrect");
 
 struct OrbisKernelBatchMapEntry {
     void* start;
@@ -77,6 +79,48 @@ struct OrbisKernelBatchMapEntry {
     char type;
     short reserved;
     int operation;
+};
+
+enum class OrbisKernelMemoryPoolOpcode : u32 {
+    Commit = 1,
+    Decommit = 2,
+    Protect = 3,
+    TypeProtect = 4,
+    Move = 5,
+};
+
+struct OrbisKernelMemoryPoolBatchEntry {
+    OrbisKernelMemoryPoolOpcode opcode;
+    u32 flags;
+    union {
+        struct {
+            void* addr;
+            u64 len;
+            u8 prot;
+            u8 type;
+        } commit_params;
+        struct {
+            void* addr;
+            u64 len;
+        } decommit_params;
+        struct {
+            void* addr;
+            u64 len;
+            u8 prot;
+        } protect_params;
+        struct {
+            void* addr;
+            u64 len;
+            u8 prot;
+            u8 type;
+        } type_protect_params;
+        struct {
+            void* dest_addr;
+            void* src_addr;
+            u64 len;
+        } move_params;
+        uintptr_t padding[3];
+    };
 };
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
@@ -128,6 +172,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
                                             void** addrOut);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
+                                          s32* num_processed, s32 flags);
 
 int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
 

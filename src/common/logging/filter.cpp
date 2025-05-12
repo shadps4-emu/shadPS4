@@ -140,6 +140,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, Font)                                                                                 \
     SUB(Lib, FontFt)                                                                               \
     SUB(Lib, SigninDialog)                                                                         \
+    SUB(Lib, Camera)                                                                               \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

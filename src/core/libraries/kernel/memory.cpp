@@ -383,13 +383,12 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    const bool is_in_range = searchEnd - searchStart >= len;
-    if (len <= 0 || !Common::Is64KBAligned(len) || !is_in_range) {
-        LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
+    if (len <= 0 || !Common::Is64KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Provided length {:#x} is invalid!", len);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0 && !Common::Is64KBAligned(alignment)) {
-        LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+        LOG_ERROR(Kernel_Vmm, "Alignment {:#x} is invalid!", alignment);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (physAddrOut == nullptr) {
@@ -397,8 +396,21 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const bool is_in_range = searchEnd - searchStart >= len;
+    if (searchEnd <= searchStart || searchEnd < len || !is_in_range) {
+        LOG_ERROR(Kernel_Vmm,
+                  "Provided address range is too small!"
+                  " searchStart = {:#x}, searchEnd = {:#x}, length = {:#x}",
+                  searchStart, searchEnd, len);
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->PoolExpand(searchStart, searchEnd, len, alignment);
+    if (phys_addr == -1) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
     *physAddrOut = static_cast<s64>(phys_addr);
 
     LOG_INFO(Kernel_Vmm,
@@ -413,10 +425,6 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
     LOG_INFO(Kernel_Vmm, "addrIn = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
              fmt::ptr(addrIn), len, alignment, flags);
 
-    if (addrIn == nullptr) {
-        LOG_ERROR(Kernel_Vmm, "Address is invalid!");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
     if (len == 0 || !Common::Is2MBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -469,9 +477,61 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) 
 
     const VAddr pool_addr = reinterpret_cast<VAddr>(addr);
     auto* memory = Core::Memory::Instance();
-    memory->PoolDecommit(pool_addr, len);
 
-    return ORBIS_OK;
+    return memory->PoolDecommit(pool_addr, len);
+}
+
+s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
+                                          s32* num_processed, s32 flags) {
+    if (entries == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    s32 result = ORBIS_OK;
+    s32 processed = 0;
+
+    for (s32 i = 0; i < count; i++, processed++) {
+        OrbisKernelMemoryPoolBatchEntry entry = entries[i];
+        switch (entry.opcode) {
+        case OrbisKernelMemoryPoolOpcode::Commit: {
+            result = sceKernelMemoryPoolCommit(entry.commit_params.addr, entry.commit_params.len,
+                                               entry.commit_params.type, entry.commit_params.prot,
+                                               entry.flags);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Decommit: {
+            result = sceKernelMemoryPoolDecommit(entry.decommit_params.addr,
+                                                 entry.decommit_params.len, entry.flags);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Protect: {
+            result = sceKernelMProtect(entry.protect_params.addr, entry.protect_params.len,
+                                       entry.protect_params.prot);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::TypeProtect: {
+            result = sceKernelMTypeProtect(
+                entry.type_protect_params.addr, entry.type_protect_params.len,
+                entry.type_protect_params.type, entry.type_protect_params.prot);
+            break;
+        }
+        case OrbisKernelMemoryPoolOpcode::Move: {
+            UNREACHABLE_MSG("Unimplemented sceKernelMemoryPoolBatch opcode Move");
+        }
+        default: {
+            result = ORBIS_KERNEL_ERROR_EINVAL;
+            break;
+        }
+        }
+
+        if (result != ORBIS_OK) {
+            break;
+        }
+    }
+
+    if (num_processed != nullptr) {
+        *num_processed = processed;
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
@@ -605,6 +665,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pU-QydtGcGY", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolReserve);
     LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolCommit);
     LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolDecommit);
+    LIB_FUNCTION("YN878uKRBbE", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolBatch);
 
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);

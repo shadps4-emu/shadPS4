@@ -107,6 +107,7 @@ enum class Class : u8 {
     Lib_SigninDialog,      ///< The LibSigninDialog implementation.
     Lib_Font,              ///< The libSceFont implementation.
     Lib_FontFt,            ///< The libSceFontFt implementation.
+    Lib_Camera,            ///< The LibCamera implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend
