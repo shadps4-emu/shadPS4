@@ -383,12 +383,13 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
             vma = FindVMA(unmap_addr)->second;
         }
 
-        // This should return SCE_KERNEL_ERROR_ENOMEM but rarely happens.
         vma = FindVMA(mapped_addr)->second;
         remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
+        if (vma.IsMapped() || remaining_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Not enough memory to map {:#x} bytes at address {:#x}", size,
+                      mapped_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Find the first free area starting with provided virtual address.
