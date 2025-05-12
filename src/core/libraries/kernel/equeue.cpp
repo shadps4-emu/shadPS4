@@ -324,9 +324,10 @@ static void TimerCallback(const boost::system::error_code& error, SceKernelEqueu
             auto timer = std::make_shared<boost::asio::steady_timer>(
                 io_context, std::chrono::milliseconds(interval_ms));
 
-            timer->async_wait([eq, kevent, interval_ms, timer](const boost::system::error_code& ec) {
-                TimerCallback(ec, eq, kevent, interval_ms);
-            });
+            timer->async_wait(
+                [eq, kevent, interval_ms, timer](const boost::system::error_code& ec) {
+                    TimerCallback(ec, eq, kevent, interval_ms);
+                });
         }
     }
 }
@@ -348,9 +349,8 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
     event.event.udata = udata;
     event.time_added = std::chrono::steady_clock::now();
     LOG_DEBUG(Kernel_Event,
-             "Added timing event: queue name={}, queue id={}, ms-intevall={}, pointer={:x}",
-             eq->GetName(), event.event.ident, interval_ms,
-             reinterpret_cast<uintptr_t>(udata));
+              "Added timing event: queue name={}, queue id={}, ms-intevall={}, pointer={:x}",
+              eq->GetName(), event.event.ident, interval_ms, reinterpret_cast<uintptr_t>(udata));
 
     auto timer = std::make_shared<boost::asio::steady_timer>(
         io_context, std::chrono::milliseconds(interval_ms));
