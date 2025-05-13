@@ -474,7 +474,12 @@ struct PM4CmdWaitRegMem {
         BitField<8, 1, Engine> engine;
         u32 raw;
     };
-    u32 poll_addr_lo;
+    union {
+        BitField<0, 16, u32> reg;
+        BitField<2, 30, u32> poll_addr_lo;
+        BitField<0, 2, u32> swap;
+        u32 poll_addr_lo_raw;
+    };
     u32 poll_addr_hi;
     u32 ref;
     u32 mask;
@@ -485,28 +490,33 @@ struct PM4CmdWaitRegMem {
         return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
     }
 
-    bool Test() const {
+    u32 Reg() const {
+        return reg.Value();
+    }
+
+    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+        u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
             return true;
         }
         case Function::LessThan: {
-            return (*Address() & mask) < ref;
+            return (value & mask) < ref;
         }
         case Function::LessThanEqual: {
-            return (*Address() & mask) <= ref;
+            return (value & mask) <= ref;
         }
         case Function::Equal: {
-            return (*Address() & mask) == ref;
+            return (value & mask) == ref;
         }
         case Function::NotEqual: {
-            return (*Address() & mask) != ref;
+            return (value & mask) != ref;
         }
         case Function::GreaterThanEqual: {
-            return (*Address() & mask) >= ref;
+            return (value & mask) >= ref;
         }
         case Function::GreaterThan: {
-            return (*Address() & mask) > ref;
+            return (value & mask) > ref;
         }
         case Function::Reserved:
             [[fallthrough]];
