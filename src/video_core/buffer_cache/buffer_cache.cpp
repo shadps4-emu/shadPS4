@@ -981,7 +981,15 @@ void BufferCache::InlineDataBuffer(Buffer& buffer, VAddr address, const void* va
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &pre_barrier,
     });
-    cmdbuf.updateBuffer(buffer.Handle(), buffer.Offset(address), num_bytes, value);
+    // vkCmdUpdateBuffer can only copy up to 65536 bytes at a time.
+    static constexpr u32 UpdateBufferMaxSize = 65536;
+    const auto dst_offset = buffer.Offset(address);
+    for (u32 offset = 0; offset < num_bytes; offset += UpdateBufferMaxSize) {
+        const auto* update_src = static_cast<const u8*>(value) + offset;
+        const auto update_dst = dst_offset + offset;
+        const auto update_size = std::min(num_bytes - offset, UpdateBufferMaxSize);
+        cmdbuf.updateBuffer(buffer.Handle(), update_dst, update_size, update_src);
+    }
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,

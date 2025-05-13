@@ -262,6 +262,8 @@ bool Instance::CreateDevice() {
         robustness2_features = feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>();
         LOG_INFO(Render_Vulkan, "- robustBufferAccess2: {}",
                  robustness2_features.robustBufferAccess2);
+        LOG_INFO(Render_Vulkan, "- robustImageAccess2: {}",
+                 robustness2_features.robustImageAccess2);
         LOG_INFO(Render_Vulkan, "- nullDescriptor: {}", robustness2_features.nullDescriptor);
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
@@ -338,6 +340,7 @@ bool Instance::CreateDevice() {
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .tessellationShader = features.tessellationShader,
+                .dualSrcBlend = features.dualSrcBlend,
                 .logicOp = features.logicOp,
                 .multiDrawIndirect = features.multiDrawIndirect,
                 .depthBiasClamp = features.depthBiasClamp,
@@ -396,6 +399,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
             .robustBufferAccess2 = robustness2_features.robustBufferAccess2,
+            .robustImageAccess2 = robustness2_features.robustImageAccess2,
             .nullDescriptor = robustness2_features.nullDescriptor,
         },
         vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
