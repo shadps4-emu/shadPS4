@@ -3,19 +3,15 @@
 
 #pragma once
 
-#include <optional>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 
 namespace Common {
 
 namespace Detail {
 
-enum class RecursiveLockType {
-    None,
-    Shared,
-    Exclusive
-};
+enum class RecursiveLockType { None, Shared, Exclusive };
 
 bool IncrementRecursiveLock(void* mutex, RecursiveLockType type);
 bool DecrementRecursiveLock(void* mutex, RecursiveLockType type);
@@ -31,13 +27,14 @@ public:
             m_lock.emplace(m_mutex);
         }
     }
-    
+
     ~RecursiveScopedLock() {
         Detail::DecrementRecursiveLock(&m_mutex, Detail::RecursiveLockType::Exclusive);
         if (m_locked) {
             m_lock.reset();
         }
     }
+
 private:
     MutexType& m_mutex;
     std::optional<std::unique_lock<MutexType>> m_lock;
@@ -53,13 +50,14 @@ public:
             m_lock.emplace(m_mutex);
         }
     }
-    
+
     ~RecursiveSharedLock() {
         Detail::DecrementRecursiveLock(&m_mutex, Detail::RecursiveLockType::Shared);
         if (m_locked) {
             m_lock.reset();
         }
     }
+
 private:
     MutexType& m_mutex;
     std::optional<std::shared_lock<MutexType>> m_lock;

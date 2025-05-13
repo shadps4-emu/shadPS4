@@ -227,13 +227,13 @@ public:
         AddLabel(available_label);
         OpSelectionMerge(after_save_masked_label, spv::SelectionControlMask::MaskNone);
         OpBranchConditional(first_time, save_masked_label, after_save_masked_label);
-        
+
         // Save unmasked BDA
         AddLabel(save_masked_label);
         const Id masked_bda = OpBitwiseOr(U64, bda, bda_first_time_mask);
         OpStore(bda_ptr, masked_bda);
         OpBranch(after_save_masked_label);
-        
+
         // Load value
         AddLabel(after_save_masked_label);
         const Id unmasked_bda = OpBitwiseAnd(U64, bda, bda_first_time_inv_mask);

@@ -148,10 +148,11 @@ public:
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
-        buffer_ranges.ForEachInRange(device_addr, size, [&](u64 page_start, u64 page_end, BufferId id) {
-            Buffer& buffer = slot_buffers[id];
-            func(id, buffer);
-        });
+        buffer_ranges.ForEachInRange(device_addr, size,
+                                     [&](u64 page_start, u64 page_end, BufferId id) {
+                                         Buffer& buffer = slot_buffers[id];
+                                         func(id, buffer);
+                                     });
     }
 
     void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);

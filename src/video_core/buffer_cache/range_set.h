@@ -3,10 +3,10 @@
 
 #pragma once
 
+#include <boost/icl/discrete_interval.hpp>
 #include <boost/icl/interval_map.hpp>
 #include <boost/icl/split_interval_map.hpp>
 #include <boost/icl/split_interval_set.hpp>
-#include <boost/icl/discrete_interval.hpp>
 #include <boost/pool/pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/poolfwd.hpp>
@@ -221,11 +221,10 @@ private:
 template <typename T>
 class SplitRangeMap {
 public:
-    using IntervalMap =
-        boost::icl::split_interval_map<VAddr, T, boost::icl::total_absorber, std::less,
-                                       boost::icl::inplace_identity, boost::icl::inter_section,
-                                       ICL_INTERVAL_INSTANCE(ICL_INTERVAL_DEFAULT, VAddr, std::less),
-                                       RangeSetsAllocator>;
+    using IntervalMap = boost::icl::split_interval_map<
+        VAddr, T, boost::icl::total_absorber, std::less, boost::icl::inplace_identity,
+        boost::icl::inter_section, ICL_INTERVAL_INSTANCE(ICL_INTERVAL_DEFAULT, VAddr, std::less),
+        RangeSetsAllocator>;
     using IntervalType = typename IntervalMap::interval_type;
 
 public:

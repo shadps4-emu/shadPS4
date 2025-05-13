@@ -35,14 +35,12 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
       bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal,
                            0,        AllFlags,  BDA_PAGETABLE_SIZE},
-      fault_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags,
-                            FAULT_BUFFER_SIZE),
+      fault_buffer(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, FAULT_BUFFER_SIZE),
       memory_tracker{&tracker} {
     Vulkan::SetObjectName(instance.GetDevice(), gds_buffer.Handle(), "GDS Buffer");
     Vulkan::SetObjectName(instance.GetDevice(), bda_pagetable_buffer.Handle(),
                           "BDA Page Table Buffer");
-    Vulkan::SetObjectName(instance.GetDevice(), fault_buffer.Handle(),
-                          "Fault Buffer");
+    Vulkan::SetObjectName(instance.GetDevice(), fault_buffer.Handle(), "Fault Buffer");
 
     // Ensure the first slot is used for the null buffer
     const auto null_id =
@@ -75,13 +73,11 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     auto [desc_layout_result, desc_layout] =
         instance.GetDevice().createDescriptorSetLayoutUnique(desc_layout_ci);
     ASSERT_MSG(desc_layout_result == vk::Result::eSuccess,
-               "Failed to create descriptor set layout: {}",
-               vk::to_string(desc_layout_result));
+               "Failed to create descriptor set layout: {}", vk::to_string(desc_layout_result));
     fault_process_desc_layout = std::move(desc_layout);
-    
-    const auto& module = Vulkan::Compile(
-        HostShaders::FAULT_BUFFER_PROCESS_COMP, vk::ShaderStageFlagBits::eCompute,
-        instance.GetDevice());
+
+    const auto& module = Vulkan::Compile(HostShaders::FAULT_BUFFER_PROCESS_COMP,
+                                         vk::ShaderStageFlagBits::eCompute, instance.GetDevice());
     Vulkan::SetObjectName(instance.GetDevice(), module, "Fault Buffer Parser");
 
     const vk::SpecializationMapEntry specialization_map_entry = {
@@ -108,10 +104,8 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         .setLayoutCount = 1U,
         .pSetLayouts = &(*fault_process_desc_layout),
     };
-    auto [layout_result, layout] =
-        instance.GetDevice().createPipelineLayoutUnique(layout_info);
-    ASSERT_MSG(layout_result == vk::Result::eSuccess,
-               "Failed to create pipeline layout: {}",
+    auto [layout_result, layout] = instance.GetDevice().createPipelineLayoutUnique(layout_info);
+    ASSERT_MSG(layout_result == vk::Result::eSuccess, "Failed to create pipeline layout: {}",
                vk::to_string(layout_result));
     fault_process_pipeline_layout = std::move(layout);
 
@@ -121,11 +115,11 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     };
     auto [pipeline_result, pipeline] =
         instance.GetDevice().createComputePipelineUnique({}, pipeline_info);
-    ASSERT_MSG(pipeline_result == vk::Result::eSuccess,
-               "Failed to create compute pipeline: {}",
+    ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create compute pipeline: {}",
                vk::to_string(pipeline_result));
     fault_process_pipeline = std::move(pipeline);
-    Vulkan::SetObjectName(instance.GetDevice(), *fault_process_pipeline, "Fault Buffer Parser Pipeline");
+    Vulkan::SetObjectName(instance.GetDevice(), *fault_process_pipeline,
+                          "Fault Buffer Parser Pipeline");
 
     instance.GetDevice().destroyShaderModule(module);
 }
@@ -145,7 +139,8 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool unmap) {
         {
             std::scoped_lock lock(dma_sync_ranges_mutex);
             const VAddr aligned_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
-            const u64 aligned_size = Common::AlignUp(device_addr + size, CACHING_PAGESIZE) - aligned_addr;
+            const u64 aligned_size =
+                Common::AlignUp(device_addr + size, CACHING_PAGESIZE) - aligned_addr;
             dma_sync_ranges.Add(device_addr, size);
         }
     }
@@ -640,7 +635,8 @@ void BufferCache::ProcessFaultBuffer() {
         .pBufferMemoryBarriers = barriers.data(),
     });
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *fault_process_pipeline);
-    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0, writes);
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0,
+                                writes);
     constexpr u32 num_threads = CACHING_NUMPAGES / 32; // 1 bit per page, 32 pages per workgroup
     constexpr u32 num_workgroups = Common::DivCeil(num_threads, 64u);
     cmdbuf.dispatch(num_workgroups, 1, 1);
@@ -700,7 +696,7 @@ void BufferCache::ProcessFaultBuffer() {
             }
             // Buffer size is in 32 bits
             ASSERT_MSG((range.upper() - range.lower()) <= std::numeric_limits<u32>::max(),
-                    "Buffer size is too large");
+                       "Buffer size is too large");
             // Only create a buffer is the current range doesn't fit in an existing one
             FindBuffer(start, static_cast<u32>(end - start));
         }

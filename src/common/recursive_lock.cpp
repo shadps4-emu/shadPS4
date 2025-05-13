@@ -34,4 +34,4 @@ bool DecrementRecursiveLock(void* mutex, RecursiveLockType type) {
     return false;
 }
 
-} // namespace Common
+} // namespace Common::Detail
