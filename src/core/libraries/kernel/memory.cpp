@@ -290,6 +290,13 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
                                        directMemoryEndOut);
 }
 
+int PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
+    LOG_DEBUG(Kernel_Vmm, "called, addr = {:#x}, start = {:#x}, end = {:#x}", fmt::ptr(addr),
+              fmt::ptr(start), fmt::ptr(end));
+    auto* memory = Core::Memory::Instance();
+    return memory->IsStack(std::bit_cast<VAddr>(addr), start, end);
+}
+
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
                                    int* numEntriesOut) {
     return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
@@ -636,6 +643,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7oxv3PPCumo", "libkernel", 1, "libkernel", 1, 1, sceKernelReserveVirtualRange);
     LIB_FUNCTION("BC+OG5m9+bw", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemoryType);
     LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
+    LIB_FUNCTION("yDBwVAolDgg", "libkernel", 1, "libkernel", 1, 1, sceKernelIsStack);
     LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
     LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
