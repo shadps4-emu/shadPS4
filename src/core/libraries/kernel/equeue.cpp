@@ -364,16 +364,15 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
         io_context, std::chrono::milliseconds(interval_ms));
 
     KernelSignalRequest();
-    std::thread([]() { io_context.run(); }).detach();
+
+    if (!eq->AddEvent(event)) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
 
     timer->async_wait(
         [eq, event_data = event.event, interval_ms, timer](const boost::system::error_code& ec) {
             TimerCallback(ec, eq, event_data, interval_ms);
         });
-
-    if (!eq->AddEvent(event)) {
-        return ORBIS_KERNEL_ERROR_ENOMEM;
-    }
 
     return ORBIS_OK;
 }
