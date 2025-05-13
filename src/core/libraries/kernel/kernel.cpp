@@ -28,6 +28,8 @@
 
 #ifdef _WIN64
 #include <Rpc.h>
+#else
+#include <uuid/uuid.h>
 #endif
 #include <common/singleton.h>
 #include "aio.h"
@@ -164,7 +166,17 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
         orbisUuid->node[i] = uuid.Data4[2 + i];
     }
 #else
-    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux");
+    uuid_t uuid;
+    uuid_generate(uuid);
+    orbisUuid->timeLow =
+        ((u32)uuid[0] << 24) | ((u32)uuid[1] << 16) | ((u32)uuid[2] << 8) | (u32)uuid[3];
+    orbisUuid->timeMid = ((u16)uuid[4] << 8) | uuid[5];
+    orbisUuid->timeHiAndVersion = ((u16)uuid[6] << 8) | uuid[7];
+    orbisUuid->clockSeqHiAndReserved = uuid[8];
+    orbisUuid->clockSeqLow = uuid[9];
+    for (int i = 0; i < 6; i++) {
+        orbisUuid->node[i] = uuid[10 + i];
+    }
 #endif
     return 0;
 }
