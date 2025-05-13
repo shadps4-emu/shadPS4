@@ -246,6 +246,46 @@ struct PM4CmdNop {
     };
 };
 
+enum class SourceSelect : u32 {
+    BufferOffset = 0,
+    VgtStrmoutBufferFilledSize = 1,
+    SrcAddress = 2,
+    None = 3,
+};
+
+struct PM4CmdStrmoutBufferUpdate {
+    PM4Type3Header header;
+    union {
+        BitField<0, 1, u32> update_memory;
+        BitField<1, 2, SourceSelect> source_select;
+        BitField<8, 2, u32> buffer_select;
+        u32 control;
+    };
+    union {
+        BitField<2, 30, u32> dst_address_lo;
+        BitField<0, 2, u32> swap_dst;
+    };
+    u32 dst_address_hi;
+    union {
+        u32 buffer_offset;
+        BitField<2, 30, u32> src_address_lo;
+        BitField<0, 2, u32> swap_src;
+    };
+    u32 src_address_hi;
+
+    template <typename T = u64>
+    T DstAddress() const {
+        ASSERT(update_memory.Value() == 1);
+        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+    }
+
+    template <typename T = u64>
+    T SrcAddress() const {
+        ASSERT(source_select.Value() == SourceSelect::SrcAddress);
+        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+    }
+};
+
 struct PM4CmdDrawIndexOffset2 {
     PM4Type3Header header;
     u32 max_size;       ///< Maximum number of indices
@@ -302,6 +342,80 @@ static u64 GetGpuClock64() {
     auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
     return static_cast<u64>(ticks);
 }
+
+// VGT_EVENT_INITIATOR.EVENT_TYPE
+enum class EventType : u32 {
+    SampleStreamoutStats1 = 1,
+    SampleStreamoutStats2 = 2,
+    SampleStreamoutStats3 = 3,
+    CacheFlushTs = 4,
+    ContextDone = 5,
+    CacheFlush = 6,
+    CsPartialFlush = 7,
+    VgtStreamoutSync = 8,
+    VgtStreamoutReset = 10,
+    EndOfPipeIncrDe = 11,
+    EndOfPipeIbEnd = 12,
+    RstPixCnt = 13,
+    VsPartialFlush = 15,
+    PsPartialFlush = 16,
+    FlushHsOutput = 17,
+    FlushLsOutput = 18,
+    CacheFlushAndInvTsEvent = 20,
+    ZpassDone = 21,
+    CacheFlushAndInvEvent = 22,
+    PerfcounterStart = 23,
+    PerfcounterStop = 24,
+    PipelineStatStart = 25,
+    PipelineStatStop = 26,
+    PerfcounterSample = 27,
+    FlushEsOutput = 28,
+    FlushGsOutput = 29,
+    SamplePipelineStat = 30,
+    SoVgtStreamoutFlush = 31,
+    SampleStreamoutStats = 32,
+    ResetVtxCnt = 33,
+    VgtFlush = 36,
+    ScSendDbVpz = 39,
+    BottomOfPipeTs = 40,
+    DbCacheFlushAndInv = 42,
+    FlushAndInvDbDataTs = 43,
+    FlushAndInvDbMeta = 44,
+    FlushAndInvCbDataTs = 45,
+    FlushAndInvCbMeta = 46,
+    CsDone = 47,
+    PsDone = 48,
+    FlushAndInvCbPixelData = 49,
+    ThreadTraceStart = 51,
+    ThreadTraceStop = 52,
+    ThreadTraceFlush = 54,
+    ThreadTraceFinish = 55,
+    PixelPipeStatControl = 56,
+    PixelPipeStatDump = 57,
+    PixelPipeStatReset = 58,
+};
+
+enum class EventIndex : u32 {
+    Other = 0,
+    ZpassDone = 1,
+    SamplePipelineStat = 2,
+    SampleStreamoutStatSx = 3,
+    CsVsPsPartialFlush = 4,
+    EopReserved = 5,
+    EosReserved = 6,
+    CacheFlush = 7,
+};
+
+struct PM4CmdEventWrite {
+    PM4Type3Header header;
+    union {
+        u32 event_control;
+        BitField<0, 6, EventType> event_type;   ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, EventIndex> event_index; ///< Event index
+        BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
+    };
+    u32 address[];
+};
 
 struct PM4CmdEventWriteEop {
     PM4Type3Header header;
