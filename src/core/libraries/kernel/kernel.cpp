@@ -168,10 +168,8 @@ int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 #else
     uuid_t uuid;
     uuid_generate(uuid);
-    orbisUuid->timeLow = ((u32)uuid[0] << 24) |
-                         ((u32)uuid[1] << 16) |
-                         ((u32)uuid[2] << 8) |
-                         (u32)uuid[3];
+    orbisUuid->timeLow =
+        ((u32)uuid[0] << 24) | ((u32)uuid[1] << 16) | ((u32)uuid[2] << 8) | (u32)uuid[3];
     orbisUuid->timeMid = ((u16)uuid[4] << 8) | uuid[5];
     orbisUuid->timeHiAndVersion = ((u16)uuid[6] << 8) | uuid[7];
     orbisUuid->clockSeqHiAndReserved = uuid[8];
