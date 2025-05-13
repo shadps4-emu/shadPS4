@@ -152,6 +152,16 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
     return count;
 }
 
+bool EqueueInternal::EventExists(u64 id, s16 filter) {
+    std::scoped_lock lock{m_mutex};
+
+    const auto& it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
+        return ev.event.ident == id && ev.event.filter == filter;
+    });
+
+    return it != m_events.cend();
+}
+
 extern boost::asio::io_context io_context;
 extern void KernelSignalRequest();
 
@@ -300,6 +310,82 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
     }
 }
 
+static void TimerCallback(const boost::system::error_code& error, SceKernelEqueue eq,
+                          SceKernelEvent kevent, SceKernelUseconds interval_ms) {
+    if (error) {
+        LOG_ERROR(Kernel_Event, "Timer callback error: {}", error.message());
+        return;
+    }
+
+    if (eq->EventExists(kevent.ident, kevent.filter)) {
+        eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::Timer, kevent.udata);
+
+        if (!(kevent.flags & SceKernelEvent::Flags::OneShot)) {
+            auto timer = std::make_shared<boost::asio::steady_timer>(
+                io_context, std::chrono::milliseconds(interval_ms));
+
+            timer->async_wait(
+                [eq, kevent, interval_ms, timer](const boost::system::error_code& ec) {
+                    TimerCallback(ec, eq, kevent, interval_ms);
+                });
+        }
+    }
+}
+
+int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUseconds usec,
+                                        void* udata) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    const u64 interval_ms = static_cast<u64>(usec & 0xFFFFFFFF) / 1000;
+
+    EqueueEvent event{};
+    event.event.ident = static_cast<u64>(id);
+    event.event.filter = SceKernelEvent::Filter::Timer;
+    event.event.flags = SceKernelEvent::Flags::Add;
+    event.event.fflags = 0;
+    event.event.data = interval_ms;
+    event.event.udata = udata;
+    event.time_added = std::chrono::steady_clock::now();
+
+    if (eq->EventExists(event.event.ident, event.event.filter)) {
+        eq->RemoveEvent(id, SceKernelEvent::Filter::Timer);
+        LOG_DEBUG(Kernel_Event,
+                  "Timer event already exists, removing it: queue name={}, queue id={}",
+                  eq->GetName(), event.event.ident);
+    }
+
+    LOG_DEBUG(Kernel_Event,
+              "Added timing event: queue name={}, queue id={}, ms-intevall={}, pointer={:x}",
+              eq->GetName(), event.event.ident, interval_ms, reinterpret_cast<uintptr_t>(udata));
+
+    auto timer = std::make_shared<boost::asio::steady_timer>(
+        io_context, std::chrono::milliseconds(interval_ms));
+
+    if (!eq->AddEvent(event)) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
+    timer->async_wait(
+        [eq, event_data = event.event, interval_ms, timer](const boost::system::error_code& ec) {
+            TimerCallback(ec, eq, event_data, interval_ms);
+        });
+
+    KernelSignalRequest();
+
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteTimerEvent(SceKernelEqueue eq, int id) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    return eq->RemoveEvent(id, SceKernelEvent::Filter::Timer) ? ORBIS_OK
+                                                              : ORBIS_KERNEL_ERROR_ENOENT;
+}
+
 int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -380,6 +466,8 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEventEdge);
     LIB_FUNCTION("R74tt43xP6k", "libkernel", 1, "libkernel", 1, 1, sceKernelAddHRTimerEvent);
     LIB_FUNCTION("J+LF6LwObXU", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteHRTimerEvent);
+    LIB_FUNCTION("57ZK+ODEXWY", "libkernel", 1, "libkernel", 1, 1, sceKernelAddTimerEvent);
+    LIB_FUNCTION("YWQFUyXIVdU", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteTimerEvent);
     LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", 1, 1, sceKernelTriggerUserEvent);
     LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteUserEvent);
     LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventId);

@@ -152,6 +152,8 @@ public:
 
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
+    bool EventExists(u64 id, s16 filter);
+
 private:
     std::string m_name;
     std::mutex m_mutex;
