@@ -12,12 +12,25 @@
 
 namespace Libraries::Kernel {
 
+extern boost::asio::io_context io_context;
+extern void KernelSignalRequest();
+
+static constexpr auto HrTimerSpinlockThresholdUs = 1200u;
+
 // Events are uniquely identified by id and filter.
 
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
     event.time_added = std::chrono::steady_clock::now();
+    if (event.event.filter == SceKernelEvent::Filter::Timer ||
+        event.event.filter == SceKernelEvent::Filter::HrTimer) {
+        // HrTimer events are offset by the threshold of time at the end that we spinlock for
+        // greater accuracy.
+        const auto offset =
+            event.event.filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
+        event.timer_interval = std::chrono::microseconds(event.event.data - offset);
+    }
 
     const auto& it = std::ranges::find(m_events, event);
     if (it != m_events.cend()) {
@@ -25,6 +38,47 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
     } else {
         m_events.emplace_back(std::move(event));
     }
+
+    return true;
+}
+
+bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
+                                   void (*callback)(SceKernelEqueue, const SceKernelEvent&)) {
+    std::scoped_lock lock{m_mutex};
+
+    const auto& it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
+        return ev.event.ident == id && ev.event.filter == filter;
+    });
+    if (it == m_events.cend()) {
+        return false;
+    }
+
+    const auto& event = *it;
+    ASSERT(event.event.filter == SceKernelEvent::Filter::Timer ||
+           event.event.filter == SceKernelEvent::Filter::HrTimer);
+
+    if (!it->timer) {
+        it->timer = std::make_unique<boost::asio::steady_timer>(io_context, event.timer_interval);
+    } else {
+        // If the timer already exists we are scheduling a reoccurrence after the next period.
+        // Set the expiration time to the previous occurrence plus the period.
+        it->timer->expires_at(it->timer->expires_at() + event.timer_interval);
+    }
+
+    it->timer->async_wait(
+        [this, event_data = event.event, callback](const boost::system::error_code& ec) {
+            if (ec) {
+                if (ec.value() != boost::system::errc::operation_canceled) {
+                    LOG_ERROR(Kernel_Event, "Timer callback error: {}", ec.message());
+                } else {
+                    // Timer was cancelled (removed) before it triggered
+                    LOG_DEBUG(Kernel_Event, "Timer cancelled");
+                }
+                return;
+            }
+            callback(this, event_data);
+        });
+    KernelSignalRequest();
 
     return true;
 }
@@ -162,20 +216,6 @@ bool EqueueInternal::EventExists(u64 id, s16 filter) {
     return it != m_events.cend();
 }
 
-extern boost::asio::io_context io_context;
-extern void KernelSignalRequest();
-
-static constexpr auto HrTimerSpinlockThresholdUs = 1200u;
-
-static void SmallTimerCallback(const boost::system::error_code& error, SceKernelEqueue eq,
-                               SceKernelEvent kevent) {
-    static EqueueEvent event;
-    event.event = kevent;
-    event.event.data = HrTimerSpinlockThresholdUs;
-    eq->AddSmallTimer(event);
-    eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
-}
-
 int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
     if (eq == nullptr) {
         LOG_ERROR(Kernel_Event, "Event queue is null!");
@@ -253,6 +293,14 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     return ORBIS_OK;
 }
 
+static void HrTimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
+    static EqueueEvent event;
+    event.event = kevent;
+    event.event.data = HrTimerSpinlockThresholdUs;
+    eq->AddSmallTimer(event);
+    eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
+}
+
 s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* ts, void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -283,17 +331,10 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
         return eq->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
-    event.timer = std::make_unique<boost::asio::steady_timer>(
-        io_context, std::chrono::microseconds(total_us - HrTimerSpinlockThresholdUs));
-
-    event.timer->async_wait(std::bind(SmallTimerCallback, std::placeholders::_1, eq, event.event));
-
-    if (!eq->AddEvent(event)) {
+    if (!eq->AddEvent(event) ||
+        !eq->ScheduleEvent(id, SceKernelEvent::Filter::HrTimer, HrTimerCallback)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
-
-    KernelSignalRequest();
-
     return ORBIS_OK;
 }
 
@@ -310,24 +351,13 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
     }
 }
 
-static void TimerCallback(const boost::system::error_code& error, SceKernelEqueue eq,
-                          SceKernelEvent kevent, SceKernelUseconds interval_ms) {
-    if (error) {
-        LOG_ERROR(Kernel_Event, "Timer callback error: {}", error.message());
-        return;
-    }
-
+static void TimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
     if (eq->EventExists(kevent.ident, kevent.filter)) {
         eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::Timer, kevent.udata);
 
         if (!(kevent.flags & SceKernelEvent::Flags::OneShot)) {
-            auto timer = std::make_shared<boost::asio::steady_timer>(
-                io_context, std::chrono::milliseconds(interval_ms));
-
-            timer->async_wait(
-                [eq, kevent, interval_ms, timer](const boost::system::error_code& ec) {
-                    TimerCallback(ec, eq, kevent, interval_ms);
-                });
+            // Reschedule the event for its next period.
+            eq->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
         }
     }
 }
@@ -338,16 +368,13 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    const u64 interval_ms = static_cast<u64>(usec & 0xFFFFFFFF) / 1000;
-
     EqueueEvent event{};
     event.event.ident = static_cast<u64>(id);
     event.event.filter = SceKernelEvent::Filter::Timer;
     event.event.flags = SceKernelEvent::Flags::Add;
     event.event.fflags = 0;
-    event.event.data = interval_ms;
+    event.event.data = usec;
     event.event.udata = udata;
-    event.time_added = std::chrono::steady_clock::now();
 
     if (eq->EventExists(event.event.ident, event.event.filter)) {
         eq->RemoveEvent(id, SceKernelEvent::Filter::Timer);
@@ -356,24 +383,13 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
                   eq->GetName(), event.event.ident);
     }
 
-    LOG_DEBUG(Kernel_Event,
-              "Added timing event: queue name={}, queue id={}, ms-intevall={}, pointer={:x}",
-              eq->GetName(), event.event.ident, interval_ms, reinterpret_cast<uintptr_t>(udata));
+    LOG_DEBUG(Kernel_Event, "Added timing event: queue name={}, queue id={}, usec={}, pointer={:x}",
+              eq->GetName(), event.event.ident, usec, reinterpret_cast<uintptr_t>(udata));
 
-    auto timer = std::make_shared<boost::asio::steady_timer>(
-        io_context, std::chrono::milliseconds(interval_ms));
-
-    if (!eq->AddEvent(event)) {
+    if (!eq->AddEvent(event) ||
+        !eq->ScheduleEvent(id, SceKernelEvent::Filter::Timer, TimerCallback)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
-
-    timer->async_wait(
-        [eq, event_data = event.event, interval_ms, timer](const boost::system::error_code& ec) {
-            TimerCallback(ec, eq, event_data, interval_ms);
-        });
-
-    KernelSignalRequest();
-
     return ORBIS_OK;
 }
 
