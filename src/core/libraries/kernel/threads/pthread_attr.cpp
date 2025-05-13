@@ -268,13 +268,13 @@ int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t c
         attr->cpuset = static_cast<Cpuset*>(calloc(1, sizeof(Cpuset)));
         attr->cpusetsize = sizeof(Cpuset);
     }
-    memcpy(attr->cpuset, cpusetp, cpusetsize);
+    memcpy(attr->cpuset, cpusetp, std::min(cpusetsize, sizeof(Cpuset)));
     return 0;
 }
 
-int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, u64* mask) {
+int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* attr, u64* mask) {
     Cpuset cpuset;
-    const int ret = posix_pthread_attr_getaffinity_np(param_1, sizeof(Cpuset), &cpuset);
+    const int ret = posix_pthread_attr_getaffinity_np(attr, sizeof(Cpuset), &cpuset);
     if (ret == 0) {
         *mask = cpuset.bits;
     }

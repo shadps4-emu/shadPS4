@@ -32,6 +32,10 @@ struct Socket;
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
+struct OrbisNetLinger {
+    s32 l_onoff;
+    s32 l_linger;
+};
 struct Socket {
     explicit Socket(int domain, int type, int protocol) {}
     virtual ~Socket() = default;
@@ -47,6 +51,7 @@ struct Socket {
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    std::mutex m_mutex;
 };
 
 struct PosixSocket : public Socket {
@@ -59,8 +64,11 @@ struct PosixSocket : public Socket {
     int sockopt_ip_ttlchk = 0;
     int sockopt_ip_maxttl = 0;
     int sockopt_tcp_mss_to_advertise = 0;
+    int socket_type;
     explicit PosixSocket(int domain, int type, int protocol)
-        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {}
+        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
+        socket_type = type;
+    }
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
