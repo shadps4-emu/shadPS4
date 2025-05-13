@@ -21,6 +21,9 @@ namespace Libraries::Kernel {
 class EqueueInternal;
 struct EqueueEvent;
 
+using SceKernelUseconds = u32;
+using SceKernelEqueue = EqueueInternal*;
+
 struct SceKernelEvent {
     enum Filter : s16 {
         None = 0,
@@ -77,6 +80,7 @@ struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
+    std::chrono::microseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
     void ResetTriggerState() {
@@ -133,6 +137,8 @@ public:
     }
 
     bool AddEvent(EqueueEvent& event);
+    bool ScheduleEvent(u64 id, s16 filter,
+                       void (*callback)(SceKernelEqueue, const SceKernelEvent&));
     bool RemoveEvent(u64 id, s16 filter);
     int WaitForEvents(SceKernelEvent* ev, int num, u32 micros);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
@@ -161,9 +167,6 @@ private:
     EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };
-
-using SceKernelUseconds = u32;
-using SceKernelEqueue = EqueueInternal*;
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);
 
