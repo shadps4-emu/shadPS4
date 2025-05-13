@@ -363,7 +363,6 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
     auto timer = std::make_shared<boost::asio::steady_timer>(
         io_context, std::chrono::milliseconds(interval_ms));
 
-
     if (!eq->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
