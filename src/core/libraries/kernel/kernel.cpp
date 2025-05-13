@@ -24,11 +24,16 @@
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/sys_net.h"
 
 #ifdef _WIN64
 #include <Rpc.h>
+#else
+#include <uuid/uuid.h>
 #endif
 #include <common/singleton.h>
+#include <core/libraries/network/net_error.h>
+#include <core/libraries/network/sockets.h>
 #include "aio.h"
 
 namespace Libraries::Kernel {
@@ -149,23 +154,23 @@ struct OrbisKernelUuid {
     u8 clockSeqLow;
     u8 node[6];
 };
+static_assert(sizeof(OrbisKernelUuid) == 0x10);
 
 int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
+    if (!orbisUuid) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
 #ifdef _WIN64
     UUID uuid;
-    UuidCreate(&uuid);
-    orbisUuid->timeLow = uuid.Data1;
-    orbisUuid->timeMid = uuid.Data2;
-    orbisUuid->timeHiAndVersion = uuid.Data3;
-    orbisUuid->clockSeqHiAndReserved = uuid.Data4[0];
-    orbisUuid->clockSeqLow = uuid.Data4[1];
-    for (int i = 0; i < 6; i++) {
-        orbisUuid->node[i] = uuid.Data4[2 + i];
+    if (UuidCreate(&uuid) != RPC_S_OK) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
 #else
-    LOG_ERROR(Kernel, "sceKernelUuidCreate: Add linux");
+    uuid_t uuid;
+    uuid_generate(uuid);
 #endif
-    return 0;
+    std::memcpy(orbisUuid, &uuid, sizeof(OrbisKernelUuid));
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI kernel_ioctl(int fd, u64 cmd, VA_ARGS) {
@@ -196,10 +201,6 @@ const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord() {
     return path;
 }
 
-int PS4_SYSV_ABI posix_connect() {
-    return -1;
-}
-
 int PS4_SYSV_ABI _sigprocmask() {
     return ORBIS_OK;
 }
@@ -208,6 +209,24 @@ int PS4_SYSV_ABI posix_getpagesize() {
     return 16_KB;
 }
 
+int PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
+                                   Libraries::Net::OrbisNetSockaddr* addr, u32* paddrlen) {
+    auto* netcall = Common::Singleton<Libraries::Net::NetInternal>::Instance();
+    auto sock = netcall->FindSocket(s);
+    if (!sock) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    int returncode = sock->GetSocketAddress(addr, paddrlen);
+    if (returncode >= 0) {
+        LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
+        return 0;
+    }
+    *Libraries::Kernel::__Error() = 0x20;
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    return -1;
+}
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -225,7 +244,6 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", 1, 1, &g_stack_chk_guard);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", 1, 1, kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetFsSandboxRandomWord);
-    LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, posix_connect);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", 1, 1, _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", 1, 1, sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", 1, 1, stack_chk_fail);
@@ -234,6 +252,24 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpagesize);
     LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal", 1, 1,
                  sceLibcHeapGetTraceInfo);
+
+    // network
+    LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_connect);
+    LIB_FUNCTION("TU-d9PfIHPM", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socketex);
+    LIB_FUNCTION("KuOmgKoqCdY", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
+    LIB_FUNCTION("pxnCmagrtao", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_listen);
+    LIB_FUNCTION("3e+4Iv7IJ8U", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_accept);
+    LIB_FUNCTION("TU-d9PfIHPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
+    LIB_FUNCTION("oBr313PppNE", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
+    LIB_FUNCTION("lUk6wrGXyMw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
+    LIB_FUNCTION("fFxGkxF2bVo", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_setsockopt);
+    // LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1, posix_getsockname);
+    LIB_FUNCTION("KuOmgKoqCdY", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
+    LIB_FUNCTION("5jRCs2axtr4", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sceNetInetNtop); // TODO fix it to sys_ ...
+    LIB_FUNCTION("4n51s0zEf0c", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sceNetInetPton); // TODO fix it to sys_ ...
 }
 
 } // namespace Libraries::Kernel

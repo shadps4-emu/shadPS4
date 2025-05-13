@@ -165,6 +165,12 @@ public:
         return amd_shader_trinary_minmax;
     }
 
+    /// Returns true when the shaderImageFloat32AtomicMinMax feature of
+    /// VK_EXT_shader_atomic_float2 is supported.
+    bool IsShaderAtomicFloatImage32MinMaxSupported() const {
+        return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -336,6 +342,7 @@ private:
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
+    vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -360,6 +367,7 @@ private:
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
+    bool shader_atomic_float2{};
     bool portability_subset{};
 };
 

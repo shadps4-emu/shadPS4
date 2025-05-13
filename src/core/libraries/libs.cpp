@@ -8,6 +8,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio3d/audio3d.h"
 #include "core/libraries/avplayer/avplayer.h"
+#include "core/libraries/camera/camera.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
@@ -45,6 +46,7 @@
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/share_play/shareplay.h"
+#include "core/libraries/signin_dialog/signindialog.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
@@ -120,6 +122,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Hmd::RegisterlibSceHmd(sym);
     Libraries::DiscMap::RegisterlibSceDiscMap(sym);
     Libraries::Ulobjmgr::RegisterlibSceUlobjmgr(sym);
+    Libraries::SigninDialog::RegisterlibSceSigninDialog(sym);
+    Libraries::Camera::RegisterlibSceCamera(sym);
 }
 
 } // namespace Libraries

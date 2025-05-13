@@ -384,23 +384,23 @@
     </message>
     <message>
       <source>Nothing</source>
-      <translation>Không có gì</translation>
+      <translation>Không chạy được</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>Giày ủng</translation>
+      <translation>Chạy được</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>Menu</translation>
+      <translation>Vào được menu</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>Trong game</translation>
+      <translation>Vào được trò chơi</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>Có thể chơi</translation>
+      <translation>Chơi được</translation>
     </message>
   </context>
   <context>
@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
@@ -447,7 +447,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation type="unfinished">Common Config</translation>
+      <translation>Cài Đặt Chung</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -551,26 +551,26 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Lưu</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Áp dụng</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Khôi Phục Mặc Định</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Hủy</translation>
     </message>
   </context>
   <context>
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Tùy chỉnh phím được gán cho Bàn phím + Chuột và Tay cầm</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -578,7 +578,7 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Lỗi</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -590,15 +590,15 @@
     </message>
     <message>
       <source>Save Changes</source>
-      <translation type="unfinished">Save Changes</translation>
+      <translation>Lưu Thay Đổi</translation>
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation type="unfinished">Do you want to save changes?</translation>
+      <translation>Bạn có muốn lưu thay đổi?</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>Trợ giúp</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
@@ -706,15 +706,15 @@
     </message>
     <message>
       <source>h</source>
-      <translation type="unfinished">h</translation>
+      <translation>giờ</translation>
     </message>
     <message>
       <source>m</source>
-      <translation type="unfinished">m</translation>
+      <translation>phút</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>giây</translation>
     </message>
     <message>
       <source>Compatibility is untested</source>
@@ -722,23 +722,23 @@
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>Trò chơi không được khởi chạy đúng cách / khiến giả lập bị văng</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>Trò chơi có thể khởi chạy, nhưng chẳng hiện gì cả</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>Trò chơi hiển thị được hình ảnh, nhưng không thể tiếp tục từ menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
+      <translation>Trò chơi có lỗi ảnh hưởng đến trải nghiệm, hoặc hiệu năng khi chơi không ổn định</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
+      <translation>Trò chơi có thể được hoàn thành từ đầu đến cuối, hiệu năng ổn định và không có lỗi ảnh hưởng đến trải nghiệm</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
@@ -1170,19 +1170,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Lưu</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Áp dụng</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Khôi Phục Mặc Định</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Hủy</translation>
     </message>
   </context>
   <context>
@@ -1193,7 +1193,7 @@
     </message>
     <message>
       <source>Boot Game</source>
-      <translation type="unfinished">Boot Game</translation>
+      <translation>Khởi Chạy Trò Chơi</translation>
     </message>
     <message>
       <source>Check for Updates</source>
@@ -1201,7 +1201,7 @@
     </message>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>Thông Tin Về shadPS4</translation>
     </message>
     <message>
       <source>Configure...</source>
@@ -1213,23 +1213,23 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>Mở Thư Mục Của shadPS4</translation>
     </message>
     <message>
       <source>Exit</source>
-      <translation type="unfinished">Exit</translation>
+      <translation>Thoát</translation>
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation type="unfinished">Exit shadPS4</translation>
+      <translation>Thoát shadPS4</translation>
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation type="unfinished">Exit the application.</translation>
+      <translation>Thoát ứng dụng.</translation>
     </message>
     <message>
       <source>Show Game List</source>
-      <translation type="unfinished">Show Game List</translation>
+      <translation>Hiển Thị Danh Sách Trò Chơi</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
