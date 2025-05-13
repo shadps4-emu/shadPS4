@@ -70,15 +70,16 @@ public:
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
     }
-    
+
     template <typename Func>
     void ForEachMappedRangeInRange(VAddr addr, u64 size, Func&& func) {
         const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
         Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-        for (const auto& mapped_range : mapped_ranges & range) {
+        for (const auto& mapped_range : (mapped_ranges & range)) {
             func(mapped_range);
         }
     }
+
 private:
     RenderState PrepareRenderState(u32 mrt_mask);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
@@ -107,6 +108,7 @@ private:
     }
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
+
 private:
     friend class VideoCore::BufferCache;
 
