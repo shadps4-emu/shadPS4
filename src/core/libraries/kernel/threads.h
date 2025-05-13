@@ -17,6 +17,12 @@ int PS4_SYSV_ABI posix_pthread_attr_init(PthreadAttrT* attr);
 
 int PS4_SYSV_ABI posix_pthread_attr_destroy(PthreadAttrT* attr);
 
+int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, size_t cpusetsize,
+                                                   Cpuset* cpusetp);
+
+int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t cpusetsize,
+                                                   const Cpuset* cpusetp);
+
 int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr,
                                       PthreadEntryFunc start_routine, void* arg);
 

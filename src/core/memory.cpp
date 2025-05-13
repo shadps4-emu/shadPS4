@@ -649,19 +649,23 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
 s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
     s64 protected_bytes = 0;
+
+    auto aligned_addr = Common::AlignDown(addr, 16_KB);
+    auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
     do {
-        auto it = FindVMA(addr + protected_bytes);
+        auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0), "Address {:#x} is out of bounds",
                    addr + protected_bytes);
         auto result = 0;
-        result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
+        result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
+                              aligned_size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
         }
         protected_bytes += result;
-    } while (protected_bytes < size);
+    } while (protected_bytes < aligned_size);
 
     return ORBIS_OK;
 }
