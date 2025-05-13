@@ -54,7 +54,7 @@ void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     IR::ScalarReg dst_reg{inst.dst[0].code};
     for (u32 i = 0; i < num_dwords; i++) {
         IR::U32 index = ir.IAdd(dword_offset, ir.Imm32(i));
-        ir.SetScalarReg(dst_reg++, ir.ReadConst(base, index));
+        ir.SetScalarReg(dst_reg + i, ir.ReadConst(base, index));
     }
 }
 
@@ -76,7 +76,7 @@ void Translator::S_BUFFER_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     IR::ScalarReg dst_reg{inst.dst[0].code};
     for (u32 i = 0; i < num_dwords; i++) {
         const IR::U32 index = ir.IAdd(dword_offset, ir.Imm32(i));
-        ir.SetScalarReg(dst_reg++, ir.ReadConstBuffer(vsharp, index));
+        ir.SetScalarReg(dst_reg + i, ir.ReadConstBuffer(vsharp, index));
     }
 }
 
