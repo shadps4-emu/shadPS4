@@ -152,33 +152,23 @@ struct OrbisKernelUuid {
     u8 clockSeqLow;
     u8 node[6];
 };
+static_assert(sizeof(OrbisKernelUuid) == 0x10);
 
 int PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
+    if (!orbisUuid) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
 #ifdef _WIN64
     UUID uuid;
-    UuidCreate(&uuid);
-    orbisUuid->timeLow = uuid.Data1;
-    orbisUuid->timeMid = uuid.Data2;
-    orbisUuid->timeHiAndVersion = uuid.Data3;
-    orbisUuid->clockSeqHiAndReserved = uuid.Data4[0];
-    orbisUuid->clockSeqLow = uuid.Data4[1];
-    for (int i = 0; i < 6; i++) {
-        orbisUuid->node[i] = uuid.Data4[2 + i];
+    if (UuidCreate(&uuid) != RPC_S_OK) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
     }
 #else
     uuid_t uuid;
     uuid_generate(uuid);
-    orbisUuid->timeLow =
-        ((u32)uuid[0] << 24) | ((u32)uuid[1] << 16) | ((u32)uuid[2] << 8) | (u32)uuid[3];
-    orbisUuid->timeMid = ((u16)uuid[4] << 8) | uuid[5];
-    orbisUuid->timeHiAndVersion = ((u16)uuid[6] << 8) | uuid[7];
-    orbisUuid->clockSeqHiAndReserved = uuid[8];
-    orbisUuid->clockSeqLow = uuid[9];
-    for (int i = 0; i < 6; i++) {
-        orbisUuid->node[i] = uuid[10 + i];
-    }
 #endif
-    return 0;
+    std::memcpy(orbisUuid, &uuid, sizeof(OrbisKernelUuid));
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI kernel_ioctl(int fd, u64 cmd, VA_ARGS) {
