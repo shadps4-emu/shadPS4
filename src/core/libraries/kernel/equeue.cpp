@@ -62,7 +62,7 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
     } else {
         // If the timer already exists we are scheduling a reoccurrence after the next period.
         // Set the expiration time to the previous occurrence plus the period.
-        it->timer->expires_at(it->timer->expires_at() + event.timer_interval);
+        it->timer->expires_at(it->timer->expiry() + event.timer_interval);
     }
 
     it->timer->async_wait(
