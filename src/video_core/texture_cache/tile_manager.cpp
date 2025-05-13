@@ -269,8 +269,6 @@ DetilerParams params{};
     params.num_levels = std::min(15u, info.resources.levels);
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
-    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
-        info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
 
     const bool is_volume = info.tiling_mode == AmdGpu::TilingMode::Texture_Volume;
     const bool is_display = info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled;
@@ -287,7 +285,8 @@ DetilerParams params{};
         const uint32_t tiles_per_slice = (info.size.height + 7u) / 8u;
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
-        for (size_t i = 2; i < std::size(params.sizes); ++i)
+
+        for (size_t i = 2; i < params.sizes.size(); ++i)
             params.sizes[i] = 0;
     } else {
         if (info.resources.levels > params.sizes.size()) {
@@ -315,8 +314,8 @@ DetilerParams params{};
     LOG_DEBUG(Lib_Videodec, "Dispatch: image_size={}, aligned={}, info.num_bits={}, num_tiles={}",
               image_size, aligned_image_size, info.num_bits, num_tiles);
     cmdbuf.dispatch(num_tiles, 1, 1);
-
-    return {out_buffer.first, 0};
+    return std::make_pair(out_buffer.first, 0u);
+    return std::make_pair(out_buffer.first, 0u);
 }
 
 } // namespace VideoCore
