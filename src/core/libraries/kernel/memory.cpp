@@ -291,8 +291,7 @@ int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut
 }
 
 int PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
-    LOG_DEBUG(Kernel_Vmm, "called, addr = {:#x}, start = {:#x}, end = {:#x}", fmt::ptr(addr),
-              fmt::ptr(start), fmt::ptr(end));
+    LOG_DEBUG(Kernel_Vmm, "called, addr = {}", fmt::ptr(addr));
     auto* memory = Core::Memory::Instance();
     return memory->IsStack(std::bit_cast<VAddr>(addr), start, end);
 }
