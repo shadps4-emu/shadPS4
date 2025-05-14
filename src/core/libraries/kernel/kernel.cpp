@@ -230,6 +230,11 @@ int PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
+
+int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              const timeval* timeout) {
+    return 0;
+}
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -273,6 +278,7 @@ void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
                  Libraries::Net::sceNetInetNtop); // TODO fix it to sys_ ...
     LIB_FUNCTION("4n51s0zEf0c", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sceNetInetPton); // TODO fix it to sys_ ...
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
 }
 
 } // namespace Libraries::Kernel
