@@ -15,9 +15,9 @@
 #include <thread>
 #include <fcntl.h>
 #include <linux/userfaultfd.h>
-#include "common/error.h"
 #include <poll.h>
 #include <sys/ioctl.h>
+#include "common/error.h"
 #endif
 #else
 #include <windows.h>
@@ -222,7 +222,7 @@ struct PageManager::Impl {
                 release_pending();
             }
         }
-        
+
         // Flush pending (un)protect action
         release_pending();
     }

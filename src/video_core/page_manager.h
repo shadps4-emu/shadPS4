@@ -16,6 +16,7 @@ namespace VideoCore {
 class PageManager {
     static constexpr size_t PAGE_BITS = 12;
     static constexpr size_t PAGE_SIZE = 1ULL << PAGE_BITS;
+
 public:
     explicit PageManager(Vulkan::Rasterizer* rasterizer);
     ~PageManager();
