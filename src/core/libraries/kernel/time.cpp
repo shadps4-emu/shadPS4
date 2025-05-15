@@ -29,6 +29,7 @@
 namespace Libraries::Kernel {
 
 static u64 initial_ptc;
+static u64 initial_unbiased_ptc;
 static std::unique_ptr<Common::NativeClock> clock;
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
@@ -36,12 +37,11 @@ u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
-    return clock->GetTimeUS(initial_ptc);
+    return clock->GetTimeUS(clock->GetUnbiasedUptime() - initial_unbiased_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return clock->GetUptime() - initial_ptc;
+    return clock->GetUnbiasedUptime() - initial_unbiased_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
@@ -172,7 +172,7 @@ static s32 clock_gettime(u32 clock_id, struct timespec* ts) {
 }
 #endif
 
-int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, struct OrbisKernelTimespec* ts) {
+int PS4_SYSV_ABI orbis_clock_gettime(s32 clock_id, OrbisKernelTimespec* ts) {
     if (ts == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
@@ -444,6 +444,7 @@ int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
+    initial_unbiased_ptc = clock->GetUnbiasedUptime();
     LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime);
     LIB_FUNCTION("fgxnMeTNUtY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounter);
     LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1,
