@@ -223,6 +223,8 @@ public:
 
     void InvalidateMemory(VAddr addr, u64 size) const;
 
+    int IsStack(VAddr addr, void** start, void** end);
+
 private:
     VMAHandle FindVMA(VAddr target) {
         return std::prev(vma_map.upper_bound(target));

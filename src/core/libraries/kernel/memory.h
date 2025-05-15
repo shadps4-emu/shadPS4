@@ -158,6 +158,7 @@ void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]);
 int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,
                                               void** directMemoryStartOut,
                                               void** directMemoryEndOut);
+int PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end);
 
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
                                    int* numEntriesOut);

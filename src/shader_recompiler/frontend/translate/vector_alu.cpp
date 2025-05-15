@@ -989,13 +989,22 @@ void Translator::V_CMP_NE_U64(const GcnInst& inst) {
         }
     };
     const IR::U1 src0{get_src(inst.src[0])};
-    ASSERT(inst.src[1].field == OperandField::ConstZero); // src0 != 0
+    auto op = [&inst, this](auto x) {
+        switch (inst.src[1].field) {
+        case OperandField::ConstZero:
+            return x;
+        case OperandField::SignedConstIntNeg:
+            return ir.LogicalNot(x);
+        default:
+            UNREACHABLE_MSG("unhandled V_CMP_NE_U64 source argument {}", u32(inst.src[1].field));
+        }
+    };
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
-        ir.SetVcc(src0);
+        ir.SetVcc(op(src0));
         break;
     case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), src0);
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), op(src0));
         break;
     default:
         UNREACHABLE();

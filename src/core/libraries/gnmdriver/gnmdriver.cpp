@@ -179,7 +179,7 @@ s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t add
         auto* wait_reg_mem = reinterpret_cast<PM4CmdWaitRegMem*>(cmdbuf);
         wait_reg_mem->header = PM4Type3Header{PM4ItOpcode::WaitRegMem, 5};
         wait_reg_mem->raw = (is_mem << 4u) | (cmp_func & 7u);
-        wait_reg_mem->poll_addr_lo = u32(addr & addr_mask);
+        wait_reg_mem->poll_addr_lo_raw = u32(addr & addr_mask);
         wait_reg_mem->poll_addr_hi = u32(addr >> 32u);
         wait_reg_mem->ref = ref;
         wait_reg_mem->mask = mask;
