@@ -54,9 +54,9 @@ else()
 endif()
 
 if (ARCHITECTURE STREQUAL "x86_64")
-    # Target the same CPU architecture as the PS4, to maintain the same level of compatibility.
-    # Exclude SSE4a as it is only available on AMD CPUs.
-    add_compile_options(-march=btver2 -mtune=generic -mno-sse4a)
+    # Target x86-64-v3 CPU architecture as this is a good balance between supporting performance critical
+    # instructions like AVX2 and maintaining support for older CPUs.
+    add_compile_options(-march=x86-64-v3)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -238,13 +238,6 @@ if (APPLE)
     find_package(date 3.0.1 CONFIG)
 endif()
 list(POP_BACK CMAKE_MODULE_PATH)
-
-# Note: Windows always has these functions through winpthreads
-include(CheckSymbolExists)
-check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
-    add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
-endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
@@ -1094,9 +1087,13 @@ if (ENABLE_DISCORD_RPC)
     target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
 endif()
 
-# Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND ENABLE_USERFAULTFD)
-    target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
+    if (ENABLE_USERFAULTFD)
+        target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+    endif()
+
+    target_link_libraries(shadps4 PRIVATE uuid)
 endif()
 
 if (APPLE)
@@ -1152,7 +1149,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore winpthreads)
+    target_link_libraries(shadps4 PRIVATE mincore)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:

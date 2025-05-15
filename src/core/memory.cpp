@@ -649,19 +649,23 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
 s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
     s64 protected_bytes = 0;
+
+    auto aligned_addr = Common::AlignDown(addr, 16_KB);
+    auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
     do {
-        auto it = FindVMA(addr + protected_bytes);
+        auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0), "Address {:#x} is out of bounds",
                    addr + protected_bytes);
         auto result = 0;
-        result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
+        result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
+                              aligned_size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
         }
         protected_bytes += result;
-    } while (protected_bytes < size);
+    } while (protected_bytes < aligned_size);
 
     return ORBIS_OK;
 }
@@ -942,6 +946,35 @@ int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
     *directMemoryStartOut = reinterpret_cast<void*>(area.base);
     *directMemoryEndOut = reinterpret_cast<void*>(area.GetEnd());
     *directMemoryTypeOut = area.memory_type;
+    return ORBIS_OK;
+}
+
+int MemoryManager::IsStack(VAddr addr, void** start, void** end) {
+    auto vma_handle = FindVMA(addr);
+    if (vma_handle == vma_map.end()) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    const VirtualMemoryArea& vma = vma_handle->second;
+    if (!vma.Contains(addr, 0) || vma.IsFree()) {
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    auto stack_start = 0ul;
+    auto stack_end = 0ul;
+    if (vma.type == VMAType::Stack) {
+        stack_start = vma.base;
+        stack_end = vma.base + vma.size;
+    }
+
+    if (start != nullptr) {
+        *start = reinterpret_cast<void*>(stack_start);
+    }
+
+    if (end != nullptr) {
+        *end = reinterpret_cast<void*>(stack_end);
+    }
+
     return ORBIS_OK;
 }
 
