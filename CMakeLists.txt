@@ -239,13 +239,6 @@ if (APPLE)
 endif()
 list(POP_BACK CMAKE_MODULE_PATH)
 
-# Note: Windows always has these functions through winpthreads
-include(CheckSymbolExists)
-check_symbol_exists(pthread_mutex_timedlock "pthread.h" HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-if(HAVE_PTHREAD_MUTEX_TIMEDLOCK OR WIN32)
-    add_compile_options(-DHAVE_PTHREAD_MUTEX_TIMEDLOCK)
-endif()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
     include(CheckCXXSymbolExists)
@@ -1156,7 +1149,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore winpthreads)
+    target_link_libraries(shadps4 PRIVATE mincore)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
