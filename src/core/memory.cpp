@@ -386,7 +386,7 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         vma = FindVMA(mapped_addr)->second;
         remaining_size = vma.base + vma.size - mapped_addr;
         if (vma.IsMapped() || remaining_size < size) {
-            LOG_ERROR(Kernel_Vmm, "Not enough memory to map {:#x} bytes at address {:#x}", size,
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size,
                       mapped_addr);
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
