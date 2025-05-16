@@ -378,15 +378,12 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         auto unmap_size = size;
         // If flag NoOverwrite is provided, don't overwrite mapped VMAs.
         // When it isn't provided, VMAs can be overwritten regardless of if they're mapped.
-        auto should_overwrite = False(flags & MemoryMapFlags::NoOverwrite) || !vma.IsMapped();
-        while (should_overwrite && unmap_addr < mapped_addr + size && remaining_size < size) {
+        while ((False(flags & MemoryMapFlags::NoOverwrite) || !vma.IsMapped()) &&
+               unmap_addr < mapped_addr + size && remaining_size < size) {
             auto unmapped = UnmapBytesFromEntry(unmap_addr, vma, unmap_size);
             unmap_addr += unmapped;
             unmap_size -= unmapped;
-            // Unmap addr should be the address of the next VMA
-            // if the previous VMA is fully unmapped.
             vma = FindVMA(unmap_addr)->second;
-            should_overwrite = False(flags & MemoryMapFlags::NoOverwrite) || !vma.IsMapped();
         }
 
         vma = FindVMA(mapped_addr)->second;
