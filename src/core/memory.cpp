@@ -376,19 +376,22 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         // To account for this, unmap any reserved areas within this mapping range first.
         auto unmap_addr = mapped_addr;
         auto unmap_size = size;
-        while (!vma.IsMapped() && unmap_addr < mapped_addr + size && remaining_size < size) {
+        // If flag NoOverwrite is provided, don't overwrite mapped VMAs.
+        // When it isn't provided, VMAs can be overwritten regardless of if they're mapped.
+        while ((False(flags & MemoryMapFlags::NoOverwrite) || !vma.IsMapped()) &&
+               unmap_addr < mapped_addr + size && remaining_size < size) {
             auto unmapped = UnmapBytesFromEntry(unmap_addr, vma, unmap_size);
             unmap_addr += unmapped;
             unmap_size -= unmapped;
             vma = FindVMA(unmap_addr)->second;
         }
 
-        // This should return SCE_KERNEL_ERROR_ENOMEM but rarely happens.
         vma = FindVMA(mapped_addr)->second;
         remaining_size = vma.base + vma.size - mapped_addr;
-        ASSERT_MSG(!vma.IsMapped() && remaining_size >= size,
-                   "Memory region {:#x} to {:#x} isn't free enough to map region {:#x} to {:#x}",
-                   vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
+        if (vma.IsMapped() || remaining_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, mapped_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
     }
 
     // Find the first free area starting with provided virtual address.
