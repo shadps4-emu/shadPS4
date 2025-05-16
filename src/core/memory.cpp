@@ -949,4 +949,33 @@ int MemoryManager::GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut,
     return ORBIS_OK;
 }
 
+int MemoryManager::IsStack(VAddr addr, void** start, void** end) {
+    auto vma_handle = FindVMA(addr);
+    if (vma_handle == vma_map.end()) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    const VirtualMemoryArea& vma = vma_handle->second;
+    if (!vma.Contains(addr, 0) || vma.IsFree()) {
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    auto stack_start = 0ul;
+    auto stack_end = 0ul;
+    if (vma.type == VMAType::Stack) {
+        stack_start = vma.base;
+        stack_end = vma.base + vma.size;
+    }
+
+    if (start != nullptr) {
+        *start = reinterpret_cast<void*>(stack_start);
+    }
+
+    if (end != nullptr) {
+        *end = reinterpret_cast<void*>(stack_end);
+    }
+
+    return ORBIS_OK;
+}
+
 } // namespace Core

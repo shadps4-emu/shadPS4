@@ -380,8 +380,7 @@ s32 PS4_SYSV_ABI sceNgs2GeomApply(const OrbisNgs2GeomListenerWork* listener,
 
 s32 PS4_SYSV_ABI sceNgs2PanInit(OrbisNgs2PanWork* work, const float* aSpeakerAngle, float unitAngle,
                                 u32 numSpeakers) {
-    LOG_ERROR(Lib_Ngs2, "aSpeakerAngle = {}, unitAngle = {}, numSpeakers = {}", *aSpeakerAngle,
-              unitAngle, numSpeakers);
+    LOG_ERROR(Lib_Ngs2, "unitAngle = {}, numSpeakers = {}", unitAngle, numSpeakers);
     return ORBIS_OK;
 }
 
