@@ -68,7 +68,7 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
     it->timer->async_wait(
         [this, event_data = event.event, callback](const boost::system::error_code& ec) {
             if (ec) {
-                if (ec.value() != boost::system::errc::operation_canceled) {
+                if (ec != boost::system::errc::operation_canceled) {
                     LOG_ERROR(Kernel_Event, "Timer callback error: {}", ec.message());
                 } else {
                     // Timer was cancelled (removed) before it triggered
