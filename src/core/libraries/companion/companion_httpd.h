@@ -13,6 +13,36 @@ class SymbolsResolver;
 
 namespace Libraries::CompanionHttpd {
 
+struct OrbisCompanionHttpdHeader {
+    char* key;
+    char* value;
+    struct OrbisCompanionHttpdHeader* header;
+};
+
+struct OrbisCompanionHttpdRequest {
+    s32 method;
+    char* url;
+    OrbisCompanionHttpdHeader* header;
+    char* body;
+    u64 bodySize;
+};
+
+struct OrbisCompanionHttpdResponse {
+    s32 status;
+    OrbisCompanionHttpdHeader* header;
+    char* body;
+    u64 bodySize;
+};
+
+using OrbisCompanionHttpdRequestBodyReceptionCallback =
+    PS4_SYSV_ABI s32 (*)(s32 event, Libraries::UserService::OrbisUserServiceUserId userId,
+                         const OrbisCompanionHttpdRequest* httpRequest, void* param);
+
+using OrbisCompanionHttpdRequestCallback =
+    PS4_SYSV_ABI s32 (*)(Libraries::UserService::OrbisUserServiceUserId userId,
+                         const OrbisCompanionHttpdRequest* httpRequest,
+                         OrbisCompanionHttpdResponse* httpResponse, void* param);
+
 struct OrbisCompanionUtilDeviceInfo {
     Libraries::UserService::OrbisUserServiceUserId userId;
     Libraries::Net::OrbisNetSockaddrIn addr;
@@ -27,18 +57,26 @@ struct OrbisCompanionHttpdEvent {
         char reserved[256];
     } data;
 };
-s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader();
-s32 PS4_SYSV_ABI sceCompanionHttpdGet2ndScreenStatus();
+
+s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader(const char* key, const char* value,
+                                            OrbisCompanionHttpdResponse* response);
+s32 PS4_SYSV_ABI
+sceCompanionHttpdGet2ndScreenStatus(Libraries::UserService::OrbisUserServiceUserId userId);
 s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent(OrbisCompanionHttpdEvent* pEvent);
-s32 PS4_SYSV_ABI sceCompanionHttpdGetUserId();
+s32 PS4_SYSV_ABI sceCompanionHttpdGetUserId(u32 addr,
+                                            Libraries::UserService::OrbisUserServiceUserId* userId);
 s32 PS4_SYSV_ABI sceCompanionHttpdInitialize();
 s32 PS4_SYSV_ABI sceCompanionHttpdInitialize2();
 s32 PS4_SYSV_ABI sceCompanionHttpdOptParamInitialize();
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestBodyReceptionCallback();
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestCallback();
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestCallback2();
-s32 PS4_SYSV_ABI sceCompanionHttpdSetBody();
-s32 PS4_SYSV_ABI sceCompanionHttpdSetStatus();
+s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestBodyReceptionCallback(
+    OrbisCompanionHttpdRequestBodyReceptionCallback function, void* param);
+s32 PS4_SYSV_ABI
+sceCompanionHttpdRegisterRequestCallback(OrbisCompanionHttpdRequestCallback function, void* param);
+s32 PS4_SYSV_ABI
+sceCompanionHttpdRegisterRequestCallback2(OrbisCompanionHttpdRequestCallback function, void* param);
+s32 PS4_SYSV_ABI sceCompanionHttpdSetBody(const char* body, u64 bodySize,
+                                          OrbisCompanionHttpdResponse* response);
+s32 PS4_SYSV_ABI sceCompanionHttpdSetStatus(s32 status, OrbisCompanionHttpdResponse* response);
 s32 PS4_SYSV_ABI sceCompanionHttpdStart();
 s32 PS4_SYSV_ABI sceCompanionHttpdStop();
 s32 PS4_SYSV_ABI sceCompanionHttpdTerminate();

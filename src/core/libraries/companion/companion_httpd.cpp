@@ -8,12 +8,14 @@
 
 namespace Libraries::CompanionHttpd {
 
-s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader() {
+s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader(const char* key, const char* value,
+                                            OrbisCompanionHttpdResponse* response) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdGet2ndScreenStatus() {
+s32 PS4_SYSV_ABI
+sceCompanionHttpdGet2ndScreenStatus(Libraries::UserService::OrbisUserServiceUserId) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -24,7 +26,8 @@ s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent(OrbisCompanionHttpdEvent* pEvent) {
     return 0x80E40008; // No events to obtain
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdGetUserId() {
+s32 PS4_SYSV_ABI
+sceCompanionHttpdGetUserId(u32 addr, Libraries::UserService::OrbisUserServiceUserId* userId) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -44,27 +47,31 @@ s32 PS4_SYSV_ABI sceCompanionHttpdOptParamInitialize() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestBodyReceptionCallback() {
+s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestBodyReceptionCallback(
+    OrbisCompanionHttpdRequestBodyReceptionCallback function, void* param) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestCallback() {
+s32 PS4_SYSV_ABI
+sceCompanionHttpdRegisterRequestCallback(OrbisCompanionHttpdRequestCallback function, void* param) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestCallback2() {
+s32 PS4_SYSV_ABI sceCompanionHttpdRegisterRequestCallback2(
+    OrbisCompanionHttpdRequestCallback function, void* param) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdSetBody() {
+s32 PS4_SYSV_ABI sceCompanionHttpdSetBody(const char* body, u64 bodySize,
+                                          OrbisCompanionHttpdResponse* response) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdSetStatus() {
+s32 PS4_SYSV_ABI sceCompanionHttpdSetStatus(s32 status, OrbisCompanionHttpdResponse* response) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }
