@@ -200,7 +200,6 @@ struct PageManager::Impl {
             u64 range_bytes = 0;
 
             const auto release_pending = [&] {
-                RENDERER_TRACE;
                 if (range_bytes > 0) {
                     // Add pending (un)protect action
                     update_ranges.push_back({range_begin << PAGE_BITS, range_bytes, perms});
