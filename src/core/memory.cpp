@@ -362,11 +362,8 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
-    // When virtual addr is zero, force it to virtual_base. The guest cannot pass Fixed
-    // flag so we will take the branch that searches for free (or reserved) mappings.
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
-    alignment = alignment > 0 ? alignment : 16_KB;
-    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+    // Limit the minumum address to SystemManagedVirtualBase to prevent hardware-specific issues.
+    VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
@@ -396,7 +393,9 @@ int MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, size_t size, M
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
-        mapped_addr = SearchFree(mapped_addr, size, alignment);
+        // Provided address needs to be aligned before we can map.
+        alignment = alignment > 0 ? alignment : 16_KB;
+        mapped_addr = SearchFree(Common::AlignUp(mapped_addr, alignment), size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
             return ORBIS_KERNEL_ERROR_ENOMEM;
