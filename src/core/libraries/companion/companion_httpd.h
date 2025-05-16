@@ -4,6 +4,8 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/network/net.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,9 +13,23 @@ class SymbolsResolver;
 
 namespace Libraries::CompanionHttpd {
 
+struct OrbisCompanionUtilDeviceInfo {
+    Libraries::UserService::OrbisUserServiceUserId userId;
+    Libraries::Net::OrbisNetSockaddrIn addr;
+    char reserved[236];
+};
+
+struct OrbisCompanionHttpdEvent {
+    s32 event;
+    union {
+        OrbisCompanionUtilDeviceInfo deviceInfo;
+        Libraries::UserService::OrbisUserServiceUserId userId;
+        char reserved[256];
+    } data;
+};
 s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader();
 s32 PS4_SYSV_ABI sceCompanionHttpdGet2ndScreenStatus();
-s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent();
+s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent(OrbisCompanionHttpdEvent* pEvent);
 s32 PS4_SYSV_ABI sceCompanionHttpdGetUserId();
 s32 PS4_SYSV_ABI sceCompanionHttpdInitialize();
 s32 PS4_SYSV_ABI sceCompanionHttpdInitialize2();

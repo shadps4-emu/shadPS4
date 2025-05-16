@@ -18,9 +18,10 @@ s32 PS4_SYSV_ABI sceCompanionHttpdGet2ndScreenStatus() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent() {
-    LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent(OrbisCompanionHttpdEvent* pEvent) {
+    pEvent->event = 0x10000002; // disconnected
+    LOG_DEBUG(Lib_CompanionHttpd, "device disconnected");
+    return 0x80E40008; // No events to obtain
 }
 
 s32 PS4_SYSV_ABI sceCompanionHttpdGetUserId() {
