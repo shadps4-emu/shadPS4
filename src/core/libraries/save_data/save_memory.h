@@ -4,13 +4,14 @@
 #pragma once
 
 #include <vector>
-#include "save_backup.h"
+#include "core/libraries/save_data/save_backup.h"
 
 class PSF;
 
 namespace Libraries::SaveData {
 using OrbisUserServiceUserId = s32;
-}
+enum class Error : u32;
+} // namespace Libraries::SaveData
 
 namespace Libraries::SaveData::SaveMemory {
 
@@ -36,7 +37,7 @@ void SetIcon(u32 slot_id, void* buf = nullptr, size_t buf_size = 0);
 // Save now or wait for the background thread to save
 void SaveSFO(u32 slot_id);
 
-void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset);
+Error ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset);
 
 void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset);
 

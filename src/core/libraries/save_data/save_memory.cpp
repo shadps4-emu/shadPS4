@@ -10,15 +10,14 @@
 #include <utility>
 #include <fmt/format.h>
 
-#include <core/libraries/system/msgdialog_ui.h>
-
-#include "common/assert.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/save_data/savedata_error.h"
+#include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"
 
 using Common::FS::IOFile;
@@ -35,7 +34,7 @@ namespace Libraries::SaveData::SaveMemory {
 static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
 struct SlotData {
-    OrbisUserServiceUserId user_id;
+    OrbisUserServiceUserId user_id{};
     std::string game_serial;
     std::filesystem::path folder_path;
     PSF sfo;
@@ -191,23 +190,25 @@ void SaveSFO(u32 slot_id) {
     }
 }
 
-void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
+Error ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     std::lock_guard lk{g_slot_mtx};
     auto& data = g_attached_slots[slot_id];
     auto& memory = data.memory_cache;
     if (memory.empty()) { // Load file
         IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
-        if (f.IsOpen()) {
-            memory.resize(f.GetSize());
-            f.Seek(0);
-            f.ReadSpan(std::span{memory});
+        if (!f.IsOpen()) {
+            return Error::NOT_FOUND;
         }
+        memory.resize(f.GetSize());
+        f.Seek(0);
+        f.ReadSpan(std::span{memory});
     }
     s64 read_size = buf_size;
     if (read_size + offset > memory.size()) {
         read_size = memory.size() - offset;
     }
     std::memcpy(buf, memory.data() + offset, read_size);
+    return Error::OK;
 }
 
 void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
