@@ -17,7 +17,6 @@
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/save_data/savedata_error.h"
 #include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"
 
@@ -200,7 +199,6 @@ void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     auto& memory = data.memory_cache;
     if (memory.empty()) { // Load file
         memory.resize(data.memory_cache_size);
-        memset(memory.data(), 0, data.memory_cache_size);
         IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
         if (f.IsOpen()) {
             f.Seek(0);
