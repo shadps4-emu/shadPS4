@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <boost/icl/interval_set.hpp>
+#include <boost/container/small_vector.hpp>
 #include "common/assert.h"
 #include "common/signal_context.h"
 #include "core/memory.h"
@@ -52,6 +52,12 @@ struct PageManager::Impl {
                 return --num_watchers;
             }
         }
+    };
+
+    struct UpdateProtectRange {
+        VAddr addr;
+        u64 size;
+        Core::MemoryPermission perms;
     };
 
     static constexpr size_t ADDRESS_BITS = 40;
@@ -184,47 +190,57 @@ struct PageManager::Impl {
 #endif
     template <s32 delta>
     void UpdatePageWatchers(VAddr addr, u64 size) {
-        std::scoped_lock lk(lock);
+        boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
+        {
+            std::scoped_lock lk(lock);
 
-        size_t page = addr >> PAGE_BITS;
-        auto perms = cached_pages[page].Perm();
-        u64 range_begin = 0;
-        u64 range_bytes = 0;
+            size_t page = addr >> PAGE_BITS;
+            auto perms = cached_pages[page].Perm();
+            u64 range_begin = 0;
+            u64 range_bytes = 0;
 
-        const auto release_pending = [&] {
-            if (range_bytes > 0) {
-                Protect(range_begin << PAGE_BITS, range_bytes, perms);
-                range_bytes = 0;
-            }
-        };
-
-        // Iterate requested pages
-        const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
-        for (; page != page_end; ++page) {
-            PageState& state = cached_pages[page];
-
-            // Apply the change to the page state
-            const u8 new_count = state.AddDelta<delta>();
-
-            // If the protection changed flush pending (un)protect action
-            if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
-                release_pending();
-                perms = new_perms;
-            }
-
-            // If the page must be (un)protected, add it to the pending range
-            if ((new_count == 0 && delta < 0) || (new_count == 1 && delta > 0)) {
-                if (range_bytes == 0) {
-                    range_begin = page;
+            const auto release_pending = [&] {
+                RENDERER_TRACE;
+                if (range_bytes > 0) {
+                    // Add pending (un)protect action
+                    update_ranges.push_back({range_begin << PAGE_BITS, range_bytes, perms});
+                    range_bytes = 0;
                 }
-                range_bytes += PAGE_SIZE;
-            } else {
-                release_pending();
+            };
+
+            // Iterate requested pages
+            const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+            for (; page != page_end; ++page) {
+                PageState& state = cached_pages[page];
+
+                // Apply the change to the page state
+                const u8 new_count = state.AddDelta<delta>();
+
+                // If the protection changed add pending (un)protect action
+                if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
+                    release_pending();
+                    perms = new_perms;
+                }
+
+                // If the page must be (un)protected, add it to the pending range
+                if ((new_count == 0 && delta < 0) || (new_count == 1 && delta > 0)) {
+                    if (range_bytes == 0) {
+                        range_begin = page;
+                    }
+                    range_bytes += PAGE_SIZE;
+                } else {
+                    release_pending();
+                }
             }
+
+            // Add pending (un)protect action
+            release_pending();
         }
 
-        // Flush pending (un)protect action
-        release_pending();
+        // Flush deferred protects
+        for (const auto& range : update_ranges) {
+            Protect(range.addr, range.size, range.perms);
+        }
     }
 
     std::array<PageState, NUM_ADDRESS_PAGES> cached_pages{};
