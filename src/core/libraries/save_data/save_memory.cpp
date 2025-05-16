@@ -40,11 +40,11 @@ struct SlotData {
     std::filesystem::path folder_path;
     PSF sfo;
     std::vector<u8> memory_cache;
+    size_t memory_cache_size{};
 };
 
 static std::mutex g_slot_mtx;
 static std::unordered_map<u32, SlotData> g_attached_slots;
-static size_t g_memory_size = 0;
 
 void PersistMemory(u32 slot_id, bool lock) {
     std::unique_lock lck{g_slot_mtx, std::defer_lock};
@@ -98,7 +98,8 @@ std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
     return SaveInstance::MakeDirSavePath(user_id, Common::ElfInfo::Instance().GameSerial(), dir);
 }
 
-size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial) {
+size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial,
+                       size_t memory_size) {
     std::lock_guard lck{g_slot_mtx};
 
     const auto save_dir = GetSavePath(user_id, slot_id, game_serial);
@@ -110,6 +111,7 @@ size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_
         .folder_path = save_dir,
         .sfo = {},
         .memory_cache = {},
+        .memory_cache_size = memory_size,
     };
 
     SaveInstance::SetupDefaultParamSFO(data.sfo, GetSaveDir(slot_id), std::string{game_serial});
@@ -197,8 +199,8 @@ void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     auto& data = g_attached_slots[slot_id];
     auto& memory = data.memory_cache;
     if (memory.empty()) { // Load file
-        memory.resize(g_memory_size);
-        memset(memory.data(), 0, g_memory_size);
+        memory.resize(data.memory_cache_size);
+        memset(memory.data(), 0, data.memory_cache_size);
         IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
         if (f.IsOpen()) {
             f.Seek(0);
@@ -224,9 +226,4 @@ void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     Backup::NewRequest(data.user_id, data.game_serial, GetSaveDir(slot_id),
                        Backup::OrbisSaveDataEventType::__DO_NOT_SAVE);
 }
-
-void SetMemorySize(size_t memory_size) {
-    g_memory_size = memory_size;
-}
-
 } // namespace Libraries::SaveData::SaveMemory

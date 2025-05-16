@@ -1565,8 +1565,6 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
         slot_id = setupParam->slotId;
     }
 
-    SaveMemory::SetMemorySize(setupParam->memorySize);
-
     const auto& save_path = SaveMemory::GetSavePath(setupParam->userId, slot_id, g_game_serial);
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetSavePath() == save_path) {
@@ -1575,8 +1573,8 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     }
 
     try {
-        size_t existed_size =
-            SaveMemory::SetupSaveMemory(setupParam->userId, slot_id, g_game_serial);
+        size_t existed_size = SaveMemory::SetupSaveMemory(setupParam->userId, slot_id,
+                                                          g_game_serial, setupParam->memorySize);
         if (existed_size == 0) { // Just created
             if (g_fw_ver >= ElfInfo::FW_45 && setupParam->initParam != nullptr) {
                 auto& sfo = SaveMemory::GetParamSFO(slot_id);
