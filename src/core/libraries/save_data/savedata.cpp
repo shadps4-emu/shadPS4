@@ -1139,10 +1139,7 @@ Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getPar
     LOG_DEBUG(Lib_SaveData, "called");
     auto data = getParam->data;
     if (data != nullptr) {
-        auto result = SaveMemory::ReadMemory(slot_id, data->buf, data->bufSize, data->offset);
-        if (Error::OK != result) {
-            return result;
-        }
+        SaveMemory::ReadMemory(slot_id, data->buf, data->bufSize, data->offset);
     }
     auto param = getParam->param;
     if (param != nullptr) {
@@ -1567,6 +1564,8 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     if (g_fw_ver > ElfInfo::FW_50) {
         slot_id = setupParam->slotId;
     }
+
+    SaveMemory::SetMemorySize(setupParam->memorySize);
 
     const auto& save_path = SaveMemory::GetSavePath(setupParam->userId, slot_id, g_game_serial);
     for (const auto& instance : g_mount_slots) {

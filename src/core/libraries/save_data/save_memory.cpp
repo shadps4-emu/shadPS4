@@ -10,6 +10,7 @@
 #include <utility>
 #include <fmt/format.h>
 
+#include "boost/icl/concept/interval.hpp"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -43,6 +44,7 @@ struct SlotData {
 
 static std::mutex g_slot_mtx;
 static std::unordered_map<u32, SlotData> g_attached_slots;
+static size_t g_memory_size = 0;
 
 void PersistMemory(u32 slot_id, bool lock) {
     std::unique_lock lck{g_slot_mtx, std::defer_lock};
@@ -190,25 +192,24 @@ void SaveSFO(u32 slot_id) {
     }
 }
 
-Error ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
+void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     std::lock_guard lk{g_slot_mtx};
     auto& data = g_attached_slots[slot_id];
     auto& memory = data.memory_cache;
     if (memory.empty()) { // Load file
+        memory.resize(g_memory_size);
+        memset(memory.data(), 0, g_memory_size);
         IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
-        if (!f.IsOpen()) {
-            return Error::NOT_FOUND;
+        if (f.IsOpen()) {
+            f.Seek(0);
+            f.ReadSpan(std::span{memory});
         }
-        memory.resize(f.GetSize());
-        f.Seek(0);
-        f.ReadSpan(std::span{memory});
     }
     s64 read_size = buf_size;
     if (read_size + offset > memory.size()) {
         read_size = memory.size() - offset;
     }
     std::memcpy(buf, memory.data() + offset, read_size);
-    return Error::OK;
 }
 
 void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
@@ -222,6 +223,10 @@ void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     PersistMemory(slot_id, false);
     Backup::NewRequest(data.user_id, data.game_serial, GetSaveDir(slot_id),
                        Backup::OrbisSaveDataEventType::__DO_NOT_SAVE);
+}
+
+void SetMemorySize(size_t memory_size) {
+    g_memory_size = memory_size;
 }
 
 } // namespace Libraries::SaveData::SaveMemory
