@@ -106,6 +106,7 @@ enum class Class : u8 {
     Lib_Hmd,               ///< The LibSceHmd implementation.
     Lib_SigninDialog,      ///< The LibSigninDialog implementation.
     Lib_Camera,            ///< The LibCamera implementation.
+    Lib_CompanionHttpd,    ///< The LibCompanionHttpd implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend
