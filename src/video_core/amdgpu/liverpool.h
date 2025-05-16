@@ -1175,6 +1175,14 @@ struct Liverpool {
         BitField<22, 2, u32> onchip;
     };
 
+    union StreamOutControl {
+        u32 raw;
+        struct {
+            u32 offset_update_done : 1;
+            u32 : 31;
+        };
+    };
+
     union StreamOutConfig {
         u32 raw;
         struct {
@@ -1378,7 +1386,9 @@ struct Liverpool {
             AaConfig aa_config;
             INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
-            INSERT_PADDING_WORDS(0xC242 - 0xA390);
+            INSERT_PADDING_WORDS(0xC03F - 0xA390);
+            StreamOutControl cp_strmout_cntl;
+            INSERT_PADDING_WORDS(0xC242 - 0xC040);
             PrimitiveType primitive_type;
             INSERT_PADDING_WORDS(0xC24C - 0xC243);
             u32 num_indices;
@@ -1668,6 +1678,7 @@ static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[7].base_address) == 0xA381);
+static_assert(GFX6_3D_REG_INDEX(cp_strmout_cntl) == 0xC03F);
 static_assert(GFX6_3D_REG_INDEX(primitive_type) == 0xC242);
 static_assert(GFX6_3D_REG_INDEX(num_instances) == 0xC24D);
 static_assert(GFX6_3D_REG_INDEX(vgt_tf_memory_base) == 0xc250);
