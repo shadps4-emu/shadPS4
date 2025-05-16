@@ -212,8 +212,9 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
 s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 prot, s32 flags,
                                            s64 phys_addr, u64 alignment) {
     LOG_INFO(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
-    const s32 ret = sceKernelMapNamedDirectMemory(addr, len, prot, flags, phys_addr, alignment, "anon");
-    
+    const s32 ret =
+        sceKernelMapNamedDirectMemory(addr, len, prot, flags, phys_addr, alignment, "anon");
+
     if (ret == 0) {
         auto* memory = Core::Memory::Instance();
         memory->SetDirectMemoryType(phys_addr, type);
