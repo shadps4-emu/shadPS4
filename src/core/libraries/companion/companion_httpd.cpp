@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "companion_error.h"
 #include "core/libraries/companion/companion_httpd.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -21,9 +22,9 @@ sceCompanionHttpdGet2ndScreenStatus(Libraries::UserService::OrbisUserServiceUser
 }
 
 s32 PS4_SYSV_ABI sceCompanionHttpdGetEvent(OrbisCompanionHttpdEvent* pEvent) {
-    pEvent->event = 0x10000002; // disconnected
+    pEvent->event = ORBIS_COMPANION_HTTPD_EVENT_DISCONNECT; // disconnected
     LOG_DEBUG(Lib_CompanionHttpd, "device disconnected");
-    return 0x80E40008; // No events to obtain
+    return ORBIS_COMPANION_HTTPD_ERROR_NO_EVENT; // No events to obtain
 }
 
 s32 PS4_SYSV_ABI

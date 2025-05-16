@@ -601,6 +601,7 @@ set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
 
 set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
                     src/core/libraries/companion/companion_httpd.h
+                    src/core/libraries/companion/companion_error.h
 )
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h

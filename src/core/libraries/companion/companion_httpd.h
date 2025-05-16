@@ -13,6 +13,10 @@ class SymbolsResolver;
 
 namespace Libraries::CompanionHttpd {
 
+// OrbisCompanionHttpdEvent event codes
+constexpr int ORBIS_COMPANION_HTTPD_EVENT_CONNECT = 0x10000001;
+constexpr int ORBIS_COMPANION_HTTPD_EVENT_DISCONNECT = 0x10000002;
+
 struct OrbisCompanionHttpdHeader {
     char* key;
     char* value;
