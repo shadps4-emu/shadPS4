@@ -5,7 +5,6 @@
 #include <thread>
 #include <vector>
 
-#include <core/libraries/system/msgdialog_ui.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -20,7 +19,9 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/savedata.h"
+#include "core/libraries/save_data/savedata_error.h"
 #include "core/libraries/system/msgdialog.h"
+#include "core/libraries/system/msgdialog_ui.h"
 #include "save_backup.h"
 #include "save_instance.h"
 #include "save_memory.h"
@@ -32,27 +33,6 @@ using Common::CString;
 using Common::ElfInfo;
 
 namespace Libraries::SaveData {
-
-enum class Error : u32 {
-    OK = 0,
-    USER_SERVICE_NOT_INITIALIZED = 0x80960002,
-    PARAMETER = 0x809F0000,
-    NOT_INITIALIZED = 0x809F0001,
-    OUT_OF_MEMORY = 0x809F0002,
-    BUSY = 0x809F0003,
-    NOT_MOUNTED = 0x809F0004,
-    EXISTS = 0x809F0007,
-    NOT_FOUND = 0x809F0008,
-    NO_SPACE_FS = 0x809F000A,
-    INTERNAL = 0x809F000B,
-    MOUNT_FULL = 0x809F000C,
-    BAD_MOUNTED = 0x809F000D,
-    BROKEN = 0x809F000F,
-    INVALID_LOGIN_USER = 0x809F0011,
-    MEMORY_NOT_READY = 0x809F0012,
-    BACKUP_BUSY = 0x809F0013,
-    BUSY_FOR_SAVING = 0x809F0016,
-};
 
 enum class OrbisSaveDataSaveDataMemoryOption : u32 {
     NONE = 0,
@@ -1593,8 +1573,8 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     }
 
     try {
-        size_t existed_size =
-            SaveMemory::SetupSaveMemory(setupParam->userId, slot_id, g_game_serial);
+        size_t existed_size = SaveMemory::SetupSaveMemory(setupParam->userId, slot_id,
+                                                          g_game_serial, setupParam->memorySize);
         if (existed_size == 0) { // Just created
             if (g_fw_ver >= ElfInfo::FW_45 && setupParam->initParam != nullptr) {
                 auto& sfo = SaveMemory::GetParamSFO(slot_id);
