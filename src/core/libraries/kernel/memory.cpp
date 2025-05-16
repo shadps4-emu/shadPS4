@@ -209,6 +209,46 @@ int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int fl
                                          "anon");
 }
 
+s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 prot, s32 flags,
+                                           s64 phys_addr, u64 alignment) {
+    LOG_INFO(Kernel_Vmm,
+             "in_addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}, "
+             "phys_addr = {:#x}, alignment = {:#x}",
+             fmt::ptr(*addr), len, type, prot, flags, phys_addr, alignment);
+
+    if (len == 0 || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (!Common::Is16KBAligned(phys_addr)) {
+        LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (alignment != 0) {
+        if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
+            LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+    }
+
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    auto* memory = Core::Memory::Instance();
+    const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
+                                       Core::VMAType::Direct, "anon", false, phys_addr, alignment);
+
+    if (ret == 0) {
+        memory->SetDirectMemoryType(phys_addr, type);
+    }
+
+    LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
+    return ret;
+}
+
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                                  int flags, const char* name) {
 
@@ -646,6 +686,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yDBwVAolDgg", "libkernel", 1, "libkernel", 1, 1, sceKernelIsStack);
     LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
+    LIB_FUNCTION("BQQniolj9tQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory2);
     LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
     LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", 1, 1, sceKernelDirectMemoryQuery);
     LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);

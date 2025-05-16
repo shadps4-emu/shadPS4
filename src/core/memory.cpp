@@ -783,6 +783,19 @@ int MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, si
     return ORBIS_OK;
 }
 
+s32 MemoryManager::SetDirectMemoryType(s64 phys_addr, s32 memory_type) {
+    std::scoped_lock lk{mutex};
+
+    auto& dmem_area = FindDmemArea(phys_addr)->second;
+
+    ASSERT_MSG(phys_addr <= dmem_area.GetEnd() && !dmem_area.is_free,
+               "Direct memory area is not mapped");
+
+    dmem_area.memory_type = memory_type;
+
+    return ORBIS_OK;
+}
+
 void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name) {
     auto it = FindVMA(virtual_addr);
 
