@@ -10,7 +10,6 @@ class PSF;
 
 namespace Libraries::SaveData {
 using OrbisUserServiceUserId = s32;
-enum class Error : u32;
 } // namespace Libraries::SaveData
 
 namespace Libraries::SaveData::SaveMemory {
