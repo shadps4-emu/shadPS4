@@ -584,7 +584,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::EventWrite: {
-                // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                LOG_DEBUG(Render_Vulkan,
+                          "Encountered EventWrite: event_type = {}, event_index = {}",
+                          magic_enum::enum_name(event->event_type.Value()),
+                          magic_enum::enum_name(event->event_index.Value()));
+                if (event->event_type.Value() == EventType::SoVgtStreamoutFlush) {
+                    // TODO: handle proper synchronization, for now signal that update is done
+                    // immediately
+                    regs.cp_strmout_cntl.offset_update_done = 1;
+                }
                 break;
             }
             case PM4ItOpcode::EventWriteEos: {
@@ -696,10 +705,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const u64* wait_addr = wait_reg_mem->Address<u64*>();
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
-                    vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+                    vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(regs.reg_array); });
                     break;
                 }
-                while (!wait_reg_mem->Test()) {
+                while (!wait_reg_mem->Test(regs.reg_array)) {
                     YIELD_GFX();
                 }
                 break;
@@ -730,6 +739,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     rasterizer->CpSync();
                 }
+                break;
+            }
+            case PM4ItOpcode::StrmoutBufferUpdate: {
+                const auto* strmout = reinterpret_cast<const PM4CmdStrmoutBufferUpdate*>(header);
+                LOG_WARNING(Render_Vulkan,
+                            "Unimplemented IT_STRMOUT_BUFFER_UPDATE, update_memory = {}, "
+                            "source_select = {}, buffer_select = {}",
+                            strmout->update_memory.Value(),
+                            magic_enum::enum_name(strmout->source_select.Value()),
+                            strmout->buffer_select.Value());
                 break;
             }
             default:
@@ -866,8 +885,9 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         }
         case PM4ItOpcode::SetQueueReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetQueueReg*>(header);
-            UNREACHABLE_MSG("Encountered compute SetQueueReg: vqid = {}, reg_offset = {:#x}",
-                            set_data->vqid.Value(), set_data->reg_offset.Value());
+            LOG_WARNING(Render, "Encountered compute SetQueueReg: vqid = {}, reg_offset = {:#x}",
+                        set_data->vqid.Value(), set_data->reg_offset.Value());
+            break;
         }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
@@ -934,7 +954,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
-            while (!wait_reg_mem->Test()) {
+            while (!wait_reg_mem->Test(regs.reg_array)) {
                 YIELD_ASC(vqid);
             }
             break;
