@@ -916,12 +916,10 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
     VAddr device_addr_end = device_addr + size;
     ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
         RENDERER_TRACE;
-        // Note that this function synchronizes the whole buffer, not just the range.
-        // This is because this function is used to sync buffers before using a
-        // shader that uses DMA.
-        // The ideal solution would be to sync all the mapped regions but it is
-        // very slow.
-        SynchronizeBuffer(buffer, buffer.CpuAddr(), buffer.SizeBytes(), false);
+        VAddr start = std::max(buffer.CpuAddr(), device_addr);
+        VAddr end = std::min(buffer.CpuAddr() + buffer.SizeBytes(), device_addr_end);
+        u32 size = static_cast<u32>(end - start);
+        SynchronizeBuffer(buffer, start, size, false);
     });
 }
 
