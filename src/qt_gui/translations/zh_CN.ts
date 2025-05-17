@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * 不支持的 Vulkan 版本</translation>
     </message>
   </context>
   <context>
