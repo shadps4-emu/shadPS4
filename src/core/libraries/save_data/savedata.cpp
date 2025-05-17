@@ -316,7 +316,9 @@ static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 
 static void initialize() {
     g_initialized = true;
-    g_game_serial = ElfInfo::Instance().GameSerial();
+    g_game_serial = Common::Singleton<PSF>::Instance()
+                        ->GetString("INSTALL_DIR_SAVEDATA")
+                        .value_or(ElfInfo::Instance().GameSerial());
     g_fw_ver = ElfInfo::Instance().FirmwareVer();
     Backup::StartThread();
 }
