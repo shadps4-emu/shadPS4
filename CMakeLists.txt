@@ -291,6 +291,8 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
             src/core/libraries/ajm/ajm_instance.h
             src/core/libraries/ajm/ajm_mp3.cpp
             src/core/libraries/ajm/ajm_mp3.h
+            src/core/libraries/ajm/ajm_m4aac.cpp
+            src/core/libraries/ajm/ajm_m4aac.h
 )
 
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
