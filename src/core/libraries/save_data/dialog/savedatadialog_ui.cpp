@@ -155,7 +155,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
 
     if (item->focusPos != FocusPos::DIRNAME) {
         this->focus_pos = item->focusPos;
-    } else {
+    } else if (item->focusPosDirName != nullptr) {
         this->focus_pos = item->focusPosDirName->data.to_string();
     }
     this->style = item->itemStyle;
