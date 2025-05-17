@@ -7,6 +7,7 @@
 #include <deque>
 #include <type_traits>
 #include <vector>
+#include "common/debug.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/word_manager.h"
 
@@ -19,11 +20,11 @@ public:
     static constexpr size_t MANAGER_POOL_SIZE = 32;
 
 public:
-    explicit MemoryTracker(PageManager* tracker_) : tracker{tracker_} {}
+    explicit MemoryTracker(PageManager& tracker_) : tracker{&tracker_} {}
     ~MemoryTracker() = default;
 
     /// Returns true if a region has been modified from the CPU
-    [[nodiscard]] bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
+    bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<true>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 return manager->template IsRegionModified<Type::CPU>(offset, size);
@@ -31,7 +32,7 @@ public:
     }
 
     /// Returns true if a region has been modified from the GPU
-    [[nodiscard]] bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
+    bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<false>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 return manager->template IsRegionModified<Type::GPU>(offset, size);
@@ -57,8 +58,7 @@ public:
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
-    template <typename Func>
-    void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, Func&& func) {
+    void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
         IteratePages<true>(query_cpu_range, query_size,
                            [&func](RegionManager* manager, u64 offset, size_t size) {
                                manager->template ForEachModifiedRange<Type::CPU, true>(
@@ -67,17 +67,12 @@ public:
     }
 
     /// Call 'func' for each GPU modified range and unmark those pages as GPU modified
-    template <bool clear, typename Func>
-    void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, Func&& func) {
+    template <bool clear>
+    void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
         IteratePages<false>(query_cpu_range, query_size,
                             [&func](RegionManager* manager, u64 offset, size_t size) {
-                                if constexpr (clear) {
-                                    manager->template ForEachModifiedRange<Type::GPU, true>(
-                                        manager->GetCpuAddr() + offset, size, func);
-                                } else {
-                                    manager->template ForEachModifiedRange<Type::GPU, false>(
-                                        manager->GetCpuAddr() + offset, size, func);
-                                }
+                                manager->template ForEachModifiedRange<Type::GPU, clear>(
+                                    manager->GetCpuAddr() + offset, size, func);
                             });
     }
 
@@ -91,6 +86,7 @@ private:
      */
     template <bool create_region_on_fail, typename Func>
     bool IteratePages(VAddr cpu_address, size_t size, Func&& func) {
+        RENDERER_TRACE;
         using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         std::size_t remaining_size{size};

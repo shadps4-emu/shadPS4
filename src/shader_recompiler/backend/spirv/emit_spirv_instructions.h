@@ -61,7 +61,7 @@ void EmitSetVectorRegister(EmitContext& ctx);
 void EmitSetGotoVariable(EmitContext& ctx);
 void EmitGetGotoVariable(EmitContext& ctx);
 void EmitSetScc(EmitContext& ctx);
-Id EmitReadConst(EmitContext& ctx, IR::Inst* inst);
+Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset);
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index);
 Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);

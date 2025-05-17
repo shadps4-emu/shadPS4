@@ -39,21 +39,22 @@ void Translator::EmitScalarMemory(const GcnInst& inst) {
 
 void Translator::S_LOAD_DWORD(int num_dwords, const GcnInst& inst) {
     const auto& smrd = inst.control.smrd;
-    const u32 dword_offset = [&] -> u32 {
+    const IR::ScalarReg sbase{inst.src[0].code * 2};
+    const IR::U32 dword_offset = [&] -> IR::U32 {
         if (smrd.imm) {
-            return smrd.offset;
+            return ir.Imm32(smrd.offset);
         }
         if (smrd.offset == SQ_SRC_LITERAL) {
-            return inst.src[1].code;
+            return ir.Imm32(inst.src[1].code);
         }
-        UNREACHABLE();
+        return ir.ShiftRightLogical(ir.GetScalarReg(IR::ScalarReg(smrd.offset)), ir.Imm32(2));
     }();
-    const IR::ScalarReg sbase{inst.src[0].code * 2};
     const IR::Value base =
         ir.CompositeConstruct(ir.GetScalarReg(sbase), ir.GetScalarReg(sbase + 1));
     IR::ScalarReg dst_reg{inst.dst[0].code};
     for (u32 i = 0; i < num_dwords; i++) {
-        ir.SetScalarReg(dst_reg + i, ir.ReadConst(base, ir.Imm32(dword_offset + i)));
+        IR::U32 index = ir.IAdd(dword_offset, ir.Imm32(i));
+        ir.SetScalarReg(dst_reg + i, ir.ReadConst(base, index));
     }
 }
 

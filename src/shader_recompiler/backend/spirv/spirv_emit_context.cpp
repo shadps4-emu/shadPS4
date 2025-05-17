@@ -7,6 +7,7 @@
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/types.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -70,6 +71,12 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
                          Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
+    if (info.dma_types != IR::Type::Void) {
+        SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
+    } else {
+        SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
+    }
+
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
     DefineInterfaces();
@@ -140,6 +147,7 @@ void EmitContext::DefineArithmeticTypes() {
     u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
+    u64_zero_value = Constant(U64, 0ULL);
 
     pi_x2 = ConstF32(2.0f * float{std::numbers::pi});
 
@@ -156,6 +164,48 @@ void EmitContext::DefineArithmeticTypes() {
     frexp_result_f32 = Name(TypeStruct(F32[1], S32[1]), "frexp_result_f32");
     if (info.uses_fp64) {
         frexp_result_f64 = Name(TypeStruct(F64[1], S32[1]), "frexp_result_f64");
+    }
+
+    if (True(info.dma_types & IR::Type::F64)) {
+        physical_pointer_types[PointerType::F64] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F64[1]);
+    }
+    if (True(info.dma_types & IR::Type::U64)) {
+        physical_pointer_types[PointerType::U64] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U64);
+    }
+    if (True(info.dma_types & IR::Type::F32)) {
+        physical_pointer_types[PointerType::F32] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F32[1]);
+    }
+    if (True(info.dma_types & IR::Type::U32)) {
+        physical_pointer_types[PointerType::U32] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
+    }
+    if (True(info.dma_types & IR::Type::F16)) {
+        physical_pointer_types[PointerType::F16] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F16[1]);
+    }
+    if (True(info.dma_types & IR::Type::U16)) {
+        physical_pointer_types[PointerType::U16] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
+    }
+    if (True(info.dma_types & IR::Type::U8)) {
+        physical_pointer_types[PointerType::U8] =
+            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
+    }
+
+    if (info.dma_types != IR::Type::Void) {
+
+        caching_pagebits_value =
+            Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS));
+        caching_pagemask_value = Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1);
+
+        // Used to calculate fault buffer position and mask
+        u32_three_value = ConstU32(3U);
+        u32_seven_value = ConstU32(7U);
+        bda_first_time_mask = Constant(U64, 0x1ULL);
+        bda_first_time_inv_mask = Constant(U64, ~0x1ULL);
     }
 }
 
@@ -195,9 +245,10 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
 }
 
 Id EmitContext::GetBufferSize(const u32 sharp_idx) {
-    const auto& srt_flatbuf = buffers.back();
-    ASSERT(srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
-    const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
+    // Can this be done with memory access? Like we do now with ReadConst
+    const auto& srt_flatbuf = buffers[flatbuf_index];
+    ASSERT(srt_flatbuf.buffer_type == BufferType::Flatbuf);
+    const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
 
     const auto rsrc1{
         OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
@@ -690,8 +741,14 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
     case Shader::BufferType::GdsBuffer:
         Name(id, "gds_buffer");
         break;
-    case Shader::BufferType::ReadConstUbo:
-        Name(id, "srt_flatbuf_ubo");
+    case Shader::BufferType::Flatbuf:
+        Name(id, "srt_flatbuf");
+        break;
+    case Shader::BufferType::BdaPagetable:
+        Name(id, "bda_pagetable");
+        break;
+    case Shader::BufferType::FaultBuffer:
+        Name(id, "fault_buffer");
         break;
     case Shader::BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
@@ -706,34 +763,49 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 
 void EmitContext::DefineBuffers() {
     if (!profile.supports_robust_buffer_access && !info.has_readconst) {
-        // In case ReadConstUbo has not already been bound by IR and is needed
+        // In case Flatbuf has not already been bound by IR and is needed
         // to query buffer sizes, bind it now.
         info.buffers.push_back({
             .used_types = IR::Type::U32,
-            .inline_cbuf = AmdGpu::Buffer::Null(),
-            .buffer_type = BufferType::ReadConstUbo,
+            // We can't guarantee that flatbuf will now grow bast UBO
+            // limit if there are a lot of ReadConsts. (We could specialize)
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
+            .buffer_type = BufferType::Flatbuf,
         });
     }
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
 
+        // Set indexes for special buffers.
+        if (desc.buffer_type == BufferType::Flatbuf) {
+            flatbuf_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::BdaPagetable) {
+            bda_pagetable_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::FaultBuffer) {
+            fault_buffer_index = buffers.size();
+        }
+
         // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        if (True(desc.used_types & IR::Type::U64)) {
+            spv_buffer[PointerType::U64] =
+                DefineBuffer(is_storage, desc.is_written, 3, desc.buffer_type, U64);
+        }
         if (True(desc.used_types & IR::Type::U32)) {
-            spv_buffer[BufferAlias::U32] =
+            spv_buffer[PointerType::U32] =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
-            spv_buffer[BufferAlias::F32] =
+            spv_buffer[PointerType::F32] =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
-            spv_buffer[BufferAlias::U16] =
+            spv_buffer[PointerType::U16] =
                 DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
-            spv_buffer[BufferAlias::U8] =
+            spv_buffer[PointerType::U8] =
                 DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
         }
         ++binding.unified;

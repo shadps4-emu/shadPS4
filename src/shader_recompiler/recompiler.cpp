@@ -85,6 +85,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
 
+    Shader::IR::DumpProgram(program, info);
+
     return program;
 }
 
