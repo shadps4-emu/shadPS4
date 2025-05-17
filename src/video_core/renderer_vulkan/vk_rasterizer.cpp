@@ -474,7 +474,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
-    if (uses_dma) {
+    if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
             // We don't want the mapped ranges to be modified while we are syncing
