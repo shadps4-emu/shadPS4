@@ -62,7 +62,14 @@ struct BufferResource {
     }
 
     bool IsStorage(const AmdGpu::Buffer& buffer, const Profile& profile) const noexcept {
-        return buffer.GetSize() > profile.max_ubo_size || is_written;
+        // When using uniform buffers, a size is required at compilation time, so we need to
+        // either compile a lot of shader specializations to handle each size or just force it to
+        // the maximum possible size always. However, for some vendors the shader-supplied size is
+        // used for bounds checking uniform buffer accesses, so the latter would effectively turn
+        // off buffer robustness behavior. Instead, force storage buffers which are bounds checked
+        // using the actual buffer size. We are assuming the performance hit from this is
+        // acceptable.
+        return true; // buffer.GetSize() > profile.max_ubo_size || is_written;
     }
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
@@ -196,6 +203,7 @@ struct Info {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool uses_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
@@ -279,6 +287,11 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
     if (!image.Valid()) {
         // Fall back to null image if unbound.
         return AmdGpu::Image::Null();
+    }
+    const auto data_fmt = image.GetDataFmt();
+    if (is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
+        data_fmt != AmdGpu::DataFormat::Format32) {
+        return AmdGpu::Image::NullDepth();
     }
     return image;
 }

@@ -83,7 +83,7 @@ public:
     }
 
     Module* GetModule(s32 index) const {
-        if (index >= 0 || index < m_modules.size()) {
+        if (index >= 0 && index < m_modules.size()) {
             return m_modules.at(index).get();
         }
         return nullptr;

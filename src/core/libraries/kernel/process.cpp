@@ -127,6 +127,62 @@ int PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, int flags,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelGetModuleInfo(s32 handle, Core::OrbisKernelModuleInfo* info) {
+    if (info == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (info->st_size != sizeof(Core::OrbisKernelModuleInfo)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->GetModule(handle);
+    if (module == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
+    *info = module->GetModuleInfo();
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoInternal(s32 handle, Core::OrbisKernelModuleInfoEx* info) {
+    if (info == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (info->st_size != sizeof(Core::OrbisKernelModuleInfoEx)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->GetModule(handle);
+    if (module == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
+    *info = module->GetModuleInfoEx();
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelGetModuleList(s32* handles, u64 num_array, u64* out_count) {
+    if (handles == nullptr || out_count == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    u64 count = 0;
+    auto* module = linker->GetModule(count);
+    while (module != nullptr && count < num_array) {
+        handles[count] = count;
+        count++;
+        module = linker->GetModule(count);
+    }
+
+    if (count == num_array && module != nullptr) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
+    *out_count = count;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI exit(s32 status) {
     UNREACHABLE_MSG("Exiting with status code {}", status);
     return 0;
@@ -141,6 +197,9 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", 1, 1, sceKernelDlsym);
     LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoForUnwind);
     LIB_FUNCTION("f7KBOafysXo", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoFromAddr);
+    LIB_FUNCTION("kUpgrXIrz7Q", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfo);
+    LIB_FUNCTION("HZO7xOos4xc", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleInfoInternal);
+    LIB_FUNCTION("IuxnUuXk6Bg", "libkernel", 1, "libkernel", 1, 1, sceKernelGetModuleList);
     LIB_FUNCTION("6Z83sYWFlA8", "libkernel", 1, "libkernel", 1, 1, exit);
 }
 

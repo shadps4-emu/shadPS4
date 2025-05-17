@@ -6,6 +6,7 @@
 #include "core/debug_state.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
@@ -289,7 +290,12 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     /* Create thread */
     new_thread->native_thr = Core::NativeThread();
     int ret = new_thread->native_thr.Create(RunThread, new_thread, &new_thread->attr);
+
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
+
+    if (attr != nullptr && *attr != nullptr && (*attr)->cpuset != nullptr) {
+        new_thread->SetAffinity((*attr)->cpuset);
+    }
     if (ret) {
         *thread = nullptr;
     }
@@ -521,6 +527,85 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
     return 0;
 }
 
+int Pthread::SetAffinity(const Cpuset* cpuset) {
+    const auto processor_count = std::thread::hardware_concurrency();
+    if (processor_count < 8) {
+        return 0;
+    }
+    if (cpuset == nullptr) {
+        return POSIX_EINVAL;
+    }
+
+    uintptr_t handle = native_thr.GetHandle();
+    if (handle == 0) {
+        return POSIX_ESRCH;
+    }
+
+    // We don't use this currently because some games gets performance problems
+    // when applying affinity even on strong hardware
+    /*
+    u64 mask = cpuset->bits;
+    #ifdef _WIN64
+        DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
+        if (!SetThreadAffinityMask(reinterpret_cast<HANDLE>(handle), affinity_mask)) {
+            return POSIX_EINVAL;
+        }
+
+    #elif defined(__linux__)
+        cpu_set_t cpu_set;
+        CPU_ZERO(&cpu_set);
+
+        u64 mask = cpuset->bits;
+        for (int cpu = 0; cpu < std::min(64, CPU_SETSIZE); ++cpu) {
+            if (mask & (1ULL << cpu)) {
+                CPU_SET(cpu, &cpu_set);
+            }
+        }
+
+        int result =
+            pthread_setaffinity_np(static_cast<pthread_t>(handle), sizeof(cpu_set_t), &cpu_set);
+        if (result != 0) {
+            return POSIX_EINVAL;
+        }
+    #endif
+    */
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize, Cpuset* cpusetp) {
+    if (thread == nullptr || cpusetp == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* attr_ptr = &thread->attr;
+    return posix_pthread_attr_getaffinity_np(&attr_ptr, cpusetsize, cpusetp);
+}
+
+int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize,
+                                              const Cpuset* cpusetp) {
+    if (thread == nullptr || cpusetp == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* attr_ptr = &thread->attr;
+    if (const auto ret = posix_pthread_attr_setaffinity_np(&attr_ptr, cpusetsize, cpusetp)) {
+        return ret;
+    }
+    return thread->SetAffinity(thread->attr.cpuset);
+}
+
+int PS4_SYSV_ABI scePthreadGetaffinity(PthreadT thread, u64* mask) {
+    Cpuset cpuset;
+    const int ret = posix_pthread_getaffinity_np(thread, sizeof(Cpuset), &cpuset);
+    if (ret == 0) {
+        *mask = cpuset.bits;
+    }
+    return ret;
+}
+
+int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
+    const Cpuset cpuset = {.bits = mask};
+    return posix_pthread_setaffinity_np(thread, sizeof(Cpuset), &cpuset);
+}
+
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_once);
@@ -544,6 +629,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_once);
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_create);
+    LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getaffinity_np);
+    LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_setaffinity_np);
 
     // Orbis
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_once));
@@ -566,6 +653,8 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_setprio));
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
+    LIB_FUNCTION("rcrVFJsQWRY", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadGetaffinity));
+    LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadSetaffinity));
 }
 
 } // namespace Libraries::Kernel

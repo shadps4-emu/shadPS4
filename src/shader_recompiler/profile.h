@@ -15,6 +15,7 @@ struct Profile {
     bool support_int8{};
     bool support_int16{};
     bool support_int64{};
+    bool support_float64{};
     bool support_vertex_instance_id{};
     bool support_float_controls{};
     bool support_separate_denorm_behavior{};
@@ -28,6 +29,7 @@ struct Profile {
     bool supports_native_cube_calc{};
     bool supports_trinary_minmax{};
     bool supports_robust_buffer_access{};
+    bool supports_image_fp32_atomic_min_max{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};

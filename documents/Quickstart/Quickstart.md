@@ -21,9 +21,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 - A processor with at least 4 cores and 6 threads
 - Above 2.5 GHz frequency
-- A CPU supporting the following instruction sets: MMX, SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AVX, F16C, CLMUL, AES, BMI1, MOVBE, XSAVE, ABM
+- A CPU supporting the x86-64-v3 baseline.
   - **Intel**: Haswell generation or newer
-  - **AMD**: Jaguar generation or newer
+  - **AMD**: Excavator generation or newer
   - **Apple**: Rosetta 2 on macOS 15.4 or newer
 
 ### GPU

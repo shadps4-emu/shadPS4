@@ -14,7 +14,7 @@
 
 namespace Vulkan::HostPasses {
 
-void PostProcessingPass::Create(vk::Device device) {
+void PostProcessingPass::Create(vk::Device device, const vk::Format surface_format) {
     static const std::array pp_shaders{
         HostShaders::FS_TRI_VERT,
         HostShaders::POST_PROCESS_FRAG,
@@ -76,7 +76,7 @@ void PostProcessingPass::Create(vk::Device device) {
         Check<"create pp pipeline layout">(device.createPipelineLayoutUnique(layout_info));
 
     const std::array pp_color_formats{
-        vk::Format::eB8G8R8A8Unorm, // swapchain.GetSurfaceFormat().format,
+        surface_format,
     };
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci{
         .colorAttachmentCount = pp_color_formats.size(),

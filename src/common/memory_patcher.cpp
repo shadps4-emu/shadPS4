@@ -23,7 +23,7 @@
 
 namespace MemoryPatcher {
 
-uintptr_t g_eboot_address;
+EXPORT uintptr_t g_eboot_address;
 uint64_t g_eboot_image_size;
 std::string g_game_serial;
 std::string patchFile;
@@ -169,7 +169,8 @@ void OnGameLoaded() {
                             if (type == "mask_jump32")
                                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-                            if (type == "mask" || type == "mask_jump32" && !maskOffsetStr.empty()) {
+                            if ((type == "mask" || type == "mask_jump32") &&
+                                !maskOffsetStr.empty()) {
                                 maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
                             }
 

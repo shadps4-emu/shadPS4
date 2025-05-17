@@ -40,6 +40,10 @@ public:
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
+    virtual size_t pwritev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
     virtual s64 lseek(s64 offset, int whence) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }

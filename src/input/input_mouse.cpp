@@ -60,7 +60,7 @@ Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
     float angle = atan2(d_y, d_x);
     float a_x = cos(angle) * output_speed, a_y = sin(angle) * output_speed;
 
-    if (d_x != 0 && d_y != 0) {
+    if (d_x != 0 || d_y != 0) {
         controller->Axis(0, axis_x, GetAxis(-0x80, 0x7f, a_x));
         controller->Axis(0, axis_y, GetAxis(-0x80, 0x7f, a_y));
     } else {

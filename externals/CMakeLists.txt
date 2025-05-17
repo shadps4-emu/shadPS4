@@ -137,12 +137,6 @@ if (NOT TARGET Zydis::Zydis)
     add_subdirectory(zydis)
 endif()
 
-# Winpthreads
-if (WIN32)
-    add_subdirectory(winpthreads)
-    target_include_directories(winpthreads INTERFACE winpthreads/include)
-endif()
-
 # sirit
 add_subdirectory(sirit)
 if (WIN32)

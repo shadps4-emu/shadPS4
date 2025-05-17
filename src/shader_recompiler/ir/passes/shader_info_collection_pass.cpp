@@ -44,7 +44,8 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BitCastF16U16:
         info.uses_fp16 = true;
         break;
-    case IR::Opcode::BitCastU64F64:
+    case IR::Opcode::PackDouble2x32:
+    case IR::Opcode::UnpackDouble2x32:
         info.uses_fp64 = true;
         break;
     case IR::Opcode::ImageWrite:
@@ -69,6 +70,10 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::ImageQueryDimensions:
     case IR::Opcode::ImageQueryLod:
         info.has_image_query = true;
+        break;
+    case IR::Opcode::ImageAtomicFMax32:
+    case IR::Opcode::ImageAtomicFMin32:
+        info.uses_atomic_float_min_max = true;
         break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;

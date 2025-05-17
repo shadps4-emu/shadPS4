@@ -8,7 +8,7 @@
 #define VA_ARGS                                                                                    \
     uint64_t rdi, uint64_t rsi, uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9,              \
         uint64_t overflow_arg_area, __m128 xmm0, __m128 xmm1, __m128 xmm2, __m128 xmm3,            \
-        __m128 xmm4, __m128 xmm5, __m128 xmm6, __m128 xmm7, ...
+        __m128 xmm4, __m128 xmm5, __m128 xmm6, __m128 xmm7
 
 #define VA_CTX(ctx)                                                                                \
     alignas(16)::Common::VaCtx ctx{};                                                              \

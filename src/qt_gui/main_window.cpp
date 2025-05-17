@@ -24,7 +24,6 @@
 #include "main_window.h"
 #include "settings_dialog.h"
 
-#include "video_core/renderer_vulkan/vk_instance.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
@@ -53,7 +52,6 @@ bool MainWindow::Init() {
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
-    GetPhysicalDevices();
     // show ui
     setMinimumSize(720, 405);
     std::string window_title = "";
@@ -368,19 +366,6 @@ void MainWindow::CheckUpdateMain(bool checkSave) {
 }
 #endif
 
-void MainWindow::GetPhysicalDevices() {
-    Vulkan::Instance instance(false, false);
-    auto physical_devices = instance.GetPhysicalDevices();
-    for (const vk::PhysicalDevice physical_device : physical_devices) {
-        auto prop = physical_device.getProperties();
-        QString name = QString::fromUtf8(prop.deviceName, -1);
-        if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
-            name += tr(" * Unsupported Vulkan Version");
-        }
-        m_physical_devices.push_back(name);
-    }
-}
-
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
@@ -421,7 +406,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -454,7 +439,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);

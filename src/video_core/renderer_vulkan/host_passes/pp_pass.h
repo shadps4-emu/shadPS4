@@ -19,7 +19,7 @@ public:
         u32 hdr = 0;
     };
 
-    void Create(vk::Device device);
+    void Create(vk::Device device, vk::Format surface_format);
 
     void Render(vk::CommandBuffer cmdbuf, vk::ImageView input, vk::Extent2D input_size,
                 Frame& output, Settings settings);
