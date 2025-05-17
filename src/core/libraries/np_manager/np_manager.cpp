@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -942,7 +943,7 @@ int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) 
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     *account_id = 0;
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
@@ -951,7 +952,7 @@ int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     *account_id = 0;
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountLanguage() {
@@ -984,7 +985,9 @@ int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) 
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    memset(np_id, 0, sizeof(OrbisNpId));
+    strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
@@ -997,7 +1000,9 @@ int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineI
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    memset(online_id, 0, sizeof(OrbisNpOnlineId));
+    strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpGetParentalControlInfo() {
@@ -1014,7 +1019,7 @@ int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* sta
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *state = OrbisNpState::SignedOut;
+    *state = OrbisNpState::SignedIn;
     LOG_DEBUG(Lib_NpManager, "Signed out");
     return ORBIS_OK;
 }
