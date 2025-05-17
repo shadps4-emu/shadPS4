@@ -411,6 +411,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/save_memory.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
+                src/core/libraries/save_data/savedata_error.h
                 src/core/libraries/save_data/dialog/savedatadialog.cpp
                 src/core/libraries/save_data/dialog/savedatadialog.h
                 src/core/libraries/save_data/dialog/savedatadialog_ui.cpp
@@ -601,6 +602,10 @@ set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
                  src/core/libraries/camera/camera_error.h
 )
 
+set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
+                    src/core/libraries/companion/companion_httpd.h
+                    src/core/libraries/companion/companion_error.h
+)
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
               src/core/devtools/options.cpp
@@ -765,6 +770,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
+         ${COMPANION_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
