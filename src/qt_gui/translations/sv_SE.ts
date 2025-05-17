@@ -1348,10 +1348,6 @@
       <translation>Spellista</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * Vulkan-versionen stöds inte</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>Hämta fusk för alla installerade spel</translation>
     </message>
@@ -2049,6 +2045,10 @@
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation>Öppna mappen för anpassade trofébilder/ljud:\nDu kan lägga till egna bilder till troféerna och ett ljud.\nLägg till filerna i custom_trophy med följande namn:\ntrophy.wav ELLER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nObservera: Ljudet fungerar endast i QT-versioner.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>

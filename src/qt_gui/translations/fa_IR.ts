@@ -1348,10 +1348,6 @@
       <translation>لیست بازی</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation>شما پشتیبانی نمیشود Vulkan ورژن *</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>دانلود چیت برای همه بازی ها</translation>
     </message>
@@ -2049,6 +2045,10 @@
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>

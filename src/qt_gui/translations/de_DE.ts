@@ -1348,10 +1348,6 @@
       <translation>Spieleliste</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * Nicht unterstützte Vulkan-Version</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>Cheats für alle installierten Spiele herunterladen</translation>
     </message>
@@ -2053,6 +2049,10 @@ Sie können benutzerdefinierte Bilder zu den Trophäen hinzufügen und einen Ton
 Fügen Sie die Dateien dem Ordner custom_trophy mit folgenden Namen hinzu:\n
 trophy.wav ODER trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\n
 Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>
