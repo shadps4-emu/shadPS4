@@ -475,6 +475,20 @@ Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     return EmitLoadBufferBoundsCheck<1>(ctx, address, spv_buffer.size, result, false);
 }
 
+Id EmitLoadBufferS8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U8];
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
+    Id result{ctx.OpLoad(ctx.U8, ptr)};
+    result = ctx.OpBitcast(ctx.S8, result);
+    result = ctx.OpSConvert(ctx.S32[1], result);
+    result = ctx.OpBitcast(ctx.U32[1], result);
+    return EmitLoadBufferBoundsCheck<1>(ctx, address, spv_buffer.size, result, false);
+}
+
 Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto& spv_buffer = ctx.buffers[handle];
     if (Sirit::ValidId(spv_buffer.offset)) {
@@ -484,6 +498,21 @@ Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
     const Id result{ctx.OpUConvert(ctx.U32[1], ctx.OpLoad(ctx.U16, ptr))};
+    return EmitLoadBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts, result, false);
+}
+
+Id EmitLoadBufferS16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
+    const auto& spv_buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(spv_buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, spv_buffer.offset);
+    }
+    const auto [id, pointer_type] = spv_buffer[BufferAlias::U16];
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(1u));
+    const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    Id result{ctx.OpLoad(ctx.U16, ptr)};
+    result = ctx.OpBitcast(ctx.S16, result);
+    result = ctx.OpSConvert(ctx.S32[1], result);
+    result = ctx.OpBitcast(ctx.U32[1], result);
     return EmitLoadBufferBoundsCheck<1>(ctx, index, spv_buffer.size_shorts, result, false);
 }
 
