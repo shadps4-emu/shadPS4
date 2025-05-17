@@ -95,7 +95,7 @@ struct EqueueEvent {
     void Trigger(void* data) {
         is_triggered = true;
         event.fflags++;
-        event.data = reinterpret_cast<uintptr_t>(data);
+        event.udata = data;
     }
 
     void TriggerDisplay(void* data) {
