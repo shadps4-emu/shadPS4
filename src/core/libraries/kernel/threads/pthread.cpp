@@ -585,6 +585,9 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
     if (thread == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
     }
+    if (thread == reinterpret_cast<PthreadT>(-1)) {
+        thread = posix_pthread_self();
+    }
     auto* attr_ptr = &thread->attr;
     if (const auto ret = posix_pthread_attr_setaffinity_np(&attr_ptr, cpusetsize, cpusetp)) {
         return ret;
