@@ -80,7 +80,15 @@ struct Buffer {
     }
 
     u32 GetSize() const noexcept {
-        return stride == 0 ? num_records : (stride * num_records);
+        if (stride == 0) {
+            return num_records;
+        }
+        auto bits = NumBits(DataFormat(data_format));
+        if (bits <= 0) {
+            return stride * num_records;
+        }
+        auto dfmt_bytes = bits / 8;
+        return stride * (num_records - 1) + dfmt_bytes;
     }
 
     u32 GetIndexStride() const noexcept {
