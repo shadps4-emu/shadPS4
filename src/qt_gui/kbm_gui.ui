@@ -825,6 +825,9 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
+                   <property name="minimumHeight">
+                    <number>48</number>
+                   </property>
                    <property name="focusPolicy">
                     <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
@@ -840,6 +843,9 @@
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
+                   </property>
+                   <property name="minimumHeight">
+                    <number>48</number>
                    </property>
                    <property name="focusPolicy">
                     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -983,8 +989,8 @@
               <widget class="QLabel" name="l_controller">
                <property name="maximumSize">
                 <size>
-                 <width>500</width>
-                 <height>200</height>
+                 <width>424</width>
+                 <height>250</height>
                 </size>
                </property>
                <property name="pixmap">
