@@ -3,6 +3,7 @@
 
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
+#include "common/debug.h"
 #include "common/signal_context.h"
 #include "core/memory.h"
 #include "core/signals.h"
@@ -174,6 +175,7 @@ struct PageManager::Impl {
     }
 
     void Protect(VAddr address, size_t size, Core::MemoryPermission perms) {
+        RENDERER_TRACE;
         auto* memory = Core::Memory::Instance();
         auto& impl = memory->GetAddressSpace();
         impl.Protect(address, size, perms);
@@ -190,6 +192,7 @@ struct PageManager::Impl {
 #endif
     template <s32 delta>
     void UpdatePageWatchers(VAddr addr, u64 size) {
+        RENDERER_TRACE;
         boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
         {
             std::scoped_lock lk(lock);
@@ -201,6 +204,7 @@ struct PageManager::Impl {
 
             const auto release_pending = [&] {
                 if (range_bytes > 0) {
+                    RENDERER_TRACE;
                     // Add pending (un)protect action
                     update_ranges.push_back({range_begin << PAGE_BITS, range_bytes, perms});
                     range_bytes = 0;

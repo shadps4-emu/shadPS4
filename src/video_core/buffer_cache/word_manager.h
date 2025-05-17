@@ -13,6 +13,7 @@
 #else
 #include "common/spin_lock.h"
 #endif
+#include "common/debug.h"
 #include "common/types.h"
 #include "video_core/page_manager.h"
 
@@ -74,6 +75,7 @@ public:
 
     template <typename Func>
     void IterateWords(size_t offset, size_t size, Func&& func) const {
+        RENDERER_TRACE;
         using FuncReturn = std::invoke_result_t<Func, std::size_t, u64>;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         const size_t start = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset), 0LL));
@@ -106,6 +108,7 @@ public:
     }
 
     void IteratePages(u64 mask, auto&& func) const {
+        RENDERER_TRACE;
         size_t offset = 0;
         while (mask != 0) {
             const size_t empty_bits = std::countr_zero(mask);
@@ -157,6 +160,7 @@ public:
      */
     template <Type type, bool clear>
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
+        RENDERER_TRACE;
         std::scoped_lock lk{lock};
         static_assert(type != Type::Untracked);
 
@@ -170,6 +174,7 @@ public:
                  (pending_pointer - pending_offset) * BYTES_PER_PAGE);
         };
         IterateWords(offset, size, [&](size_t index, u64 mask) {
+            RENDERER_TRACE;
             if constexpr (type == Type::GPU) {
                 mask &= ~untracked[index];
             }
@@ -183,6 +188,7 @@ public:
             }
             const size_t base_offset = index * PAGES_PER_WORD;
             IteratePages(word, [&](size_t pages_offset, size_t pages_size) {
+                RENDERER_TRACE;
                 const auto reset = [&]() {
                     pending_offset = base_offset + pages_offset;
                     pending_pointer = base_offset + pages_offset + pages_size;
@@ -243,6 +249,7 @@ private:
      */
     template <bool add_to_tracker>
     void UpdateProtection(u64 word_index, u64 current_bits, u64 new_bits) const {
+        RENDERER_TRACE;
         constexpr s32 delta = add_to_tracker ? 1 : -1;
         u64 changed_bits = (add_to_tracker ? current_bits : ~current_bits) & new_bits;
         VAddr addr = cpu_addr + word_index * BYTES_PER_WORD;

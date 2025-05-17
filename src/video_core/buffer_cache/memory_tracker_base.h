@@ -7,6 +7,7 @@
 #include <deque>
 #include <type_traits>
 #include <vector>
+#include "common/debug.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/word_manager.h"
 
@@ -85,6 +86,7 @@ private:
      */
     template <bool create_region_on_fail, typename Func>
     bool IteratePages(VAddr cpu_address, size_t size, Func&& func) {
+        RENDERER_TRACE;
         using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         std::size_t remaining_size{size};
