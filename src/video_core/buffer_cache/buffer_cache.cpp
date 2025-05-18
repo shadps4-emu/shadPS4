@@ -140,8 +140,7 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool unmap) {
             // This is a temporary workaround...
             std::scoped_lock lock(dma_sync_ranges_mutex);
             const VAddr aligned_addr = Common::AlignDown(device_addr, 4_KB);
-            const u64 aligned_size =
-                Common::AlignUp(device_addr + size, 4_KB) - aligned_addr;
+            const u64 aligned_size = Common::AlignUp(device_addr + size, 4_KB) - aligned_addr;
             dma_sync_ranges.Add(aligned_addr, aligned_size);
         }
     }
