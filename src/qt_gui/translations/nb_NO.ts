@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> *Ustøttet Vulkan-versjon</translation>
     </message>
   </context>
   <context>
