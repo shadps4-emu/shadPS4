@@ -926,9 +926,11 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 void BufferCache::SynchronizeDmaBuffers() {
     RENDERER_TRACE;
     std::scoped_lock lk(dma_sync_ranges_mutex);
+    LOG_WARNING(Render_Vulkan, "Synchronizing ranges");
     dma_sync_ranges.ForEach([&](VAddr device_addr, u64 end_addr) {
         RENDERER_TRACE;
         SynchronizeBuffersInRange(device_addr, end_addr - device_addr);
+        LOG_WARNING(Render_Vulkan, "Sync range {:#x} - {:#x}", device_addr, end_addr);
     });
     dma_sync_ranges.Clear();
 }
