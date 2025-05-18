@@ -160,7 +160,7 @@ public:
             Common::FS::PathToQString(userPath,
                                       Common::FS::GetUserPath(Common::FS::PathType::UserDir));
             QString saveDataPath =
-                userPath + "/savedata/1/" + QString::fromStdString(m_games[itemID].serial);
+                userPath + "/savedata/1/" + QString::fromStdString(m_games[itemID].save_dir);
             QDir(saveDataPath).mkpath(saveDataPath);
             QDesktopServices::openUrl(QUrl::fromLocalFile(saveDataPath));
         }
