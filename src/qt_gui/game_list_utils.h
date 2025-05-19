@@ -25,6 +25,7 @@ struct GameInfo {
     std::string version = "Unknown";
     std::string region = "Unknown";
     std::string fw = "Unknown";
+    std::string save_dir = "Unknown";
 
     std::string play_time = "Unknown";
     CompatibilityEntry compatibility = CompatibilityEntry{CompatibilityStatus::Unknown};
