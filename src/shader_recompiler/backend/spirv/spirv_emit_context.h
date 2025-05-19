@@ -175,12 +175,8 @@ public:
 
     template <typename Func>
     Id EmitMemoryAccess(Id type, Id address, Func&& fallback) {
-        const Id first_time_label = OpLabel();
-        const Id after_first_time_label = OpLabel();
-        const Id fallback_label = OpLabel();
+        const Id fault_label = OpLabel();
         const Id available_label = OpLabel();
-        const Id save_masked_label = OpLabel();
-        const Id after_save_masked_label = OpLabel();
         const Id merge_label = OpLabel();
 
         // Get page BDA
@@ -191,14 +187,13 @@ public:
         const Id bda_ptr = OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32);
         const Id bda = OpLoad(U64, bda_ptr);
 
-        // Check if it is the first time we access this page
-        const Id bda_and_mask = OpBitwiseAnd(U64, bda, bda_first_time_mask);
-        const Id first_time = OpIEqual(U1[1], bda_and_mask, u64_zero_value);
-        OpSelectionMerge(after_first_time_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(first_time, first_time_label, after_first_time_label);
+        // Check if the page is GPU mapped
+        const Id is_fault = OpIEqual(U1[1], bda, u64_zero_value);
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(is_fault, fault_label, available_label);
 
         // First time access
-        AddLabel(first_time_label);
+        AddLabel(fault_label);
         const auto& fault_buffer = buffers[fault_buffer_index];
         const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
         const Id page_div8 = OpShiftRightLogical(U32[1], page32, u32_three_value);
@@ -210,35 +205,14 @@ public:
         const Id page_mask8 = OpUConvert(U8, page_mask);
         const Id fault_value_masked = OpBitwiseOr(U8, fault_value, page_mask8);
         OpStore(fault_ptr, fault_value_masked);
-        OpBranch(after_first_time_label);
-
-        // Check if the value is available
-        AddLabel(after_first_time_label);
-        const Id bda_eq_zero = OpIEqual(U1[1], bda, u64_zero_value);
-        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(bda_eq_zero, fallback_label, available_label);
-
-        // Fallback (and mark on faul buffer)
-        AddLabel(fallback_label);
+        // Fallback (we are not able to access the page)
         const Id fallback_result = fallback();
         OpBranch(merge_label);
 
         // Value is available
         AddLabel(available_label);
-        OpSelectionMerge(after_save_masked_label, spv::SelectionControlMask::MaskNone);
-        OpBranchConditional(first_time, save_masked_label, after_save_masked_label);
-
-        // Save unmasked BDA
-        AddLabel(save_masked_label);
-        const Id masked_bda = OpBitwiseOr(U64, bda, bda_first_time_mask);
-        OpStore(bda_ptr, masked_bda);
-        OpBranch(after_save_masked_label);
-
-        // Load value
-        AddLabel(after_save_masked_label);
-        const Id unmasked_bda = OpBitwiseAnd(U64, bda, bda_first_time_inv_mask);
         const Id offset_in_bda = OpBitwiseAnd(U64, address, caching_pagemask_value);
-        const Id addr = OpIAdd(U64, unmasked_bda, offset_in_bda);
+        const Id addr = OpIAdd(U64, bda, offset_in_bda);
         const PointerType pointer_type = PointerTypeFromType(type);
         const Id pointer_type_id = physical_pointer_types[pointer_type];
         const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
@@ -247,8 +221,7 @@ public:
 
         // Merge
         AddLabel(merge_label);
-        const Id final_result =
-            OpPhi(type, fallback_result, fallback_label, result, after_save_masked_label);
+        const Id final_result = OpPhi(type, fallback_result, fault_label, result, available_label);
         return final_result;
     }
 
@@ -292,8 +265,6 @@ public:
 
     Id caching_pagebits_value{};
     Id caching_pagemask_value{};
-    Id bda_first_time_mask{};
-    Id bda_first_time_inv_mask{};
 
     Id shared_u8{};
     Id shared_u16{};

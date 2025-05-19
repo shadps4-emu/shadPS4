@@ -477,9 +477,13 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
-            // We don't want the mapped ranges to be modified while we are syncing
+            // TODO: GPU might have written to memory (for example with EVENT_WRITE_EOP)
+            // we need to account for that and synchronize.
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-            buffer_cache.SynchronizeDmaBuffers();
+            for (auto& range : mapped_ranges) {
+                buffer_cache.SynchronizeBuffersInRange(range.lower(),
+                                                       range.upper() - range.lower());
+            }
         }
         buffer_cache.MemoryBarrier();
     }

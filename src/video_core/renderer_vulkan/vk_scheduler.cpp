@@ -91,17 +91,14 @@ void Scheduler::Wait(u64 tick) {
     }
     master_semaphore.Wait(tick);
 
-    // TODO: We should be applyting pending operations here because that gives us
-    // the ability to use mapped regions on stream buffers in deferred operations.
-    // We don't do that right now because it might introduce varioations in the
-    // timing and, since we don't sync the GPU some games might be affected by that.
-    // It shouldn't be an issue right now, because we only use mapped regions in
-    // deferred operations to download faulted addresses. That is only 8KB every tick
-    // and the stream buffer is 256MB. GPU doesn't go that behind.
-    // while (!pending_ops.empty() && pending_ops.front().gpu_tick <= tick) {
-    //     pending_ops.front().callback();
-    //     pending_ops.pop();
-    // }
+    // CAUTION: This can introduce unexpected variation in the wait time.
+    // We don't currently sync the GPU, and some games are very sensitive to this.
+    // If this becomes a problem, it can be commented out.
+    // Idealy we would implement proper gpu sync.
+    while (!pending_ops.empty() && pending_ops.front().gpu_tick <= tick) {
+        pending_ops.front().callback();
+        pending_ops.pop();
+    }
 }
 
 void Scheduler::AllocateWorkerCommandBuffers() {

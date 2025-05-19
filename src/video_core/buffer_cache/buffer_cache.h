@@ -48,7 +48,6 @@ public:
 
     struct PageData {
         BufferId buffer_id{};
-        bool is_dma_synced = false;
     };
 
     struct Traits {
@@ -194,8 +193,6 @@ private:
     Buffer fault_buffer;
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
-    std::shared_mutex dma_sync_ranges_mutex;
-    RangeSet dma_sync_ranges;
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     MemoryTracker memory_tracker;

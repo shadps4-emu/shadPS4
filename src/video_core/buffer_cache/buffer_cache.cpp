@@ -135,14 +135,6 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool unmap) {
         if (unmap) {
             return;
         }
-
-        {
-            // This is a temporary workaround...
-            std::scoped_lock lock(dma_sync_ranges_mutex);
-            const VAddr aligned_addr = Common::AlignDown(device_addr, 4_KB);
-            const u64 aligned_size = Common::AlignUp(device_addr + size, 4_KB) - aligned_addr;
-            dma_sync_ranges.Add(aligned_addr, aligned_size);
-        }
     }
 }
 
@@ -553,10 +545,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     bda_addrs.reserve(size_pages);
     for (u64 i = 0; i < size_pages; ++i) {
         vk::DeviceAddress addr = new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS);
-        const bool is_dma_synced = page_table[start_page + i].is_dma_synced;
-        // Use LSB to mark if the page is DMA synced. If it is not synced, it
-        // we haven't accessed it yet.
-        bda_addrs.push_back(addr | (is_dma_synced ? 0x1 : 0x0));
+        bda_addrs.push_back(addr);
     }
     WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
                     bda_addrs.size() * sizeof(vk::DeviceAddress));
@@ -568,10 +557,6 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
         JoinOverlap(new_buffer_id, overlap_id, !overlap.has_stream_leap);
     }
     Register(new_buffer_id);
-    {
-        std::scoped_lock lk(dma_sync_ranges_mutex);
-        dma_sync_ranges.Add(overlap.begin, overlap.end);
-    }
     return new_buffer_id;
 }
 
@@ -683,22 +668,17 @@ void BufferCache::ProcessFaultBuffer() {
             const VAddr fault_end = fault + CACHING_PAGESIZE; // This can be adjusted
             fault_ranges +=
                 boost::icl::interval_set<VAddr>::interval_type::right_open(fault, fault_end);
-            LOG_WARNING(Render_Vulkan, "First time DMA access to memory at page {:#x}", fault);
+            LOG_INFO(Render_Vulkan, "Accessed non-GPU mapped memory at {:#x}", fault);
         }
         for (const auto& range : fault_ranges) {
             const VAddr start = range.lower();
             const VAddr end = range.upper();
             const u64 page_start = start >> CACHING_PAGEBITS;
             const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
-            // Mark the pages as synced
-            for (u64 page = page_start; page < page_end; ++page) {
-                page_table[page].is_dma_synced = true;
-            }
             // Buffer size is in 32 bits
             ASSERT_MSG((range.upper() - range.lower()) <= std::numeric_limits<u32>::max(),
                        "Buffer size is too large");
-            // Only create a buffer is the current range doesn't fit in an existing one
-            FindBuffer(start, static_cast<u32>(end - start));
+            CreateBuffer(start, static_cast<u32>(end - start));
         }
     });
 }
@@ -921,18 +901,6 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
         u32 size = static_cast<u32>(end - start);
         SynchronizeBuffer(buffer, start, size, false);
     });
-}
-
-void BufferCache::SynchronizeDmaBuffers() {
-    RENDERER_TRACE;
-    std::scoped_lock lk(dma_sync_ranges_mutex);
-    LOG_WARNING(Render_Vulkan, "Synchronizing ranges");
-    dma_sync_ranges.ForEach([&](VAddr device_addr, u64 end_addr) {
-        RENDERER_TRACE;
-        SynchronizeBuffersInRange(device_addr, end_addr - device_addr);
-        LOG_WARNING(Render_Vulkan, "Sync range {:#x} - {:#x}", device_addr, end_addr);
-    });
-    dma_sync_ranges.Clear();
 }
 
 void BufferCache::MemoryBarrier() {
