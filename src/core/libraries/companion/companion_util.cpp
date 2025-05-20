@@ -8,8 +8,42 @@
 
 namespace Libraries::CompanionUtil {
 
-s32 PS4_SYSV_ABI sceCompanionUtilGetEvent() {
-    return 0x8000000;
+uint32_t PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* outEvent,
+                               s32 param_3) {
+    uint32_t return_var;
+
+    if (outEvent == 0) {
+        return_var = ORBIS_COMPANION_UTIL_INVALID_ARGUMENT;
+    }
+
+    if (ctx == nullptr) {
+        return_var = ORBIS_COMPANION_UTIL_INVALID_POINTER;
+    } else {
+        uint8_t* base = ctx->blob;
+        int flag = *reinterpret_cast<int*>(base + 0x178);
+        if (flag == 0) {
+            return_var = ORBIS_COMPANION_UTIL_NO_EVENT;
+        } else {
+            return_var = ORBIS_COMPANION_UTIL_OK;
+        }
+    }
+
+    return return_var;
+}
+
+s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent) {
+
+    sceCompanionUtilContext* ctx = nullptr;
+    uint32_t ret = getEvent(ctx, outEvent,
+                       1);
+    uint32_t return_var;
+    LOG_DEBUG(Lib_CompanionUtil, "(STUBBED) called ret: {}", ret);
+    return_var = ret | 0xad0000;
+    if (-1 < (int)ret) {
+        return_var = ret;
+    }
+
+    return return_var;
 }
 
 s32 PS4_SYSV_ABI sceCompanionUtilGetRemoteOskEvent() {
