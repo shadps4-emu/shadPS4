@@ -37,12 +37,13 @@ s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent) {
     uint32_t ret = getEvent(ctx, outEvent,
                        1);
     uint32_t return_var;
-    LOG_DEBUG(Lib_CompanionUtil, "(STUBBED) called ret: {}", ret);
+
     return_var = ret | 0xad0000;
     if (-1 < (int)ret) {
         return_var = ret;
     }
 
+    LOG_DEBUG(Lib_CompanionUtil, "(STUBBED) called ret: {}", return_var);
     return return_var;
 }
 
