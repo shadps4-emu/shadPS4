@@ -11,8 +11,6 @@ namespace Libraries::CompanionUtil {
 
 u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* outEvent,
                           s32 param_3) {
-    u32 return_var;
-
     if (outEvent == 0) {
         return ORBIS_COMPANION_UTIL_INVALID_ARGUMENT;
     }
@@ -25,10 +23,9 @@ u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* o
     int flag = *reinterpret_cast<int*>(base + 0x178);
     if (flag == 0) {
         return ORBIS_COMPANION_UTIL_NO_EVENT;
-    } 
+    }
 
     return ORBIS_COMPANION_UTIL_OK;
-
 }
 
 s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent) {
