@@ -193,6 +193,9 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     std::string remote_url(Common::g_scm_remote_url);
     std::string remote_host;
     try {
+        if (*remote_url.rbegin() == '/') {
+            remote_url.pop_back();
+        }
         remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
     } catch (...) {
         remote_host = "unknown";
