@@ -53,7 +53,7 @@ template <class ReturnType, class... FuncArgs, class... CallArgs>
 ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
     EnsureThreadInitialized();
     // clear stack to avoid trash from EnsureThreadInitialized
-    ClearStack<13_KB>();
+    ClearStack<12_KB>();
     return func(std::forward<CallArgs>(args)...);
 }
 
