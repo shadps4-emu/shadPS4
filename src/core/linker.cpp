@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/devtools/widget/module_list.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/linker.h"
@@ -147,6 +148,9 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
 
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
+
+    Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string());   
+
     return m_modules.size() - 1;
 }
 
