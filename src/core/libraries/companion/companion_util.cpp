@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "companion_error.h"
+#include "core/libraries/companion/companion_util.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/companion/companion_util.h"
 
 namespace Libraries::CompanionUtil {
 
 u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* outEvent,
-                               s32 param_3) {
+                          s32 param_3) {
     u32 return_var;
 
     if (outEvent == 0) {
@@ -32,19 +33,11 @@ u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* o
 }
 
 s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent) {
-
     sceCompanionUtilContext* ctx = nullptr;
-    u32 ret = getEvent(ctx, outEvent,
-                       1);
-    u32 return_var;
+    u32 ret = getEvent(ctx, outEvent, 1);
 
-    return_var = ret | 0xad0000;
-    if (-1 < (int)ret) {
-        return_var = ret;
-    }
-
-    LOG_DEBUG(Lib_CompanionUtil, "(STUBBED) called ret: {}", return_var);
-    return return_var;
+    LOG_DEBUG(Lib_CompanionUtil, "(STUBBED) called ret: {}", ret);
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceCompanionUtilGetRemoteOskEvent() {

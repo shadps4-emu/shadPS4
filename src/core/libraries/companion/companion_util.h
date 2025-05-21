@@ -11,11 +11,7 @@ class SymbolsResolver;
 
 namespace Libraries::CompanionUtil {
 
-static constexpr u32 ORBIS_COMPANION_UTIL_OK = 0;
-
-static constexpr u32 ORBIS_COMPANION_UTIL_INVALID_ARGUMENT = 0x80000004;
-static constexpr u32 ORBIS_COMPANION_UTIL_INVALID_POINTER = 0x80000006;
-static constexpr u32 ORBIS_COMPANION_UTIL_NO_EVENT = 0x80000008;
+constexpr u32 ORBIS_COMPANION_UTIL_OK = 0;
 
 struct sceCompanionUtilEvent {
     std::uint8_t blob[0x104]{}; /// 0x104 bytes of data, dont know what it is exactly
@@ -26,7 +22,7 @@ struct sceCompanionUtilContext {
 };
 
 u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* outEvent,
-                               s32 param_3);
+                          s32 param_3);
 s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent);
 s32 PS4_SYSV_ABI sceCompanionUtilGetRemoteOskEvent();
 s32 PS4_SYSV_ABI sceCompanionUtilInitialize();
