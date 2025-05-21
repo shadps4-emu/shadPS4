@@ -14,22 +14,21 @@ u32 PS4_SYSV_ABI getEvent(sceCompanionUtilContext* ctx, sceCompanionUtilEvent* o
     u32 return_var;
 
     if (outEvent == 0) {
-        return_var = ORBIS_COMPANION_UTIL_INVALID_ARGUMENT;
+        return ORBIS_COMPANION_UTIL_INVALID_ARGUMENT;
     }
 
     if (ctx == nullptr) {
-        return_var = ORBIS_COMPANION_UTIL_INVALID_POINTER;
-    } else {
-        uint8_t* base = ctx->blob;
-        int flag = *reinterpret_cast<int*>(base + 0x178);
-        if (flag == 0) {
-            return_var = ORBIS_COMPANION_UTIL_NO_EVENT;
-        } else {
-            return_var = ORBIS_COMPANION_UTIL_OK;
-        }
+        return ORBIS_COMPANION_UTIL_INVALID_POINTER;
     }
 
-    return return_var;
+    uint8_t* base = ctx->blob;
+    int flag = *reinterpret_cast<int*>(base + 0x178);
+    if (flag == 0) {
+        return ORBIS_COMPANION_UTIL_NO_EVENT;
+    } 
+
+    return ORBIS_COMPANION_UTIL_OK;
+
 }
 
 s32 PS4_SYSV_ABI sceCompanionUtilGetEvent(sceCompanionUtilEvent* outEvent) {
