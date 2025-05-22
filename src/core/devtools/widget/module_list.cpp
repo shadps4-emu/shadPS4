@@ -47,7 +47,7 @@ void ModuleList::Draw() {
             if (module.is_sys_module) {
                 TextColored({0.0f, 1.0f, 0.0f, 1.0f}, "System Module");
             } else {
-                TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "User Module");
+                TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Game Module");
             }
         }
         EndTable();
