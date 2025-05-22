@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -167,6 +168,7 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst) {
     const auto& srt_flatbuf = ctx.buffers.back();
     ASSERT(srt_flatbuf.binding >= 0 && flatbuf_off_dw > 0 &&
            srt_flatbuf.buffer_type == BufferType::ReadConstUbo);
+    LOG_DEBUG(Render_Recompiler, "ReadConst from flatbuf dword {}", flatbuf_off_dw);
     const auto [id, pointer_type] = srt_flatbuf[BufferAlias::U32];
     const Id ptr{
         ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(flatbuf_off_dw))};
