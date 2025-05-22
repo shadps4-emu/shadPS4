@@ -134,6 +134,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  message("got remote: ${GIT_REMOTE_NAME}")
 endif()
 
 # If running in GitHub Actions and the above fails
@@ -177,7 +178,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     set(GIT_BRANCH "${GITHUB_BRANCH}")
   elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_REF}" STREQUAL "")
     set(GIT_BRANCH "${GITHUB_REF}")
-  else()
+  elseif("${GIT_BRANCH}" STREQUAL "")
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
   endif()
@@ -186,8 +187,8 @@ else()
   string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
   if (INDEX GREATER -1)
     string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
-  else()
-    # If no remote is present (only a branch name), default to origin
+  elseif("${GIT_REMOTE_NAME}" STREQUAL "")
+    message("reset to origin")
     set(GIT_REMOTE_NAME "origin")
   endif()
 endif()
@@ -202,7 +203,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "8")
+set(EMULATOR_VERSION_MINOR "9")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -409,6 +410,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/save_memory.h
                 src/core/libraries/save_data/savedata.cpp
                 src/core/libraries/save_data/savedata.h
+                src/core/libraries/save_data/savedata_error.h
                 src/core/libraries/save_data/dialog/savedatadialog.cpp
                 src/core/libraries/save_data/dialog/savedatadialog.h
                 src/core/libraries/save_data/dialog/savedatadialog_ui.cpp

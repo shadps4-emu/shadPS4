@@ -55,16 +55,23 @@ bool MainWindow::Init() {
     // show ui
     setMinimumSize(720, 405);
     std::string window_title = "";
-    if (Common::g_is_release) {
-        window_title = fmt::format("shadPS4 v{}", Common::g_version);
-    } else {
-        std::string remote_url(Common::g_scm_remote_url);
-        std::string remote_host;
-        try {
-            remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-        } catch (...) {
-            remote_host = "unknown";
+    std::string remote_url(Common::g_scm_remote_url);
+    std::string remote_host;
+    try {
+        if (*remote_url.rbegin() == '/') {
+            remote_url.pop_back();
         }
+        remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
+    } catch (...) {
+        remote_host = "unknown";
+    }
+    if (Common::g_is_release) {
+        if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
+            window_title = fmt::format("shadPS4 v{}", Common::g_version);
+        } else {
+            window_title = fmt::format("shadPS4 {}/v{}", remote_host, Common::g_version);
+        }
+    } else {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
                                        Common::g_scm_desc);
