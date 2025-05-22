@@ -163,25 +163,14 @@ void EmitGetGotoVariable(EmitContext&) {
 using PointerType = EmitContext::PointerType;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
-    const Id base_lo = ctx.OpUConvert(ctx.U64, ctx.OpCompositeExtract(ctx.U32[1], addr, 0));
-    const Id base_hi = ctx.OpUConvert(ctx.U64, ctx.OpCompositeExtract(ctx.U32[1], addr, 1));
-    const Id base_sift = ctx.OpShiftLeftLogical(ctx.U64, base_hi, ctx.ConstU32(32u));
-    const Id base = ctx.OpBitwiseOr(ctx.U64, base_lo, base_sift);
-    const Id offset_bytes = ctx.OpShiftLeftLogical(ctx.U32[1], offset, ctx.ConstU32(2u));
-    const Id address = ctx.OpIAdd(ctx.U64, base, ctx.OpUConvert(ctx.U64, offset_bytes));
-    return ctx.EmitMemoryAccess(ctx.U32[1], address, [&]() {
-        const u32 flatbuf_off_dw = inst->Flags<u32>();
-        if (flatbuf_off_dw == 0) {
-            return ctx.u32_zero_value;
-        } else {
-            const auto& srt_flatbuf = ctx.buffers[ctx.flatbuf_index];
-            ASSERT(srt_flatbuf.binding >= 0 && srt_flatbuf.buffer_type == BufferType::Flatbuf);
-            const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
-            const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value,
-                                           ctx.ConstU32(flatbuf_off_dw))};
-            return ctx.OpLoad(ctx.U32[1], ptr);
-        }
-    });
+    const u32 flatbuf_off_dw = inst->Flags<u32>();
+    // We can only provide a fallback for immediate offsets.
+    if (flatbuf_off_dw == 0) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);
+    } else {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset,
+                                  ctx.ConstU32(flatbuf_off_dw));
+    }
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
