@@ -17,8 +17,8 @@
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
-#include "widget/shader_list.h"
 #include "widget/module_list.h"
+#include "widget/shader_list.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
