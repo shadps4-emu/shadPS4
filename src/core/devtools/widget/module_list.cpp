@@ -20,17 +20,18 @@ void ModuleList::Draw() {
         for (const auto& entry : s_modules) {
             ModuleInfo info;
             info.name = entry.name;
+            info.is_sys_module = IsSystemModule(entry.path);
             modules.push_back(info);
         }
     }
 
-    SetNextWindowSize({500.0f, 600.0f}, ImGuiCond_FirstUseEver);
+    SetNextWindowSize({550.0f, 600.0f}, ImGuiCond_FirstUseEver);
     if (!Begin("LLE Module List", &open)) {
         End();
         return;
     }
 
-    if (BeginTable("ModuleTable", 1,
+    if (BeginTable("ModuleTable", 2,
                    ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable |
                        ImGuiTableFlags_RowBg)) {
         TableSetupColumn("Modulname", ImGuiTableColumnFlags_WidthStretch);
@@ -41,6 +42,13 @@ void ModuleList::Draw() {
 
             TableSetColumnIndex(0);
             TextUnformatted(module.name.c_str());
+
+            TableSetColumnIndex(1);
+            if (module.is_sys_module) {
+                TextColored({0.0f, 1.0f, 0.0f, 1.0f}, "System Module");
+            } else {
+                TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "User Module");
+            }
         }
         EndTable();
     }

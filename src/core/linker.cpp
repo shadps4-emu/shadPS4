@@ -149,7 +149,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
 
-    Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string());   
+    Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
     return m_modules.size() - 1;
 }
