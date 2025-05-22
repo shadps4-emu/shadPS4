@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation>Não é possível salvar</translation>
+      <translation>Não foi possível guardar</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -551,7 +551,7 @@
     </message>
     <message>
       <source>Save</source>
-      <translation>Salvar</translation>
+      <translation>Guardar</translation>
     </message>
     <message>
       <source>Apply</source>
@@ -559,7 +559,7 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Restaurar o Padrão</translation>
+      <translation>Restaurar Predefinições</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -570,11 +570,11 @@
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation>Editar comandos do Teclado + Mouse e do Controle</translation>
+      <translation>Editar configurações de entrada do Teclado + Rato e do Comando</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation>Use uma configuração para cada jogo</translation>
+      <translation>Utilizar configurações por jogo</translation>
     </message>
     <message>
       <source>Error</source>
@@ -582,19 +582,19 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation>Não foi possível abrir o arquivo para ler</translation>
+      <translation>Não foi possível abrir o ficheiro para leitura</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
-      <translation>Não foi possível abrir o arquivo para escrever</translation>
+      <translation>Não foi possível abrir o ficheiro para escrita</translation>
     </message>
     <message>
       <source>Save Changes</source>
-      <translation>Salvar mudanças</translation>
+      <translation>Guardar as alterações</translation>
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation>Salvar as mudanças?</translation>
+      <translation>Pretende guardar as alterações?</translation>
     </message>
     <message>
       <source>Help</source>
@@ -610,7 +610,7 @@
     </message>
     <message>
       <source>Reset to Default</source>
-      <translation>Resetar ao Padrão</translation>
+      <translation>Repor para o Padrão</translation>
     </message>
   </context>
   <context>
@@ -1150,7 +1150,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation>Não é possível salvar</translation>
+      <translation>Não foi possível guardar</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once</source>
@@ -1166,11 +1166,11 @@
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation>Roda do rato não pode ser mapeada para saídas empates</translation>
+      <translation>Roda do rato não pode ser mapeada para saídas dos manípulos</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>Salvar</translation>
+      <translation>Guardar</translation>
     </message>
     <message>
       <source>Apply</source>
@@ -1178,7 +1178,7 @@
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Restaurar Definições</translation>
+      <translation>Restaurar Predefinições</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -1405,43 +1405,43 @@
     </message>
     <message>
       <source>Play</source>
-      <translation type="unfinished">Play</translation>
+      <translation>Reproduzir</translation>
     </message>
     <message>
       <source>Pause</source>
-      <translation type="unfinished">Pause</translation>
+      <translation>Pausa</translation>
     </message>
     <message>
       <source>Stop</source>
-      <translation type="unfinished">Stop</translation>
+      <translation>Parar</translation>
     </message>
     <message>
       <source>Restart</source>
-      <translation type="unfinished">Restart</translation>
+      <translation>Reiniciar</translation>
     </message>
     <message>
       <source>Full Screen</source>
-      <translation type="unfinished">Full Screen</translation>
+      <translation>Ecrã Inteiro</translation>
     </message>
     <message>
       <source>Controllers</source>
-      <translation type="unfinished">Controllers</translation>
+      <translation>Comandos</translation>
     </message>
     <message>
       <source>Keyboard</source>
-      <translation type="unfinished">Keyboard</translation>
+      <translation>Teclado</translation>
     </message>
     <message>
       <source>Refresh List</source>
-      <translation type="unfinished">Refresh List</translation>
+      <translation>Atualizar Lista</translation>
     </message>
     <message>
       <source>Resume</source>
-      <translation type="unfinished">Resume</translation>
+      <translation>Continuar</translation>
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation type="unfinished">Show Labels Under Icons</translation>
+      <translation>Mostrar Etiquetas Debaixo dos Ícones</translation>
     </message>
   </context>
   <context>
@@ -2028,7 +2028,7 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation>Não é possível criar pasta de utilizador portátil</translation>
+      <translation>Não foi possível criar pasta de utilizador portátil</translation>
     </message>
     <message>
       <source>%1 already exists</source>
@@ -2044,11 +2044,11 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>Abra a pasta de imagens/sons de troféus personalizados:\nPoderá adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os arquivos na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3 ou trophy.wav, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas nas versões Qt.</translation>
+      <translation>Abra a pasta de imagens/sons de troféus personalizados:\nPoderá adicionar imagens personalizadas aos troféus e um áudio.\nAdicione os ficheiros na pasta custom_trophy com os seguintes nomes:\ntrophy.mp3 ou trophy.wav, bronze.png, gold.png, platinum.png, silver.png\nObservação: O som funcionará apenas nas versões Qt.</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Versão do Vulkan não suportada</translation>
     </message>
   </context>
   <context>
