@@ -223,11 +223,28 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         }
 
         ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
+        if (image_info.resources.levels > tex_cache_image.info.resources.levels ||
+            image_info.resources.layers > tex_cache_image.info.resources.layers) {
+            LOG_INFO(Render,
+                     "Expanding image at guest address 0x{:X}: resources ({}x{}) -> ({}x{})",
+                     image_info.guest_address, tex_cache_image.info.resources.levels,
+                     tex_cache_image.info.resources.layers, image_info.resources.levels,
+                     image_info.resources.layers);
             new_image_id = ExpandImage(image_info, cache_image_id);
+        } else if (image_info.resources.levels == tex_cache_image.info.resources.levels &&
+                   image_info.resources.layers == tex_cache_image.info.resources.layers) {
+            LOG_INFO(Render, "Reusing exact match at guest address 0x{:X}: resources ({}x{})",
+                     image_info.guest_address, image_info.resources.levels,
+                     image_info.resources.layers);
+            new_image_id = cache_image_id;
         } else {
-            UNREACHABLE();
+            LOG_INFO(Render,
+                     "Reusing image at guest address 0x{:X} without expansion (resources ({}x{}) "
+                     "< ({}x{}))",
+                     image_info.guest_address, image_info.resources.levels,
+                     image_info.resources.layers, tex_cache_image.info.resources.levels,
+                     tex_cache_image.info.resources.layers);
+            new_image_id = cache_image_id;
         }
         return {new_image_id, -1, -1};
     }
