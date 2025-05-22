@@ -21,7 +21,7 @@ public:
     void Draw();
     bool open = false;
 
-    bool ModuleList::IsSystemModule(const std::filesystem::path& path) {
+    bool IsSystemModule(const std::filesystem::path& path) {
 
         const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
 
