@@ -222,14 +222,15 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        ASSERT(image_info.type == tex_cache_image.info.type);
+        if (image_info.resources == tex_cache_image.info.resources) {
+            // Could happen due to texture and render target guest_size mismatch
+            return {cache_image_id, -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        // At this point, something is wrong if we aren't expanding the image
+        ASSERT(image_info.resources > tex_cache_image.info.resources);
+        return {ExpandImage(image_info, cache_image_id), -1, -1};
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
