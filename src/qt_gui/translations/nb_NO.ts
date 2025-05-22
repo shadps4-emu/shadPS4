@@ -1253,11 +1253,11 @@
     </message>
     <message>
       <source>List View</source>
-      <translation>Liste-visning</translation>
+      <translation>Listevisning</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>Rute-visning</translation>
+      <translation>Rutenettvisning</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
@@ -1756,7 +1756,7 @@
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Loggfilter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; \nNivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i lista og loggfører alle nivåer etter det.</translation>
+      <translation>Loggfilter:\nFiltrerer loggen for å kun skrive ut spesifikk informasjon.\nEksempler: «Core:Trace» «Lib.Pad:Debug Common.Filesystem:Error» «*:Critical» \nNivåer: Trace, Debug, Info, Warning, Error, Critical - i denne rekkefølgen, et spesifikt nivå demper alle tidligere nivåer i lista og loggfører alle nivåer etter det.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
@@ -1788,7 +1788,7 @@
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Bruk &quot;Oppdater kompatibilitets-data ved oppstart&quot; for oppdatert informasjon.</translation>
+      <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Bruk «Oppdater database ved oppstart» for oppdatert informasjon.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
@@ -1828,7 +1828,7 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkenhet:\nSystemer med flere GPU-er, kan emulatoren velge hvilken enhet som skal brukes fra rullegardinlista,\neller velg &quot;Velg automatisk&quot;.</translation>
+      <translation>Grafikkenhet:\nSystemer med flere GPU-er, kan emulatoren velge hvilken enhet som skal brukes fra rullegardinlista,\neller bruk «Velg automatisk».</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> *Ustøttet Vulkan-versjon</translation>
     </message>
   </context>
   <context>

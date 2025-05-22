@@ -134,6 +134,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  message("got remote: ${GIT_REMOTE_NAME}")
 endif()
 
 # If running in GitHub Actions and the above fails
@@ -177,7 +178,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     set(GIT_BRANCH "${GITHUB_BRANCH}")
   elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_REF}" STREQUAL "")
     set(GIT_BRANCH "${GITHUB_REF}")
-  else()
+  elseif("${GIT_BRANCH}" STREQUAL "")
     message("couldn't find branch")
     set(GIT_BRANCH "detached-head")
   endif()
@@ -186,8 +187,8 @@ else()
   string(FIND "${GIT_REMOTE_NAME}" "/" INDEX)
   if (INDEX GREATER -1)
     string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
-  else()
-    # If no remote is present (only a branch name), default to origin
+  elseif("${GIT_REMOTE_NAME}" STREQUAL "")
+    message("reset to origin")
     set(GIT_REMOTE_NAME "origin")
   endif()
 endif()

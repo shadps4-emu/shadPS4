@@ -79,6 +79,11 @@ public:
             if (const auto play_time = psf.GetString("PLAY_TIME"); play_time.has_value()) {
                 game.play_time = *play_time;
             }
+            if (const auto save_dir = psf.GetString("INSTALL_DIR_SAVEDATA"); save_dir.has_value()) {
+                game.save_dir = *save_dir;
+            } else {
+                game.save_dir = game.serial;
+            }
         }
         return game;
     }
