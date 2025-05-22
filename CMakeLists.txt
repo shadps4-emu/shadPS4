@@ -203,7 +203,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "8")
+set(EMULATOR_VERSION_MINOR "9")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -674,6 +674,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/recursive_lock.cpp
+           src/common/recursive_lock.h
            src/common/sha1.h
            src/common/signal_context.h
            src/common/signal_context.cpp
@@ -864,6 +866,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
+                      src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp
                       src/shader_recompiler/ir/attribute.h
