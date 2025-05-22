@@ -70,8 +70,11 @@ UniqueBuffer::~UniqueBuffer() {
 
 void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usage,
                           VmaAllocationInfo* out_alloc_info) {
+    const bool with_bda = bool(buffer_ci.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress);
+    const VmaAllocationCreateFlags bda_flag =
+        with_bda ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT : 0;
     const VmaAllocationCreateInfo alloc_ci = {
-        .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | MemoryUsageVmaFlags(usage),
+        .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | bda_flag | MemoryUsageVmaFlags(usage),
         .usage = MemoryUsageVma(usage),
         .requiredFlags = 0,
         .preferredFlags = MemoryUsagePreferredVmaFlags(usage),
@@ -86,6 +89,15 @@ void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usa
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating buffer with error {}",
                vk::to_string(vk::Result{result}));
     buffer = vk::Buffer{unsafe_buffer};
+
+    if (with_bda) {
+        vk::BufferDeviceAddressInfo bda_info{
+            .buffer = buffer,
+        };
+        auto bda_result = device.getBufferAddress(bda_info);
+        ASSERT_MSG(bda_result != 0, "Failed to get buffer device address");
+        bda_addr = bda_result;
+    }
 }
 
 Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_, MemoryUsage usage_,
