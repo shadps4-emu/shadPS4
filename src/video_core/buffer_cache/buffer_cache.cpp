@@ -668,7 +668,7 @@ void BufferCache::ProcessFaultBuffer() {
             const VAddr fault_end = fault + CACHING_PAGESIZE; // This can be adjusted
             fault_ranges +=
                 boost::icl::interval_set<VAddr>::interval_type::right_open(fault, fault_end);
-            LOG_INFO(Render_Vulkan, "Accessed non-GPU mapped memory at {:#x}", fault);
+            LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault);
         }
         for (const auto& range : fault_ranges) {
             const VAddr start = range.lower();
