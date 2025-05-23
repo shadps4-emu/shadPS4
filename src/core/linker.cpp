@@ -329,6 +329,9 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
     if (record) {
         *return_info = *record;
+
+        Core::Devtools::Widget::ModuleList::AddModule(sr.library);
+
         return true;
     }
 

@@ -25,6 +25,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -74,6 +75,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
             game_folder = base_path;
         }
     }
+
+    Core::Devtools::Widget::ModuleList::SetGameFolder(game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();

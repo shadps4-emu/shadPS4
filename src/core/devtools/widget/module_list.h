@@ -21,7 +21,13 @@ public:
     void Draw();
     bool open = false;
 
-    bool IsSystemModule(const std::filesystem::path& path) {
+    static std::filesystem::path game_folder;
+
+    static void SetGameFolder(const std::filesystem::path& path) {
+        game_folder = path;
+    }
+
+    static bool IsSystemModule(const std::filesystem::path& path) {
 
         const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
 
@@ -34,29 +40,50 @@ public:
         return path_str.starts_with(sys_path_str);
     }
 
+    static bool IsSystemModule(const std::string& name) {
+        const auto game_modules_path = game_folder / "sce_module";
+        const auto prx_path = game_modules_path / name;
+
+        if (!std::filesystem::exists(prx_path)) {
+            return true;
+        }
+        return false;
+    }
+
     static void AddModule(const std::string& name, std::filesystem::path path) {
         if (name == "eboot.bin") {
             return;
         }
-        std::scoped_lock lock(s_modules_mutex);
-        s_modules.push_back({name, path});
+        std::scoped_lock lock(modules_mutex);
+        modules.push_back({name, IsSystemModule(path), true});
+    }
+
+    static void AddModule(std::string& name) {
+        name = name + ".prx";
+        std::scoped_lock lock(modules_mutex);
+
+        bool is_sys_module = IsSystemModule(name);
+        bool is_lle = false;
+        auto it = std::find_if(modules.begin(), modules.end(),
+                               [&name, is_sys_module, is_lle](const ModuleInfo& entry) {
+                                   return entry.name == name && entry.is_lle == false;
+                               });
+
+        if (it == modules.end()) {
+            modules.push_back({name, is_sys_module, is_lle});
+        }
     }
 
 private:
     struct ModuleInfo {
         std::string name;
         bool is_sys_module;
+        bool is_lle;
     };
 
-    struct ModuleListEntry {
-        std::string name;
-        std::filesystem::path path;
-    };
+    static inline std::mutex modules_mutex;
 
-    static inline std::vector<ModuleListEntry> s_modules;
-    static inline std::mutex s_modules_mutex;
-
-    std::vector<ModuleInfo> modules;
+    static inline std::vector<ModuleInfo> modules;
 };
 
 } // namespace Core::Devtools::Widget

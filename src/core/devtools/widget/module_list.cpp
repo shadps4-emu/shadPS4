@@ -13,25 +13,20 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
+std::filesystem::path ModuleList::game_folder;
+
 void ModuleList::Draw() {
     {
-        std::scoped_lock lock(s_modules_mutex);
-        modules.clear();
-        for (const auto& entry : s_modules) {
-            ModuleInfo info;
-            info.name = entry.name;
-            info.is_sys_module = IsSystemModule(entry.path);
-            modules.push_back(info);
-        }
+        std::scoped_lock lock(modules_mutex);
     }
 
     SetNextWindowSize({550.0f, 600.0f}, ImGuiCond_FirstUseEver);
-    if (!Begin("LLE Module List", &open)) {
+    if (!Begin("Module List", &open)) {
         End();
         return;
     }
 
-    if (BeginTable("ModuleTable", 2,
+    if (BeginTable("ModuleTable", 3,
                    ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable |
                        ImGuiTableFlags_RowBg)) {
         TableSetupColumn("Modulname", ImGuiTableColumnFlags_WidthStretch);
@@ -45,9 +40,16 @@ void ModuleList::Draw() {
 
             TableSetColumnIndex(1);
             if (module.is_sys_module) {
-                TextColored({0.0f, 1.0f, 0.0f, 1.0f}, "System Module");
+                TextColored({0.2f, 0.6f, 0.8f, 1.0f}, "System Module");
             } else {
-                TextColored({1.0f, 0.0f, 0.0f, 1.0f}, "Game Module");
+                TextColored({0.8f, 0.4f, 0.2f, 1.0f}, "Game Module");
+            }
+
+            TableSetColumnIndex(2);
+            if (module.is_lle) {
+                TextColored({0.4f, 0.7f, 0.4f, 1.0f}, "LLE");
+            } else {
+                TextColored({0.7f, 0.4f, 0.5f, 1.0f}, "HLE");
             }
         }
         EndTable();
