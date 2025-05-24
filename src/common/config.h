@@ -139,7 +139,6 @@ void setVkHostMarkersEnabled(bool enable);
 void setVkGuestMarkersEnabled(bool enable);
 
 // Gui
-void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
 void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
@@ -150,16 +149,10 @@ void setIconSizeGrid(u32 size);
 void setSliderPosition(u32 pos);
 void setSliderPositionGrid(u32 pos);
 void setTableMode(u32 mode);
-void setMainWindowWidth(u32 width);
-void setMainWindowHeight(u32 height);
 void setElfViewer(const std::vector<std::string>& elfList);
 void setRecentFiles(const std::vector<std::string>& recentFiles);
 void setEmulatorLanguage(std::string language);
 
-u32 getMainWindowGeometryX();
-u32 getMainWindowGeometryY();
-u32 getMainWindowGeometryW();
-u32 getMainWindowGeometryH();
 const std::vector<std::filesystem::path> getGameInstallDirs();
 const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
@@ -169,8 +162,6 @@ u32 getIconSizeGrid();
 u32 getSliderPosition();
 u32 getSliderPositionGrid();
 u32 getTableMode();
-u32 getMainWindowWidth();
-u32 getMainWindowHeight();
 std::vector<std::string> getElfViewer();
 std::vector<std::string> getRecentFiles();
 std::string getEmulatorLanguage();
