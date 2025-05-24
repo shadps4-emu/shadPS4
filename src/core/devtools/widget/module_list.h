@@ -28,7 +28,6 @@ public:
     }
 
     static bool IsSystemModule(const std::filesystem::path& path) {
-
         const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
 
         const auto abs_path = std::filesystem::absolute(path).lexically_normal();
@@ -66,7 +65,7 @@ public:
         bool is_lle = false;
         auto it = std::find_if(modules.begin(), modules.end(),
                                [&name, is_sys_module, is_lle](const ModuleInfo& entry) {
-                                   return entry.name == name && entry.is_lle == false;
+                                   return entry.name == name && !entry.is_lle;
                                });
 
         if (it == modules.end()) {
