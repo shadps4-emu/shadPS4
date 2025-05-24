@@ -622,6 +622,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
+              src/core/devtools/widget/module_list.cpp
+              src/core/devtools/widget/module_list.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp
