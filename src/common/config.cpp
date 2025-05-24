@@ -85,18 +85,12 @@ static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-u32 main_window_geometry_x = 400;
-u32 main_window_geometry_y = 400;
-u32 main_window_geometry_w = 1280;
-u32 main_window_geometry_h = 720;
 u32 mw_themes = 0;
 u32 m_icon_size = 36;
 u32 m_icon_size_grid = 69;
 u32 m_slider_pos = 0;
 u32 m_slider_pos_grid = 0;
 u32 m_table_mode = 0;
-u32 m_window_size_W = 1280;
-u32 m_window_size_H = 720;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
@@ -520,13 +514,6 @@ void setCheckCompatibilityOnStartup(bool use) {
     checkCompatibilityOnStartup = use;
 }
 
-void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
-    main_window_geometry_x = x;
-    main_window_geometry_y = y;
-    main_window_geometry_w = w;
-    main_window_geometry_h = h;
-}
-
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled) {
     for (const auto& install_dir : settings_install_dirs) {
         if (install_dir.path == dir) {
@@ -583,14 +570,6 @@ void setTableMode(u32 mode) {
     m_table_mode = mode;
 }
 
-void setMainWindowWidth(u32 width) {
-    m_window_size_W = width;
-}
-
-void setMainWindowHeight(u32 height) {
-    m_window_size_H = height;
-}
-
 void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer.resize(elfList.size());
     m_elf_viewer = elfList;
@@ -618,22 +597,6 @@ void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config) {
 
 void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
-}
-
-u32 getMainWindowGeometryX() {
-    return main_window_geometry_x;
-}
-
-u32 getMainWindowGeometryY() {
-    return main_window_geometry_y;
-}
-
-u32 getMainWindowGeometryW() {
-    return main_window_geometry_w;
-}
-
-u32 getMainWindowGeometryH() {
-    return main_window_geometry_h;
 }
 
 const std::vector<std::filesystem::path> getGameInstallDirs() {
@@ -684,14 +647,6 @@ u32 getSliderPositionGrid() {
 
 u32 getTableMode() {
     return m_table_mode;
-}
-
-u32 getMainWindowWidth() {
-    return m_window_size_W;
-}
-
-u32 getMainWindowHeight() {
-    return m_window_size_H;
 }
 
 std::vector<std::string> getElfViewer() {
@@ -836,8 +791,6 @@ void load(const std::filesystem::path& path) {
         m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
         m_slider_pos_grid = toml::find_or<int>(gui, "sliderPosGrid", 0);
         mw_themes = toml::find_or<int>(gui, "theme", 0);
-        m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
-        m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
@@ -862,10 +815,6 @@ void load(const std::filesystem::path& path) {
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
-        main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
-        main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
-        main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
-        main_window_geometry_h = toml::find_or<int>(gui, "geometry_h", 0);
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
@@ -1071,18 +1020,12 @@ void saveMainWindow(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["GUI"]["mw_width"] = m_window_size_W;
-    data["GUI"]["mw_height"] = m_window_size_H;
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["iconSize"] = m_icon_size;
     data["GUI"]["sliderPos"] = m_slider_pos;
     data["GUI"]["iconSizeGrid"] = m_icon_size_grid;
     data["GUI"]["sliderPosGrid"] = m_slider_pos_grid;
     data["GUI"]["gameTableMode"] = m_table_mode;
-    data["GUI"]["geometry_x"] = main_window_geometry_x;
-    data["GUI"]["geometry_y"] = main_window_geometry_y;
-    data["GUI"]["geometry_w"] = main_window_geometry_w;
-    data["GUI"]["geometry_h"] = main_window_geometry_h;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 

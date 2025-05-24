@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->setupUi(this);
     installEventFilter(this);
     setAttribute(Qt::WA_DeleteOnClose);
+    m_gui_settings = std::make_shared<gui_settings>();
 }
 
 MainWindow::~MainWindow() {
@@ -934,9 +935,10 @@ void MainWindow::RefreshGameTable() {
 }
 
 void MainWindow::ConfigureGuiFromSettings() {
-    setGeometry(Config::getMainWindowGeometryX(), Config::getMainWindowGeometryY(),
-                Config::getMainWindowGeometryW(), Config::getMainWindowGeometryH());
-
+    if (!restoreGeometry(m_gui_settings->GetValue(gui::mw_geometry).toByteArray())) {
+        // By default, set the window to 70% of the screen
+        resize(QGuiApplication::primaryScreen()->availableSize() * 0.7);
+    }
     ui->showGameListAct->setChecked(true);
     if (Config::getTableMode() == 0) {
         ui->setlistModeListAct->setChecked(true);
@@ -948,11 +950,8 @@ void MainWindow::ConfigureGuiFromSettings() {
     BackgroundMusicPlayer::getInstance().setVolume(Config::getBGMvolume());
 }
 
-void MainWindow::SaveWindowState() const {
-    Config::setMainWindowWidth(this->width());
-    Config::setMainWindowHeight(this->height());
-    Config::setMainWindowGeometry(this->geometry().x(), this->geometry().y(),
-                                  this->geometry().width(), this->geometry().height());
+void MainWindow::SaveWindowState() {
+    m_gui_settings->SetValue(gui::mw_geometry, saveGeometry(), false);
 }
 
 void MainWindow::BootGame() {
