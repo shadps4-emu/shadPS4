@@ -7,7 +7,6 @@
 #include <QSettings>
 #include <QString>
 #include <QVariant>
-#include "gui_save.h"
 
 struct gui_value {
     QString key;
