@@ -16,10 +16,6 @@ namespace Core::Devtools::Widget {
 std::filesystem::path ModuleList::game_folder;
 
 void ModuleList::Draw() {
-    {
-        std::scoped_lock lock(modules_mutex);
-    }
-
     SetNextWindowSize({550.0f, 600.0f}, ImGuiCond_FirstUseEver);
     if (!Begin("Module List", &open)) {
         End();
@@ -32,6 +28,7 @@ void ModuleList::Draw() {
         TableSetupColumn("Modulname", ImGuiTableColumnFlags_WidthStretch);
         TableHeadersRow();
 
+        std::scoped_lock lock(modules_mutex);
         for (const auto& module : modules) {
             TableNextRow();
 
