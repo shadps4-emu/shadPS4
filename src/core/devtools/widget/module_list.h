@@ -8,7 +8,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-
+#include "common/elf_info.h"
 #include "common/path_util.h"
 
 namespace Core::Devtools::Widget {
@@ -20,12 +20,6 @@ public:
 
     void Draw();
     bool open = false;
-
-    static std::filesystem::path game_folder;
-
-    static void SetGameFolder(const std::filesystem::path& path) {
-        game_folder = path;
-    }
 
     static bool IsSystemModule(const std::filesystem::path& path) {
         const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
@@ -40,7 +34,7 @@ public:
     }
 
     static bool IsSystemModule(const std::string& name) {
-        const auto game_modules_path = game_folder / "sce_module";
+        const auto game_modules_path = Common::ElfInfo::Instance().GetGameFolder() / "sce_module";
         const auto prx_path = game_modules_path / name;
 
         if (!std::filesystem::exists(prx_path)) {

@@ -12,9 +12,6 @@
 using namespace ImGui;
 
 namespace Core::Devtools::Widget {
-
-std::filesystem::path ModuleList::game_folder;
-
 void ModuleList::Draw() {
     SetNextWindowSize({550.0f, 600.0f}, ImGuiCond_FirstUseEver);
     if (!Begin("Module List", &open)) {

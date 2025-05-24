@@ -76,8 +76,6 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         }
     }
 
-    Core::Devtools::Widget::ModuleList::SetGameFolder(game_folder);
-
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(game_folder, "/app0", true);
@@ -190,6 +188,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     if (std::filesystem::exists(pic1_path)) {
         game_info.splash_path = pic1_path;
     }
+
+    game_info.game_folder = game_folder;
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
