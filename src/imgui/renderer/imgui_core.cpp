@@ -69,14 +69,51 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
     rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
     rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+    // For keyboard
+    rb.AddChar(U'×');
+    rb.AddChar(U'○');
+    rb.AddChar(U'△');
+    rb.AddChar(U'□');
+    rb.AddChar(U'↑');
+    rb.AddChar(U'↓');
+    rb.AddChar(U'←');
+    rb.AddChar(U'→');
+    rb.AddChar(U'⊗');
+    rb.AddChar(U'⮾');
+    rb.AddChar(U'╳');
+    rb.AddChar(U'◀');
+    rb.AddChar(U'▲');
+    rb.AddChar(U'▶');
+    rb.AddChar(U'▼');
+    rb.AddChar(U'⇧');
+    rb.AddChar(U'⬆');
+    rb.AddChar(U'⇦');
+    rb.AddChar(U'€');
+    rb.AddChar(U'₩');
+    rb.AddChar(U'“');
+    rb.AddChar(U'”');
+    rb.AddChar(U'„');
+    rb.AddChar(U'‼');
+    rb.AddChar(U'¿');
+    rb.AddChar(U'⁇');
+    rb.AddChar(U'‹');
+    rb.AddChar(U'›');
+    rb.AddChar(U'’');
+    rb.AddChar(U'‘');
+    rb.AddChar(U'‛');
+    rb.AddChar(U'‚');
+    rb.AddChar(U'№');
+
     ImVector<ImWchar> ranges{};
     rb.BuildRanges(&ranges);
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
+    font_cfg.MergeMode = false;
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
         imgui_font_notosansjp_regular_compressed_data,
         imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
+    font_cfg.MergeMode = true;
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
                                              16.0f);
