@@ -58,7 +58,7 @@ public:
         modules.push_back({name, IsSystemModule(path), true});
     }
 
-    static void AddModule(std::string& name) {
+    static void AddModule(std::string name) {
         name = name + ".prx";
         std::scoped_lock lock(modules_mutex);
 
