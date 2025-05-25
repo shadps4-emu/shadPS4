@@ -86,11 +86,6 @@ std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 u32 mw_themes = 0;
-u32 m_icon_size = 36;
-u32 m_icon_size_grid = 69;
-u32 m_slider_pos = 0;
-u32 m_slider_pos_grid = 0;
-u32 m_table_mode = 0;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
@@ -550,26 +545,6 @@ void setMainWindowTheme(u32 theme) {
     mw_themes = theme;
 }
 
-void setIconSize(u32 size) {
-    m_icon_size = size;
-}
-
-void setIconSizeGrid(u32 size) {
-    m_icon_size_grid = size;
-}
-
-void setSliderPosition(u32 pos) {
-    m_slider_pos = pos;
-}
-
-void setSliderPositionGrid(u32 pos) {
-    m_slider_pos_grid = pos;
-}
-
-void setTableMode(u32 mode) {
-    m_table_mode = mode;
-}
-
 void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer.resize(elfList.size());
     m_elf_viewer = elfList;
@@ -627,26 +602,6 @@ std::filesystem::path getAddonInstallDir() {
 
 u32 getMainWindowTheme() {
     return mw_themes;
-}
-
-u32 getIconSize() {
-    return m_icon_size;
-}
-
-u32 getIconSizeGrid() {
-    return m_icon_size_grid;
-}
-
-u32 getSliderPosition() {
-    return m_slider_pos;
-}
-
-u32 getSliderPositionGrid() {
-    return m_slider_pos_grid;
-}
-
-u32 getTableMode() {
-    return m_table_mode;
 }
 
 std::vector<std::string> getElfViewer() {
@@ -786,10 +741,6 @@ void load(const std::filesystem::path& path) {
         const toml::value& gui = data.at("GUI");
 
         load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
-        m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
-        m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
-        m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
-        m_slider_pos_grid = toml::find_or<int>(gui, "sliderPosGrid", 0);
         mw_themes = toml::find_or<int>(gui, "theme", 0);
 
         const auto install_dir_array =
@@ -817,7 +768,6 @@ void load(const std::filesystem::path& path) {
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
-        m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
         backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
         showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
@@ -1021,11 +971,6 @@ void saveMainWindow(const std::filesystem::path& path) {
     }
 
     data["GUI"]["theme"] = mw_themes;
-    data["GUI"]["iconSize"] = m_icon_size;
-    data["GUI"]["sliderPos"] = m_slider_pos;
-    data["GUI"]["iconSizeGrid"] = m_icon_size_grid;
-    data["GUI"]["sliderPosGrid"] = m_slider_pos_grid;
-    data["GUI"]["gameTableMode"] = m_table_mode;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
 

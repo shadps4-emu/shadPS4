@@ -9,11 +9,13 @@
 #include "game_list_frame.h"
 #include "game_list_utils.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
+GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
+                             std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,
                              QWidget* parent)
-    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
-    icon_size = Config::getIconSize();
+    : QTableWidget(parent), m_gui_settings(std::move(gui_settings)), m_game_info(game_info_get),
+      m_compat_info(compat_info_get) {
+    icon_size = m_gui_settings->GetValue(gui::gl_icon_size).toInt();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
     this->setSelectionBehavior(QAbstractItemView::SelectRows);
