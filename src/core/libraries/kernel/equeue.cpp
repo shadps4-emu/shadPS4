@@ -172,10 +172,8 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
 }
 
 bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
-    // We assume that only one timer event (with the same ident across calls)
-    // can be posted to the queue, based on observations so far. In the opposite case,
     // the small timer storage and wait logic should be reworked.
-    ASSERT(!HasSmallTimer() || small_timer_event.event.ident == ev.event.ident);
+
     ev.time_added = std::chrono::steady_clock::now();
     small_timer_event = std::move(ev);
     return true;
@@ -327,6 +325,11 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     // `HrTimerSpinlockThresholdUs`) and fall back to boost asio timers if the time to tick is
     // large. Even for large delays, we truncate a small portion to complete the wait
     // using the spinlock, prioritizing precision.
+
+    if (eq->EventExists(event.event.ident, event.event.filter)) {
+        eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer);
+    }
+
     if (total_us < HrTimerSpinlockThresholdUs) {
         return eq->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
