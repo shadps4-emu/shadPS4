@@ -389,6 +389,10 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
         ui->hostMarkersCheckBox->installEventFilter(this);
         ui->collectShaderCheckBox->installEventFilter(this);
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
+
+        //Experimental
+        ui->isDevKitCheckBox->setChecked(Config::isDevKitConsole());
+        ui->isNeoModeCheckBox->setChecked(Config::isNeoModeConsole());
     }
 }
 
@@ -754,7 +758,8 @@ void SettingsDialog::UpdateSettings() {
     } else if (ui->radioButton_Bottom->isChecked()) {
         Config::setSideTrophy("bottom");
     }
-
+    Config::setDevKitMode(ui->isDevKitCheckBox->isChecked());
+    Config::setNeoMode(ui->isNeoModeCheckBox->isChecked());
     Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());

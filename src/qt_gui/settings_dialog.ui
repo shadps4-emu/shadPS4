@@ -2079,7 +2079,31 @@
        </layout>
       </widget>
      </widget>
-    </widget>
+    <widget class="QWidget" name="experimentalTab">
+		<attribute name="title">
+			<string>Experimental
+		</string>
+		</attribute>
+		<layout class="QVBoxLayout" name="verticalLayout_experimental">
+			<item>
+				<widget class="QCheckBox" name="isDevKitCheckBox">
+					<property name="text">
+						<string>Enable DevKit Mode
+						</string>
+					</property>
+				</widget>
+			</item>
+			<item>
+				<widget class="QCheckBox" name="isNeoModeCheckBox">
+					<property name="text">
+						<string>Enable Neo Mode
+						</string>
+					</property>
+				</widget>
+			</item>
+		</layout>
+	</widget>
+	</widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
