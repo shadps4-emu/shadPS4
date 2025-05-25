@@ -349,13 +349,9 @@ u32 GameController::Poll() {
 }
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
-    auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    for (int i = 0; i < 4; i++) {
-        if (SDL_GetGamepadID(controllers[i]->m_sdl_gamepad) == id) {
-            return controllers[i]->player_index;
-        }
-    }
-    UNREACHABLE_MSG("Handle {} is not registered!", id);
+    s32 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
+    LOG_INFO(Input, "Gamepad index: {}", index);
+    return index;
 }
 
 } // namespace Input
