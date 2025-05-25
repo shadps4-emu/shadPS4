@@ -390,7 +390,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
         ui->collectShaderCheckBox->installEventFilter(this);
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
 
-        //Experimental
+        // Experimental
         ui->isDevKitCheckBox->setChecked(Config::isDevKitConsole());
         ui->isNeoModeCheckBox->setChecked(Config::isNeoModeConsole());
     }
