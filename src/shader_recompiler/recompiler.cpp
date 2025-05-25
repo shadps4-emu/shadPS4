@@ -60,6 +60,9 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
     // Run optimization passes
+    if (!profile.support_float64) {
+        Shader::Optimization::LowerFp64ToFp32(program);
+    }
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
@@ -81,6 +84,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::CollectShaderInfoPass(program);
+
+    Shader::IR::DumpProgram(program, info);
 
     return program;
 }

@@ -211,6 +211,21 @@ struct PM4CmdSetData {
     }
 };
 
+struct PM4CmdSetQueueReg {
+    PM4Type3Header header;
+    union {
+        u32 raw;
+        BitField<0, 8, u32> reg_offset;  ///< Offset in DWords from the register base address
+        BitField<15, 1, u32> defer_exec; ///< Defer execution
+        BitField<16, 10, u32> vqid;      ///< Queue ID
+    };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
+};
+
 struct PM4CmdNop {
     PM4Type3Header header;
     u32 data_block[0];
@@ -229,6 +244,46 @@ struct PM4CmdNop {
         PrepareFlipInterrupt = 0x68750780u, ///< Flip marker with interrupt
         PrepareFlipInterruptLabel = 0x68750781u, ///< Flip marker with interrupt and label
     };
+};
+
+enum class SourceSelect : u32 {
+    BufferOffset = 0,
+    VgtStrmoutBufferFilledSize = 1,
+    SrcAddress = 2,
+    None = 3,
+};
+
+struct PM4CmdStrmoutBufferUpdate {
+    PM4Type3Header header;
+    union {
+        BitField<0, 1, u32> update_memory;
+        BitField<1, 2, SourceSelect> source_select;
+        BitField<8, 2, u32> buffer_select;
+        u32 control;
+    };
+    union {
+        BitField<2, 30, u32> dst_address_lo;
+        BitField<0, 2, u32> swap_dst;
+    };
+    u32 dst_address_hi;
+    union {
+        u32 buffer_offset;
+        BitField<2, 30, u32> src_address_lo;
+        BitField<0, 2, u32> swap_src;
+    };
+    u32 src_address_hi;
+
+    template <typename T = u64>
+    T DstAddress() const {
+        ASSERT(update_memory.Value() == 1);
+        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+    }
+
+    template <typename T = u64>
+    T SrcAddress() const {
+        ASSERT(source_select.Value() == SourceSelect::SrcAddress);
+        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+    }
 };
 
 struct PM4CmdDrawIndexOffset2 {
@@ -287,6 +342,80 @@ static u64 GetGpuClock64() {
     auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
     return static_cast<u64>(ticks);
 }
+
+// VGT_EVENT_INITIATOR.EVENT_TYPE
+enum class EventType : u32 {
+    SampleStreamoutStats1 = 1,
+    SampleStreamoutStats2 = 2,
+    SampleStreamoutStats3 = 3,
+    CacheFlushTs = 4,
+    ContextDone = 5,
+    CacheFlush = 6,
+    CsPartialFlush = 7,
+    VgtStreamoutSync = 8,
+    VgtStreamoutReset = 10,
+    EndOfPipeIncrDe = 11,
+    EndOfPipeIbEnd = 12,
+    RstPixCnt = 13,
+    VsPartialFlush = 15,
+    PsPartialFlush = 16,
+    FlushHsOutput = 17,
+    FlushLsOutput = 18,
+    CacheFlushAndInvTsEvent = 20,
+    ZpassDone = 21,
+    CacheFlushAndInvEvent = 22,
+    PerfcounterStart = 23,
+    PerfcounterStop = 24,
+    PipelineStatStart = 25,
+    PipelineStatStop = 26,
+    PerfcounterSample = 27,
+    FlushEsOutput = 28,
+    FlushGsOutput = 29,
+    SamplePipelineStat = 30,
+    SoVgtStreamoutFlush = 31,
+    SampleStreamoutStats = 32,
+    ResetVtxCnt = 33,
+    VgtFlush = 36,
+    ScSendDbVpz = 39,
+    BottomOfPipeTs = 40,
+    DbCacheFlushAndInv = 42,
+    FlushAndInvDbDataTs = 43,
+    FlushAndInvDbMeta = 44,
+    FlushAndInvCbDataTs = 45,
+    FlushAndInvCbMeta = 46,
+    CsDone = 47,
+    PsDone = 48,
+    FlushAndInvCbPixelData = 49,
+    ThreadTraceStart = 51,
+    ThreadTraceStop = 52,
+    ThreadTraceFlush = 54,
+    ThreadTraceFinish = 55,
+    PixelPipeStatControl = 56,
+    PixelPipeStatDump = 57,
+    PixelPipeStatReset = 58,
+};
+
+enum class EventIndex : u32 {
+    Other = 0,
+    ZpassDone = 1,
+    SamplePipelineStat = 2,
+    SampleStreamoutStatSx = 3,
+    CsVsPsPartialFlush = 4,
+    EopReserved = 5,
+    EosReserved = 6,
+    CacheFlush = 7,
+};
+
+struct PM4CmdEventWrite {
+    PM4Type3Header header;
+    union {
+        u32 event_control;
+        BitField<0, 6, EventType> event_type;   ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, EventIndex> event_index; ///< Event index
+        BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
+    };
+    u32 address[];
+};
 
 struct PM4CmdEventWriteEop {
     PM4Type3Header header;
@@ -459,7 +588,12 @@ struct PM4CmdWaitRegMem {
         BitField<8, 1, Engine> engine;
         u32 raw;
     };
-    u32 poll_addr_lo;
+    union {
+        BitField<0, 16, u32> reg;
+        BitField<2, 30, u32> poll_addr_lo;
+        BitField<0, 2, u32> swap;
+        u32 poll_addr_lo_raw;
+    };
     u32 poll_addr_hi;
     u32 ref;
     u32 mask;
@@ -467,31 +601,36 @@ struct PM4CmdWaitRegMem {
 
     template <typename T = u32*>
     T Address() const {
-        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | (poll_addr_lo << 2));
     }
 
-    bool Test() const {
+    u32 Reg() const {
+        return reg.Value();
+    }
+
+    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+        u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
             return true;
         }
         case Function::LessThan: {
-            return (*Address() & mask) < ref;
+            return (value & mask) < ref;
         }
         case Function::LessThanEqual: {
-            return (*Address() & mask) <= ref;
+            return (value & mask) <= ref;
         }
         case Function::Equal: {
-            return (*Address() & mask) == ref;
+            return (value & mask) == ref;
         }
         case Function::NotEqual: {
-            return (*Address() & mask) != ref;
+            return (value & mask) != ref;
         }
         case Function::GreaterThanEqual: {
-            return (*Address() & mask) >= ref;
+            return (value & mask) >= ref;
         }
         case Function::GreaterThan: {
-            return (*Address() & mask) > ref;
+            return (value & mask) > ref;
         }
         case Function::Reserved:
             [[fallthrough]];
@@ -872,16 +1011,34 @@ struct PM4CmdDrawIndexIndirectMulti {
         BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
                                              ///< StartInstanceLocation it fetched from memory
     };
+    u32 count;          ///< Count of data structures to loop through before going to next packet
+    u32 stride;         ///< Stride in memory from one data structure to the next
+    u32 draw_initiator; ///< Draw Initiator Register
+};
+
+struct PM4CmdDrawIndexIndirectCountMulti {
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union {
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
     union {
         u32 dw4;
-        BitField<0, 16, u32> drawIndexLoc; ///< register offset to write the Draw Index count
+        BitField<0, 16, u32> draw_index_loc; ///< register offset to write the Draw Index count
         BitField<30, 1, u32>
-            countIndirectEnable; ///< Indicates the data structure count is in memory
+            count_indirect_enable; ///< Indicates the data structure count is in memory
         BitField<31, 1, u32>
-            drawIndexEnable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
+            draw_index_enable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
     };
     u32 count;          ///< Count of data structures to loop through before going to next packet
-    u64 countAddr;      ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
+    u64 count_addr;     ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
     u32 stride;         ///< Stride in memory from one data structure to the next
     u32 draw_initiator; ///< Draw Initiator Register
 };

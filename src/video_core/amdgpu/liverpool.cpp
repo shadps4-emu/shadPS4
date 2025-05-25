@@ -133,6 +133,7 @@ void Liverpool::Process(std::stop_token stoken) {
             VideoCore::EndCapture();
 
             if (rasterizer) {
+                rasterizer->ProcessFaults();
                 rasterizer->Flush();
             }
             submit_done = false;
@@ -455,14 +456,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::DrawIndirect: {
                 const auto* draw_indirect = reinterpret_cast<const PM4CmdDrawIndirect*>(header);
                 const auto offset = draw_indirect->data_offset;
-                const auto size = sizeof(DrawIndirectArgs);
+                const auto stride = sizeof(DrawIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
                     DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(fmt::format("gfx:{}:DrawIndirect", cmd_address));
-                    rasterizer->DrawIndirect(false, indirect_args_addr, offset, size, 1, 0);
+                    rasterizer->DrawIndirect(false, indirect_args_addr, offset, stride, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;
@@ -471,7 +472,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirect*>(header);
                 const auto offset = draw_index_indirect->data_offset;
-                const auto size = sizeof(DrawIndexedIndirectArgs);
+                const auto stride = sizeof(DrawIndexedIndirectArgs);
                 if (DebugState.DumpingCurrentReg()) {
                     DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
@@ -479,12 +480,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
                         fmt::format("gfx:{}:DrawIndexIndirect", cmd_address));
-                    rasterizer->DrawIndirect(true, indirect_args_addr, offset, size, 1, 0);
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset, stride, 1, 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;
             }
-            case PM4ItOpcode::DrawIndexIndirectCountMulti: {
+            case PM4ItOpcode::DrawIndexIndirectMulti: {
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirectMulti*>(header);
                 const auto offset = draw_index_indirect->data_offset;
@@ -494,10 +495,31 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
                     rasterizer->ScopeMarkerBegin(
+                        fmt::format("gfx:{}:DrawIndexIndirectMulti", cmd_address));
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                             draw_index_indirect->stride,
+                                             draw_index_indirect->count, 0);
+                    rasterizer->ScopeMarkerEnd();
+                }
+                break;
+            }
+            case PM4ItOpcode::DrawIndexIndirectCountMulti: {
+                const auto* draw_index_indirect =
+                    reinterpret_cast<const PM4CmdDrawIndexIndirectCountMulti*>(header);
+                const auto offset = draw_index_indirect->data_offset;
+                if (DebugState.DumpingCurrentReg()) {
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                }
+                if (rasterizer) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    rasterizer->ScopeMarkerBegin(
                         fmt::format("gfx:{}:DrawIndexIndirectCountMulti", cmd_address));
-                    rasterizer->DrawIndirect(
-                        true, indirect_args_addr, offset, draw_index_indirect->stride,
-                        draw_index_indirect->count, draw_index_indirect->countAddr);
+                    rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                             draw_index_indirect->stride,
+                                             draw_index_indirect->count,
+                                             draw_index_indirect->count_indirect_enable.Value()
+                                                 ? draw_index_indirect->count_addr
+                                                 : 0);
                     rasterizer->ScopeMarkerEnd();
                 }
                 break;
@@ -563,7 +585,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::EventWrite: {
-                // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
+                LOG_DEBUG(Render_Vulkan,
+                          "Encountered EventWrite: event_type = {}, event_index = {}",
+                          magic_enum::enum_name(event->event_type.Value()),
+                          magic_enum::enum_name(event->event_index.Value()));
+                if (event->event_type.Value() == EventType::SoVgtStreamoutFlush) {
+                    // TODO: handle proper synchronization, for now signal that update is done
+                    // immediately
+                    regs.cp_strmout_cntl.offset_update_done = 1;
+                }
                 break;
             }
             case PM4ItOpcode::EventWriteEos: {
@@ -675,10 +706,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const u64* wait_addr = wait_reg_mem->Address<u64*>();
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
-                    vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(); });
+                    vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(regs.reg_array); });
                     break;
                 }
-                while (!wait_reg_mem->Test()) {
+                while (!wait_reg_mem->Test(regs.reg_array)) {
                     YIELD_GFX();
                 }
                 break;
@@ -709,6 +740,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (rasterizer) {
                     rasterizer->CpSync();
                 }
+                break;
+            }
+            case PM4ItOpcode::StrmoutBufferUpdate: {
+                const auto* strmout = reinterpret_cast<const PM4CmdStrmoutBufferUpdate*>(header);
+                LOG_WARNING(Render_Vulkan,
+                            "Unimplemented IT_STRMOUT_BUFFER_UPDATE, update_memory = {}, "
+                            "source_select = {}, buffer_select = {}",
+                            strmout->update_memory.Value(),
+                            magic_enum::enum_name(strmout->source_select.Value()),
+                            strmout->buffer_select.Value());
                 break;
             }
             default:
@@ -843,6 +884,12 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
             }
             break;
         }
+        case PM4ItOpcode::SetQueueReg: {
+            const auto* set_data = reinterpret_cast<const PM4CmdSetQueueReg*>(header);
+            LOG_WARNING(Render, "Encountered compute SetQueueReg: vqid = {}, reg_offset = {:#x}",
+                        set_data->vqid.Value(), set_data->reg_offset.Value());
+            break;
+        }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
             auto& cs_program = GetCsRegs();
@@ -908,7 +955,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         case PM4ItOpcode::WaitRegMem: {
             const auto* wait_reg_mem = reinterpret_cast<const PM4CmdWaitRegMem*>(header);
             ASSERT(wait_reg_mem->engine.Value() == PM4CmdWaitRegMem::Engine::Me);
-            while (!wait_reg_mem->Test()) {
+            while (!wait_reg_mem->Test(regs.reg_array)) {
                 YIELD_ASC(vqid);
             }
             break;

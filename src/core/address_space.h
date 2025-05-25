@@ -19,8 +19,6 @@ enum class MemoryPermission : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
 
-constexpr VAddr CODE_BASE_OFFSET = 0x100000000ULL;
-
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
 constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;

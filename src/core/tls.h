@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/types.h"
 
 namespace Xbyak {
@@ -41,10 +42,31 @@ Tcb* GetTcbBase();
 /// Makes sure TLS is initialized for the thread before entering guest.
 void EnsureThreadInitialized();
 
+template <size_t size>
+__attribute__((optnone)) void ClearStack() {
+    volatile void* buf = alloca(size);
+    memset(const_cast<void*>(buf), 0, size);
+    buf = nullptr;
+}
+
 template <class ReturnType, class... FuncArgs, class... CallArgs>
 ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
     EnsureThreadInitialized();
+    // clear stack to avoid trash from EnsureThreadInitialized
+    ClearStack<12_KB>();
     return func(std::forward<CallArgs>(args)...);
 }
+
+template <class F, F f>
+struct HostCallWrapperImpl;
+
+template <class ReturnType, class... Args, PS4_SYSV_ABI ReturnType (*func)(Args...)>
+struct HostCallWrapperImpl<PS4_SYSV_ABI ReturnType (*)(Args...), func> {
+    static ReturnType PS4_SYSV_ABI wrap(Args... args) {
+        return func(args...);
+    }
+};
+
+#define HOST_CALL(func) (Core::HostCallWrapperImpl<decltype(&(func)), func>::wrap)
 
 } // namespace Core

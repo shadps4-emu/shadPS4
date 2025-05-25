@@ -206,6 +206,10 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
 
+    if (handle >= trophy_handles.size()) {
+        LOG_ERROR(Lib_NpTrophy, "Invalid handle {}", handle);
+        return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
+    }
     if (!trophy_handles.is_allocated({static_cast<u32>(handle)})) {
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
     }

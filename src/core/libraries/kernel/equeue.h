@@ -21,6 +21,9 @@ namespace Libraries::Kernel {
 class EqueueInternal;
 struct EqueueEvent;
 
+using SceKernelUseconds = u32;
+using SceKernelEqueue = EqueueInternal*;
+
 struct SceKernelEvent {
     enum Filter : s16 {
         None = 0,
@@ -61,10 +64,23 @@ struct SceKernelEvent {
     void* udata = nullptr; /* opaque user data identifier */
 };
 
+struct OrbisVideoOutEventHint {
+    u64 event_id : 8;
+    u64 video_id : 8;
+    u64 flip_arg : 48;
+};
+
+struct OrbisVideoOutEventData {
+    u64 time : 12;
+    u64 count : 4;
+    u64 flip_arg : 48;
+};
+
 struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
+    std::chrono::microseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
     void ResetTriggerState() {
@@ -84,19 +100,18 @@ struct EqueueEvent {
 
     void TriggerDisplay(void* data) {
         is_triggered = true;
-        auto hint = reinterpret_cast<u64>(data);
-        if (hint != 0) {
-            auto hint_h = static_cast<u32>(hint >> 8) & 0xFFFFFF;
-            auto ident_h = static_cast<u32>(event.ident >> 40);
-            if ((static_cast<u32>(hint) & 0xFF) == event.ident && event.ident != 0xFE &&
-                ((hint_h ^ ident_h) & 0xFF) == 0) {
+        if (data != nullptr) {
+            auto event_data = static_cast<OrbisVideoOutEventData>(event.data);
+            auto event_hint_raw = reinterpret_cast<u64>(data);
+            auto event_hint = static_cast<OrbisVideoOutEventHint>(event_hint_raw);
+            if (event_hint.event_id == event.ident && event.ident != 0xfe) {
                 auto time = Common::FencedRDTSC();
-                auto mask = 0xF000;
-                if ((static_cast<u32>(event.data) & 0xF000) != 0xF000) {
-                    mask = (static_cast<u32>(event.data) + 0x1000) & 0xF000;
+                auto counter = event_data.count;
+                if (counter != 0xf) {
+                    counter++;
                 }
-                event.data = (mask | static_cast<u64>(static_cast<u32>(time) & 0xFFF) |
-                              (hint & 0xFFFFFFFFFFFF0000));
+                event.data =
+                    (time & 0xfff) | (counter << 0xc) | (event_hint_raw & 0xffffffffffff0000);
             }
         }
     }
@@ -122,6 +137,8 @@ public:
     }
 
     bool AddEvent(EqueueEvent& event);
+    bool ScheduleEvent(u64 id, s16 filter,
+                       void (*callback)(SceKernelEqueue, const SceKernelEvent&));
     bool RemoveEvent(u64 id, s16 filter);
     int WaitForEvents(SceKernelEvent* ev, int num, u32 micros);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
@@ -141,6 +158,8 @@ public:
 
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
+    bool EventExists(u64 id, s16 filter);
+
 private:
     std::string m_name;
     std::mutex m_mutex;
@@ -148,9 +167,6 @@ private:
     EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
 };
-
-using SceKernelUseconds = u32;
-using SceKernelEqueue = EqueueInternal*;
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);
 

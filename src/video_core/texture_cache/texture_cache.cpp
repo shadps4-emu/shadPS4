@@ -8,6 +8,7 @@
 #include "common/debug.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/host_compatibility.h"
@@ -23,30 +24,40 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
       tile_manager{instance, scheduler} {
+    // Create basic null image at fixed image ID.
+    const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
+    ASSERT(null_id.index == NULL_IMAGE_ID.index);
+}
+
+TextureCache::~TextureCache() = default;
+
+ImageId TextureCache::GetNullImage(const vk::Format format) {
+    const auto existing_image = null_images.find(format);
+    if (existing_image != null_images.end()) {
+        return existing_image->second;
+    }
+
     ImageInfo info{};
-    info.pixel_format = vk::Format::eR8G8B8A8Unorm;
+    info.pixel_format = format;
     info.type = vk::ImageType::e2D;
-    info.tiling_idx = u32(AmdGpu::TilingMode::Texture_MicroTiled);
+    info.tiling_idx = static_cast<u32>(AmdGpu::TilingMode::Texture_MicroTiled);
     info.num_bits = 32;
     info.UpdateSize();
+
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
-    ASSERT(null_id.index == NULL_IMAGE_ID.index);
     auto& img = slot_images[null_id];
+
     const vk::Image& null_image = img.image;
-    Vulkan::SetObjectName(instance.GetDevice(), null_image, "Null Image");
+    Vulkan::SetObjectName(instance.GetDevice(), null_image,
+                          fmt::format("Null Image ({})", vk::to_string(format)));
+
     img.flags = ImageFlagBits::Empty;
     img.track_addr = img.info.guest_address;
     img.track_addr_end = img.info.guest_address + img.info.guest_size;
 
-    ImageViewInfo view_info;
-    const auto null_view_id =
-        slot_image_views.insert(instance, view_info, slot_images[null_id], null_id);
-    ASSERT(null_view_id.index == NULL_IMAGE_VIEW_ID.index);
-    const vk::ImageView& null_image_view = slot_image_views[null_view_id].image_view.get();
-    Vulkan::SetObjectName(instance.GetDevice(), null_image_view, "Null Image View");
+    null_images.emplace(format, null_id);
+    return null_id;
 }
-
-TextureCache::~TextureCache() = default;
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
@@ -211,14 +222,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        if (image_info.type == tex_cache_image.info.type &&
+            image_info.resources > tex_cache_image.info.resources) {
+            // Size and resources are greater, expand the image.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        if (image_info.tiling_mode != tex_cache_image.info.tiling_mode) {
+            // Size is greater but resources are not, because the tiling mode is different.
+            // Likely this memory address is being reused for a different image with a different
+            // tiling mode.
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
@@ -296,7 +316,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
     const auto& info = desc.info;
 
     if (info.guest_address == 0) [[unlikely]] {
-        return NULL_IMAGE_ID;
+        return GetNullImage(info.pixel_format);
     }
 
     std::scoped_lock lock{mutex};
@@ -527,10 +547,16 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.mip_hashes[m] = hash;
         }
 
+        auto mip_pitch = static_cast<u32>(mip.pitch);
+        auto mip_height = static_cast<u32>(mip.height);
+
+        auto image_extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        auto image_extent_height = mip_height ? std::min(mip_height, height) : height;
+
         image_copy.push_back({
             .bufferOffset = mip.offset,
-            .bufferRowLength = static_cast<u32>(mip.pitch),
-            .bufferImageHeight = static_cast<u32>(mip.height),
+            .bufferRowLength = mip_pitch,
+            .bufferImageHeight = mip_height,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
@@ -538,7 +564,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
                 .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
+            .imageExtent = {image_extent_width, image_extent_height, depth},
         });
     }
 
@@ -661,7 +687,7 @@ void TextureCache::TrackImage(ImageId image_id) {
         // Re-track the whole image
         image.track_addr = image_begin;
         image.track_addr_end = image_end;
-        tracker.UpdatePagesCachedCount(image_begin, image.info.guest_size, 1);
+        tracker.UpdatePageWatchers<1>(image_begin, image.info.guest_size);
     } else {
         if (image_begin < image.track_addr) {
             TrackImageHead(image_id);
@@ -684,7 +710,7 @@ void TextureCache::TrackImageHead(ImageId image_id) {
     ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
     const auto size = image.track_addr - image_begin;
     image.track_addr = image_begin;
-    tracker.UpdatePagesCachedCount(image_begin, size, 1);
+    tracker.UpdatePageWatchers<1>(image_begin, size);
 }
 
 void TextureCache::TrackImageTail(ImageId image_id) {
@@ -700,7 +726,7 @@ void TextureCache::TrackImageTail(ImageId image_id) {
     const auto addr = image.track_addr_end;
     const auto size = image_end - image.track_addr_end;
     image.track_addr_end = image_end;
-    tracker.UpdatePagesCachedCount(addr, size, 1);
+    tracker.UpdatePageWatchers<1>(addr, size);
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -713,7 +739,7 @@ void TextureCache::UntrackImage(ImageId image_id) {
     image.track_addr = 0;
     image.track_addr_end = 0;
     if (size != 0) {
-        tracker.UpdatePagesCachedCount(addr, size, -1);
+        tracker.UpdatePageWatchers<-1>(addr, size);
     }
 }
 
@@ -732,7 +758,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(image_begin, size, -1);
+    tracker.UpdatePageWatchers<-1>(image_begin, size);
 }
 
 void TextureCache::UntrackImageTail(ImageId image_id) {
@@ -751,7 +777,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(addr, size, -1);
+    tracker.UpdatePageWatchers<-1>(addr, size);
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

@@ -2,6 +2,7 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdio>
+#include <ctime>
 #include <fmt/chrono.h>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>

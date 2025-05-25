@@ -159,6 +159,7 @@ enum class SchedPolicy : u32 {
 
 struct Cpuset {
     u64 bits;
+    u64 _reserved;
 };
 
 struct PthreadAttr {
@@ -269,7 +270,7 @@ struct Pthread {
     bool no_cancel;
     bool cancel_async;
     bool cancelling;
-    Cpuset sigmask;
+    u64 sigmask;
     bool unblock_sigcancel;
     bool in_sigsuspend;
     bool force_exit;
@@ -332,6 +333,8 @@ struct Pthread {
             return true;
         }
     }
+
+    int SetAffinity(const Cpuset* cpuset);
 };
 using PthreadT = Pthread*;
 

@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include "core/devtools/widget/module_list.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/linker.h"
@@ -127,7 +128,7 @@ void Linker::Execute(const std::vector<std::string> args) {
             }
         }
         params.entry_addr = module->GetEntryAddress();
-        RunMainEntry(&params);
+        ExecuteGuest(RunMainEntry, &params);
     });
 }
 
@@ -147,6 +148,9 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
 
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
+
+    Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
+
     return m_modules.size() - 1;
 }
 
@@ -325,6 +329,9 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
     if (record) {
         *return_info = *record;
+
+        Core::Devtools::Widget::ModuleList::AddModule(sr.library);
+
         return true;
     }
 
@@ -366,7 +373,8 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        u8* dest = reinterpret_cast<u8*>(
+            Core::ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);

@@ -71,6 +71,7 @@ class ElfInfo {
     PSFAttributes psf_attributes{};
 
     std::filesystem::path splash_path{};
+    std::filesystem::path game_folder{};
 
 public:
     static constexpr u32 FW_15 = 0x1500000;
@@ -122,6 +123,10 @@ public:
 
     [[nodiscard]] const std::filesystem::path& GetSplashPath() const {
         return splash_path;
+    }
+
+    [[nodiscard]] const std::filesystem::path& GetGameFolder() const {
+        return game_folder;
     }
 };
 

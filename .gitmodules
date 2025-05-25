@@ -30,10 +30,6 @@
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak.git
 	shallow = true
-[submodule "externals/winpthreads"]
-	path = externals/winpthreads
-	url = https://github.com/shadps4-emu/winpthreads.git
-	shallow = true
 [submodule "externals/magic_enum"]
 	path = externals/magic_enum
 	url = https://github.com/Neargye/magic_enum.git

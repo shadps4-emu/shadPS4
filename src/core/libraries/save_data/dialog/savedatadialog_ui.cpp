@@ -49,13 +49,11 @@ void SaveDialogResult::CopyTo(OrbisSaveDataDialogResult& result) const {
     result.mode = this->mode;
     result.result = this->result;
     result.buttonId = this->button_id;
-    if (mode == SaveDataDialogMode::LIST || ElfInfo::Instance().FirmwareVer() >= ElfInfo::FW_45) {
-        if (result.dirName != nullptr) {
-            result.dirName->data.FromString(this->dir_name);
-        }
-        if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
-            result.param->FromSFO(this->param);
-        }
+    if (result.dirName != nullptr) {
+        result.dirName->data.FromString(this->dir_name);
+    }
+    if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
+        result.param->FromSFO(this->param);
     }
     result.userData = this->user_data;
 }
@@ -157,7 +155,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
 
     if (item->focusPos != FocusPos::DIRNAME) {
         this->focus_pos = item->focusPos;
-    } else {
+    } else if (item->focusPosDirName != nullptr) {
         this->focus_pos = item->focusPosDirName->data.to_string();
     }
     this->style = item->itemStyle;
@@ -345,12 +343,15 @@ SaveDialogUi::SaveDialogUi(SaveDialogUi&& other) noexcept
     }
 }
 
-SaveDialogUi& SaveDialogUi::operator=(SaveDialogUi other) {
+SaveDialogUi& SaveDialogUi::operator=(SaveDialogUi&& other) noexcept {
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
     using std::swap;
-    swap(state, other.state);
-    swap(status, other.status);
-    swap(result, other.result);
+    state = other.state;
+    other.state = nullptr;
+    status = other.status;
+    other.status = nullptr;
+    result = other.result;
+    other.result = nullptr;
     if (status && *status == Status::RUNNING) {
         first_render = true;
         AddLayer(this);
