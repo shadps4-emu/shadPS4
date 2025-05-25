@@ -62,10 +62,10 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     const u8* code_start = g_srt_codegen_start;
     const u8* code_end = code_start + g_srt_codegen.getSize();
     const void* code = Common::GetRip(context);
-    if (code < code_start || fault_address >= code) {
-        return false;
+    if (code < code_start || code >= code_end) {
+        return false; // Not in SRT code range
     }
-   
+    
     // Patch instruction to zero register
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
