@@ -67,7 +67,7 @@ void VideoOutDriver::Close(s32 handle) {
     ASSERT(main_port.flip_events.empty());
 }
 
-VideoOutPort* VideoOutDriver::GetPort(int handle) {
+VideoOutPort* VideoOutDriver::GetPort(s32 handle) {
     if (handle != 1) [[unlikely]] {
         return nullptr;
     }
