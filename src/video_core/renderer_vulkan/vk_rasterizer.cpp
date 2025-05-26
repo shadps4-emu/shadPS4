@@ -17,6 +17,10 @@
 #undef MemoryBarrier
 #endif
 
+namespace {
+    const int OCCLUSION_QUERIES_COUNT = 16;
+}
+
 namespace Vulkan {
 
 static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
@@ -43,6 +47,11 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
+    occlusion_query_pool = Check<"occlusion query pool">(instance.GetDevice().createQueryPool({
+        .queryType = vk::QueryType::eOcclusion,
+        .queryCount = OCCLUSION_QUERIES_COUNT,
+    }));
+    instance.GetDevice().resetQueryPool(occlusion_query_pool, 0, OCCLUSION_QUERIES_COUNT);
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -1271,12 +1280,31 @@ void Rasterizer::EndPredication() {
 
 }
 
-void Rasterizer::StartOcclusionQuery() {
+void Rasterizer::StartOcclusionQuery(VAddr addr) {
+    LOG_DEBUG(Render_Vulkan, "addr = {:#x}, index = {}", addr, occlusion_current_index);
 
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.resetQueryPool(occlusion_query_pool, occlusion_current_index, 1);
+    ScopeMarkerBegin("gfx:{}:occlusionQuery", fmt::ptr(reinterpret_cast<const void*>(addr)));
+    cmdbuf.beginQuery(occlusion_query_pool, occlusion_current_index, vk::QueryControlFlags());
+
+    occlusion_index_mapping.insert_or_assign(addr, occlusion_current_index);
+
+    occlusion_current_index++;
+    if (occlusion_current_index > OCCLUSION_QUERIES_COUNT - 1) {
+        occlusion_current_index = 0;
+    }
 }
 
-void Rasterizer::EndOcclusionQuery() {
+void Rasterizer::EndOcclusionQuery(VAddr addr) {
+    ASSERT(occlusion_index_mapping.contains(addr));
 
+    auto index = occlusion_index_mapping[addr];
+    LOG_DEBUG(Render_Vulkan, "addr = {:#x}, index = {}", addr, index);
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.endQuery(occlusion_query_pool, index);
+    ScopeMarkerEnd();
 }
 
 } // namespace Vulkan

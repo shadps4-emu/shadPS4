@@ -621,13 +621,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                         if ((event->Address<u64>() & 0x8) == 0) {
                             // occlusion query start
                             if (rasterizer) {
-                                rasterizer->StartOcclusionQuery();
+                                rasterizer->StartOcclusionQuery(event->Address<VAddr>());
                             }
                         }
                         else {
                             // occlusion query end
                             if (rasterizer) {
-                                rasterizer->EndOcclusionQuery();
+                                rasterizer->EndOcclusionQuery(event->Address<VAddr>() & ~0xF);
                             }
                         }
                     }

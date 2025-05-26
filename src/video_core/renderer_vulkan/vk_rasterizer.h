@@ -57,8 +57,8 @@ public:
 
     void StartPredication();
     void EndPredication();
-    void StartOcclusionQuery();
-    void EndOcclusionQuery();
+    void StartOcclusionQuery(VAddr addr);
+    void EndOcclusionQuery(VAddr addr);
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
@@ -127,6 +127,9 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     std::shared_mutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
+    vk::QueryPool occlusion_query_pool;
+    u32 occlusion_current_index{};
+    std::map<VAddr, u32> occlusion_index_mapping;
 
     boost::container::static_vector<
         std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
