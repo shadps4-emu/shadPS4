@@ -577,13 +577,16 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         } else {
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
                 vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
-            const u32 alignment =
+            // enforce at least 16-byte alignment on vertex buffer offsets
+            const u32 baseAlign =
                 is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
-            const u32 offset_aligned = Common::AlignDown(offset, alignment);
-            const u32 adjust = offset - offset_aligned;
-            ASSERT(adjust % 4 == 0);
+            const u32 minAlign = std::max<u32>(baseAlign, 16u);
+            const u32 offset_align = Common::AlignDown(offset, minAlign);
+            const u32 adjust = offset - offset_align;
+            ASSERT_MSG(adjust % 4 == 0 && adjust < minAlign,
+                       "Unsafe vertex offset adjust %u >= align %u", adjust, minAlign);
             push_data.AddOffset(binding.buffer, adjust);
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
+            buffer_infos.emplace_back(vk_buffer->Handle(), offset_align, size + adjust);
             if (auto barrier =
                     vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
                                                           : vk::AccessFlagBits2::eShaderRead,

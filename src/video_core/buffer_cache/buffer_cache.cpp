@@ -216,16 +216,18 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
     // Merge connecting ranges together
     Vulkan::VertexInputs<BufferRange> ranges_merged{};
     if (!ranges.empty()) {
-        std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
-            return lhv.base_address < rhv.base_address;
-        });
+        std::ranges::sort(ranges, [](auto& a, auto& b) { return a.base_address < b.base_address; });
         ranges_merged.emplace_back(ranges[0]);
-        for (auto range : ranges) {
-            auto& prev_range = ranges_merged.back();
-            if (prev_range.end_address < range.base_address) {
-                ranges_merged.emplace_back(range);
+        static constexpr VAddr MAX_GAP = 64;     // max gap (bytes) to merge
+        static constexpr VAddr SAFETY_PAD = 128; // pad merged ranges
+        for (size_t i = 1; i < ranges.size(); ++i) {
+            auto& curr = ranges[i];
+            auto& prev = ranges_merged.back();
+            const VAddr gap = curr.base_address - prev.end_address;
+            if (gap <= MAX_GAP) {
+                prev.end_address = curr.end_address + SAFETY_PAD;
             } else {
-                prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+                ranges_merged.emplace_back(curr);
             }
         }
     }

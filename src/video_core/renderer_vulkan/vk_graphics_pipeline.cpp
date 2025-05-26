@@ -324,9 +324,12 @@ void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
             .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
+        // ensure vertex stride is 4-byte aligned
+        const u32 rawStride = buffer.GetStride();
+        const u32 safeStride = Common::AlignUp(rawStride, 4u);
         bindings.push_back(Binding{
             .binding = attrib.semantic,
-            .stride = buffer.GetStride(),
+            .stride = safeStride,
             .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
                              ? vk::VertexInputRate::eVertex
                              : vk::VertexInputRate::eInstance,
