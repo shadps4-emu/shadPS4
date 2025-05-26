@@ -279,6 +279,8 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
         if (timo == nullptr) {
             *out = eq->WaitForEvents(ev, num, 0);
         } else if (*timo == 0) {
+            // Only events that have already arrived at the time of this function call can be
+            // received
             *out = eq->GetTriggeredEvents(ev, num);
         } else {
             *out = eq->WaitForEvents(ev, num, *timo);
