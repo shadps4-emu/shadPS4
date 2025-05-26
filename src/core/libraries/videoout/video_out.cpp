@@ -339,25 +339,34 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    static std::mutex irq_mutex;
-
     {
-        std::lock_guard<std::mutex> lock(irq_mutex);
-
-        Platform::IrqC::Instance()->RegisterOnce(
-            Platform::InterruptId::GfxFlip, [=](Platform::InterruptId irq) {
-                ASSERT_MSG(irq == Platform::InterruptId::GfxFlip, "Unexpected IRQ occurred");
-                ASSERT_MSG(port->buffer_labels[buf_id] == 1, "Out-of-order flip IRQ");
-
-                const auto result = driver->SubmitFlip(port, buf_id, arg, true);
-                if (!result) {
-                    LOG_ERROR(Lib_VideoOut, "EOP flip submission failed for buffer {}", buf_id);
+        std::lock_guard lock(port->pending_mutex);
+        port->pending_flips.emplace(buf_id, arg);
+    }
+    Platform::IrqC::Instance()->RegisterOnce(
+        Platform::InterruptId::GfxFlip, [=](Platform::InterruptId irq) {
+            ASSERT_MSG(irq == Platform::InterruptId::GfxFlip, "Unexpected IRQ");
+            if (port->is_mode_changing) {
+                LOG_WARNING(Lib_VideoOut, "Ignoring flip IRQ during mode change");
+                return;
+            }
+            std::tuple<u32, u32> pending;
+            {
+                std::lock_guard lock(port->pending_mutex);
+                if (port->pending_flips.empty()) {
+                    LOG_ERROR(Lib_VideoOut, "Received GfxFlip IRQ but no flips pending");
                     return;
                 }
-
-                port->buffer_labels[buf_id] = 0;
-            });
-    }
+                pending = port->pending_flips.front();
+                port->pending_flips.pop();
+            }
+            const auto [queued_buf_id, queued_arg] = pending;
+            ASSERT_MSG(queued_buf_id == buf_id,
+                       "Out-of-order flip IRQ (expected buf_id = {}, got = {})", buf_id,
+                       queued_buf_id);
+            const bool result = driver->SubmitFlip(port, queued_buf_id, queued_arg, true);
+            ASSERT_MSG(result, "EOP flip submission failed for buffer {}", queued_buf_id);
+        });
 
     return ORBIS_OK;
 }
