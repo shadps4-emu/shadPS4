@@ -187,7 +187,8 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
     ASSERT(num == 1);
 
     auto curr_clock = std::chrono::steady_clock::now();
-    const auto wait_end_us = curr_clock + std::chrono::microseconds{micros};
+    const auto wait_end_us = (micros == 0) ? std::chrono::steady_clock::time_point::max()
+                                           : curr_clock + std::chrono::microseconds{micros};
 
     do {
         curr_clock = std::chrono::steady_clock::now();
