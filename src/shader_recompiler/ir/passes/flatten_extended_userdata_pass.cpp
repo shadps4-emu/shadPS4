@@ -103,7 +103,7 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     // Fill nops
     memset(code_patch + patch_size, 0x90, len - patch_size);
 
-    LOG_WARNING(Render_Recompiler, "Patched SRT walker at {}", code);
+    LOG_DEBUG(Render_Recompiler, "Patched SRT walker at {}", code);
 
     return true;
 }
