@@ -269,14 +269,19 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
 
     // When the timeout is nullptr, we wait indefinitely
     if (eq->HasSmallTimer()) {
-        *out = eq->WaitForSmallTimer(ev, num, (timo != nullptr) ? *timo : 0);
+        if (timo == nullptr) {
+            *out = eq->WaitForSmallTimer(ev, num, 0);
+        } else {
+            ASSERT(*timo);
+            *out = eq->WaitForSmallTimer(ev, num, *timo);
+        }
     } else {
-        if (*timo == 0) {
-            // Only events that have already arrived at the time of this function call can be
-            // received
+        if (timo == nullptr) {
+            *out = eq->WaitForEvents(ev, num, 0);
+        } else if (*timo == 0) {
             *out = eq->GetTriggeredEvents(ev, num);
         } else {
-            *out = eq->WaitForEvents(ev, num, (timo != nullptr) ? *timo : 0);
+            *out = eq->WaitForEvents(ev, num, *timo);
         }
     }
 
