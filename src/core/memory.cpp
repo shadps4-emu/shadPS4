@@ -223,9 +223,9 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
-        // Make sure we're mapping to a valid address
-        mapped_addr = mapped_addr > min_address ? mapped_addr : min_address;
         auto vma = FindVMA(mapped_addr)->second;
+        // If the found vma doesn't contain our address, then it's not in the vma map.
+        ASSERT_MSG(vma.Contains(mapped_addr, 0), "Requested address is out of bounds!");
         size_t remaining_size = vma.base + vma.size - mapped_addr;
         // If the VMA is mapped or there's not enough space, unmap the region first.
         if (vma.IsMapped() || remaining_size < size) {
@@ -260,14 +260,15 @@ int MemoryManager::PoolReserve(void** out_addr, VAddr virtual_addr, size_t size,
 int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
                            u64 alignment) {
     std::scoped_lock lk{mutex};
-
-    virtual_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     alignment = alignment > 0 ? alignment : 16_KB;
-    VAddr mapped_addr = alignment > 0 ? Common::AlignUp(virtual_addr, alignment) : virtual_addr;
+    VAddr min_address = Common::AlignUp(impl.SystemManagedVirtualBase(), alignment);
+    VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     // Fixed mapping means the virtual address must exactly match the provided one.
     if (True(flags & MemoryMapFlags::Fixed)) {
         auto vma = FindVMA(mapped_addr)->second;
+        // If the found vma doesn't contain our address, then it's not in the vma map.
+        ASSERT_MSG(vma.Contains(mapped_addr, 0), "Requested address is out of bounds!");
         size_t remaining_size = vma.base + vma.size - mapped_addr;
         // If the VMA is mapped or there's not enough space, unmap the region first.
         if (vma.IsMapped() || remaining_size < size) {
@@ -278,6 +279,9 @@ int MemoryManager::Reserve(void** out_addr, VAddr virtual_addr, size_t size, Mem
 
     // Find the first free area starting with provided virtual address.
     if (False(flags & MemoryMapFlags::Fixed)) {
+        // When MemoryMapFlags::Fixed is not specified, and mapped_addr is 0,
+        // search from address 0x200000000 instead.
+        mapped_addr = mapped_addr == 0 ? 0x200000000 : mapped_addr;
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
