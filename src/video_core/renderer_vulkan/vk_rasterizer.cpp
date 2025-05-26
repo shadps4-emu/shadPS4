@@ -1283,6 +1283,7 @@ void Rasterizer::EndPredication() {
 void Rasterizer::StartOcclusionQuery(VAddr addr) {
     LOG_DEBUG(Render_Vulkan, "addr = {:#x}, index = {}", addr, occlusion_current_index);
 
+    scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.resetQueryPool(occlusion_query_pool, occlusion_current_index, 1);
     ScopeMarkerBegin("gfx:{}:occlusionQuery", fmt::ptr(reinterpret_cast<const void*>(addr)));
@@ -1302,6 +1303,7 @@ void Rasterizer::EndOcclusionQuery(VAddr addr) {
     auto index = occlusion_index_mapping[addr];
     LOG_DEBUG(Render_Vulkan, "addr = {:#x}, index = {}", addr, index);
 
+    scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.endQuery(occlusion_query_pool, index);
     ScopeMarkerEnd();
