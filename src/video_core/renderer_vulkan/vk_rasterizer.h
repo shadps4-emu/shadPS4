@@ -57,6 +57,8 @@ public:
 
     void StartPredication();
     void EndPredication();
+    void StartOcclusionQuery();
+    void EndOcclusionQuery();
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);

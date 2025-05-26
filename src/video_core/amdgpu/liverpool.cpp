@@ -612,6 +612,26 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
                 }
+
+                if (event->event_index.Value() == EventIndex::ZpassDone) {
+                    if (event->event_type.Value() == EventType::PixelPipeStatControl) {
+
+                    }
+                    else if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                        if ((event->Address<u64>() & 0x8) == 0) {
+                            // occlusion query start
+                            if (rasterizer) {
+                                rasterizer->StartOcclusionQuery();
+                            }
+                        }
+                        else {
+                            // occlusion query end
+                            if (rasterizer) {
+                                rasterizer->EndOcclusionQuery();
+                            }
+                        }
+                    }
+                }
                 break;
             }
             case PM4ItOpcode::EventWriteEos: {

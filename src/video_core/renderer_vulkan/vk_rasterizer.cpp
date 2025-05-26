@@ -1268,8 +1268,15 @@ void Rasterizer::StartPredication() {
 }
 
 void Rasterizer::EndPredication() {
-    
+
 }
 
+void Rasterizer::StartOcclusionQuery() {
+
+}
+
+void Rasterizer::EndOcclusionQuery() {
+
+}
 
 } // namespace Vulkan
