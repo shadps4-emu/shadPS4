@@ -1263,4 +1263,13 @@ void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 
              (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
 }
 
+void Rasterizer::StartPredication() {
+
+}
+
+void Rasterizer::EndPredication() {
+    
+}
+
+
 } // namespace Vulkan

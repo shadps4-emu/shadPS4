@@ -55,6 +55,9 @@ public:
     void ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                  bool from_guest = false);
 
+    void StartPredication();
+    void EndPredication();
+
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size);

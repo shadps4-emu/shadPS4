@@ -394,7 +394,24 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::SetPredication: {
-                LOG_WARNING(Render_Vulkan, "Unimplemented IT_SET_PREDICATION");
+                const auto* predication = reinterpret_cast<const PM4CmdSetPredication*>(header);
+                if (predication->continue_bit.Value()) {
+                    LOG_WARNING(Render_Vulkan, "unhandled continue bit in predication command");
+                }
+                if (predication->pred_op.Value() == PredicateOperation::Clear) {
+                    if (rasterizer) {
+                        rasterizer->EndPredication();
+                    }
+                }
+                else if (predication->pred_op.Value() == PredicateOperation::Zpass) {
+                    if (rasterizer) {
+                        rasterizer->StartPredication();
+                    }
+                }
+                else {
+                    LOG_WARNING(Render_Vulkan, "unhandled predicate operation {}",
+                        magic_enum::enum_name(predication->pred_op.Value()));
+                }
                 break;
             }
             case PM4ItOpcode::IndexType: {
