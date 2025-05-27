@@ -7,8 +7,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
-#include "common/singleton.h"
-#include "core/file_sys/fs.h"
+#include "common/singleton.h"9
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -553,30 +552,47 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
-                               void** res) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",
-             fmt::ptr(addr), len, prot, flags, fd, offset);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
+    LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
+             fmt::ptr(addr), len, prot, flags, fd, phys_addr);
+
+    void* addr_out;
     auto* memory = Core::Memory::Instance();
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    s32 result = 0;
     if (fd == -1) {
-        return memory->MapMemory(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
-                                 Core::VMAType::Flexible);
+        result = memory->MapMemory(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                   Core::VMAType::Flexible);
     } else {
-        const uintptr_t handle = h->GetFile(fd)->f.GetFileMapping();
-        return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
-                               offset);
+        result = memory->MapFile(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                 fd, phys_addr);
     }
+
+    if (result < 0) {
+        // If the memory mappings fail, mmap sets errno to the appropriate error code,
+        // then returns (void*)-1;
+        ErrSceToPosix(result);
+        return reinterpret_cast<void*>(-1);
+    }
+
+    return addr_out;
 }
 
-void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
-    void* ptr;
-    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap");
-    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
-    ASSERT(result == 0);
-    return ptr;
+s32 PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr,
+                               void** res) {
+    void* addr_out = posix_mmap(addr, len, prot, flags, fd, phys_addr);
+
+    if (addr_out == reinterpret_cast<void*>(-1)) {
+        // posix_mmap failed, calculate and return the appropriate kernel error code using errno.
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+
+    // Set the outputted address
+    *res = addr_out;
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceKernelConfiguredFlexibleMemorySize(u64* sizeOut) {

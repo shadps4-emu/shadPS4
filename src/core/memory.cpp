@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
@@ -459,8 +460,15 @@ int MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, size_t size, Mem
                    vma.base, vma.base + vma.size, virtual_addr, virtual_addr + size);
     }
 
-    // Map the file.
-    impl.MapFile(mapped_addr, size_aligned, offset, std::bit_cast<u32>(prot), fd);
+    // Get the file to map
+    auto file = h->GetFile(fd);
+    if (file == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    const auto handle = file->f.GetFileMapping();
+
+    impl.MapFile(mapped_addr, size_aligned, phys_addr, std::bit_cast<u32>(prot), fd);
 
     if (prot >= MemoryProt::GpuRead) {
         // PS4s only map to GPU memory when the protection includes GPU access.
