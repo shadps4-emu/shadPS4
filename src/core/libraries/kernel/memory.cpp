@@ -389,7 +389,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
     return result;
 }
 
-s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const char* name) {
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;

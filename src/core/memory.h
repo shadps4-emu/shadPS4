@@ -215,7 +215,7 @@ public:
 
     s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
 
-    void NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name);
+    void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
 

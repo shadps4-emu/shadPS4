@@ -769,12 +769,31 @@ s32 MemoryManager::SetDirectMemoryType(s64 phys_addr, s32 memory_type) {
     return ORBIS_OK;
 }
 
-void MemoryManager::NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name) {
-    auto it = FindVMA(virtual_addr);
+void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name) {
+    // Sizes are aligned up to the nearest 16_KB
+    auto aligned_size = Common::AlignUp(size, 16_KB);
+    // Addresses are aligned down to the nearest 16_KB
+    auto aligned_addr = Common::AlignDown(virtual_addr, 16_KB);
 
-    ASSERT_MSG(it->second.Contains(virtual_addr, size),
-               "Range provided is not fully contained in vma");
-    it->second.name = name;
+    auto it = FindVMA(aligned_addr);
+    s64 remaining_size = aligned_size;
+    auto current_addr = aligned_addr;
+    while (remaining_size > 0) {
+        // Nothing needs to be done to free VMAs
+        if (!it->second.IsFree()) {
+            if (remaining_size < it->second.size) {
+                // We should split VMAs here, but this could cause trouble for Windows.
+                // Instead log a warning and name the whole VMA.
+                // it = CarveVMA(current_addr, remaining_size);
+                LOG_WARNING(Kernel_Vmm, "Trying to partially name a range");
+            }
+            auto& vma = it->second;
+            vma.name = name;
+        }
+        remaining_size -= it->second.size;
+        current_addr += it->second.size;
+        it = FindVMA(current_addr);
+    }
 }
 
 void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
