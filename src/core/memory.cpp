@@ -335,7 +335,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     new_vma.prot = prot;
     new_vma.name = name;
     new_vma.type = type;
-    new_vma.phys_base = phys_addr;
+    new_vma.phys_base = phys_addr == -1 ? 0 : phys_addr;
     new_vma.is_exec = is_exec;
 
     if (type == VMAType::Reserved) {
