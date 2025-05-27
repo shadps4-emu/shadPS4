@@ -561,7 +561,6 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
 
     if (vma_base.type == VMAType::Free) {
         // On PS4, protecting freed memory does nothing.
-        LOG_WARNING(Kernel_Vmm, "Attempting to protect free memory");
         return adjusted_size;
     }
 
