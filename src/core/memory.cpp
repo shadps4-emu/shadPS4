@@ -396,7 +396,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     const auto handle = file->f.GetFileMapping();
 
-    impl.MapFile(mapped_addr, size_aligned, phys_addr, std::bit_cast<u32>(prot), fd);
+    impl.MapFile(mapped_addr, size_aligned, phys_addr, std::bit_cast<u32>(prot), handle);
 
     if (prot >= MemoryProt::GpuRead) {
         // PS4s only map to GPU memory when the protection includes GPU access.
