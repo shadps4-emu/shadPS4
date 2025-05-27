@@ -33,6 +33,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     installEventFilter(this);
     setAttribute(Qt::WA_DeleteOnClose);
     m_gui_settings = std::make_shared<gui_settings>();
+    ui->toggleLabelsAct->setChecked(
+        m_gui_settings->GetValue(gui::mw_showLabelsUnderIcons).toBool());
 }
 
 MainWindow::~MainWindow() {
@@ -148,7 +150,7 @@ void MainWindow::PauseGame() {
 
 void MainWindow::toggleLabelsUnderIcons() {
     bool showLabels = ui->toggleLabelsAct->isChecked();
-    Config::setShowLabelsUnderIcons();
+    m_gui_settings->SetValue(gui::mw_showLabelsUnderIcons, showLabels);
     UpdateToolbarLabels();
     if (isGameRunning) {
         UpdateToolbarButtons();
@@ -414,7 +416,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -447,7 +449,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_gui_settings,m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);

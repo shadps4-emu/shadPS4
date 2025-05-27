@@ -90,11 +90,9 @@ std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
 static int backgroundImageOpacity = 50;
-static bool showBackgroundImage = true;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
-static bool showLabelsUnderIcons = true;
 
 // Language
 u32 m_language = 1; // english
@@ -162,14 +160,6 @@ bool isDevKitConsole() {
 
 bool getIsFullscreen() {
     return isFullscreen;
-}
-
-bool getShowLabelsUnderIcons() {
-    return showLabelsUnderIcons;
-}
-
-bool setShowLabelsUnderIcons() {
-    return false;
 }
 
 std::string getFullscreenMode() {
@@ -419,9 +409,6 @@ void setVblankDiv(u32 value) {
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
-static void setShowLabelsUnderIcons(bool enable) {
-    showLabelsUnderIcons = enable;
-}
 
 void setFullscreenMode(std::string mode) {
     fullscreenMode = mode;
@@ -632,14 +619,6 @@ void setBackgroundImageOpacity(int opacity) {
     backgroundImageOpacity = std::clamp(opacity, 0, 100);
 }
 
-bool getShowBackgroundImage() {
-    return showBackgroundImage;
-}
-
-void setShowBackgroundImage(bool show) {
-    showBackgroundImage = show;
-}
-
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -770,7 +749,6 @@ void load(const std::filesystem::path& path) {
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
         backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
-        showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
     }
 
     if (data.contains("Settings")) {
@@ -935,7 +913,6 @@ void save(const std::filesystem::path& path) {
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["GUI"]["emulatorLanguage"] = emulator_language;
     data["GUI"]["backgroundImageOpacity"] = backgroundImageOpacity;
-    data["GUI"]["showBackgroundImage"] = showBackgroundImage;
     data["Settings"]["consoleLanguage"] = m_language;
 
     // Sorting of TOML sections
@@ -1030,7 +1007,6 @@ void setDefaultValues() {
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
     backgroundImageOpacity = 50;
-    showBackgroundImage = true;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {

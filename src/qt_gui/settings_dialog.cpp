@@ -71,9 +71,10 @@ int bgm_volume_backup;
 
 static std::vector<QString> m_physical_devices;
 
-SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
+                               std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                                QWidget* parent)
-    : QDialog(parent), ui(new Ui::SettingsDialog) {
+    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
@@ -147,6 +148,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
                     Config::save(config_dir / "config.toml");
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     Config::setDefaultValues();
+                    setDefaultValues();
                     Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
@@ -235,12 +237,12 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
 #else
         connect(ui->showBackgroundImageCheckBox, &QCheckBox::checkStateChanged, this,
                 [](Qt::CheckState state) {
 #endif
-            Config::setShowBackgroundImage(state == Qt::Checked);
+            m_gui_settings->SetValue(gui::gl_showBackgroundImage, state == Qt::Checked);
         });
     }
 
@@ -537,7 +539,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
     ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
-    ui->showBackgroundImageCheckBox->setChecked(Config::getShowBackgroundImage());
+    ui->showBackgroundImageCheckBox->setChecked(
+        m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool());
 
     backgroundImageOpacitySlider_backup = Config::getBackgroundImageOpacity();
     bgm_volume_backup = Config::getBGMvolume();
@@ -793,7 +796,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
     Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
-    Config::setShowBackgroundImage(ui->showBackgroundImageCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gl_showBackgroundImage,
+                             ui->showBackgroundImageCheckBox->isChecked());
 
     std::vector<Config::GameInstallDir> dirs_with_states;
     for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
@@ -861,4 +865,7 @@ void SettingsDialog::ResetInstallFolders() {
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
+}
+void SettingsDialog::setDefaultValues() {
+    m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
 }

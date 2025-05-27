@@ -174,7 +174,7 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     }
 
     // If background images are hidden, clear the background image
-    if (!Config::getShowBackgroundImage()) {
+    if (!m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         backgroundImage = QImage();
         m_last_opacity = -1;         // Reset opacity tracking when disabled
         m_current_game_path.clear(); // Reset current game path
@@ -202,7 +202,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 
 void GameListFrame::RefreshListBackgroundImage() {
     QPalette palette;
-    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
+    if (!backgroundImage.isNull() &&
+        m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         QSize widgetSize = size();
         QPixmap scaledPixmap =
             QPixmap::fromImage(backgroundImage)
