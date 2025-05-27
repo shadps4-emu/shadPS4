@@ -276,7 +276,6 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
             // received
             *out = eq->GetTriggeredEvents(ev, num);
         } else {
-            ASSERT(*timo);
             *out = eq->WaitForSmallTimer(ev, num, *timo);
         }
     } else {
