@@ -18,7 +18,7 @@
 #endif
 
 namespace {
-const int OCCLUSION_QUERIES_COUNT = 16;
+const int OCCLUSION_QUERIES_COUNT = 256;
 }
 
 namespace Vulkan {
@@ -1291,7 +1291,7 @@ void Rasterizer::StartPredication(VAddr addr, bool draw_if_visible, bool wait_fo
 
     auto index = occlusion_index_mapping[addr];
     LOG_DEBUG(Render_Vulkan,
-              "addr = {:#x}, index = {}, draw_if_visible = {} "
+              "addr = {:#x}, index = {}, draw_if_visible = {}, "
               "wait_for_result = {}",
               addr, index, draw_if_visible, wait_for_result);
 
