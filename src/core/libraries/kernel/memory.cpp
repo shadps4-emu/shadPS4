@@ -396,8 +396,8 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, cons
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len,
-                                           u64 alignment, u64* physAddrOut) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len, u64 alignment,
+                                           u64* physAddrOut) {
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
