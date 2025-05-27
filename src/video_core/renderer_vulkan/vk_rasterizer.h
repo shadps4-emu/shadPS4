@@ -55,7 +55,7 @@ public:
     void ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                  bool from_guest = false);
 
-    void StartPredication();
+    void StartPredication(VAddr addr, bool discard_if_zero, bool wait_for_result);
     void EndPredication();
     void StartOcclusionQuery(VAddr addr);
     void EndOcclusionQuery(VAddr addr);
@@ -130,6 +130,8 @@ private:
     vk::QueryPool occlusion_query_pool;
     u32 occlusion_current_index{};
     std::map<VAddr, u32> occlusion_index_mapping;
+    VideoCore::Buffer occlusion_query_buffer;
+    bool active_predication;
 
     boost::container::static_vector<
         std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>

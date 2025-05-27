@@ -405,7 +405,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 else if (predication->pred_op.Value() == PredicateOperation::Zpass) {
                     if (rasterizer) {
-                        rasterizer->StartPredication();
+                        rasterizer->StartPredication(predication->Address<VAddr>(),
+                            predication->action.Value() == Predication::DrawIfVisible,
+                            predication->hint.Value() == PredicationHint::Wait);
                     }
                 }
                 else {
