@@ -1309,8 +1309,17 @@ void Rasterizer::StartPredication(VAddr addr, bool draw_if_visible, bool wait_fo
         .offset = index * sizeof(u32),
         .size = sizeof(u32),
     };
+
+    const vk::MemoryBarrier2 ib_barrier{
+        .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eConditionalRenderingEXT,
+        .dstAccessMask = vk::AccessFlagBits2::eConditionalRenderingReadEXT,
+    };
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers = &ib_barrier,
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &pre_barrier,
     });
