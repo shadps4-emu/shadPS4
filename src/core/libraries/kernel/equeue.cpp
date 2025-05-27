@@ -271,6 +271,10 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     if (eq->HasSmallTimer()) {
         if (timo == nullptr) {
             *out = eq->WaitForSmallTimer(ev, num, 0);
+        } else if (*timo == 0) {
+            // Only events that have already arrived at the time of this function call can be
+            // received
+            *out = eq->GetTriggeredEvents(ev, num);
         } else {
             ASSERT(*timo);
             *out = eq->WaitForSmallTimer(ev, num, *timo);
