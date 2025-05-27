@@ -962,7 +962,7 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
     const char* res = inet_ntop(af, src, dst, size);
 #endif
     if (res == nullptr) {
-        UNREACHABLE();
+        return nullptr;
     }
     return dst;
 }
