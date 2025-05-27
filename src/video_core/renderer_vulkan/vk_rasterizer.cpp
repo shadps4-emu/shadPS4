@@ -18,7 +18,7 @@
 #endif
 
 namespace {
-    const int OCCLUSION_QUERIES_COUNT = 16;
+const int OCCLUSION_QUERIES_COUNT = 16;
 }
 
 namespace Vulkan {
@@ -43,8 +43,13 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       buffer_cache{instance, scheduler, *this, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool},
-      occlusion_query_buffer{instance, scheduler, VideoCore::MemoryUsage::DeviceLocal, 0,
-        vk::BufferUsageFlagBits::eConditionalRenderingEXT | vk::BufferUsageFlagBits::eTransferDst, sizeof(u32)*OCCLUSION_QUERIES_COUNT} {
+      occlusion_query_buffer{instance,
+                             scheduler,
+                             VideoCore::MemoryUsage::DeviceLocal,
+                             0,
+                             vk::BufferUsageFlagBits::eConditionalRenderingEXT |
+                                 vk::BufferUsageFlagBits::eTransferDst,
+                             sizeof(u32) * OCCLUSION_QUERIES_COUNT} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }
@@ -54,7 +59,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         .queryCount = OCCLUSION_QUERIES_COUNT,
     }));
     instance.GetDevice().resetQueryPool(occlusion_query_pool, 0, OCCLUSION_QUERIES_COUNT);
-    Vulkan::SetObjectName(instance.GetDevice(), occlusion_query_buffer.Handle(), "OcclusionQueryBuffer:{:#x}", sizeof(u32)*OCCLUSION_QUERIES_COUNT);
+    Vulkan::SetObjectName(instance.GetDevice(), occlusion_query_buffer.Handle(),
+                          "OcclusionQueryBuffer:{:#x}", sizeof(u32) * OCCLUSION_QUERIES_COUNT);
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -1290,8 +1296,9 @@ void Rasterizer::StartPredication(VAddr addr, bool draw_if_visible, bool wait_fo
     const auto cmdbuf = scheduler.CommandBuffer();
 
     cmdbuf.copyQueryPoolResults(occlusion_query_pool, index, 1, occlusion_query_buffer.Handle(),
-        index*sizeof(u32), sizeof(u32), wait_for_result ? vk::QueryResultFlagBits::eWait
-        : vk::QueryResultFlagBits::ePartial);
+                                index * sizeof(u32), sizeof(u32),
+                                wait_for_result ? vk::QueryResultFlagBits::eWait
+                                                : vk::QueryResultFlagBits::ePartial);
 
     const auto pre_barrier = vk::BufferMemoryBarrier2{
         .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
@@ -1309,7 +1316,7 @@ void Rasterizer::StartPredication(VAddr addr, bool draw_if_visible, bool wait_fo
     });
 
     ScopeMarkerBegin("gfx:{}:predication", fmt::ptr(reinterpret_cast<const void*>(addr)));
-    vk::ConditionalRenderingBeginInfoEXT conditional_rendering_info {
+    vk::ConditionalRenderingBeginInfoEXT conditional_rendering_info{
         .buffer = occlusion_query_buffer.Handle(),
         .offset = index * sizeof(u32),
         .flags = draw_if_visible ? vk::ConditionalRenderingFlagBitsEXT::eInverted

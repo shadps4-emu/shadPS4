@@ -402,17 +402,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     if (rasterizer) {
                         rasterizer->EndPredication();
                     }
-                }
-                else if (predication->pred_op.Value() == PredicateOperation::Zpass) {
+                } else if (predication->pred_op.Value() == PredicateOperation::Zpass) {
                     if (rasterizer) {
-                        rasterizer->StartPredication(predication->Address<VAddr>(),
+                        rasterizer->StartPredication(
+                            predication->Address<VAddr>(),
                             predication->action.Value() == Predication::DrawIfVisible,
                             predication->hint.Value() == PredicationHint::Wait);
                     }
-                }
-                else {
+                } else {
                     LOG_WARNING(Render_Vulkan, "unhandled predicate operation {}",
-                        magic_enum::enum_name(predication->pred_op.Value()));
+                                magic_enum::enum_name(predication->pred_op.Value()));
                 }
                 break;
             }
@@ -618,15 +617,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (event->event_index.Value() == EventIndex::ZpassDone) {
                     if (event->event_type.Value() == EventType::PixelPipeStatControl) {
 
-                    }
-                    else if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                    } else if (event->event_type.Value() == EventType::PixelPipeStatDump) {
                         if ((event->Address<u64>() & 0x8) == 0) {
                             // occlusion query start
                             if (rasterizer) {
                                 rasterizer->StartOcclusionQuery(event->Address<VAddr>());
                             }
-                        }
-                        else {
+                        } else {
                             // occlusion query end
                             if (rasterizer) {
                                 rasterizer->EndOcclusionQuery(event->Address<VAddr>() & ~0xF);

@@ -419,7 +419,7 @@ struct PM4CmdEventWrite {
     template <typename T>
     T Address() const {
         ASSERT(event_index.Value() >= EventIndex::ZpassDone &&
-            event_index.Value() <= EventIndex::SampleStreamoutStatSx);
+               event_index.Value() <= EventIndex::SampleStreamoutStatSx);
         return reinterpret_cast<T>((u64(address[1]) << 32u) | u64(address[0]));
     }
 };
@@ -1145,7 +1145,8 @@ struct PM4CmdSetPredication {
 
     template <typename T = u64>
     T Address() const {
-        return reinterpret_cast<T>(u64(start_address_lo.Value()) << 4 | u64(start_address_hi.Value()) << 32);
+        return reinterpret_cast<T>(u64(start_address_lo.Value()) << 4 |
+                                   u64(start_address_hi.Value()) << 32);
     }
 };
 
