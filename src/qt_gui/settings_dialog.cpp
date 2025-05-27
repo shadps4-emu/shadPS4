@@ -240,7 +240,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
 #else
         connect(ui->showBackgroundImageCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) {
+                [this](Qt::CheckState state) {
 #endif
             m_gui_settings->SetValue(gui::gl_showBackgroundImage, state == Qt::Checked);
         });
