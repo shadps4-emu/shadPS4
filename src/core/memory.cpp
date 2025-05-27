@@ -563,8 +563,9 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
         vma_base.size - start_in_vma < size ? vma_base.size - start_in_vma : size;
 
     if (vma_base.type == VMAType::Free) {
-        LOG_ERROR(Kernel_Vmm, "Cannot change protection on free memory region");
-        return ORBIS_KERNEL_ERROR_EINVAL;
+        // On PS4, protecting freed memory does nothing.
+        LOG_WARNING(Kernel_Vmm, "Attempting to protect free memory");
+        return adjusted_size;
     }
 
     // Validate protection flags
