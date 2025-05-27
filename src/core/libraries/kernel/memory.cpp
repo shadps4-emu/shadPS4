@@ -152,7 +152,7 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
     s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
-                                   Core::VMAType::Reserved);
+                                   Core::VMAType::Reserved, "anon", false, -1, alignment);
     if (result == 0) {
         LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     }
@@ -458,9 +458,11 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addr_in, u64 len, u64 alignmen
     auto* memory = Core::Memory::Instance();
     const VAddr in_addr = reinterpret_cast<VAddr>(addr_in);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    u64 map_alignment = alignment == 0 ? 2_MB : alignment;
 
     return memory->MapMemory(addr_out, std::bit_cast<VAddr>(addr_in), len,
-                             Core::MemoryProt::NoAccess, map_flags, Core::VMAType::PoolReserved);
+                             Core::MemoryProt::NoAccess, map_flags, Core::VMAType::PoolReserved,
+                             "anon", false, -1, map_alignment);
 }
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 prot, s32 flags) {
