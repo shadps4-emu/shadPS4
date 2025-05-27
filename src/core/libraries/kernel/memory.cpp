@@ -263,13 +263,22 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
-int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
+s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
 }
 
-int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
+s32 PS4_SYSV_ABI posix_mprotect(const void* addr, u64 size, s32 prot) {
+    s32 result = sceKernelMprotect(addr, size, prot);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s32 prot) {
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
@@ -344,7 +353,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
-            result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
+            result = sceKernelMprotect(entries[i].start, entries[i].length, entries[i].protection);
             LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
                      entries[i].operation, entries[i].length, result);
             break;
@@ -359,7 +368,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
-            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
+            result = sceKernelMtypeprotect(entries[i].start, entries[i].length, entries[i].type,
                                            entries[i].protection);
             LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
                      entries[i].operation, entries[i].length, result);
@@ -525,12 +534,12 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
             break;
         }
         case OrbisKernelMemoryPoolOpcode::Protect: {
-            result = sceKernelMProtect(entry.protect_params.addr, entry.protect_params.len,
+            result = sceKernelMprotect(entry.protect_params.addr, entry.protect_params.len,
                                        entry.protect_params.prot);
             break;
         }
         case OrbisKernelMemoryPoolOpcode::TypeProtect: {
-            result = sceKernelMTypeProtect(
+            result = sceKernelMtypeprotect(
                 entry.type_protect_params.addr, entry.type_protect_params.len,
                 entry.type_protect_params.type, entry.type_protect_params.prot);
             break;
@@ -698,8 +707,9 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelConfiguredFlexibleMemorySize);
 
-    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMTypeProtect);
-    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMProtect);
+    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMprotect);
+    LIB_FUNCTION("YQOfxL4QfeU", "libScePosix", 1, "libkernel", 1, 1, posix_mprotect);
+    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMtypeprotect);
 
     // Memory pool
     LIB_FUNCTION("qCSfqDILlns", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolExpand);
