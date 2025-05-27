@@ -797,14 +797,14 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, size_t size, u32 alignment) 
     virtual_addr = Common::AlignUp(virtual_addr, alignment);
     auto it = FindVMA(virtual_addr);
 
-    // If the VMA is free and contains the requested mapping we are done.
-    if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
+    // If the VMA is not mapped and contains the requested mapping, we are done.
+    if (!it->second.IsMapped() && it->second.Contains(virtual_addr, size)) {
         return virtual_addr;
     }
 
     // Search for the first free VMA that fits our mapping.
     while (it != vma_map.end()) {
-        if (!it->second.IsFree()) {
+        if (it->second.IsMapped()) {
             it++;
             continue;
         }
