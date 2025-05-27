@@ -424,7 +424,7 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceConditionalRenderingFeaturesEXT{
             .conditionalRendering = true,
-        }
+        },
 #ifdef __APPLE__
         portability_features,
 #endif

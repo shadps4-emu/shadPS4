@@ -239,6 +239,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case 3:
             const u32 count = header->type3.NumWords();
             const PM4ItOpcode opcode = header->type3.opcode;
+            const auto predicate = header->type3.predicate;
+            if (predicate == PM4Predicate::PredEnable) {
+                LOG_DEBUG(Render_Vulkan, "PM4 command {} is predicated",
+                          magic_enum::enum_name(opcode));
+            }
             switch (opcode) {
             case PM4ItOpcode::Nop: {
                 const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
