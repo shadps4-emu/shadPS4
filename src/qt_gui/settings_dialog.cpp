@@ -538,11 +538,13 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
-    ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
+    ui->backgroundImageOpacitySlider->setValue(
+        m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt());
     ui->showBackgroundImageCheckBox->setChecked(
         m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool());
 
-    backgroundImageOpacitySlider_backup = Config::getBackgroundImageOpacity();
+    backgroundImageOpacitySlider_backup =
+        m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
     bgm_volume_backup = Config::getBGMvolume();
 }
 
@@ -794,7 +796,8 @@ void SettingsDialog::UpdateSettings() {
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
-    Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
+    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
+                             std::clamp(ui->backgroundImageOpacitySlider->value(), 0, 100));
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
     m_gui_settings->SetValue(gui::gl_showBackgroundImage,
                              ui->showBackgroundImageCheckBox->isChecked());
@@ -868,4 +871,5 @@ void SettingsDialog::ResetInstallFolders() {
 }
 void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
+    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
 }

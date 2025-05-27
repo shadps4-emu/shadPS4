@@ -21,6 +21,7 @@ const gui_value gl_mode = gui_value(game_list, "tableMode", 0);
 const gui_value gl_icon_size = gui_value(game_list, "icon_size", 36);
 const gui_value gl_slider_pos = gui_value(game_list, "slider_pos", 0);
 const gui_value gl_showBackgroundImage = gui_value(game_list, "showBackgroundImage", true);
+const gui_value gl_backgroundImageOpacity = gui_value(game_list, "backgroundImageOpacity", 50);
 
 // game grid settings
 const gui_value gg_icon_size = gui_value(game_grid, "icon_size", 69);

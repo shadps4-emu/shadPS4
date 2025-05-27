@@ -35,7 +35,6 @@ bool getisTrophyPopupDisabled();
 bool getEnableDiscordRPC();
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
-int getBackgroundImageOpacity();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -106,7 +105,6 @@ void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
-void setBackgroundImageOpacity(int opacity);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);

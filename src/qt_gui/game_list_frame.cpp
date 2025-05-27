@@ -183,7 +183,7 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     }
 
     const auto& game = m_game_info->m_games[item->row()];
-    const int opacity = Config::getBackgroundImageOpacity();
+    const int opacity = m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
 
     // Recompute if opacity changed or we switched to a different game
     if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {

@@ -89,7 +89,6 @@ u32 mw_themes = 0;
 std::vector<std::string> m_elf_viewer;
 std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
-static int backgroundImageOpacity = 50;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -611,14 +610,6 @@ bool getSeparateLogFilesEnabled() {
     return isSeparateLogFilesEnabled;
 }
 
-int getBackgroundImageOpacity() {
-    return backgroundImageOpacity;
-}
-
-void setBackgroundImageOpacity(int opacity) {
-    backgroundImageOpacity = std::clamp(opacity, 0, 100);
-}
-
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -748,7 +739,6 @@ void load(const std::filesystem::path& path) {
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
         m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
-        backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
     }
 
     if (data.contains("Settings")) {
@@ -912,7 +902,6 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["GUI"]["emulatorLanguage"] = emulator_language;
-    data["GUI"]["backgroundImageOpacity"] = backgroundImageOpacity;
     data["Settings"]["consoleLanguage"] = m_language;
 
     // Sorting of TOML sections
@@ -1006,7 +995,6 @@ void setDefaultValues() {
     gpuId = -1;
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
-    backgroundImageOpacity = 50;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {
