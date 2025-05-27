@@ -183,15 +183,9 @@ public:
 
     void Free(PAddr phys_addr, size_t size);
 
-    int PoolReserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                    u64 alignment = 0);
-
-    int Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                u64 alignment = 0);
-
     int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
-    int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
+    s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 

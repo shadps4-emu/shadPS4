@@ -7,7 +7,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
-#include "common/singleton.h"9
+#include "common/singleton.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -151,7 +151,8 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
-    s32 result = memory->Reserve(addr, in_addr, len, map_flags, alignment);
+    s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
+                                   Core::VMAType::Reserved);
     if (result == 0) {
         LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     }
@@ -395,8 +396,8 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, cons
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_t len,
-                                           size_t alignment, u64* physAddrOut) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len,
+                                           u64 alignment, u64* physAddrOut) {
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -438,10 +439,10 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t alignment, int flags,
-                                            void** addrOut) {
-    LOG_INFO(Kernel_Vmm, "addrIn = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
-             fmt::ptr(addrIn), len, alignment, flags);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addr_in, u64 len, u64 alignment, s32 flags,
+                                            void** addr_out) {
+    LOG_INFO(Kernel_Vmm, "addr_in = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
+             fmt::ptr(addr_in), len, alignment, flags);
 
     if (len == 0 || !Common::Is2MBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
@@ -455,14 +456,14 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
     }
 
     auto* memory = Core::Memory::Instance();
-    const VAddr in_addr = reinterpret_cast<VAddr>(addrIn);
+    const VAddr in_addr = reinterpret_cast<VAddr>(addr_in);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    memory->PoolReserve(addrOut, in_addr, len, map_flags, alignment);
 
-    return ORBIS_OK;
+    return memory->MapMemory(addr_out, std::bit_cast<VAddr>(addr_in), len,
+                             Core::MemoryProt::NoAccess, map_flags, Core::VMAType::PoolReserved);
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 prot, s32 flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -481,7 +482,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int
     return memory->PoolCommit(in_addr, len, mem_prot);
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -553,7 +554,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
 }
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
+    LOG_INFO(Kernel_Vmm,
+             "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
              fmt::ptr(addr), len, prot, flags, fd, phys_addr);
 
     void* addr_out;
