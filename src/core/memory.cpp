@@ -400,10 +400,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     impl.MapFile(mapped_addr, size_aligned, phys_addr, std::bit_cast<u32>(prot), handle);
 
     if (prot >= MemoryProt::GpuRead) {
-        // PS4s only map to GPU memory when the protection includes GPU access.
-        // If the address to map to is too high, PS4s throw a page fault and crash.
-        ASSERT_MSG(IsValidGpuMapping(mapped_addr, size_aligned), "Invalid address for GPU mapping");
-        rasterizer->MapMemory(mapped_addr, size_aligned);
+        ASSERT_MSG(false, "Files cannot be mapped to GPU memory");
     }
 
     // Add virtual memory area
