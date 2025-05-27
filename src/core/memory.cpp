@@ -578,6 +578,18 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    if (vma_base.prot < MemoryProt::GpuRead && prot >= MemoryProt::GpuRead) {
+        // New protection will give the GPU access to this VMA, perform a rasterizer map
+        ASSERT_MSG(IsValidGpuMapping(addr, size), "Invalid address for GPU mapping");
+        rasterizer->MapMemory(addr, size);
+    }
+
+    if (vma_base.prot >= MemoryProt::GpuRead && prot < MemoryProt::GpuRead) {
+        // New protection will remove the GPU's access to this VMA, perform a rasterizer unmap
+        ASSERT_MSG(IsValidGpuMapping(addr, size), "Invalid address for GPU unmap");
+        rasterizer->UnmapMemory(addr, size);
+    }
+
     // Change protection
     vma_base.prot = prot;
 
