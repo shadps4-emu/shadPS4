@@ -314,7 +314,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         // When MemoryMapFlags::Fixed is not specified, and mapped_addr is 0,
         // search from address 0x200000000 instead.
         alignment = alignment > 0 ? alignment : 16_KB;
-        mapped_addr = mapped_addr == 0 ? 0x200000000 : mapped_addr;
+        mapped_addr = virtual_addr == 0 ? 0x200000000 : mapped_addr;
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
