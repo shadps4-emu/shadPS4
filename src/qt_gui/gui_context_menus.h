@@ -156,11 +156,9 @@ public:
         }
 
         if (selected == openSaveDataFolder) {
-            QString userPath;
-            Common::FS::PathToQString(userPath,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir));
-            QString saveDataPath =
-                userPath + "/savedata/1/" + QString::fromStdString(m_games[itemID].serial);
+            QString saveDataPath;
+            Common::FS::PathToQString(saveDataPath,
+                                      Config::GetSaveDataPath() / "1" / m_games[itemID].save_dir);
             QDir(saveDataPath).mkpath(saveDataPath);
             QDesktopServices::openUrl(QUrl::fromLocalFile(saveDataPath));
         }
@@ -485,8 +483,7 @@ public:
                 dlc_path, Config::getAddonInstallDir() /
                               Common::FS::PathFromQString(folder_path).parent_path().filename());
             Common::FS::PathToQString(save_data_path,
-                                      Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                          "savedata/1" / m_games[itemID].serial);
+                                      Config::GetSaveDataPath() / "1" / m_games[itemID].save_dir);
 
             Common::FS::PathToQString(trophy_data_path,
                                       Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) /

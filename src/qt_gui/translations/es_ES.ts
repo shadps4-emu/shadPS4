@@ -1348,10 +1348,6 @@
       <translation>Lista de Juegos</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * Versión de Vulkan no soportada</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>Descargar trucos para todos los juegos instalados</translation>
     </message>
@@ -2049,6 +2045,10 @@
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation>Abre la carpeta de trofeos/sonidos personalizados:\nPuedes añadir imágenes y un audio personalizados a los trofeos.\nAñade los archivos a custom_trophy con los siguientes nombres:\ntrophy.wav o trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: El sonido sólo funcionará en versiones QT.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>

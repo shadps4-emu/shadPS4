@@ -1348,10 +1348,6 @@
       <translation>قائمة الألعاب</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * إصدار Vulkan غير مدعوم</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>تحميل الشفرات لجميع الألعاب المثبتة</translation>
     </message>
@@ -2050,6 +2046,10 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation>افتح مجلد الصور/الأصوات الخاصة بالجوائز المخصصة:\nيمكنك إضافة صور مخصصة للجوائز وصوت مرفق.\nأضف الملفات إلى مجلد custom_trophy بالأسماء التالية:\ntrophy.wav أو trophy.mp3، bronze.png، gold.png، platinum.png، silver.png\nملاحظة: الصوت سيعمل فقط في الإصدارات التي تستخدم QT.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>

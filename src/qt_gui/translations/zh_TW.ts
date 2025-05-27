@@ -1348,10 +1348,6 @@
       <translation>遊戲列表</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * 不支援的 Vulkan 版本</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>下載所有已安裝遊戲的金手指</translation>
     </message>
@@ -2049,6 +2045,10 @@
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation>開啟自訂獎盃影像/聲音資料夾：\n您可以將自訂影像新增至獎盃和音訊。 \n將檔案加入 custom_tropy，名稱如下：\ntropy.wav OR trophy.mp3、bronze.png、gold.png、platinum.png、silver.png\n注意：聲音僅在 QT 版本中有效。</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
   </context>
   <context>
