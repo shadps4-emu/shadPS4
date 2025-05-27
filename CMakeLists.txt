@@ -227,7 +227,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.309 CONFIG)
+find_package(VulkanHeaders 1.4.314 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -622,6 +622,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
+              src/core/devtools/widget/module_list.cpp
+              src/core/devtools/widget/module_list.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp

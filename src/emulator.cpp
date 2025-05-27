@@ -25,6 +25,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -187,6 +188,8 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
     if (std::filesystem::exists(pic1_path)) {
         game_info.splash_path = pic1_path;
     }
+
+    game_info.game_folder = game_folder;
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";

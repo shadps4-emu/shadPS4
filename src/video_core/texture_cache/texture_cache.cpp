@@ -222,14 +222,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        if (image_info.type == tex_cache_image.info.type &&
+            image_info.resources > tex_cache_image.info.resources) {
+            // Size and resources are greater, expand the image.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        if (image_info.tiling_mode != tex_cache_image.info.tiling_mode) {
+            // Size is greater but resources are not, because the tiling mode is different.
+            // Likely this memory address is being reused for a different image with a different
+            // tiling mode.
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
@@ -538,10 +547,16 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.mip_hashes[m] = hash;
         }
 
+        auto mip_pitch = static_cast<u32>(mip.pitch);
+        auto mip_height = static_cast<u32>(mip.height);
+
+        auto image_extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        auto image_extent_height = mip_height ? std::min(mip_height, height) : height;
+
         image_copy.push_back({
             .bufferOffset = mip.offset,
-            .bufferRowLength = static_cast<u32>(mip.pitch),
-            .bufferImageHeight = static_cast<u32>(mip.height),
+            .bufferRowLength = mip_pitch,
+            .bufferImageHeight = mip_height,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
@@ -549,7 +564,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
                 .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
+            .imageExtent = {image_extent_width, image_extent_height, depth},
         });
     }
 
