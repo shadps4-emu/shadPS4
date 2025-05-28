@@ -28,22 +28,6 @@ static thread_local int32_t net_errno = 0;
 
 static bool g_isNetInitialized = true; // TODO init it properly
 
-u64 FUN_01007040(const char* str, u64 maxlen) {
-    if (!str || maxlen == 0)
-        return 0;
-
-    size_t i = 0;
-    maxlen += 1; // Extended scan limit
-
-    while (i < maxlen) {
-        if (str[i] == '\0')
-            return i;
-        i++;
-    }
-
-    return maxlen;
-}
-
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -1002,22 +986,108 @@ const char* freebsd_inet_ntop4(const char* src, char* dst, u64 size) {
     return (dst);
 }
 
+const char* freebsd_inet_ntop6(const char* src, char* dst, u64 size) {
+    /*
+     * Note that int32_t and int16_t need only be "at least" large enough
+     * to contain a value of the specified size.  On some systems, like
+     * Crays, there is no such thing as an integer variable with 16 bits.
+     * Keep this in mind if you think this function should have been coded
+     * to use pointer overlays.  All the world's not a VAX.
+     */
+    char tmp[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"], *tp;
+    struct {
+        int base, len;
+    } best, cur;
+#define NS_IN6ADDRSZ 16
+#define NS_INT16SZ 2
+    u_int words[NS_IN6ADDRSZ / NS_INT16SZ];
+    int i;
+
+    /*
+     * Preprocess:
+     *	Copy the input (bytewise) array into a wordwise array.
+     *	Find the longest run of 0x00's in src[] for :: shorthanding.
+     */
+    memset(words, '\0', sizeof words);
+    for (i = 0; i < NS_IN6ADDRSZ; i++)
+        words[i / 2] |= (src[i] << ((1 - (i % 2)) << 3));
+    best.base = -1;
+    best.len = 0;
+    cur.base = -1;
+    cur.len = 0;
+    for (i = 0; i < (NS_IN6ADDRSZ / NS_INT16SZ); i++) {
+        if (words[i] == 0) {
+            if (cur.base == -1)
+                cur.base = i, cur.len = 1;
+            else
+                cur.len++;
+        } else {
+            if (cur.base != -1) {
+                if (best.base == -1 || cur.len > best.len)
+                    best = cur;
+                cur.base = -1;
+            }
+        }
+    }
+    if (cur.base != -1) {
+        if (best.base == -1 || cur.len > best.len)
+            best = cur;
+    }
+    if (best.base != -1 && best.len < 2)
+        best.base = -1;
+
+    /*
+     * Format the result.
+     */
+    tp = tmp;
+    for (i = 0; i < (NS_IN6ADDRSZ / NS_INT16SZ); i++) {
+        /* Are we inside the best run of 0x00's? */
+        if (best.base != -1 && i >= best.base && i < (best.base + best.len)) {
+            if (i == best.base)
+                *tp++ = ':';
+            continue;
+        }
+        /* Are we following an initial run of 0x00s or any real hex? */
+        if (i != 0)
+            *tp++ = ':';
+        /* Is this address an encapsulated IPv4? */
+        if (i == 6 && best.base == 0 &&
+            (best.len == 6 || (best.len == 7 && words[7] != 0x0001) ||
+             (best.len == 5 && words[5] == 0xffff))) {
+            if (!freebsd_inet_ntop4(src + 12, tp, sizeof tmp - (tp - tmp)))
+                return nullptr;
+            tp += strlen(tp);
+            break;
+        }
+        tp += sprintf(tp, "%x", words[i]);
+    }
+    /* Was it a trailing run of 0x00's? */
+    if (best.base != -1 && (best.base + best.len) == (NS_IN6ADDRSZ / NS_INT16SZ))
+        *tp++ = ':';
+    *tp++ = '\0';
+
+    /*
+     * Check for overflow, copy, and we're done.
+     */
+    if ((u64)(tp - tmp) > size) {
+        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+        return nullptr;
+    }
+    strcpy(dst, tmp);
+    return (dst);
+}
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size) {
     char temp[16];
     u32 len;
 
     if (af == 0x1C) { // AF_INET6
-        LOG_ERROR(Lib_Net, "AF_INET6 partial");
-        // return FUN_010063d0(src, dst, size, 0);//TODO
-#ifdef WIN32
-        const char* res = InetNtopA(af, src, dst, size);
-#else
-        const char* res = inet_ntop(af, src, dst, size);
-#endif
-        if (res == nullptr) {
-            UNREACHABLE();
+        if (src && dst) {
+            return freebsd_inet_ntop6((const char*)src, dst, size);
+        } else {
+            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         }
-        return res;
     }
     if (af == 2) { // AF_INET
         if (src && dst) {
