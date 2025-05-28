@@ -28,6 +28,22 @@ static thread_local int32_t net_errno = 0;
 
 static bool g_isNetInitialized = true; // TODO init it properly
 
+u64 FUN_01007040(const char* str, u64 maxlen) {
+    if (!str || maxlen == 0)
+        return 0;
+
+    size_t i = 0;
+    maxlen += 1; // Extended scan limit
+
+    while (i < maxlen) {
+        if (str[i] == '\0')
+            return i;
+        i++;
+    }
+
+    return maxlen;
+}
+
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -956,15 +972,43 @@ u16 PS4_SYSV_ABI sceNetHtons(u16 host16) {
 }
 
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size) {
+    char temp[16];
+    u32 len;
+
+    if (af == 0x1C) { // AF_INET6
+                      // return FUN_010063d0(src, dst, size, 0);//TODO
 #ifdef WIN32
-    const char* res = InetNtopA(af, src, dst, size);
+        const char* res = InetNtopA(af, src, dst, size);
 #else
-    const char* res = inet_ntop(af, src, dst, size);
+        const char* res = inet_ntop(af, src, dst, size);
 #endif
-    if (res == nullptr) {
-        UNREACHABLE();
+        if (res == nullptr) {
+            UNREACHABLE();
+        }
+        return res;
     }
-    return dst;
+    if (af == 2) { // AF_INET
+        if (src && dst) {
+            const u8* bytes = (const u8*)src;
+
+            len =
+                snprintf(temp, sizeof(temp), "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
+
+            if (len > 0 && len < size) {
+                size_t copy_len = FUN_01007040(temp, sizeof(temp));
+                memcpy(dst, temp, copy_len + 1); // Include null terminator
+                return dst;
+            }
+
+            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        } else {
+            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        }
+    } else {
+        *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
+    }
+
+    return nullptr;
 }
 
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
