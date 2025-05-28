@@ -971,6 +971,37 @@ u16 PS4_SYSV_ABI sceNetHtons(u16 host16) {
     return htons(host16);
 }
 
+#ifdef WIN32
+// there isn't a strlcpy function in windows so implement one
+u64 strlcpy(char* dst, const char* src, u64 size) {
+    u64 src_len = strlen(src);
+
+    if (size > 0) {
+        u64 copy_len = (src_len >= size) ? (size - 1) : src_len;
+        memcpy(dst, src, copy_len);
+        dst[copy_len] = '\0';
+    }
+
+    return src_len;
+}
+
+#endif
+
+const char* freebsd_inet_ntop4(const char* src, char* dst, u64 size) {
+    static const char fmt[] = "%u.%u.%u.%u";
+    char tmp[sizeof "255.255.255.255"];
+    int l;
+
+    l = snprintf(tmp, sizeof(tmp), fmt, src[0], src[1], src[2], src[3]);
+    if (l <= 0 || (socklen_t)l >= size) {
+        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+        return nullptr;
+    }
+    strlcpy(dst, tmp, size);
+    return (dst);
+}
+
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size) {
     char temp[16];
     u32 len;
@@ -990,19 +1021,7 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
     }
     if (af == 2) { // AF_INET
         if (src && dst) {
-            const u8* bytes = (const u8*)src;
-
-            len =
-                snprintf(temp, sizeof(temp), "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
-
-            if (len > 0 && len < size) {
-                size_t copy_len = FUN_01007040(temp, sizeof(temp));
-                memcpy(dst, temp, copy_len + 1); // Include null terminator
-                return dst;
-            }
-
-            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
-            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+            return freebsd_inet_ntop4((const char*)src, dst, size);
         } else {
             *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
             LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
@@ -1011,7 +1030,6 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
         *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_EAFNOSUPPORT");
     }
-
     return nullptr;
 }
 
