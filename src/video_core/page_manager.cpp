@@ -213,6 +213,12 @@ struct PageManager::Impl {
 
             // Iterate requested pages
             const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+            const u64 aligned_addr = page << PAGE_BITS;
+            const u64 aligned_end = page_end << PAGE_BITS;
+            ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
+                       "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
+                       aligned_addr, aligned_end - aligned_addr);
+
             for (; page != page_end; ++page) {
                 PageState& state = cached_pages[page];
 
