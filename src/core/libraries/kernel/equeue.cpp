@@ -98,6 +98,11 @@ bool EqueueInternal::RemoveEvent(u64 id, s16 filter) {
 }
 
 int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
+    if (HasSmallTimer()) {
+        // If a small timer is set, just wait for it to expire.
+        return WaitForSmallTimer(ev, num, micros);
+    }
+
     int count = 0;
 
     const auto predicate = [&] {
@@ -267,27 +272,15 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // When the timeout is nullptr, we wait indefinitely
-    if (eq->HasSmallTimer()) {
-        if (timo == nullptr) {
-            *out = eq->WaitForSmallTimer(ev, num, 0);
-        } else if (*timo == 0) {
-            // Only events that have already arrived at the time of this function call can be
-            // received
-            *out = eq->GetTriggeredEvents(ev, num);
-        } else {
-            *out = eq->WaitForSmallTimer(ev, num, *timo);
-        }
+    if (timo == nullptr) {
+        // When the timeout is nullptr, we wait indefinitely
+        *out = eq->WaitForEvents(ev, num, 0);
+    } else if (*timo == 0) {
+        // Only events that have already arrived at the time of this function call can be received
+        *out = eq->GetTriggeredEvents(ev, num);
     } else {
-        if (timo == nullptr) {
-            *out = eq->WaitForEvents(ev, num, 0);
-        } else if (*timo == 0) {
-            // Only events that have already arrived at the time of this function call can be
-            // received
-            *out = eq->GetTriggeredEvents(ev, num);
-        } else {
-            *out = eq->WaitForEvents(ev, num, *timo);
-        }
+        // Wait for up to the specified timeout value
+        *out = eq->WaitForEvents(ev, num, *timo);
     }
 
     if (*out == 0) {
