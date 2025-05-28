@@ -976,7 +976,8 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
     u32 len;
 
     if (af == 0x1C) { // AF_INET6
-                      // return FUN_010063d0(src, dst, size, 0);//TODO
+        LOG_ERROR(Lib_Net, "AF_INET6 partial");
+        // return FUN_010063d0(src, dst, size, 0);//TODO
 #ifdef WIN32
         const char* res = InetNtopA(af, src, dst, size);
 #else
@@ -1001,11 +1002,14 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
             }
 
             *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         } else {
             *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         }
     } else {
         *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
+        LOG_ERROR(Lib_Net, "returned ORBIS_NET_EAFNOSUPPORT");
     }
 
     return nullptr;
