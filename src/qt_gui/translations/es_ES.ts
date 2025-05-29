@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Los cheats/patches son experimentales.\nÚselos con precaución.\n\nDescargue los cheats individualmente seleccionando el repositorio y haciendo clic en el botón de descarga.\nEn la pestaña Patches, puede descargar todos los patches a la vez, elegir cuáles desea usar y guardar la selección.\n\nComo no desarrollamos los Cheats/Patches,\npor favor informe los problemas al autor del cheat.\n\n¿Creaste un nuevo cheat? Visita:\n</translation>
+      <translation>Los trucos/parches son experimentales.\nÚselos con precaución.\n\nPuede descargar cada truco seleccionando el repositorio y haciendo clic en el botón de descarga.\nEn la pestaña Parches podrá descargar todos los parches a la vez, elegir cuáles desea usar y guardar la selección.\n\nComo no desarrollamos los trucos/parches,\ndebe informar de cualquier problema a sus autores correspondientes.\n\n¿Creaste un truco nuevo? Visita:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -2048,7 +2048,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Versión de Vulkan no soportada</translation>
     </message>
   </context>
   <context>

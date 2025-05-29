@@ -603,6 +603,8 @@ set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
 
 set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
                     src/core/libraries/companion/companion_httpd.h
+                    src/core/libraries/companion/companion_util.cpp
+                    src/core/libraries/companion/companion_util.h
                     src/core/libraries/companion/companion_error.h
 )
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -622,6 +624,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
+              src/core/devtools/widget/module_list.cpp
+              src/core/devtools/widget/module_list.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp

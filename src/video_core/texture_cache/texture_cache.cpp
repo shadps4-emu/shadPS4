@@ -222,14 +222,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        if (image_info.type == tex_cache_image.info.type &&
+            image_info.resources > tex_cache_image.info.resources) {
+            // Size and resources are greater, expand the image.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        if (image_info.tiling_mode != tex_cache_image.info.tiling_mode) {
+            // Size is greater but resources are not, because the tiling mode is different.
+            // Likely this memory address is being reused for a different image with a different
+            // tiling mode.
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.

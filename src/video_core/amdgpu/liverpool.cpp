@@ -752,6 +752,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                             strmout->buffer_select.Value());
                 break;
             }
+            case PM4ItOpcode::GetLodStats: {
+                LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
+                break;
+            }
             default:
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
