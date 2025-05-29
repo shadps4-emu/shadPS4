@@ -456,7 +456,6 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
                                                  deltaTime, lastOrientation, outputOrientation);
             pData->orientation = outputOrientation;
             controller->SetLastOrientation(outputOrientation);
-            std::cout << pData->orientation.x << std::endl;
         }
     }
     pData->touchData.touchNum =
