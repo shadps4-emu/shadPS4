@@ -8,8 +8,6 @@
 #include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
 #include "pad.h"
-#include <iostream>
-#include <qmath.h>
 
 namespace Libraries::Pad {
 
