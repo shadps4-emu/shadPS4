@@ -1078,29 +1078,22 @@ const char* freebsd_inet_ntop6(const char* src, char* dst, u64 size) {
     return (dst);
 }
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size) {
-    char temp[16];
-    u32 len;
-
-    if (af == 0x1C) { // AF_INET6
-        if (src && dst) {
-            return freebsd_inet_ntop6((const char*)src, dst, size);
-        } else {
-            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
-            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
-        }
+    if (!(src && dst)) {
+        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+        return nullptr;
     }
-    if (af == 2) { // AF_INET
-        if (src && dst) {
-            return freebsd_inet_ntop4((const char*)src, dst, size);
-        } else {
-            *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
-            LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
-        }
-    } else {
+
+    switch (af) {
+    case ORBIS_NET_AF_INET:
+        return freebsd_inet_ntop4((const char*)src, dst, size);
+    case ORBIS_NET_AF_INET6:
+        return freebsd_inet_ntop6((const char*)src, dst, size);
+    default:
         *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_EAFNOSUPPORT");
+        return nullptr;
     }
-    return nullptr;
 }
 
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
