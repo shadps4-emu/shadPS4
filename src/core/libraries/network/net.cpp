@@ -978,8 +978,6 @@ const char* freebsd_inet_ntop4(const char* src, char* dst, u64 size) {
 
     l = snprintf(tmp, sizeof(tmp), fmt, src[0], src[1], src[2], src[3]);
     if (l <= 0 || (socklen_t)l >= size) {
-        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
-        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
     strlcpy(dst, tmp, size);
@@ -1070,8 +1068,6 @@ const char* freebsd_inet_ntop6(const char* src, char* dst, u64 size) {
      * Check for overflow, copy, and we're done.
      */
     if ((u64)(tp - tmp) > size) {
-        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
-        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
     strcpy(dst, tmp);
@@ -1083,17 +1079,24 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
-
+    const char* returnvalue = nullptr;
     switch (af) {
     case ORBIS_NET_AF_INET:
-        return freebsd_inet_ntop4((const char*)src, dst, size);
+        returnvalue = freebsd_inet_ntop4((const char*)src, dst, size);
+        break;
     case ORBIS_NET_AF_INET6:
-        return freebsd_inet_ntop6((const char*)src, dst, size);
+        returnvalue = freebsd_inet_ntop6((const char*)src, dst, size);
+        break;
     default:
         *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_EAFNOSUPPORT");
         return nullptr;
     }
+    if (returnvalue == nullptr) {
+        *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
+        LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+    }
+    return returnvalue;
 }
 
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
