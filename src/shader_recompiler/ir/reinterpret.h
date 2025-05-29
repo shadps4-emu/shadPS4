@@ -46,6 +46,10 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
         const IR::F32 max = ir.Imm32(float(std::numeric_limits<u16>::max()));
         return ir.FPDiv(left, max);
     }
+    case AmdGpu::NumberConversion::Uint32ToUnorm: {
+        const auto float_val = ir.ConvertUToF(32, 32, ir.BitCast<U32>(value));
+        return ir.FPDiv(float_val, ir.Imm32(static_cast<float>(std::numeric_limits<u32>::max())));
+    }
     default:
         UNREACHABLE();
     }
@@ -91,6 +95,12 @@ inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
         const IR::F32 left = ir.FPSub(mul, ir.Imm32(1.f));
         const IR::U32 raw = ir.ConvertFToS(32, ir.FPDiv(left, ir.Imm32(2.f)));
         return ir.BitCast<F32>(raw);
+    }
+    case AmdGpu::NumberConversion::Uint32ToUnorm: {
+        const auto clamped = ir.FPClamp(value, ir.Imm32(0.f), ir.Imm32(1.f));
+        const auto unnormalized =
+            ir.FPMul(clamped, ir.Imm32(static_cast<float>(std::numeric_limits<u32>::max())));
+        return ir.BitCast<F32>(U32{ir.ConvertFToU(32, unnormalized)});
     }
     default:
         UNREACHABLE();
