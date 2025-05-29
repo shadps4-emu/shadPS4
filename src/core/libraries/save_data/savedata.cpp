@@ -8,6 +8,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/cstring.h"
 #include "common/elf_info.h"
 #include "common/enum.h"
@@ -316,7 +317,9 @@ static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 
 static void initialize() {
     g_initialized = true;
-    g_game_serial = ElfInfo::Instance().GameSerial();
+    g_game_serial = Common::Singleton<PSF>::Instance()
+                        ->GetString("INSTALL_DIR_SAVEDATA")
+                        .value_or(ElfInfo::Instance().GameSerial());
     g_fw_ver = ElfInfo::Instance().FirmwareVer();
     Backup::StartThread();
 }
@@ -436,7 +439,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
             LOG_INFO(Lib_SaveData, "called with invalid block size");
         }
 
-        const auto root_save = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
+        const auto root_save = Config::GetSaveDataPath();
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;
 

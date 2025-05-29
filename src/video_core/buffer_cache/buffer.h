@@ -68,6 +68,7 @@ struct UniqueBuffer {
     VmaAllocator allocator;
     VmaAllocation allocation;
     vk::Buffer buffer{};
+    vk::DeviceAddress bda_addr = 0;
 };
 
 class Buffer {
@@ -113,6 +114,11 @@ public:
 
     vk::Buffer Handle() const noexcept {
         return buffer;
+    }
+
+    vk::DeviceAddress BufferDeviceAddress() const noexcept {
+        ASSERT_MSG(buffer.bda_addr != 0, "Can't get BDA from a non BDA buffer");
+        return buffer.bda_addr;
     }
 
     std::optional<vk::BufferMemoryBarrier2> GetBarrier(
