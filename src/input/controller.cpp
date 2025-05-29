@@ -193,8 +193,8 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
     q.w /= norm;
 
     orientation.x = q.x;
-    orientation.y = q.z;
-    orientation.z = q.y; // yes this is swapped on purpose don't touch it
+    orientation.y = q.y;
+    orientation.z = q.z;
     orientation.w = q.w;
     LOG_DEBUG(Lib_Pad, "Calculated orientation: {:.2f} {:.2f} {:.2f} {:.2f}", orientation.x,
               orientation.y, orientation.z, orientation.w);
