@@ -171,12 +171,13 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
                                           Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                           Libraries::Pad::OrbisFQuaternion& orientation) {
     Libraries::Pad::OrbisFQuaternion q = lastOrientation;
-    Libraries::Pad::OrbisFQuaternion ω = {angularVelocity.x, angularVelocity.y,angularVelocity.z,0.0f};
+    Libraries::Pad::OrbisFQuaternion ω = {angularVelocity.x, angularVelocity.y, angularVelocity.z,
+                                          0.0f};
 
     Libraries::Pad::OrbisFQuaternion qω = {q.w * ω.x + q.x * ω.w + q.y * ω.z - q.z * ω.y,
-                           q.w * ω.y + q.y * ω.w + q.z * ω.x - q.x * ω.z,
-                           q.w * ω.z + q.z * ω.w + q.x * ω.y - q.y * ω.x,
-                           q.w * ω.w - q.x * ω.x - q.y * ω.y - q.z * ω.z};
+                                           q.w * ω.y + q.y * ω.w + q.z * ω.x - q.x * ω.z,
+                                           q.w * ω.z + q.z * ω.w + q.x * ω.y - q.y * ω.x,
+                                           q.w * ω.w - q.x * ω.x - q.y * ω.y - q.z * ω.z};
 
     Libraries::Pad::OrbisFQuaternion qDot = {0.5f * qω.x, 0.5f * qω.y, 0.5f * qω.z, 0.5f * qω.w};
 
@@ -247,7 +248,7 @@ void GameController::SetSecondaryTouchCount(u8 touchCount) {
     m_secondary_touch_count = touchCount;
     if (touchCount == 0) {
         m_was_secondary_reset = true;
-    } 
+    }
 }
 
 u8 GameController::GetPreviousTouchNum() {

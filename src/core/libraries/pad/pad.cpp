@@ -377,7 +377,7 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         } else if (pData->touchData.touchNum == 2) {
             states[i].touchpad[0].ID = controller->GetTouchCount();
             states[i].touchpad[1].ID = controller->GetSecondaryTouchCount();
-        } 
+        }
 
         pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
         pData[i].touchData.touch[0].y = states[i].touchpad[0].y;
@@ -442,19 +442,23 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
 
     if (engine) {
         const auto gyro_poll_rate = engine->GetAccelPollRate();
-        if (gyro_poll_rate != 0.0f) {          
+        if (gyro_poll_rate != 0.0f) {
             auto now = std::chrono::steady_clock::now();
-            float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(now - controller->GetLastUpdate()).count() / 1000000.0f;
+            float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  now - controller->GetLastUpdate())
+                                  .count() /
+                              1000000.0f;
             controller->SetLastUpdate(now);
             Libraries::Pad::OrbisFQuaternion lastOrientation = controller->GetLastOrientation();
-            Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f,0.0f,0.0f,1.0f};
+            Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
             GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
                                                  deltaTime, lastOrientation, outputOrientation);
             pData->orientation = outputOrientation;
             controller->SetLastOrientation(outputOrientation);
         }
     }
-    pData->touchData.touchNum = (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
+    pData->touchData.touchNum =
+        (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
 
     if (controller->GetTouchCount() >= 127) {
         controller->SetTouchCount(0);
@@ -467,15 +471,12 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     if (pData->touchData.touchNum == 1 && controller->GetPreviousTouchNum() == 0) {
         controller->SetTouchCount(controller->GetTouchCount() + 1);
         controller->SetSecondaryTouchCount(controller->GetTouchCount());
-    } 
-    else if (pData->touchData.touchNum == 2 && controller->GetPreviousTouchNum() == 1) {
+    } else if (pData->touchData.touchNum == 2 && controller->GetPreviousTouchNum() == 1) {
         controller->SetSecondaryTouchCount(controller->GetSecondaryTouchCount() + 1);
-    } 
-    else if (pData->touchData.touchNum == 0 && controller->GetPreviousTouchNum() > 0) {
+    } else if (pData->touchData.touchNum == 0 && controller->GetPreviousTouchNum() > 0) {
         if (controller->GetTouchCount() < controller->GetSecondaryTouchCount()) {
             controller->SetTouchCount(controller->GetSecondaryTouchCount());
-        } 
-        else {
+        } else {
             if (controller->WasSecondaryTouchReset()) {
                 controller->SetTouchCount(controller->GetSecondaryTouchCount());
                 controller->UnsetSecondaryTouchResetBool();
@@ -488,11 +489,10 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     if (pData->touchData.touchNum == 1) {
         state.touchpad[0].ID = controller->GetTouchCount();
         state.touchpad[1].ID = 0;
-    } 
-    else if (pData->touchData.touchNum == 2) {
+    } else if (pData->touchData.touchNum == 2) {
         state.touchpad[0].ID = controller->GetTouchCount();
         state.touchpad[1].ID = controller->GetSecondaryTouchCount();
-    } 
+    }
 
     pData->touchData.touch[0].x = state.touchpad[0].x;
     pData->touchData.touch[0].y = state.touchpad[0].y;

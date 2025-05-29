@@ -39,7 +39,7 @@ public:
 
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
-    int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};  
+    int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
     Libraries::Pad::OrbisFVector3 acceleration = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
@@ -82,7 +82,7 @@ public:
     void SetEngine(std::unique_ptr<Engine>);
     Engine* GetEngine();
     u32 Poll();
-    
+
     u8 GetTouchCount();
     void SetTouchCount(u8 touchCount);
     u8 GetSecondaryTouchCount();
@@ -122,7 +122,7 @@ private:
     std::array<StateInternal, MAX_STATES> m_private;
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
-    
+
     std::unique_ptr<Engine> m_engine = nullptr;
 };
 
