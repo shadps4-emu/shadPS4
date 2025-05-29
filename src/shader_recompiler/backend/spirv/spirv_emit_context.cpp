@@ -979,12 +979,17 @@ void EmitContext::DefineSharedMemory() {
     }
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
-    const Id type{TypeArray(U32[1], ConstU32(num_elements))};
-    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+    const Id type16{TypeArray(U16, ConstU32(Common::DivCeil(shared_memory_size, 2U)))};
+    const Id type32{TypeArray(U32[1], ConstU32(Common::DivCeil(shared_memory_size, 4U)))};
+    shared_memory_u16_type = TypePointer(spv::StorageClass::Workgroup, type16);
+    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type32);
+    shared_u16 = TypePointer(spv::StorageClass::Workgroup, U16);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
+    shared_memory_u16 = AddGlobalVariable(shared_memory_u16_type, spv::StorageClass::Workgroup);
     shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
-    Name(shared_memory_u32, "shared_mem");
+    Name(shared_memory_u16, "shared_mem_u16");
+    Name(shared_memory_u32, "shared_mem_u32");
+    interfaces.push_back(shared_memory_u16);
     interfaces.push_back(shared_memory_u32);
 }
 

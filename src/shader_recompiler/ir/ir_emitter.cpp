@@ -293,6 +293,8 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
 
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
+    case 16:
+        return Inst<U16>(Opcode::LoadSharedU16, offset);
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
@@ -304,6 +306,9 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
     switch (bit_size) {
+    case 16:
+        Inst(Opcode::WriteSharedU16, offset, value);
+        break;
     case 32:
         Inst(Opcode::WriteSharedU32, offset, value);
         break;

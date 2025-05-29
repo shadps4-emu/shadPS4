@@ -291,6 +291,7 @@ public:
     Id shared_memory_u32x2{};
     Id shared_memory_u32x4{};
 
+    Id shared_memory_u16_type{};
     Id shared_memory_u32_type{};
 
     Id bary_coord_persp_id{};

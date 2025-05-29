@@ -6,6 +6,13 @@
 
 namespace Shader::Backend::SPIRV {
 
+Id EmitLoadSharedU16(EmitContext& ctx, Id offset) {
+    const Id shift_id{ctx.ConstU32(1U)};
+    const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
+    const Id pointer = ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, index);
+    return ctx.OpLoad(ctx.U16, pointer);
+}
+
 Id EmitLoadSharedU32(EmitContext& ctx, Id offset) {
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
@@ -21,6 +28,13 @@ Id EmitLoadSharedU64(EmitContext& ctx, Id offset) {
     const Id rhs_pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, next_index)};
     return ctx.OpCompositeConstruct(ctx.U32[2], ctx.OpLoad(ctx.U32[1], lhs_pointer),
                                     ctx.OpLoad(ctx.U32[1], rhs_pointer));
+}
+
+void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value) {
+    const Id shift{ctx.ConstU32(1U)};
+    const Id word_offset{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift)};
+    const Id pointer = ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, word_offset);
+    ctx.OpStore(pointer, value);
 }
 
 void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value) {

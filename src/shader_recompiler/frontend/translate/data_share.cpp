@@ -61,10 +61,14 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_READ(32, false, true, false, inst);
     case Opcode::DS_READ2ST64_B32:
         return DS_READ(32, false, true, true, inst);
+    case Opcode::DS_READ_U16:
+        return DS_READ(16, false, false, false, inst);
     case Opcode::DS_CONSUME:
         return DS_CONSUME(inst);
     case Opcode::DS_APPEND:
         return DS_APPEND(inst);
+    case Opcode::DS_WRITE_B16:
+        return DS_WRITE(16, false, false, false, inst);
     case Opcode::DS_WRITE_B64:
         return DS_WRITE(64, false, false, false, inst);
     case Opcode::DS_WRITE2_B64:
@@ -305,6 +309,10 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
         const IR::Value data = ir.LoadShared(bit_size, is_signed, addr0);
         ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(data, 0)});
         ir.SetVectorReg(dst_reg + 1, IR::U32{ir.CompositeExtract(data, 1)});
+    } else if (bit_size == 16) {
+        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
+        const IR::U16 data = IR::U16{ir.LoadShared(bit_size, is_signed, addr0)};
+        ir.SetVectorReg(dst_reg, ir.UConvert(32, data));
     } else {
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
         const IR::U32 data = IR::U32{ir.LoadShared(bit_size, is_signed, addr0)};
