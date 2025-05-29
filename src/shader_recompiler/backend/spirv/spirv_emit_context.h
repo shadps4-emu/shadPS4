@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <unordered_map>
 #include <sirit/sirit.h>
 
 #include "shader_recompiler/backend/bindings.h"
@@ -40,6 +41,17 @@ public:
     explicit EmitContext(const Profile& profile, const RuntimeInfo& runtime_info, Info& info,
                          Bindings& binding);
     ~EmitContext();
+
+    enum class PointerType : u32 {
+        U8,
+        U16,
+        F16,
+        U32,
+        F32,
+        U64,
+        F64,
+        NumAlias,
+    };
 
     Id Def(const IR::Value& value);
 
@@ -133,11 +145,71 @@ public:
         return ConstantComposite(type, constituents);
     }
 
+    inline Id AddLabel() {
+        last_label = Module::AddLabel();
+        return last_label;
+    }
+
+    inline Id AddLabel(Id label) {
+        last_label = Module::AddLabel(label);
+        return last_label;
+    }
+
+    PointerType PointerTypeFromType(Id type) {
+        if (type.value == U8.value)
+            return PointerType::U8;
+        if (type.value == U16.value)
+            return PointerType::U16;
+        if (type.value == F16[1].value)
+            return PointerType::F16;
+        if (type.value == U32[1].value)
+            return PointerType::U32;
+        if (type.value == F32[1].value)
+            return PointerType::F32;
+        if (type.value == U64.value)
+            return PointerType::U64;
+        if (type.value == F64[1].value)
+            return PointerType::F64;
+        UNREACHABLE_MSG("Unknown type for pointer");
+    }
+
+    Id EmitMemoryRead(Id type, Id address, auto&& fallback) {
+        const Id available_label = OpLabel();
+        const Id fallback_label = OpLabel();
+        const Id merge_label = OpLabel();
+
+        const Id addr = OpFunctionCall(U64, get_bda_pointer, address);
+        const Id is_available = OpINotEqual(U1[1], addr, u64_zero_value);
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(is_available, available_label, fallback_label);
+
+        // Available
+        AddLabel(available_label);
+        const auto pointer_type = PointerTypeFromType(type);
+        const Id pointer_type_id = physical_pointer_types[pointer_type];
+        const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
+        const Id result = OpLoad(type, addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
+        OpBranch(merge_label);
+
+        // Fallback
+        AddLabel(fallback_label);
+        const Id fallback_result = fallback();
+        OpBranch(merge_label);
+
+        // Merge
+        AddLabel(merge_label);
+        const Id final_result =
+            OpPhi(type, fallback_result, fallback_label, result, available_label);
+        return final_result;
+    }
+
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Stage stage;
     LogicalStage l_stage{};
+
+    Id last_label{};
 
     Id void_id{};
     Id U8{};
@@ -161,9 +233,13 @@ public:
 
     Id true_value{};
     Id false_value{};
+    Id u8_one_value{};
+    Id u8_zero_value{};
     Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
+    Id u64_one_value{};
+    Id u64_zero_value{};
 
     Id shared_u8{};
     Id shared_u16{};
@@ -231,14 +307,6 @@ public:
         bool is_storage = false;
     };
 
-    enum class BufferAlias : u32 {
-        U8,
-        U16,
-        U32,
-        F32,
-        NumAlias,
-    };
-
     struct BufferSpv {
         Id id;
         Id pointer_type;
@@ -252,14 +320,26 @@ public:
         Id size;
         Id size_shorts;
         Id size_dwords;
-        std::array<BufferSpv, u32(BufferAlias::NumAlias)> aliases;
+        std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
-        const BufferSpv& operator[](BufferAlias alias) const {
+        const BufferSpv& operator[](PointerType alias) const {
             return aliases[u32(alias)];
         }
 
-        BufferSpv& operator[](BufferAlias alias) {
+        BufferSpv& operator[](PointerType alias) {
             return aliases[u32(alias)];
+        }
+    };
+
+    struct PhysicalPointerTypes {
+        std::array<Id, u32(PointerType::NumAlias)> types;
+
+        const Id& operator[](PointerType type) const {
+            return types[u32(type)];
+        }
+
+        Id& operator[](PointerType type) {
+            return types[u32(type)];
         }
     };
 
@@ -268,6 +348,12 @@ public:
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
+    PhysicalPointerTypes physical_pointer_types;
+    std::unordered_map<u32, Id> first_to_last_label_map;
+
+    size_t flatbuf_index{};
+    size_t bda_pagetable_index{};
+    size_t fault_buffer_index{};
 
     Id sampler_type{};
     Id sampler_pointer_type{};
@@ -292,6 +378,11 @@ public:
     Id uf10_to_f32{};
     Id f32_to_uf10{};
 
+    Id get_bda_pointer{};
+
+    Id read_const{};
+    Id read_const_dynamic{};
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
@@ -311,6 +402,10 @@ private:
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
+
+    Id DefineGetBdaPointer();
+
+    Id DefineReadConst(bool dynamic);
 
     Id GetBufferSize(u32 sharp_idx);
 };

@@ -10,8 +10,10 @@
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
-#endif
+#else
 #include "common/spin_lock.h"
+#endif
+#include "common/debug.h"
 #include "common/types.h"
 #include "video_core/page_manager.h"
 
@@ -56,7 +58,7 @@ public:
         return cpu_addr;
     }
 
-    static u64 ExtractBits(u64 word, size_t page_start, size_t page_end) {
+    static constexpr u64 ExtractBits(u64 word, size_t page_start, size_t page_end) {
         constexpr size_t number_bits = sizeof(u64) * 8;
         const size_t limit_page_end = number_bits - std::min(page_end, number_bits);
         u64 bits = (word >> page_start) << page_start;
@@ -64,7 +66,7 @@ public:
         return bits;
     }
 
-    static std::pair<size_t, size_t> GetWordPage(VAddr address) {
+    static constexpr std::pair<size_t, size_t> GetWordPage(VAddr address) {
         const size_t converted_address = static_cast<size_t>(address);
         const size_t word_number = converted_address / BYTES_PER_WORD;
         const size_t amount_pages = converted_address % BYTES_PER_WORD;
@@ -73,6 +75,7 @@ public:
 
     template <typename Func>
     void IterateWords(size_t offset, size_t size, Func&& func) const {
+        RENDERER_TRACE;
         using FuncReturn = std::invoke_result_t<Func, std::size_t, u64>;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         const size_t start = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset), 0LL));
@@ -104,13 +107,13 @@ public:
         }
     }
 
-    template <typename Func>
-    void IteratePages(u64 mask, Func&& func) const {
+    void IteratePages(u64 mask, auto&& func) const {
+        RENDERER_TRACE;
         size_t offset = 0;
         while (mask != 0) {
             const size_t empty_bits = std::countr_zero(mask);
             offset += empty_bits;
-            mask = mask >> empty_bits;
+            mask >>= empty_bits;
 
             const size_t continuous_bits = std::countr_one(mask);
             func(offset, continuous_bits);
@@ -155,8 +158,9 @@ public:
      * @param size            Size in bytes of the CPU range to loop over
      * @param func            Function to call for each turned off region
      */
-    template <Type type, bool clear, typename Func>
-    void ForEachModifiedRange(VAddr query_cpu_range, s64 size, Func&& func) {
+    template <Type type, bool clear>
+    void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
+        RENDERER_TRACE;
         std::scoped_lock lk{lock};
         static_assert(type != Type::Untracked);
 
@@ -170,6 +174,7 @@ public:
                  (pending_pointer - pending_offset) * BYTES_PER_PAGE);
         };
         IterateWords(offset, size, [&](size_t index, u64 mask) {
+            RENDERER_TRACE;
             if constexpr (type == Type::GPU) {
                 mask &= ~untracked[index];
             }
@@ -177,14 +182,13 @@ public:
             if constexpr (clear) {
                 if constexpr (type == Type::CPU) {
                     UpdateProtection<true>(index, untracked[index], mask);
-                }
-                state_words[index] &= ~mask;
-                if constexpr (type == Type::CPU) {
                     untracked[index] &= ~mask;
                 }
+                state_words[index] &= ~mask;
             }
             const size_t base_offset = index * PAGES_PER_WORD;
             IteratePages(word, [&](size_t pages_offset, size_t pages_size) {
+                RENDERER_TRACE;
                 const auto reset = [&]() {
                     pending_offset = base_offset + pages_offset;
                     pending_pointer = base_offset + pages_offset + pages_size;
@@ -245,11 +249,13 @@ private:
      */
     template <bool add_to_tracker>
     void UpdateProtection(u64 word_index, u64 current_bits, u64 new_bits) const {
+        RENDERER_TRACE;
+        constexpr s32 delta = add_to_tracker ? 1 : -1;
         u64 changed_bits = (add_to_tracker ? current_bits : ~current_bits) & new_bits;
         VAddr addr = cpu_addr + word_index * BYTES_PER_WORD;
         IteratePages(changed_bits, [&](size_t offset, size_t size) {
-            tracker->UpdatePagesCachedCount(addr + offset * BYTES_PER_PAGE, size * BYTES_PER_PAGE,
-                                            add_to_tracker ? 1 : -1);
+            tracker->UpdatePageWatchers<delta>(addr + offset * BYTES_PER_PAGE,
+                                               size * BYTES_PER_PAGE);
         });
     }
 

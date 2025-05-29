@@ -41,7 +41,9 @@ constexpr u32 NUM_TEXTURE_TYPES = 7;
 
 enum class BufferType : u32 {
     Guest,
-    ReadConstUbo,
+    Flatbuf,
+    BdaPagetable,
+    FaultBuffer,
     GdsBuffer,
     SharedMemory,
 };
@@ -215,10 +217,17 @@ struct Info {
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{};
-    bool has_readconst{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
+
+    enum class ReadConstType {
+        None = 0,
+        Immediate = 1 << 0,
+        Dynamic = 1 << 1,
+    };
+    ReadConstType readconst_types{};
+    IR::Type dma_types{IR::Type::Void};
 
     explicit Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
         : stage{stage_}, l_stage{l_stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
@@ -277,6 +286,7 @@ struct Info {
                sizeof(tess_constants));
     }
 };
+DECLARE_ENUM_FLAG_OPERATORS(Info::ReadConstType);
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);

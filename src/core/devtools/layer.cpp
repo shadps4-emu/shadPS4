@@ -17,6 +17,7 @@
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
+#include "widget/module_list.h"
 #include "widget/shader_list.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -40,6 +41,7 @@ static bool just_opened_options = false;
 
 static Widget::MemoryMapViewer memory_map;
 static Widget::ShaderList shader_list;
+static Widget::ModuleList module_list;
 
 // clang-format off
 static std::string help_text =
@@ -107,6 +109,9 @@ void L::DrawMenuBar() {
         if (BeginMenu("Debug")) {
             if (MenuItem("Memory map")) {
                 memory_map.open = true;
+            }
+            if (MenuItem("Module list")) {
+                module_list.open = true;
             }
             ImGui::EndMenu();
         }
@@ -255,6 +260,9 @@ void L::DrawAdvanced() {
     }
     if (shader_list.open) {
         shader_list.Draw();
+    }
+    if (module_list.open) {
+        module_list.Draw();
     }
 }
 

@@ -8,6 +8,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/cstring.h"
 #include "common/elf_info.h"
 #include "common/enum.h"
@@ -438,7 +439,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
             LOG_INFO(Lib_SaveData, "called with invalid block size");
         }
 
-        const auto root_save = Common::FS::GetUserPath(Common::FS::PathType::SaveDataDir);
+        const auto root_save = Config::GetSaveDataPath();
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;
 
