@@ -311,22 +311,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 }
             } else {
                 Flip(request);
-                // add second request to avoid potential deadlocks
-                const auto second = receive_request();
-                if (second) {
-                    Flip(second);
-                    {
-                        std::scoped_lock lock{second.port->port_mutex};
-                        second.port->flip_status.flip_pending_num--;
-                        if (second.eop) {
-                            second.port->flip_status.gc_queue_num--;
-                        }
-                        second.port->vo_cv
-                            .notify_all(); // wake up threads waiting to submit more flips
-                    }
-                    FRAME_END;
-                }
+                main_port.vblank_cv.notify_all();
+                // wake up threads waiting to submit more flips
             }
+            FRAME_END;
         }
 
         {
