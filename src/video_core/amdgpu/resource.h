@@ -320,7 +320,7 @@ struct Image {
 
     TilingMode GetTilingMode() const {
         if (tiling_index >= 0 && tiling_index <= 7) {
-        return tiling_index == 5 ? TilingMode::Depth_MicroTiled : TilingMode::Depth_MacroTiled;
+         return tiling_index == 5 ? TilingMode::Depth_MicroTiled : TilingMode::Depth_MacroTiled;
         }
         return static_cast<TilingMode>(tiling_index);
     }
