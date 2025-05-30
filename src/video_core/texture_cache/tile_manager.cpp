@@ -28,7 +28,6 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
     const auto bpp = info.num_bits * (info.props.is_block ? 16 : 1);
     switch (info.tiling_mode) {
     case AmdGpu::TilingMode::Depth_MicroTiled:
-    case AmdGpu::TilingMode::Display_MicroTiled:
     case AmdGpu::TilingMode::Texture_MicroTiled:
         switch (bpp) {
         case 8:
