@@ -141,6 +141,7 @@ constexpr std::string_view NameOf(ImageType type) {
 
 enum class TilingMode : u32 {
     Depth_MacroTiled = 0u,
+    Depth_MicroTiled = 0x5u,
     Display_Linear = 0x8u,
     Display_MicroTiled = 0x9u,
     Display_MacroTiled = 0xAu,
