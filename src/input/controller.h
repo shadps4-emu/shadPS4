@@ -23,6 +23,7 @@ enum class Axis {
 };
 
 struct TouchpadEntry {
+    u8 ID = 0;
     bool state{};
     u16 x{};
     u16 y{};
@@ -82,9 +83,23 @@ public:
     Engine* GetEngine();
     u32 Poll();
 
+    u8 GetTouchCount();
+    void SetTouchCount(u8 touchCount);
+    u8 GetSecondaryTouchCount();
+    void SetSecondaryTouchCount(u8 touchCount);
+    u8 GetPreviousTouchNum();
+    void SetPreviousTouchNum(u8 touchNum);
+    bool WasSecondaryTouchReset();
+    void UnsetSecondaryTouchResetBool();
+
+    void SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation);
+    Libraries::Pad::OrbisFQuaternion GetLastOrientation();
+    std::chrono::steady_clock::time_point GetLastUpdate();
+    void SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate);
     static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                      Libraries::Pad::OrbisFVector3& angularVelocity,
                                      float deltaTime,
+                                     Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
 
 private:
@@ -98,8 +113,15 @@ private:
     int m_connected_count = 0;
     u32 m_states_num = 0;
     u32 m_first_state = 0;
+    u8 m_touch_count = 0;
+    u8 m_secondary_touch_count = 0;
+    u8 m_previous_touch_count = 0;
+    u8 m_previous_touchnum = 0;
+    bool m_was_secondary_reset = false;
     std::array<State, MAX_STATES> m_states;
     std::array<StateInternal, MAX_STATES> m_private;
+    std::chrono::steady_clock::time_point m_last_update = {};
+    Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
     std::unique_ptr<Engine> m_engine = nullptr;
 };
