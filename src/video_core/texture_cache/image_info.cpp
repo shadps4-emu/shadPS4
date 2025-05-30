@@ -186,14 +186,13 @@ void ImageInfo::UpdateSize() {
             thickness = 4;
             mip_d += (-mip_d) & (thickness - 1);
             [[fallthrough]];
+        case AmdGpu::TilingMode::Depth_MicroTiled:
         case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Texture_MicroTiled: {
             std::tie(mip_info.pitch, mip_info.size) =
                 ImageSizeMicroTiled(mip_w, mip_h, thickness, bpp, num_samples);
             break;
         }
-        case AmdGpu::TilingMode::Depth_MicroTiled:        
-        case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Display_MacroTiled:
         case AmdGpu::TilingMode::Texture_MacroTiled:
         case AmdGpu::TilingMode::Depth_MacroTiled: {
