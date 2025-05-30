@@ -636,9 +636,11 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     image.flags &= ~ImageFlagBits::Dirty;
 }
 
-vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
+vk::Sampler TextureCache::GetSampler(
+    const AmdGpu::Sampler& sampler,
+    const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base) {
     const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
-    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler);
+    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
     return it->second.Handle();
 }
 
