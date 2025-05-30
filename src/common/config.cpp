@@ -33,9 +33,7 @@ namespace Config {
 
 static bool isNeo = false;
 static bool isDevKit = false;
-static bool playBGM = false;
 static bool isTrophyPopupDisabled = false;
-static int BGMvolume = 50;
 static bool enableDiscordRPC = false;
 static u32 screenWidth = 1280;
 static u32 screenHeight = 720;
@@ -167,14 +165,6 @@ std::string getFullscreenMode() {
 
 bool getisTrophyPopupDisabled() {
     return isTrophyPopupDisabled;
-}
-
-bool getPlayBGM() {
-    return playBGM;
-}
-
-int getBGMvolume() {
-    return BGMvolume;
 }
 
 bool getEnableDiscordRPC() {
@@ -417,14 +407,6 @@ void setisTrophyPopupDisabled(bool disable) {
     isTrophyPopupDisabled = disable;
 }
 
-void setPlayBGM(bool enable) {
-    playBGM = enable;
-}
-
-void setBGMvolume(int volume) {
-    BGMvolume = volume;
-}
-
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
@@ -634,11 +616,9 @@ void load(const std::filesystem::path& path) {
 
         isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
         isDevKit = toml::find_or<bool>(general, "isDevKit", false);
-        playBGM = toml::find_or<bool>(general, "playBGM", false);
         isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
         trophyNotificationDuration =
             toml::find_or<double>(general, "trophyNotificationDuration", 5.0);
-        BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
@@ -822,8 +802,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["isDevKit"] = isDevKit;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
-    data["General"]["playBGM"] = playBGM;
-    data["General"]["BGMvolume"] = BGMvolume;
     data["General"]["enableDiscordRPC"] = enableDiscordRPC;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
@@ -954,8 +932,6 @@ void setDefaultValues() {
     isDevKit = false;
     isFullscreen = false;
     isTrophyPopupDisabled = false;
-    playBGM = false;
-    BGMvolume = 50;
     enableDiscordRPC = true;
     screenWidth = 1280;
     screenHeight = 720;

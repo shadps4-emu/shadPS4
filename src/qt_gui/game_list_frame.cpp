@@ -99,7 +99,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
-    if (!item || !Config::getPlayBGM()) {
+    if (!item || !m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }

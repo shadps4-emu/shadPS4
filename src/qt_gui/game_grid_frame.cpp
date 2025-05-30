@@ -76,7 +76,7 @@ void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameGridFrame::PlayBackgroundMusic(QString path) {
-    if (path.isEmpty() || !Config::getPlayBGM()) {
+    if (path.isEmpty() || !m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }

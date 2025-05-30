@@ -952,7 +952,8 @@ void MainWindow::ConfigureGuiFromSettings() {
     } else if (table_mode == 2) {
         ui->setlistElfAct->setChecked(true);
     }
-    BackgroundMusicPlayer::getInstance().setVolume(Config::getBGMvolume());
+    BackgroundMusicPlayer::getInstance().setVolume(
+        m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt());
 }
 
 void MainWindow::SaveWindowState() {

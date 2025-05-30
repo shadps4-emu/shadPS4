@@ -545,7 +545,7 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     backgroundImageOpacitySlider_backup =
         m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
-    bgm_volume_backup = Config::getBGMvolume();
+    bgm_volume_backup = m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -759,8 +759,7 @@ void SettingsDialog::UpdateSettings() {
     } else if (ui->radioButton_Bottom->isChecked()) {
         Config::setSideTrophy("bottom");
     }
-
-    Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
@@ -769,7 +768,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorState(ui->hideCursorComboBox->currentIndex());
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
-    Config::setBGMvolume(ui->BGMVolumeSlider->value());
+    m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, ui->BGMVolumeSlider->value());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setScreenWidth(ui->widthSpinBox->value());
@@ -872,4 +871,6 @@ void SettingsDialog::ResetInstallFolders() {
 void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
     m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
+    m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
+    m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
 }
