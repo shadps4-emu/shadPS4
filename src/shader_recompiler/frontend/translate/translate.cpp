@@ -380,7 +380,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         break;
     case OperandField::VccLo:
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackDouble2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
         }
