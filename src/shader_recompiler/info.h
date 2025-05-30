@@ -84,6 +84,7 @@ struct ImageResource {
     bool is_atomic{};
     bool is_array{};
     bool is_written{};
+    bool is_r128{};
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
@@ -293,7 +294,13 @@ constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexce
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    const auto image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    AmdGpu::Image image{0};
+    if (!is_r128) {
+        image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    } else {
+        AmdGpu::Buffer buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        memcpy(&image, &buf, sizeof(buf));
+    }
     if (!image.Valid()) {
         // Fall back to null image if unbound.
         return AmdGpu::Image::Null();

@@ -8,7 +8,6 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -152,7 +151,8 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
-    s32 result = memory->Reserve(addr, in_addr, len, map_flags, alignment);
+    s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
+                                   Core::VMAType::Reserved, "anon", false, -1, alignment);
     if (result == 0) {
         LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     }
@@ -263,13 +263,22 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
     return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
-int PS4_SYSV_ABI sceKernelMProtect(const void* addr, size_t size, int prot) {
+s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
 }
 
-int PS4_SYSV_ABI sceKernelMTypeProtect(const void* addr, size_t size, int mtype, int prot) {
+s32 PS4_SYSV_ABI posix_mprotect(const void* addr, u64 size, s32 prot) {
+    s32 result = sceKernelMprotect(addr, size, prot);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s32 prot) {
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
@@ -344,7 +353,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
-            result = sceKernelMProtect(entries[i].start, entries[i].length, entries[i].protection);
+            result = sceKernelMprotect(entries[i].start, entries[i].length, entries[i].protection);
             LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
                      entries[i].operation, entries[i].length, result);
             break;
@@ -359,7 +368,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
-            result = sceKernelMTypeProtect(entries[i].start, entries[i].length, entries[i].type,
+            result = sceKernelMtypeprotect(entries[i].start, entries[i].length, entries[i].type,
                                            entries[i].protection);
             LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
                      entries[i].operation, entries[i].length, result);
@@ -380,7 +389,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEn
     return result;
 }
 
-s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, const char* name) {
+s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const char* name) {
     if (name == nullptr) {
         LOG_ERROR(Kernel_Vmm, "name is invalid!");
         return ORBIS_KERNEL_ERROR_EFAULT;
@@ -396,8 +405,8 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, size_t len, cons
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_t len,
-                                           size_t alignment, u64* physAddrOut) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len, u64 alignment,
+                                           u64* physAddrOut) {
     if (searchStart < 0 || searchEnd <= searchStart) {
         LOG_ERROR(Kernel_Vmm, "Provided address range is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -439,10 +448,10 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, size_
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t alignment, int flags,
-                                            void** addrOut) {
-    LOG_INFO(Kernel_Vmm, "addrIn = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
-             fmt::ptr(addrIn), len, alignment, flags);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addr_in, u64 len, u64 alignment, s32 flags,
+                                            void** addr_out) {
+    LOG_INFO(Kernel_Vmm, "addr_in = {}, len = {:#x}, alignment = {:#x}, flags = {:#x}",
+             fmt::ptr(addr_in), len, alignment, flags);
 
     if (len == 0 || !Common::Is2MBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 2MB aligned!");
@@ -456,14 +465,16 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addrIn, size_t len, size_t ali
     }
 
     auto* memory = Core::Memory::Instance();
-    const VAddr in_addr = reinterpret_cast<VAddr>(addrIn);
+    const VAddr in_addr = reinterpret_cast<VAddr>(addr_in);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    memory->PoolReserve(addrOut, in_addr, len, map_flags, alignment);
+    u64 map_alignment = alignment == 0 ? 2_MB : alignment;
 
-    return ORBIS_OK;
+    return memory->MapMemory(addr_out, std::bit_cast<VAddr>(addr_in), len,
+                             Core::MemoryProt::NoAccess, map_flags, Core::VMAType::PoolReserved,
+                             "anon", false, -1, map_alignment);
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int prot, int flags) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 prot, s32 flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -482,7 +493,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, size_t len, int type, int
     return memory->PoolCommit(in_addr, len, mem_prot);
 }
 
-s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, size_t len, int flags) {
+s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
     if (addr == nullptr) {
         LOG_ERROR(Kernel_Vmm, "Address is invalid!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -523,12 +534,12 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
             break;
         }
         case OrbisKernelMemoryPoolOpcode::Protect: {
-            result = sceKernelMProtect(entry.protect_params.addr, entry.protect_params.len,
+            result = sceKernelMprotect(entry.protect_params.addr, entry.protect_params.len,
                                        entry.protect_params.prot);
             break;
         }
         case OrbisKernelMemoryPoolOpcode::TypeProtect: {
-            result = sceKernelMTypeProtect(
+            result = sceKernelMtypeprotect(
                 entry.type_protect_params.addr, entry.type_protect_params.len,
                 entry.type_protect_params.type, entry.type_protect_params.prot);
             break;
@@ -553,30 +564,48 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
     return result;
 }
 
-int PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, int prot, int flags, int fd, size_t offset,
-                               void** res) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, offset = {}",
-             fmt::ptr(addr), len, prot, flags, fd, offset);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
+    LOG_INFO(Kernel_Vmm,
+             "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
+             fmt::ptr(addr), len, prot, flags, fd, phys_addr);
+
+    void* addr_out;
     auto* memory = Core::Memory::Instance();
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    s32 result = ORBIS_OK;
     if (fd == -1) {
-        return memory->MapMemory(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
-                                 Core::VMAType::Flexible);
+        result = memory->MapMemory(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                   Core::VMAType::Flexible);
     } else {
-        const uintptr_t handle = h->GetFile(fd)->f.GetFileMapping();
-        return memory->MapFile(res, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags, handle,
-                               offset);
+        result = memory->MapFile(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+                                 fd, phys_addr);
     }
+
+    if (result != ORBIS_OK) {
+        // If the memory mappings fail, mmap sets errno to the appropriate error code,
+        // then returns (void*)-1;
+        ErrSceToPosix(result);
+        return reinterpret_cast<void*>(-1);
+    }
+
+    return addr_out;
 }
 
-void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, int prot, int flags, int fd, u64 offset) {
-    void* ptr;
-    LOG_INFO(Kernel_Vmm, "posix mmap redirect to sceKernelMmap");
-    int result = sceKernelMmap(addr, len, prot, flags, fd, offset, &ptr);
-    ASSERT(result == 0);
-    return ptr;
+s32 PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr,
+                               void** res) {
+    void* addr_out = posix_mmap(addr, len, prot, flags, fd, phys_addr);
+
+    if (addr_out == reinterpret_cast<void*>(-1)) {
+        // posix_mmap failed, calculate and return the appropriate kernel error code using errno.
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+
+    // Set the outputted address
+    *res = addr_out;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelConfiguredFlexibleMemorySize(u64* sizeOut) {
@@ -678,8 +707,9 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", 1, 1,
                  sceKernelConfiguredFlexibleMemorySize);
 
-    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMTypeProtect);
-    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMProtect);
+    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMprotect);
+    LIB_FUNCTION("YQOfxL4QfeU", "libScePosix", 1, "libkernel", 1, 1, posix_mprotect);
+    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMtypeprotect);
 
     // Memory pool
     LIB_FUNCTION("qCSfqDILlns", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolExpand);
