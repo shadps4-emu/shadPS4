@@ -152,6 +152,8 @@ enum class TilingMode : u32 {
 
 constexpr std::string_view NameOf(TilingMode type) {
     switch (type) {
+    case TilingMode::Depth_MicroTiled:
+        return "Depth_MicroTiled";
     case TilingMode::Depth_MacroTiled:
         return "Depth_MacroTiled";
     case TilingMode::Display_Linear:
@@ -318,8 +320,7 @@ struct Image {
 
     TilingMode GetTilingMode() const {
         if (tiling_index >= 0 && tiling_index <= 7) {
-            return tiling_index == 5 ? TilingMode::Texture_MicroTiled
-                                     : TilingMode::Depth_MacroTiled;
+        return tiling_index == 5 ? TilingMode::Depth_MicroTiled : TilingMode::Depth_MacroTiled;
         }
         return static_cast<TilingMode>(tiling_index);
     }
