@@ -222,14 +222,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        if (image_info.type == tex_cache_image.info.type &&
+            image_info.resources > tex_cache_image.info.resources) {
+            // Size and resources are greater, expand the image.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        if (image_info.tiling_mode != tex_cache_image.info.tiling_mode) {
+            // Size is greater but resources are not, because the tiling mode is different.
+            // Likely this memory address is being reused for a different image with a different
+            // tiling mode.
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
@@ -538,10 +547,16 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.mip_hashes[m] = hash;
         }
 
+        auto mip_pitch = static_cast<u32>(mip.pitch);
+        auto mip_height = static_cast<u32>(mip.height);
+
+        auto image_extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        auto image_extent_height = mip_height ? std::min(mip_height, height) : height;
+
         image_copy.push_back({
             .bufferOffset = mip.offset,
-            .bufferRowLength = static_cast<u32>(mip.pitch),
-            .bufferImageHeight = static_cast<u32>(mip.height),
+            .bufferRowLength = mip_pitch,
+            .bufferImageHeight = mip_height,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
@@ -549,7 +564,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
                 .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
+            .imageExtent = {image_extent_width, image_extent_height, depth},
         });
     }
 
@@ -672,7 +687,7 @@ void TextureCache::TrackImage(ImageId image_id) {
         // Re-track the whole image
         image.track_addr = image_begin;
         image.track_addr_end = image_end;
-        tracker.UpdatePagesCachedCount(image_begin, image.info.guest_size, 1);
+        tracker.UpdatePageWatchers<1>(image_begin, image.info.guest_size);
     } else {
         if (image_begin < image.track_addr) {
             TrackImageHead(image_id);
@@ -695,7 +710,7 @@ void TextureCache::TrackImageHead(ImageId image_id) {
     ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
     const auto size = image.track_addr - image_begin;
     image.track_addr = image_begin;
-    tracker.UpdatePagesCachedCount(image_begin, size, 1);
+    tracker.UpdatePageWatchers<1>(image_begin, size);
 }
 
 void TextureCache::TrackImageTail(ImageId image_id) {
@@ -711,7 +726,7 @@ void TextureCache::TrackImageTail(ImageId image_id) {
     const auto addr = image.track_addr_end;
     const auto size = image_end - image.track_addr_end;
     image.track_addr_end = image_end;
-    tracker.UpdatePagesCachedCount(addr, size, 1);
+    tracker.UpdatePageWatchers<1>(addr, size);
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -724,7 +739,7 @@ void TextureCache::UntrackImage(ImageId image_id) {
     image.track_addr = 0;
     image.track_addr_end = 0;
     if (size != 0) {
-        tracker.UpdatePagesCachedCount(addr, size, -1);
+        tracker.UpdatePageWatchers<-1>(addr, size);
     }
 }
 
@@ -743,7 +758,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(image_begin, size, -1);
+    tracker.UpdatePageWatchers<-1>(image_begin, size);
 }
 
 void TextureCache::UntrackImageTail(ImageId image_id) {
@@ -762,7 +777,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(addr, size, -1);
+    tracker.UpdatePageWatchers<-1>(addr, size);
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

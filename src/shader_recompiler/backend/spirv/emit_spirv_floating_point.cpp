@@ -154,7 +154,7 @@ Id EmitFPRecip32(EmitContext& ctx, Id value) {
 }
 
 Id EmitFPRecip64(EmitContext& ctx, Id value) {
-    return ctx.OpFDiv(ctx.F64[1], ctx.Constant(ctx.F64[1], 1.0f), value);
+    return ctx.OpFDiv(ctx.F64[1], ctx.Constant(ctx.F64[1], f64{1.0}), value);
 }
 
 Id EmitFPRecipSqrt32(EmitContext& ctx, Id value) {

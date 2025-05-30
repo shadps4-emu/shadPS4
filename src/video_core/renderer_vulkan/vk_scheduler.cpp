@@ -70,6 +70,11 @@ void Scheduler::Flush(SubmitInfo& info) {
     SubmitExecution(info);
 }
 
+void Scheduler::Flush() {
+    SubmitInfo info{};
+    Flush(info);
+}
+
 void Scheduler::Finish() {
     // When finishing, we need to wait for the submission to have executed on the device.
     const u64 presubmit_tick = CurrentTick();
@@ -85,6 +90,15 @@ void Scheduler::Wait(u64 tick) {
         Flush(info);
     }
     master_semaphore.Wait(tick);
+
+    // CAUTION: This can introduce unexpected variation in the wait time.
+    // We don't currently sync the GPU, and some games are very sensitive to this.
+    // If this becomes a problem, it can be commented out.
+    // Idealy we would implement proper gpu sync.
+    while (!pending_ops.empty() && pending_ops.front().gpu_tick <= tick) {
+        pending_ops.front().callback();
+        pending_ops.pop();
+    }
 }
 
 void Scheduler::AllocateWorkerCommandBuffers() {

@@ -133,6 +133,7 @@ void Liverpool::Process(std::stop_token stoken) {
             VideoCore::EndCapture();
 
             if (rasterizer) {
+                rasterizer->ProcessFaults();
                 rasterizer->Flush();
             }
             submit_done = false;
@@ -749,6 +750,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                             strmout->update_memory.Value(),
                             magic_enum::enum_name(strmout->source_select.Value()),
                             strmout->buffer_select.Value());
+                break;
+            }
+            case PM4ItOpcode::GetLodStats: {
+                LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
                 break;
             }
             default:

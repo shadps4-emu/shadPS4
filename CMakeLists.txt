@@ -203,7 +203,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "8")
+set(EMULATOR_VERSION_MINOR "9")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -227,7 +227,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.309 CONFIG)
+find_package(VulkanHeaders 1.4.314 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -603,6 +603,8 @@ set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
 
 set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
                     src/core/libraries/companion/companion_httpd.h
+                    src/core/libraries/companion/companion_util.cpp
+                    src/core/libraries/companion/companion_util.h
                     src/core/libraries/companion/companion_error.h
 )
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -622,6 +624,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
+              src/core/devtools/widget/module_list.cpp
+              src/core/devtools/widget/module_list.h
               src/core/devtools/widget/reg_popup.cpp
               src/core/devtools/widget/reg_popup.h
               src/core/devtools/widget/reg_view.cpp
@@ -674,6 +678,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/polyfill_thread.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
+           src/common/recursive_lock.cpp
+           src/common/recursive_lock.h
            src/common/sha1.h
            src/common/signal_context.h
            src/common/signal_context.cpp
@@ -864,6 +870,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
+                      src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp
                       src/shader_recompiler/ir/attribute.h
