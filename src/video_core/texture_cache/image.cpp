@@ -85,7 +85,9 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
         // involve re-creating the resource with a new configuration and copying previous content
         // into it. However, for now, we will set storage usage for all images (if the format
         // allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set by default.
-        usage |= vk::ImageUsageFlagBits::eStorage;
+        if (!info.IsBlockCoded()) {
+            usage |= vk::ImageUsageFlagBits::eStorage;
+        }
     }
 
     return usage;
