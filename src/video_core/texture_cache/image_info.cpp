@@ -192,6 +192,8 @@ void ImageInfo::UpdateSize() {
                 ImageSizeMicroTiled(mip_w, mip_h, thickness, bpp, num_samples);
             break;
         }
+        case AmdGpu::TilingMode::Depth_MicroTiled:        
+        case AmdGpu::TilingMode::Display_MicroTiled:
         case AmdGpu::TilingMode::Display_MacroTiled:
         case AmdGpu::TilingMode::Texture_MacroTiled:
         case AmdGpu::TilingMode::Depth_MacroTiled: {
