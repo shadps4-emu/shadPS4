@@ -415,6 +415,13 @@ struct PM4CmdEventWrite {
         BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
     };
     u32 address[];
+
+    template <typename T>
+    T Address() const {
+        ASSERT(event_index.Value() >= EventIndex::ZpassDone &&
+               event_index.Value() <= EventIndex::SampleStreamoutStatSx);
+        return std::bit_cast<T>((u64(address[1]) << 32u) | u64(address[0]));
+    }
 };
 
 struct PM4CmdEventWriteEop {
@@ -1101,6 +1108,45 @@ struct PM4CmdMemSemaphore {
         default:
             UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
         }
+    }
+};
+
+enum class Predication : u32 {
+    DrawIfNotVisible = 0,
+    DrawIfVisible = 1,
+};
+
+enum class PredicationHint : u32 {
+    Wait = 0,
+    Draw = 1,
+};
+
+enum class PredicateOperation : u32 {
+    Clear = 0,
+    Zpass = 1,
+    PrimCount = 2,
+    // other values are reserved
+};
+
+struct PM4CmdSetPredication {
+    PM4Type3Header header;
+    union {
+        BitField<4, 28, u32> start_address_lo;
+        u32 raw1;
+    };
+    union {
+        BitField<0, 8, u32> start_address_hi;
+        BitField<8, 1, Predication> action;
+        BitField<12, 1, PredicationHint> hint;
+        BitField<16, 3, PredicateOperation> pred_op;
+        BitField<31, 1, u32> continue_bit;
+        u32 raw2;
+    };
+
+    template <typename T = u64>
+    T Address() const {
+        return std::bit_cast<T>(u64(start_address_lo.Value()) << 4 | u64(start_address_hi.Value())
+                                                                         << 32);
     }
 };
 

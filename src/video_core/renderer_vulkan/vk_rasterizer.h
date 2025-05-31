@@ -55,6 +55,11 @@ public:
     void ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                  bool from_guest = false);
 
+    void StartPredication(VAddr addr, bool discard_if_zero, bool wait_for_result);
+    void EndPredication();
+    void StartOcclusionQuery(VAddr addr);
+    void EndOcclusionQuery(VAddr addr);
+
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size);
@@ -122,6 +127,11 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     std::shared_mutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
+    vk::QueryPool occlusion_query_pool;
+    u32 occlusion_current_index{};
+    std::map<VAddr, u32> occlusion_index_mapping;
+    VideoCore::Buffer occlusion_query_buffer;
+    bool active_predication;
 
     boost::container::static_vector<
         std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
