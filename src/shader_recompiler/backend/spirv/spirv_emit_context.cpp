@@ -960,6 +960,7 @@ void EmitContext::DefineSharedMemory() {
     const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], ConstU32(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
+    shared_u16 = TypePointer(spv::StorageClass::Workgroup, U16);
     shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
     shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
     Name(shared_memory_u32, "shared_mem");
