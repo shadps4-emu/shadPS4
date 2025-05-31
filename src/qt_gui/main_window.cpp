@@ -367,11 +367,11 @@ void MainWindow::LoadGameLists() {
 #ifdef ENABLE_UPDATER
 void MainWindow::CheckUpdateMain(bool checkSave) {
     if (checkSave) {
-        if (!Config::autoUpdate()) {
+        if (!m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool()) {
             return;
         }
     }
-    auto checkUpdate = new CheckUpdate(false);
+    auto checkUpdate = new CheckUpdate(m_gui_settings, false);
     checkUpdate->exec();
 }
 #endif
@@ -495,7 +495,7 @@ void MainWindow::CreateConnects() {
 
 #ifdef ENABLE_UPDATER
     connect(ui->updaterAct, &QAction::triggered, this, [this]() {
-        auto checkUpdate = new CheckUpdate(true);
+        auto checkUpdate = new CheckUpdate(m_gui_settings, true);
         checkUpdate->exec();
     });
 #endif

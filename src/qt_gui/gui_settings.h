@@ -8,9 +8,13 @@
 
 namespace gui {
 // categories
+const QString general = "general";
 const QString main_window = "main_window";
 const QString game_list = "game_list";
 const QString game_grid = "game_grid";
+
+// general
+const gui_value gen_checkForUpdates = gui_value(general, "showLabelsUnderIcons", false);
 
 // main window settings
 const gui_value mw_geometry = gui_value(main_window, "geometry", QByteArray());

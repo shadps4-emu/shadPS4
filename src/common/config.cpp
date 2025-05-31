@@ -50,7 +50,6 @@ static bool isMotionControlsEnabled = true;
 static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isShowSplash = false;
-static bool isAutoUpdate = false;
 static bool isAlwaysShowChangelog = false;
 static std::string isSideTrophy = "right";
 static bool isNullGpu = false;
@@ -243,10 +242,6 @@ bool showSplash() {
     return isShowSplash;
 }
 
-bool autoUpdate() {
-    return isAutoUpdate;
-}
-
 bool alwaysShowChangelog() {
     return isAlwaysShowChangelog;
 }
@@ -349,10 +344,6 @@ void setCollectShaderForDebug(bool enable) {
 
 void setShowSplash(bool enable) {
     isShowSplash = enable;
-}
-
-void setAutoUpdate(bool enable) {
-    isAutoUpdate = enable;
 }
 
 void setAlwaysShowChangelog(bool enable) {
@@ -629,7 +620,6 @@ void load(const std::filesystem::path& path) {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
-        isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
         isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
@@ -809,7 +799,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
-    data["General"]["autoUpdate"] = isAutoUpdate;
     data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
@@ -953,7 +942,6 @@ void setDefaultValues() {
     isDebugDump = false;
     isShaderDebug = false;
     isShowSplash = false;
-    isAutoUpdate = false;
     isAlwaysShowChangelog = false;
     isSideTrophy = "right";
     isNullGpu = false;

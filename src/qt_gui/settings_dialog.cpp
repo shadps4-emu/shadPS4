@@ -177,14 +177,16 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     {
 #ifdef ENABLE_UPDATER
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-        connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
-                [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
+        connect(ui->updateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
+        });
 
         connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this,
                 [](int state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
 #else
-        connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) { Config::setAutoUpdate(state == Qt::Checked); });
+        connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
+            m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
+        });
 
         connect(ui->changelogCheckBox, &QCheckBox::checkStateChanged, this,
                 [](Qt::CheckState state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
@@ -197,8 +199,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                     }
                 });
 
-        connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
-            auto checkUpdate = new CheckUpdate(true);
+        connect(ui->checkUpdateButton, &QPushButton::clicked, this, [this]() {
+            auto checkUpdate = new CheckUpdate(m_gui_settings,true);
             checkUpdate->exec();
         });
 #else
@@ -788,7 +790,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked());
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
-    Config::setAutoUpdate(ui->updateCheckBox->isChecked());
+     m_gui_settings->SetValue(gui::gen_checkForUpdates, ui->updateCheckBox->isChecked());
     Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
     Config::setChooseHomeTab(
@@ -873,4 +875,5 @@ void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
+    m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
 }
