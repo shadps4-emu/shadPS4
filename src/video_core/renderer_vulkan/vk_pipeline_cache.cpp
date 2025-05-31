@@ -278,8 +278,11 @@ bool PipelineCache::RefreshGraphicsKey() {
         vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
     if (regs.depth_buffer.DepthValid()) {
         key.depth_format = depth_format;
+        key.depth_samples = LiverpoolToVK::NumSamples(regs.depth_buffer.NumSamples(),
+                                                      instance.GetFramebufferSampleCounts());
     } else {
         key.depth_format = vk::Format::eUndefined;
+        key.depth_samples = vk::SampleCountFlagBits::e1;
     }
     if (regs.depth_buffer.StencilValid()) {
         key.stencil_format = depth_format;
@@ -301,6 +304,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.num_color_attachments = 0;
     key.color_formats.fill(vk::Format::eUndefined);
     key.color_buffers.fill({});
+    key.color_samples.fill(vk::SampleCountFlagBits::e1);
     key.blend_controls.fill({});
     key.write_masks.fill({});
     key.vertex_buffer_formats.fill(vk::Format::eUndefined);
@@ -335,6 +339,8 @@ bool PipelineCache::RefreshGraphicsKey() {
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
 
+        key.color_samples[remapped_cb] =
+            LiverpoolToVK::NumSamples(col_buf.NumSamples(), instance.GetFramebufferSampleCounts());
         key.color_formats[remapped_cb] =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
         key.color_buffers[remapped_cb] = Shader::PsColorBuffer{

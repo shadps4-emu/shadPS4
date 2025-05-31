@@ -40,6 +40,8 @@ struct GraphicsPipelineKey {
     vk::Format stencil_format;
 
     u32 num_samples;
+    std::array<vk::SampleCountFlagBits, Liverpool::NumColorBuffers> color_samples;
+    vk::SampleCountFlagBits depth_samples;
     u32 mrt_mask;
     AmdGpu::PrimitiveType prim_type;
     Liverpool::PolygonMode polygon_mode;
