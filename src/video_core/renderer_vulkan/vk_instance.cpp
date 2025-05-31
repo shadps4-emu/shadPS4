@@ -283,6 +283,8 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- shaderImageFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderImageFloat32AtomicMinMax);
     }
+    nv_framebuffer_mixed_samples = add_extension(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME);
+    amd_mixed_attachment_samples = add_extension(VK_AMD_MIXED_ATTACHMENT_SAMPLES_EXTENSION_NAME);
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
