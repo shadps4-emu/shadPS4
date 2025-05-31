@@ -171,6 +171,12 @@ public:
         return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
     }
 
+    /// Returns true if VK_NV_framebuffer_mixed_samples or
+    /// VK_AMD_mixed_attachment_samples is supported
+    bool IsMixedSamplesSupported() const {
+        return nv_framebuffer_mixed_samples || amd_mixed_attachment_samples;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -374,6 +380,8 @@ private:
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
     bool shader_atomic_float2{};
+    bool nv_framebuffer_mixed_samples{};
+    bool amd_mixed_attachment_samples{};
     bool portability_subset{};
 };
 

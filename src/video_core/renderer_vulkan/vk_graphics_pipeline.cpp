@@ -109,7 +109,7 @@ GraphicsPipeline::GraphicsPipeline(
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
         .rasterizationSamples =
-            LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
+            instance.IsMixedSamplesSupported() ? vk::SampleCountFlagBits::e1 : key.num_samples,
         .sampleShadingEnable = false,
     };
 
@@ -212,7 +212,14 @@ GraphicsPipeline::GraphicsPipeline(
         });
     }
 
+    const vk::AttachmentSampleCountInfoAMD mixed_samples = {
+        .colorAttachmentCount = key.num_color_attachments,
+        .pColorAttachmentSamples = key.color_samples.data(),
+        .depthStencilAttachmentSamples = key.depth_samples,
+    };
+
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
+        .pNext = instance.IsMixedSamplesSupported() ? &mixed_samples : nullptr,
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
         .depthAttachmentFormat = key.depth_format,
