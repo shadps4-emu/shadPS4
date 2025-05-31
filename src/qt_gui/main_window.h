@@ -20,6 +20,7 @@
 #include "game_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
+#include "gui_settings.h"
 #include "main_window_themes.h"
 #include "main_window_ui.h"
 
@@ -42,7 +43,7 @@ public:
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
-    void SaveWindowState() const;
+    void SaveWindowState();
     void SearchGameTable(const QString& text);
     void ShowGameList();
     void RefreshGameTable();
@@ -103,6 +104,7 @@ private:
         std::make_shared<CompatibilityInfoClass>();
 
     QTranslator* translator;
+    std::shared_ptr<gui_settings> m_gui_settings;
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;

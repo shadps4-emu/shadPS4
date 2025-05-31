@@ -28,8 +28,10 @@
 
 using namespace Common::FS;
 
-CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
-    : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
+CheckUpdate::CheckUpdate(std::shared_ptr<gui_settings> gui_settings, const bool showMessage,
+                         QWidget* parent)
+    : QDialog(parent), m_gui_settings(std::move(gui_settings)),
+      networkManager(new QNetworkAccessManager(this)) {
     setWindowTitle(tr("Auto Updater"));
     setFixedSize(0, 0);
     CheckForUpdates(showMessage);
@@ -290,14 +292,14 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
 
     connect(noButton, &QPushButton::clicked, this, [this]() { close(); });
 
-    autoUpdateCheckBox->setChecked(Config::autoUpdate());
+    autoUpdateCheckBox->setChecked(m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool());
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-    connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+    connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
 #else
-    connect(autoUpdateCheckBox, &QCheckBox::checkStateChanged, this, [](Qt::CheckState state) {
+    connect(autoUpdateCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
 #endif
         const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-        Config::setAutoUpdate(state == Qt::Checked);
+        m_gui_settings->SetValue(gui::gen_checkForUpdates, (state == Qt::Checked));
         Config::save(user_dir / "config.toml");
     });
 
