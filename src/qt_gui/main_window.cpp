@@ -387,9 +387,9 @@ void MainWindow::CreateConnects() {
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
             m_game_list_frame->icon_size =
-                36 + value; // 36 is the minimum icon size to use due to text disappearing.
-            m_game_list_frame->ResizeIcons(36 + value);
-            Config::setIconSize(36 + value);
+                48 + value; // 48 is the minimum icon size to use due to text disappearing.
+            m_game_list_frame->ResizeIcons(48 + value);
+            Config::setIconSize(48 + value);
             Config::setSliderPosition(value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
