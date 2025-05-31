@@ -29,7 +29,7 @@ sudo dnf install clang git cmake libatomic alsa-lib-devel \
     openssl-devel libevdev-devel libudev-devel libXext-devel \
     qt6-qtbase-devel qt6-qtbase-private-devel \
     qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel \
-    vulkan-devel vulkan-validation-layers libpng-devel
+    vulkan-devel vulkan-validation-layers libpng-devel libuuid-devel
 ```
 
 #### Arch Linux
