@@ -473,6 +473,10 @@ void setNeoMode(bool enable) {
     isNeo = enable;
 }
 
+void setDevKitMode(bool enable) {
+    isDevKit = enable;
+}
+
 void setLogType(const std::string& type) {
     logType = type;
 }

@@ -137,6 +137,8 @@ bool getVkGuestMarkersEnabled();
 void setVkCrashDiagnosticEnabled(bool enable);
 void setVkHostMarkersEnabled(bool enable);
 void setVkGuestMarkersEnabled(bool enable);
+void setNeoMode(bool enable);
+void setDevKitMode(bool enable);
 
 // Gui
 void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
