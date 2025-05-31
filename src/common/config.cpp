@@ -42,7 +42,9 @@ static u32 screenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
 static std::string logType = "sync";
-static std::string userName = "shadPS4";
+static std::array<std::string, 4> userNames = {"shadPS4"
+                                               "shadps4-2",
+                                               "shadPS4-3", "shadPS4-4"};
 static std::string updateChannel;
 static std::string chooseHomeTab;
 static std::string backButtonBehavior = "left";
@@ -236,7 +238,7 @@ std::string getLogType() {
 }
 
 std::string getUserName() {
-    return userName;
+    return userNames[0];
 }
 
 std::string getUpdateChannel() {
@@ -486,7 +488,7 @@ void setSeparateLogFilesEnabled(bool enabled) {
 }
 
 void setUserName(const std::string& type) {
-    userName = type;
+    userNames[0] = type;
 }
 
 void setUpdateChannel(const std::string& type) {
@@ -762,7 +764,7 @@ void load(const std::filesystem::path& path) {
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
-        userName = toml::find_or<std::string>(general, "userName", "shadPS4");
+        userNames[0] = toml::find_or<std::string>(general, "userName", "shadPS4");
         if (Common::g_is_release) {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
         } else {
@@ -960,7 +962,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["enableDiscordRPC"] = enableDiscordRPC;
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
-    data["General"]["userName"] = userName;
+    data["General"]["userName"] = userNames[0];
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
@@ -1107,7 +1109,7 @@ void setDefaultValues() {
     screenHeight = 720;
     logFilter = "";
     logType = "sync";
-    userName = "shadPS4";
+    userNames = {"shadPS4", "shadps4-2", "shadPS4-3", "shadPS4-4"};
     if (Common::g_is_release) {
         updateChannel = "Release";
     } else {
