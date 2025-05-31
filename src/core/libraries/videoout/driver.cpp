@@ -67,7 +67,7 @@ void VideoOutDriver::Close(s32 handle) {
     ASSERT(main_port.flip_events.empty());
 }
 
-VideoOutPort* VideoOutDriver::GetPort(int handle) {
+VideoOutPort* VideoOutDriver::GetPort(s32 handle) {
     if (handle != 1) [[unlikely]] {
         return nullptr;
     }
@@ -220,10 +220,11 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
         std::unique_lock lock{port->port_mutex};
-        if (index != -1 && port->flip_status.flip_pending_num >= port->NumRegisteredBuffers()) {
-            LOG_ERROR(Lib_VideoOut, "Flip queue is full");
-            return false;
-        }
+
+        // wait until there is space in the flip queue
+        port->vo_cv.wait(lock, [&]() {
+            return index == -1 || port->flip_status.flip_pending_num < port->NumRegisteredBuffers();
+        });
 
         if (is_eop) {
             ++port->flip_status.gc_queue_num;
@@ -310,8 +311,10 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 }
             } else {
                 Flip(request);
-                FRAME_END;
+                main_port.vblank_cv.notify_all();
+                // wake up threads waiting to submit more flips
             }
+            FRAME_END;
         }
 
         {
