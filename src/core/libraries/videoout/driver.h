@@ -29,8 +29,6 @@ struct VideoOutPort {
     std::vector<Kernel::SceKernelEqueue> vblank_events;
     std::mutex vo_mutex;
     std::mutex port_mutex;
-    std::mutex pending_mutex;
-    std::queue<std::tuple<u32, u32>> pending_flips;
     std::condition_variable vo_cv;
     std::condition_variable vblank_cv;
     int flip_rate = 0;
