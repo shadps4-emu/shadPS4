@@ -350,22 +350,8 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
                 LOG_WARNING(Lib_VideoOut, "Ignoring flip IRQ during mode change");
                 return;
             }
-            std::tuple<u32, u32> pending;
-            {
-                std::lock_guard lock(port->pending_mutex);
-                if (port->pending_flips.empty()) {
-                    LOG_ERROR(Lib_VideoOut, "Received GfxFlip IRQ but no flips pending");
-                    return;
-                }
-                pending = port->pending_flips.front();
-                port->pending_flips.pop();
-            }
-            const auto [queued_buf_id, queued_arg] = pending;
-            ASSERT_MSG(queued_buf_id == buf_id,
-                       "Out-of-order flip IRQ (expected buf_id = {}, got = {})", buf_id,
-                       queued_buf_id);
-            const bool result = driver->SubmitFlip(port, queued_buf_id, queued_arg, true);
-            ASSERT_MSG(result, "EOP flip submission failed for buffer {}", queued_buf_id);
+            const bool result = driver->SubmitFlip(port, buf_id, arg, true);
+            ASSERT_MSG(result, "EOP flip submission failed for buffer {}", buf_id);
         });
 
     return ORBIS_OK;

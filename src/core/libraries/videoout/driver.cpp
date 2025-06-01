@@ -311,7 +311,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                 }
             } else {
                 Flip(request);
-                main_port.vblank_cv.notify_all();
+                request.port->vo_cv.notify_all();
                 // wake up threads waiting to submit more flips
             }
             FRAME_END;
