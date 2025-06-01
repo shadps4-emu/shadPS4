@@ -57,7 +57,7 @@ s32 PS4_SYSV_ABI sceVoiceGetPortInfo(u32 port_id, OrbisVoicePortInfo* info) {
     info->frame_size = 1;
     info->edge_count = 0;
     info->reserved = 0;
-    
+
     return ORBIS_OK;
 }
 
