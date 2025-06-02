@@ -56,15 +56,7 @@ bool MainWindow::Init() {
     setMinimumSize(720, 405);
     std::string window_title = "";
     std::string remote_url(Common::g_scm_remote_url);
-    std::string remote_host;
-    try {
-        if (*remote_url.rbegin() == '/') {
-            remote_url.pop_back();
-        }
-        remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-    } catch (...) {
-        remote_host = "unknown";
-    }
+    std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{}", Common::g_version);
