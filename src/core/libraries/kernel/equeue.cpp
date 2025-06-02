@@ -179,6 +179,7 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
 bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
     // the small timer storage and wait logic should be reworked.
 
+    // id check
     ev.time_added = std::chrono::steady_clock::now();
     small_timer_event = std::move(ev);
     return true;
