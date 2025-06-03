@@ -14,7 +14,7 @@ struct GameInstallDir {
     bool enabled;
 };
 
-enum HideCursorState : s16 { Never, Idle, Always };
+enum HideCursorState : int { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
@@ -39,6 +39,7 @@ bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
 int getBackgroundImageOpacity();
 bool getShowBackgroundImage();
+bool getPSNSignedIn();
 
 std::string getLogFilter();
 std::string getLogType();
@@ -111,6 +112,7 @@ void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
 void setBackgroundImageOpacity(int opacity);
 void setShowBackgroundImage(bool show);
+void setPSNSignedIn(bool sign);
 
 void setCursorState(s16 cursorState);
 void setCursorHideTimeout(int newcursorHideTimeout);
