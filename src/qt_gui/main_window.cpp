@@ -372,7 +372,6 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
-    connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
     connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
     connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
