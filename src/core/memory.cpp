@@ -557,18 +557,6 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
         return adjusted_size;
     }
 
-    // Validate protection flags
-    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
-                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
-                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
-
-    MemoryProt invalid_flags = prot & ~valid_flags;
-    if (u32(invalid_flags) != 0 && u32(invalid_flags) != u32(MemoryProt::NoAccess)) {
-        LOG_ERROR(Kernel_Vmm, "Invalid protection flags: prot = {:#x}, invalid flags = {:#x}",
-                  u32(prot), u32(invalid_flags));
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
     // Change protection
     vma_base.prot = prot;
 
@@ -598,11 +586,25 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t s
 
 s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
-    s64 protected_bytes = 0;
 
+    // Validate protection flags
+    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
+                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
+                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
+
+    MemoryProt invalid_flags = prot & ~valid_flags;
+    if (invalid_flags != MemoryProt::NoAccess) {
+        LOG_ERROR(Kernel_Vmm, "Invalid protection flags");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Align addr and size to the nearest page boundary.
     auto aligned_addr = Common::AlignDown(addr, 16_KB);
     auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
-    do {
+
+    // Protect all VMAs between aligned_addr and aligned_addr + aligned_size.
+    s64 protected_bytes = 0;
+    while (protected_bytes < aligned_size) {
         auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0), "Address {:#x} is out of bounds",
@@ -615,7 +617,7 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
             return result;
         }
         protected_bytes += result;
-    } while (protected_bytes < aligned_size);
+    }
 
     return ORBIS_OK;
 }
