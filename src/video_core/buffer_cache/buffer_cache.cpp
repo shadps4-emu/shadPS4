@@ -293,8 +293,11 @@ void BufferCache::BindIndexBuffer(u32 index_offset) {
 
 void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
     ASSERT_MSG(address % 4 == 0, "GDS offset must be dword aligned");
-    if (!is_gds && !IsRegionRegistered(address, num_bytes)) {
+    if (!is_gds) {
         memcpy(std::bit_cast<void*>(address), value, num_bytes);
+        if (!IsRegionRegistered(address, num_bytes)) {
+            return;
+        }
         return;
     }
     Buffer* buffer = [&] {
