@@ -38,7 +38,7 @@ public:
         return (data[idx / BITS_PER_WORD] & (1ULL << (idx % BITS_PER_WORD))) != 0;
     }
 
-    inline constexpr void SetRange(size_t start, size_t end) {
+    inline void SetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -66,7 +66,7 @@ public:
         }
     }
 
-    inline constexpr void UnsetRange(size_t start, size_t end) {
+    inline void UnsetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -118,7 +118,7 @@ public:
         return !None();
     }
 
-    inline constexpr Range FirstSetFrom(size_t start) const {
+    inline Range FirstSetFrom(size_t start) const {
         if (start >= N) {
             return {N, N};
         }
