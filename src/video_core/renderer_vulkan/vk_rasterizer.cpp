@@ -320,6 +320,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
+    if (active_predication) {
+        cmdbuf.beginConditionalRenderingEXT(&*active_predication);
+    }
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
                            s32(vertex_offset), instance_offset);
@@ -327,7 +330,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
-
+    if (active_predication) {
+        cmdbuf.endConditionalRenderingEXT();
+    }
     ResetBindings();
 }
 
@@ -372,6 +377,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
+    if (active_predication) {
+        cmdbuf.beginConditionalRenderingEXT(&*active_predication);
+    }
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
 
@@ -391,7 +399,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
             cmdbuf.drawIndirect(buffer->Handle(), base, max_count, stride);
         }
     }
-
+    if (active_predication) {
+        cmdbuf.endConditionalRenderingEXT();
+    }
     ResetBindings();
 }
 
@@ -1334,9 +1344,8 @@ void Rasterizer::StartPredication(VAddr addr, bool draw_if_visible, bool wait_fo
         .flags = draw_if_visible ? vk::ConditionalRenderingFlagBitsEXT::eInverted
                                  : vk::ConditionalRenderingFlagsEXT(),
     };
-    cmdbuf.beginConditionalRenderingEXT(&conditional_rendering_info);
 
-    active_predication = true;
+    active_predication = conditional_rendering_info;
 }
 
 void Rasterizer::EndPredication() {
@@ -1347,10 +1356,8 @@ void Rasterizer::EndPredication() {
     LOG_DEBUG(Render_Vulkan, "");
 
     scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.endConditionalRenderingEXT();
     ScopeMarkerEnd();
-    active_predication = false;
+    active_predication = std::nullopt;
 }
 
 void Rasterizer::StartOcclusionQuery(VAddr addr) {

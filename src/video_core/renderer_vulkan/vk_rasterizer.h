@@ -131,7 +131,7 @@ private:
     u32 occlusion_current_index{};
     std::map<VAddr, u32> occlusion_index_mapping;
     VideoCore::Buffer occlusion_query_buffer;
-    bool active_predication;
+    std::optional<vk::ConditionalRenderingBeginInfoEXT> active_predication;
 
     boost::container::static_vector<
         std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
