@@ -602,7 +602,7 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
 
     auto aligned_addr = Common::AlignDown(addr, 16_KB);
     auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
-    do {
+    while (protected_bytes < aligned_size) {
         auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         ASSERT_MSG(vma_base.Contains(addr + protected_bytes, 0), "Address {:#x} is out of bounds",
@@ -615,7 +615,7 @@ s32 MemoryManager::Protect(VAddr addr, size_t size, MemoryProt prot) {
             return result;
         }
         protected_bytes += result;
-    } while (protected_bytes < aligned_size);
+    }
 
     return ORBIS_OK;
 }
