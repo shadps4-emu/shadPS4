@@ -98,6 +98,12 @@ struct EqueueEvent {
         event.data = reinterpret_cast<uintptr_t>(data);
     }
 
+    void TriggerUser(void* data) {
+        is_triggered = true;
+        event.fflags++;
+        event.udata = data;
+    }
+
     void TriggerDisplay(void* data) {
         is_triggered = true;
         if (data != nullptr) {
