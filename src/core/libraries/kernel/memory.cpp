@@ -264,6 +264,8 @@ int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 }
 
 s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
+    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
+             prot);
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
@@ -279,6 +281,8 @@ s32 PS4_SYSV_ABI posix_mprotect(const void* addr, u64 size, s32 prot) {
 }
 
 s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s32 prot) {
+    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
+             prot);
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
     return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
