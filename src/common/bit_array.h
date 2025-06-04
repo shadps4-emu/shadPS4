@@ -26,6 +26,52 @@ class BitArray {
 public:
     using Range = std::pair<size_t, size_t>;
 
+    class Iterator {
+    public:
+        explicit Iterator(const BitArray& bit_array_, u64 start) : bit_array(bit_array_) {
+            range = bit_array.FirstRangeFrom(start);
+        }
+
+        Iterator& operator++() {
+            range = bit_array.FirstRangeFrom(range.second);
+            return *this;
+        }
+
+        bool operator==(const Iterator& other) const {
+            return range == other.range;
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return !(*this == other);
+        }
+
+        const Range& operator*() const {
+            return range;
+        }
+
+        const Range* operator->() const {
+            return &range;
+        }
+
+    private:
+        const BitArray& bit_array;
+        Range range;
+    };
+
+    using const_iterator = Iterator;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Range;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const Range*;
+    using reference = const Range&;
+
+    const_iterator begin() const {
+        return Iterator(*this, 0);
+    }
+    const_iterator end() const {
+        return Iterator(*this, N);
+    }
+
     inline constexpr void Set(size_t idx) {
         data[idx / BITS_PER_WORD] |= (1ULL << (idx % BITS_PER_WORD));
     }
@@ -38,7 +84,7 @@ public:
         return (data[idx / BITS_PER_WORD] & (1ULL << (idx % BITS_PER_WORD))) != 0;
     }
 
-    void SetRange(size_t start, size_t end) {
+    inline void SetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -66,7 +112,7 @@ public:
         }
     }
 
-    void UnsetRange(size_t start, size_t end) {
+    inline void UnsetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -118,7 +164,7 @@ public:
         return !None();
     }
 
-    Range FirstSetFrom(size_t start) const {
+    Range FirstRangeFrom(size_t start) const {
         if (start >= N) {
             return {N, N};
         }
@@ -175,6 +221,74 @@ public:
             }
         }
         return {N, N};
+    }
+
+    inline constexpr size_t Size() const {
+        return N;
+    }
+
+    inline constexpr BitArray& operator|=(const BitArray& other) {
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            data[i] |= other.data[i];
+        }
+        return *this;
+    }
+
+    inline constexpr BitArray& operator&=(const BitArray& other) {
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            data[i] &= other.data[i];
+        }
+        return *this;
+    }
+
+    inline constexpr BitArray& operator^=(const BitArray& other) {
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            data[i] ^= other.data[i];
+        }
+        return *this;
+    }
+
+    inline constexpr BitArray& operator~() {
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            data[i] = ~data[i];
+        }
+        return *this;
+    }
+
+    inline constexpr BitArray operator|(const BitArray& other) const {
+        BitArray result = *this;
+        result |= other;
+        return result;
+    }
+
+    inline constexpr BitArray operator&(const BitArray& other) const {
+        BitArray result = *this;
+        result &= other;
+        return result;
+    }
+
+    inline constexpr BitArray operator^(const BitArray& other) const {
+        BitArray result = *this;
+        result ^= other;
+        return result;
+    }
+
+    inline constexpr BitArray operator~() const {
+        BitArray result = *this;
+        result = ~result;
+        return result;
+    }
+
+    inline constexpr bool operator==(const BitArray& other) const {
+        u64 result = 0;
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            result |= data[i] ^ other.data[i];
+        }
+        return result == 0;
+    }
+
+    inline constexpr bool operator!=(const BitArray& other) const {
+        return !(*this == other);
     }
 
 private:
