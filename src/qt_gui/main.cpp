@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
 
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
+    bool ignore_game_patch = false;
     std::string game_path;
     std::vector<std::string> game_args{};
 
@@ -50,6 +51,7 @@ int main(int argc, char* argv[]) {
                           "Needs to be at the end of the line, and everything after \"--\" is a "
                           "game argument.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
+                          "  -i, --ignore-game-patch       Disable automatic loading of game patch\n"
                           "  -s, --show-gui                Show the GUI\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
@@ -84,6 +86,8 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
+        {"-i", [&](int&) { ignore_game_patch = true; }},
+        {"--ignore-game-patch", [&](int& i) { arg_map["-i"](i); }},
         {"-f",
          [&](int& i) {
              if (++i >= argc) {
@@ -201,7 +205,7 @@ int main(int argc, char* argv[]) {
 
         // Run the emulator with the resolved game path
         Core::Emulator emulator;
-        emulator.Run(game_file_path.string(), game_args);
+        emulator.Run(game_file_path.string(), game_args, ignore_game_patch);
         if (!show_gui) {
             return 0; // Exit after running the emulator without showing the GUI
         }

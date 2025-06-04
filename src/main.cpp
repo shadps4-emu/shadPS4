@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
     Config::load(user_dir / "config.toml");
 
     bool has_game_argument = false;
+    bool ignore_game_patch = false;
     std::string game_path;
     std::vector<std::string> game_args{};
 
@@ -42,6 +43,7 @@ int main(int argc, char* argv[]) {
                           "Needs to be at the end of the line, and everything after \"--\" is a "
                           "game argument.\n"
                           "  -p, --patch <patch_file>      Apply specified patch file\n"
+                          "  -i, --ignore-game-patch       Disable automatic loading of game patch\n"
                           "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                           "state. Does not overwrite the config file.\n"
                           "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
@@ -72,6 +74,8 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
+        {"-i", [&](int&) { ignore_game_patch = true; }},
+        {"--ignore-game-patch", [&](int& i) { arg_map["-i"](i); }},
         {"-f",
          [&](int& i) {
              if (++i >= argc) {
@@ -185,7 +189,7 @@ int main(int argc, char* argv[]) {
 
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
-    emulator.Run(eboot_path, game_args);
+    emulator.Run(eboot_path, game_args, ignore_game_patch);
 
     return 0;
 }
