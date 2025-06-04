@@ -411,6 +411,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_atomic = IsImageAtomicInstruction(inst),
         .is_array = bool(inst_info.is_array),
         .is_written = is_written,
+        .is_r128 = bool(inst_info.is_r128),
     });
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
