@@ -86,6 +86,7 @@ void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+Id EmitBufferAtomicIAdd64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
@@ -127,6 +128,7 @@ void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value);
 void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value);
 void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicIAdd64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value);

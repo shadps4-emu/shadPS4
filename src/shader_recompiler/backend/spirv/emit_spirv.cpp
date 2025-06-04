@@ -303,6 +303,11 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
     }
+    if (info.uses_shared && profile.supports_workgroup_explicit_memory_layout) {
+        ctx.AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
+    }
 }
 
 void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {

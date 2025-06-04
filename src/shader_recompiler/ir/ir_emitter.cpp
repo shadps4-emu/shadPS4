@@ -298,7 +298,7 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst(Opcode::LoadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
@@ -320,10 +320,12 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     }
 }
 
-U32F32 IREmitter::SharedAtomicIAdd(const U32& address, const U32F32& data) {
+U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data) {
     switch (data.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicIAdd64, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
