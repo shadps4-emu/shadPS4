@@ -28,6 +28,7 @@
 
 #ifdef _WIN64
 #include <Rpc.h>
+#include <io.h>
 #else
 #include <uuid/uuid.h>
 #endif
@@ -231,9 +232,82 @@ int PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
     return -1;
 }
 
+#ifdef _WIN32
+
+int IsSocket(int fd) {
+    intptr_t handle = _get_osfhandle(fd);
+    WSANETWORKEVENTS ne;
+    SOCKET s = (SOCKET)handle;
+    WSAEnumNetworkEvents(s, NULL, &ne);
+    return (WSAGetLastError() != WSAENOTSOCK);
+}
+
+int IsPipeOrFile(int fd) {
+    HANDLE h = (HANDLE)_get_osfhandle(fd);
+    DWORD t = GetFileType(h);
+    return (t == FILE_TYPE_PIPE || t == FILE_TYPE_DISK);
+}
+
+#endif
+
 int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               const timeval* timeout) {
-    return 0;
+    // note writefds,exceptfds will not work
+#ifdef _WIN32
+    fd_set sock_r, sock_w, sock_x;
+    FD_ZERO(&sock_r);
+    FD_ZERO(&sock_w);
+    FD_ZERO(&sock_x);
+    int fd;
+
+    // Separate socket FDs
+    for (fd = 0; fd < nfds; ++fd) {
+        if (readfds && FD_ISSET(fd, readfds) && IsSocket(fd)) {
+            FD_SET((SOCKET)_get_osfhandle(fd), &sock_r);
+        }
+        if (writefds && FD_ISSET(fd, writefds) && IsSocket(fd)) {
+            FD_SET((SOCKET)_get_osfhandle(fd), &sock_w);
+        }
+        if (exceptfds && FD_ISSET(fd, exceptfds) && IsSocket(fd)) {
+            FD_SET((SOCKET)_get_osfhandle(fd), &sock_x);
+        }
+    }
+
+    int result = select(0, &sock_r, &sock_w, &sock_x, timeout);
+    int total_ready = result;
+
+    // Poll pipes/files for read readiness
+    for (fd = 0; fd < nfds; ++fd) {
+        if (readfds && FD_ISSET(fd, readfds) && IsPipeOrFile(fd) && !IsSocket(fd)) {
+            HANDLE h = (HANDLE)_get_osfhandle(fd);
+            DWORD avail = 0;
+
+            if (GetFileType(h) == FILE_TYPE_PIPE) {
+                if (PeekNamedPipe(h, NULL, 0, NULL, &avail, NULL) && avail > 0) {
+                    total_ready++;
+                } else {
+                    FD_CLR(fd, readfds);
+                }
+            } else if (GetFileType(h) == FILE_TYPE_DISK) {
+                char buf[1];
+                long pos = _lseek(fd, 0, SEEK_CUR);
+                int r = _read(fd, buf, 1);
+                if (r > 0) {
+                    _lseek(fd, pos, SEEK_SET);
+                    total_ready++;
+                } else {
+                    FD_CLR(fd, readfds);
+                }
+            }
+        }
+    }
+
+    return total_ready;
+
+#else
+    // POSIX: just use select directly
+    return select(nfds, readfds, writefds, exceptfds, timeout);
+#endif
 }
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
