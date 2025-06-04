@@ -29,7 +29,6 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 signals:
     void WindowResized(QResizeEvent* event);
-    void ExtractionFinished();
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
