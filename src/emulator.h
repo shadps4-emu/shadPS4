@@ -25,7 +25,8 @@ public:
     Emulator();
     ~Emulator();
 
-    void Run(std::filesystem::path file, const std::vector<std::string> args = {}, bool use_game_patch=false);
+    void Run(std::filesystem::path file, const std::vector<std::string> args = {},
+             bool ignore_game_patch = false);
     void UpdatePlayTime(const std::string& serial);
 
 private:

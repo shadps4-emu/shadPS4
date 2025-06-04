@@ -139,7 +139,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path) {
+    if (!force_base_path && !ignore_game_patches) {
         if (const auto path = search(patch_path)) {
             return *path;
         }
