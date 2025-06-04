@@ -38,7 +38,7 @@ public:
         return (data[idx / BITS_PER_WORD] & (1ULL << (idx % BITS_PER_WORD))) != 0;
     }
 
-    inline void SetRange(size_t start, size_t end) {
+    void SetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -54,7 +54,7 @@ public:
             data[first_word] |= start_mask;
             size_t i = first_word + 1;
 #ifdef BIT_ARRAY_USE_AVX
-            const __m256i value = _mm256_set1_epi64x(~1);
+            const __m256i value = _mm256_set1_epi64x(-1);
             for (; i + WORDS_PER_AVX <= last_word; i += WORDS_PER_AVX) {
                 _mm256_storeu_si256(reinterpret_cast<__m256i*>(&data[i]), value);
             }
@@ -66,7 +66,7 @@ public:
         }
     }
 
-    inline void UnsetRange(size_t start, size_t end) {
+    void UnsetRange(size_t start, size_t end) {
         if (start >= end || end > N) {
             return;
         }
@@ -118,7 +118,7 @@ public:
         return !None();
     }
 
-    inline Range FirstSetFrom(size_t start) const {
+    Range FirstSetFrom(size_t start) const {
         if (start >= N) {
             return {N, N};
         }
