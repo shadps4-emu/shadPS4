@@ -13,6 +13,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         // DS
     case Opcode::DS_ADD_U32:
         return DS_ADD_U32(inst, false);
+    case Opcode::DS_ADD_U64:
+        return DS_ADD_U64(inst, false);
     case Opcode::DS_SUB_U32:
         return DS_SUB_U32(inst, false);
     case Opcode::DS_INC_U32:
@@ -124,6 +126,18 @@ void Translator::DS_ADD_U32(const GcnInst& inst, bool rtn) {
     const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
+    }
+}
+
+void Translator::DS_ADD_U64(const GcnInst& inst, bool rtn) {
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U64 data{GetSrc64(inst.src[1])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    const IR::Value original_val = ir.SharedAtomicIAdd(addr_offset, data);
+    if (rtn) {
+        SetDst64(inst.dst[0], IR::U64{original_val});
     }
 }
 
