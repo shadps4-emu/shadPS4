@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <set>
 #include <fmt/core.h>
-#include <string_view>
 
 #include "common/config.h"
 #include "common/debug.h"
