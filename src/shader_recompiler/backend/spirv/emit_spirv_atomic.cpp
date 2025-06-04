@@ -19,7 +19,8 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
-    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
@@ -31,7 +32,8 @@ Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
-    const Id pointer{ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
@@ -43,7 +45,8 @@ Id SharedAtomicU32_IncDec(EmitContext& ctx, Id offset,
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
-    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);

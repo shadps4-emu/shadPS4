@@ -284,16 +284,19 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- shaderImageFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderImageFloat32AtomicMinMax);
     }
-    workgroup_memory_explicit_layout = add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
+    workgroup_memory_explicit_layout =
+        add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     if (workgroup_memory_explicit_layout) {
         workgroup_memory_explicit_layout_features =
             feature_chain.get<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
         LOG_INFO(Render_Vulkan, "- workgroupMemoryExplicitLayout: {}",
                  workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout);
         LOG_INFO(Render_Vulkan, "- workgroupMemoryExplicitLayoutScalarBlockLayout: {}",
-                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayoutScalarBlockLayout);
-        LOG_INFO(Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
-                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
+                 workgroup_memory_explicit_layout_features
+                     .workgroupMemoryExplicitLayoutScalarBlockLayout);
+        LOG_INFO(
+            Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
+            workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -436,7 +439,8 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayout =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout,
             .workgroupMemoryExplicitLayoutScalarBlockLayout =
-                workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayoutScalarBlockLayout,
+                workgroup_memory_explicit_layout_features
+                    .workgroupMemoryExplicitLayoutScalarBlockLayout,
             .workgroupMemoryExplicitLayout16BitAccess =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
         },

@@ -173,7 +173,8 @@ public:
 
     /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
     bool IsWorkgroupMemoryExplicitLayoutSupported() const {
-        return workgroup_memory_explicit_layout && workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
+        return workgroup_memory_explicit_layout &&
+               workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -354,7 +355,8 @@ private:
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
-    vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR workgroup_memory_explicit_layout_features;
+    vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
+        workgroup_memory_explicit_layout_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
