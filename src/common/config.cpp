@@ -180,10 +180,6 @@ bool getShowLabelsUnderIcons() {
     return showLabelsUnderIcons;
 }
 
-bool setShowLabelsUnderIcons() {
-    return false;
-}
-
 std::string getFullscreenMode() {
     return fullscreenMode;
 }
@@ -431,7 +427,8 @@ void setVblankDiv(u32 value) {
 void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
-static void setShowLabelsUnderIcons(bool enable) {
+
+void setShowLabelsUnderIcons(bool enable) {
     showLabelsUnderIcons = enable;
 }
 
@@ -882,6 +879,7 @@ void load(const std::filesystem::path& path) {
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
         backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
         showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
+        showLabelsUnderIcons = toml::find_or<bool>(gui, "showLabels", true);
     }
 
     if (data.contains("Settings")) {
@@ -1096,6 +1094,7 @@ void saveMainWindow(const std::filesystem::path& path) {
     data["GUI"]["geometry_h"] = main_window_geometry_h;
     data["GUI"]["elfDirs"] = m_elf_viewer;
     data["GUI"]["recentFiles"] = m_recent_files;
+    data["GUI"]["showLabels"] = showLabelsUnderIcons;
 
     // Sorting of TOML sections
     sortTomlSections(data);

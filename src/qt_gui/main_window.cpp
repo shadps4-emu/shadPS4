@@ -138,9 +138,8 @@ void MainWindow::PauseGame() {
 }
 
 void MainWindow::toggleLabelsUnderIcons() {
-    bool showLabels = ui->toggleLabelsAct->isChecked();
-    Config::setShowLabelsUnderIcons();
-    UpdateToolbarLabels();
+    Config::setShowLabelsUnderIcons(ui->toggleLabelsAct->isChecked());
+    AddUiWidgets();
     if (isGameRunning) {
         UpdateToolbarButtons();
     }
@@ -187,7 +186,7 @@ void MainWindow::AddUiWidgets() {
     // add toolbar widgets
     QApplication::setStyle("Fusion");
 
-    bool showLabels = ui->toggleLabelsAct->isChecked();
+    bool showLabels = Config::getShowLabelsUnderIcons();
     ui->toolBar->clear();
 
     ui->toolBar->addWidget(createSpacer(this));
@@ -278,10 +277,6 @@ void MainWindow::UpdateToolbarButtons() {
             pauseButtonLabel->setVisible(true);
         }
     }
-}
-
-void MainWindow::UpdateToolbarLabels() {
-    AddUiWidgets();
 }
 
 void MainWindow::CreateDockWindows() {
