@@ -239,6 +239,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case 3:
             const u32 count = header->type3.NumWords();
             const PM4ItOpcode opcode = header->type3.opcode;
+            const auto predicate = header->type3.predicate;
+            if (predicate == PM4Predicate::PredEnable) {
+                LOG_DEBUG(Render_Vulkan, "PM4 command {} is predicated",
+                          magic_enum::enum_name(opcode));
+            }
             switch (opcode) {
             case PM4ItOpcode::Nop: {
                 const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
@@ -394,7 +399,25 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::SetPredication: {
-                LOG_WARNING(Render_Vulkan, "Unimplemented IT_SET_PREDICATION");
+                const auto* predication = reinterpret_cast<const PM4CmdSetPredication*>(header);
+                if (predication->continue_bit.Value()) {
+                    LOG_WARNING(Render_Vulkan, "unhandled continue bit in predication command");
+                }
+                if (predication->pred_op.Value() == PredicateOperation::Clear) {
+                    if (rasterizer) {
+                        rasterizer->EndPredication();
+                    }
+                } else if (predication->pred_op.Value() == PredicateOperation::Zpass) {
+                    if (rasterizer) {
+                        rasterizer->StartPredication(
+                            predication->Address<VAddr>(),
+                            predication->action.Value() == Predication::DrawIfVisible,
+                            predication->hint.Value() == PredicationHint::Wait);
+                    }
+                } else {
+                    LOG_WARNING(Render_Vulkan, "unhandled predicate operation {}",
+                                magic_enum::enum_name(predication->pred_op.Value()));
+                }
                 break;
             }
             case PM4ItOpcode::IndexType: {
@@ -594,6 +617,24 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // TODO: handle proper synchronization, for now signal that update is done
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
+                }
+
+                if (event->event_index.Value() == EventIndex::ZpassDone) {
+                    if (event->event_type.Value() == EventType::PixelPipeStatControl) {
+
+                    } else if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                        if ((event->Address<u64>() & 0x8) == 0) {
+                            // occlusion query start
+                            if (rasterizer) {
+                                rasterizer->StartOcclusionQuery(event->Address<VAddr>());
+                            }
+                        } else {
+                            // occlusion query end
+                            if (rasterizer) {
+                                rasterizer->EndOcclusionQuery(event->Address<VAddr>() & ~0xF);
+                            }
+                        }
+                    }
                 }
                 break;
             }
