@@ -59,15 +59,7 @@ bool MainWindow::Init() {
     setMinimumSize(720, 405);
     std::string window_title = "";
     std::string remote_url(Common::g_scm_remote_url);
-    std::string remote_host;
-    try {
-        if (*remote_url.rbegin() == '/') {
-            remote_url.pop_back();
-        }
-        remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-    } catch (...) {
-        remote_host = "unknown";
-    }
+    std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{}", Common::g_version);
@@ -383,16 +375,15 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
-    connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
     connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
     connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
             m_game_list_frame->icon_size =
-                36 + value; // 36 is the minimum icon size to use due to text disappearing.
-            m_game_list_frame->ResizeIcons(36 + value);
-            m_gui_settings->SetValue(gui::gl_icon_size, 36 + value);
+                48 + value; // 48 is the minimum icon size to use due to text disappearing.
+            m_game_list_frame->ResizeIcons(48 + value);
+            m_gui_settings->SetValue(gui::gl_icon_size, 48 + value);
             m_gui_settings->SetValue(gui::gl_slider_pos, value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
