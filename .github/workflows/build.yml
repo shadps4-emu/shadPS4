@@ -76,17 +76,12 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-    - name: Setup VS Environment
-      uses: ilammy/msvc-dev-cmd@v1.13.0
-      with:
-        arch: amd64
 
     - name: Configure CMake
       run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -111,7 +106,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.0
+        version: 6.9.1
         host: windows
         target: desktop
         arch: win64_msvc2022_64
@@ -130,17 +125,12 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-    - name: Setup VS Environment
-      uses: ilammy/msvc-dev-cmd@v1.13.0
-      with:
-        arch: amd64
 
     - name: Configure CMake
       run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_QT_GUI=ON -DENABLE_UPDATER=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -186,7 +176,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
@@ -228,7 +218,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.0
+        version: 6.9.1
         host: mac
         target: desktop
         arch: clang_64
@@ -247,7 +237,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{runner.os}}-qt-cache-cmake-build
       with:
@@ -301,7 +291,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -362,7 +352,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -409,7 +399,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
@@ -445,7 +435,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-build
       with:
