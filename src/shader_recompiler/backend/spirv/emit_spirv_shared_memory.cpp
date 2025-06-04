@@ -14,7 +14,8 @@ Id EmitLoadSharedU16(EmitContext& ctx, Id offset) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 2u)};
 
     return AccessBoundsCheck<16>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer = ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, ctx.u32_zero_value, index);
+        const Id pointer =
+            ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, ctx.u32_zero_value, index);
         return ctx.OpLoad(ctx.U16, pointer);
     });
 }
@@ -25,7 +26,8 @@ Id EmitLoadSharedU32(EmitContext& ctx, Id offset) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
 
     return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer = ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index);
+        const Id pointer =
+            ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index);
         return ctx.OpLoad(ctx.U32[1], pointer);
     });
 }
@@ -36,7 +38,8 @@ Id EmitLoadSharedU64(EmitContext& ctx, Id offset) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
 
     return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer{ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
+        const Id pointer{
+            ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
         return ctx.OpLoad(ctx.U64, pointer);
     });
 }
@@ -47,7 +50,8 @@ void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 2u)};
 
     AccessBoundsCheck<16>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer = ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, ctx.u32_zero_value, index);
+        const Id pointer =
+            ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, ctx.u32_zero_value, index);
         ctx.OpStore(pointer, value);
         return ctx.OpUndef(ctx.U16);
     });
@@ -59,7 +63,8 @@ void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
 
     AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer = ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index);
+        const Id pointer =
+            ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index);
         ctx.OpStore(pointer, value);
         return ctx.OpUndef(ctx.U32[1]);
     });
@@ -71,7 +76,8 @@ void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value) {
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
 
     AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        const Id pointer{ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
+        const Id pointer{
+            ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
         ctx.OpStore(pointer, value);
         return ctx.OpUndef(ctx.U64);
     });

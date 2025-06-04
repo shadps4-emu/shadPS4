@@ -216,7 +216,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         // TODO: Emitted bounds checks cause problems with phi control flow; needs to be fixed.
         .supports_robust_buffer_access = true, // instance_.IsRobustBufferAccess2Supported(),
         .supports_image_fp32_atomic_min_max = instance_.IsShaderAtomicFloatImage32MinMaxSupported(),
-        .supports_workgroup_explicit_memory_layout = instance_.IsWorkgroupMemoryExplicitLayoutSupported(),
+        .supports_workgroup_explicit_memory_layout =
+            instance_.IsWorkgroupMemoryExplicitLayoutSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
