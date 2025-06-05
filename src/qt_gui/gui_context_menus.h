@@ -16,6 +16,7 @@
 #include "common/scm_rev.h"
 #include "compatibility_info.h"
 #include "game_info.h"
+#include "gui_settings.h"
 #include "trophy_viewer.h"
 
 #ifdef Q_OS_WIN
@@ -32,8 +33,10 @@ class GuiContextMenus : public QObject {
 public:
     void RequestGameMenu(const QPoint& pos, QVector<GameInfo>& m_games,
                          std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+                         std::shared_ptr<gui_settings> settings,
                          QTableWidget* widget, bool isList) {
         QPoint global_pos = widget->viewport()->mapToGlobal(pos);
+        std::shared_ptr<gui_settings> m_gui_settings = std::move(settings);
         int itemID = 0;
         if (isList) {
             itemID = widget->currentRow();
@@ -63,11 +66,13 @@ public:
 
         menu.addMenu(openFolderMenu);
 
+        QAction addToFavorites(tr("Add/Remove Favorite"), widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
+        menu.addAction(&addToFavorites);
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
@@ -299,6 +304,12 @@ public:
                 tableWidget->setWindowTitle(tr("SFO Viewer for ") + gameName);
                 tableWidget->show();
             }
+        }
+
+        if (selected == &addToFavorites) {
+            QString serialStr = QString::fromStdString(m_games[itemID].serial);
+            bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+            m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
         }
 
         if (selected == &openCheats) {
