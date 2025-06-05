@@ -554,6 +554,61 @@ struct PM4DmaData {
     }
 };
 
+enum class CopyDataSrc : u32 {
+    MappedRegister = 0,
+    Memory = 1,
+    TCL2 = 2,
+    Gds = 3,
+    // Reserved = 4,
+    Immediate = 5,
+    Atomic = 6,
+    GdsAtomic0 = 7,
+    GdsAtomic1 = 8,
+    GpuClock = 9,
+};
+
+enum class CopyDataDst : u32 {
+    MappedRegister = 0,
+    MemorySync = 1,
+    TCL2 = 2,
+    Gds = 3,
+    // Reserved = 4,
+    MemoryAsync = 5,
+};
+
+enum class CopyDataEngine : u32 {
+    Me = 0,
+    Pfp = 1,
+    Ce = 2,
+    // Reserved = 3
+};
+
+struct PM4CmdCopyData {
+    PM4Type3Header header;
+    union {
+        BitField<0, 4, CopyDataSrc> src_sel;
+        BitField<8, 4, CopyDataDst> dst_sel;
+        BitField<16, 1, u32> count_sel;
+        BitField<20, 1, u32> wr_confirm;
+        BitField<30, 2, CopyDataEngine> engine_sel;
+        u32 control;
+    };
+    u32 src_addr_lo;
+    u32 src_addr_hi;
+    u32 dst_addr_lo;
+    u32 dst_addr_hi;
+
+    template <typename T>
+    T SrcAddress() const {
+        return std::bit_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
+    }
+
+    template <typename T>
+    T DstAddress() const {
+        return std::bit_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
+    }
+};
+
 struct PM4CmdRewind {
     PM4Type3Header header;
     union {

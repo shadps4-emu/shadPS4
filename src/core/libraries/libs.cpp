@@ -60,6 +60,7 @@
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/libraries/voice/voice.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
@@ -128,6 +129,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Camera::RegisterlibSceCamera(sym);
     Libraries::CompanionHttpd::RegisterlibSceCompanionHttpd(sym);
     Libraries::CompanionUtil::RegisterlibSceCompanionUtil(sym);
+    Libraries::Voice::RegisterlibSceVoice(sym);
 }
 
 } // namespace Libraries
