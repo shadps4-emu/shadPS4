@@ -242,17 +242,10 @@ int IsSocket(int fd) {
     return (WSAGetLastError() != WSAENOTSOCK);
 }
 
-int IsPipeOrFile(int fd) {
-    HANDLE h = (HANDLE)_get_osfhandle(fd);
-    DWORD t = GetFileType(h);
-    return (t == FILE_TYPE_PIPE || t == FILE_TYPE_DISK);
-}
-
 #endif
 
 int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
-                              const timeval* timeout) {
-    // note writefds,exceptfds will not work
+                              timeval* timeout) {
 #ifdef _WIN32
     fd_set sock_r, sock_w, sock_x;
     FD_ZERO(&sock_r);
@@ -260,39 +253,41 @@ int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     FD_ZERO(&sock_x);
     int fd;
 
-    // Separate socket FDs
+    // Separate sockets for select()
     for (fd = 0; fd < nfds; ++fd) {
-        if (readfds && FD_ISSET(fd, readfds) && IsSocket(fd)) {
-            FD_SET((SOCKET)_get_osfhandle(fd), &sock_r);
-        }
-        if (writefds && FD_ISSET(fd, writefds) && IsSocket(fd)) {
-            FD_SET((SOCKET)_get_osfhandle(fd), &sock_w);
-        }
-        if (exceptfds && FD_ISSET(fd, exceptfds) && IsSocket(fd)) {
-            FD_SET((SOCKET)_get_osfhandle(fd), &sock_x);
+        if (IsSocket(fd)) {
+            SOCKET s = (SOCKET)_get_osfhandle(fd);
+            if (readfds && FD_ISSET(fd, readfds))
+                FD_SET(s, &sock_r);
+            if (writefds && FD_ISSET(fd, writefds))
+                FD_SET(s, &sock_w);
+            if (exceptfds && FD_ISSET(fd, exceptfds))
+                FD_SET(s, &sock_x);
         }
     }
 
     int result = select(0, &sock_r, &sock_w, &sock_x, timeout);
     int total_ready = result;
 
-    // Poll pipes/files for read readiness
     for (fd = 0; fd < nfds; ++fd) {
-        if (readfds && FD_ISSET(fd, readfds) && IsPipeOrFile(fd) && !IsSocket(fd)) {
-            HANDLE h = (HANDLE)_get_osfhandle(fd);
-            DWORD avail = 0;
+        HANDLE h = (HANDLE)_get_osfhandle(fd);
+        DWORD type = GetFileType(h);
+        if (type == FILE_TYPE_UNKNOWN || IsSocket(fd))
+            continue;
 
-            if (GetFileType(h) == FILE_TYPE_PIPE) {
+        // READ check
+        if (readfds && FD_ISSET(fd, readfds)) {
+            if (type == FILE_TYPE_PIPE) {
+                DWORD avail = 0;
                 if (PeekNamedPipe(h, NULL, 0, NULL, &avail, NULL) && avail > 0) {
                     total_ready++;
                 } else {
                     FD_CLR(fd, readfds);
                 }
-            } else if (GetFileType(h) == FILE_TYPE_DISK) {
-                char buf[1];
+            } else if (type == FILE_TYPE_DISK) {
+                char tmp;
                 long pos = _lseek(fd, 0, SEEK_CUR);
-                int r = _read(fd, buf, 1);
-                if (r > 0) {
+                if (_read(fd, &tmp, 1) > 0) {
                     _lseek(fd, pos, SEEK_SET);
                     total_ready++;
                 } else {
@@ -300,13 +295,58 @@ int PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 }
             }
         }
+
+        // WRITE check
+        if (writefds && FD_ISSET(fd, writefds)) {
+            DWORD written = 0;
+            char dummy = 0;
+            BOOL writable = FALSE;
+            if (type == FILE_TYPE_PIPE) {
+                // Try writing 0 bytes to check if it's broken
+                writable = WriteFile(h, &dummy, 0, &written, NULL);
+            } else if (type == FILE_TYPE_DISK) {
+                writable = true; // Disk files are always "writable"
+            }
+            if (writable) {
+                total_ready++;
+            } else {
+                FD_CLR(fd, writefds);
+            }
+        }
+
+        // EXCEPTION check
+        if (exceptfds && FD_ISSET(fd, exceptfds)) {
+            DWORD err = 0, size = sizeof(err);
+            BOOL error_detected = false;
+
+            if (type == FILE_TYPE_PIPE) {
+                // Check broken pipe by trying non-blocking zero write
+                DWORD written;
+                char tmp = 0;
+                if (!WriteFile(h, &tmp, 0, &written, NULL)) {
+                    DWORD e = GetLastError();
+                    if (e == ERROR_NO_DATA || e == ERROR_BROKEN_PIPE) {
+                        error_detected = true;
+                    }
+                }
+            }
+
+            if (error_detected) {
+                total_ready++;
+            } else {
+                FD_CLR(fd, exceptfds);
+            }
+        }
     }
 
     return total_ready;
 
 #else
-    // POSIX: just use select directly
-    return select(nfds, readfds, writefds, exceptfds, timeout);
+    // return select(nfds, readfds, writefds, exceptfds, timeout);
+    // nfds is shared with pipes , sockets , files in which we use separate maps so it can't work
+    // like this
+    LOG_ERROR(Lib_Net, "unimplemented (suck it linux) nfds={}", nfds);
+    return 0;
 #endif
 }
 void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
