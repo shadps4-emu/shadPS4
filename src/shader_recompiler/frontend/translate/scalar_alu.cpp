@@ -695,7 +695,7 @@ void Translator::S_FLBIT_I32_B64(const GcnInst& inst) {
     const IR::U32 msb_pos = ir.FindUMsb(src0);
     const IR::U32 pos_from_left = ir.ISub(ir.Imm32(63), msb_pos);
     // Select 0xFFFFFFFF if src0 was 0
-    const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm64(u64(0u)));
     SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 
