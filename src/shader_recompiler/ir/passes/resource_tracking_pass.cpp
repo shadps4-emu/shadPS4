@@ -55,7 +55,9 @@ bool IsBufferStore(const IR::Inst& inst) {
 bool IsBufferInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::LoadBufferS8:
     case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::LoadBufferS16:
     case IR::Opcode::LoadBufferU32:
     case IR::Opcode::LoadBufferU32x2:
     case IR::Opcode::LoadBufferU32x3:
@@ -80,9 +82,11 @@ bool IsDataRingInstruction(const IR::Inst& inst) {
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::LoadBufferS8:
     case IR::Opcode::StoreBufferU8:
         return IR::Type::U8;
     case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::LoadBufferS16:
     case IR::Opcode::StoreBufferU16:
         return IR::Type::U16;
     case IR::Opcode::LoadBufferFormatF32:

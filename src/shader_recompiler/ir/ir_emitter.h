@@ -114,7 +114,9 @@ public:
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
     [[nodiscard]] U32 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferS8(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] U32 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U32 LoadBufferS16(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] Value LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
                                       BufferInstInfo info);
     [[nodiscard]] Value LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
