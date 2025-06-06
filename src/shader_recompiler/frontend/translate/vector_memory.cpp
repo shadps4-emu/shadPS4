@@ -331,6 +331,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         switch (op) {
         case AtomicOp::Swap:
             return ir.BufferAtomicSwap(handle, address, vdata_val, buffer_info);
+        case AtomicOp::CmpSwap: {
+            IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
+        }
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, buffer_info);
         case AtomicOp::Smin:

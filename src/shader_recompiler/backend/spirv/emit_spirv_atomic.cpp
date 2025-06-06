@@ -68,6 +68,22 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     });
 }
 
+Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                          Id cmp_value,
+                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
+    const auto& buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    }
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
+    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return BufferAtomicU32BoundsCheck(ctx, index, buffer.size_dwords, [&] {
+        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
+    });
+}
+
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
@@ -173,6 +189,12 @@ Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 
 Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicExchange);
+}
+
+Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                             Id cmp_value) {
+    return BufferAtomicU32CmpSwap(ctx, inst, handle, address, value, cmp_value,
+                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
