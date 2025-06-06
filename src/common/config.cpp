@@ -53,6 +53,7 @@ static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isShowSplash = false;
 static bool isAutoUpdate = false;
+static bool isStartupUpdate = false;
 static bool isAlwaysShowChangelog = false;
 static std::string isSideTrophy = "right";
 static bool isNullGpu = false;
@@ -280,6 +281,10 @@ bool autoUpdate() {
     return isAutoUpdate;
 }
 
+bool startupUpdate() {
+    return isStartupUpdate;
+}
+
 bool alwaysShowChangelog() {
     return isAlwaysShowChangelog;
 }
@@ -386,6 +391,10 @@ void setShowSplash(bool enable) {
 
 void setAutoUpdate(bool enable) {
     isAutoUpdate = enable;
+}
+
+void setStartupUpdate(bool enable) {
+    isStartupUpdate = enable;
 }
 
 void setAlwaysShowChangelog(bool enable) {
@@ -780,6 +789,7 @@ void load(const std::filesystem::path& path) {
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
+        isStartupUpdate = toml::find_or<bool>(general, "startupUpdate", false);
         isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
@@ -976,6 +986,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["autoUpdate"] = isAutoUpdate;
+    data["General"]["startupUpdate"] = isStartupUpdate;
     data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
@@ -1136,6 +1147,7 @@ void setDefaultValues() {
     isShaderDebug = false;
     isShowSplash = false;
     isAutoUpdate = false;
+    isStartupUpdate = false;
     isAlwaysShowChangelog = false;
     isSideTrophy = "right";
     isNullGpu = false;

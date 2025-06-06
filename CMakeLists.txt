@@ -34,6 +34,7 @@ endif()
 option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
+option(ENABLE_UPDATER_EXE "Enables the new executable for updates" ON)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -1074,6 +1075,26 @@ if (ENABLE_QT_GUI)
         ${EMULATOR}
         src/images/shadPS4.icns
     )
+    if (ENABLE_UPDATER_EXE)
+        qt_add_executable(shadps4_updater
+        ${AUDIO_CORE}
+        ${IMGUI}
+        ${INPUT}
+        ${COMMON}
+        ${CORE}
+        ${SHADER_RECOMPILER}
+        ${VIDEO_CORE}
+        ${EMULATOR}
+        ${UPDATER}
+        ${RESOURCE_FILES}
+        src/qt_gui/main_window_themes.cpp
+        src/qt_gui/main_window_themes.h
+        src/qt_gui/background_music_player.cpp
+        src/qt_gui/background_music_player.h
+        src/updater/main.cpp    
+        src/images/shadPS4.icns
+        )
+    endif()
 else()
     add_executable(shadps4
         ${AUDIO_CORE}
@@ -1097,20 +1118,55 @@ create_target_directory_groups(shadps4)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb)
 
+
+if (ENABLE_UPDATER_EXE) 
+    create_target_directory_groups(shadps4_updater)
+
+    target_link_libraries(shadps4_updater PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+    target_link_libraries(shadps4_updater PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb)
+endif()
+
+#Hide console for shadps4_updater
+if (ENABLE_UPDATER_EXE)
+    if (WIN32)
+         set_target_properties(shadps4_updater PROPERTIES WIN32_EXECUTABLE TRUE)
+    endif()
+endif()
+
+if(WIN32)
+    target_link_libraries(shadps4 PRIVATE shell32)
+    if (ENABLE_UPDATER_EXE)
+        target_link_libraries(shadps4_updater PRIVATE shell32)
+    endif()
+endif()
+
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
 
+if (ENABLE_UPDATER_EXE) 
+    target_compile_definitions(shadps4_updater PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
+endif()
+
 if (ENABLE_DISCORD_RPC)
     target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+    if (ENABLE_UPDATER_EXE) 
+        target_compile_definitions(shadps4_updater PRIVATE ENABLE_DISCORD_RPC)
+    endif()
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
     if (ENABLE_USERFAULTFD)
         target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+        if (ENABLE_UPDATER_EXE) 
+            target_compile_definitions(shadps4_updater PRIVATE ENABLE_USERFAULTFD)
+        endif()
     endif()
 
     target_link_libraries(shadps4 PRIVATE uuid)
+    if (ENABLE_UPDATER_EXE) 
+        target_link_libraries(shadps4_updater PRIVATE uuid)
+    endif()
 endif()
 
 if (APPLE)
@@ -1118,9 +1174,15 @@ if (APPLE)
     if (ENABLE_QT_GUI)
         set(MVK_BUNDLE_PATH "Resources/vulkan/icd.d")
         set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
+        if (ENABLE_UPDATER_EXE) 
+            set_property(TARGET shadps4_updater APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
+        endif()
         set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/${MVK_BUNDLE_PATH})
     else()
         set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
+        if (ENABLE_UPDATER_EXE) 
+            set_property(TARGET shadps4_updater APPEND PROPERTY BUILD_RPATH "@executable_path")
+        endif()
         set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 
@@ -1143,14 +1205,23 @@ if (APPLE)
     add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
     add_dependencies(CopyMoltenVK MoltenVK)
     add_dependencies(shadps4 CopyMoltenVK)
+    if (ENABLE_UPDATER_EXE)
+        add_dependencies(shadps4_updater CopyMoltenVK)
+    endif()
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
         target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        if (ENABLE_UPDATER_EXE)
+            target_link_options(shadps4_updater PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        endif()
     endif()
 
     # Replacement for std::chrono::time_zone
     target_link_libraries(shadps4 PRIVATE date::date-tz)
+    if (ENABLE_UPDATER_EXE)
+        target_link_libraries(shadps4_updater PRIVATE date::date-tz)
+    endif()
 endif()
 
 if (NOT ENABLE_QT_GUI)
@@ -1159,6 +1230,9 @@ endif()
 
 if (ENABLE_QT_GUI)
     target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
+    if (ENABLE_UPDATER_EXE)
+        target_link_libraries(shadps4_updater PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
+    endif()
     add_definitions(-DENABLE_QT_GUI)
     if (ENABLE_UPDATER)
         add_definitions(-DENABLE_UPDATER)
@@ -1167,6 +1241,9 @@ endif()
 
 if (WIN32)
     target_link_libraries(shadps4 PRIVATE mincore)
+    if (ENABLE_UPDATER_EXE)
+        target_link_libraries(shadps4_updater PRIVATE mincore)
+    endif()
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
@@ -1185,37 +1262,64 @@ if (WIN32)
 
     if (MSVC)
         target_link_libraries(shadps4 PRIVATE clang_rt.builtins-x86_64.lib)
+        if (ENABLE_UPDATER_EXE)
+            target_link_libraries(shadps4_updater PRIVATE clang_rt.builtins-x86_64.lib)
+        endif()
     endif()
 
     # Disable ASLR so we can reserve the user area
     if (MSVC)
         target_link_options(shadps4 PRIVATE /DYNAMICBASE:NO)
+        if (ENABLE_UPDATER_EXE)
+            target_link_options(shadps4_updater PRIVATE /DYNAMICBASE:NO)
+        endif()
     else()
         target_link_options(shadps4 PRIVATE -Wl,--disable-dynamicbase)
+        if (ENABLE_UPDATER_EXE)
+            	target_link_options(shadps4_updater PRIVATE -Wl,--disable-dynamicbase)
+        endif()
     endif()
 
     # Increase stack commit area (Needed, otherwise there are crashes)
     if (MSVC)
         target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+        if (ENABLE_UPDATER_EXE)
+            target_link_options(shadps4_updater PRIVATE /STACK:0x200000,0x200000)
+        endif()
     else()
         target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
+        if (ENABLE_UPDATER_EXE)
+            target_link_options(shadps4_updater PRIVATE -Wl,--stack,2097152)
+        endif()
     endif()
 endif()
 
 if (WIN32)
     target_sources(shadps4 PRIVATE src/shadps4.rc)
+    if (ENABLE_UPDATER_EXE)
+        target_sources(shadps4_updater PRIVATE src/shadps4.rc)
+    endif()
 endif()
 
 add_definitions(-DBOOST_ASIO_STANDALONE)
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if (ENABLE_UPDATER_EXE)
+    target_include_directories(shadps4_updater PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 # Shaders sources
 set(HOST_SHADERS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/video_core/host_shaders)
 
 add_subdirectory(${HOST_SHADERS_INCLUDE})
 add_dependencies(shadps4 host_shaders)
+if (ENABLE_UPDATER_EXE)
+    add_dependencies(shadps4_updater host_shaders)
+endif()
 target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
+if (ENABLE_UPDATER_EXE)
+    target_include_directories(shadps4_updater PRIVATE ${HOST_SHADERS_INCLUDE})
+endif()
 
 # embed resources
 
@@ -1228,11 +1332,20 @@ cmrc_add_resource_library(embedded-resources
         src/images/platinum.png
         src/images/silver.png)
 target_link_libraries(shadps4 PRIVATE res::embedded)
+if (ENABLE_UPDATER_EXE)
+    target_link_libraries(shadps4_updater PRIVATE res::embedded)
+endif()
 
 # ImGui resources
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
 add_dependencies(shadps4 ImGui_Resources)
+if (ENABLE_UPDATER_EXE)
+    add_dependencies(shadps4_updater ImGui_Resources)
+endif()
 target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
+if (ENABLE_UPDATER_EXE)
+    target_include_directories(shadps4_updater PRIVATE ${IMGUI_RESOURCES_INCLUDE})
+endif()
 
 if (ENABLE_QT_GUI)
     set_target_properties(shadps4 PROPERTIES
@@ -1242,7 +1355,15 @@ if (ENABLE_QT_GUI)
         MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
     )
-
+    if (ENABLE_UPDATER_EXE)
+        set_target_properties(shadps4 PROPERTIES
+        #       WIN32_EXECUTABLE ON
+                MACOSX_BUNDLE ON
+                MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
+                MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
+                MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
+            )
+    endif()
     set_source_files_properties(src/images/shadPS4.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION Resources)
 endif()
@@ -1251,12 +1372,18 @@ if (UNIX AND NOT APPLE)
     if (ENABLE_QT_GUI)
         find_package(OpenSSL REQUIRED)
         target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
+        if (ENABLE_UPDATER_EXE)
+            target_link_libraries(shadps4_updater PRIVATE ${OPENSSL_LIBRARIES})
+        endif()
     endif()
 endif()
 
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     target_link_libraries(shadps4 PRIVATE discord-rpc)
+    if (ENABLE_UPDATER_EXE)
+        target_link_libraries(shadps4_updater PRIVATE discord-rpc)
+    endif()
 endif()
 
 # Install rules

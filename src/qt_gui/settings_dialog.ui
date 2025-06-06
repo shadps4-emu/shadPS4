@@ -416,6 +416,13 @@
                 </widget>
                </item>
                <item>
+                <widget class="QCheckBox" name="startupUpdateCheckBox">
+                 <property name="text">
+                  <string>Check for Updates at OS Startup</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QCheckBox" name="changelogCheckBox">
                  <property name="text">
                   <string>Always Show Changelog</string>

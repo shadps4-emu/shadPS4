@@ -42,6 +42,8 @@ private:
     void OnLanguageChanged(int index);
     void OnCursorStateChanged(s16 index);
     void closeEvent(QCloseEvent* event) override;
+    void AddUpdaterToStartup();
+    void RemoveUpdaterFromStartup();
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 

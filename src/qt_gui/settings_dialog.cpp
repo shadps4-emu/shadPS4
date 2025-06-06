@@ -3,11 +3,21 @@
 
 #include <vector>
 #include <QCompleter>
+#include <QCoreApplication>
 #include <QDirIterator>
+#include <QFile>
 #include <QFileDialog>
 #include <QHoverEvent>
 #include <QMessageBox>
+#include <QProcess>
+#include <QStandardPaths>
+#include <QTemporaryFile>
+#include <QTextStream>
+#include <QUuid>
 #include <fmt/format.h>
+#include <windows.h>
+#include <shellapi.h>
+
 
 #include "common/config.h"
 #include "common/scm_rev.h"
@@ -178,11 +188,28 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
         connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
                 [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
 
+        connect(ui->startupUpdateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            Config::setStartupUpdate(state == Qt::Checked);
+            if (state == Qt::Checked)
+                AddUpdaterToStartup();
+            else
+                RemoveUpdaterFromStartup();
+        });
+
         connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this,
                 [](int state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
 #else
         connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
                 [](Qt::CheckState state) { Config::setAutoUpdate(state == Qt::Checked); });
+
+        connect(ui->startupUpdateCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) {
+                    Config::setStartupUpdate(state == Qt::Checked);
+                    if (state == Qt::Checked)
+                        AddUpdaterToStartup();
+                    else
+                        RemoveUpdaterFromStartup();
+                });
 
         connect(ui->changelogCheckBox, &QCheckBox::checkStateChanged, this,
                 [](Qt::CheckState state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
@@ -502,6 +529,8 @@ void SettingsDialog::LoadValuesFromConfig() {
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
+    ui->startupUpdateCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "startupUpdate", false));
     ui->changelogCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "alwaysShowChangelog", false));
 
@@ -785,6 +814,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     Config::setAutoUpdate(ui->updateCheckBox->isChecked());
+    Config::setStartupUpdate(ui->startupUpdateCheckBox->isChecked());
     Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
     Config::setChooseHomeTab(
@@ -861,4 +891,90 @@ void SettingsDialog::ResetInstallFolders() {
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
+}
+
+void SettingsDialog::AddUpdaterToStartup() {
+
+#ifdef _WIN32
+
+    QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+                          "/Temp/temp_download_update";
+    QDir().mkpath(tempDirPath);
+
+    QString scriptFileName =
+        tempDirPath + "/create_task_" + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".ps1";
+
+    QString taskName = "ShadPS4Updater";
+    QString exePath = QCoreApplication::applicationFilePath()
+                          .replace("shadps4.exe", "shadps4_updater.exe")
+                          .replace("/", "\\");
+
+    QString scriptContent =
+        QStringLiteral("$Action = New-ScheduledTaskAction -Execute '%1'\n"
+                       "$Trigger = New-ScheduledTaskTrigger -AtLogOn\n"
+                       "$Principal = New-ScheduledTaskPrincipal -UserId \"$env:USERNAME\" "
+                       "-LogonType Interactive -RunLevel Highest\n"
+                       "$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries "
+                       "-DontStopIfGoingOnBatteries\n"
+                       "Register-ScheduledTask -TaskName '%2' -Action $Action -Trigger $Trigger "
+                       "-Principal $Principal -Settings $Settings -Force\n")
+            .arg(exePath, taskName);
+
+    QFile scriptFile(scriptFileName);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << scriptContent;
+        scriptFile.close();
+
+        // Elevate PowerShell to run the script
+        ShellExecuteW(
+            nullptr,
+            L"runas", // Triggers UAC prompt
+            L"powershell.exe",
+            (L"-ExecutionPolicy Bypass -File \"" + scriptFileName.toStdWString() + L"\"").c_str(),
+            nullptr, SW_HIDE);
+    }
+
+#endif
+}
+
+void SettingsDialog::RemoveUpdaterFromStartup() {
+
+#ifdef _WIN32
+
+    QString tempDirPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+                          "/Temp/temp_download_update";
+    QDir().mkpath(tempDirPath);
+
+    QString scriptFileName =
+        tempDirPath + "/remove_task_" + QUuid::createUuid().toString(QUuid::WithoutBraces) + ".ps1";
+
+    QString taskName = "ShadPS4Updater";
+
+    QString scriptContent =
+        QStringLiteral(
+            "$taskName = '%1'\n"
+            "if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {\n"
+            "    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false\n"
+            "}\n"
+            "Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force\n" // Optional:
+                                                                             // self-delete the
+                                                                             // script
+            )
+            .arg(taskName);
+
+    QFile scriptFile(scriptFileName);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << scriptContent;
+        scriptFile.close();
+
+        // Run PowerShell script with admin privileges
+        ShellExecuteW(
+            nullptr, L"runas", L"powershell.exe",
+            (L"-ExecutionPolicy Bypass -File \"" + scriptFileName.toStdWString() + L"\"").c_str(),
+            nullptr, SW_HIDE);
+    }
+
+#endif
 }

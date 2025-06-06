@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -444,8 +445,7 @@ void CheckUpdate::Install() {
     QString userPath;
     Common::FS::PathToQString(userPath, Common::FS::GetUserPath(Common::FS::PathType::UserDir));
 
-    QString rootPath;
-    Common::FS::PathToQString(rootPath, std::filesystem::current_path());
+    QString rootPath = QCoreApplication::applicationDirPath();
 
     QString tempDirPath = userPath + "/temp_download_update";
     QString startingUpdate = tr("Starting Update...");
