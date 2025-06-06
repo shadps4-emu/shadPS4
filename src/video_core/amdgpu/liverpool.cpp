@@ -232,9 +232,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             UNREACHABLE_MSG("Unsupported PM4 type {}", type);
             break;
         case 0:
-            LOG_ERROR(Render, "Unimplemented PM4 type 2, base reg: {}, count: {}",
+            LOG_ERROR(Render, "Unimplemented PM4 type 0, base reg: {}, count: {}",
                       header->type0.base.Value(), header->type0.NumWords());
-            dcb = NextPacket(dcb, header->type3.NumWords() + 1);
+            // TODO fill registers with given values
+            dcb = NextPacket(dcb, header->type0.NumWords());
             continue;
         case 2:
             // Type-2 packet are used for padding purposes
