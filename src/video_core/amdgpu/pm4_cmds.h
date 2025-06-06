@@ -1159,4 +1159,25 @@ struct PM4CmdMemSemaphore {
     }
 };
 
+struct PM4CmdCondExec {
+    PM4Type3Header header;
+    union {
+        BitField<2, 30, u32> bool_addr_lo; ///< low 32 address bits for the block in memory from
+                                           ///< where the CP will fetch the condition
+    };
+    union {
+        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition
+        BitField<28, 4, u32> command;
+    };
+    union {
+        BitField<0, 14, u32> exec_count; ///< Number of DWords that the CP will skip
+                                         ///< if bool pointed to is zero
+    };
+
+    bool* Address() const {
+        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
+                                                                          << 2);
+    }
+};
+
 } // namespace AmdGpu
