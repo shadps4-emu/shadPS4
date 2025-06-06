@@ -235,7 +235,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             LOG_ERROR(Render, "Unimplemented PM4 type 0, base reg: {}, count: {}",
                       header->type0.base.Value(), header->type0.NumWords());
             // TODO fill registers with given values
-            dcb = NextPacket(dcb, header->type0.NumWords());
+            dcb = NextPacket(dcb, header->type0.NumWords() + 1);
             continue;
         case 2:
             // Type-2 packet are used for padding purposes
