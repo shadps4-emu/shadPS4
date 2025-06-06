@@ -168,7 +168,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        if (e == EACCES) {
+        if (e == EACCES || e == ENOENT) {
             // Hack to bypass some platform limitations, ignore the error and continue as normal.
             LOG_WARNING(Kernel_Fs, "Opening directories is not fully supported on this platform");
             e = 0;
