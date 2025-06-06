@@ -10,6 +10,8 @@
 
 namespace Core::FileSys {
 
+bool MntPoints::ignore_game_patches = false;
+
 std::string RemoveTrailingSlashes(const std::string& path) {
     // Remove trailing slashes to make comparisons simpler.
     std::string path_sanitized = path;
@@ -77,7 +79,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     patch_path /= rel_path;
 
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && std::filesystem::exists(patch_path)) {
+        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
         return patch_path;
     }
 
@@ -137,7 +139,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path) {
+    if (!force_base_path && !ignore_game_patches) {
         if (const auto path = search(patch_path)) {
             return *path;
         }

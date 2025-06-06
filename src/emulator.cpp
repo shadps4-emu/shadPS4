@@ -63,7 +63,8 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
+void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args,
+                   bool ignore_game_patch) {
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
@@ -75,7 +76,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
         // If an executable was launched from a separate update directory,
         // use the base game directory as the game folder.
-        const auto base_name = game_folder_name.substr(0, game_folder_name.size() - 7);
+        const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
         const auto base_path = game_folder.parent_path() / base_name;
         if (std::filesystem::is_directory(base_path)) {
             game_folder = base_path;
@@ -84,6 +85,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    Core::FileSys::MntPoints::ignore_game_patches = ignore_game_patch;
+
     mnt->Mount(game_folder, "/app0", true);
     // Certain games may use /hostapp as well such as CUSA001100
     mnt->Mount(game_folder, "/hostapp", true);
