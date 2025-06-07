@@ -39,11 +39,13 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                     ASSERT(addr->Arg(1).IsImmediate());
                     offset = addr->Arg(1).U32();
                 }
-                IR::Value data = inst.Arg(1).Resolve();
+                IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
+                                              : inst.Arg(1).Resolve();
                 for (s32 i = 0; i < num_components; i++) {
                     const auto attrib = IR::Attribute::Param0 + (offset / 16);
                     const auto comp = (offset / 4) % 4;
-                    const IR::U32 value = IR::U32{is_composite ? data.Inst()->Arg(i) : data};
+                    const IR::U32 value =
+                        IR::U32{is_composite ? ir.CompositeExtract(data, i) : data};
                     ir.SetAttribute(attrib, ir.BitCast<IR::F32, IR::U32>(value), comp);
                     offset += 4;
                 }
