@@ -88,7 +88,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
@@ -126,7 +127,8 @@ static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     return !cpu.has(Cpu::tSSE4a);
 }
 
-static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operands,
+                          Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -245,7 +247,8 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operan
     }
 }
 
-static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* operands,
+                            Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -383,7 +386,8 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
     }
 }
 
-static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand* operands,
+                           Xbyak::CodeGenerator& c) {
     // Find the opcode byte
     // There can be any amount of prefixes but the instruction can't be more than 15 bytes
     // And we know for sure this is a MOVNTSS
@@ -408,7 +412,8 @@ static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand* operands, X
     ptr[index] = 0x11;
 }
 
-static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand* operands,
+                           Xbyak::CodeGenerator& c) {
     // Find the opcode byte
     // There can be any amount of prefixes but the instruction can't be more than 15 bytes
     // And we know for sure this is a MOVNTSD
