@@ -190,7 +190,7 @@ struct PageManager::Impl {
     }
 
 #endif
-    template <s32 delta>
+    template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) {
         RENDERER_TRACE;
         boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
@@ -223,7 +223,7 @@ struct PageManager::Impl {
                 PageState& state = cached_pages[page];
 
                 // Apply the change to the page state
-                const u8 new_count = state.AddDelta<delta>();
+                const u8 new_count = state.AddDelta<track ? 1 : -1>();
 
                 // If the protection changed add pending (un)protect action
                 if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
@@ -232,7 +232,7 @@ struct PageManager::Impl {
                 }
 
                 // If the page must be (un)protected, add it to the pending range
-                if ((new_count == 0 && delta < 0) || (new_count == 1 && delta > 0)) {
+                if ((new_count == 0 && !track) || (new_count == 1 && track)) {
                     if (range_bytes == 0) {
                         range_begin = page;
                     }
@@ -244,6 +244,22 @@ struct PageManager::Impl {
 
             // Add pending (un)protect action
             release_pending();
+        }
+
+        // Flush deferred protects
+        for (const auto& range : update_ranges) {
+            Protect(range.addr, range.size, range.perms);
+        }
+    }
+
+    template <bool track>
+    void UpdatePageWatchersMasked(VAddr addr, RegionBits& mask) {
+        RENDERER_TRACE;
+        boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
+        {
+            std::scoped_lock lk(lock);
+
+            
         }
 
         // Flush deferred protects
@@ -273,12 +289,12 @@ void PageManager::OnGpuUnmap(VAddr address, size_t size) {
     impl->OnUnmap(address, size);
 }
 
-template <s32 delta>
+template <bool track>
 void PageManager::UpdatePageWatchers(VAddr addr, u64 size) const {
-    impl->UpdatePageWatchers<delta>(addr, size);
+    impl->UpdatePageWatchers<track>(addr, size);
 }
 
-template void PageManager::UpdatePageWatchers<1>(VAddr addr, u64 size) const;
-template void PageManager::UpdatePageWatchers<-1>(VAddr addr, u64 size) const;
+template void PageManager::UpdatePageWatchers<true>(VAddr addr, u64 size) const;
+template void PageManager::UpdatePageWatchers<false>(VAddr addr, u64 size) const;
 
 } // namespace VideoCore

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <mutex>
 #include <span>
 #include <utility>
@@ -16,25 +15,9 @@
 #include "common/debug.h"
 #include "common/types.h"
 #include "video_core/page_manager.h"
+#include "video_core/buffer_cache/region_definitions.h"
 
 namespace VideoCore {
-
-constexpr u64 PAGES_PER_WORD = 64;
-constexpr u64 BYTES_PER_PAGE = 4_KB;
-constexpr u64 BYTES_PER_WORD = PAGES_PER_WORD * BYTES_PER_PAGE;
-
-constexpr u64 HIGHER_PAGE_BITS = 22;
-constexpr u64 HIGHER_PAGE_SIZE = 1ULL << HIGHER_PAGE_BITS;
-constexpr u64 HIGHER_PAGE_MASK = HIGHER_PAGE_SIZE - 1ULL;
-constexpr u64 NUM_REGION_WORDS = HIGHER_PAGE_SIZE / BYTES_PER_WORD;
-
-enum class Type {
-    CPU,
-    GPU,
-    Untracked,
-};
-
-using WordsArray = std::array<u64, NUM_REGION_WORDS>;
 
 /**
  * Allows tracking CPU and GPU modification of pages in a contigious 4MB virtual address region.
@@ -250,12 +233,11 @@ private:
     template <bool add_to_tracker>
     void UpdateProtection(u64 word_index, u64 current_bits, u64 new_bits) const {
         RENDERER_TRACE;
-        constexpr s32 delta = add_to_tracker ? 1 : -1;
         u64 changed_bits = (add_to_tracker ? current_bits : ~current_bits) & new_bits;
         VAddr addr = cpu_addr + word_index * BYTES_PER_WORD;
         IteratePages(changed_bits, [&](size_t offset, size_t size) {
-            tracker->UpdatePageWatchers<delta>(addr + offset * BYTES_PER_PAGE,
-                                               size * BYTES_PER_PAGE);
+            tracker->UpdatePageWatchers<add_to_tracker>(addr + offset * BYTES_PER_PAGE,
+                                                  size * BYTES_PER_PAGE);
         });
     }
 

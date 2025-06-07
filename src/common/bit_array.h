@@ -223,6 +223,76 @@ public:
         return {N, N};
     }
 
+    inline constexpr Range FirstRange() const {
+        return FirstRangeFrom(0);
+    }
+
+    Range LastRegionFrom(size_t end) const {
+        if (end >= N) {
+            return {N, N};
+        }
+        if (end == 0) {
+            return {0, 0};
+        }
+        const auto find_start_bit = [&](size_t word) {
+#ifdef BIT_ARRAY_USE_AVX
+            const __m256i all_zero = _mm256_setzero_si256();
+            for (; word >= WORDS_PER_AVX; word -= WORDS_PER_AVX) {
+                const __m256i current =
+                    _mm256_loadu_si256(reinterpret_cast<const __m256i*>(&data[word - WORDS_PER_AVX]));
+                const __m256i cmp = _mm256_cmpeq_epi64(current, all_zero);
+                if (_mm256_movemask_epi8(cmp) != 0xFFFFFFFF) {
+                    break;
+                }
+            }
+#endif
+            for (; word > 0; --word) {
+                if (data[word - 1] != 0) {
+                    return word * BITS_PER_WORD - std::countl_zero(data[word - 1]);
+                }
+            }
+            return size_t(0);
+        };
+        const auto word_bits = [&](size_t index, u64 word) {
+            const int empty_bits = std::countl_zero(word);
+            const int ones_count = std::countl_one(word << empty_bits);
+            const size_t end_bit = index * BITS_PER_WORD - empty_bits;
+            if (empty_bits + ones_count < BITS_PER_WORD) {
+                return Range{end_bit - ones_count, end_bit};
+            }
+            return Range{find_start_bit(index - 1), end_bit};
+        };
+        const size_t end_word = (end - 1) / BITS_PER_WORD;
+        const size_t end_bit = (end - 1) % BITS_PER_WORD;
+        u64 masked_last = data[end_word];
+        if (end_bit < BITS_PER_WORD - 1) {
+            masked_last &= (1ULL << (end_bit + 1)) - 1;
+        }
+        if (masked_last) {
+            return word_bits(end_word, masked_last);
+        }
+        size_t word = end_word - 1;
+#ifdef BIT_ARRAY_USE_AVX
+        for (; word >= WORDS_PER_AVX; word -= WORDS_PER_AVX) {
+            const __m256i current =
+                _mm256_loadu_si256(reinterpret_cast<const __m256i*>(&data[word - WORDS_PER_AVX]));
+            if (!_mm256_testz_si256(current, current)) {
+                break;
+            }
+        }
+#endif
+        for (; word > 0; --word) {
+            if (data[word - 1] != 0) {
+                return word_bits(word, data[word - 1]);
+            }
+        }
+        return {0, 0};
+    }
+
+    inline constexpr Range LastRegion() const {
+        return LastRegionFrom(0);
+    }
+
     inline constexpr size_t Size() const {
         return N;
     }

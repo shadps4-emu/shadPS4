@@ -9,7 +9,7 @@
 #include <vector>
 #include "common/debug.h"
 #include "common/types.h"
-#include "video_core/buffer_cache/word_manager.h"
+#include "video_core/buffer_cache/region_manager.h"
 
 namespace VideoCore {
 
