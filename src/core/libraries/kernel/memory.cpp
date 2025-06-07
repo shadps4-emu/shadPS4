@@ -224,7 +224,8 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
 
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
                                                  int flags, const char* name) {
-
+    LOG_INFO(Kernel_Vmm, "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, name = '{}'",
+             fmt::ptr(*addr_in_out), len, prot, flags, name);
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "len is 0 or not 16kb multiple");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -243,14 +244,11 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    SCOPE_EXIT {
-        LOG_INFO(Kernel_Vmm,
-                 "in_addr = {:#x}, out_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}",
-                 in_addr, fmt::ptr(*addr_in_out), len, prot, flags);
-    };
     auto* memory = Core::Memory::Instance();
-    return memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
+    const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                              Core::VMAType::Flexible, name);
+    LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr_in_out));
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, std::size_t len, int prot,
