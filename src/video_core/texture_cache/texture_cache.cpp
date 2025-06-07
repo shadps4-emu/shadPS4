@@ -299,6 +299,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     auto& new_image = slot_images[new_image_id];
 
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    RefreshImage(new_image);
     new_image.CopyImage(src_image);
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
