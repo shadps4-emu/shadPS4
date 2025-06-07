@@ -20,24 +20,26 @@ auto AccessBoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto emit_fun
         zero_value = ctx.u16_zero_value;
         result_type = ctx.U16;
     } else {
-        static_assert("type not supported");
+        static_assert(false, "type not supported");
     }
     if (Sirit::ValidId(buffer_size)) {
         // Bounds checking enabled, wrap in a conditional branch to make sure that
         // the atomic is not mistakenly executed when the index is out of bounds.
         const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer_size);
         const Id ib_label = ctx.OpLabel();
-        const Id oob_label = ctx.OpLabel();
         const Id end_label = ctx.OpLabel();
         ctx.OpSelectionMerge(end_label, spv::SelectionControlMask::MaskNone);
-        ctx.OpBranchConditional(in_bounds, ib_label, oob_label);
+        ctx.OpBranchConditional(in_bounds, ib_label, end_label);
+        const auto last_label = ctx.last_label;
         ctx.AddLabel(ib_label);
         const auto ib_result = emit_func();
         ctx.OpBranch(end_label);
-        ctx.AddLabel(oob_label);
-        ctx.OpBranch(end_label);
         ctx.AddLabel(end_label);
-        return ctx.OpPhi(result_type, ib_result, ib_label, zero_value, oob_label);
+        if (Sirit::ValidId(ib_result)) {
+            return ctx.OpPhi(result_type, ib_result, ib_label, zero_value, last_label);
+        } else {
+            return Id{0};
+        }
     }
     // Bounds checking not enabled, just perform the atomic operation.
     return emit_func();

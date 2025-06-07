@@ -53,7 +53,7 @@ void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value) {
         const Id pointer =
             ctx.OpAccessChain(ctx.shared_u16, ctx.shared_memory_u16, ctx.u32_zero_value, index);
         ctx.OpStore(pointer, value);
-        return ctx.OpUndef(ctx.U16);
+        return Id{0};
     });
 }
 
@@ -66,7 +66,7 @@ void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value) {
         const Id pointer =
             ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index);
         ctx.OpStore(pointer, value);
-        return ctx.OpUndef(ctx.U32[1]);
+        return Id{0};
     });
 }
 
@@ -79,7 +79,7 @@ void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value) {
         const Id pointer{
             ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
         ctx.OpStore(pointer, value);
-        return ctx.OpUndef(ctx.U64);
+        return Id{0};
     });
 }
 
