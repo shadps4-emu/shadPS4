@@ -246,7 +246,7 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, std::size_t
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
     const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
-                             Core::VMAType::Flexible, name);
+                                       Core::VMAType::Flexible, name);
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr_in_out));
     return ret;
 }
