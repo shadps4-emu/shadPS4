@@ -262,9 +262,9 @@ public:
             }
             return Range{find_start_bit(index - 1), end_bit};
         };
-        const size_t end_word = (end - 1) / BITS_PER_WORD;
+        const size_t end_word = ((end - 1) / BITS_PER_WORD) + 1;
         const size_t end_bit = (end - 1) % BITS_PER_WORD;
-        u64 masked_last = data[end_word];
+        u64 masked_last = data[end_word - 1];
         if (end_bit < BITS_PER_WORD - 1) {
             masked_last &= (1ULL << (end_bit + 1)) - 1;
         }
