@@ -391,10 +391,13 @@ static void ReplaceMOVNT(void* address, u8 rep_prefix) {
     // There can be any amount of prefixes but the instruction can't be more than 15 bytes
     // And we know for sure this is a MOVNTSS/MOVNTSD
     bool found = false;
+    bool rep_prefix_found = false;
     int index = 0;
     u8* ptr = reinterpret_cast<u8*>(address);
     for (int i = 0; i < 15; i++) {
-        if (ptr[i] == 0x2B) {
+        if (ptr[i] == rep_prefix) {
+            rep_prefix_found = true;
+        } else if (ptr[i] == 0x2B) {
             index = i;
             found = true;
             break;
@@ -404,8 +407,8 @@ static void ReplaceMOVNT(void* address, u8 rep_prefix) {
     // Some sanity checks
     ASSERT(found);
     ASSERT(index >= 2);
-    ASSERT(ptr[index - 2] == rep_prefix);
     ASSERT(ptr[index - 1] == 0x0F);
+    ASSERT(rep_prefix_found);
 
     // This turns the MOVNTSS/MOVNTSD to a MOVSS/MOVSD m, xmm
     ptr[index] = 0x11;
