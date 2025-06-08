@@ -70,7 +70,7 @@ struct DetilerParams {
     u32 num_levels;
     u32 pitch0;
     u32 height;
-    u32 sizes[14];
+    std::array<u32, 16> sizes;
 };
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
@@ -275,7 +275,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
     } else {
-        ASSERT(info.resources.levels <= 14);
+        ASSERT(info.resources.levels <= params.sizes.size());
         std::memset(&params.sizes, 0, sizeof(params.sizes));
         for (int m = 0; m < info.resources.levels; ++m) {
             params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
