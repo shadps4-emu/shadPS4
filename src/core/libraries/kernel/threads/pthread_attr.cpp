@@ -243,7 +243,7 @@ int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, si
     if (attr->cpuset != nullptr)
         memcpy(cpusetp, attr->cpuset, std::min(cpusetsize, attr->cpusetsize));
     else
-        memset(cpusetp, -1, sizeof(Cpuset));
+        memset(cpusetp, -1, cpusetsize);
     return 0;
 }
 
@@ -259,30 +259,31 @@ int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t c
     if (cpusetsize == 0 || cpusetp == nullptr) {
         if (attr->cpuset != nullptr) {
             free(attr->cpuset);
-            attr->cpuset = NULL;
+            attr->cpuset = nullptr;
             attr->cpusetsize = 0;
         }
         return 0;
     }
     if (attr->cpuset == nullptr) {
-        attr->cpuset = (Cpuset*)calloc(1, sizeof(Cpuset));
+        attr->cpuset = static_cast<Cpuset*>(calloc(1, sizeof(Cpuset)));
         attr->cpusetsize = sizeof(Cpuset);
     }
-    memcpy(attr->cpuset, cpusetp, sizeof(Cpuset));
+    memcpy(attr->cpuset, cpusetp, std::min(cpusetsize, sizeof(Cpuset)));
     return 0;
 }
 
-int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* param_1, Cpuset* mask) {
+int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* attr, u64* mask) {
     Cpuset cpuset;
-    const int ret = posix_pthread_attr_getaffinity_np(param_1, 0x10, &cpuset);
+    const int ret = posix_pthread_attr_getaffinity_np(attr, sizeof(Cpuset), &cpuset);
     if (ret == 0) {
-        *mask = cpuset;
+        *mask = cpuset.bits;
     }
     return ret;
 }
 
-int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const Cpuset mask) {
-    return posix_pthread_attr_setaffinity_np(attr, 0x10, &mask);
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const u64 mask) {
+    const Cpuset cpuset = {.bits = mask};
+    return posix_pthread_attr_setaffinity_np(attr, sizeof(Cpuset), &cpuset);
 }
 
 void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
@@ -305,6 +306,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_attr_getdetachstate);
     LIB_FUNCTION("JKyG3SWyA10", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_setguardsize);
+    LIB_FUNCTION("qlk9pSLsUmM", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_getschedparam);
 
     // Orbis
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1,

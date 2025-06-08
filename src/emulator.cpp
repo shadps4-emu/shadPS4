@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <filesystem>
 #include <set>
 #include <fmt/core.h>
 
@@ -25,6 +26,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -61,8 +63,13 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(const std::filesystem::path& file, const std::vector<std::string> args) {
+void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
+    if (std::filesystem::is_directory(file)) {
+        file /= "eboot.bin";
+    }
+
     const auto eboot_name = file.filename().string();
+
     auto game_folder = file.parent_path();
     if (const auto game_folder_name = game_folder.filename().string();
         game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
@@ -113,6 +120,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         Common::Log::Initialize();
     }
     Common::Log::Start();
+    if (!std::filesystem::exists(file)) {
+        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
+                     std::filesystem::absolute(file).string());
+        std::quick_exit(0);
+    }
 
     LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
@@ -188,18 +200,20 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
         game_info.splash_path = pic1_path;
     }
 
+    game_info.game_folder = game_folder;
+
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
+    std::string remote_url(Common::g_scm_remote_url);
+    std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
-        window_title = fmt::format("shadPS4 v{} | {}", Common::g_version, game_title);
-    } else {
-        std::string remote_url(Common::g_scm_remote_url);
-        std::string remote_host;
-        try {
-            remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-        } catch (...) {
-            remote_host = "unknown";
+        if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
+            window_title = fmt::format("shadPS4 v{} | {}", Common::g_version, game_title);
+        } else {
+            window_title =
+                fmt::format("shadPS4 {}/v{} | {}", remote_host, Common::g_version, game_title);
         }
+    } else {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::g_version,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
@@ -252,7 +266,11 @@ void Emulator::Run(const std::filesystem::path& file, const std::vector<std::str
 
     // Load the module with the linker
     const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
-    linker->LoadModule(eboot_path);
+    if (linker->LoadModule(eboot_path) == -1) {
+        LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
+                     std::filesystem::absolute(eboot_path).string());
+        std::quick_exit(0);
+    }
 
     // check if we have system modules to load
     LoadSystemModules(game_info.game_serial);

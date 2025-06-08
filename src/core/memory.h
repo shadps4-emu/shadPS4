@@ -183,22 +183,16 @@ public:
 
     void Free(PAddr phys_addr, size_t size);
 
-    int PoolReserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                    u64 alignment = 0);
-
-    int Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                u64 alignment = 0);
-
     int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
-    int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
+    s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 
-    int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                MemoryMapFlags flags, uintptr_t fd, size_t offset);
+    s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
+                MemoryMapFlags flags, s32 fd, s64 phys_addr);
 
-    void PoolDecommit(VAddr virtual_addr, size_t size);
+    s32 PoolDecommit(VAddr virtual_addr, size_t size);
 
     s32 UnmapMemory(VAddr virtual_addr, size_t size);
 
@@ -219,9 +213,13 @@ public:
     int GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
                             void** directMemoryEndOut);
 
-    void NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name);
+    s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
+
+    void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
+
+    int IsStack(VAddr addr, void** start, void** end);
 
 private:
     VMAHandle FindVMA(VAddr target) {
@@ -274,6 +272,7 @@ private:
     size_t total_direct_size{};
     size_t total_flexible_size{};
     size_t flexible_usage{};
+    size_t pool_budget{};
     Vulkan::Rasterizer* rasterizer{};
 
     friend class ::Core::Devtools::Widget::MemoryMapViewer;

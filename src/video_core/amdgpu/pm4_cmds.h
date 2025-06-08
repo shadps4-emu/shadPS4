@@ -211,6 +211,21 @@ struct PM4CmdSetData {
     }
 };
 
+struct PM4CmdSetQueueReg {
+    PM4Type3Header header;
+    union {
+        u32 raw;
+        BitField<0, 8, u32> reg_offset;  ///< Offset in DWords from the register base address
+        BitField<15, 1, u32> defer_exec; ///< Defer execution
+        BitField<16, 10, u32> vqid;      ///< Queue ID
+    };
+    u32 data[0];
+
+    [[nodiscard]] u32 Size() const {
+        return header.count << 2u;
+    }
+};
+
 struct PM4CmdNop {
     PM4Type3Header header;
     u32 data_block[0];
@@ -229,6 +244,46 @@ struct PM4CmdNop {
         PrepareFlipInterrupt = 0x68750780u, ///< Flip marker with interrupt
         PrepareFlipInterruptLabel = 0x68750781u, ///< Flip marker with interrupt and label
     };
+};
+
+enum class SourceSelect : u32 {
+    BufferOffset = 0,
+    VgtStrmoutBufferFilledSize = 1,
+    SrcAddress = 2,
+    None = 3,
+};
+
+struct PM4CmdStrmoutBufferUpdate {
+    PM4Type3Header header;
+    union {
+        BitField<0, 1, u32> update_memory;
+        BitField<1, 2, SourceSelect> source_select;
+        BitField<8, 2, u32> buffer_select;
+        u32 control;
+    };
+    union {
+        BitField<2, 30, u32> dst_address_lo;
+        BitField<0, 2, u32> swap_dst;
+    };
+    u32 dst_address_hi;
+    union {
+        u32 buffer_offset;
+        BitField<2, 30, u32> src_address_lo;
+        BitField<0, 2, u32> swap_src;
+    };
+    u32 src_address_hi;
+
+    template <typename T = u64>
+    T DstAddress() const {
+        ASSERT(update_memory.Value() == 1);
+        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+    }
+
+    template <typename T = u64>
+    T SrcAddress() const {
+        ASSERT(source_select.Value() == SourceSelect::SrcAddress);
+        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+    }
 };
 
 struct PM4CmdDrawIndexOffset2 {
@@ -287,6 +342,80 @@ static u64 GetGpuClock64() {
     auto ticks = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
     return static_cast<u64>(ticks);
 }
+
+// VGT_EVENT_INITIATOR.EVENT_TYPE
+enum class EventType : u32 {
+    SampleStreamoutStats1 = 1,
+    SampleStreamoutStats2 = 2,
+    SampleStreamoutStats3 = 3,
+    CacheFlushTs = 4,
+    ContextDone = 5,
+    CacheFlush = 6,
+    CsPartialFlush = 7,
+    VgtStreamoutSync = 8,
+    VgtStreamoutReset = 10,
+    EndOfPipeIncrDe = 11,
+    EndOfPipeIbEnd = 12,
+    RstPixCnt = 13,
+    VsPartialFlush = 15,
+    PsPartialFlush = 16,
+    FlushHsOutput = 17,
+    FlushLsOutput = 18,
+    CacheFlushAndInvTsEvent = 20,
+    ZpassDone = 21,
+    CacheFlushAndInvEvent = 22,
+    PerfcounterStart = 23,
+    PerfcounterStop = 24,
+    PipelineStatStart = 25,
+    PipelineStatStop = 26,
+    PerfcounterSample = 27,
+    FlushEsOutput = 28,
+    FlushGsOutput = 29,
+    SamplePipelineStat = 30,
+    SoVgtStreamoutFlush = 31,
+    SampleStreamoutStats = 32,
+    ResetVtxCnt = 33,
+    VgtFlush = 36,
+    ScSendDbVpz = 39,
+    BottomOfPipeTs = 40,
+    DbCacheFlushAndInv = 42,
+    FlushAndInvDbDataTs = 43,
+    FlushAndInvDbMeta = 44,
+    FlushAndInvCbDataTs = 45,
+    FlushAndInvCbMeta = 46,
+    CsDone = 47,
+    PsDone = 48,
+    FlushAndInvCbPixelData = 49,
+    ThreadTraceStart = 51,
+    ThreadTraceStop = 52,
+    ThreadTraceFlush = 54,
+    ThreadTraceFinish = 55,
+    PixelPipeStatControl = 56,
+    PixelPipeStatDump = 57,
+    PixelPipeStatReset = 58,
+};
+
+enum class EventIndex : u32 {
+    Other = 0,
+    ZpassDone = 1,
+    SamplePipelineStat = 2,
+    SampleStreamoutStatSx = 3,
+    CsVsPsPartialFlush = 4,
+    EopReserved = 5,
+    EosReserved = 6,
+    CacheFlush = 7,
+};
+
+struct PM4CmdEventWrite {
+    PM4Type3Header header;
+    union {
+        u32 event_control;
+        BitField<0, 6, EventType> event_type;   ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<8, 4, EventIndex> event_index; ///< Event index
+        BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
+    };
+    u32 address[];
+};
 
 struct PM4CmdEventWriteEop {
     PM4Type3Header header;
@@ -425,6 +554,61 @@ struct PM4DmaData {
     }
 };
 
+enum class CopyDataSrc : u32 {
+    MappedRegister = 0,
+    Memory = 1,
+    TCL2 = 2,
+    Gds = 3,
+    // Reserved = 4,
+    Immediate = 5,
+    Atomic = 6,
+    GdsAtomic0 = 7,
+    GdsAtomic1 = 8,
+    GpuClock = 9,
+};
+
+enum class CopyDataDst : u32 {
+    MappedRegister = 0,
+    MemorySync = 1,
+    TCL2 = 2,
+    Gds = 3,
+    // Reserved = 4,
+    MemoryAsync = 5,
+};
+
+enum class CopyDataEngine : u32 {
+    Me = 0,
+    Pfp = 1,
+    Ce = 2,
+    // Reserved = 3
+};
+
+struct PM4CmdCopyData {
+    PM4Type3Header header;
+    union {
+        BitField<0, 4, CopyDataSrc> src_sel;
+        BitField<8, 4, CopyDataDst> dst_sel;
+        BitField<16, 1, u32> count_sel;
+        BitField<20, 1, u32> wr_confirm;
+        BitField<30, 2, CopyDataEngine> engine_sel;
+        u32 control;
+    };
+    u32 src_addr_lo;
+    u32 src_addr_hi;
+    u32 dst_addr_lo;
+    u32 dst_addr_hi;
+
+    template <typename T>
+    T SrcAddress() const {
+        return std::bit_cast<T>(src_addr_lo | u64(src_addr_hi) << 32);
+    }
+
+    template <typename T>
+    T DstAddress() const {
+        return std::bit_cast<T>(dst_addr_lo | u64(dst_addr_hi) << 32);
+    }
+};
+
 struct PM4CmdRewind {
     PM4Type3Header header;
     union {
@@ -459,7 +643,12 @@ struct PM4CmdWaitRegMem {
         BitField<8, 1, Engine> engine;
         u32 raw;
     };
-    u32 poll_addr_lo;
+    union {
+        BitField<0, 16, u32> reg;
+        BitField<2, 30, u32> poll_addr_lo;
+        BitField<0, 2, u32> swap;
+        u32 poll_addr_lo_raw;
+    };
     u32 poll_addr_hi;
     u32 ref;
     u32 mask;
@@ -467,31 +656,36 @@ struct PM4CmdWaitRegMem {
 
     template <typename T = u32*>
     T Address() const {
-        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | poll_addr_lo);
+        return std::bit_cast<T>((uintptr_t(poll_addr_hi) << 32) | (poll_addr_lo << 2));
     }
 
-    bool Test() const {
+    u32 Reg() const {
+        return reg.Value();
+    }
+
+    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+        u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
             return true;
         }
         case Function::LessThan: {
-            return (*Address() & mask) < ref;
+            return (value & mask) < ref;
         }
         case Function::LessThanEqual: {
-            return (*Address() & mask) <= ref;
+            return (value & mask) <= ref;
         }
         case Function::Equal: {
-            return (*Address() & mask) == ref;
+            return (value & mask) == ref;
         }
         case Function::NotEqual: {
-            return (*Address() & mask) != ref;
+            return (value & mask) != ref;
         }
         case Function::GreaterThanEqual: {
-            return (*Address() & mask) >= ref;
+            return (value & mask) >= ref;
         }
         case Function::GreaterThan: {
-            return (*Address() & mask) > ref;
+            return (value & mask) > ref;
         }
         case Function::Reserved:
             [[fallthrough]];
@@ -962,6 +1156,27 @@ struct PM4CmdMemSemaphore {
         default:
             UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
         }
+    }
+};
+
+struct PM4CmdCondExec {
+    PM4Type3Header header;
+    union {
+        BitField<2, 30, u32> bool_addr_lo; ///< low 32 address bits for the block in memory from
+                                           ///< where the CP will fetch the condition
+    };
+    union {
+        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition
+        BitField<28, 4, u32> command;
+    };
+    union {
+        BitField<0, 14, u32> exec_count; ///< Number of DWords that the CP will skip
+                                         ///< if bool pointed to is zero
+    };
+
+    bool* Address() const {
+        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
+                                                                          << 2);
     }
 };
 

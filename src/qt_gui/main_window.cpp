@@ -24,7 +24,6 @@
 #include "main_window.h"
 #include "settings_dialog.h"
 
-#include "video_core/renderer_vulkan/vk_instance.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
@@ -53,20 +52,18 @@ bool MainWindow::Init() {
     CreateConnects();
     SetLastUsedTheme();
     SetLastIconSizeBullet();
-    GetPhysicalDevices();
     // show ui
     setMinimumSize(720, 405);
     std::string window_title = "";
+    std::string remote_url(Common::g_scm_remote_url);
+    std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
-        window_title = fmt::format("shadPS4 v{}", Common::g_version);
-    } else {
-        std::string remote_url(Common::g_scm_remote_url);
-        std::string remote_host;
-        try {
-            remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-        } catch (...) {
-            remote_host = "unknown";
+        if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
+            window_title = fmt::format("shadPS4 v{}", Common::g_version);
+        } else {
+            window_title = fmt::format("shadPS4 {}/v{}", remote_host, Common::g_version);
         }
+    } else {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
                                        Common::g_scm_desc);
@@ -368,19 +365,6 @@ void MainWindow::CheckUpdateMain(bool checkSave) {
 }
 #endif
 
-void MainWindow::GetPhysicalDevices() {
-    Vulkan::Instance instance(false, false);
-    auto physical_devices = instance.GetPhysicalDevices();
-    for (const vk::PhysicalDevice physical_device : physical_devices) {
-        auto prop = physical_device.getProperties();
-        QString name = QString::fromUtf8(prop.deviceName, -1);
-        if (prop.apiVersion < Vulkan::TargetVulkanApiVersion) {
-            name += tr(" * Unsupported Vulkan Version");
-        }
-        m_physical_devices.push_back(name);
-    }
-}
-
 void MainWindow::CreateConnects() {
     connect(this, &MainWindow::WindowResized, this, &MainWindow::HandleResize);
     connect(ui->mw_searchbar, &QLineEdit::textChanged, this, &MainWindow::SearchGameTable);
@@ -388,16 +372,15 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
-    connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
     connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
     connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
             m_game_list_frame->icon_size =
-                36 + value; // 36 is the minimum icon size to use due to text disappearing.
-            m_game_list_frame->ResizeIcons(36 + value);
-            Config::setIconSize(36 + value);
+                48 + value; // 48 is the minimum icon size to use due to text disappearing.
+            m_game_list_frame->ResizeIcons(48 + value);
+            Config::setIconSize(48 + value);
             Config::setSliderPosition(value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
@@ -421,7 +404,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -454,7 +437,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_physical_devices, m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);

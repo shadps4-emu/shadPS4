@@ -29,7 +29,6 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 signals:
     void WindowResized(QResizeEvent* event);
-    void ExtractionFinished();
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
@@ -60,7 +59,6 @@ private:
     void toggleFullscreen();
     void CreateRecentGameActions();
     void CreateDockWindows();
-    void GetPhysicalDevices();
     void LoadGameLists();
 
 #ifdef ENABLE_UPDATER
@@ -96,8 +94,6 @@ private:
     QScopedPointer<ElfViewer> m_elf_viewer;
     // Status Bar.
     QScopedPointer<QStatusBar> statusBar;
-    // Available GPU devices
-    std::vector<QString> m_physical_devices;
 
     PSF psf;
 

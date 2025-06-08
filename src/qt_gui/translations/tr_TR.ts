@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Dosya mevcut</translation>
+      <translation>Dosya Mevcut</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
@@ -1221,7 +1221,7 @@
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation>shadPS4&apos;ten Çık</translation>
+      <translation>shadPS4 Çıkış</translation>
     </message>
     <message>
       <source>Exit the application.</source>
@@ -1348,10 +1348,6 @@
       <translation>Oyun Listesi</translation>
     </message>
     <message>
-      <source> * Unsupported Vulkan Version</source>
-      <translation> * Desteklenmeyen Vulkan Sürümü</translation>
-    </message>
-    <message>
       <source>Download Cheats For All Installed Games</source>
       <translation>Tüm Yüklenmiş Oyunlar İçin Hileleri İndir</translation>
     </message>
@@ -1385,7 +1381,7 @@
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>Oyun Başlatma</translation>
+      <translation>Oyun Başlat</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
@@ -2049,6 +2045,10 @@
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
       <translation>Özel kupa görüntüleri/sesleri klasörünü aç:\nKupalara özel görüntüler ve sesler ekleyebilirsiniz.\nDosyaları aşağıdaki adlarla custom_trophy'ye ekleyin:\ntrophy.wav ya da trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNot: Ses yalnızca QT sürümlerinde çalışacaktır.</translation>
+    </message>
+    <message>
+      <source> * Unsupported Vulkan Version</source>
+      <translation> * Desteklenmeyen Vulkan Sürümü</translation>
     </message>
   </context>
   <context>
