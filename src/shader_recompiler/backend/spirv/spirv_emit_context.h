@@ -293,8 +293,8 @@ public:
 
     Id shared_memory_u32_type{};
 
-    Id interpolate_func{};
-    Id gl_bary_coord_id{};
+    Id bary_coord_persp_id{};
+    Id bary_coord_linear_id{};
 
     struct TextureDefinition {
         const VectorIds* data_types;

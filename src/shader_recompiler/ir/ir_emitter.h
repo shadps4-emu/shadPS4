@@ -6,7 +6,6 @@
 #include <cstring>
 #include <type_traits>
 
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
@@ -17,6 +16,7 @@ namespace Shader::IR {
 
 class IREmitter {
 public:
+    explicit IREmitter() = default;
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <bit>
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
