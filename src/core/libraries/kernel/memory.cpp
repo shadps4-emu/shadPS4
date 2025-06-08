@@ -660,6 +660,9 @@ int PS4_SYSV_ABI sceKernelSetPrtAperture(int id, VAddr address, size_t size) {
                 "PRT aperture id = {}, address = {:#x}, size = {:#x} is set but not used", id,
                 address, size);
 
+    auto* memory = Core::Memory::Instance();
+    memory->SetPrtArea(id, address, size);
+
     PrtApertures[id] = {address, size};
     return ORBIS_OK;
 }
