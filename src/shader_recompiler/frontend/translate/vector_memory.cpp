@@ -70,6 +70,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
     case Opcode::BUFFER_ATOMIC_SWAP:
         return BUFFER_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::BUFFER_ATOMIC_CMPSWAP:
+        return BUFFER_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::BUFFER_ATOMIC_SMIN:
         return BUFFER_ATOMIC(AtomicOp::Smin, inst);
     case Opcode::BUFFER_ATOMIC_UMIN:
@@ -332,7 +334,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::Swap:
             return ir.BufferAtomicSwap(handle, address, vdata_val, buffer_info);
         case AtomicOp::CmpSwap: {
-            IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
             return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
         }
         case AtomicOp::Add:
