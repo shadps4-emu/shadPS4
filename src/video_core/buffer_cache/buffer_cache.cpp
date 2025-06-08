@@ -798,24 +798,45 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    static constexpr FindFlags find_flags =
-        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
-    TextureCache::BaseDesc desc{};
-    desc.info.guest_address = device_addr;
-    desc.info.guest_size = size;
-    const ImageId image_id = texture_cache.FindImage(desc, find_flags);
-    if (!image_id) {
+    boost::container::small_vector<ImageId, 6> image_ids;
+    texture_cache.ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
+        if (image.info.guest_address != device_addr) {
+            return;
+        }
+        // Only perform sync if image is:
+        // - GPU modified; otherwise there are no changes to synchronize.
+        // - Not CPU dirty; otherwise we could overwrite CPU changes with stale GPU changes.
+        // - Not GPU dirty; otherwise we could overwrite GPU changes with stale image data.
+        if (False(image.flags & ImageFlagBits::GpuModified) ||
+            True(image.flags & ImageFlagBits::Dirty)) {
+            return;
+        }
+        image_ids.push_back(image_id);
+    });
+    if (image_ids.empty()) {
         return false;
+    }
+    ImageId image_id{};
+    if (image_ids.size() == 1) {
+        // Sometimes image size might not exactly match with requested buffer size
+        // If we only found 1 candidate image use it without too many questions.
+        image_id = image_ids[0];
+    } else {
+        for (s32 i = 0; i < image_ids.size(); ++i) {
+            Image& image = texture_cache.GetImage(image_ids[i]);
+            if (image.info.guest_size == size) {
+                image_id = image_ids[i];
+                break;
+            }
+        }
+        if (!image_id) {
+            LOG_WARNING(Render_Vulkan,
+                        "Failed to find exact image match for copy addr={:#x}, size={:#x}",
+                        device_addr, size);
+            return false;
+        }
     }
     Image& image = texture_cache.GetImage(image_id);
-    // Only perform sync if image is:
-    // - GPU modified; otherwise there are no changes to synchronize.
-    // - Not CPU dirty; otherwise we could overwrite CPU changes with stale GPU changes.
-    // - Not GPU dirty; otherwise we could overwrite GPU changes with stale image data.
-    if (False(image.flags & ImageFlagBits::GpuModified) ||
-        True(image.flags & ImageFlagBits::Dirty)) {
-        return false;
-    }
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
