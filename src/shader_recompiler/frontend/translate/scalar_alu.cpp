@@ -114,6 +114,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_FF1_I32_B64(inst);
         case Opcode::S_FLBIT_I32_B32:
             return S_FLBIT_I32_B32(inst);
+        case Opcode::S_FLBIT_I32_B64:
+            return S_FLBIT_I32_B64(inst);
         case Opcode::S_BITSET0_B32:
             return S_BITSET_B32(inst, 0);
         case Opcode::S_BITSET1_B32:
@@ -683,6 +685,17 @@ void Translator::S_FLBIT_I32_B32(const GcnInst& inst) {
     const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
     // Select 0xFFFFFFFF if src0 was 0
     const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
+}
+
+void Translator::S_FLBIT_I32_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
+    const IR::U32 msb_pos = ir.FindUMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(63), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm64(u64(0u)));
     SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 

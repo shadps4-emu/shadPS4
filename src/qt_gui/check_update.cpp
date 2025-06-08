@@ -137,7 +137,7 @@ tr("The Auto Updater allows up to 60 update checks per hour.\\nYou have reached 
             }
         }
 
-        latestRev = latestVersion.right(7);
+        latestRev = latestVersion.right(40);
         latestDate = jsonObj["published_at"].toString();
 
         QJsonArray assets = jsonObj["assets"].toArray();
@@ -167,7 +167,7 @@ tr("The Auto Updater allows up to 60 update checks per hour.\\nYou have reached 
         QDateTime dateTime = QDateTime::fromString(latestDate, Qt::ISODate);
         latestDate = dateTime.isValid() ? dateTime.toString("yyyy-MM-dd HH:mm:ss") : "Unknown date";
 
-        if (latestRev == currentRev.left(7)) {
+        if (latestRev == currentRev) {
             if (showMessage) {
                 QMessageBox::information(this, tr("Auto Updater"),
                                          tr("Your version is already up to date!"));
@@ -215,7 +215,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                                  "<td>%3</td>"
                                  "<td>(%4)</td>"
                                  "</tr></table></p>")
-                             .arg(currentRev.left(7), currentDate, latestRev, latestDate);
+                             .arg(currentRev.left(7), currentDate, latestRev.left(7), latestDate);
 
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);
