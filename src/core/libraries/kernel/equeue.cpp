@@ -98,6 +98,11 @@ bool EqueueInternal::RemoveEvent(u64 id, s16 filter) {
 }
 
 int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
+    if (HasSmallTimer()) {
+        // If a small timer is set, just wait for it to expire.
+        return WaitForSmallTimer(ev, num, micros);
+    }
+
     int count = 0;
 
     const auto predicate = [&] {
@@ -140,6 +145,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
             if (event.event.ident == ident && event.event.filter == filter) {
                 if (filter == SceKernelEvent::Filter::VideoOut) {
                     event.TriggerDisplay(trigger_data);
+                } else if (filter == SceKernelEvent::Filter::User) {
+                    event.TriggerUser(trigger_data);
                 } else {
                     event.Trigger(trigger_data);
                 }
@@ -187,7 +194,8 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
     ASSERT(num == 1);
 
     auto curr_clock = std::chrono::steady_clock::now();
-    const auto wait_end_us = curr_clock + std::chrono::microseconds{micros};
+    const auto wait_end_us = (micros == 0) ? std::chrono::steady_clock::time_point::max()
+                                           : curr_clock + std::chrono::microseconds{micros};
 
     do {
         curr_clock = std::chrono::steady_clock::now();
@@ -266,24 +274,15 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    if (eq->HasSmallTimer()) {
-        ASSERT(timo && *timo);
-        *out = eq->WaitForSmallTimer(ev, num, *timo);
+    if (timo == nullptr) {
+        // When the timeout is nullptr, we wait indefinitely
+        *out = eq->WaitForEvents(ev, num, 0);
+    } else if (*timo == 0) {
+        // Only events that have already arrived at the time of this function call can be received
+        *out = eq->GetTriggeredEvents(ev, num);
     } else {
-        if (timo == nullptr) { // wait until an event arrives without timing out
-            *out = eq->WaitForEvents(ev, num, 0);
-        }
-
-        if (timo != nullptr) {
-            // Only events that have already arrived at the time of this function call can be
-            // received
-            if (*timo == 0) {
-                *out = eq->GetTriggeredEvents(ev, num);
-            } else {
-                // Wait until an event arrives with timing out
-                *out = eq->WaitForEvents(ev, num, *timo);
-            }
-        }
+        // Wait for up to the specified timeout value
+        *out = eq->WaitForEvents(ev, num, *timo);
     }
 
     if (*out == 0) {

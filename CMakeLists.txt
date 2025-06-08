@@ -296,6 +296,8 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
 
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
+              src/core/libraries/voice/voice.cpp
+              src/core/libraries/voice/voice.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
@@ -603,6 +605,8 @@ set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
 
 set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
                     src/core/libraries/companion/companion_httpd.h
+                    src/core/libraries/companion/companion_util.cpp
+                    src/core/libraries/companion/companion_util.h
                     src/core/libraries/companion/companion_error.h
 )
 set(DEV_TOOLS src/core/devtools/layer.cpp
@@ -960,6 +964,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/tile_manager.cpp
                src/video_core/texture_cache/tile_manager.h
                src/video_core/texture_cache/types.h
+               src/video_core/texture_cache/host_compatibility.cpp
                src/video_core/texture_cache/host_compatibility.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h

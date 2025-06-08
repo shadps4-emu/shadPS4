@@ -110,6 +110,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_I32_F64(inst);
     case Opcode::V_CVT_F64_I32:
         return V_CVT_F64_I32(inst);
+    case Opcode::V_CVT_F64_U32:
+        return V_CVT_F64_U32(inst);
     case Opcode::V_CVT_F32_I32:
         return V_CVT_F32_I32(inst);
     case Opcode::V_CVT_F32_U32:
@@ -156,6 +158,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LOG_F32(inst);
     case Opcode::V_RCP_F32:
         return V_RCP_F32(inst);
+    case Opcode::V_RCP_LEGACY_F32:
+        return V_RCP_LEGACY_F32(inst);
     case Opcode::V_RCP_F64:
         return V_RCP_F64(inst);
     case Opcode::V_RCP_IFLAG_F32:
@@ -684,6 +688,11 @@ void Translator::V_CVT_F64_I32(const GcnInst& inst) {
     SetDst64(inst.dst[0], ir.ConvertSToF(64, 32, src0));
 }
 
+void Translator::V_CVT_F64_U32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    SetDst64(inst.dst[0], ir.ConvertUToF(64, 32, src0));
+}
+
 void Translator::V_CVT_F32_I32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.ConvertSToF(32, 32, src0));
@@ -789,6 +798,20 @@ void Translator::V_LOG_F32(const GcnInst& inst) {
 void Translator::V_RCP_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPRecip(src0));
+}
+
+void Translator::V_RCP_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const auto result = ir.FPRecip(src0);
+    const auto inf = ir.FPIsInf(result);
+
+    const auto raw_result = ir.ConvertFToU(32, result);
+    const auto sign_bit = ir.ShiftRightLogical(raw_result, ir.Imm32(31u));
+    const auto sign_bit_set = ir.INotEqual(sign_bit, ir.Imm32(0u));
+    const IR::F32 inf_result{ir.Select(sign_bit_set, ir.Imm32(-0.0f), ir.Imm32(0.0f))};
+    const IR::F32 val{ir.Select(inf, inf_result, result)};
+
+    SetDst(inst.dst[0], val);
 }
 
 void Translator::V_RCP_F64(const GcnInst& inst) {

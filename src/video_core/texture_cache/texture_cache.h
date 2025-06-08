@@ -139,7 +139,9 @@ public:
     void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
-    [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler);
+    [[nodiscard]] vk::Sampler GetSampler(
+        const AmdGpu::Sampler& sampler,
+        const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base);
 
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {

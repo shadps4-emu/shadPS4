@@ -15,7 +15,7 @@ struct FormatInfo {
     AmdGpu::NumberFormat num_format;
     AmdGpu::CompMapping swizzle;
     AmdGpu::NumberConversion num_conversion;
-    int num_components;
+    u32 num_components;
 };
 
 static bool IsBufferFormatLoad(const IR::Inst& inst) {

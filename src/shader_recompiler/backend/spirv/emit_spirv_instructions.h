@@ -96,6 +96,8 @@ Id EmitBufferAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 Id EmitBufferAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                             Id cmp_value);
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
@@ -372,6 +374,7 @@ Id EmitBitCount64(EmitContext& ctx, Id value);
 Id EmitBitwiseNot32(EmitContext& ctx, Id value);
 Id EmitFindSMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb32(EmitContext& ctx, Id value);
+Id EmitFindUMsb64(EmitContext& ctx, Id value);
 Id EmitFindILsb32(EmitContext& ctx, Id value);
 Id EmitFindILsb64(EmitContext& ctx, Id value);
 Id EmitSMin32(EmitContext& ctx, Id a, Id b);

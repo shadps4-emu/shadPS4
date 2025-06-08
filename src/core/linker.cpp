@@ -117,6 +117,18 @@ void Linker::Execute(const std::vector<std::string> args) {
         Common::SetCurrentThreadName("GAME_MainThread");
         LoadSharedLibraries();
 
+        // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
+        // Some games fail without accurately emulating this behavior.
+        s64 phys_addr{};
+        s32 result = Libraries::Kernel::sceKernelAllocateDirectMemory(
+            0, Libraries::Kernel::sceKernelGetDirectMemorySize(), 0x10000, 0x10000, 3, &phys_addr);
+        if (result == 0) {
+            void* addr{reinterpret_cast<void*>(0xfe0000000)};
+            result = Libraries::Kernel::sceKernelMapNamedDirectMemory(
+                &addr, 0x10000, 0x13, 0, phys_addr, 0x10000, "SceGnmDriver");
+        }
+        ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
+
         // Start main module.
         EntryParams params{};
         params.argc = 1;
@@ -320,19 +332,20 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     sr.type = sym_type;
 
     const auto* record = m_hle_symbols.FindSymbol(sr);
-    if (!record) {
-        // Check if it an export function
-        const auto* p = FindExportedModule(*module, *library);
-        if (p && p->export_sym.GetSize() > 0) {
-            record = p->export_sym.FindSymbol(sr);
-        }
-    }
     if (record) {
         *return_info = *record;
-
         Core::Devtools::Widget::ModuleList::AddModule(sr.library);
-
         return true;
+    }
+
+    // Check if it an export function
+    const auto* p = FindExportedModule(*module, *library);
+    if (p && p->export_sym.GetSize() > 0) {
+        record = p->export_sym.FindSymbol(sr);
+        if (record) {
+            *return_info = *record;
+            return true;
+        }
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());

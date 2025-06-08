@@ -70,6 +70,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Add, inst);
     case Opcode::BUFFER_ATOMIC_SWAP:
         return BUFFER_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::BUFFER_ATOMIC_CMPSWAP:
+        return BUFFER_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::BUFFER_ATOMIC_SMIN:
         return BUFFER_ATOMIC(AtomicOp::Smin, inst);
     case Opcode::BUFFER_ATOMIC_UMIN:
@@ -152,6 +154,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 
         // Image gather operations
     case Opcode::IMAGE_GATHER4:
+    case Opcode::IMAGE_GATHER4_L:
     case Opcode::IMAGE_GATHER4_LZ:
     case Opcode::IMAGE_GATHER4_C:
     case Opcode::IMAGE_GATHER4_O:
@@ -330,6 +333,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         switch (op) {
         case AtomicOp::Swap:
             return ir.BufferAtomicSwap(handle, address, vdata_val, buffer_info);
+        case AtomicOp::CmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
+        }
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, buffer_info);
         case AtomicOp::Smin:
@@ -377,6 +384,7 @@ void Translator::IMAGE_LOAD(bool has_mip, const GcnInst& inst) {
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
     const IR::Value texel = ir.ImageRead(handle, body, {}, {}, info);
 
     for (u32 i = 0; i < 4; i++) {
@@ -426,6 +434,7 @@ void Translator::IMAGE_GET_RESINFO(const GcnInst& inst) {
 
     IR::TextureInstInfo info{};
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     const IR::Value size = ir.ImageQueryDimension(tsharp, lod, ir.Imm1(has_mips), info);
 
@@ -451,6 +460,7 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
 
     IR::TextureInstInfo info{};
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     const IR::Value value = ir.GetVectorReg(val_reg);
     const IR::Value handle = ir.GetScalarReg(tsharp_reg);
@@ -509,6 +519,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.has_lod.Assign(flags.any(MimgModifier::Lod));
     info.is_array.Assign(mimg.da);
     info.is_unnormalized.Assign(mimg.unrm);
+    info.is_r128.Assign(mimg.r128);
 
     if (gather) {
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
@@ -617,6 +628,7 @@ void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
 
     IR::TextureInstInfo info{};
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     const IR::Value handle = ir.GetScalarReg(tsharp_reg);
     const IR::Value body = ir.CompositeConstruct(
