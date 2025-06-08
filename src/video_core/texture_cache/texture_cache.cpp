@@ -222,11 +222,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             image_info.guest_size <= tex_cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
-            return {
-                IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
-                    ? result_id
-                    : ImageId{},
-                -1, -1};
+            const bool is_compatible =
+                IsVulkanFormatCompatible(result_image.info.pixel_format, image_info.pixel_format);
+            return {is_compatible ? result_id : ImageId{}, -1, -1};
         }
 
         if (image_info.type == tex_cache_image.info.type &&
@@ -347,7 +345,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             continue;
         }
         if (False(flags & FindFlags::RelaxFmt) &&
-            (!IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format) ||
+            (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format) ||
              (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1}))) {
             continue;
         }
