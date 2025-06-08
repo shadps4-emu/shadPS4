@@ -196,11 +196,13 @@ struct FragmentRuntimeInfo {
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
+    bool dual_source_blending;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
                en_flags.raw == other.en_flags.raw && addr_flags.raw == other.addr_flags.raw &&
                num_inputs == other.num_inputs &&
+               dual_source_blending == other.dual_source_blending &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }
