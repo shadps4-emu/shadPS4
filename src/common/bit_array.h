@@ -227,7 +227,7 @@ public:
         return FirstRangeFrom(0);
     }
 
-    Range LastRegionFrom(size_t end) const {
+    Range LastRangeFrom(size_t end) const {
         if (end == 0) {
             return {0, 0};
         }
@@ -289,8 +289,8 @@ public:
         return {0, 0};
     }
 
-    inline constexpr Range LastRegion() const {
-        return LastRegionFrom(N);
+    inline constexpr Range LastRaange() const {
+        return LastRangeFrom(N);
     }
 
     inline constexpr size_t Size() const {
