@@ -33,6 +33,8 @@ void Translator::ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR:
     AmdGpu::NumberFormat num_format;
     switch (color_buffer.export_format) {
     case AmdGpu::Liverpool::ShaderExportFormat::Zero:
+        // No export
+        return;
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_FP16:
         num_format = AmdGpu::NumberFormat::Float;
         break;
