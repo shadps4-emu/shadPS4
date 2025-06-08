@@ -121,6 +121,7 @@ public:
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B64(const GcnInst& inst);
     void S_FLBIT_I32_B32(const GcnInst& inst);
+    void S_FLBIT_I32_B64(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
     void S_GETPC_B64(u32 pc, const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
@@ -204,6 +205,7 @@ public:
     void V_EXP_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
+    void V_RCP_LEGACY_F32(const GcnInst& inst);
     void V_RCP_F64(const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SQRT_F32(const GcnInst& inst);
