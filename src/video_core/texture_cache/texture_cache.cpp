@@ -199,7 +199,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
-        if (image_info.size != tex_cache_image.info.size) {
+        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
+            image_info.num_bits != tex_cache_image.info.num_bits) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -209,6 +210,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         if (const auto depth_image_id = ResolveDepthOverlap(image_info, binding, cache_image_id)) {
             return {depth_image_id, -1, -1};
+        }
+
+        if (image_info.IsBlockCoded() && !tex_cache_image.info.IsBlockCoded()) {
+            // Compressed view of uncompressed image with same block size.
+            // We need to recreate the image with compressed format and copy.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
