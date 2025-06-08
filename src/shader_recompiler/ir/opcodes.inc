@@ -439,7 +439,7 @@ OPCODE(LaneId,                                              U32,                
 OPCODE(WarpId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
 OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
-OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
+OPCODE(ReadLane,                                            U32,            U32,            Opaque,                                                         )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
 OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
 OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )

@@ -26,9 +26,18 @@ Id EmitReadFirstLane(EmitContext& ctx, Id value) {
     return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
 }
 
-Id EmitReadLane(EmitContext& ctx, Id value, u32 lane) {
-    return ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value,
-                                          ctx.ConstU32(lane));
+Id EmitReadLane(EmitContext& ctx, Id value, Id lane) {
+    // TODO: proper implementation would need to ensure that `lane` is active in the subgroup
+    // by tracking EXEC register more closely, extracting the predicate used, and using
+    // it as a parameter to OpGroupNonUniformBallot. If the condition is not satisfied,
+    // the result is undefined. It may result in device loss
+    //
+    // Excerpt from SPIR-V specification:
+    // The resulting value is undefined if Id is not part of the scope restricted tangle,
+    // or is greater than or equal to the size of the scope.
+    return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
+    // return ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value,
+    //                                       lane);
 }
 
 Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane) {
