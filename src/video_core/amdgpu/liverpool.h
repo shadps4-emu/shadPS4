@@ -1179,8 +1179,16 @@ struct Liverpool {
     };
 
     union GsMode {
+        enum class Mode : u32 {
+            Off = 0,
+            ScenarioA = 1,
+            ScenarioB = 2,
+            ScenarioG = 3,
+            ScenarioC = 4,
+        };
+
         u32 raw;
-        BitField<0, 3, u32> mode;
+        BitField<0, 3, Mode> mode;
         BitField<3, 2, u32> cut_mode;
         BitField<22, 2, u32> onchip;
     };
