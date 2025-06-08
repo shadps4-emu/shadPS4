@@ -182,7 +182,6 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, size_t size,
     auto& area = CarveDmemArea(mapping_start, size)->second;
     area.memory_type = memory_type;
     area.is_free = false;
-    MergeAdjacent(dmem_map, dmem_area);
     return mapping_start;
 }
 
