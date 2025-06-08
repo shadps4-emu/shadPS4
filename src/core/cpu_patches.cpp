@@ -386,11 +386,10 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
     }
 }
 
-static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand* operands,
-                           Xbyak::CodeGenerator& c) {
+static void ReplaceMOVNT(void* address, u8 rep_prefix) {
     // Find the opcode byte
     // There can be any amount of prefixes but the instruction can't be more than 15 bytes
-    // And we know for sure this is a MOVNTSS
+    // And we know for sure this is a MOVNTSS/MOVNTSD
     bool found = false;
     int index = 0;
     u8* ptr = reinterpret_cast<u8*>(address);
@@ -405,37 +404,19 @@ static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand* operands,
     // Some sanity checks
     ASSERT(found);
     ASSERT(index >= 2);
-    ASSERT(ptr[index - 2] == 0xF3);
+    ASSERT(ptr[index - 2] == rep_prefix);
     ASSERT(ptr[index - 1] == 0x0F);
 
-    // This turns the MOVNTSS to a MOVSS m32, xmm
+    // This turns the MOVNTSS/MOVNTSD to a MOVSS/MOVSD m, xmm
     ptr[index] = 0x11;
 }
 
-static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand* operands,
-                           Xbyak::CodeGenerator& c) {
-    // Find the opcode byte
-    // There can be any amount of prefixes but the instruction can't be more than 15 bytes
-    // And we know for sure this is a MOVNTSD
-    bool found = false;
-    int index = 0;
-    u8* ptr = reinterpret_cast<u8*>(address);
-    for (int i = 0; i < 15; i++) {
-        if (ptr[i] == 0x2B) {
-            index = i;
-            found = true;
-            break;
-        }
-    }
+static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF3);
+}
 
-    // Some sanity checks
-    ASSERT(found);
-    ASSERT(index >= 2);
-    ASSERT(ptr[index - 2] == 0xF2);
-    ASSERT(ptr[index - 1] == 0x0F);
-
-    // This turns the MOVNTSD to a MOVSD m64, xmm
-    ptr[index] = 0x11;
+static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF2);
 }
 
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
