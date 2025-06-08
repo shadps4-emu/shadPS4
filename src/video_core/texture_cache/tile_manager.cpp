@@ -263,10 +263,8 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-    DetilerParams params{};
-    std::memset(&params, 0, sizeof(params));
-
-    params.num_levels = std::min(15u, info.resources.levels);
+    DetilerParams params;
+    params.num_levels = info.resources.levels;
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
 
@@ -285,7 +283,6 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
 
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
-
         for (size_t i = 2; i < params.sizes.size(); ++i)
             params.sizes[i] = 0;
     } else {
@@ -309,12 +306,12 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushConstants(*detiler->pl_layout, vk::ShaderStageFlagBits::eCompute, 0u, sizeof(params),
                          &params);
     const auto aligned_image_size = Common::AlignUp(image_size, 64u);
-    ASSERT((aligned_image_size % 64) == 0);
+    ASSERT(info.resources.levels <= params.sizes.size());
     const auto num_tiles = image_size / (64 * (info.num_bits / 8));
     LOG_DEBUG(Lib_Videodec, "Dispatch: image_size={}, aligned={}, info.num_bits={}, num_tiles={}",
               image_size, aligned_image_size, info.num_bits, num_tiles);
     cmdbuf.dispatch(num_tiles, 1, 1);
-    return std::make_pair(out_buffer.first, 0u);
+    return {out_buffer.first, 0};
 }
 
 } // namespace VideoCore
