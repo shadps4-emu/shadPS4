@@ -25,10 +25,9 @@
 namespace VideoCore {
 
 const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
-    const auto bpp = info.num_bits * (info.props.is_block ? 16 : 1);
     switch (info.tiling_mode) {
     case AmdGpu::TilingMode::Texture_MicroTiled:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 8:
             return &detilers[DetilerType::Micro8];
         case 16:
@@ -43,7 +42,7 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
             return nullptr;
         }
     case AmdGpu::TilingMode::Texture_Volume:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 8:
             return &detilers[DetilerType::Macro8];
         case 32:
@@ -55,7 +54,7 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
         }
         break;
     case AmdGpu::TilingMode::Display_MicroTiled:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 64:
             return &detilers[DetilerType::Display_Micro64];
         default:
@@ -287,8 +286,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                          &params);
 
     ASSERT((image_size % 64) == 0);
-    const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
-    const auto num_tiles = image_size / (64 * (bpp / 8));
+    const auto num_tiles = image_size / (64 * (info.num_bits / 8));
     cmdbuf.dispatch(num_tiles, 1, 1);
     return {out_buffer.first, 0};
 }

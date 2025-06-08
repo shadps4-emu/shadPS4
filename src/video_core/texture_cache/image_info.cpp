@@ -81,7 +81,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     tiling_mode = buffer.GetTilingMode();
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
     num_samples = buffer.NumSamples();
-    num_bits = NumBits(buffer.GetDataFmt());
+    num_bits = NumBitsPerBlock(buffer.GetDataFmt());
     type = vk::ImageType::e2D;
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
     size.height = hint.Valid() ? hint.height : buffer.Height();
@@ -142,7 +142,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
-    num_bits = NumBits(image.GetDataFmt());
+    num_bits = NumBitsPerBlock(image.GetDataFmt());
 
     guest_address = image.Address();
 
@@ -163,7 +163,6 @@ void ImageInfo::UpdateSize() {
         if (props.is_block) {
             mip_w = (mip_w + 3) / 4;
             mip_h = (mip_h + 3) / 4;
-            bpp *= 16;
         }
         mip_w = std::max(mip_w, 1u);
         mip_h = std::max(mip_h, 1u);

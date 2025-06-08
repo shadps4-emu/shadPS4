@@ -310,10 +310,8 @@ constexpr bool IsInteger(const NumberFormat nfmt) {
 std::string_view NameOf(DataFormat fmt);
 std::string_view NameOf(NumberFormat fmt);
 
-int NumComponents(DataFormat format);
-int NumBits(DataFormat format);
-u32 ComponentBits(DataFormat format, u32 comp);
-s32 ComponentOffset(DataFormat format, u32 comp);
+u32 NumComponents(DataFormat format);
+u32 NumBitsPerBlock(DataFormat format);
 
 } // namespace AmdGpu
 

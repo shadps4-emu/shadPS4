@@ -914,7 +914,7 @@ struct Liverpool {
         }
 
         size_t GetColorSliceSize() const {
-            const auto num_bytes_per_element = NumBits(info.format) / 8u;
+            const auto num_bytes_per_element = NumBitsPerBlock(info.format) / 8u;
             const auto slice_size =
                 num_bytes_per_element * (slice.tile_max + 1) * 64u * NumSamples();
             return slice_size;

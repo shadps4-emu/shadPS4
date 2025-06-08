@@ -512,9 +512,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         // So this calculation should be very uncommon and reasonably fast
         // For now we'll just check up to 64 first pixels
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
-        const auto w = std::min(image.info.size.width, u32(8));
-        const auto h = std::min(image.info.size.height, u32(8));
-        const auto size = w * h * image.info.num_bits / 8;
+        const u32 w = std::min(image.info.size.width, u32(8));
+        const u32 h = std::min(image.info.size.height, u32(8));
+        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
