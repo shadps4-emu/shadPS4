@@ -331,7 +331,6 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     sr.module_version_minor = module->version_minor;
     sr.type = sym_type;
 
-
     const auto* record = m_hle_symbols.FindSymbol(sr);
     if (record) {
         *return_info = *record;
