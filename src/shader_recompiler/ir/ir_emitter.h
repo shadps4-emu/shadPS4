@@ -150,6 +150,9 @@ public:
                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicCmpSwap(const Value& handle, const Value& address,
+                                            const Value& value, const Value& cmp_value,
+                                            BufferInstInfo info);
 
     [[nodiscard]] U32 DataAppend(const U32& counter);
     [[nodiscard]] U32 DataConsume(const U32& counter);
