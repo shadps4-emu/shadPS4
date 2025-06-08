@@ -228,18 +228,18 @@ public:
     }
 
     Range LastRegionFrom(size_t end) const {
-        if (end >= N) {
-            return {N, N};
-        }
         if (end == 0) {
             return {0, 0};
+        }
+        if (end > N) {
+            end = N;
         }
         const auto find_start_bit = [&](size_t word) {
 #ifdef BIT_ARRAY_USE_AVX
             const __m256i all_zero = _mm256_setzero_si256();
             for (; word >= WORDS_PER_AVX; word -= WORDS_PER_AVX) {
-                const __m256i current =
-                    _mm256_loadu_si256(reinterpret_cast<const __m256i*>(&data[word - WORDS_PER_AVX]));
+                const __m256i current = _mm256_loadu_si256(
+                    reinterpret_cast<const __m256i*>(&data[word - WORDS_PER_AVX]));
                 const __m256i cmp = _mm256_cmpeq_epi64(current, all_zero);
                 if (_mm256_movemask_epi8(cmp) != 0xFFFFFFFF) {
                     break;
@@ -247,8 +247,8 @@ public:
             }
 #endif
             for (; word > 0; --word) {
-                if (data[word - 1] != 0) {
-                    return word * BITS_PER_WORD - std::countl_zero(data[word - 1]);
+                if (data[word - 1] != ~0ULL) {
+                    return word * BITS_PER_WORD - std::countl_one(data[word - 1]);
                 }
             }
             return size_t(0);
@@ -290,7 +290,7 @@ public:
     }
 
     inline constexpr Range LastRegion() const {
-        return LastRegionFrom(0);
+        return LastRegionFrom(N);
     }
 
     inline constexpr size_t Size() const {
