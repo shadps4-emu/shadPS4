@@ -263,7 +263,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *detiler->pl_layout, 0,
                                 set_writes);
 
-DetilerParams params{};
+    DetilerParams params{};
     std::memset(&params, 0, sizeof(params));
 
     params.num_levels = std::min(15u, info.resources.levels);
@@ -278,11 +278,11 @@ DetilerParams params{};
             LOG_ERROR(Lib_Videodec, "Display tiling with multiple mip levels is not supported.");
             return {};
         }
-    } else if (is_display_tiled) {
-        ASSERT(info.resources.levels == 1);
-        params.num_levels = 1;
-        const uint32_t tiles_per_row = info.pitch / 8u;
-        const uint32_t tiles_per_slice = (info.size.height + 7u) / 8u;
+        ASSERT(in_buffer != out_buffer.first);
+
+        const auto tiles_per_row = info.pitch / 8u;
+        const auto tiles_per_slice = tiles_per_row * (Common::AlignUp(info.size.height, 8u) / 8u);
+
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
 
@@ -314,7 +314,6 @@ DetilerParams params{};
     LOG_DEBUG(Lib_Videodec, "Dispatch: image_size={}, aligned={}, info.num_bits={}, num_tiles={}",
               image_size, aligned_image_size, info.num_bits, num_tiles);
     cmdbuf.dispatch(num_tiles, 1, 1);
-    return std::make_pair(out_buffer.first, 0u);
     return std::make_pair(out_buffer.first, 0u);
 }
 
