@@ -634,7 +634,8 @@ void EmitContext::DefineOutputs() {
         }
         break;
     }
-    case LogicalStage::Fragment:
+    case LogicalStage::Fragment: {
+        u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
             if (!info.stores.GetAny(mrt)) {
@@ -643,11 +644,21 @@ void EmitContext::DefineOutputs() {
             const u32 num_components = info.stores.NumComponents(mrt);
             const AmdGpu::NumberFormat num_format{runtime_info.fs_info.color_buffers[i].num_format};
             const Id type{GetAttributeType(*this, num_format)[num_components]};
-            const Id id{DefineOutput(type, i)};
+            Id id;
+            if (runtime_info.fs_info.dual_source_blending) {
+                id = DefineOutput(type, 0);
+                Decorate(id, spv::Decoration::Index, i);
+            } else {
+                id = DefineOutput(type, i);
+            }
             Name(id, fmt::format("frag_color{}", i));
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
+            ++num_render_targets;
         }
+        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,
+                   "Dual source blending enabled, there must be exactly two MRT exports");
         break;
+    }
     case LogicalStage::Geometry: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
 
