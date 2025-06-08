@@ -51,7 +51,7 @@ void ZlibTaskThread(const std::stop_token& stop) {
             if (!task_queue_cv.wait(lock, stop, [&] { return !task_queue.empty(); })) {
                 break;
             }
-            task = task_queue.back();
+            task = task_queue.front();
             task_queue.pop();
         }
 
@@ -136,7 +136,7 @@ s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout) {
         } else {
             done_queue_cv.wait(lock, pred);
         }
-        *request_id = done_queue.back();
+        *request_id = done_queue.front();
         done_queue.pop();
     }
     return ORBIS_OK;
