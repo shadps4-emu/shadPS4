@@ -53,15 +53,17 @@ enum class NegateMode : u32 {
     Result,
 };
 
+static constexpr size_t MaxInterpVgpr = 16;
+
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Info& info, const RuntimeInfo& runtime_info,
-                        const Profile& profile);
+    explicit Translator(Info& info, const RuntimeInfo& runtime_info, const Profile& profile);
 
+    void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list);
     void TranslateInstruction(const GcnInst& inst, u32 pc);
 
     // Instruction categories
-    void EmitPrologue();
+    void EmitPrologue(IR::Block* first_block);
     void EmitFetch(const GcnInst& inst);
     void EmitExport(const GcnInst& inst);
     void EmitFlowControl(u32 pc, const GcnInst& inst);
@@ -326,16 +328,18 @@ private:
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
+    IR::VectorReg GatherInterpQualifiers();
 
 private:
     IR::IREmitter ir;
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
+    u32 next_vgpr_num;
+    std::unordered_map<u32, IR::VectorReg> vgpr_map;
+    std::array<IR::Interpolation, MaxInterpVgpr> vgpr_to_interp{};
+    IR::VectorReg dst_frag_vreg{};
     bool opcode_missing = false;
 };
-
-void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,
-               const RuntimeInfo& runtime_info, const Profile& profile);
 
 } // namespace Shader::Gcn

@@ -307,7 +307,9 @@ void EmitContext::DefineInterpolatedAttribs() {
         const Id p2{OpCompositeExtract(F32[4], p_array, 2U)};
         const Id p10{OpFSub(F32[4], p1, p0)};
         const Id p20{OpFSub(F32[4], p2, p0)};
-        const Id bary_coord{OpLoad(F32[3], gl_bary_coord_id)};
+        const Id bary_coord{OpLoad(F32[3], IsLinear(info.interp_qualifiers[i])
+                                               ? bary_coord_linear_id
+                                               : bary_coord_persp_id)};
         const Id bary_coord_y{OpCompositeExtract(F32[1], bary_coord, 1)};
         const Id bary_coord_z{OpCompositeExtract(F32[1], bary_coord, 2)};
         const Id p10_y{OpVectorTimesScalar(F32[4], p10, bary_coord_y)};
@@ -411,8 +413,14 @@ void EmitContext::DefineInputs() {
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         }
         if (profile.needs_manual_interpolation) {
-            gl_bary_coord_id =
-                DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            if (info.has_perspective_interp) {
+                bary_coord_persp_id =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            }
+            if (info.has_linear_interp) {
+                bary_coord_linear_id = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
+                                                      spv::StorageClass::Input);
+            }
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
@@ -435,9 +443,12 @@ void EmitContext::DefineInputs() {
             } else {
                 attr_id = DefineInput(type, semantic);
                 Name(attr_id, fmt::format("fs_in_attr{}", semantic));
-            }
-            if (input.is_flat) {
-                Decorate(attr_id, spv::Decoration::Flat);
+
+                if (input.is_flat) {
+                    Decorate(attr_id, spv::Decoration::Flat);
+                } else if (IsLinear(info.interp_qualifiers[i])) {
+                    Decorate(attr_id, spv::Decoration::NoPerspective);
+                }
             }
             input_params[semantic] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);

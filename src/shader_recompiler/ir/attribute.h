@@ -83,6 +83,16 @@ enum class Attribute : u64 {
     Max,
 };
 
+enum class Interpolation {
+    Invalid = 0,
+    PerspectiveSample = 1,
+    PerspectiveCenter = 2,
+    PerspectiveCentroid = 3,
+    LinearSample = 4,
+    LinearCenter = 5,
+    LinearCentroid = 6,
+};
+
 constexpr size_t NumAttributes = static_cast<size_t>(Attribute::Max);
 constexpr size_t NumRenderTargets = 8;
 constexpr size_t NumParams = 32;
@@ -102,6 +112,15 @@ constexpr bool IsParam(Attribute attribute) noexcept {
 
 constexpr bool IsMrt(Attribute attribute) noexcept {
     return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
+}
+
+constexpr bool IsLinear(Interpolation interp) noexcept {
+    return interp >= Interpolation::LinearSample && interp <= Interpolation::LinearCentroid;
+}
+
+constexpr bool IsPerspective(Interpolation interp) noexcept {
+    return interp >= Interpolation::PerspectiveSample &&
+           interp <= Interpolation::PerspectiveCentroid;
 }
 
 [[nodiscard]] std::string NameOf(Attribute attribute);
