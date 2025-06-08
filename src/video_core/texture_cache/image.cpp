@@ -14,62 +14,6 @@ namespace VideoCore {
 
 using namespace Vulkan;
 
-bool ImageInfo::IsBlockCoded() const {
-    switch (pixel_format) {
-    case vk::Format::eBc1RgbaSrgbBlock:
-    case vk::Format::eBc1RgbaUnormBlock:
-    case vk::Format::eBc1RgbSrgbBlock:
-    case vk::Format::eBc1RgbUnormBlock:
-    case vk::Format::eBc2SrgbBlock:
-    case vk::Format::eBc2UnormBlock:
-    case vk::Format::eBc3SrgbBlock:
-    case vk::Format::eBc3UnormBlock:
-    case vk::Format::eBc4SnormBlock:
-    case vk::Format::eBc4UnormBlock:
-    case vk::Format::eBc5SnormBlock:
-    case vk::Format::eBc5UnormBlock:
-    case vk::Format::eBc6HSfloatBlock:
-    case vk::Format::eBc6HUfloatBlock:
-    case vk::Format::eBc7SrgbBlock:
-    case vk::Format::eBc7UnormBlock:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool ImageInfo::IsPacked() const {
-    switch (pixel_format) {
-    case vk::Format::eB5G5R5A1UnormPack16:
-        [[fallthrough]];
-    case vk::Format::eB5G6R5UnormPack16:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool ImageInfo::IsDepthStencil() const {
-    switch (pixel_format) {
-    case vk::Format::eD16Unorm:
-    case vk::Format::eD16UnormS8Uint:
-    case vk::Format::eD32Sfloat:
-    case vk::Format::eD32SfloatS8Uint:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool ImageInfo::HasStencil() const {
-    if (pixel_format == vk::Format::eD32SfloatS8Uint ||
-        pixel_format == vk::Format::eD24UnormS8Uint ||
-        pixel_format == vk::Format::eD16UnormS8Uint) {
-        return true;
-    }
-    return false;
-}
-
 static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
@@ -160,6 +104,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                                vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
+    }
+    if (info.props.is_block) {
+        flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 
     usage_flags = ImageUsageFlags(info);
@@ -372,9 +319,9 @@ void Image::CopyImage(const Image& image) {
 
     boost::container::small_vector<vk::ImageCopy, 14> image_copy{};
     for (u32 m = 0; m < image.info.resources.levels; ++m) {
-        const auto mip_w = std::max(info.size.width >> m, 1u);
-        const auto mip_h = std::max(info.size.height >> m, 1u);
-        const auto mip_d = std::max(info.size.depth >> m, 1u);
+        const auto mip_w = std::max(image.info.size.width >> m, 1u);
+        const auto mip_h = std::max(image.info.size.height >> m, 1u);
+        const auto mip_d = std::max(image.info.size.depth >> m, 1u);
 
         image_copy.emplace_back(vk::ImageCopy{
             .srcSubresource{

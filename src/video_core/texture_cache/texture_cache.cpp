@@ -199,7 +199,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
-        if (image_info.size != tex_cache_image.info.size) {
+        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
+            image_info.num_bits != tex_cache_image.info.num_bits) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -211,15 +212,19 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {depth_image_id, -1, -1};
         }
 
+        if (image_info.IsBlockCoded() && !tex_cache_image.info.IsBlockCoded()) {
+            // Compressed view of uncompressed image with same block size.
+            // We need to recreate the image with compressed format and copy.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
+        }
+
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
             image_info.guest_size <= tex_cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
-            return {
-                IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
-                    ? result_id
-                    : ImageId{},
-                -1, -1};
+            const bool is_compatible =
+                IsVulkanFormatCompatible(result_image.info.pixel_format, image_info.pixel_format);
+            return {is_compatible ? result_id : ImageId{}, -1, -1};
         }
 
         if (image_info.type == tex_cache_image.info.type &&
@@ -340,7 +345,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             continue;
         }
         if (False(flags & FindFlags::RelaxFmt) &&
-            (!IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format) ||
+            (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format) ||
              (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1}))) {
             continue;
         }
@@ -512,9 +517,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         // So this calculation should be very uncommon and reasonably fast
         // For now we'll just check up to 64 first pixels
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
-        const auto w = std::min(image.info.size.width, u32(8));
-        const auto h = std::min(image.info.size.height, u32(8));
-        const auto size = w * h * image.info.num_bits / 8;
+        const u32 w = std::min(image.info.size.width, u32(8));
+        const u32 h = std::min(image.info.size.height, u32(8));
+        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
