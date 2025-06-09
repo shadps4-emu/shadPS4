@@ -234,9 +234,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case 0:
             UNREACHABLE_MSG("Unimplemented PM4 type 0, base reg: {}, size: {}",
                             header->type0.base.Value(), header->type0.NumWords());
-            // comment "UNREACHABLE_MSG()" above ^^^ to skip "PM4 type 0" command
-            dcb = NextPacket(dcb, header->type0.NumWords() + 1);
-            continue;
+            break;
         case 2:
             // Type-2 packet are used for padding purposes
             dcb = NextPacket(dcb, 1);
