@@ -17,6 +17,10 @@ namespace AmdGpu {
 struct Liverpool;
 }
 
+namespace Core {
+class MemoryManager;
+}
+
 namespace Shader {
 namespace Gcn {
 struct FetchShaderData;
@@ -183,6 +187,7 @@ private:
     Vulkan::Scheduler& scheduler;
     Vulkan::Rasterizer& rasterizer;
     AmdGpu::Liverpool* liverpool;
+    Core::MemoryManager* memory;
     TextureCache& texture_cache;
     PageManager& tracker;
     StreamBuffer staging_buffer;
