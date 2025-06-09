@@ -146,6 +146,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         }
         gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
         gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
+        gs_info.mode = regs.vgt_gs_mode.mode;
         const auto params_vc = Liverpool::GetParams(regs.vs_program);
         gs_info.vs_copy = params_vc.code;
         gs_info.vs_copy_hash = params_vc.hash;

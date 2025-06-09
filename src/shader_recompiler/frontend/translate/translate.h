@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <unordered_map>
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"

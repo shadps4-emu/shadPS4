@@ -149,6 +149,7 @@ struct GeometryRuntimeInfo {
     u32 out_vertex_data_size{};
     AmdGpu::PrimitiveType in_primitive;
     GsOutputPrimTypes out_primitive;
+    AmdGpu::Liverpool::GsMode::Mode mode;
     std::span<const u32> vs_copy;
     u64 vs_copy_hash;
 
