@@ -269,7 +269,10 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     params.height = info.size.height;
     if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
         info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
-        ASSERT(info.resources.levels == 1);
+        if (info.resources.levels != 1) {
+            LOG_ERROR(Render_Vulkan, "Unexpected mipmaps for volume and display tilings {}",
+                      info.resources.levels);
+        }
         const auto tiles_per_row = info.pitch / 8u;
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;
