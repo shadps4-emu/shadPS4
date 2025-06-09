@@ -6,7 +6,6 @@
 #include <cstring>
 #include <type_traits>
 
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
@@ -17,6 +16,7 @@ namespace Shader::IR {
 
 class IREmitter {
 public:
+    explicit IREmitter() = default;
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
@@ -150,6 +150,9 @@ public:
                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicCmpSwap(const Value& handle, const Value& address,
+                                            const Value& value, const Value& cmp_value,
+                                            BufferInstInfo info);
 
     [[nodiscard]] U32 DataAppend(const U32& counter);
     [[nodiscard]] U32 DataConsume(const U32& counter);
@@ -266,7 +269,7 @@ public:
     [[nodiscard]] U32 BitwiseNot(const U32& value);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
-    [[nodiscard]] U32 FindUMsb(const U32& value);
+    [[nodiscard]] U32 FindUMsb(const U32U64& value);
     [[nodiscard]] U32 FindILsb(const U32U64& value);
     [[nodiscard]] U32 SMin(const U32& a, const U32& b);
     [[nodiscard]] U32 UMin(const U32& a, const U32& b);

@@ -146,6 +146,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         }
         gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
         gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
+        gs_info.mode = regs.vgt_gs_mode.mode;
         const auto params_vc = Liverpool::GetParams(regs.vs_program);
         gs_info.vs_copy = params_vc.code;
         gs_info.vs_copy_hash = params_vc.hash;
@@ -158,6 +159,15 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.addr_flags = regs.ps_input_addr;
         const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
+        const auto& cb0_blend = regs.blend_control[0];
+        info.fs_info.dual_source_blending =
+            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
+            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
+        if (cb0_blend.separate_alpha_blend) {
+            info.fs_info.dual_source_blending |=
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
+        }
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs[i] = {
                 .param_index = u8(ps_inputs[i].input_offset.Value()),

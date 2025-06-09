@@ -7,7 +7,7 @@
 #include "common/bit_field.h"
 #include "common/enum.h"
 #include "common/types.h"
-#include "video_core/amdgpu/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
@@ -44,6 +44,7 @@ union TextureInstInfo {
     BitField<9, 1, u32> is_array;
     BitField<10, 1, u32> is_unnormalized;
     BitField<11, 1, u32> is_gather;
+    BitField<12, 1, u32> is_r128;
 };
 
 union BufferInstInfo {
