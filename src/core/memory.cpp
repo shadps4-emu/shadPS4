@@ -122,7 +122,7 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
     ASSERT_MSG(vma->second.Contains(virtual_addr, 0),
                "Attempted to access invalid GPU address {:#x}", virtual_addr);
     while (size) {
-        u64 copy_size = std::min(vma->second.size - (virtual_addr - vma->first), size);
+        u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
         if (vma->second.IsFree()) {
             std::memset(dest, 0, copy_size);
         } else {
