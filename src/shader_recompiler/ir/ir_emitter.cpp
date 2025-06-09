@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <bit>
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
@@ -294,10 +293,12 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
 
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
+    case 16:
+        return Inst<U16>(Opcode::LoadSharedU16, offset);
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst(Opcode::LoadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
@@ -305,6 +306,9 @@ Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
 
 void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
     switch (bit_size) {
+    case 16:
+        Inst(Opcode::WriteSharedU16, offset, value);
+        break;
     case 32:
         Inst(Opcode::WriteSharedU32, offset, value);
         break;
@@ -316,10 +320,12 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset)
     }
 }
 
-U32F32 IREmitter::SharedAtomicIAdd(const U32& address, const U32F32& data) {
+U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data) {
     switch (data.Type()) {
     case Type::U32:
         return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicIAdd64, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
@@ -511,6 +517,11 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
 Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
     return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicCmpSwap(const Value& handle, const Value& address, const Value& vdata,
+                                     const Value& cmp_value, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
 U32 IREmitter::DataAppend(const U32& counter) {
@@ -1546,8 +1557,15 @@ U32 IREmitter::FindSMsb(const U32& value) {
     return Inst<U32>(Opcode::FindSMsb32, value);
 }
 
-U32 IREmitter::FindUMsb(const U32& value) {
-    return Inst<U32>(Opcode::FindUMsb32, value);
+U32 IREmitter::FindUMsb(const U32U64& value) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::FindUMsb32, value);
+    case Type::U64:
+        return Inst<U32>(Opcode::FindUMsb64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U32 IREmitter::FindILsb(const U32U64& value) {

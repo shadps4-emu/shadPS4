@@ -171,6 +171,12 @@ public:
         return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
     }
 
+    /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
+    bool IsWorkgroupMemoryExplicitLayoutSupported() const {
+        return workgroup_memory_explicit_layout &&
+               workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -349,6 +355,8 @@ private:
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
+    vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
+        workgroup_memory_explicit_layout_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -374,6 +382,7 @@ private:
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
     bool shader_atomic_float2{};
+    bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
 };
 

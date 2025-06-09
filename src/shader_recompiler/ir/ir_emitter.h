@@ -6,7 +6,6 @@
 #include <cstring>
 #include <type_traits>
 
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
@@ -17,6 +16,7 @@ namespace Shader::IR {
 
 class IREmitter {
 public:
+    explicit IREmitter() = default;
     explicit IREmitter(Block& block_) : block{&block_}, insertion_point{block->end()} {}
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
@@ -99,7 +99,7 @@ public:
     [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
-    [[nodiscard]] U32F32 SharedAtomicIAdd(const U32& address, const U32F32& data);
+    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data);
     [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
     [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
     [[nodiscard]] U32 SharedAtomicAnd(const U32& address, const U32& data);
@@ -150,6 +150,9 @@ public:
                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicSwap(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicCmpSwap(const Value& handle, const Value& address,
+                                            const Value& value, const Value& cmp_value,
+                                            BufferInstInfo info);
 
     [[nodiscard]] U32 DataAppend(const U32& counter);
     [[nodiscard]] U32 DataConsume(const U32& counter);
@@ -266,7 +269,7 @@ public:
     [[nodiscard]] U32 BitwiseNot(const U32& value);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
-    [[nodiscard]] U32 FindUMsb(const U32& value);
+    [[nodiscard]] U32 FindUMsb(const U32U64& value);
     [[nodiscard]] U32 FindILsb(const U32U64& value);
     [[nodiscard]] U32 SMin(const U32& a, const U32& b);
     [[nodiscard]] U32 UMin(const U32& a, const U32& b);

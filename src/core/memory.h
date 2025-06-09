@@ -172,6 +172,10 @@ public:
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
 
+    void SetPrtArea(u32 id, VAddr address, u64 size);
+
+    void CopySparseMemory(VAddr source, u8* dest, u64 size);
+
     bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
@@ -274,6 +278,18 @@ private:
     size_t flexible_usage{};
     size_t pool_budget{};
     Vulkan::Rasterizer* rasterizer{};
+
+    struct PrtArea {
+        VAddr start;
+        VAddr end;
+        bool mapped;
+
+        bool Overlaps(VAddr test_address, u64 test_size) const {
+            const VAddr overlap_end = test_address + test_size;
+            return start < overlap_end && test_address < end;
+        }
+    };
+    std::array<PrtArea, 3> prt_areas{};
 
     friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };

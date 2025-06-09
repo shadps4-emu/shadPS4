@@ -16,6 +16,7 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     case IR::Opcode::WriteSharedU64:
     case IR::Opcode::SharedAtomicAnd32:
     case IR::Opcode::SharedAtomicIAdd32:
+    case IR::Opcode::SharedAtomicIAdd64:
     case IR::Opcode::SharedAtomicOr32:
     case IR::Opcode::SharedAtomicSMax32:
     case IR::Opcode::SharedAtomicUMax32:
@@ -33,9 +34,11 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
     if (program.info.stage != Stage::Compute) {
         return;
     }
-    // Only perform the transform if the host shared memory is insufficient.
+    // Only perform the transform if the host shared memory is insufficient
+    // or the device does not support VK_KHR_workgroup_memory_explicit_layout
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    if (shared_memory_size <= profile.max_shared_memory_size) {
+    if (shared_memory_size <= profile.max_shared_memory_size &&
+        profile.supports_workgroup_explicit_memory_layout) {
         return;
     }
     // Add buffer binding for shared memory storage buffer.
@@ -60,6 +63,7 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                     ir.BufferAtomicAnd(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicIAdd32:
+            case IR::Opcode::SharedAtomicIAdd64:
                 inst.ReplaceUsesWithAndRemove(
                     ir.BufferAtomicIAdd(handle, inst.Arg(0), inst.Arg(1), {}));
                 continue;
@@ -93,11 +97,18 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                                            ir.Imm32(shared_memory_size));
             const IR::U32 address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
             switch (inst.GetOpcode()) {
+            case IR::Opcode::LoadSharedU16:
+                inst.ReplaceUsesWithAndRemove(ir.LoadBufferU16(handle, address, {}));
+                break;
             case IR::Opcode::LoadSharedU32:
                 inst.ReplaceUsesWithAndRemove(ir.LoadBufferU32(1, handle, address, {}));
                 break;
             case IR::Opcode::LoadSharedU64:
                 inst.ReplaceUsesWithAndRemove(ir.LoadBufferU32(2, handle, address, {}));
+                break;
+            case IR::Opcode::WriteSharedU16:
+                ir.StoreBufferU16(handle, address, IR::U32{inst.Arg(1)}, {});
+                inst.Invalidate();
                 break;
             case IR::Opcode::WriteSharedU32:
                 ir.StoreBufferU32(1, handle, address, inst.Arg(1), {});
