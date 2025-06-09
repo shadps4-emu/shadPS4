@@ -152,6 +152,10 @@ public:
         data.fill(0);
     }
 
+    inline constexpr void Fill() {
+        data.fill(~0ULL);
+    }
+
     inline constexpr bool None() const {
         u64 result = 0;
         for (const auto& word : data) {

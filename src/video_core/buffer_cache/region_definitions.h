@@ -11,12 +11,11 @@ namespace VideoCore {
 
 constexpr u64 PAGES_PER_WORD = 64;
 constexpr u64 BYTES_PER_PAGE = 4_KB;
-constexpr u64 BYTES_PER_WORD = PAGES_PER_WORD * BYTES_PER_PAGE;
 
 constexpr u64 HIGHER_PAGE_BITS = 22;
 constexpr u64 HIGHER_PAGE_SIZE = 1ULL << HIGHER_PAGE_BITS;
 constexpr u64 HIGHER_PAGE_MASK = HIGHER_PAGE_SIZE - 1ULL;
-constexpr u64 NUM_REGION_WORDS = HIGHER_PAGE_SIZE / BYTES_PER_WORD;
+constexpr u64 NUM_REGION_PAGES = HIGHER_PAGE_SIZE / BYTES_PER_PAGE;
 
 enum class Type {
     CPU,
@@ -24,8 +23,6 @@ enum class Type {
     Untracked,
 };
 
-using WordsArray = std::array<u64, NUM_REGION_WORDS>;
-// TODO: use this insteed of WordsArray once it is ready
-using RegionBits = Common::BitArray<NUM_REGION_WORDS * PAGES_PER_WORD>;
+using RegionBits = Common::BitArray<NUM_REGION_PAGES>;
 
 } // namespace VideoCore

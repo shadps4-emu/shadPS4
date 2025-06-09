@@ -4,8 +4,8 @@
 #pragma once
 
 #include <mutex>
-#include <span>
 #include <utility>
+#include "common/div_ceil.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
@@ -14,8 +14,8 @@
 #endif
 #include "common/debug.h"
 #include "common/types.h"
-#include "video_core/page_manager.h"
 #include "video_core/buffer_cache/region_definitions.h"
+#include "video_core/page_manager.h"
 
 namespace VideoCore {
 
@@ -27,9 +27,9 @@ class RegionManager {
 public:
     explicit RegionManager(PageManager* tracker_, VAddr cpu_addr_)
         : tracker{tracker_}, cpu_addr{cpu_addr_} {
-        cpu.fill(~u64{0});
-        gpu.fill(0);
-        untracked.fill(~u64{0});
+        cpu.Fill();
+        gpu.Clear();
+        untracked.Fill();
     }
     explicit RegionManager() = default;
 
@@ -41,67 +41,35 @@ public:
         return cpu_addr;
     }
 
-    static constexpr u64 ExtractBits(u64 word, size_t page_start, size_t page_end) {
-        constexpr size_t number_bits = sizeof(u64) * 8;
-        const size_t limit_page_end = number_bits - std::min(page_end, number_bits);
-        u64 bits = (word >> page_start) << page_start;
-        bits = (bits << limit_page_end) >> limit_page_end;
-        return bits;
+    static constexpr size_t SanitizeAddress(size_t address) {
+        return static_cast<size_t>(std::max<s64>(static_cast<s64>(address), 0LL));
     }
 
-    static constexpr std::pair<size_t, size_t> GetWordPage(VAddr address) {
-        const size_t converted_address = static_cast<size_t>(address);
-        const size_t word_number = converted_address / BYTES_PER_WORD;
-        const size_t amount_pages = converted_address % BYTES_PER_WORD;
-        return std::make_pair(word_number, amount_pages / BYTES_PER_PAGE);
-    }
-
-    template <typename Func>
-    void IterateWords(size_t offset, size_t size, Func&& func) const {
-        RENDERER_TRACE;
-        using FuncReturn = std::invoke_result_t<Func, std::size_t, u64>;
-        static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-        const size_t start = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset), 0LL));
-        const size_t end = static_cast<size_t>(std::max<s64>(static_cast<s64>(offset + size), 0LL));
-        if (start >= HIGHER_PAGE_SIZE || end <= start) {
-            return;
-        }
-        auto [start_word, start_page] = GetWordPage(start);
-        auto [end_word, end_page] = GetWordPage(end + BYTES_PER_PAGE - 1ULL);
-        constexpr size_t num_words = NUM_REGION_WORDS;
-        start_word = std::min(start_word, num_words);
-        end_word = std::min(end_word, num_words);
-        const size_t diff = end_word - start_word;
-        end_word += (end_page + PAGES_PER_WORD - 1ULL) / PAGES_PER_WORD;
-        end_word = std::min(end_word, num_words);
-        end_page += diff * PAGES_PER_WORD;
-        constexpr u64 base_mask{~0ULL};
-        for (size_t word_index = start_word; word_index < end_word; word_index++) {
-            const u64 mask = ExtractBits(base_mask, start_page, end_page);
-            start_page = 0;
-            end_page -= PAGES_PER_WORD;
-            if constexpr (BOOL_BREAK) {
-                if (func(word_index, mask)) {
-                    return;
-                }
-            } else {
-                func(word_index, mask);
-            }
+    template <Type type>
+    RegionBits& GetRegionBits() noexcept {
+        static_assert(type != Type::Untracked);
+        if constexpr (type == Type::CPU) {
+            return cpu;
+        } else if constexpr (type == Type::GPU) {
+            return gpu;
+        } else if constexpr (type == Type::Untracked) {
+            return untracked;
+        } else {
+            static_assert(false, "Invalid type");
         }
     }
 
-    void IteratePages(u64 mask, auto&& func) const {
-        RENDERER_TRACE;
-        size_t offset = 0;
-        while (mask != 0) {
-            const size_t empty_bits = std::countr_zero(mask);
-            offset += empty_bits;
-            mask >>= empty_bits;
-
-            const size_t continuous_bits = std::countr_one(mask);
-            func(offset, continuous_bits);
-            mask = continuous_bits < PAGES_PER_WORD ? (mask >> continuous_bits) : 0;
-            offset += continuous_bits;
+    template <Type type>
+    const RegionBits& GetRegionBits() const noexcept {
+        static_assert(type != Type::Untracked);
+        if constexpr (type == Type::CPU) {
+            return cpu;
+        } else if constexpr (type == Type::GPU) {
+            return gpu;
+        } else if constexpr (type == Type::Untracked) {
+            return untracked;
+        } else {
+            static_assert(false, "Invalid type");
         }
     }
 
@@ -113,24 +81,25 @@ public:
      */
     template <Type type, bool enable>
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
-        std::scoped_lock lk{lock};
-        std::span<u64> state_words = Span<type>();
-        IterateWords(dirty_addr - cpu_addr, size, [&](size_t index, u64 mask) {
-            if constexpr (type == Type::CPU) {
-                UpdateProtection<!enable>(index, untracked[index], mask);
-            }
-            if constexpr (enable) {
-                state_words[index] |= mask;
-                if constexpr (type == Type::CPU) {
-                    untracked[index] |= mask;
-                }
-            } else {
-                state_words[index] &= ~mask;
-                if constexpr (type == Type::CPU) {
-                    untracked[index] &= ~mask;
-                }
-            }
-        });
+        const size_t offset = dirty_addr - cpu_addr;
+        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
+        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
+        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+            return;
+        }
+        RENDERER_TRACE;
+        std::unique_lock lk{lock};
+        static_assert(type != Type::Untracked);
+
+        RegionBits& bits = GetRegionBits<type>();
+        if constexpr (enable) {
+            bits.SetRange(start_page, end_page);
+        } else {
+            bits.UnsetRange(start_page, end_page);
+        }
+        if constexpr (type == Type::CPU) {
+            UpdateProtection<!enable>(std::move(lk));
+        }
     }
 
     /**
@@ -144,53 +113,36 @@ public:
     template <Type type, bool clear>
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
         RENDERER_TRACE;
-        std::scoped_lock lk{lock};
+        const size_t offset = query_cpu_range - cpu_addr;
+        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
+        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
+        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+            return;
+        }
+        std::unique_lock lk{lock};
         static_assert(type != Type::Untracked);
 
-        std::span<u64> state_words = Span<type>();
-        const size_t offset = query_cpu_range - cpu_addr;
-        bool pending = false;
-        size_t pending_offset{};
-        size_t pending_pointer{};
-        const auto release = [&]() {
-            func(cpu_addr + pending_offset * BYTES_PER_PAGE,
-                 (pending_pointer - pending_offset) * BYTES_PER_PAGE);
-        };
-        IterateWords(offset, size, [&](size_t index, u64 mask) {
-            RENDERER_TRACE;
-            if constexpr (type == Type::GPU) {
-                mask &= ~untracked[index];
+        RegionBits& bits = GetRegionBits<type>();
+        RegionBits mask{};
+        mask.SetRange(start_page, end_page);
+        if constexpr (type == Type::GPU) {
+            mask &= ~untracked;
+        }
+        mask &= bits;
+
+        if constexpr (clear) {
+            bits.UnsetRange(start_page, end_page);
+            if constexpr (type == Type::CPU) {
+                UpdateProtection<true>(std::move(lk));
+            } else {
+                lk.unlock();
             }
-            const u64 word = state_words[index] & mask;
-            if constexpr (clear) {
-                if constexpr (type == Type::CPU) {
-                    UpdateProtection<true>(index, untracked[index], mask);
-                    untracked[index] &= ~mask;
-                }
-                state_words[index] &= ~mask;
-            }
-            const size_t base_offset = index * PAGES_PER_WORD;
-            IteratePages(word, [&](size_t pages_offset, size_t pages_size) {
-                RENDERER_TRACE;
-                const auto reset = [&]() {
-                    pending_offset = base_offset + pages_offset;
-                    pending_pointer = base_offset + pages_offset + pages_size;
-                };
-                if (!pending) {
-                    reset();
-                    pending = true;
-                    return;
-                }
-                if (pending_pointer == base_offset + pages_offset) {
-                    pending_pointer += pages_size;
-                    return;
-                }
-                release();
-                reset();
-            });
-        });
-        if (pending) {
-            release();
+        } else {
+            lk.unlock();
+        }
+
+        for (const auto& [start, end] : mask) {
+            func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
         }
     }
 
@@ -202,22 +154,23 @@ public:
      */
     template <Type type>
     [[nodiscard]] bool IsRegionModified(u64 offset, u64 size) const noexcept {
+        RENDERER_TRACE;
+        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
+        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
+        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+            return false;
+        }
+        // std::scoped_lock lk{lock}; // Is this needed?
         static_assert(type != Type::Untracked);
 
-        const std::span<const u64> state_words = Span<type>();
-        bool result = false;
-        IterateWords(offset, size, [&](size_t index, u64 mask) {
-            if constexpr (type == Type::GPU) {
-                mask &= ~untracked[index];
-            }
-            const u64 word = state_words[index] & mask;
-            if (word != 0) {
-                result = true;
-                return true;
-            }
-            return false;
-        });
-        return result;
+        const RegionBits& bits = GetRegionBits<type>();
+        RegionBits test{};
+        test.SetRange(start_page, end_page);
+        if constexpr (type == Type::GPU) {
+            test &= ~untracked;
+        }
+        test &= bits;
+        return test.Any();
     }
 
 private:
@@ -230,37 +183,13 @@ private:
      *
      * @tparam add_to_tracker True when the tracker should start tracking the new pages
      */
-    template <bool add_to_tracker>
-    void UpdateProtection(u64 word_index, u64 current_bits, u64 new_bits) const {
+    template <bool add_to_tracker, typename Lock>
+    void UpdateProtection(Lock&& lk) {
         RENDERER_TRACE;
-        u64 changed_bits = (add_to_tracker ? current_bits : ~current_bits) & new_bits;
-        VAddr addr = cpu_addr + word_index * BYTES_PER_WORD;
-        IteratePages(changed_bits, [&](size_t offset, size_t size) {
-            tracker->UpdatePageWatchers<add_to_tracker>(addr + offset * BYTES_PER_PAGE,
-                                                  size * BYTES_PER_PAGE);
-        });
-    }
-
-    template <Type type>
-    std::span<u64> Span() noexcept {
-        if constexpr (type == Type::CPU) {
-            return cpu;
-        } else if constexpr (type == Type::GPU) {
-            return gpu;
-        } else if constexpr (type == Type::Untracked) {
-            return untracked;
-        }
-    }
-
-    template <Type type>
-    std::span<const u64> Span() const noexcept {
-        if constexpr (type == Type::CPU) {
-            return cpu;
-        } else if constexpr (type == Type::GPU) {
-            return gpu;
-        } else if constexpr (type == Type::Untracked) {
-            return untracked;
-        }
+        RegionBits mask = cpu ^ untracked;
+        untracked = cpu;
+        lk.unlock();
+        tracker->UpdatePageWatchersMasked<add_to_tracker>(cpu_addr, mask);
     }
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
@@ -270,9 +199,9 @@ private:
 #endif
     PageManager* tracker;
     VAddr cpu_addr = 0;
-    WordsArray cpu;
-    WordsArray gpu;
-    WordsArray untracked;
+    RegionBits cpu;
+    RegionBits gpu;
+    RegionBits untracked;
 };
 
 } // namespace VideoCore
