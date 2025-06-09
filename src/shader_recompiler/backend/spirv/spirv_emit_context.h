@@ -235,17 +235,16 @@ public:
     Id false_value{};
     Id u8_one_value{};
     Id u8_zero_value{};
+    Id u16_zero_value{};
     Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
     Id u64_one_value{};
     Id u64_zero_value{};
 
-    Id shared_u8{};
     Id shared_u16{};
     Id shared_u32{};
-    Id shared_u32x2{};
-    Id shared_u32x4{};
+    Id shared_u64{};
 
     Id input_u32{};
     Id input_f32{};
@@ -285,13 +284,13 @@ public:
     Id image_u32{};
     Id image_f32{};
 
-    Id shared_memory_u8{};
     Id shared_memory_u16{};
     Id shared_memory_u32{};
-    Id shared_memory_u32x2{};
-    Id shared_memory_u32x4{};
+    Id shared_memory_u64{};
 
+    Id shared_memory_u16_type{};
     Id shared_memory_u32_type{};
+    Id shared_memory_u64_type{};
 
     Id bary_coord_persp_id{};
     Id bary_coord_linear_id{};
@@ -320,6 +319,7 @@ public:
         Id size;
         Id size_shorts;
         Id size_dwords;
+        Id size_qwords;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
         const BufferSpv& operator[](PointerType alias) const {

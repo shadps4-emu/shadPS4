@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/div_ceil.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_bounds.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
@@ -15,42 +17,40 @@ std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
 Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+    return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
+        return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+    });
+}
+
+Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
+                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
+    const Id shift_id{ctx.ConstU32(3U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
+        return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
+    });
 }
 
 Id SharedAtomicU32_IncDec(EmitContext& ctx, Id offset,
                           Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightArithmetic(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
+    const Id pointer{
+        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
-}
-
-Id BufferAtomicU32BoundsCheck(EmitContext& ctx, Id index, Id buffer_size, auto emit_func) {
-    if (Sirit::ValidId(buffer_size)) {
-        // Bounds checking enabled, wrap in a conditional branch to make sure that
-        // the atomic is not mistakenly executed when the index is out of bounds.
-        const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, buffer_size);
-        const Id ib_label = ctx.OpLabel();
-        const Id oob_label = ctx.OpLabel();
-        const Id end_label = ctx.OpLabel();
-        ctx.OpSelectionMerge(end_label, spv::SelectionControlMask::MaskNone);
-        ctx.OpBranchConditional(in_bounds, ib_label, oob_label);
-        ctx.AddLabel(ib_label);
-        const Id ib_result = emit_func();
-        ctx.OpBranch(end_label);
-        ctx.AddLabel(oob_label);
-        const Id oob_result = ctx.u32_zero_value;
-        ctx.OpBranch(end_label);
-        ctx.AddLabel(end_label);
-        return ctx.OpPhi(ctx.U32[1], ib_result, ib_label, oob_result, oob_label);
-    }
-    // Bounds checking not enabled, just perform the atomic operation.
-    return emit_func();
+    return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
+        return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
+    });
 }
 
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
@@ -63,7 +63,7 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return BufferAtomicU32BoundsCheck(ctx, index, buffer.size_dwords, [&] {
+    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
         return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
     });
 }
@@ -79,8 +79,23 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return BufferAtomicU32BoundsCheck(ctx, index, buffer.size_dwords, [&] {
+    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
         return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
+    });
+}
+
+Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
+    const auto& buffer = ctx.buffers[handle];
+    if (Sirit::ValidId(buffer.offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    }
+    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(3u));
+    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U64];
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return AccessBoundsCheck<64>(ctx, index, buffer.size_qwords, [&] {
+        return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
     });
 }
 
@@ -103,6 +118,10 @@ Id ImageAtomicF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
 
 Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicIAdd);
+}
+
+Id EmitSharedAtomicIAdd64(EmitContext& ctx, Id offset, Id value) {
+    return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicIAdd);
 }
 
 Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value) {
@@ -147,6 +166,10 @@ Id EmitSharedAtomicIDecrement32(EmitContext& ctx, Id offset) {
 
 Id EmitBufferAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicIAdd);
+}
+
+Id EmitBufferAtomicIAdd64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU64(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicIAdd);
 }
 
 Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {

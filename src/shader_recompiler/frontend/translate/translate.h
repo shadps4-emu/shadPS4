@@ -271,6 +271,7 @@ public:
     // Data share
     // DS
     void DS_ADD_U32(const GcnInst& inst, bool rtn);
+    void DS_ADD_U64(const GcnInst& inst, bool rtn);
     void DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn);
     void DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);

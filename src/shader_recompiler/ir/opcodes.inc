@@ -30,13 +30,16 @@ OPCODE(EmitVertex,                                          Void,               
 OPCODE(EmitPrimitive,                                       Void,                                                                                           )
 
 // Shared memory operations
+OPCODE(LoadSharedU16,                                       U16,            U32,                                                                            )
 OPCODE(LoadSharedU32,                                       U32,            U32,                                                                            )
-OPCODE(LoadSharedU64,                                       U32x2,          U32,                                                                            )
+OPCODE(LoadSharedU64,                                       U64,            U32,                                                                            )
+OPCODE(WriteSharedU16,                                      Void,           U32,            U16,                                                            )
 OPCODE(WriteSharedU32,                                      Void,           U32,            U32,                                                            )
-OPCODE(WriteSharedU64,                                      Void,           U32,            U32x2,                                                          )
+OPCODE(WriteSharedU64,                                      Void,           U32,            U64,                                                          )
 
 // Shared atomic operations
 OPCODE(SharedAtomicIAdd32,                                  U32,            U32,            U32,                                                            )
+OPCODE(SharedAtomicIAdd64,                                  U64,            U32,            U64,                                                            )
 OPCODE(SharedAtomicSMin32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMin32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicSMax32,                                  U32,            U32,            U32,                                                            )
@@ -116,6 +119,7 @@ OPCODE(StoreBufferFormatF32,                                Void,           Opaq
 
 // Buffer atomic operations
 OPCODE(BufferAtomicIAdd32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicIAdd64,                                  U64,            Opaque,         Opaque,         U64                                             )
 OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
 OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
 OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,         Opaque,         U32                                             )

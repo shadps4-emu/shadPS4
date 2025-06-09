@@ -146,6 +146,7 @@ void EmitContext::DefineArithmeticTypes() {
     false_value = ConstantFalse(U1[1]);
     u8_one_value = Constant(U8, 1U);
     u8_zero_value = Constant(U8, 0U);
+    u16_zero_value = Constant(U16, 0U);
     u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
     f32_zero_value = ConstF32(0.0f);
@@ -285,6 +286,8 @@ void EmitContext::DefineBufferProperties() {
             Name(buffer.size_shorts, fmt::format("buf{}_short_size", binding));
             buffer.size_dwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(2U));
             Name(buffer.size_dwords, fmt::format("buf{}_dword_size", binding));
+            buffer.size_qwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(3U));
+            Name(buffer.size_qwords, fmt::format("buf{}_qword_size", binding));
         }
     }
 }
@@ -979,13 +982,27 @@ void EmitContext::DefineSharedMemory() {
     }
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
-    const Id type{TypeArray(U32[1], ConstU32(num_elements))};
-    shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
-    shared_u32 = TypePointer(spv::StorageClass::Workgroup, U32[1]);
-    shared_memory_u32 = AddGlobalVariable(shared_memory_u32_type, spv::StorageClass::Workgroup);
-    Name(shared_memory_u32, "shared_mem");
-    interfaces.push_back(shared_memory_u32);
+
+    const auto make_type = [&](Id element_type, u32 element_size) {
+        const u32 num_elements{Common::DivCeil(shared_memory_size, element_size)};
+        const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
+        Decorate(array_type, spv::Decoration::ArrayStride, element_size);
+
+        const Id struct_type{TypeStruct(array_type)};
+        MemberDecorate(struct_type, 0u, spv::Decoration::Offset, 0u);
+        Decorate(struct_type, spv::Decoration::Block);
+
+        const Id pointer = TypePointer(spv::StorageClass::Workgroup, struct_type);
+        const Id element_pointer = TypePointer(spv::StorageClass::Workgroup, element_type);
+        const Id variable = AddGlobalVariable(pointer, spv::StorageClass::Workgroup);
+        Decorate(variable, spv::Decoration::Aliased);
+        interfaces.push_back(variable);
+
+        return std::make_tuple(variable, element_pointer, pointer);
+    };
+    std::tie(shared_memory_u16, shared_u16, shared_memory_u16_type) = make_type(U16, 2u);
+    std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make_type(U32[1], 4u);
+    std::tie(shared_memory_u64, shared_u64, shared_memory_u64_type) = make_type(U64, 8u);
 }
 
 Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {
