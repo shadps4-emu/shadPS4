@@ -1119,6 +1119,10 @@ if (APPLE)
         set(MVK_BUNDLE_PATH "Resources/vulkan/icd.d")
         set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
         set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/${MVK_BUNDLE_PATH})
+
+        add_custom_command(
+            OUTPUT ${MVK_DST}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
     else()
         set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
         set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
@@ -1129,9 +1133,6 @@ if (APPLE)
     set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
     set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
 
-    add_custom_command(
-        OUTPUT ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
     add_custom_command(
         OUTPUT ${MVK_ICD_DST}
         DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
@@ -1146,15 +1147,11 @@ if (APPLE)
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
-        target_link_options(shadps4 PRIVATE -Wl,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
     endif()
 
     # Replacement for std::chrono::time_zone
     target_link_libraries(shadps4 PRIVATE date::date-tz)
-endif()
-
-if (NOT ENABLE_QT_GUI)
-  target_link_libraries(shadps4 PRIVATE SDL3::SDL3)
 endif()
 
 if (ENABLE_QT_GUI)
