@@ -63,8 +63,7 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args
-                   ) {
+void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
