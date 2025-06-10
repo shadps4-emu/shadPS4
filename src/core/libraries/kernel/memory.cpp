@@ -100,7 +100,7 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
                                                     size_t alignment, u64* physAddrOut,
                                                     size_t* sizeOut) {
     LOG_INFO(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
-                searchStart, searchEnd, alignment);
+             searchStart, searchEnd, alignment);
 
     if (physAddrOut == nullptr || sizeOut == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
