@@ -319,7 +319,8 @@ void Image::CopyImage(const Image& image) {
     auto cmdbuf = scheduler->CommandBuffer();
 
     boost::container::small_vector<vk::ImageCopy, 14> image_copy{};
-    for (u32 m = 0; m < image.info.resources.levels; ++m) {
+    const u32 num_mips = std::min(image.info.resources.levels, info.resources.levels);
+    for (u32 m = 0; m < num_mips; ++m) {
         const auto mip_w = std::max(image.info.size.width >> m, 1u);
         const auto mip_h = std::max(image.info.size.height >> m, 1u);
         const auto mip_d = std::max(image.info.size.depth >> m, 1u);
