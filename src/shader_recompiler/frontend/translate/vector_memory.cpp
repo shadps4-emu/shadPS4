@@ -354,9 +354,9 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::Xor:
             return ir.BufferAtomicXor(handle, address, vdata_val, buffer_info);
         case AtomicOp::Inc:
-            return ir.BufferAtomicInc(handle, address, vdata_val, buffer_info);
+            return ir.BufferAtomicInc(handle, address, buffer_info);
         case AtomicOp::Dec:
-            return ir.BufferAtomicDec(handle, address, vdata_val, buffer_info);
+            return ir.BufferAtomicDec(handle, address, buffer_info);
         default:
             UNREACHABLE();
         }

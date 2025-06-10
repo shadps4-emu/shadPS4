@@ -294,11 +294,11 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
 Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
     switch (bit_size) {
     case 16:
-        return Inst<U16>(Opcode::LoadSharedU16, offset);
+        return Inst<U32>(Opcode::LoadSharedU16, offset);
     case 32:
         return Inst<U32>(Opcode::LoadSharedU32, offset);
     case 64:
-        return Inst<U64>(Opcode::LoadSharedU64, offset);
+        return Inst(Opcode::LoadSharedU64, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
@@ -353,12 +353,12 @@ U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
     return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
 }
 
-U32 IREmitter::SharedAtomicIIncrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIIncrement32, address);
+U32 IREmitter::SharedAtomicInc(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicInc32, address);
 }
 
-U32 IREmitter::SharedAtomicIDecrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIDecrement32, address);
+U32 IREmitter::SharedAtomicDec(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicDec32, address);
 }
 
 U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
@@ -474,7 +474,19 @@ void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, con
 
 Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return Inst(Opcode::BufferAtomicIAdd64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+Value IREmitter::BufferAtomicISub(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicISub32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
@@ -489,14 +501,12 @@ Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, con
                      : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address);
 }
 
-Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address);
 }
 
 Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,

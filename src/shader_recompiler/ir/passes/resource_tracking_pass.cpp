@@ -17,6 +17,8 @@ using SharpLocation = u32;
 bool IsBufferAtomic(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::BufferAtomicIAdd32:
+    case IR::Opcode::BufferAtomicIAdd64:
+    case IR::Opcode::BufferAtomicISub32:
     case IR::Opcode::BufferAtomicSMin32:
     case IR::Opcode::BufferAtomicUMin32:
     case IR::Opcode::BufferAtomicSMax32:
@@ -27,6 +29,7 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicOr32:
     case IR::Opcode::BufferAtomicXor32:
     case IR::Opcode::BufferAtomicSwap32:
+    case IR::Opcode::BufferAtomicCmpSwap32:
         return true;
     default:
         return false;

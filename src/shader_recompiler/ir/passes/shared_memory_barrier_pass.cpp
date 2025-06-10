@@ -9,12 +9,14 @@
 namespace Shader::Optimization {
 
 static bool IsLoadShared(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
+    return inst.GetOpcode() == IR::Opcode::LoadSharedU16 ||
+           inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
            inst.GetOpcode() == IR::Opcode::LoadSharedU64;
 }
 
 static bool IsWriteShared(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
+    return inst.GetOpcode() == IR::Opcode::WriteSharedU16 ||
+           inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
            inst.GetOpcode() == IR::Opcode::WriteSharedU64;
 }
 

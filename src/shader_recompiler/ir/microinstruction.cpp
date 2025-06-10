@@ -66,6 +66,8 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferF32x4:
     case Opcode::StoreBufferFormatF32:
     case Opcode::BufferAtomicIAdd32:
+    case Opcode::BufferAtomicIAdd64:
+    case Opcode::BufferAtomicISub32:
     case Opcode::BufferAtomicSMin32:
     case Opcode::BufferAtomicUMin32:
     case Opcode::BufferAtomicSMax32:
@@ -76,15 +78,21 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicOr32:
     case Opcode::BufferAtomicXor32:
     case Opcode::BufferAtomicSwap32:
+    case Opcode::BufferAtomicCmpSwap32:
     case Opcode::DataAppend:
     case Opcode::DataConsume:
-    case Opcode::WriteSharedU64:
+    case Opcode::WriteSharedU16:
     case Opcode::WriteSharedU32:
+    case Opcode::WriteSharedU64:
     case Opcode::SharedAtomicIAdd32:
+    case Opcode::SharedAtomicIAdd64:
+    case Opcode::SharedAtomicISub32:
     case Opcode::SharedAtomicSMin32:
     case Opcode::SharedAtomicUMin32:
     case Opcode::SharedAtomicSMax32:
     case Opcode::SharedAtomicUMax32:
+    case Opcode::SharedAtomicInc32:
+    case Opcode::SharedAtomicDec32:
     case Opcode::SharedAtomicAnd32:
     case Opcode::SharedAtomicOr32:
     case Opcode::SharedAtomicXor32:
