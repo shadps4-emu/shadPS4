@@ -55,6 +55,22 @@ struct OrbisVideodec2AvcPictureInfo {
     u8 pic_struct;
     u8 field_pic_flag;
     u8 bottom_field_flag;
+
+    u8 sequenceParameterSetPresentFlag;
+    u8 pictureParameterSetPresentFlag;
+    u8 auDelimiterPresentFlag;
+    u8 endOfSequencePresentFlag;
+    u8 endOfStreamPresentFlag;
+    u8 fillerDataPresentFlag;
+    u8 pictureTimingSeiPresentFlag;
+    u8 bufferingPeriodSeiPresentFlag;
+
+    u8 constraint_set0_flag;
+    u8 constraint_set1_flag;
+    u8 constraint_set2_flag;
+    u8 constraint_set3_flag;
+    u8 constraint_set4_flag;
+    u8 constraint_set5_flag;
 };
 
 } // namespace Libraries::Vdec2
