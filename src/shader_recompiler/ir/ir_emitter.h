@@ -100,33 +100,35 @@ public:
     void WriteShared(int bit_size, const Value& value, const U32& offset);
 
     [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data);
+    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
     [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
     [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
+    [[nodiscard]] U32 SharedAtomicInc(const U32& address);
+    [[nodiscard]] U32 SharedAtomicDec(const U32& address);
     [[nodiscard]] U32 SharedAtomicAnd(const U32& address, const U32& data);
     [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
     [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
 
-    [[nodiscard]] U32 SharedAtomicIIncrement(const U32& address);
-    [[nodiscard]] U32 SharedAtomicIDecrement(const U32& address);
-    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
-
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
-    [[nodiscard]] U32 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
-    [[nodiscard]] U32 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U8 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U16 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] Value LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
                                       BufferInstInfo info);
+    [[nodiscard]] U64 LoadBufferU64(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] Value LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
                                       BufferInstInfo info);
     [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
-    void StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+    void StoreBufferU8(const Value& handle, const Value& address, const U8& data,
                        BufferInstInfo info);
-    void StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+    void StoreBufferU16(const Value& handle, const Value& address, const U16& data,
                         BufferInstInfo info);
     void StoreBufferU32(int num_dwords, const Value& handle, const Value& address,
                         const Value& data, BufferInstInfo info);
+    void StoreBufferU64(const Value& handle, const Value& address, const U64& data,
+                        BufferInstInfo info);
     void StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
                         const Value& data, BufferInstInfo info);
     void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
@@ -134,14 +136,16 @@ public:
 
     [[nodiscard]] Value BufferAtomicIAdd(const Value& handle, const Value& address,
                                          const Value& value, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicISub(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
-                                        const Value& value, BufferInstInfo info);
+                                        BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
-                                        const Value& value, BufferInstInfo info);
+                                        BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicAnd(const Value& handle, const Value& address,
                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicOr(const Value& handle, const Value& address,
@@ -309,7 +313,7 @@ public:
     [[nodiscard]] F32F64 ConvertIToF(size_t dest_bitsize, size_t src_bitsize, bool is_signed,
                                      const Value& value);
 
-    [[nodiscard]] U16U32U64 UConvert(size_t result_bitsize, const U16U32U64& value);
+    [[nodiscard]] U8U16U32U64 UConvert(size_t result_bitsize, const U8U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
     [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,

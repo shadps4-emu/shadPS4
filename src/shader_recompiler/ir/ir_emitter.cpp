@@ -353,12 +353,12 @@ U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
     return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
 }
 
-U32 IREmitter::SharedAtomicIIncrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIIncrement32, address);
+U32 IREmitter::SharedAtomicInc(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicInc32, address);
 }
 
-U32 IREmitter::SharedAtomicIDecrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIDecrement32, address);
+U32 IREmitter::SharedAtomicDec(const U32& address) {
+    return Inst<U32>(Opcode::SharedAtomicDec32, address);
 }
 
 U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
@@ -373,12 +373,12 @@ U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
     return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
 }
 
-U32 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info) {
-    return Inst<U32>(Opcode::LoadBufferU8, Flags{info}, handle, address);
+U8 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U8>(Opcode::LoadBufferU8, Flags{info}, handle, address);
 }
 
-U32 IREmitter::LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info) {
-    return Inst<U32>(Opcode::LoadBufferU16, Flags{info}, handle, address);
+U16 IREmitter::LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U16>(Opcode::LoadBufferU16, Flags{info}, handle, address);
 }
 
 Value IREmitter::LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
@@ -395,6 +395,10 @@ Value IREmitter::LoadBufferU32(int num_dwords, const Value& handle, const Value&
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
+}
+
+U64 IREmitter::LoadBufferU64(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U64>(Opcode::LoadBufferU64, Flags{info}, handle, address);
 }
 
 Value IREmitter::LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
@@ -417,12 +421,12 @@ Value IREmitter::LoadBufferFormat(const Value& handle, const Value& address, Buf
     return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
 }
 
-void IREmitter::StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+void IREmitter::StoreBufferU8(const Value& handle, const Value& address, const U8& data,
                               BufferInstInfo info) {
     Inst(Opcode::StoreBufferU8, Flags{info}, handle, address, data);
 }
 
-void IREmitter::StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+void IREmitter::StoreBufferU16(const Value& handle, const Value& address, const U16& data,
                                BufferInstInfo info) {
     Inst(Opcode::StoreBufferU16, Flags{info}, handle, address, data);
 }
@@ -445,6 +449,11 @@ void IREmitter::StoreBufferU32(int num_dwords, const Value& handle, const Value&
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
+}
+
+void IREmitter::StoreBufferU64(const Value& handle, const Value& address, const U64& data,
+                               BufferInstInfo info) {
+    Inst(Opcode::StoreBufferU64, Flags{info}, handle, address, data);
 }
 
 void IREmitter::StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
@@ -474,7 +483,19 @@ void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, con
 
 Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return Inst(Opcode::BufferAtomicIAdd64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+Value IREmitter::BufferAtomicISub(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicISub32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
@@ -489,14 +510,12 @@ Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, con
                      : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address);
 }
 
-Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address);
 }
 
 Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,
@@ -1804,8 +1823,15 @@ F32F64 IREmitter::ConvertIToF(size_t dest_bitsize, size_t src_bitsize, bool is_s
                      : ConvertUToF(dest_bitsize, src_bitsize, value);
 }
 
-U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
+U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value) {
     switch (result_bitsize) {
+    case 8:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U8>(Opcode::ConvertU8U32, value);
+        default:
+            break;
+        }
     case 16:
         switch (value.Type()) {
         case Type::U32:
@@ -1815,6 +1841,8 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         }
     case 32:
         switch (value.Type()) {
+        case Type::U8:
+            return Inst<U32>(Opcode::ConvertU32U8, value);
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
         default:

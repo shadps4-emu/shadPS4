@@ -216,34 +216,38 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
     if (is_pair) {
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
-        if (bit_size == 32) {
-            ir.WriteShared(32, ir.GetVectorReg(data0), addr0);
-        } else {
+        if (bit_size == 64) {
             ir.WriteShared(64,
                            ir.PackUint2x32(ir.CompositeConstruct(ir.GetVectorReg(data0),
                                                                  ir.GetVectorReg(data0 + 1))),
                            addr0);
+        } else if (bit_size == 32) {
+            ir.WriteShared(32, ir.GetVectorReg(data0), addr0);
+        } else if (bit_size == 16) {
+            ir.WriteShared(16, ir.UConvert(16, ir.GetVectorReg(data0)), addr0);
         }
         const IR::U32 addr1 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset1 * adj)));
-        if (bit_size == 32) {
-            ir.WriteShared(32, ir.GetVectorReg(data1), addr1);
-        } else {
+        if (bit_size == 64) {
             ir.WriteShared(64,
                            ir.PackUint2x32(ir.CompositeConstruct(ir.GetVectorReg(data1),
                                                                  ir.GetVectorReg(data1 + 1))),
                            addr1);
+        } else if (bit_size == 32) {
+            ir.WriteShared(32, ir.GetVectorReg(data1), addr1);
+        } else if (bit_size == 16) {
+            ir.WriteShared(16, ir.UConvert(16, ir.GetVectorReg(data1)), addr1);
         }
-    } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        const IR::Value data =
-            ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1));
-        ir.WriteShared(bit_size, ir.PackUint2x32(data), addr0);
-    } else if (bit_size == 16) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
     } else {
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
+        if (bit_size == 64) {
+            const IR::Value data =
+                ir.CompositeConstruct(ir.GetVectorReg(data0), ir.GetVectorReg(data0 + 1));
+            ir.WriteShared(bit_size, ir.PackUint2x32(data), addr0);
+        } else if (bit_size == 32) {
+            ir.WriteShared(bit_size, ir.GetVectorReg(data0), addr0);
+        } else if (bit_size == 16) {
+            ir.WriteShared(bit_size, ir.UConvert(16, ir.GetVectorReg(data0)), addr0);
+        }
     }
 }
 
@@ -264,7 +268,7 @@ void Translator::DS_INC_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 offset =
         ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const IR::Value original_val = ir.SharedAtomicIIncrement(addr_offset);
+    const IR::Value original_val = ir.SharedAtomicInc(addr_offset);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }
@@ -275,7 +279,7 @@ void Translator::DS_DEC_U32(const GcnInst& inst, bool rtn) {
     const IR::U32 offset =
         ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const IR::Value original_val = ir.SharedAtomicIDecrement(addr_offset);
+    const IR::Value original_val = ir.SharedAtomicDec(addr_offset);
     if (rtn) {
         SetDst(inst.dst[0], IR::U32{original_val});
     }
@@ -309,36 +313,38 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
         const u32 adj = (bit_size == 32 ? 4 : 8) * (stride64 ? 64 : 1);
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset0 * adj)));
         const IR::Value data0 = ir.LoadShared(bit_size, is_signed, addr0);
-        if (bit_size == 32) {
-            ir.SetVectorReg(dst_reg++, IR::U32{data0});
-        } else {
+        if (bit_size == 64) {
             const auto vector = ir.UnpackUint2x32(IR::U64{data0});
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(vector, 0)});
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(vector, 1)});
+        } else if (bit_size == 32) {
+            ir.SetVectorReg(dst_reg++, IR::U32{data0});
+        } else if (bit_size == 16) {
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.UConvert(32, IR::U16{data0})});
         }
         const IR::U32 addr1 = ir.IAdd(addr, ir.Imm32(u32(inst.control.ds.offset1 * adj)));
         const IR::Value data1 = ir.LoadShared(bit_size, is_signed, addr1);
-        if (bit_size == 32) {
-            ir.SetVectorReg(dst_reg++, IR::U32{data1});
-        } else {
+        if (bit_size == 64) {
             const auto vector = ir.UnpackUint2x32(IR::U64{data1});
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(vector, 0)});
             ir.SetVectorReg(dst_reg++, IR::U32{ir.CompositeExtract(vector, 1)});
+        } else if (bit_size == 32) {
+            ir.SetVectorReg(dst_reg++, IR::U32{data1});
+        } else if (bit_size == 16) {
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.UConvert(32, IR::U16{data1})});
         }
-    } else if (bit_size == 64) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        const IR::Value data = ir.LoadShared(bit_size, is_signed, addr0);
-        const auto vector = ir.UnpackUint2x32(IR::U64{data});
-        ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(vector, 0)});
-        ir.SetVectorReg(dst_reg + 1, IR::U32{ir.CompositeExtract(vector, 1)});
-    } else if (bit_size == 16) {
-        const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        const IR::U16 data = IR::U16{ir.LoadShared(bit_size, is_signed, addr0)};
-        ir.SetVectorReg(dst_reg, ir.UConvert(32, data));
     } else {
         const IR::U32 addr0 = ir.IAdd(addr, ir.Imm32(offset));
-        const IR::U32 data = IR::U32{ir.LoadShared(bit_size, is_signed, addr0)};
-        ir.SetVectorReg(dst_reg, data);
+        const IR::Value data = ir.LoadShared(bit_size, is_signed, addr0);
+        if (bit_size == 64) {
+            const auto vector = ir.UnpackUint2x32(IR::U64{data});
+            ir.SetVectorReg(dst_reg, IR::U32{ir.CompositeExtract(vector, 0)});
+            ir.SetVectorReg(dst_reg + 1, IR::U32{ir.CompositeExtract(vector, 1)});
+        } else if (bit_size == 32) {
+            ir.SetVectorReg(dst_reg, IR::U32{data});
+        } else if (bit_size == 16) {
+            ir.SetVectorReg(dst_reg++, IR::U32{ir.UConvert(32, IR::U16{data})});
+        }
     }
 }
 
