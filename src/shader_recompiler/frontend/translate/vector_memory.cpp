@@ -28,6 +28,15 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_LOAD_FORMAT_XYZW:
         return BUFFER_LOAD(4, false, true, inst);
 
+    case Opcode::BUFFER_LOAD_UBYTE:
+        return BufferAccessSmallType(8, false, false, inst);
+    case Opcode::BUFFER_LOAD_SBYTE:
+        return BufferAccessSmallType(8, true, false, inst);
+    case Opcode::BUFFER_LOAD_USHORT:
+        return BufferAccessSmallType(16, false, false, inst);
+    case Opcode::BUFFER_LOAD_SSHORT:
+        return BufferAccessSmallType(16, true, false, inst);
+
     case Opcode::BUFFER_LOAD_DWORD:
         return BUFFER_LOAD(1, false, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX2:
@@ -55,6 +64,11 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_STORE(3, true, false, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZW:
         return BUFFER_STORE(4, true, false, inst);
+
+    case Opcode::BUFFER_STORE_BYTE:
+        return BufferAccessSmallType(8, false, true, inst);
+    case Opcode::BUFFER_STORE_SHORT:
+        return BufferAccessSmallType(16, false, true, inst);
 
     case Opcode::BUFFER_STORE_DWORD:
         return BUFFER_STORE(1, false, false, inst);
@@ -231,6 +245,70 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
         for (u32 i = 0; i < num_dwords; i++) {
             ir.SetVectorReg(dst_reg + i, IR::U32{ir.CompositeExtract(value, i)});
         }
+    }
+}
+
+void Translator::BufferAccessSmallType(u32 bitwidth, bool is_signed, bool is_write,
+                                       const GcnInst& inst) {
+    const auto& mubuf = inst.control.mubuf;
+    const IR::VectorReg vaddr{inst.src[0].code};
+    const IR::ScalarReg sharp{inst.src[2].code * 4};
+    const IR::U32 soffset{GetSrc(inst.src[3])};
+
+    // ASSERT(!mubuf.idxen);              // Some dfmt conversion is necessary?
+    ASSERT(!(mubuf.glc && mubuf.slc)); // ring access?
+
+    IR::BufferInstInfo buffer_info{};
+    buffer_info.index_enable.Assign(mubuf.idxen);
+    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.inst_offset.Assign(mubuf.offset);
+    buffer_info.globally_coherent.Assign(mubuf.glc);
+    buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.typed.Assign(false);
+
+    const IR::Value handle =
+        ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
+                              ir.GetScalarReg(sharp + 2), ir.GetScalarReg(sharp + 3));
+    // TODO when idxen==1, this is probably a hack.
+    // I think we need to check DFMT in the sharp. This assumes DFMT is r16
+    const IR::Value addr = ir.IAdd(ir.GetVectorReg(vaddr), soffset);
+    IR::U32 result;
+    IR::U32 write_data;
+
+    if (is_write) {
+        write_data = GetSrc(inst.src[1]);
+    }
+
+    switch (bitwidth) {
+    case 8:
+        if (is_write) {
+            ir.StoreBufferU8(handle, addr, write_data, buffer_info);
+        } else {
+            if (is_signed) {
+                result = ir.LoadBufferS8(handle, addr, buffer_info);
+            } else {
+                result = ir.LoadBufferU8(handle, addr, buffer_info);
+            }
+        }
+        break;
+    case 16:
+        if (is_write) {
+            ir.StoreBufferU16(handle, addr, write_data, buffer_info);
+        } else {
+            if (is_signed) {
+                result = ir.LoadBufferS16(handle, addr, buffer_info);
+            } else {
+                result = ir.LoadBufferU16(handle, addr, buffer_info);
+            }
+        }
+        break;
+
+    default:
+        UNREACHABLE();
+    }
+
+    if (is_write) {
+        SetDst(inst.src[1], result);
     }
 }
 

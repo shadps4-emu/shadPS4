@@ -95,7 +95,9 @@ OPCODE(UndefU64,                                            U64,                
 
 // Buffer operations
 OPCODE(LoadBufferU8,                                        U32,            Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferS8,                                        U32,            Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU16,                                       U32,            Opaque,         Opaque,                                                         )
+OPCODE(LoadBufferS16,                                       U32,            Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32,                                       U32,            Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32x2,                                     U32x2,          Opaque,         Opaque,                                                         )
 OPCODE(LoadBufferU32x3,                                     U32x3,          Opaque,         Opaque,                                                         )

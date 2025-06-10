@@ -377,8 +377,16 @@ U32 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferIns
     return Inst<U32>(Opcode::LoadBufferU8, Flags{info}, handle, address);
 }
 
+U32 IREmitter::LoadBufferS8(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U32>(Opcode::LoadBufferS8, Flags{info}, handle, address);
+}
+
 U32 IREmitter::LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info) {
     return Inst<U32>(Opcode::LoadBufferU16, Flags{info}, handle, address);
+}
+
+U32 IREmitter::LoadBufferS16(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U32>(Opcode::LoadBufferS16, Flags{info}, handle, address);
 }
 
 Value IREmitter::LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
