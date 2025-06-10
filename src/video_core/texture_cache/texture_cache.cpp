@@ -397,7 +397,6 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
     // Create and register a new image
     if (!image_id) {
         image_id = slot_images.insert(instance, scheduler, info);
-        RefreshImage(slot_images[image_id]);
         RegisterImage(image_id);
     }
 
