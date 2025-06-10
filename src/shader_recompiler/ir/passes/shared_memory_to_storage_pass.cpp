@@ -34,11 +34,11 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
     if (program.info.stage != Stage::Compute) {
         return;
     }
-    // Only perform the transform if the host shared memory is insufficient
-    // or the device does not support VK_KHR_workgroup_memory_explicit_layout
+    // Only perform the transform if there is shared memory and either host shared memory is
+    // insufficient or the device does not support VK_KHR_workgroup_memory_explicit_layout
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
-    if (shared_memory_size <= profile.max_shared_memory_size &&
-        profile.supports_workgroup_explicit_memory_layout) {
+    if (shared_memory_size == 0 || (shared_memory_size <= profile.max_shared_memory_size &&
+                                    profile.supports_workgroup_explicit_memory_layout)) {
         return;
     }
     // Add buffer binding for shared memory storage buffer.
