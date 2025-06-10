@@ -15,19 +15,19 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
             "border-radius: 4px; padding: 5px; }"
             "QLineEdit:focus {"
             "border: 1px solid #2A82DA; }");
-        themePalette.setColor(QPalette::Window, QColor(50, 50, 50));
-        themePalette.setColor(QPalette::WindowText, Qt::white);
-        themePalette.setColor(QPalette::Base, QColor(20, 20, 20));
-        themePalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-        themePalette.setColor(QPalette::ToolTipBase, QColor(20, 20, 20));
-        themePalette.setColor(QPalette::ToolTipText, Qt::white);
-        themePalette.setColor(QPalette::Text, Qt::white);
-        themePalette.setColor(QPalette::Button, QColor(53, 53, 53));
-        themePalette.setColor(QPalette::ButtonText, Qt::white);
-        themePalette.setColor(QPalette::BrightText, Qt::red);
-        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));
-        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
-        themePalette.setColor(QPalette::HighlightedText, Qt::black);
+        themePalette.setColor(QPalette::Window, QColor(50, 50, 50));             // Dark Gray      
+        themePalette.setColor(QPalette::WindowText, Qt::white);                  // White
+        themePalette.setColor(QPalette::Base, QColor(20, 20, 20));               // Dark Dark Gray
+        themePalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));      // Gray
+        themePalette.setColor(QPalette::ToolTipBase, QColor(20, 20, 20));        // Dark Dark Gray
+        themePalette.setColor(QPalette::ToolTipText, Qt::white);                 // White
+        themePalette.setColor(QPalette::Text, Qt::white);                        // White
+        themePalette.setColor(QPalette::Button, QColor(53, 53, 53));             // Gray
+        themePalette.setColor(QPalette::ButtonText, Qt::white);                  // White
+        themePalette.setColor(QPalette::BrightText, Qt::red);                    // Red
+        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));             // Blue
+        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));        // Blue
+        themePalette.setColor(QPalette::HighlightedText, Qt::black);             // White
         qApp->setPalette(themePalette);
         break;
     case Theme::Light:
@@ -45,6 +45,27 @@ void WindowThemes::SetWindowTheme(Theme theme, QLineEdit* mw_searchbar) {
         themePalette.setColor(QPalette::Text, Qt::black);                        // Black
         themePalette.setColor(QPalette::Button, QColor(240, 240, 240));          // Light gray
         themePalette.setColor(QPalette::ButtonText, Qt::black);                  // Black
+        themePalette.setColor(QPalette::BrightText, Qt::red);                    // Red
+        themePalette.setColor(QPalette::Link, QColor(42, 130, 218));             // Blue
+        themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));        // Blue
+        themePalette.setColor(QPalette::HighlightedText, Qt::white);             // White
+        qApp->setPalette(themePalette);
+        break;
+    case Theme::Red:
+        mw_searchbar->setStyleSheet(
+            "QLineEdit {"
+            "background-color: #0e0000; color: #ffffff; border: 1px solid #ffffff; "
+            "border-radius: 4px; padding: 5px; }"
+            "QLineEdit:focus {"
+            "border: 1px solid #2A82DA; }");
+        themePalette.setColor(QPalette::Window, QColor(70, 0, 0));               // red 3
+        themePalette.setColor(QPalette::WindowText, Qt::white);                  // White
+        themePalette.setColor(QPalette::Base, QColor(28, 0, 0, 80));             // red 4
+        themePalette.setColor(QPalette::AlternateBase, QColor(56, 0, 0));        // red 2
+        themePalette.setColor(QPalette::ToolTipBase, QColor(28, 0, 0, 80));      // red 4
+        themePalette.setColor(QPalette::ToolTipText, Qt::white);                 // White
+        themePalette.setColor(QPalette::Text, Qt::white);                        // White
+        themePalette.setColor(QPalette::ButtonText, Qt::white);           // red 2
         themePalette.setColor(QPalette::BrightText, Qt::red);                    // Red
         themePalette.setColor(QPalette::Link, QColor(42, 130, 218));             // Blue
         themePalette.setColor(QPalette::Highlight, QColor(42, 130, 218));        // Blue

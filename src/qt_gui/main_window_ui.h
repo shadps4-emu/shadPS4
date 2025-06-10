@@ -34,6 +34,7 @@ public:
     QAction* configureAct;
     QAction* setThemeDark;
     QAction* setThemeLight;
+    QAction* setThemeRed;
     QAction* setThemeGreen;
     QAction* setThemeBlue;
     QAction* setThemeViolet;
@@ -163,6 +164,9 @@ public:
         setThemeLight = new QAction(MainWindow);
         setThemeLight->setObjectName("setThemeLight");
         setThemeLight->setCheckable(true);
+        setThemeRed = new QAction(MainWindow);
+        setThemeRed->setObjectName("setThemeRed");
+        setThemeRed->setCheckable(true);
         setThemeGreen = new QAction(MainWindow);
         setThemeGreen->setObjectName("setThemeGreen");
         setThemeGreen->setCheckable(true);
@@ -316,6 +320,7 @@ public:
         menuView->addAction(menuThemes->menuAction());
         menuThemes->addAction(setThemeDark);
         menuThemes->addAction(setThemeLight);
+        menuThemes->addAction(setThemeRed);
         menuThemes->addAction(setThemeGreen);
         menuThemes->addAction(setThemeBlue);
         menuThemes->addAction(setThemeViolet);
@@ -404,6 +409,7 @@ public:
         menuHelp->setTitle(QCoreApplication::translate("MainWindow", "Help", nullptr));
         setThemeDark->setText(QCoreApplication::translate("MainWindow", "Dark", nullptr));
         setThemeLight->setText(QCoreApplication::translate("MainWindow", "Light", nullptr));
+        setThemeRed->setText(QCoreApplication::translate("MainWindow", "Red", nullptr));
         setThemeGreen->setText(QCoreApplication::translate("MainWindow", "Green", nullptr));
         setThemeBlue->setText(QCoreApplication::translate("MainWindow", "Blue", nullptr));
         setThemeViolet->setText(QCoreApplication::translate("MainWindow", "Violet", nullptr));
