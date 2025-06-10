@@ -299,8 +299,7 @@ void EmitContext::DefineInterpolatedAttribs() {
     // Iterate all input attributes, load them and manually interpolate.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
-        const u32 semantic = input.param_index;
-        auto& params = input_params[semantic];
+        auto& params = input_params[i];
         if (input.is_flat || params.is_loaded) {
             continue;
         }
@@ -318,7 +317,7 @@ void EmitContext::DefineInterpolatedAttribs() {
         const Id p10_y{OpVectorTimesScalar(F32[4], p10, bary_coord_y)};
         const Id p20_z{OpVectorTimesScalar(F32[4], p20, bary_coord_z)};
         params.id = OpFAdd(F32[4], p0, OpFAdd(F32[4], p10_y, p20_z));
-        Name(params.id, fmt::format("fs_in_attr{}", semantic));
+        Name(params.id, fmt::format("fs_in_attr{}", i));
         params.is_loaded = true;
     }
 }
@@ -427,25 +426,28 @@ void EmitContext::DefineInputs() {
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
-            const u32 semantic = input.param_index;
-            ASSERT(semantic < IR::NumParams);
             if (input.IsDefault()) {
-                input_params[semantic] = {
-                    MakeDefaultValue(*this, input.default_value), input_f32, F32[1], 4, false, true,
+                input_params[i] = {
+                    .id = MakeDefaultValue(*this, input.default_value),
+                    .pointer_type = input_f32,
+                    .component_type = F32[1],
+                    .num_components = 4,
+                    .is_integer = false,
+                    .is_loaded = true,
                 };
                 continue;
             }
-            const IR::Attribute param{IR::Attribute::Param0 + input.param_index};
+            const IR::Attribute param{IR::Attribute::Param0 + i};
             const u32 num_components = info.loads.NumComponents(param);
             const Id type{F32[num_components]};
             Id attr_id{};
             if (profile.needs_manual_interpolation && !input.is_flat) {
-                attr_id = DefineInput(TypeArray(type, ConstU32(3U)), semantic);
+                attr_id = DefineInput(TypeArray(type, ConstU32(3U)), input.param_index);
                 Decorate(attr_id, spv::Decoration::PerVertexKHR);
-                Name(attr_id, fmt::format("fs_in_attr{}_p", semantic));
+                Name(attr_id, fmt::format("fs_in_attr{}_p", i));
             } else {
-                attr_id = DefineInput(type, semantic);
-                Name(attr_id, fmt::format("fs_in_attr{}", semantic));
+                attr_id = DefineInput(type, input.param_index);
+                Name(attr_id, fmt::format("fs_in_attr{}", i));
 
                 if (input.is_flat) {
                     Decorate(attr_id, spv::Decoration::Flat);
@@ -453,7 +455,7 @@ void EmitContext::DefineInputs() {
                     Decorate(attr_id, spv::Decoration::NoPerspective);
                 }
             }
-            input_params[semantic] =
+            input_params[i] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);
         }
         break;
