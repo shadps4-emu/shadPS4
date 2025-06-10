@@ -72,5 +72,6 @@ struct OrbisVideodec2AvcPictureInfo {
     u8 constraint_set4_flag;
     u8 constraint_set5_flag;
 };
+static_assert(sizeof(OrbisVideodec2AvcPictureInfo) == 0x78);
 
 } // namespace Libraries::Vdec2
