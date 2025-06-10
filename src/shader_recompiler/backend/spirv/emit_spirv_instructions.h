@@ -69,6 +69,7 @@ Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
+Id EmitLoadBufferU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
@@ -80,6 +81,7 @@ void EmitStoreBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address
 void EmitStoreBufferU32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferU32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferU32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
+void EmitStoreBufferU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32x2(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 void EmitStoreBufferF32x3(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
@@ -462,6 +464,8 @@ Id EmitConvertF64U32(EmitContext& ctx, Id value);
 Id EmitConvertF64U64(EmitContext& ctx, Id value);
 Id EmitConvertU16U32(EmitContext& ctx, Id value);
 Id EmitConvertU32U16(EmitContext& ctx, Id value);
+Id EmitConvertU8U32(EmitContext& ctx, Id value);
+Id EmitConvertU32U8(EmitContext& ctx, Id value);
 
 Id EmitImageSampleRaw(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address1, Id address2,
                       Id address3, Id address4);

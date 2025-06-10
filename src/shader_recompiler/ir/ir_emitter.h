@@ -112,20 +112,23 @@ public:
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
 
-    [[nodiscard]] U32 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
-    [[nodiscard]] U32 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U8 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
+    [[nodiscard]] U16 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] Value LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
                                       BufferInstInfo info);
+    [[nodiscard]] U64 LoadBufferU64(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] Value LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
                                       BufferInstInfo info);
     [[nodiscard]] Value LoadBufferFormat(const Value& handle, const Value& address,
                                          BufferInstInfo info);
-    void StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+    void StoreBufferU8(const Value& handle, const Value& address, const U8& data,
                        BufferInstInfo info);
-    void StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+    void StoreBufferU16(const Value& handle, const Value& address, const U16& data,
                         BufferInstInfo info);
     void StoreBufferU32(int num_dwords, const Value& handle, const Value& address,
                         const Value& data, BufferInstInfo info);
+    void StoreBufferU64(const Value& handle, const Value& address, const U64& data,
+                        BufferInstInfo info);
     void StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
                         const Value& data, BufferInstInfo info);
     void StoreBufferFormat(const Value& handle, const Value& address, const Value& data,
@@ -310,7 +313,7 @@ public:
     [[nodiscard]] F32F64 ConvertIToF(size_t dest_bitsize, size_t src_bitsize, bool is_signed,
                                      const Value& value);
 
-    [[nodiscard]] U16U32U64 UConvert(size_t result_bitsize, const U16U32U64& value);
+    [[nodiscard]] U8U16U32U64 UConvert(size_t result_bitsize, const U8U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
     [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,

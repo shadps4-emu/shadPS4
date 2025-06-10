@@ -60,6 +60,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::StoreBufferU32x2:
     case Opcode::StoreBufferU32x3:
     case Opcode::StoreBufferU32x4:
+    case Opcode::StoreBufferU64:
     case Opcode::StoreBufferF32:
     case Opcode::StoreBufferF32x2:
     case Opcode::StoreBufferF32x3:

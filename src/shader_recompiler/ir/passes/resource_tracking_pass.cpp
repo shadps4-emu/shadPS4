@@ -44,6 +44,7 @@ bool IsBufferStore(const IR::Inst& inst) {
     case IR::Opcode::StoreBufferU32x2:
     case IR::Opcode::StoreBufferU32x3:
     case IR::Opcode::StoreBufferU32x4:
+    case IR::Opcode::StoreBufferU64:
     case IR::Opcode::StoreBufferF32:
     case IR::Opcode::StoreBufferF32x2:
     case IR::Opcode::StoreBufferF32x3:
@@ -63,6 +64,7 @@ bool IsBufferInstruction(const IR::Inst& inst) {
     case IR::Opcode::LoadBufferU32x2:
     case IR::Opcode::LoadBufferU32x3:
     case IR::Opcode::LoadBufferU32x4:
+    case IR::Opcode::LoadBufferU64:
     case IR::Opcode::LoadBufferF32:
     case IR::Opcode::LoadBufferF32x2:
     case IR::Opcode::LoadBufferF32x3:
@@ -88,6 +90,10 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::LoadBufferU16:
     case IR::Opcode::StoreBufferU16:
         return IR::Type::U16;
+    case IR::Opcode::LoadBufferU64:
+    case IR::Opcode::StoreBufferU64:
+    case IR::Opcode::BufferAtomicIAdd64:
+        return IR::Type::U64;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32:
         // Formatted buffer loads can use a variety of types.
