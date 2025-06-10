@@ -63,8 +63,8 @@ Emulator::~Emulator() {
     Config::saveMainWindow(config_dir / "config.toml");
 }
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args,
-                   bool ignore_game_patch) {
+void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args
+                   ) {
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
@@ -85,7 +85,6 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    Core::FileSys::MntPoints::ignore_game_patches = ignore_game_patch;
 
     mnt->Mount(game_folder, "/app0", true);
     // Certain games may use /hostapp as well such as CUSA001100

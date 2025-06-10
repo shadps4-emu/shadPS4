@@ -34,7 +34,6 @@ int main(int argc, char* argv[]) {
 
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
-    bool ignore_game_patch = false;
     std::string game_path;
     std::vector<std::string> game_args{};
 
@@ -87,7 +86,7 @@ int main(int argc, char* argv[]) {
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
-        {"-i", [&](int&) { ignore_game_patch = true; }},
+        {"-i", [&](int&) { Core::FileSys::MntPoints::ignore_game_patches = true; }},
         {"--ignore-game-patch", [&](int& i) { arg_map["-i"](i); }},
         {"-f",
          [&](int& i) {
@@ -206,7 +205,7 @@ int main(int argc, char* argv[]) {
 
         // Run the emulator with the resolved game path
         Core::Emulator emulator;
-        emulator.Run(game_file_path.string(), game_args, ignore_game_patch);
+        emulator.Run(game_file_path.string(), game_args);
         if (!show_gui) {
             return 0; // Exit after running the emulator without showing the GUI
         }
