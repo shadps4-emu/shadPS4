@@ -411,7 +411,7 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
@@ -491,7 +491,7 @@
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation type="unfinished">Triangle / Y</translation>
+      <translation>مثلث / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
@@ -860,7 +860,7 @@
     </message>
     <message>
       <source>View report</source>
-      <translation type="unfinished">View report</translation>
+      <translation>مشاهده گزارش</translation>
     </message>
     <message>
       <source>Submit a report</source>
@@ -1122,7 +1122,7 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>کپی از پیکربندی مشترک</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1130,19 +1130,19 @@
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>ضریب سرعت (def 1.0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation type="unfinished">Common Config Selected</translation>
+      <translation>پیکربندی مشترک انتخاب شده</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>این دکمه نگاشت‌ها را از پیکربندی مشترک به پروفایل انتخاب‌شده‌ی فعلی کپی می‌کند و وقتی پروفایل انتخاب‌شده‌ی فعلی پیکربندی مشترک باشد، نمی‌توان از آن استفاده کرد.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation type="unfinished">Copy values from Common Config</translation>
+      <translation>کپی کردن مقادیر از پیکربندی مشترک</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
@@ -1170,7 +1170,7 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>ذخیره‌سازی</translation>
     </message>
     <message>
       <source>Apply</source>
@@ -1748,7 +1748,7 @@
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>کلید تروفی:\و کلیدی که برای رمزگشایی تروفی‌ها استفاده می‌شود. باید از کنسول جیلبریک شده شما دریافت شود.\باید فقط شامل کاراکترهای هگز باشد.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
@@ -1756,7 +1756,7 @@
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
+      <translation>فیلتر گزارش:\nگزارش را فیلتر می‌کند تا فقط اطلاعات خاصی چاپ شود.\nمثال‌ها: &quot;هسته:ردیابی&quot; &quot;Lib.Pad:اشکال‌زدایی Common.Filesystem:خطا&quot; &quot;*:بحرانی&quot;\nسطوح: ردیابی، اشکال‌زدایی، اطلاعات، هشدار، خطا، بحرانی - به این ترتیب، یک سطح خاص تمام سطوح قبل از خود را در لیست بی‌صدا می‌کند و هر سطح بعد از خود را ثبت می‌کند.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
@@ -1764,7 +1764,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>تصویر پس‌زمینه: میزان شفافیت تصویر پس‌زمینه بازی را کنترل کنید.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1844,11 +1844,11 @@
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
+      <translation>فعال کردن پردازنده گرافیکی خالی:\برای رفع اشکال فنی، رندر بازی را طوری غیرفعال کنید که انگار هیچ کارت گرافیکی وجود ندارد.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>فعال کردن HDR:\nاین گزینه HDR را در بازی‌هایی که از آن پشتیبانی می‌کنند فعال می‌کند.\nمانیتور شما باید از فضای رنگی BT2020 PQ و فرمت swapchain RGB10A2 پشتیبانی کند.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1868,11 +1868,11 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>فعال کردن لایه‌های اعتبارسنجی Vulkan:\nسیستمی را فعال می‌کند که وضعیت رندرکننده Vulkan را اعتبارسنجی کرده و اطلاعات مربوط به وضعیت داخلی آن را ثبت می‌کند.\nاین کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>فعال کردن اعتبارسنجی همگام‌سازی Vulkan:\nسیستمی را فعال می‌کند که زمان‌بندی وظایف رندر Vulkan را اعتبارسنجی می‌کند.\nاین کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -1880,7 +1880,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>جمع‌آوری سایه‌زن‌ها:\nبرای ویرایش سایه‌زن‌ها با منوی اشکال‌زدایی (Ctrl + F10) باید این گزینه فعال باشد.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -1912,7 +1912,7 @@
     </message>
     <message>
       <source>Nightly</source>
-      <translation type="unfinished">Nightly</translation>
+      <translation>اخرین نسخه شبانه</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1936,7 +1936,7 @@
     </message>
     <message>
       <source>sync</source>
-      <translation type="unfinished">sync</translation>
+      <translation>همزمان</translation>
     </message>
     <message>
       <source>Auto Select</source>
@@ -2000,7 +2000,7 @@
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>راست</translation>
     </message>
     <message>
       <source>Top</source>
@@ -2032,7 +2032,7 @@
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation type="unfinished">%1 already exists</translation>
+      <translation>%1 از قبل وجود دارد</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
@@ -2075,7 +2075,7 @@
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>نمایش جوایز مخفی</translation>
     </message>
   </context>
 </TS>
