@@ -10,18 +10,23 @@ namespace Shader::Optimization {
 static bool IsSharedAccess(const IR::Inst& inst) {
     const auto opcode = inst.GetOpcode();
     switch (opcode) {
+    case IR::Opcode::LoadSharedU16:
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::LoadSharedU64:
+    case IR::Opcode::WriteSharedU16:
     case IR::Opcode::WriteSharedU32:
     case IR::Opcode::WriteSharedU64:
-    case IR::Opcode::SharedAtomicAnd32:
     case IR::Opcode::SharedAtomicIAdd32:
     case IR::Opcode::SharedAtomicIAdd64:
-    case IR::Opcode::SharedAtomicOr32:
-    case IR::Opcode::SharedAtomicSMax32:
-    case IR::Opcode::SharedAtomicUMax32:
+    case IR::Opcode::SharedAtomicISub32:
     case IR::Opcode::SharedAtomicSMin32:
     case IR::Opcode::SharedAtomicUMin32:
+    case IR::Opcode::SharedAtomicSMax32:
+    case IR::Opcode::SharedAtomicUMax32:
+    case IR::Opcode::SharedAtomicInc32:
+    case IR::Opcode::SharedAtomicDec32:
+    case IR::Opcode::SharedAtomicAnd32:
+    case IR::Opcode::SharedAtomicOr32:
     case IR::Opcode::SharedAtomicXor32:
         return true;
     default:
@@ -41,14 +46,8 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                                     profile.supports_workgroup_explicit_memory_layout)) {
         return;
     }
-    // Add buffer binding for shared memory storage buffer.
     const u32 binding = static_cast<u32>(program.info.buffers.size());
-    program.info.buffers.push_back({
-        .used_types = IR::Type::U32,
-        .inline_cbuf = AmdGpu::Buffer::Null(),
-        .buffer_type = BufferType::SharedMemory,
-        .is_written = true,
-    });
+    IR::Type used_types{};
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (!IsSharedAccess(inst)) {
@@ -56,73 +55,106 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
             }
             IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
             const IR::U32 handle = ir.Imm32(binding);
+            const IR::U32 offset = ir.IMul(ir.GetAttributeU32(IR::Attribute::WorkgroupIndex),
+                                           ir.Imm32(shared_memory_size));
+            const IR::U32 address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
             // Replace shared atomics first
             switch (inst.GetOpcode()) {
-            case IR::Opcode::SharedAtomicAnd32:
-                inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicAnd(handle, inst.Arg(0), inst.Arg(1), {}));
-                continue;
             case IR::Opcode::SharedAtomicIAdd32:
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicIAdd(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U32;
+                continue;
             case IR::Opcode::SharedAtomicIAdd64:
                 inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicIAdd(handle, inst.Arg(0), inst.Arg(1), {}));
+                    ir.BufferAtomicIAdd(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U64;
                 continue;
-            case IR::Opcode::SharedAtomicOr32:
+            case IR::Opcode::SharedAtomicISub32:
                 inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicOr(handle, inst.Arg(0), inst.Arg(1), {}));
+                    ir.BufferAtomicISub(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U32;
                 continue;
-            case IR::Opcode::SharedAtomicSMax32:
-            case IR::Opcode::SharedAtomicUMax32: {
-                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
-                inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicIMax(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
-                continue;
-            }
             case IR::Opcode::SharedAtomicSMin32:
             case IR::Opcode::SharedAtomicUMin32: {
                 const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
                 inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicIMin(handle, inst.Arg(0), inst.Arg(1), is_signed, {}));
+                    ir.BufferAtomicIMin(handle, address, inst.Arg(1), is_signed, {}));
+                used_types |= IR::Type::U32;
                 continue;
             }
-            case IR::Opcode::SharedAtomicXor32:
+            case IR::Opcode::SharedAtomicSMax32:
+            case IR::Opcode::SharedAtomicUMax32: {
+                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
                 inst.ReplaceUsesWithAndRemove(
-                    ir.BufferAtomicXor(handle, inst.Arg(0), inst.Arg(1), {}));
+                    ir.BufferAtomicIMax(handle, address, inst.Arg(1), is_signed, {}));
+                used_types |= IR::Type::U32;
+                continue;
+            }
+            case IR::Opcode::SharedAtomicInc32:
+                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicInc(handle, address, {}));
+                used_types |= IR::Type::U32;
+                continue;
+            case IR::Opcode::SharedAtomicDec32:
+                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicDec(handle, address, {}));
+                used_types |= IR::Type::U32;
+                continue;
+            case IR::Opcode::SharedAtomicAnd32:
+                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicAnd(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U32;
+                continue;
+            case IR::Opcode::SharedAtomicOr32:
+                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicOr(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U32;
+                continue;
+            case IR::Opcode::SharedAtomicXor32:
+                inst.ReplaceUsesWithAndRemove(ir.BufferAtomicXor(handle, address, inst.Arg(1), {}));
+                used_types |= IR::Type::U32;
                 continue;
             default:
                 break;
             }
             // Replace shared operations.
-            const IR::U32 offset = ir.IMul(ir.GetAttributeU32(IR::Attribute::WorkgroupIndex),
-                                           ir.Imm32(shared_memory_size));
-            const IR::U32 address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
             switch (inst.GetOpcode()) {
             case IR::Opcode::LoadSharedU16:
                 inst.ReplaceUsesWithAndRemove(ir.LoadBufferU16(handle, address, {}));
+                used_types |= IR::Type::U16;
                 break;
             case IR::Opcode::LoadSharedU32:
                 inst.ReplaceUsesWithAndRemove(ir.LoadBufferU32(1, handle, address, {}));
+                used_types |= IR::Type::U32;
                 break;
             case IR::Opcode::LoadSharedU64:
-                inst.ReplaceUsesWithAndRemove(ir.LoadBufferU32(2, handle, address, {}));
+                inst.ReplaceUsesWithAndRemove(ir.LoadBufferU64(handle, address, {}));
+                used_types |= IR::Type::U64;
                 break;
             case IR::Opcode::WriteSharedU16:
-                ir.StoreBufferU16(handle, address, IR::U32{inst.Arg(1)}, {});
+                ir.StoreBufferU16(handle, address, IR::U16{inst.Arg(1)}, {});
                 inst.Invalidate();
+                used_types |= IR::Type::U16;
                 break;
             case IR::Opcode::WriteSharedU32:
                 ir.StoreBufferU32(1, handle, address, inst.Arg(1), {});
                 inst.Invalidate();
+                used_types |= IR::Type::U32;
                 break;
             case IR::Opcode::WriteSharedU64:
-                ir.StoreBufferU32(2, handle, address, inst.Arg(1), {});
+                ir.StoreBufferU64(handle, address, IR::U64{inst.Arg(1)}, {});
                 inst.Invalidate();
+                used_types |= IR::Type::U64;
                 break;
             default:
                 break;
             }
         }
     }
+    // Add buffer binding for shared memory storage buffer.
+    program.info.buffers.push_back({
+        .used_types = used_types,
+        .inline_cbuf = AmdGpu::Buffer::Null(),
+        .buffer_type = BufferType::SharedMemory,
+        .is_written = true,
+    });
 }
 
 } // namespace Shader::Optimization
