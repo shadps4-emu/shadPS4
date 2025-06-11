@@ -44,11 +44,14 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
                         OrbisVideodec2FrameBuffer& frameBuffer,
                         OrbisVideodec2OutputInfo& outputInfo) {
     frameBuffer.isAccepted = false;
-    outputInfo.thisSize = sizeof(OrbisVideodec2OutputInfo);
     outputInfo.isValid = false;
     outputInfo.isErrorFrame = true;
     outputInfo.pictureCount = 0;
-    outputInfo.frameFormat = 0;
+
+    // Only set frameFormat if the game uses the newer struct version.
+    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+        outputInfo.frameFormat = 0;
+    }
 
     if (!inputData.auData) {
         return ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_POINTER;
@@ -107,13 +110,17 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         outputInfo.frameWidth = frame->width;
         outputInfo.frameHeight = frame->height;
         outputInfo.framePitch = frame->linesize[0];
-        outputInfo.framePitchInBytes = frame->linesize[0];
         outputInfo.frameBufferSize = frameBuffer.frameBufferSize;
         outputInfo.frameBuffer = frameBuffer.frameBuffer;
 
         outputInfo.isValid = true;
         outputInfo.isErrorFrame = false;
         outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
+
+        // Only set framePitchInBytes if the game uses the newer struct version.
+        if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+            outputInfo.framePitchInBytes = frame->linesize[0];
+        }
 
         if (outputInfo.isValid) {
             OrbisVideodec2AvcPictureInfo pictureInfo = {};
@@ -142,11 +149,14 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
 s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
                        OrbisVideodec2OutputInfo& outputInfo) {
     frameBuffer.isAccepted = false;
-    outputInfo.thisSize = sizeof(OrbisVideodec2OutputInfo);
     outputInfo.isValid = false;
     outputInfo.isErrorFrame = true;
     outputInfo.pictureCount = 0;
-    outputInfo.frameFormat = 0;
+
+    // Only set frameFormat if the game uses the newer struct version.
+    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+        outputInfo.frameFormat = 0;
+    }
 
     AVFrame* frame = av_frame_alloc();
     if (!frame) {
@@ -178,13 +188,17 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
         outputInfo.frameWidth = frame->width;
         outputInfo.frameHeight = frame->height;
         outputInfo.framePitch = frame->linesize[0];
-        outputInfo.framePitchInBytes = frame->linesize[0];
         outputInfo.frameBufferSize = frameBuffer.frameBufferSize;
         outputInfo.frameBuffer = frameBuffer.frameBuffer;
 
         outputInfo.isValid = true;
         outputInfo.isErrorFrame = false;
         outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
+
+        // Only set framePitchInBytes if the game uses the newer struct version.
+        if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+            outputInfo.framePitchInBytes = frame->linesize[0];
+        }
 
         // FIXME: Should we add picture info here too?
     }
