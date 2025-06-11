@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>تقلب‌ها/پچ‌ها آزمایشی هستند.\nبا احتیاط استفاده کنید.\n\nبا انتخاب مخزن و کلیک روی دکمه دانلود، تقلب‌ها را به‌صورت جداگانه دانلود کنید.\nدر تب پچ‌ها، می‌توانید همه پچ‌ها را به‌طور همزمان دانلود کنید، انتخاب کنید که می‌خواهید از کدام استفاده کنید و انتخاب خود را ذخیره کنید.\n\nاز آنجایی که ما تقلب‌ها/پچ‌ها را توسعه نمی‌دهیم،\nلطفاً مشکلات را به نویسنده تقلب گزارش دهید.\n\nتقلب جدیدی ایجاد کرده‌اید؟ به این صفحه مراجعه کنید:\n</translation>
+      <translation>تقلب‌ها/پچ‌ها آزمایشی هستند.\n با احتیاط استفاده کنید.\n\n با انتخاب مخزن و کلیک روی دکمه دانلود، تقلب‌ها را به‌صورت جداگانه دانلود کنید.\n در تب پچ‌ها، می‌توانید همه پچ‌ها را به‌طور همزمان دانلود کنید، انتخاب کنید که می‌خواهید از کدام استفاده کنید و انتخاب خود را ذخیره کنید.\n\n از آنجایی که ما تقلب‌ها/پچ‌ها را توسعه نمی‌دهیم،\n لطفاً مشکلات را به نویسنده تقلب گزارش دهید.\n\n تقلب جدیدی ایجاد کرده‌اید؟ به این صفحه مراجعه کنید: \n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -1860,7 +1860,7 @@
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>حذف:\nیک پوشه را از لیست حذف کنید.</translation>
+      <translation>حذف:\n یک پوشه را از لیست حذف کنید.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
