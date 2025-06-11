@@ -1848,7 +1848,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation>فعال کردن HDR:\nاین گزینه HDR را در بازی‌هایی که از آن پشتیبانی می‌کنند فعال می‌کند.\nمانیتور شما باید از فضای رنگی BT2020 PQ و فرمت swapchain RGB10A2 پشتیبانی کند.</translation>
+      <translation>فعال کردن HDR و :\n این گزینه HDR را در بازی‌هایی که از آن پشتیبانی می‌کنند فعال می‌کند.\n مانیتور شما باید از فضای رنگی BT2020 PQ و فرمت swapchain RGB10A2 پشتیبانی کند.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1868,11 +1868,11 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>فعال کردن لایه‌های اعتبارسنجی Vulkan:\nسیستمی را فعال می‌کند که وضعیت رندرکننده Vulkan را اعتبارسنجی کرده و اطلاعات مربوط به وضعیت داخلی آن را ثبت می‌کند.\nاین کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
+      <translation>فعال کردن لایه‌های اعتبارسنجی Vulkan: \nسیستمی را فعال می‌کند که وضعیت رندرکننده Vulkan را اعتبارسنجی کرده و اطلاعات مربوط به وضعیت داخلی آن را ثبت می‌کند.\n این کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>فعال کردن اعتبارسنجی همگام‌سازی Vulkan:\nسیستمی را فعال می‌کند که زمان‌بندی وظایف رندر Vulkan را اعتبارسنجی می‌کند.\nاین کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
+      <translation>فعال کردن اعتبارسنجی همگام‌سازی Vulkan: \nسیستمی را فعال می‌کند که زمان‌بندی وظایف رندر Vulkan را اعتبارسنجی می‌کند.\n این کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -1880,7 +1880,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>جمع‌آوری سایه‌زن‌ها:\nبرای ویرایش سایه‌زن‌ها با منوی اشکال‌زدایی (Ctrl + F10) باید این گزینه فعال باشد.</translation>
+      <translation>جمع‌آوری سایه‌زن‌ها:\n برای ویرایش سایه‌زن‌ها با منوی اشکال‌زدایی (Ctrl + F10) باید این گزینه فعال باشد.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -2044,7 +2044,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>پوشه تصاویر/صداهای تروفی سفارشی را باز کنید:\n شما می‌توانید تصاویر و صدای سفارشی به تروفی‌ها اضافه کنید.\n فایل‌ها را با نام‌های زیر به custom_trophy اضافه کنید:\ntrophy.wav یا trophy.mp3، bronze.png، gold.png، platinum.png، silver.png \nتوجه: صدا فقط در نسخه‌های QT کار می‌کند.</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
