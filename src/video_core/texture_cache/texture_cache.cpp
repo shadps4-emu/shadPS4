@@ -8,7 +8,6 @@
 #include "common/debug.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
-#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/host_compatibility.h"
@@ -126,7 +125,7 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
 
 ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
                                           ImageId cache_image_id) {
-    const auto& cache_image = slot_images[cache_image_id];
+    auto& cache_image = slot_images[cache_image_id];
 
     if (!cache_image.info.IsDepthStencil() && !requested_info.IsDepthStencil()) {
         return {};
@@ -169,18 +168,21 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     }
 
     if (recreate) {
-        auto new_info{requested_info};
-        new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
-        new_info.UpdateSize();
+        auto new_info = requested_info;
+        new_info.resources = std::min(requested_info.resources, cache_image.info.resources);
         const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
-        auto& new_image = GetImage(new_image_id);
+        auto& new_image = slot_images[new_image_id];
         new_image.usage = cache_image.usage;
+        new_image.flags &= ~ImageFlagBits::Dirty;
 
-        // TODO: perform a depth copy here
+        // Perform depth<->color copy using the intermediate copy buffer.
+        const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+        new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
 
+        // Free the cache image.
         FreeImage(cache_image_id);
         return new_image_id;
     }
@@ -584,12 +586,11 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size;
-    const auto [vk_buffer, buf_offset] =
-        buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
+    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
 
     const auto cmdbuf = sched_ptr->CommandBuffer();
-    // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
-    // hazard
+
+    // The obtained buffer may be GPU modified so we need to emit a barrier to prevent RAW hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
         cmdbuf.pipelineBarrier2(vk::DependencyInfo{
