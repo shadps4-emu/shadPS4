@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation>تقلب‌ها/پچ‌ها آزمایشی هستند.\nبا احتیاط استفاده کنید.\n\nبا انتخاب مخزن و کلیک روی دکمه دانلود، تقلب‌ها را به‌صورت جداگانه دانلود کنید.\nدر تب پچ‌ها، می‌توانید همه پچ‌ها را به‌طور همزمان دانلود کنید، انتخاب کنید که می‌خواهید از کدام استفاده کنید و انتخاب خود را ذخیره کنید.\n\nاز آنجایی که ما تقلب‌ها/پچ‌ها را توسعه نمی‌دهیم،\nلطفاً مشکلات را به نویسنده تقلب گزارش دهید.\n\nتقلب جدیدی ایجاد کرده‌اید؟ به این صفحه مراجعه کنید:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -214,7 +214,7 @@
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation type="unfinished">XML ERROR:</translation>
+      <translation>XML خطای :</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
@@ -407,7 +407,7 @@
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation type="unfinished">Configure Controls</translation>
+      <translation>پیکربندی دسته ها</translation>
     </message>
     <message>
       <source>D-Pad</source>
@@ -415,35 +415,35 @@
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>بالا</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>چپ</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>راست</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>پایین</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>منطقه‌ی حساس به حرکت چپ  (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>منطقه مرده چپ</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>جواستیک چپ</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation type="unfinished">Config Selection</translation>
+      <translation>انتخاب پیکربندی</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
+      <translation>از پیکربندی‌های مخصوص هر بازی استفاده کنید</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -483,7 +483,7 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -531,7 +531,7 @@
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>ذخیره امکان پذیر نیست</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -570,7 +570,7 @@
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>تغییر دکمه های کیبرد + ماوس و دسته</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation type="unfinished">Could not open the file for reading</translation>
+      <translation>نمی تواند فایل را برای خواندن باز کند</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
@@ -602,7 +602,7 @@
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
-      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+      <translation>آیا می‌خواهید پیکربندی سفارشی خود را به پیکربندی پیش‌فرض اصلی بازگردانید ؟</translation>
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
@@ -916,11 +916,11 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>پاک کردن داده های ذخیره شده</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>این بازی هیچ پوشه‌ی به‌روزرسانی برای باز کردن ندارد!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
@@ -948,7 +948,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation type="unfinished">SFO Viewer for </translation>
+      <translation>SFO مشاهده </translation>
     </message>
   </context>
   <context>
@@ -986,7 +986,7 @@
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation/>
     </message>
     <message>
       <source>unmapped</source>
@@ -1058,7 +1058,7 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>کلیک روی تاچ‌پد</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1078,7 +1078,7 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation/>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
@@ -1102,7 +1102,7 @@
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>ضربدر</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
@@ -1146,7 +1146,7 @@
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>آیا می‌خواهید نگاشت‌های موجود را با نگاشت‌های پیکربندی مشترک جایگزین کنید؟</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1213,7 +1213,7 @@
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation type="unfinished">Open shadPS4 Folder</translation>
+      <translation>پوشه shadPS4 را باز کنید</translation>
     </message>
     <message>
       <source>Exit</source>
@@ -1624,7 +1624,7 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation type="unfinished">Collect Shaders</translation>
+      <translation>جمع آوری شیدرها</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1664,7 +1664,7 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation/>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
@@ -1728,7 +1728,7 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
+      <translation>زبان کنسول:\nزبانی را که بازی PS4 استفاده می‌کند تنظیم می‌کند.\nتوصیه می‌شود این را روی زبانی که بازی پشتیبانی می‌کند تنظیم کنید، که بسته به منطقه متفاوت خواهد بود.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
