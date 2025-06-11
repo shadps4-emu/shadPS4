@@ -979,32 +979,46 @@ void EmitContext::DefineImagesAndSamplers() {
 }
 
 void EmitContext::DefineSharedMemory() {
-    if (!info.uses_shared) {
+    const auto num_types = std::popcount(static_cast<u32>(info.shared_types));
+    if (num_types == 0) {
         return;
     }
     ASSERT(info.stage == Stage::Compute);
     const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
 
-    const auto make_type = [&](Id element_type, u32 element_size) {
+    const auto make_type = [&](IR::Type type, Id element_type, u32 element_size,
+                               std::string_view name) {
+        if (False(info.shared_types & type)) {
+            // Skip unused shared memory types.
+            return std::make_tuple(Id{}, Id{}, Id{});
+        }
+
         const u32 num_elements{Common::DivCeil(shared_memory_size, element_size)};
         const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
         Decorate(array_type, spv::Decoration::ArrayStride, element_size);
 
         const Id struct_type{TypeStruct(array_type)};
         MemberDecorate(struct_type, 0u, spv::Decoration::Offset, 0u);
-        Decorate(struct_type, spv::Decoration::Block);
 
         const Id pointer = TypePointer(spv::StorageClass::Workgroup, struct_type);
         const Id element_pointer = TypePointer(spv::StorageClass::Workgroup, element_type);
         const Id variable = AddGlobalVariable(pointer, spv::StorageClass::Workgroup);
-        Decorate(variable, spv::Decoration::Aliased);
+        Name(variable, name);
         interfaces.push_back(variable);
+
+        if (num_types > 1) {
+            Decorate(struct_type, spv::Decoration::Block);
+            Decorate(variable, spv::Decoration::Aliased);
+        }
 
         return std::make_tuple(variable, element_pointer, pointer);
     };
-    std::tie(shared_memory_u16, shared_u16, shared_memory_u16_type) = make_type(U16, 2u);
-    std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) = make_type(U32[1], 4u);
-    std::tie(shared_memory_u64, shared_u64, shared_memory_u64_type) = make_type(U64, 8u);
+    std::tie(shared_memory_u16, shared_u16, shared_memory_u16_type) =
+        make_type(IR::Type::U16, U16, 2u, "shared_mem_u16");
+    std::tie(shared_memory_u32, shared_u32, shared_memory_u32_type) =
+        make_type(IR::Type::U32, U32[1], 4u, "shared_mem_u32");
+    std::tie(shared_memory_u64, shared_u64, shared_memory_u64_type) =
+        make_type(IR::Type::U64, U64, 8u, "shared_mem_u64");
 }
 
 Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {
