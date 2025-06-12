@@ -16,6 +16,7 @@
 namespace Libraries::AvPlayer {
 
 enum class AvState {
+    Unknown,
     Initial,
     AddingSource,
     Ready,
@@ -23,12 +24,13 @@ enum class AvState {
     Stop,
     EndOfFile,
     Pause,
-    C0x08,
+    PauseOnEOF,
     Jump,
     TrickMode,
     C0x0B,
     Buffering,
     Starting,
+    C0x10,
     Error,
 };
 
@@ -64,6 +66,10 @@ public:
         m_queue.emplace(std::forward<T>(value));
     }
 
+    T& Front() {
+        return m_queue.front();
+    }
+
     std::optional<T> Pop() {
         if (Size() == 0) {
             return std::nullopt;
@@ -84,6 +90,6 @@ private:
     std::queue<T> m_queue{};
 };
 
-SceAvPlayerSourceType GetSourceType(std::string_view path);
+AvPlayerSourceType GetSourceType(std::string_view path);
 
 } // namespace Libraries::AvPlayer

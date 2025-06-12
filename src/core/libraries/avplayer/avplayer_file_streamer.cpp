@@ -14,7 +14,7 @@ constexpr u32 AVPLAYER_AVIO_BUFFER_SIZE = 4096;
 
 namespace Libraries::AvPlayer {
 
-AvPlayerFileStreamer::AvPlayerFileStreamer(const SceAvPlayerFileReplacement& file_replacement)
+AvPlayerFileStreamer::AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement)
     : m_file_replacement(file_replacement) {}
 
 AvPlayerFileStreamer::~AvPlayerFileStreamer() {
@@ -51,7 +51,7 @@ s32 AvPlayerFileStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
     if (self->m_position + size > self->m_file_size) {
         size = self->m_file_size - self->m_position;
     }
-    const auto read_offset = self->m_file_replacement.readOffset;
+    const auto read_offset = self->m_file_replacement.read_offset;
     const auto ptr = self->m_file_replacement.object_ptr;
     const auto bytes_read = read_offset(ptr, buffer, self->m_position, size);
     if (bytes_read == 0 && size != 0) {
