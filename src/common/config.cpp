@@ -713,7 +713,7 @@ void load(const std::filesystem::path& path) {
     const std::vector<std::string> allowed_languages = {
         "ar_SA", "da_DK", "de_DE", "el_GR", "en_US", "es_ES", "fa_IR", "fi_FI", "fr_FR", "hu_HU",
         "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nb_NO", "nl_NL", "pl_PL", "pt_BR", "pt_PT",
-        "ro_RO", "ru_RU", "sq_AL", "sv_SE", "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW"};
+        "ro_RO", "ru_RU", "sq_AL", "sv_SE", "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW", "ca_ES"};
 
     if (std::find(allowed_languages.begin(), allowed_languages.end(), emulator_language) ==
         allowed_languages.end()) {
