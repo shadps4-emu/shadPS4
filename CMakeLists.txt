@@ -1059,6 +1059,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/gui_settings.h
            src/qt_gui/settings.cpp
            src/qt_gui/settings.h
+           src/qt_gui/user_management_dialog.cpp
+           src/qt_gui/user_management_dialog.h
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}

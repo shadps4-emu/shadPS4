@@ -27,6 +27,7 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#include "user_management_dialog.h"
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -438,6 +439,11 @@ void MainWindow::CreateConnects() {
                 });
 
         settingsDialog->exec();
+    });
+
+    connect(ui->userManagement, &QAction::triggered, this, [this]() {
+        user_manager_dialog user_manager(this);
+        user_manager.exec();
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
@@ -1103,6 +1109,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->menuGame_List_Mode->setIcon(RecolorIcon(ui->menuGame_List_Mode->icon(), isWhite));
     ui->trophyViewerAct->setIcon(RecolorIcon(ui->trophyViewerAct->icon(), isWhite));
     ui->configureAct->setIcon(RecolorIcon(ui->configureAct->icon(), isWhite));
+    ui->userManagement->setIcon(RecolorIcon(ui->userManagement->icon(), isWhite));
     ui->addElfFolderAct->setIcon(RecolorIcon(ui->addElfFolderAct->icon(), isWhite));
 }
 

@@ -32,6 +32,7 @@ public:
 #endif
     QAction* aboutAct;
     QAction* configureAct;
+    QAction* userManagement;
     QAction* setThemeDark;
     QAction* setThemeLight;
     QAction* setThemeGreen;
@@ -155,6 +156,9 @@ public:
         configureAct = new QAction(MainWindow);
         configureAct->setObjectName("configureAct");
         configureAct->setIcon(QIcon(":images/settings_icon.png"));
+        userManagement = new QAction(MainWindow);
+        userManagement->setObjectName("userManagement");
+        userManagement->setIcon(QIcon(":images/users_icon.png"));
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
@@ -329,6 +333,7 @@ public:
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuGame_List_Mode->addAction(setlistElfAct);
         menuSettings->addAction(configureAct);
+        menuSettings->addAction(userManagement);
         menuSettings->addAction(gameInstallPathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(downloadCheatsPatchesAct);
@@ -355,6 +360,7 @@ public:
 #endif
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
+        userManagement->setText(QCoreApplication::translate("MainWindow", "User Management", nullptr));
 #if QT_CONFIG(tooltip)
 #endif // QT_CONFIG(tooltip)
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
