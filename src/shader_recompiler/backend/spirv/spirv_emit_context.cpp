@@ -972,7 +972,12 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sharp_idx));
+        auto sharp_desc = std::holds_alternative<u32>(samp_desc.sampler)
+                              ? fmt::format("sgpr:{}", std::get<u32>(samp_desc.sampler))
+                              : fmt::format("inline:{:#x}:{:#x}",
+                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw0,
+                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw1);
+        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
         samplers.push_back(id);
         interfaces.push_back(id);
     }
