@@ -3,9 +3,9 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
-#include <core/libraries/system/userservice.h>
 
 enum class OrbisImeType : u32 {
     Default = 0,

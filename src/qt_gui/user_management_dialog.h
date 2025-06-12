@@ -16,5 +16,4 @@ private:
     void Init();
 
     QTableWidget* m_table = nullptr;
-
 };

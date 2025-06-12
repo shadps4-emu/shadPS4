@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "common/types.h"
 #include <core/libraries/system/userservice.h>
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;

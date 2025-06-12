@@ -31,8 +31,8 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(
     const OrbisAudio3dPortId port_id, const Libraries::UserService::OrbisUserServiceUserId user_id,
-                       s32 type, const s32 index, const u32 len, const u32 freq,
-                       const AudioOut::OrbisAudioOutParamExtendedInformation param) {
+    s32 type, const s32 index, const u32 len, const u32 freq,
+    const AudioOut::OrbisAudioOutParamExtendedInformation param) {
     LOG_INFO(Lib_Audio3d,
              "called, port_id = {}, user_id = {}, type = {}, index = {}, len = {}, freq = {}",
              port_id, user_id, type, index, len, freq);

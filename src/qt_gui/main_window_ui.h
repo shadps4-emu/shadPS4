@@ -360,7 +360,8 @@ public:
 #endif
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
-        userManagement->setText(QCoreApplication::translate("MainWindow", "User Management", nullptr));
+        userManagement->setText(
+            QCoreApplication::translate("MainWindow", "User Management", nullptr));
 #if QT_CONFIG(tooltip)
 #endif // QT_CONFIG(tooltip)
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));

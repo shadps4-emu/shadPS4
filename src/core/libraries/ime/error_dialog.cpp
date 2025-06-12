@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
 
+#include <core/libraries/system/userservice.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -13,7 +14,6 @@
 #include "error_dialog.h"
 #include "imgui/imgui_layer.h"
 #include "imgui/imgui_std.h"
-#include <core/libraries/system/userservice.h>
 
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
