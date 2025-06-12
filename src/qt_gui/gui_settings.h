@@ -8,15 +8,15 @@
 
 namespace gui {
 // categories
-const QString general = "general";
+const QString general_settings = "general_settings";
 const QString main_window = "main_window";
 const QString game_list = "game_list";
 const QString game_grid = "game_grid";
 
 // general
-const gui_value gen_checkForUpdates = gui_value(general, "checkForUpdates", false);
-const gui_value gen_showChangeLog = gui_value(general, "showChangeLog", false);
-const gui_value gen_updateChannel = gui_value(general, "updateChannel", "Release");
+const gui_value gen_checkForUpdates = gui_value(general_settings, "checkForUpdates", false);
+const gui_value gen_showChangeLog = gui_value(general_settings, "showChangeLog", false);
+const gui_value gen_updateChannel = gui_value(general_settings, "updateChannel", "Release");
 
 // main window settings
 const gui_value mw_geometry = gui_value(main_window, "geometry", QByteArray());
