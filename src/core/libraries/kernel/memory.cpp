@@ -99,8 +99,8 @@ s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, size_t len) {
 s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd,
                                                     size_t alignment, u64* physAddrOut,
                                                     size_t* sizeOut) {
-    LOG_WARNING(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
-                searchStart, searchEnd, alignment);
+    LOG_INFO(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
+             searchStart, searchEnd, alignment);
 
     if (physAddrOut == nullptr || sizeOut == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -287,7 +287,7 @@ s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s3
 
 int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
                                             size_t infoSize) {
-    LOG_WARNING(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
+    LOG_INFO(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
     auto* memory = Core::Memory::Instance();
     return memory->DirectMemoryQuery(offset, flags == 1, query_info);
 }
