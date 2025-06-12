@@ -303,7 +303,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
     }
-    if (info.uses_shared && profile.supports_workgroup_explicit_memory_layout) {
+    const auto shared_type_count = std::popcount(static_cast<u32>(info.shared_types));
+    if (shared_type_count > 1 && profile.supports_workgroup_explicit_memory_layout) {
         ctx.AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);

@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
                     "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                     "state. Does not overwrite the config file.\n"
                     "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
+                    "  --set-addon-folder <folder>   Sets the addon folder to the config.\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -116,7 +117,24 @@ int main(int argc, char* argv[]) {
              std::cout << "Game folder successfully saved.\n";
              exit(0);
          }},
-    };
+        {"--set-addon-folder", [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --add-addon-folder\n";
+                 exit(1);
+             }
+             std::string config_dir(argv[i]);
+             std::filesystem::path config_path = std::filesystem::path(config_dir);
+             std::error_code discard;
+             if (!std::filesystem::exists(config_path, discard)) {
+                 std::cerr << "Error: File does not exist: " << config_path << "\n";
+                 exit(1);
+             }
+
+             Config::setAddonInstallDir(config_path);
+             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             std::cout << "Addon folder successfully saved.\n";
+             exit(0);
+         }}};
 
     if (argc == 1) {
         int dummy = 0; // one does not simply pass 0 directly

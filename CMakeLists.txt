@@ -870,6 +870,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
+                      src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.cpp
@@ -1054,6 +1055,10 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/settings_dialog.h
            src/qt_gui/settings_dialog.ui
            src/qt_gui/main.cpp
+           src/qt_gui/gui_settings.cpp
+           src/qt_gui/gui_settings.h
+           src/qt_gui/settings.cpp
+           src/qt_gui/settings.h
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}
