@@ -50,7 +50,6 @@ static bool isMotionControlsEnabled = true;
 static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isShowSplash = false;
-static bool isAlwaysShowChangelog = false;
 static std::string isSideTrophy = "right";
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
@@ -243,10 +242,6 @@ bool showSplash() {
     return isShowSplash;
 }
 
-bool alwaysShowChangelog() {
-    return isAlwaysShowChangelog;
-}
-
 std::string sideTrophy() {
     return isSideTrophy;
 }
@@ -347,9 +342,6 @@ void setShowSplash(bool enable) {
     isShowSplash = enable;
 }
 
-void setAlwaysShowChangelog(bool enable) {
-    isAlwaysShowChangelog = enable;
-}
 
 void setSideTrophy(std::string side) {
     isSideTrophy = side;
@@ -630,7 +622,6 @@ void load(const std::filesystem::path& path) {
             updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
         }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
-        isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
         checkCompatibilityOnStartup =
@@ -810,7 +801,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["updateChannel"] = updateChannel;
     data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
-    data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
@@ -954,7 +944,6 @@ void setDefaultValues() {
     isDebugDump = false;
     isShaderDebug = false;
     isShowSplash = false;
-    isAlwaysShowChangelog = false;
     isSideTrophy = "right";
     isNullGpu = false;
     shouldDumpShaders = false;

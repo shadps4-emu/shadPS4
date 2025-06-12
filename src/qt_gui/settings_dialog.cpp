@@ -181,8 +181,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
         });
 
-        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this,
-                [](int state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
+        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this, [this](int state) { m_gui_settings->SetValue(gui::gen_showChangeLog,state == Qt::Checked);
+        });
 #else
         connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
                 [this](Qt::CheckState state) {
@@ -190,7 +190,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 });
 
         connect(ui->changelogCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
+                [this](Qt::CheckState state) {
+                    m_gui_settings->SetValue(gui::gen_showChangeLog, state == Qt::Checked);
+                });
 #endif
 
         connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
@@ -792,7 +794,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     m_gui_settings->SetValue(gui::gen_checkForUpdates, ui->updateCheckBox->isChecked());
-    Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gen_showChangeLog,ui->changelogCheckBox->isChecked());
     Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
     Config::setChooseHomeTab(
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
@@ -877,4 +879,5 @@ void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
     m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
+    m_gui_settings->SetValue(gui::gen_showChangeLog, false);
 }

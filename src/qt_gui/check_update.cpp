@@ -275,7 +275,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                     }
                 });
 
-        if (Config::alwaysShowChangelog()) {
+        if (m_gui_settings->GetValue(gui::gen_showChangeLog).toBool()) {
             requestChangelog(currentRev, latestRev, downloadUrl, latestDate, currentDate);
             textField->setVisible(true);
             toggleButton->setText(tr("Hide Changelog"));
