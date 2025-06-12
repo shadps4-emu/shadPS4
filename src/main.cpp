@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
                         "  -f, --fullscreen <true|false> Specify window initial fullscreen "
                         "state. Does not overwrite the config file.\n"
                         "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
-                        "  --set-addon-folder <folder>    Sets the addon folder to the config.\n"
+                        "  --set-addon-folder <folder>   Sets the addon folder to the config.\n"
                         "  -h, --help                    Display this help message\n";
            exit(0);
        }},
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
             std::cout << "Addon folder successfully saved.\n";
             exit(0);
-        }}};
+        }};
 
     if (argc == 1) {
         int dummy = 0; // one does not simply pass 0 directly
