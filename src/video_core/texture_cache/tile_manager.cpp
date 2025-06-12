@@ -264,24 +264,46 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                                 set_writes);
 
     DetilerParams params;
-    params.num_levels = info.resources.levels;
+    params.num_levels = std::min<u32>(7, info.resources.levels);
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
-    if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
-        info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
-        if (info.resources.levels != 1) {
-            LOG_ERROR(Render_Vulkan, "Unexpected mipmaps for volume and display tilings {}",
-                      info.resources.levels);
+
+    const bool is_volume = info.tiling_mode == AmdGpu::TilingMode::Texture_Volume;
+    const bool is_display = info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled;
+
+    if (is_volume) {
+        ASSERT(in_buffer != out_buffer.first);
+        const u32 max_levels = static_cast<u32>(params.sizes.size() / 2);
+        const u32 levels = std::min(max_levels, params.num_levels);
+
+        for (u32 level = 0; level < levels; ++level) {
+            const u32 mip_pitch = info.pitch >> level;
+            const u32 tiles_x = mip_pitch / 8u;
+            const u32 mip_height = std::max(1u, info.size.height >> level);
+            const u32 tiles_y = Common::AlignUp(mip_height, 8u) / 8u;
+
+            params.sizes[level * 2 + 0] = tiles_x;
+            params.sizes[level * 2 + 1] = tiles_x * tiles_y;
         }
-        const auto tiles_per_row = info.pitch / 8u;
-        const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
-        params.sizes[0] = tiles_per_row;
-        params.sizes[1] = tiles_per_slice;
+
+    } else if (is_display) {
+        // set only the first mip size
+        const u32 mip_pitch = info.pitch;
+        const u32 tiles_x = mip_pitch / 8u;
+        const u32 tiles_y = Common::AlignUp(info.size.height, 8u) / 8u;
+        const u32 tiles_total = tiles_x * tiles_y;
+
+        params.sizes[0] = tiles_x;
+        params.sizes[1] = tiles_total;
+
+        // forcing num_levels = 1 to match shader capability
+        params.num_levels = 1;
+
     } else {
-        ASSERT(info.resources.levels <= params.sizes.size());
-        std::memset(&params.sizes, 0, sizeof(params.sizes));
+        // fallback to mips layout offsets
+        ASSERT(params.sizes.size() >= info.resources.levels);
         for (int m = 0; m < info.resources.levels; ++m) {
-            params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
+            params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0u);
         }
     }
 
