@@ -138,7 +138,7 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 </div>
 
 > [!Caution]
-> The above modules are required to run the games properly and must be extracted from your PlayStation 4.\
+> The above modules are required to run the games properly and must be extracted from your PlayStation 4.
 
 
 
