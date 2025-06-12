@@ -181,7 +181,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
         });
 
-        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this, [this](int state) { m_gui_settings->SetValue(gui::gen_showChangeLog,state == Qt::Checked);
+        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            m_gui_settings->SetValue(gui::gen_showChangeLog, state == Qt::Checked);
         });
 #else
         connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
@@ -198,7 +199,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
                 [this](const QString& channel) {
                     if (channelMap.contains(channel)) {
-                        Config::setUpdateChannel(channelMap.value(channel).toStdString());
+                        m_gui_settings->SetValue(gui::gen_updateChannel, channelMap.value(channel));
                     }
                 });
 
@@ -512,7 +513,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->changelogCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "alwaysShowChangelog", false));
 
-    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    QString updateChannel = m_gui_settings->GetValue(gui::gen_updateChannel).toString();
     ui->updateComboBox->setCurrentText(
         channelMap.key(updateChannel != "Release" && updateChannel != "Nightly"
                            ? (Common::g_is_release ? "Release" : "Nightly")
@@ -794,8 +795,9 @@ void SettingsDialog::UpdateSettings() {
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     m_gui_settings->SetValue(gui::gen_checkForUpdates, ui->updateCheckBox->isChecked());
-    m_gui_settings->SetValue(gui::gen_showChangeLog,ui->changelogCheckBox->isChecked());
-    Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
+    m_gui_settings->SetValue(gui::gen_showChangeLog, ui->changelogCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gen_updateChannel,
+                             channelMap.value(ui->updateComboBox->currentText()));
     Config::setChooseHomeTab(
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
@@ -880,4 +882,9 @@ void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
     m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
     m_gui_settings->SetValue(gui::gen_showChangeLog, false);
+    if (Common::g_is_release) {
+        m_gui_settings->SetValue(gui::gen_updateChannel, "Release");
+    } else {
+        m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
+    }
 }

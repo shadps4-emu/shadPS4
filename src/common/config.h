@@ -38,7 +38,6 @@ bool getPSNSignedIn();
 std::string getLogFilter();
 std::string getLogType();
 std::string getUserName();
-std::string getUpdateChannel();
 std::string getChooseHomeTab();
 
 s16 getCursorState();
@@ -91,7 +90,6 @@ void setEnableDiscordRPC(bool enable);
 void setLanguage(u32 language);
 void setNeoMode(bool enable);
 void setUserName(const std::string& type);
-void setUpdateChannel(const std::string& type);
 void setChooseHomeTab(const std::string& type);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
 void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);

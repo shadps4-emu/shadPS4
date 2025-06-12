@@ -41,7 +41,6 @@ static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto
 static std::string logFilter;
 static std::string logType = "sync";
 static std::string userName = "shadPS4";
-static std::string updateChannel;
 static std::string chooseHomeTab;
 static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
@@ -206,10 +205,6 @@ std::string getUserName() {
     return userName;
 }
 
-std::string getUpdateChannel() {
-    return updateChannel;
-}
-
 std::string getChooseHomeTab() {
     return chooseHomeTab;
 }
@@ -342,7 +337,6 @@ void setShowSplash(bool enable) {
     isShowSplash = enable;
 }
 
-
 void setSideTrophy(std::string side) {
     isSideTrophy = side;
 }
@@ -430,9 +424,6 @@ void setUserName(const std::string& type) {
     userName = type;
 }
 
-void setUpdateChannel(const std::string& type) {
-    updateChannel = type;
-}
 void setChooseHomeTab(const std::string& type) {
     chooseHomeTab = type;
 }
@@ -616,11 +607,6 @@ void load(const std::filesystem::path& path) {
         logFilter = toml::find_or<std::string>(general, "logFilter", "");
         logType = toml::find_or<std::string>(general, "logType", "sync");
         userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        if (Common::g_is_release) {
-            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
-        } else {
-            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
-        }
         isShowSplash = toml::find_or<bool>(general, "showSplash", true);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
@@ -798,7 +784,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["logFilter"] = logFilter;
     data["General"]["logType"] = logType;
     data["General"]["userName"] = userName;
-    data["General"]["updateChannel"] = updateChannel;
     data["General"]["chooseHomeTab"] = chooseHomeTab;
     data["General"]["showSplash"] = isShowSplash;
     data["General"]["sideTrophy"] = isSideTrophy;
@@ -929,11 +914,7 @@ void setDefaultValues() {
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";
-    if (Common::g_is_release) {
-        updateChannel = "Release";
-    } else {
-        updateChannel = "Nightly";
-    }
+
     chooseHomeTab = "General";
     cursorState = HideCursorState::Idle;
     cursorHideTimeout = 5;
