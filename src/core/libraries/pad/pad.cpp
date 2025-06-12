@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <core/libraries/system/userservice.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -156,7 +157,8 @@ int PS4_SYSV_ABI scePadGetFeatureReport() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index) {
+int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                                 s32 index) {
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
@@ -249,7 +251,8 @@ int PS4_SYSV_ABI scePadMbusTerm() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
+int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                            s32 index, const OrbisPadOpenParam* pParam) {
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
@@ -265,8 +268,8 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
     return 1; // dummy
 }
 
-int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index,
-                               const OrbisPadOpenExtParam* pParam) {
+int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                               s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     if (Config::getUseSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)

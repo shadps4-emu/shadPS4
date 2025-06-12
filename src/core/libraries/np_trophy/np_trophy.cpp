@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <pugixml.hpp>
 
+#include <core/libraries/system/userservice.h>
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/slot_vector.h"
@@ -147,7 +148,8 @@ int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t user_id,
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
+                                          Libraries::UserService::OrbisUserServiceUserId userId,
                                           uint32_t service_label, uint64_t options) {
     ASSERT(options == 0ull);
     if (!context) {
@@ -158,16 +160,16 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t
         return ORBIS_NP_TROPHY_ERROR_CONTEXT_EXCEEDS_MAX;
     }
 
-    const auto& key = ContextKey{user_id, service_label};
+    const auto& key = ContextKey{userId, service_label};
     if (contexts_internal.contains(key)) {
         return ORBIS_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS;
     }
 
-    const auto ctx_id = trophy_contexts.insert(user_id, service_label);
+    const auto ctx_id = trophy_contexts.insert(userId, service_label);
 
     *context = ctx_id.index + 1;
     contexts_internal[key].context_id = *context;
-    LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", *context, user_id,
+    LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", *context, userId,
              service_label);
 
     return ORBIS_OK;

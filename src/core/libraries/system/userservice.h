@@ -151,7 +151,7 @@ int PS4_SYSV_ABI sceUserServiceGetImeLastUnit();
 int PS4_SYSV_ABI sceUserServiceGetImePointerMode();
 int PS4_SYSV_ABI sceUserServiceGetImePredictiveTextEnabled();
 int PS4_SYSV_ABI sceUserServiceGetImeRunCount();
-s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id);
+s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(OrbisUserServiceUserId* user_id);
 int PS4_SYSV_ABI sceUserServiceGetIPDLeft();
 int PS4_SYSV_ABI sceUserServiceGetIPDRight();
 int PS4_SYSV_ABI sceUserServiceGetIsFakePlus();
@@ -258,11 +258,13 @@ int PS4_SYSV_ABI sceUserServiceGetTopMenuLimitItem();
 int PS4_SYSV_ABI sceUserServiceGetTopMenuNotificationFlag();
 int PS4_SYSV_ABI sceUserServiceGetTopMenuTutorialFlag();
 int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType();
-s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color);
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(OrbisUserServiceUserId user_id,
+                                            OrbisUserServiceUserColor* color);
 int PS4_SYSV_ABI sceUserServiceGetUserGroupName();
 int PS4_SYSV_ABI sceUserServiceGetUserGroupNameList();
 int PS4_SYSV_ABI sceUserServiceGetUserGroupNum();
-s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size);
+s32 PS4_SYSV_ABI sceUserServiceGetUserName(OrbisUserServiceUserId user_id, char* user_name,
+                                           std::size_t size);
 int PS4_SYSV_ABI sceUserServiceGetUserStatus();
 int PS4_SYSV_ABI sceUserServiceGetVibrationEnabled();
 int PS4_SYSV_ABI sceUserServiceGetVoiceRecognitionLastUsedOsk();
