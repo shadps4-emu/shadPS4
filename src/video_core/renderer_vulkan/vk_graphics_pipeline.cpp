@@ -108,6 +108,7 @@ GraphicsPipeline::GraphicsPipeline(
     };
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
+        // if dynamic rasterization samples state is enabled, this field is ignored
         .rasterizationSamples =
             LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
         .sampleShadingEnable = false,
@@ -121,7 +122,7 @@ GraphicsPipeline::GraphicsPipeline(
         .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
     };
 
-    boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
+    boost::container::static_vector<vk::DynamicState, 22> dynamic_states = {
         vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
         vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthTestEnable,
         vk::DynamicState::eDepthWriteEnable,   vk::DynamicState::eDepthCompareOp,
@@ -146,6 +147,9 @@ GraphicsPipeline::GraphicsPipeline(
         dynamic_states.push_back(vk::DynamicState::eVertexInputEXT);
     } else if (!vertex_bindings.empty()) {
         dynamic_states.push_back(vk::DynamicState::eVertexInputBindingStride);
+    }
+    if (instance.IsDynamicRasterizationSamplesSupported()) {
+        dynamic_states.push_back(vk::DynamicState::eRasterizationSamplesEXT);
     }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
