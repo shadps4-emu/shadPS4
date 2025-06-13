@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
 
+#include <core/libraries/system/userservice.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -117,7 +118,7 @@ static ErrorDialogUi g_dialog_ui;
 struct Param {
     s32 size;
     s32 errorCode;
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 _reserved;
 };
 

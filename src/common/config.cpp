@@ -74,7 +74,12 @@ static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
 static bool isPSNSignedIn = false;
+std::string userid{"00000001"};
+std::string selectedUserid{"00000001"};
 
+std::string getDefaultUserId() {
+    return userid;
+}
 // Gui
 static bool load_game_size = true;
 static std::vector<GameInstallDir> settings_install_dirs = {};

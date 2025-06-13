@@ -924,7 +924,7 @@ int PS4_SYSV_ABI sceNpGetAccountCountry() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountCountryA(OrbisUserServiceUserId user_id,
+int PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          OrbisNpCountryCode* country_code) {
     LOG_INFO(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
     if (country_code == nullptr) {
@@ -955,7 +955,8 @@ int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) 
     return SIGNEDIN_STATUS;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
+int PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                    u64* account_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     if (account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -989,7 +990,8 @@ int PS4_SYSV_ABI sceNpGetGamePresenceStatusA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) {
+int PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
+                              OrbisNpId* np_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -1004,7 +1006,8 @@ int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineId* online_id) {
+int PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                  OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -1024,7 +1027,8 @@ int PS4_SYSV_ABI sceNpGetParentalControlInfoA() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* state) {
+int PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId user_id,
+                               OrbisNpState* state) {
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -1043,7 +1047,8 @@ int PS4_SYSV_ABI sceNpGetUserIdByOnlineId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpHasSignedUp(OrbisUserServiceUserId user_id, bool* has_signed_up) {
+int PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                  bool* has_signed_up) {
     LOG_DEBUG(Lib_NpManager, "called");
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;

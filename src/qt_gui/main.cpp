@@ -5,6 +5,7 @@
 #include "system_error"
 #include "unordered_map"
 
+#include <core/user_account.h>
 #include "common/config.h"
 #include "common/memory_patcher.h"
 #include "core/file_sys/fs.h"
@@ -31,6 +32,8 @@ int main(int argc, char* argv[]) {
     // Load configurations and initialize Qt application
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
+
+    user_account::createdDefaultUser();
 
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
