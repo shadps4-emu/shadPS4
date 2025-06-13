@@ -25,10 +25,9 @@
 namespace VideoCore {
 
 const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
-    const auto bpp = info.num_bits * (info.props.is_block ? 16 : 1);
     switch (info.tiling_mode) {
     case AmdGpu::TilingMode::Texture_MicroTiled:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 8:
             return &detilers[DetilerType::Micro8];
         case 16:
@@ -43,7 +42,7 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
             return nullptr;
         }
     case AmdGpu::TilingMode::Texture_Volume:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 8:
             return &detilers[DetilerType::Macro8];
         case 32:
@@ -55,7 +54,7 @@ const DetilerContext* TileManager::GetDetiler(const ImageInfo& info) const {
         }
         break;
     case AmdGpu::TilingMode::Display_MicroTiled:
-        switch (bpp) {
+        switch (info.num_bits) {
         case 64:
             return &detilers[DetilerType::Display_Micro64];
         default:
@@ -71,7 +70,7 @@ struct DetilerParams {
     u32 num_levels;
     u32 pitch0;
     u32 height;
-    u32 sizes[14];
+    std::array<u32, 16> sizes;
 };
 
 TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler)
@@ -270,13 +269,16 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
     params.height = info.size.height;
     if (info.tiling_mode == AmdGpu::TilingMode::Texture_Volume ||
         info.tiling_mode == AmdGpu::TilingMode::Display_MicroTiled) {
-        ASSERT(info.resources.levels == 1);
+        if (info.resources.levels != 1) {
+            LOG_ERROR(Render_Vulkan, "Unexpected mipmaps for volume and display tilings {}",
+                      info.resources.levels);
+        }
         const auto tiles_per_row = info.pitch / 8u;
         const auto tiles_per_slice = tiles_per_row * ((info.size.height + 7u) / 8u);
         params.sizes[0] = tiles_per_row;
         params.sizes[1] = tiles_per_slice;
     } else {
-        ASSERT(info.resources.levels <= 14);
+        ASSERT(info.resources.levels <= params.sizes.size());
         std::memset(&params.sizes, 0, sizeof(params.sizes));
         for (int m = 0; m < info.resources.levels; ++m) {
             params.sizes[m] = info.mips_layout[m].size + (m > 0 ? params.sizes[m - 1] : 0);
@@ -287,8 +289,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                          &params);
 
     ASSERT((image_size % 64) == 0);
-    const auto bpp = info.num_bits * (info.props.is_block ? 16u : 1u);
-    const auto num_tiles = image_size / (64 * (bpp / 8));
+    const auto num_tiles = image_size / (64 * (info.num_bits / 8));
     cmdbuf.dispatch(num_tiles, 1, 1);
     return {out_buffer.first, 0};
 }

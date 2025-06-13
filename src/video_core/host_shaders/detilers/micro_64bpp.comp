@@ -16,7 +16,7 @@ layout(push_constant) uniform image_info {
     uint num_levels;
     uint pitch;
     uint height;
-    uint sizes[14];
+    uint sizes[16];
 } info;
 
 // Inverse morton LUT, small enough to fit into K$

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_set>
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
@@ -9,12 +10,14 @@
 namespace Shader::Optimization {
 
 static bool IsLoadShared(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
+    return inst.GetOpcode() == IR::Opcode::LoadSharedU16 ||
+           inst.GetOpcode() == IR::Opcode::LoadSharedU32 ||
            inst.GetOpcode() == IR::Opcode::LoadSharedU64;
 }
 
 static bool IsWriteShared(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
+    return inst.GetOpcode() == IR::Opcode::WriteSharedU16 ||
+           inst.GetOpcode() == IR::Opcode::WriteSharedU32 ||
            inst.GetOpcode() == IR::Opcode::WriteSharedU64;
 }
 
@@ -49,11 +52,14 @@ static void EmitBarrierInBlock(IR::Block* block) {
     }
 }
 
+using NodeSet = std::unordered_set<const IR::Block*>;
+
 // Inserts a barrier after divergent conditional blocks to avoid undefined
 // behavior when some threads write and others read from shared memory.
-static void EmitBarrierInMergeBlock(const IR::AbstractSyntaxNode::Data& data) {
+static void EmitBarrierInMergeBlock(const IR::AbstractSyntaxNode::Data& data,
+                                    NodeSet& divergence_end, u32& divergence_depth) {
     const IR::U1 cond = data.if_node.cond;
-    const auto insert_barrier =
+    const auto is_divergent_cond =
         IR::BreadthFirstSearch(cond, [](IR::Inst* inst) -> std::optional<bool> {
             if (inst->GetOpcode() == IR::Opcode::GetAttributeU32 &&
                 inst->Arg(0).Attribute() == IR::Attribute::LocalInvocationId) {
@@ -61,11 +67,15 @@ static void EmitBarrierInMergeBlock(const IR::AbstractSyntaxNode::Data& data) {
             }
             return std::nullopt;
         });
-    if (insert_barrier) {
-        IR::Block* const merge = data.if_node.merge;
-        auto insert_point = std::ranges::find_if_not(merge->Instructions(), IR::IsPhi);
-        IR::IREmitter ir{*merge, insert_point};
-        ir.Barrier();
+    if (is_divergent_cond) {
+        if (divergence_depth == 0) {
+            IR::Block* const merge = data.if_node.merge;
+            auto insert_point = std::ranges::find_if_not(merge->Instructions(), IR::IsPhi);
+            IR::IREmitter ir{*merge, insert_point};
+            ir.Barrier();
+        }
+        ++divergence_depth;
+        divergence_end.emplace(data.if_node.merge);
     }
 }
 
@@ -87,19 +97,22 @@ void SharedMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_in
         return;
     }
     using Type = IR::AbstractSyntaxNode::Type;
-    u32 branch_depth{};
+    u32 divergence_depth{};
+    NodeSet divergence_end;
     for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
         if (node.type == Type::EndIf) {
-            --branch_depth;
+            if (divergence_end.contains(node.data.end_if.merge)) {
+                --divergence_depth;
+            }
             continue;
         }
         // Check if branch depth is zero, we don't want to insert barrier in potentially divergent
         // code.
-        if (node.type == Type::If && branch_depth++ == 0) {
-            EmitBarrierInMergeBlock(node.data);
+        if (node.type == Type::If) {
+            EmitBarrierInMergeBlock(node.data, divergence_end, divergence_depth);
             continue;
         }
-        if (node.type == Type::Block && branch_depth == 0) {
+        if (node.type == Type::Block && divergence_depth == 0) {
             EmitBarrierInBlock(node.data.block);
         }
     }

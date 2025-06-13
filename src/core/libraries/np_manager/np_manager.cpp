@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -9,6 +10,8 @@
 #include "core/tls.h"
 
 namespace Libraries::NpManager {
+
+#define SIGNEDIN_STATUS (Config::getPSNSignedIn() ? ORBIS_OK : ORBIS_NP_ERROR_SIGNED_OUT)
 
 int PS4_SYSV_ABI Func_EF4378573542A508() {
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
@@ -921,9 +924,16 @@ int PS4_SYSV_ABI sceNpGetAccountCountry() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpGetAccountCountryA() {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpGetAccountCountryA(OrbisUserServiceUserId user_id,
+                                         OrbisNpCountryCode* country_code) {
+    LOG_INFO(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    if (country_code == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    ::memset(country_code, 0, sizeof(OrbisNpCountryCode));
+    // TODO: get NP country code from config
+    ::memcpy(country_code->country_code, "us", 2);
+    return SIGNEDIN_STATUS;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirth() {
@@ -941,8 +951,8 @@ int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) 
     if (online_id == nullptr || account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *account_id = 0;
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    *account_id = 0xFEEDFACE;
+    return SIGNEDIN_STATUS;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account_id) {
@@ -950,8 +960,8 @@ int PS4_SYSV_ABI sceNpGetAccountIdA(OrbisUserServiceUserId user_id, u64* account
     if (account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *account_id = 0;
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    *account_id = 0xFEEDFACE;
+    return SIGNEDIN_STATUS;
 }
 
 int PS4_SYSV_ABI sceNpGetAccountLanguage() {
@@ -984,7 +994,9 @@ int PS4_SYSV_ABI sceNpGetNpId(OrbisUserServiceUserId user_id, OrbisNpId* np_id) 
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    memset(np_id, 0, sizeof(OrbisNpId));
+    strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
+    return SIGNEDIN_STATUS;
 }
 
 int PS4_SYSV_ABI sceNpGetNpReachabilityState() {
@@ -997,7 +1009,9 @@ int PS4_SYSV_ABI sceNpGetOnlineId(OrbisUserServiceUserId user_id, OrbisNpOnlineI
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    return ORBIS_NP_ERROR_SIGNED_OUT;
+    memset(online_id, 0, sizeof(OrbisNpOnlineId));
+    strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
+    return SIGNEDIN_STATUS;
 }
 
 int PS4_SYSV_ABI sceNpGetParentalControlInfo() {
@@ -1014,8 +1028,8 @@ int PS4_SYSV_ABI sceNpGetState(OrbisUserServiceUserId user_id, OrbisNpState* sta
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *state = OrbisNpState::SignedOut;
-    LOG_DEBUG(Lib_NpManager, "Signed out");
+    *state = Config::getPSNSignedIn() ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
+    LOG_DEBUG(Lib_NpManager, "Signed {}", Config::getPSNSignedIn() ? "in" : "out");
     return ORBIS_OK;
 }
 

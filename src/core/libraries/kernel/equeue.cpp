@@ -145,6 +145,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
             if (event.event.ident == ident && event.event.filter == filter) {
                 if (filter == SceKernelEvent::Filter::VideoOut) {
                     event.TriggerDisplay(trigger_data);
+                } else if (filter == SceKernelEvent::Filter::User) {
+                    event.TriggerUser(trigger_data);
                 } else {
                     event.Trigger(trigger_data);
                 }
