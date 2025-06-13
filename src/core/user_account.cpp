@@ -14,8 +14,8 @@ user_account::user_account(const std::string& user_id) {
     // Setting userId.
     m_user_id = user_id;
 
-    m_user_dir = Common::FS::GetUserPathString(Common::FS::PathType::HomeDir) + "/" +
-                 Config::getDefaultUserId() + "/";
+    m_user_dir =
+        Common::FS::GetUserPathString(Common::FS::PathType::HomeDir) + "/" + m_user_id + "/";
 
     Common::FS::IOFile userfile(m_user_dir + "localuser.json", Common::FS::FileAccessMode::Read);
     if (userfile.IsOpen()) {
@@ -39,4 +39,22 @@ std::map<u32, user_account> user_account::GetUserAccounts(const std::string& bas
     // TODO
 
     return user_list;
+}
+
+void user_account::createdDefaultUser() {
+    const auto& default_user_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::HomeDir) / Config::getDefaultUserId();
+    if (!std::filesystem::exists(default_user_dir)) {
+        std::filesystem::create_directory(default_user_dir);
+        Common::FS::IOFile userfile(default_user_dir / "localuser.json",
+                                    Common::FS::FileAccessMode::Write);
+        nlohmann::json jsonfile;
+
+        // Assign values
+        jsonfile["username"] = "shadps4";
+
+        std::string jsonStr = jsonfile.dump(4);
+        userfile.WriteString(jsonStr);
+        userfile.Close();
+    }
 }

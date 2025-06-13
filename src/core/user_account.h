@@ -21,6 +21,7 @@ public:
     }
 
     static std::map<u32, user_account> GetUserAccounts(const std::string& base_dir);
+    static void createdDefaultUser();
 
 private:
     std::string m_user_id;
