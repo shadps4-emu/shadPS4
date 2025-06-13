@@ -605,11 +605,12 @@ public:
                   Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
           syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_},
-          runtime_info{runtime_info_}, profile{profile_} {
+          runtime_info{runtime_info_}, profile{profile_},
+          translator{info_, runtime_info_, profile_} {
         Visit(root_stmt, nullptr, nullptr);
 
-        IR::Block& first_block{*syntax_list.front().data.block};
-        Translator{&first_block, info, runtime_info, profile}.EmitPrologue();
+        IR::Block* first_block = syntax_list.front().data.block;
+        translator.EmitPrologue(first_block);
     }
 
 private:
@@ -637,8 +638,8 @@ private:
                     current_block->has_multiple_predecessors = stmt.block->num_predecessors > 1;
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
-                    Translate(current_block, stmt.block->begin, inst_list.subspan(start, size),
-                              info, runtime_info, profile);
+                    translator.Translate(current_block, stmt.block->begin,
+                                         inst_list.subspan(start, size));
                 }
                 break;
             }
@@ -820,6 +821,7 @@ private:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
+    Translator translator;
 };
 } // Anonymous namespace
 

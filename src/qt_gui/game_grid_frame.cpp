@@ -5,11 +5,13 @@
 #include "game_grid_frame.h"
 #include "qt_gui/compatibility_info.h"
 
-GameGridFrame::GameGridFrame(std::shared_ptr<GameInfoClass> game_info_get,
+GameGridFrame::GameGridFrame(std::shared_ptr<gui_settings> gui_settings,
+                             std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,
                              QWidget* parent)
-    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
-    icon_size = Config::getIconSizeGrid();
+    : QTableWidget(parent), m_gui_settings(std::move(gui_settings)), m_game_info(game_info_get),
+      m_compat_info(compat_info_get) {
+    icon_size = m_gui_settings->GetValue(gui::gg_icon_size).toInt();
     windowWidth = parent->width();
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -74,7 +76,7 @@ void GameGridFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameGridFrame::PlayBackgroundMusic(QString path) {
-    if (path.isEmpty() || !Config::getPlayBGM()) {
+    if (path.isEmpty() || !m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
@@ -91,7 +93,8 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     else
         m_games_ = m_game_info->m_games;
     m_games_shared = std::make_shared<QVector<GameInfo>>(m_games_);
-    icon_size = Config::getIconSizeGrid(); // update icon size for resize event.
+    icon_size =
+        m_gui_settings->GetValue(gui::gg_icon_size).toInt(); // update icon size for resize event.
 
     int gamesPerRow = windowWidth / (icon_size + 20); // 2 x cell widget border size.
     int row = 0;
@@ -118,7 +121,7 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
         layout->addWidget(name_label);
 
         // Resizing of font-size.
-        float fontSize = (Config::getIconSizeGrid() / 5.5f);
+        float fontSize = (m_gui_settings->GetValue(gui::gg_icon_size).toInt() / 5.5f);
         QString styleSheet =
             QString("color: white; font-weight: bold; font-size: %1px;").arg(fontSize);
         name_label->setStyleSheet(styleSheet);
@@ -168,7 +171,7 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     }
 
     // If background images are hidden, clear the background image
-    if (!Config::getShowBackgroundImage()) {
+    if (!m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         backgroundImage = QImage();
         m_last_opacity = -1;         // Reset opacity tracking when disabled
         m_current_game_path.clear(); // Reset current game path
@@ -177,7 +180,7 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
     }
 
     const auto& game = (*m_games_shared)[itemID];
-    const int opacity = Config::getBackgroundImageOpacity();
+    const int opacity = m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
 
     // Recompute if opacity changed or we switched to a different game
     if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
@@ -195,7 +198,8 @@ void GameGridFrame::SetGridBackgroundImage(int row, int column) {
 
 void GameGridFrame::RefreshGridBackgroundImage() {
     QPalette palette;
-    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
+    if (!backgroundImage.isNull() &&
+        m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         QSize widgetSize = size();
         QPixmap scaledPixmap =
             QPixmap::fromImage(backgroundImage)

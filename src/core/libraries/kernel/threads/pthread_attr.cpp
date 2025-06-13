@@ -306,6 +306,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_attr_getdetachstate);
     LIB_FUNCTION("JKyG3SWyA10", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_setguardsize);
+    LIB_FUNCTION("qlk9pSLsUmM", "libScePosix", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_getschedparam);
 
     // Orbis
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel", 1, 1,

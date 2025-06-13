@@ -25,11 +25,11 @@ sudo apt install build-essential clang git cmake libasound2-dev \
 
 ```bash
 sudo dnf install clang git cmake libatomic alsa-lib-devel \
-    pipewire-jack-audio-connection-kit-devel openal-devel \
+    pipewire-jack-audio-connection-kit-devel openal-soft-devel \
     openssl-devel libevdev-devel libudev-devel libXext-devel \
     qt6-qtbase-devel qt6-qtbase-private-devel \
     qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel \
-    vulkan-devel vulkan-validation-layers libpng-devel
+    vulkan-devel vulkan-validation-layers libpng-devel libuuid-devel
 ```
 
 #### Arch Linux

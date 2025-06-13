@@ -229,6 +229,20 @@ Id EmitFindUMsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindUMsb(ctx.U32[1], value);
 }
 
+Id EmitFindUMsb64(EmitContext& ctx, Id value) {
+    // Vulkan restricts some bitwise operations to 32-bit only, so decompose into
+    // two 32-bit values and select the correct result.
+    const Id unpacked{ctx.OpBitcast(ctx.U32[2], value)};
+    const Id hi{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1U)};
+    const Id lo{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0U)};
+    const Id hi_msb{ctx.OpFindUMsb(ctx.U32[1], hi)};
+    const Id lo_msb{ctx.OpFindUMsb(ctx.U32[1], lo)};
+    const Id found_hi{ctx.OpINotEqual(ctx.U1[1], hi_msb, ctx.ConstU32(u32(-1)))};
+    const Id shifted_hi{ctx.OpIAdd(ctx.U32[1], hi_msb, ctx.ConstU32(32u))};
+    // value == 0 case is checked in IREmitter
+    return ctx.OpSelect(ctx.U32[1], found_hi, shifted_hi, lo_msb);
+}
+
 Id EmitFindILsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindILsb(ctx.U32[1], value);
 }

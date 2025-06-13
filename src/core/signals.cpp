@@ -11,6 +11,7 @@
 #include <windows.h>
 #else
 #include <csignal>
+#include <pthread.h>
 #ifdef ARCH_X86_64
 #include <Zydis/Formatter.h>
 #endif

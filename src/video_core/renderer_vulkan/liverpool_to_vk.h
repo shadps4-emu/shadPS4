@@ -30,6 +30,8 @@ vk::FrontFace FrontFace(Liverpool::FrontFace mode);
 
 vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor);
 
+bool IsDualSourceBlendFactor(Liverpool::BlendControl::BlendFactor factor);
+
 vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func);
 
 vk::SamplerAddressMode ClampMode(AmdGpu::ClampMode mode);

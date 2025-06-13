@@ -549,7 +549,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
-                auto& vk_buffer = buffer_cache.GetStreamBuffer();
+                auto& vk_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
                 const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
                 const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size,
                                                   instance.UniformMinAlignment());
@@ -561,7 +561,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const auto* fault_buffer = buffer_cache.GetFaultBuffer();
                 buffer_infos.emplace_back(fault_buffer->Handle(), 0, fault_buffer->SizeBytes());
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
-                auto& lds_buffer = buffer_cache.GetStreamBuffer();
+                auto& lds_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
                 const auto& cs_program = liverpool->GetCsRegs();
                 const auto lds_size = cs_program.SharedMemSize() * cs_program.NumWorkgroups();
                 const auto [data, offset] =

@@ -32,6 +32,12 @@ struct OrbisNpId {
     u8 reserved[8];
 };
 
+struct OrbisNpCountryCode {
+    char country_code[2];
+    char end;
+    char pad;
+};
+
 int PS4_SYSV_ABI Func_EF4378573542A508();
 int PS4_SYSV_ABI _sceNpIpcCreateMemoryFromKernel();
 int PS4_SYSV_ABI _sceNpIpcCreateMemoryFromPool();
@@ -215,7 +221,8 @@ int PS4_SYSV_ABI sceNpCreateRequest();
 int PS4_SYSV_ABI sceNpDeleteRequest(int reqId);
 int PS4_SYSV_ABI sceNpGetAccountAge();
 int PS4_SYSV_ABI sceNpGetAccountCountry();
-int PS4_SYSV_ABI sceNpGetAccountCountryA();
+int PS4_SYSV_ABI sceNpGetAccountCountryA(OrbisUserServiceUserId user_id,
+                                         OrbisNpCountryCode* country_code);
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirth();
 int PS4_SYSV_ABI sceNpGetAccountDateOfBirthA();
 int PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id);
