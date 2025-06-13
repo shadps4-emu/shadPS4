@@ -269,6 +269,34 @@ void Rasterizer::EliminateFastClear() {
     ScopeMarkerEnd();
 }
 
+std::vector<u32> Rasterizer::UniqueSampleCounts() const {
+    const auto& regs = liverpool->regs;
+    using Liverpool = AmdGpu::Liverpool;
+    std::vector<u32> result{};
+
+    if (!regs.mode_control.msaa_enable) {
+        result.push_back(1);
+        return std::move(result);
+    }
+    std::vector<u32> samples{};
+    if (regs.color_control.mode != Liverpool::ColorControl::OperationMode::Disable) {
+        for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
+            const auto& col_buf = regs.color_buffers[cb];
+            if (!col_buf) {
+                continue;
+            }
+            samples.push_back(col_buf.NumSamples());
+        }
+    }
+    if (regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid()) {
+        samples.push_back(regs.depth_buffer.NumSamples());
+    }
+    std::ranges::unique_copy(samples, std::back_inserter(result));
+    std::ranges::sort(result, std::ranges::greater());
+
+    return std::move(result);
+}
+
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
@@ -282,7 +310,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    auto state = PrepareRenderState(pipeline->GetMrtMask());
+    auto full_state = PrepareRenderState(pipeline->GetMrtMask());
     if (!BindResources(pipeline)) {
         return;
     }
@@ -291,10 +319,6 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     if (is_indexed) {
         buffer_cache.BindIndexBuffer(index_offset);
     }
-
-    BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline);
-
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     const auto [vertex_offset, instance_offset] = GetDrawOffsets(regs, vs_info, fetch_shader);
@@ -302,12 +326,31 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
-    if (is_indexed) {
-        cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
-                           s32(vertex_offset), instance_offset);
-    } else {
-        cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
-                    instance_offset);
+    for (auto samples : UniqueSampleCounts()) {
+        auto state = full_state;
+        auto sample_count =
+            LiverpoolToVK::NumSamples(samples, instance.GetFramebufferSampleCounts());
+        for (auto i = 0; i < AmdGpu::Liverpool::NumColorBuffers; ++i) {
+            if (regs.color_buffers[i] && regs.color_buffers[i].NumSamples() != u32(sample_count)) {
+                state.color_attachments[i].imageView = VK_NULL_HANDLE;
+            }
+        }
+        if (state.has_depth && regs.depth_buffer.NumSamples() != u32(sample_count)) {
+            state.depth_attachment.imageView = VK_NULL_HANDLE;
+        }
+        if (state.has_stencil && regs.depth_buffer.NumSamples() != u32(sample_count)) {
+            state.stencil_attachment.imageView = VK_NULL_HANDLE;
+        }
+        BeginRendering(*pipeline, state);
+        UpdateDynamicState(*pipeline, sample_count);
+
+        if (is_indexed) {
+            cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
+                               s32(vertex_offset), instance_offset);
+        } else {
+            cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
+                        instance_offset);
+        }
     }
 
     ResetBindings();
@@ -321,6 +364,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
+    const auto& regs = liverpool->regs;
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
         return;
@@ -346,7 +390,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline);
+    UpdateDynamicState(*pipeline, LiverpoolToVK::NumSamples(regs.NumSamples(),
+                                                            instance.GetFramebufferSampleCounts()));
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
@@ -993,7 +1038,8 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     }
 }
 
-void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline,
+                                    vk::SampleCountFlagBits sample_count) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState();
@@ -1001,6 +1047,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
     dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
+    dynamic_state.SetRasterizationSamples(sample_count);
 
     // Commit new dynamic state to the command buffer.
     dynamic_state.Commit(instance, scheduler.CommandBuffer());
