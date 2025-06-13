@@ -794,6 +794,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/user_account.cpp
+         src/core/user_account.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")

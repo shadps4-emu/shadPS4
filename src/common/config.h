@@ -34,6 +34,7 @@ bool getEnableDiscordRPC();
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
 bool getPSNSignedIn();
+std::string getDefaultUserId();
 
 std::string getLogFilter();
 std::string getLogType();

@@ -32,6 +32,12 @@ int main(int argc, char* argv[]) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
+    const auto& default_user_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::HomeDir) / Config::getDefaultUserId();
+    if (!std::filesystem::exists(default_user_dir)) {
+        std::filesystem::create_directory(default_user_dir);
+    }
+
     bool has_command_line_argument = argc > 1;
     bool show_gui = false, has_game_argument = false;
     std::string game_path;
