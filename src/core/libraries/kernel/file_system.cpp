@@ -293,9 +293,10 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     }
+    auto file_size_before = file->f.GetSize();
     auto written_bytes = file->f.WriteRaw<u8>(buf, nbytes);
     auto file_size = file->f.GetSize();
-    if (file_size != written_bytes) {
+    if (file_size != file_size_before + written_bytes) {
         file->f.SetSize(written_bytes);
     }
     return written_bytes;
