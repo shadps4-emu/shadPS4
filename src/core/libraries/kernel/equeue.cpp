@@ -179,18 +179,19 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
 }
 
 bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
-    // the small timer storage and wait logic should be reworked.
-
-    // id check
-    ev.time_added = std::chrono::steady_clock::now();
-    small_timer_event = std::move(ev);
+    SmallTimer st;
+    st.event = ev.event;
+    st.added = std::chrono::steady_clock::now();
+    st.interval = std::chrono::microseconds{ev.event.data};
+    {
+        std::scoped_lock lock{m_mutex};
+        m_small_timers[st.event.ident] = std::move(st);
+    }
     return true;
 }
 
 int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
-    int count{};
-
-    ASSERT(num == 1);
+    ASSERT(num == 1); // Could be extended to support more events if needed
 
     auto curr_clock = std::chrono::steady_clock::now();
     const auto wait_end_us = (micros == 0) ? std::chrono::steady_clock::time_point::max()
@@ -200,17 +201,19 @@ int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
         curr_clock = std::chrono::steady_clock::now();
         {
             std::scoped_lock lock{m_mutex};
-            if ((curr_clock - small_timer_event.time_added) >
-                std::chrono::microseconds{small_timer_event.event.data}) {
-                ev[count++] = small_timer_event.event;
-                small_timer_event.event.data = 0;
-                break;
+            for (auto it = m_small_timers.begin(); it != m_small_timers.end(); ++it) {
+                const SmallTimer& st = it->second;
+                if (curr_clock - st.added >= st.interval) {
+                    ev[0] = st.event;
+                    m_small_timers.erase(it);
+                    return 1;
+                }
             }
         }
         std::this_thread::yield();
     } while (curr_clock < wait_end_us);
 
-    return count;
+    return 0;
 }
 
 bool EqueueInternal::EventExists(u64 id, s16 filter) {
