@@ -293,13 +293,17 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     }
-    auto file_size_before = file->f.GetSize();
-    auto written_bytes = file->f.WriteRaw<u8>(buf, nbytes);
-    auto file_size = file->f.GetSize();
-    if (file_size != file_size_before + written_bytes) {
-        file->f.SetSize(written_bytes);
+
+    // Due to a quirk with std::fwrite
+    // we need to validate the returned bytes, and make sure the file size is correct.
+    auto expected_file_size = file->f.GetSize();
+    auto bytes_written = file->f.WriteRaw<u8>(buf, nbytes);
+    expected_file_size += bytes_written;
+    auto actual_file_size = file->f.GetSize();
+    if (expected_file_size != actual_file_size) {
+        file->f.SetSize(expected_file_size);
     }
-    return written_bytes;
+    return bytes_written;
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
