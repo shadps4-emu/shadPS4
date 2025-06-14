@@ -54,7 +54,7 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
     this->horizontalHeader()->setSectionResizeMode(10, QHeaderView::Fixed);
     PopulateGameList();
 
-    connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) { 
+    connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
         ToggleFavorite(row, column);
         PopulateGameList(false);
     });
@@ -84,7 +84,8 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, true);
+        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info,
+                                            m_gui_settings, this, true);
         PopulateGameList(false);
     });
 
@@ -126,7 +127,7 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
 
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
-    
+
     ApplyLastSorting(isInitialPopulation);
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {

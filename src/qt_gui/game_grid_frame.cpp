@@ -34,7 +34,8 @@ GameGridFrame::GameGridFrame(std::shared_ptr<gui_settings> gui_settings,
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
             &GameGridFrame::RefreshGridBackgroundImage);
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, false);
+        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info,
+                                            m_gui_settings, this, false);
         PopulateGameGrid(m_game_info->m_games, false);
     });
 }
@@ -241,9 +242,9 @@ void GameGridFrame::SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_g
     bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
 
     QLabel* label = new QLabel(parentWidget);
-    label->setPixmap(
-        QPixmap(":images/favorite_icon.png")
-            .scaled(icon_size / 3.8, icon_size / 3.8, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    label->setPixmap(QPixmap(":images/favorite_icon.png")
+                         .scaled(icon_size / 3.8, icon_size / 3.8, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation));
     label->move(icon_size - icon_size / 4, 2);
     label->raise();
     label->setVisible(isFavorite);
