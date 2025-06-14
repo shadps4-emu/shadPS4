@@ -7,7 +7,7 @@
 #include "common/bit_field.h"
 #include "common/enum.h"
 #include "common/types.h"
-#include "video_core/amdgpu/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
