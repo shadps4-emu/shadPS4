@@ -751,6 +751,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         return -1;
     }
     std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::remove(src_path);
     return ORBIS_OK;
 }
 
