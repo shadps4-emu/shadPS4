@@ -33,13 +33,13 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
     }
 
     ButtonsList = {
-        ui->CrossButton,       ui->CircleButton,   ui->TriangleButton,   ui->SquareButton,
-        ui->L1Button,          ui->R1Button,       ui->L2Button,         ui->R2Button,
-        ui->L3Button,          ui->R3Button,       ui->TouchpadButton,   ui->OptionsButton,
-        ui->TouchpadButton,    ui->DpadUpButton,   ui->DpadDownButton,   ui->DpadLeftButton,
-        ui->DpadRightButton,   ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton,
-        ui->LStickRightButton, ui->RStickUpButton, ui->RStickDownButton, ui->RStickLeftButton,
-        ui->RStickRightButton, ui->LHalfButton,    ui->RHalfButton};
+        ui->CrossButton,    ui->CircleButton,     ui->TriangleButton,   ui->SquareButton,
+        ui->L1Button,       ui->R1Button,         ui->L2Button,         ui->R2Button,
+        ui->L3Button,       ui->R3Button,         ui->OptionsButton,    ui->TouchpadButton,
+        ui->DpadUpButton,   ui->DpadDownButton,   ui->DpadLeftButton,   ui->DpadRightButton,
+        ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
+        ui->RStickUpButton, ui->RStickDownButton, ui->RStickLeftButton, ui->RStickRightButton,
+        ui->LHalfButton,    ui->RHalfButton};
 
     ButtonConnects();
     SetUIValuestoMappings("default");
