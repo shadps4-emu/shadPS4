@@ -193,6 +193,8 @@ struct Info {
     PersistentSrtInfo srt_info;
     std::vector<u32> flattened_ud_buf;
 
+    std::array<IR::Interpolation, 32> interp_qualifiers{};
+
     IR::ScalarReg tess_consts_ptr_base = IR::ScalarReg::Max;
     s32 tess_consts_dword_offset = -1;
 
@@ -206,11 +208,13 @@ struct Info {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool has_perspective_interp{};
+    bool has_linear_interp{};
     bool uses_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
-    bool uses_shared{};
+    IR::Type shared_types{};
     bool uses_fp16{};
     bool uses_fp64{};
     bool uses_pack_10_11_11{};
