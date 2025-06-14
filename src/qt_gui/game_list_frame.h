@@ -38,15 +38,18 @@ public Q_SLOTS:
     void PlayBackgroundMusic(QTableWidgetItem* item);
     void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                               int previousColumn);
+    void ToggleFavorite(int row, int column);
 
 private:
     void SetTableItem(int row, int column, QString itemStr);
     void SetRegionFlag(int row, int column, QString itemStr);
+    void SetFavoriteIcon(int row, int column);
     void SetCompatibilityItem(int row, int column, CompatibilityEntry entry);
     QString GetPlayTime(const std::string& serial);
     QList<QAction*> m_columnActs;
     GameInfoClass* game_inf_get = nullptr;
     bool ListSortedAsc = true;
+    int sortColumn = 1;
     QTableWidgetItem* m_current_item = nullptr;
     int m_last_opacity = -1; // Track last opacity to avoid unnecessary recomputation
     std::filesystem::path m_current_game_path; // Track current game path to detect changes
@@ -55,6 +58,7 @@ private:
 public:
     void PopulateGameList(bool isInitialPopulation = true);
     void ResizeIcons(int iconSize);
+    void ApplyLastSorting(bool isInitialPopulation);
     QTableWidgetItem* GetCurrentItem();
     QImage backgroundImage;
     GameListUtils m_game_list_utils;
@@ -130,4 +134,6 @@ public:
             return false;
         }
     }
+
+    bool CompareWithFavorite(GameInfo a, GameInfo b, int columnIndex, bool ascending);
 };
