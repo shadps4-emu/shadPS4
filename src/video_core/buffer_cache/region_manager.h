@@ -130,19 +130,15 @@ public:
         }
         mask &= bits;
 
+        for (const auto& [start, end] : mask) {
+            func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
+        }
+
         if constexpr (clear) {
             bits.UnsetRange(start_page, end_page);
             if constexpr (type == Type::CPU) {
                 UpdateProtection<true>(std::move(lk));
-            } else {
-                lk.unlock();
             }
-        } else {
-            lk.unlock();
-        }
-
-        for (const auto& [start, end] : mask) {
-            func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
         }
     }
 
