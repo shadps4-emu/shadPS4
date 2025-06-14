@@ -373,28 +373,27 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
 
     // Prevent duplicate inputs for KBM as this breaks the engine
     bool duplicateFound = false;
-    QSet<QString> duplicateInputs;
+    QSet<QString> duplicateMappings;
     for (auto it = inputs.begin(); it != inputs.end(); ++it) {
         if (std::find(it + 1, inputs.end(), *it) != inputs.end()) {
             duplicateFound = true;
-            duplicateInputs.insert(QString::fromStdString(*it));
+            duplicateMappings.insert(QString::fromStdString(*it));
         }
     }
 
     if (duplicateFound) {
-        QStringList DuplicateButtons;
-        for (QString i : duplicateInputs) {
-            for (const auto& j : ButtonsList) {
-                if (j->text() == i)
-                    DuplicateButtons.append(j->objectName() + " - " + i);
+        QStringList duplicatesList;
+        for (const QString mapping : duplicateMappings) {
+            for (const auto& button : ButtonsList) {
+                if (button->text() == mapping)
+                    duplicatesList.append(button->objectName() + " - " + mapping);
             }
         }
-        QString DuplicateList = DuplicateButtons.join("\n");
         QMessageBox::information(
             this, tr("Unable to Save"),
             QString(tr("Cannot bind any unique input more than once. "
                        "Duplicate inputs mapped to the following buttons:\n\n%1")
-                        .arg(DuplicateList)));
+                        .arg(duplicatesList.join("\n"))));
         return;
     }
 
