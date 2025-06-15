@@ -106,6 +106,8 @@ enum class Class : u8 {
     Lib_Zlib,              ///< The LibSceZlib implementation.
     Lib_Hmd,               ///< The LibSceHmd implementation.
     Lib_SigninDialog,      ///< The LibSigninDialog implementation.
+    Lib_Font,              ///< The libSceFont implementation.
+    Lib_FontFt,            ///< The libSceFontFt implementation.
     Lib_Camera,            ///< The LibCamera implementation.
     Lib_CompanionHttpd,    ///< The LibCompanionHttpd implementation.
     Lib_CompanionUtil,     ///< The LibCompanionUtil implementation.
