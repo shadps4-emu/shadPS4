@@ -26,8 +26,11 @@ void Translator::ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32
 }
 
 void Translator::ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value) {
-    const u32 color_buffer_idx =
+    u32 color_buffer_idx =
         static_cast<u32>(attribute) - static_cast<u32>(IR::Attribute::RenderTarget0);
+    if (runtime_info.fs_info.dual_source_blending && attribute == IR::Attribute::RenderTarget1) {
+        color_buffer_idx = 0;
+    }
     const auto color_buffer = runtime_info.fs_info.color_buffers[color_buffer_idx];
 
     AmdGpu::NumberFormat num_format;
@@ -68,8 +71,11 @@ void Translator::ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR:
 }
 
 void Translator::ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value) {
-    const u32 color_buffer_idx =
+    u32 color_buffer_idx =
         static_cast<u32>(attribute) - static_cast<u32>(IR::Attribute::RenderTarget0);
+    if (runtime_info.fs_info.dual_source_blending && attribute == IR::Attribute::RenderTarget1) {
+        color_buffer_idx = 0;
+    }
     const auto color_buffer = runtime_info.fs_info.color_buffers[color_buffer_idx];
     const auto swizzled_comp = SwizzleMrtComponent(color_buffer, comp);
 
