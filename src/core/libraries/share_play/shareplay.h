@@ -21,8 +21,8 @@ struct OrbisSharePlayConnectionInfo {
     int mode;
     Libraries::NpManager::OrbisNpOnlineId hostOnlineId;
     Libraries::NpManager::OrbisNpOnlineId visitorOnlineId;
-    s32 hostUserId;
-    s32 visitorUserId;
+    Libraries::UserService::OrbisUserServiceUserId hostUserId;
+    Libraries::UserService::OrbisUserServiceUserId visitorUserId;
 };
 
 int PS4_SYSV_ABI sceSharePlayCrashDaemon();

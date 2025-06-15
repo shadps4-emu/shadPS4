@@ -3,6 +3,7 @@
 
 #include "remoteplay.h"
 
+#include <core/libraries/system/userservice.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -54,7 +55,8 @@ int PS4_SYSV_ABI sceRemoteplayGetConnectHistory() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(s32 userId, int* pStatus) {
+int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(
+    Libraries::UserService::OrbisUserServiceUserId userId, int* pStatus) {
     *pStatus = ORBIS_REMOTEPLAY_CONNECTION_STATUS_DISCONNECT;
     return ORBIS_OK;
 }

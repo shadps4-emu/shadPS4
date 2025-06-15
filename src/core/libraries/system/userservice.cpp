@@ -490,7 +490,7 @@ int PS4_SYSV_ABI sceUserServiceGetImeRunCount() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
+s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(OrbisUserServiceUserId* user_id) {
     LOG_DEBUG(Lib_UserService, "called");
     if (user_id == nullptr) {
         LOG_ERROR(Lib_UserService, "user_id is null");
@@ -1041,7 +1041,8 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color) {
+s32 PS4_SYSV_ABI sceUserServiceGetUserColor(OrbisUserServiceUserId user_id,
+                                            OrbisUserServiceUserColor* color) {
     // TODO fix me better
     LOG_DEBUG(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
@@ -1067,7 +1068,8 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
+s32 PS4_SYSV_ABI sceUserServiceGetUserName(OrbisUserServiceUserId user_id, char* user_name,
+                                           std::size_t size) {
     LOG_DEBUG(Lib_UserService, "called user_id = {} ,size = {} ", user_id, size);
     if (user_name == nullptr) {
         LOG_ERROR(Lib_UserService, "user_name is null");
