@@ -294,18 +294,9 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         return result;
     }
 
-    // Due to a quirk with std::fwrite
-    // we need to validate the returned bytes, and make sure the file size is correct.
-    auto expected_file_size = file->f.GetSize();
     auto bytes_written = file->f.WriteRaw<u8>(buf, nbytes);
-    expected_file_size += bytes_written;
-    auto actual_file_size = file->f.GetSize();
-    if (expected_file_size != actual_file_size) {
-        LOG_WARNING(Kernel_Fs,
-                    "Unexpected behavior from fwrite. Expected size {:#x}, actual size {:#x}",
-                    expected_file_size, actual_file_size);
-        file->f.SetSize(expected_file_size);
-    }
+    // Some written data might be buffered, run Flush to make sure all data is written properly.
+    file->f.Flush();
     return bytes_written;
 }
 
