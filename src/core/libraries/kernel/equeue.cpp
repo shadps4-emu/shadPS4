@@ -125,7 +125,6 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
                                          .count();
             count = WaitForSmallTimer(ev, num, std::max(0l, long(micros - time_waited)));
         }
-        small_timer_event.event.data = 0;
     }
 
     if (ev->flags & SceKernelEvent::Flags::OneShot) {

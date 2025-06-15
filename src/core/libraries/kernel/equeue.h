@@ -178,7 +178,6 @@ private:
     std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
-    EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
     std::unordered_map<u64, SmallTimer> m_small_timers;
 };
