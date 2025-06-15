@@ -16,13 +16,7 @@ struct InstFormat {
     ScalarType dst_type = ScalarType::Undefined;
 };
 
-InstEncoding GetInstructionEncoding(u32 token);
-
-u32 GetEncodingLength(InstEncoding encoding);
-
-InstFormat InstructionFormat(InstEncoding encoding, u32 opcode);
-
-Opcode DecodeOpcode(u32 token);
+InstFormat InstructionFormat(InstEncoding encoding, uint32_t opcode);
 
 class GcnCodeSlice {
 public:
@@ -58,30 +52,43 @@ public:
     GcnInst decodeInstruction(GcnCodeSlice& code);
 
 private:
-    uint32_t getEncodingLength(InstEncoding encoding);
-    uint32_t getOpMapOffset(InstEncoding encoding);
-    uint32_t mapEncodingOp(InstEncoding encoding, Opcode opcode);
-    void updateInstructionMeta(InstEncoding encoding);
+    uint32_t mapEncodingOp(OpcodeMap opcodeMap, Opcode opcode);
+    void updateInstructionMeta(OpcodeMap opcodeMap, uint32_t encodingLength);
     uint32_t getMimgModifier(Opcode opcode);
     void repairOperandType();
 
     OperandField getOperandField(uint32_t code);
+    
+    void decodeInstruction32(void (
+        GcnDecodeContext::*decodeFunc)(u32), 
+        OpcodeMap opcodeMap, GcnCodeSlice& code
+    );
+    void decodeInstruction64(void (
+        GcnDecodeContext::*decodeFunc)(uint64_t), 
+        OpcodeMap opcodeMap, GcnCodeSlice& code
+    );
 
-    void decodeInstruction32(InstEncoding encoding, GcnCodeSlice& code);
-    void decodeInstruction64(InstEncoding encoding, GcnCodeSlice& code);
-    void decodeLiteralConstant(InstEncoding encoding, GcnCodeSlice& code);
+    void decodeInstructionFromMask9bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask7bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask6bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask5bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask4bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask2bit(GcnCodeSlice& code);
+    void decodeInstructionFromMask1bit(GcnCodeSlice& code);
+
+    void decodeLiteralConstant(OpcodeMap opcodeMap, GcnCodeSlice& code);
 
     // 32 bits encodings
-    void decodeInstructionSOP1(uint32_t hexInstruction);
-    void decodeInstructionSOPP(uint32_t hexInstruction);
-    void decodeInstructionSOPC(uint32_t hexInstruction);
-    void decodeInstructionSOPK(uint32_t hexInstruction);
-    void decodeInstructionSOP2(uint32_t hexInstruction);
-    void decodeInstructionVOP1(uint32_t hexInstruction);
-    void decodeInstructionVOPC(uint32_t hexInstruction);
-    void decodeInstructionVOP2(uint32_t hexInstruction);
-    void decodeInstructionSMRD(uint32_t hexInstruction);
-    void decodeInstructionVINTRP(uint32_t hexInstruction);
+    void decodeInstructionSOP1(u32 hexInstruction);
+    void decodeInstructionSOPP(u32 hexInstruction);
+    void decodeInstructionSOPC(u32 hexInstruction);
+    void decodeInstructionSOPK(u32 hexInstruction);
+    void decodeInstructionSOP2(u32 hexInstruction);
+    void decodeInstructionVOP1(u32 hexInstruction);
+    void decodeInstructionVOPC(u32 hexInstruction);
+    void decodeInstructionVOP2(u32 hexInstruction);
+    void decodeInstructionSMRD(u32 hexInstruction);
+    void decodeInstructionVINTRP(u32 hexInstruction);
     // 64 bits encodings
     void decodeInstructionVOP3(uint64_t hexInstruction);
     void decodeInstructionMUBUF(uint64_t hexInstruction);
