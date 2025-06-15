@@ -191,24 +191,29 @@ bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
 }
 
 int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
-    ASSERT(num == 1); // Could be extended to support more events if needed
+    ASSERT(num >= 1);
 
     auto curr_clock = std::chrono::steady_clock::now();
     const auto wait_end_us = (micros == 0) ? std::chrono::steady_clock::time_point::max()
                                            : curr_clock + std::chrono::microseconds{micros};
-
+    int count = 0;
     do {
         curr_clock = std::chrono::steady_clock::now();
         {
             std::scoped_lock lock{m_mutex};
-            for (auto it = m_small_timers.begin(); it != m_small_timers.end(); ++it) {
+            for (auto it = m_small_timers.begin(); it != m_small_timers.end() && count < num;) {
                 const SmallTimer& st = it->second;
+
                 if (curr_clock - st.added >= st.interval) {
-                    ev[0] = st.event;
-                    m_small_timers.erase(it);
-                    return 1;
+                    ev[count++] = st.event;
+                    it = m_small_timers.erase(it);
+                } else {
+                    ++it;
                 }
             }
+
+            if (count > 0)
+                return count;
         }
         std::this_thread::yield();
     } while (curr_clock < wait_end_us);
