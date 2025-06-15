@@ -391,9 +391,9 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
         }
         QMessageBox::information(
             this, tr("Unable to Save"),
-            QString(tr("Cannot bind any unique input more than once. "
-                       "Duplicate inputs mapped to the following buttons:\n\n%1")
-                        .arg(duplicatesList.join("\n"))));
+            // clang-format off
+QString(tr("Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:\n\n%1").arg(duplicatesList.join("\n"))));
+        // clang-format on
         return;
     }
 
