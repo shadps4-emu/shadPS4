@@ -9,6 +9,7 @@
 #include <vector>
 #include <boost/asio/steady_timer.hpp>
 
+#include <unordered_map>
 #include "common/rdtsc.h"
 #include "common/types.h"
 
@@ -20,6 +21,9 @@ namespace Libraries::Kernel {
 
 class EqueueInternal;
 struct EqueueEvent;
+
+using SceKernelUseconds = u32;
+using SceKernelEqueue = EqueueInternal*;
 
 struct SceKernelEvent {
     enum Filter : s16 {
@@ -77,6 +81,7 @@ struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
+    std::chrono::microseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
     void ResetTriggerState() {
@@ -92,6 +97,12 @@ struct EqueueEvent {
         is_triggered = true;
         event.fflags++;
         event.data = reinterpret_cast<uintptr_t>(data);
+    }
+
+    void TriggerUser(void* data) {
+        is_triggered = true;
+        event.fflags++;
+        event.udata = data;
     }
 
     void TriggerDisplay(void* data) {
@@ -125,6 +136,12 @@ private:
 };
 
 class EqueueInternal {
+    struct SmallTimer {
+        SceKernelEvent event;
+        std::chrono::steady_clock::time_point added;
+        std::chrono::microseconds interval;
+    };
+
 public:
     explicit EqueueInternal(std::string_view name) : m_name(name) {}
 
@@ -133,35 +150,37 @@ public:
     }
 
     bool AddEvent(EqueueEvent& event);
+    bool ScheduleEvent(u64 id, s16 filter,
+                       void (*callback)(SceKernelEqueue, const SceKernelEvent&));
     bool RemoveEvent(u64 id, s16 filter);
     int WaitForEvents(SceKernelEvent* ev, int num, u32 micros);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
     int GetTriggeredEvents(SceKernelEvent* ev, int num);
 
     bool AddSmallTimer(EqueueEvent& event);
-    bool HasSmallTimer() const {
-        return small_timer_event.event.data != 0;
+    bool HasSmallTimer() {
+        std::scoped_lock lock{m_mutex};
+        return !m_small_timers.empty();
     }
     bool RemoveSmallTimer(u64 id) {
-        if (HasSmallTimer() && small_timer_event.event.ident == id) {
-            small_timer_event = {};
-            return true;
+        if (HasSmallTimer()) {
+            std::scoped_lock lock{m_mutex};
+            return m_small_timers.erase(id) > 0;
         }
         return false;
     }
 
     int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
 
+    bool EventExists(u64 id, s16 filter);
+
 private:
     std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
-    EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
+    std::unordered_map<u64, SmallTimer> m_small_timers;
 };
-
-using SceKernelUseconds = u32;
-using SceKernelEqueue = EqueueInternal*;
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);
 

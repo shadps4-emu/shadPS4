@@ -41,7 +41,9 @@ constexpr u32 NUM_TEXTURE_TYPES = 7;
 
 enum class BufferType : u32 {
     Guest,
-    ReadConstUbo,
+    Flatbuf,
+    BdaPagetable,
+    FaultBuffer,
     GdsBuffer,
     SharedMemory,
 };
@@ -62,7 +64,14 @@ struct BufferResource {
     }
 
     bool IsStorage(const AmdGpu::Buffer& buffer, const Profile& profile) const noexcept {
-        return buffer.GetSize() > profile.max_ubo_size || is_written;
+        // When using uniform buffers, a size is required at compilation time, so we need to
+        // either compile a lot of shader specializations to handle each size or just force it to
+        // the maximum possible size always. However, for some vendors the shader-supplied size is
+        // used for bounds checking uniform buffer accesses, so the latter would effectively turn
+        // off buffer robustness behavior. Instead, force storage buffers which are bounds checked
+        // using the actual buffer size. We are assuming the performance hit from this is
+        // acceptable.
+        return true; // buffer.GetSize() > profile.max_ubo_size || is_written;
     }
 
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
@@ -75,6 +84,7 @@ struct ImageResource {
     bool is_atomic{};
     bool is_array{};
     bool is_written{};
+    bool is_r128{};
 
     [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
 };
@@ -183,6 +193,8 @@ struct Info {
     PersistentSrtInfo srt_info;
     std::vector<u32> flattened_ud_buf;
 
+    std::array<IR::Interpolation, 32> interp_qualifiers{};
+
     IR::ScalarReg tess_consts_ptr_base = IR::ScalarReg::Max;
     s32 tess_consts_dword_offset = -1;
 
@@ -196,11 +208,13 @@ struct Info {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool has_perspective_interp{};
+    bool has_linear_interp{};
     bool uses_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
-    bool uses_shared{};
+    IR::Type shared_types{};
     bool uses_fp16{};
     bool uses_fp64{};
     bool uses_pack_10_11_11{};
@@ -208,10 +222,17 @@ struct Info {
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{};
-    bool has_readconst{};
     u8 mrt_mask{0u};
     bool has_fetch_shader{false};
     u32 fetch_shader_sgpr_base{0u};
+
+    enum class ReadConstType {
+        None = 0,
+        Immediate = 1 << 0,
+        Dynamic = 1 << 1,
+    };
+    ReadConstType readconst_types{};
+    IR::Type dma_types{IR::Type::Void};
 
     explicit Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
         : stage{stage_}, l_stage{l_stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
@@ -270,13 +291,20 @@ struct Info {
                sizeof(tess_constants));
     }
 };
+DECLARE_ENUM_FLAG_OPERATORS(Info::ReadConstType);
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
     return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    const auto image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    AmdGpu::Image image{0};
+    if (!is_r128) {
+        image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
+    } else {
+        AmdGpu::Buffer buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        memcpy(&image, &buf, sizeof(buf));
+    }
     if (!image.Valid()) {
         // Fall back to null image if unbound.
         return AmdGpu::Image::Null();

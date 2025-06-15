@@ -154,6 +154,7 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
             for (IR::Inst& inst : node.data.block->Instructions()) {
                 EmitInst(ctx, &inst);
             }
+            ctx.first_to_last_label_map[label.value] = ctx.last_label;
             break;
         }
         case IR::AbstractSyntaxNode::Type::If: {
@@ -298,6 +299,16 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
     }
+    if (info.dma_types != IR::Type::Void) {
+        ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
+        ctx.AddExtension("SPV_KHR_physical_storage_buffer");
+    }
+    const auto shared_type_count = std::popcount(static_cast<u32>(info.shared_types));
+    if (shared_type_count > 1 && profile.supports_workgroup_explicit_memory_layout) {
+        ctx.AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
+    }
 }
 
 void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
@@ -387,7 +398,7 @@ void SetupFloatMode(EmitContext& ctx, const Profile& profile, const RuntimeInfo&
 void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     auto inst{program.blocks.front()->begin()};
     size_t block_index{0};
-    ctx.PatchDeferredPhi([&](size_t phi_arg) {
+    ctx.PatchDeferredPhi([&](u32 phi_arg, Id first_parent) {
         if (phi_arg == 0) {
             ++inst;
             if (inst == program.blocks[block_index]->end() ||
@@ -398,7 +409,9 @@ void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
                 } while (inst->GetOpcode() != IR::Opcode::Phi);
             }
         }
-        return ctx.Def(inst->Arg(phi_arg));
+        const Id arg = ctx.Def(inst->Arg(phi_arg));
+        const Id parent = ctx.first_to_last_label_map[first_parent.value];
+        return std::make_pair(arg, parent);
     });
 }
 } // Anonymous namespace

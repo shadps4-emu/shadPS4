@@ -6,7 +6,6 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
-#include "common/types.h"
 #include "video_core/amdgpu/pixel_format.h"
 
 namespace AmdGpu {
@@ -34,6 +33,13 @@ struct Buffer {
     static constexpr Buffer Null() {
         Buffer buffer{};
         buffer.base_address = 1;
+        return buffer;
+    }
+
+    static constexpr Buffer Placeholder(u32 size) {
+        Buffer buffer{};
+        buffer.base_address = 1;
+        buffer.num_records = size;
         return buffer;
     }
 

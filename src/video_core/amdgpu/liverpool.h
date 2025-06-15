@@ -608,6 +608,16 @@ struct Liverpool {
         }
     };
 
+    struct BorderColorBufferBase {
+        u32 base_addr_lo;
+        BitField<0, 8, u32> base_addr_hi;
+
+        template <typename T = VAddr>
+        T Address() const {
+            return std::bit_cast<T>(u64(base_addr_hi) << 40 | u64(base_addr_lo) << 8);
+        }
+    };
+
     struct IndexBufferBase {
         BitField<0, 8, u32> base_addr_hi;
         u32 base_addr_lo;
@@ -904,7 +914,7 @@ struct Liverpool {
         }
 
         size_t GetColorSliceSize() const {
-            const auto num_bytes_per_element = NumBits(info.format) / 8u;
+            const auto num_bytes_per_element = NumBitsPerBlock(info.format) / 8u;
             const auto slice_size =
                 num_bytes_per_element * (slice.tile_max + 1) * 64u * NumSamples();
             return slice_size;
@@ -1169,10 +1179,26 @@ struct Liverpool {
     };
 
     union GsMode {
+        enum class Mode : u32 {
+            Off = 0,
+            ScenarioA = 1,
+            ScenarioB = 2,
+            ScenarioG = 3,
+            ScenarioC = 4,
+        };
+
         u32 raw;
-        BitField<0, 3, u32> mode;
+        BitField<0, 3, Mode> mode;
         BitField<3, 2, u32> cut_mode;
         BitField<22, 2, u32> onchip;
+    };
+
+    union StreamOutControl {
+        u32 raw;
+        struct {
+            u32 offset_update_done : 1;
+            u32 : 31;
+        };
     };
 
     union StreamOutConfig {
@@ -1291,7 +1317,9 @@ struct Liverpool {
             Scissor screen_scissor;
             INSERT_PADDING_WORDS(0xA010 - 0xA00C - 2);
             DepthBuffer depth_buffer;
-            INSERT_PADDING_WORDS(0xA080 - 0xA018);
+            INSERT_PADDING_WORDS(8);
+            BorderColorBufferBase ta_bc_base;
+            INSERT_PADDING_WORDS(0xA080 - 0xA020 - 2);
             WindowOffset window_offset;
             ViewportScissor window_scissor;
             INSERT_PADDING_WORDS(0xA08E - 0xA081 - 2);
@@ -1378,7 +1406,9 @@ struct Liverpool {
             AaConfig aa_config;
             INSERT_PADDING_WORDS(0xA318 - 0xA2F8 - 1);
             ColorBuffer color_buffers[NumColorBuffers];
-            INSERT_PADDING_WORDS(0xC242 - 0xA390);
+            INSERT_PADDING_WORDS(0xC03F - 0xA390);
+            StreamOutControl cp_strmout_cntl;
+            INSERT_PADDING_WORDS(0xC242 - 0xC040);
             PrimitiveType primitive_type;
             INSERT_PADDING_WORDS(0xC24C - 0xC243);
             u32 num_indices;
@@ -1616,6 +1646,7 @@ static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
+static_assert(GFX6_3D_REG_INDEX(ta_bc_base) == 0xA020);
 static_assert(GFX6_3D_REG_INDEX(window_offset) == 0xA080);
 static_assert(GFX6_3D_REG_INDEX(window_scissor) == 0xA081);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
@@ -1668,6 +1699,7 @@ static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[7].base_address) == 0xA381);
+static_assert(GFX6_3D_REG_INDEX(cp_strmout_cntl) == 0xC03F);
 static_assert(GFX6_3D_REG_INDEX(primitive_type) == 0xC242);
 static_assert(GFX6_3D_REG_INDEX(num_instances) == 0xC24D);
 static_assert(GFX6_3D_REG_INDEX(vgt_tf_memory_base) == 0xc250);

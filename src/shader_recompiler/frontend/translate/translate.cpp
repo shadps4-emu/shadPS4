@@ -21,16 +21,60 @@
 
 namespace Shader::Gcn {
 
-static u32 next_vgpr_num;
-static std::unordered_map<u32, IR::VectorReg> vgpr_map;
-
-Translator::Translator(IR::Block* block_, Info& info_, const RuntimeInfo& runtime_info_,
-                       const Profile& profile_)
-    : ir{*block_, block_->begin()}, info{info_}, runtime_info{runtime_info_}, profile{profile_} {
-    next_vgpr_num = vgpr_map.empty() ? runtime_info.num_allocated_vgprs : next_vgpr_num;
+Translator::Translator(Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
+    : info{info_}, runtime_info{runtime_info_}, profile{profile_},
+      next_vgpr_num{runtime_info.num_allocated_vgprs} {
+    if (info.l_stage == LogicalStage::Fragment) {
+        dst_frag_vreg = GatherInterpQualifiers();
+    }
 }
 
-void Translator::EmitPrologue() {
+IR::VectorReg Translator::GatherInterpQualifiers() {
+    u32 dst_vreg{};
+    if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveSample; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveSample; // J
+        info.has_perspective_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.persp_center_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCenter; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCenter; // J
+        info.has_perspective_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.persp_centroid_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCentroid; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCentroid; // J
+        info.has_perspective_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
+        ++dst_vreg; // I/W
+        ++dst_vreg; // J/W
+        ++dst_vreg; // 1/W
+    }
+    if (runtime_info.fs_info.addr_flags.linear_sample_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearSample; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearSample; // J
+        info.has_linear_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.linear_center_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCenter; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCenter; // J
+        info.has_linear_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.linear_centroid_ena) {
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCentroid; // I
+        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCentroid; // J
+        info.has_linear_interp = true;
+    }
+    if (runtime_info.fs_info.addr_flags.line_stipple_tex_ena) {
+        ++dst_vreg;
+    }
+    return IR::VectorReg(dst_vreg);
+}
+
+void Translator::EmitPrologue(IR::Block* first_block) {
+    ir = IR::IREmitter(*first_block, first_block->begin());
+
     ir.Prologue();
     ir.SetExec(ir.Imm1(true));
 
@@ -60,39 +104,7 @@ void Translator::EmitPrologue() {
         }
         break;
     case LogicalStage::Fragment:
-        dst_vreg = IR::VectorReg::V0;
-        if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.persp_center_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.persp_centroid_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
-            ++dst_vreg; // I/W
-            ++dst_vreg; // J/W
-            ++dst_vreg; // 1/W
-        }
-        if (runtime_info.fs_info.addr_flags.linear_sample_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.linear_center_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.linear_centroid_ena) {
-            ++dst_vreg; // I
-            ++dst_vreg; // J
-        }
-        if (runtime_info.fs_info.addr_flags.line_stipple_tex_ena) {
-            ++dst_vreg;
-        }
+        dst_vreg = dst_frag_vreg;
         if (runtime_info.fs_info.addr_flags.pos_x_float_ena) {
             if (runtime_info.fs_info.en_flags.pos_x_float_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 0));
@@ -380,7 +392,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         break;
     case OperandField::VccLo:
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackDouble2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
         }
@@ -543,6 +555,26 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
+void Translator::Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list) {
+    if (inst_list.empty()) {
+        return;
+    }
+    ir = IR::IREmitter{*block, block->begin()};
+    for (const auto& inst : inst_list) {
+        pc += inst.length;
+
+        // Special case for emitting fetch shader.
+        if (inst.opcode == Opcode::S_SWAPPC_B64) {
+            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export ||
+                   info.stage == Stage::Local);
+            EmitFetch(inst);
+            continue;
+        }
+
+        TranslateInstruction(inst, pc);
+    }
+}
+
 void Translator::TranslateInstruction(const GcnInst& inst, const u32 pc) {
     // Emit instructions for each category.
     switch (inst.category) {
@@ -574,27 +606,6 @@ void Translator::TranslateInstruction(const GcnInst& inst, const u32 pc) {
         break;
     default:
         UNREACHABLE();
-    }
-}
-
-void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list, Info& info,
-               const RuntimeInfo& runtime_info, const Profile& profile) {
-    if (inst_list.empty()) {
-        return;
-    }
-    Translator translator{block, info, runtime_info, profile};
-    for (const auto& inst : inst_list) {
-        pc += inst.length;
-
-        // Special case for emitting fetch shader.
-        if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export ||
-                   info.stage == Stage::Local);
-            translator.EmitFetch(inst);
-            continue;
-        }
-
-        translator.TranslateInstruction(inst, pc);
     }
 }
 

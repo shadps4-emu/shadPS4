@@ -8,7 +8,6 @@
 #include "common/debug.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
-#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/host_compatibility.h"
@@ -126,7 +125,7 @@ void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
 
 ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
                                           ImageId cache_image_id) {
-    const auto& cache_image = slot_images[cache_image_id];
+    auto& cache_image = slot_images[cache_image_id];
 
     if (!cache_image.info.IsDepthStencil() && !requested_info.IsDepthStencil()) {
         return {};
@@ -169,18 +168,21 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     }
 
     if (recreate) {
-        auto new_info{requested_info};
-        new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
-        new_info.UpdateSize();
+        auto new_info = requested_info;
+        new_info.resources = std::min(requested_info.resources, cache_image.info.resources);
         const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
-        auto& new_image = GetImage(new_image_id);
+        auto& new_image = slot_images[new_image_id];
         new_image.usage = cache_image.usage;
+        new_image.flags &= ~ImageFlagBits::Dirty;
 
-        // TODO: perform a depth copy here
+        // Perform depth<->color copy using the intermediate copy buffer.
+        const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+        new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
 
+        // Free the cache image.
         FreeImage(cache_image_id);
         return new_image_id;
     }
@@ -199,7 +201,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
-        if (image_info.size != tex_cache_image.info.size) {
+        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
+            image_info.num_bits != tex_cache_image.info.num_bits) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -211,25 +214,38 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {depth_image_id, -1, -1};
         }
 
+        if (image_info.IsBlockCoded() && !tex_cache_image.info.IsBlockCoded()) {
+            // Compressed view of uncompressed image with same block size.
+            // We need to recreate the image with compressed format and copy.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
+        }
+
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
             image_info.guest_size <= tex_cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
-            return {
-                IsVulkanFormatCompatible(image_info.pixel_format, result_image.info.pixel_format)
-                    ? result_id
-                    : ImageId{},
-                -1, -1};
+            const bool is_compatible =
+                IsVulkanFormatCompatible(result_image.info.pixel_format, image_info.pixel_format);
+            return {is_compatible ? result_id : ImageId{}, -1, -1};
         }
 
-        ImageId new_image_id{};
-        if (image_info.type == tex_cache_image.info.type) {
-            ASSERT(image_info.resources > tex_cache_image.info.resources);
-            new_image_id = ExpandImage(image_info, cache_image_id);
-        } else {
-            UNREACHABLE();
+        if (image_info.type == tex_cache_image.info.type &&
+            image_info.resources > tex_cache_image.info.resources) {
+            // Size and resources are greater, expand the image.
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
-        return {new_image_id, -1, -1};
+
+        if (image_info.tiling_mode != tex_cache_image.info.tiling_mode) {
+            // Size is greater but resources are not, because the tiling mode is different.
+            // Likely this memory address is being reused for a different image with a different
+            // tiling mode.
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
@@ -290,6 +306,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     auto& new_image = slot_images[new_image_id];
 
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    RefreshImage(new_image);
     new_image.CopyImage(src_image);
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
@@ -330,7 +347,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
             continue;
         }
         if (False(flags & FindFlags::RelaxFmt) &&
-            (!IsVulkanFormatCompatible(info.pixel_format, cache_image.info.pixel_format) ||
+            (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format) ||
              (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1}))) {
             continue;
         }
@@ -446,9 +463,9 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    image.flags &= ~ImageFlagBits::Dirty;
     image.usage.depth_target = 1u;
     image.usage.stencil = image.info.HasStencil();
+    UpdateImage(image_id);
 
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
@@ -502,9 +519,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         // So this calculation should be very uncommon and reasonably fast
         // For now we'll just check up to 64 first pixels
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
-        const auto w = std::min(image.info.size.width, u32(8));
-        const auto h = std::min(image.info.size.height, u32(8));
-        const auto size = w * h * image.info.num_bits / 8;
+        const u32 w = std::min(image.info.size.width, u32(8));
+        const u32 h = std::min(image.info.size.height, u32(8));
+        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
@@ -538,10 +555,16 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
             image.mip_hashes[m] = hash;
         }
 
+        auto mip_pitch = static_cast<u32>(mip.pitch);
+        auto mip_height = static_cast<u32>(mip.height);
+
+        auto image_extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        auto image_extent_height = mip_height ? std::min(mip_height, height) : height;
+
         image_copy.push_back({
             .bufferOffset = mip.offset,
-            .bufferRowLength = static_cast<u32>(mip.pitch),
-            .bufferImageHeight = static_cast<u32>(mip.height),
+            .bufferRowLength = mip_pitch,
+            .bufferImageHeight = mip_height,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
@@ -549,7 +572,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
                 .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
+            .imageExtent = {image_extent_width, image_extent_height, depth},
         });
     }
 
@@ -563,12 +586,11 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size;
-    const auto [vk_buffer, buf_offset] =
-        buffer_cache.ObtainViewBuffer(image_addr, image_size, is_gpu_dirty);
+    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
 
     const auto cmdbuf = sched_ptr->CommandBuffer();
-    // The obtained buffer may be written by a shader so we need to emit a barrier to prevent RAW
-    // hazard
+
+    // The obtained buffer may be GPU modified so we need to emit a barrier to prevent RAW hazard
     if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
         cmdbuf.pipelineBarrier2(vk::DependencyInfo{
@@ -621,9 +643,11 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     image.flags &= ~ImageFlagBits::Dirty;
 }
 
-vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler) {
+vk::Sampler TextureCache::GetSampler(
+    const AmdGpu::Sampler& sampler,
+    const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base) {
     const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
-    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler);
+    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
     return it->second.Handle();
 }
 
@@ -672,7 +696,7 @@ void TextureCache::TrackImage(ImageId image_id) {
         // Re-track the whole image
         image.track_addr = image_begin;
         image.track_addr_end = image_end;
-        tracker.UpdatePagesCachedCount(image_begin, image.info.guest_size, 1);
+        tracker.UpdatePageWatchers<1>(image_begin, image.info.guest_size);
     } else {
         if (image_begin < image.track_addr) {
             TrackImageHead(image_id);
@@ -695,7 +719,7 @@ void TextureCache::TrackImageHead(ImageId image_id) {
     ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
     const auto size = image.track_addr - image_begin;
     image.track_addr = image_begin;
-    tracker.UpdatePagesCachedCount(image_begin, size, 1);
+    tracker.UpdatePageWatchers<1>(image_begin, size);
 }
 
 void TextureCache::TrackImageTail(ImageId image_id) {
@@ -711,7 +735,7 @@ void TextureCache::TrackImageTail(ImageId image_id) {
     const auto addr = image.track_addr_end;
     const auto size = image_end - image.track_addr_end;
     image.track_addr_end = image_end;
-    tracker.UpdatePagesCachedCount(addr, size, 1);
+    tracker.UpdatePageWatchers<1>(addr, size);
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -724,7 +748,7 @@ void TextureCache::UntrackImage(ImageId image_id) {
     image.track_addr = 0;
     image.track_addr_end = 0;
     if (size != 0) {
-        tracker.UpdatePagesCachedCount(addr, size, -1);
+        tracker.UpdatePageWatchers<-1>(addr, size);
     }
 }
 
@@ -743,7 +767,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(image_begin, size, -1);
+    tracker.UpdatePageWatchers<-1>(image_begin, size);
 }
 
 void TextureCache::UntrackImageTail(ImageId image_id) {
@@ -762,7 +786,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePagesCachedCount(addr, size, -1);
+    tracker.UpdatePageWatchers<-1>(addr, size);
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

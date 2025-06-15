@@ -315,7 +315,7 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
     auto result = ef->Poll(bitPattern, wait, clear, pResultPat);
 
     if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_EBUSY) {
-        LOG_ERROR(Kernel_Event, "returned {}", result);
+        LOG_DEBUG(Kernel_Event, "returned {:#x}", result);
     }
 
     return result;
@@ -361,7 +361,7 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
     u32 result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
 
     if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_ETIMEDOUT) {
-        LOG_ERROR(Kernel_Event, "returned {:#x}", result);
+        LOG_DEBUG(Kernel_Event, "returned {:#x}", result);
     }
 
     return result;

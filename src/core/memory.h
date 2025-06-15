@@ -75,6 +75,9 @@ struct DirectMemoryArea {
         if (base + size != next.base) {
             return false;
         }
+        if (memory_type != next.memory_type) {
+            return false;
+        }
         if (is_free != next.is_free) {
             return false;
         }
@@ -172,6 +175,10 @@ public:
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
 
+    void SetPrtArea(u32 id, VAddr address, u64 size);
+
+    void CopySparseMemory(VAddr source, u8* dest, u64 size);
+
     bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
@@ -183,22 +190,16 @@ public:
 
     void Free(PAddr phys_addr, size_t size);
 
-    int PoolReserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                    u64 alignment = 0);
-
-    int Reserve(void** out_addr, VAddr virtual_addr, size_t size, MemoryMapFlags flags,
-                u64 alignment = 0);
-
     int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
 
-    int MapMemory(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
+    s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
 
-    int MapFile(void** out_addr, VAddr virtual_addr, size_t size, MemoryProt prot,
-                MemoryMapFlags flags, uintptr_t fd, size_t offset);
+    s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
+                MemoryMapFlags flags, s32 fd, s64 phys_addr);
 
-    void PoolDecommit(VAddr virtual_addr, size_t size);
+    s32 PoolDecommit(VAddr virtual_addr, size_t size);
 
     s32 UnmapMemory(VAddr virtual_addr, size_t size);
 
@@ -219,9 +220,13 @@ public:
     int GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
                             void** directMemoryEndOut);
 
-    void NameVirtualRange(VAddr virtual_addr, size_t size, std::string_view name);
+    s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
+
+    void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
+
+    int IsStack(VAddr addr, void** start, void** end);
 
 private:
     VMAHandle FindVMA(VAddr target) {
@@ -274,7 +279,20 @@ private:
     size_t total_direct_size{};
     size_t total_flexible_size{};
     size_t flexible_usage{};
+    size_t pool_budget{};
     Vulkan::Rasterizer* rasterizer{};
+
+    struct PrtArea {
+        VAddr start;
+        VAddr end;
+        bool mapped;
+
+        bool Overlaps(VAddr test_address, u64 test_size) const {
+            const VAddr overlap_end = test_address + test_size;
+            return start < overlap_end && test_address < end;
+        }
+    };
+    std::array<PrtArea, 3> prt_areas{};
 
     friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };
