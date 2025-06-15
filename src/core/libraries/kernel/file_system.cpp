@@ -294,10 +294,7 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         return result;
     }
 
-    auto bytes_written = file->f.WriteRaw<u8>(buf, nbytes);
-    // Some written data might be buffered, run Flush to make sure all data is written properly.
-    file->f.Flush();
-    return bytes_written;
+    return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
