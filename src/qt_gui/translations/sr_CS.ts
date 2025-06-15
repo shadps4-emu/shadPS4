@@ -2,448 +2,448 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="fa_IR" sourcelanguage="en">
+<TS version="2.1" language="sr_CS" sourcelanguage="en">
   <context>
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation>درباره ShadPS4</translation>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>یک شبیه ساز متن باز برای پلی استیشن 4 است. </translation>
+      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>این برنامه نباید برای بازی هایی که شما به صورت غیرقانونی به دست آوردید استفاده شود.</translation>
+      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation> چیت / پچ برای </translation>
+      <translation type="unfinished">Cheats / Patches for </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>تقلب‌ها/پچ‌ها آزمایشی هستند.\n با احتیاط استفاده کنید.\n\n با انتخاب مخزن و کلیک روی دکمه دانلود، تقلب‌ها را به‌صورت جداگانه دانلود کنید.\n در تب پچ‌ها، می‌توانید همه پچ‌ها را به‌طور همزمان دانلود کنید، انتخاب کنید که می‌خواهید از کدام استفاده کنید و انتخاب خود را ذخیره کنید.\n\n از آنجایی که ما تقلب‌ها/پچ‌ها را توسعه نمی‌دهیم،\n لطفاً مشکلات را به نویسنده تقلب گزارش دهید.\n\n تقلب جدیدی ایجاد کرده‌اید؟ به این صفحه مراجعه کنید: \n</translation>
+      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>تصویری موجود نمی باشد</translation>
+      <translation type="unfinished">No Image Available</translation>
     </message>
     <message>
       <source>Serial: </source>
-      <translation>سریال: </translation>
+      <translation type="unfinished">Serial: </translation>
     </message>
     <message>
       <source>Version: </source>
-      <translation>نسخه: </translation>
+      <translation type="unfinished">Version: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation>حجم: </translation>
+      <translation type="unfinished">Size: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>فایل چیت را انتخاب کنید:</translation>
+      <translation type="unfinished">Select Cheat File:</translation>
     </message>
     <message>
       <source>Repository:</source>
-      <translation>:منبع</translation>
+      <translation type="unfinished">Repository:</translation>
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>دانلود چیت ها</translation>
+      <translation type="unfinished">Download Cheats</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation>حذف فایل</translation>
+      <translation type="unfinished">Delete File</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation>فایلی انتخاب نشده.</translation>
+      <translation type="unfinished">No files selected.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>شما میتوانید بعد از دانلود چیت هایی که نمیخواهید را پاک کنید</translation>
+      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>آیا میخواهید فایل های انتخاب شده را پاک کنید؟ \n%1</translation>
+      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>فایل پچ را انتخاب کنید</translation>
+      <translation type="unfinished">Select Patch File:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>دانلود کردن پچ ها</translation>
+      <translation type="unfinished">Download Patches</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>ذخیره</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation>چیت ها</translation>
+      <translation type="unfinished">Cheats</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation>پچ ها</translation>
+      <translation type="unfinished">Patches</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>ارور</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation>هیچ پچ انتخاب نشده</translation>
+      <translation type="unfinished">No patch selected.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>.json مشکل در خواندن فایل</translation>
+      <translation type="unfinished">Unable to open files.json for reading.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>هیچ فایل پچ برای سریال بازی شما پیدا نشد.</translation>
+      <translation type="unfinished">No patch file found for the current serial.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>خطا در خواندن فایل</translation>
+      <translation type="unfinished">Unable to open the file for reading.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>خطا در نوشتن فایل</translation>
+      <translation type="unfinished">Unable to open the file for writing.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>انجام نشد XML تجزیه فایل:</translation>
+      <translation type="unfinished">Failed to parse XML: </translation>
     </message>
     <message>
       <source>Success</source>
-      <translation>عملیات موفق بود</translation>
+      <translation type="unfinished">Success</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation>تغییرات با موفقیت ذخیره شد✅</translation>
+      <translation type="unfinished">Options saved successfully.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation>منبع نامعتبر❌</translation>
+      <translation type="unfinished">Invalid Source</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation>منبع انتخاب شده نامعتبر است</translation>
+      <translation type="unfinished">The selected source is invalid.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation>فایل وجود دارد</translation>
+      <translation type="unfinished">File Exists</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>فایل از قبل وجود دارد. آیا می خواهید آن را جایگزین کنید؟</translation>
+      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>ذخیره فایل موفقیت آمیز نبود:</translation>
+      <translation type="unfinished">Failed to save file:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>خطا در دانلود فایل:</translation>
+      <translation type="unfinished">Failed to download file:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>چیت یافت نشد</translation>
+      <translation type="unfinished">Cheats Not Found</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>متاسفانه هیچ چیتی از منبع انتخاب شده پیدا نشد! شما میتوانید منابع دیگری را برای دانلود انتخاب و یا چیت های خود را به صورت دستی واردکنید.</translation>
+      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>دانلود چیت ها موفقیت آمیز بود✅</translation>
+      <translation type="unfinished">Cheats Downloaded Successfully</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>تمامی چیت های موجود برای این بازی از منبع انتخاب شده دانلود شد! شما همچنان میتوانید چیت های دیگری را ازمنابع مختلف دانلود کنید و درصورت موجود بودن از آنها استفاده کنید.</translation>
+      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>خطا در ذخیره اطلاعات:</translation>
+      <translation type="unfinished">Failed to save:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>خطا در دانلود❌</translation>
+      <translation type="unfinished">Failed to download:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>دانلود کامل شد</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>پچ ها با موفقیت بارگیری شدند! تمام وصله های موجود برای همه بازی ها دانلود شده اند، نیازی به دانلود جداگانه آنها برای هر بازی نیست، همانطور که در Cheats اتفاق می افتد. اگر پچ ظاهر نشد، ممکن است برای سریال و نسخه خاصی از بازی وجود نداشته باشد.</translation>
+      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>HTML از JSON خطا در تجزیه اطلاعات.</translation>
+      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>HTML خطا دربازیابی صفحه</translation>
+      <translation type="unfinished">Failed to retrieve HTML page.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>بازی در نسخه: %1 است</translation>
+      <translation type="unfinished">The game is in version: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation>وصله دانلود شده فقط در نسخه: %1 کار می کند</translation>
+      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>شاید لازم باشد بازی خود را به روز کنید.</translation>
+      <translation type="unfinished">You may need to update your game.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>اطلاعیه عدم سازگاری</translation>
+      <translation type="unfinished">Incompatibility Notice</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>خطا در اجرای فایل:</translation>
+      <translation type="unfinished">Failed to open file:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>XML خطای :</translation>
+      <translation type="unfinished">XML ERROR:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation>.json خطا در نوشتن فایل</translation>
+      <translation type="unfinished">Failed to open files.json for writing</translation>
     </message>
     <message>
       <source>Author: </source>
-      <translation>تولید کننده: </translation>
+      <translation type="unfinished">Author: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>پوشه وجود ندارد:</translation>
+      <translation type="unfinished">Directory does not exist:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>.json خطا در خواندن فایل</translation>
+      <translation type="unfinished">Failed to open files.json for reading.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation>نام:</translation>
+      <translation type="unfinished">Name:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>قبل از شروع بازی نمی توانید تقلب ها را اعمال کنید.</translation>
+      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>بستن</translation>
+      <translation type="unfinished">Close</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>به‌روزرسانی خودکار</translation>
+      <translation type="unfinished">Auto Updater</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>خطا</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation>خطای شبکه:</translation>
+      <translation type="unfinished">Network error:</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>به‌روزرسانی خودکار حداکثر ۶۰ بررسی به‌روزرسانی در ساعت را مجاز می‌داند.\nشما به این محدودیت رسیده‌اید. لطفاً بعداً دوباره امتحان کنید.</translation>
+      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>خطا در تجزیه اطلاعات بهروزرسانی.</translation>
+      <translation type="unfinished">Failed to parse update information.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation>هیچ پیش انتشاری یافت نشد.</translation>
+      <translation type="unfinished">No pre-releases found.</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation>داده های نسخه نامعتبر است.</translation>
+      <translation type="unfinished">Invalid release data.</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>هیچ URL دانلودی برای دارایی مشخص شده پیدا نشد.</translation>
+      <translation type="unfinished">No download URL found for the specified asset.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation>نسخه شما اکنون به روز شده است!</translation>
+      <translation type="unfinished">Your version is already up to date!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation>به روز رسانی موجود است</translation>
+      <translation type="unfinished">Update Available</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>کانال به‌روزرسانی</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation>نسخه فعلی</translation>
+      <translation type="unfinished">Current Version</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>جدیدترین نسخه</translation>
+      <translation type="unfinished">Latest Version</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation>آیا می خواهید به روز رسانی کنید؟</translation>
+      <translation type="unfinished">Do you want to update?</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation>نمایش تغییرات</translation>
+      <translation type="unfinished">Show Changelog</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>بررسی به‌روزرسانی هنگام شروع</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>به روز رسانی</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>No</source>
-      <translation>خیر</translation>
+      <translation type="unfinished">No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>مخفی کردن تغییرات</translation>
+      <translation type="unfinished">Hide Changelog</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation>تغییرات</translation>
+      <translation type="unfinished">Changes</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>در حین تلاش برای دسترسی به URL خطای شبکه رخ داد</translation>
+      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>دانلود کامل شد</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>به روز رسانی دانلود شده است، برای نصب OK را فشار دهید.</translation>
+      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>فایل به روز رسانی ذخیره نشد</translation>
+      <translation type="unfinished">Failed to save the update file at</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>شروع به روز رسانی...</translation>
+      <translation type="unfinished">Starting Update...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>فایل اسکریپت به روز رسانی ایجاد نشد</translation>
+      <translation type="unfinished">Failed to create the update script file</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>در حال بارگذاری داده‌های سازگاری، لطفاً صبر کنید</translation>
+      <translation type="unfinished">Fetching compatibility data, please wait</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>لغو</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>در حال بارگذاری...</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>خطا</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>ناتوان از بروزرسانی داده‌های سازگاری! لطفاً بعداً دوباره تلاش کنید.</translation>
+      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>امکان باز کردن compatibility_data.json برای نوشتن وجود ندارد.</translation>
+      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation>ناشناخته</translation>
+      <translation type="unfinished">Unknown</translation>
     </message>
     <message>
       <source>Nothing</source>
-      <translation>هیچ چیز</translation>
+      <translation type="unfinished">Nothing</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>چکمه‌ها</translation>
+      <translation type="unfinished">Boots</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>منوها</translation>
+      <translation type="unfinished">Menus</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>داخل بازی</translation>
+      <translation type="unfinished">Ingame</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>قابل بازی</translation>
+      <translation type="unfinished">Playable</translation>
     </message>
   </context>
   <context>
     <name>ControlSettings</name>
     <message>
       <source>Configure Controls</source>
-      <translation>پیکربندی دسته ها</translation>
+      <translation type="unfinished">Configure Controls</translation>
     </message>
     <message>
       <source>D-Pad</source>
-      <translation>D-Pad</translation>
+      <translation type="unfinished">D-Pad</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation>بالا</translation>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
       <source>Left</source>
-      <translation>چپ</translation>
+      <translation type="unfinished">Left</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation>راست</translation>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation>پایین</translation>
+      <translation type="unfinished">Down</translation>
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation>منطقه‌ی حساس به حرکت چپ  (def:2 max:127)</translation>
+      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation>منطقه مرده چپ</translation>
+      <translation type="unfinished">Left Deadzone</translation>
     </message>
     <message>
       <source>Left Stick</source>
-      <translation>جواستیک چپ</translation>
+      <translation type="unfinished">Left Stick</translation>
     </message>
     <message>
       <source>Config Selection</source>
-      <translation>انتخاب پیکربندی</translation>
+      <translation type="unfinished">Config Selection</translation>
     </message>
     <message>
       <source>Common Config</source>
@@ -451,7 +451,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation>از پیکربندی‌های مخصوص هر بازی استفاده کنید</translation>
+      <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
       <source>L1 / LB</source>
@@ -483,7 +483,7 @@
     </message>
     <message>
       <source>R3</source>
-      <translation>R3</translation>
+      <translation type="unfinished">R3</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -491,7 +491,7 @@
     </message>
     <message>
       <source>Triangle / Y</source>
-      <translation>مثلث / Y</translation>
+      <translation type="unfinished">Triangle / Y</translation>
     </message>
     <message>
       <source>Square / X</source>
@@ -531,7 +531,7 @@
     </message>
     <message>
       <source>B:</source>
-      <translation>B:</translation>
+      <translation type="unfinished">B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -543,7 +543,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation>ذخیره امکان پذیر نیست</translation>
+      <translation type="unfinished">Unable to Save</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -570,7 +570,7 @@
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation>تغییر دکمه های کیبرد + ماوس و دسته</translation>
+      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -582,7 +582,7 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation>نمی تواند فایل را برای خواندن باز کند</translation>
+      <translation type="unfinished">Could not open the file for reading</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
@@ -602,7 +602,7 @@
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
-      <translation>آیا می‌خواهید پیکربندی سفارشی خود را به پیکربندی پیش‌فرض اصلی بازگردانید ؟</translation>
+      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
@@ -617,41 +617,41 @@
     <name>ElfViewer</name>
     <message>
       <source>Open Folder</source>
-      <translation>فولدر را بازکن</translation>
+      <translation type="unfinished">Open Folder</translation>
     </message>
   </context>
   <context>
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation>درحال بارگیری لیست بازی ها,لطفا کمی صبرکنید :3</translation>
+      <translation type="unfinished">Loading game list, please wait :3</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>لغو</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>...درحال بارگیری</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
   </context>
   <context>
     <name>GameInstallDialog</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation>ShadPS4 - انتخاب محل نصب بازی</translation>
+      <translation type="unfinished">shadPS4 - Choose directory</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>محل نصب بازی ها</translation>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
       <source>Browse</source>
-      <translation>انتخاب دستی</translation>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>ارور</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Directory to install DLC</source>
@@ -662,47 +662,47 @@
     <name>GameListFrame</name>
     <message>
       <source>Icon</source>
-      <translation>آیکون</translation>
+      <translation type="unfinished">Icon</translation>
     </message>
     <message>
       <source>Name</source>
-      <translation>نام</translation>
+      <translation type="unfinished">Name</translation>
     </message>
     <message>
       <source>Serial</source>
-      <translation>سریال</translation>
+      <translation type="unfinished">Serial</translation>
     </message>
     <message>
       <source>Compatibility</source>
-      <translation>سازگاری</translation>
+      <translation type="unfinished">Compatibility</translation>
     </message>
     <message>
       <source>Region</source>
-      <translation>منطقه</translation>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
       <source>Firmware</source>
-      <translation>فریم‌ور</translation>
+      <translation type="unfinished">Firmware</translation>
     </message>
     <message>
       <source>Size</source>
-      <translation>اندازه</translation>
+      <translation type="unfinished">Size</translation>
     </message>
     <message>
       <source>Version</source>
-      <translation>نسخه</translation>
+      <translation type="unfinished">Version</translation>
     </message>
     <message>
       <source>Path</source>
-      <translation>مسیر</translation>
+      <translation type="unfinished">Path</translation>
     </message>
     <message>
       <source>Play Time</source>
-      <translation>زمان بازی</translation>
+      <translation type="unfinished">Play Time</translation>
     </message>
     <message>
       <source>Never Played</source>
-      <translation>هرگز بازی نشده</translation>
+      <translation type="unfinished">Never Played</translation>
     </message>
     <message>
       <source>h</source>
@@ -718,35 +718,35 @@
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation>سازگاری تست نشده است</translation>
+      <translation type="unfinished">Compatibility is untested</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation>بازی به درستی راه‌اندازی نمی‌شود / شبیه‌ساز کرش می‌کند</translation>
+      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation>بازی اجرا می‌شود، اما فقط یک صفحه خالی نمایش داده می‌شود</translation>
+      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation>بازی تصویری نمایش می‌دهد، اما از منو فراتر نمی‌رود</translation>
+      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation>بازی دارای اشکالات بحرانی یا عملکرد غیرقابل بازی است</translation>
+      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation>بازی با عملکرد قابل قبول و بدون اشکالات عمده قابل بازی است.</translation>
+      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>برای مشاهده جزئیات در GitHub کلیک کنید</translation>
+      <translation type="unfinished">Click to see details on github</translation>
     </message>
     <message>
       <source>Last updated</source>
-      <translation>آخرین به‌روزرسانی</translation>
+      <translation type="unfinished">Last updated</translation>
     </message>
   </context>
   <context>
@@ -776,47 +776,47 @@
     <name>GuiContextMenus</name>
     <message>
       <source>Create Shortcut</source>
-      <translation>ایجاد میانبر</translation>
+      <translation type="unfinished">Create Shortcut</translation>
     </message>
     <message>
       <source>Cheats / Patches</source>
-      <translation>چیت/پچ ها</translation>
+      <translation type="unfinished">Cheats / Patches</translation>
     </message>
     <message>
       <source>SFO Viewer</source>
-      <translation>SFO مشاهده</translation>
+      <translation type="unfinished">SFO Viewer</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation>مشاهده جوایز</translation>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>باز کردن پوشه...</translation>
+      <translation type="unfinished">Open Folder...</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation>باز کردن پوشه بازی</translation>
+      <translation type="unfinished">Open Game Folder</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>پوشه ذخیره داده را باز کنید</translation>
+      <translation type="unfinished">Open Save Data Folder</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>باز کردن پوشه لاگ</translation>
+      <translation type="unfinished">Open Log Folder</translation>
     </message>
     <message>
       <source>Copy info...</source>
-      <translation>...کپی کردن اطلاعات</translation>
+      <translation type="unfinished">Copy info...</translation>
     </message>
     <message>
       <source>Copy Name</source>
-      <translation>کپی کردن نام</translation>
+      <translation type="unfinished">Copy Name</translation>
     </message>
     <message>
       <source>Copy Serial</source>
-      <translation>کپی کردن سریال</translation>
+      <translation type="unfinished">Copy Serial</translation>
     </message>
     <message>
       <source>Copy Version</source>
@@ -828,23 +828,23 @@
     </message>
     <message>
       <source>Copy All</source>
-      <translation>کپی کردن تمامی مقادیر</translation>
+      <translation type="unfinished">Copy All</translation>
     </message>
     <message>
       <source>Delete...</source>
-      <translation>حذف...</translation>
+      <translation type="unfinished">Delete...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation>حذف بازی</translation>
+      <translation type="unfinished">Delete Game</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation>حذف به‌روزرسانی</translation>
+      <translation type="unfinished">Delete Update</translation>
     </message>
     <message>
       <source>Delete DLC</source>
-      <translation>حذف محتوای اضافی (DLC)</translation>
+      <translation type="unfinished">Delete DLC</translation>
     </message>
     <message>
       <source>Delete Trophy</source>
@@ -860,7 +860,7 @@
     </message>
     <message>
       <source>View report</source>
-      <translation>مشاهده گزارش</translation>
+      <translation type="unfinished">View report</translation>
     </message>
     <message>
       <source>Submit a report</source>
@@ -868,35 +868,35 @@
     </message>
     <message>
       <source>Shortcut creation</source>
-      <translation>ایجاد میانبر</translation>
+      <translation type="unfinished">Shortcut creation</translation>
     </message>
     <message>
       <source>Shortcut created successfully!</source>
-      <translation>میانبر با موفقیت ساخته شد!</translation>
+      <translation type="unfinished">Shortcut created successfully!</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>ارور</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Error creating shortcut!</source>
-      <translation>مشکلی در هنگام ساخت میانبر بوجود آمد!</translation>
+      <translation type="unfinished">Error creating shortcut!</translation>
     </message>
     <message>
       <source>Game</source>
-      <translation>بازی</translation>
+      <translation type="unfinished">Game</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation>این بازی به‌روزرسانی‌ای برای حذف ندارد!</translation>
+      <translation type="unfinished">This game has no update to delete!</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>به‌روزرسانی</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation>این بازی محتوای اضافی (DLC) برای حذف ندارد!</translation>
+      <translation type="unfinished">This game has no DLC to delete!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -904,7 +904,7 @@
     </message>
     <message>
       <source>Delete %1</source>
-      <translation>حذف %1</translation>
+      <translation type="unfinished">Delete %1</translation>
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
@@ -916,11 +916,11 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>پاک کردن داده های ذخیره شده</translation>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>این بازی هیچ پوشه‌ی به‌روزرسانی برای باز کردن ندارد!</translation>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
@@ -948,7 +948,7 @@
     </message>
     <message>
       <source>SFO Viewer for </source>
-      <translation>SFO مشاهده </translation>
+      <translation type="unfinished">SFO Viewer for </translation>
     </message>
   </context>
   <context>
@@ -986,7 +986,7 @@
     </message>
     <message>
       <source>Up</source>
-      <translation/>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
       <source>unmapped</source>
@@ -1058,7 +1058,7 @@
     </message>
     <message>
       <source>Touchpad Click</source>
-      <translation>کلیک روی تاچ‌پد</translation>
+      <translation type="unfinished">Touchpad Click</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1078,7 +1078,7 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation/>
+      <translation type="unfinished">Mouse Movement Parameters</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
@@ -1102,7 +1102,7 @@
     </message>
     <message>
       <source>Cross</source>
-      <translation>ضربدر</translation>
+      <translation type="unfinished">Cross</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
@@ -1122,7 +1122,7 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation>کپی از پیکربندی مشترک</translation>
+      <translation type="unfinished">Copy from Common Config</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1130,23 +1130,23 @@
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation>ضریب سرعت (def 1.0):</translation>
+      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation>پیکربندی مشترک انتخاب شده</translation>
+      <translation type="unfinished">Common Config Selected</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>این دکمه نگاشت‌ها را از پیکربندی مشترک به پروفایل انتخاب‌شده‌ی فعلی کپی می‌کند و وقتی پروفایل انتخاب‌شده‌ی فعلی پیکربندی مشترک باشد، نمی‌توان از آن استفاده کرد.</translation>
+      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>کپی کردن مقادیر از پیکربندی مشترک</translation>
+      <translation type="unfinished">Copy values from Common Config</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation>آیا می‌خواهید نگاشت‌های موجود را با نگاشت‌های پیکربندی مشترک جایگزین کنید؟</translation>
+      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1170,7 +1170,7 @@
     </message>
     <message>
       <source>Save</source>
-      <translation>ذخیره‌سازی</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Apply</source>
@@ -1189,91 +1189,91 @@
     <name>MainWindow</name>
     <message>
       <source>Open/Add Elf Folder</source>
-      <translation>ELF بازکردن/ساختن پوشه</translation>
+      <translation type="unfinished">Open/Add Elf Folder</translation>
     </message>
     <message>
       <source>Boot Game</source>
-      <translation>اجرای بازی</translation>
+      <translation type="unfinished">Boot Game</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>به روز رسانی را بررسی کنید</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>About shadPS4</source>
-      <translation>ShadPS4 درباره</translation>
+      <translation type="unfinished">About shadPS4</translation>
     </message>
     <message>
       <source>Configure...</source>
-      <translation>...تنظیمات</translation>
+      <translation type="unfinished">Configure...</translation>
     </message>
     <message>
       <source>Recent Games</source>
-      <translation>بازی های اخیر</translation>
+      <translation type="unfinished">Recent Games</translation>
     </message>
     <message>
       <source>Open shadPS4 Folder</source>
-      <translation>پوشه shadPS4 را باز کنید</translation>
+      <translation type="unfinished">Open shadPS4 Folder</translation>
     </message>
     <message>
       <source>Exit</source>
-      <translation>خروج</translation>
+      <translation type="unfinished">Exit</translation>
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation>ShadPS4 بستن</translation>
+      <translation type="unfinished">Exit shadPS4</translation>
     </message>
     <message>
       <source>Exit the application.</source>
-      <translation>بستن برنامه</translation>
+      <translation type="unfinished">Exit the application.</translation>
     </message>
     <message>
       <source>Show Game List</source>
-      <translation>نشان دادن بازی ها</translation>
+      <translation type="unfinished">Show Game List</translation>
     </message>
     <message>
       <source>Game List Refresh</source>
-      <translation>رفرش لیست بازی ها</translation>
+      <translation type="unfinished">Game List Refresh</translation>
     </message>
     <message>
       <source>Tiny</source>
-      <translation>کوچک ترین</translation>
+      <translation type="unfinished">Tiny</translation>
     </message>
     <message>
       <source>Small</source>
-      <translation>کوچک</translation>
+      <translation type="unfinished">Small</translation>
     </message>
     <message>
       <source>Medium</source>
-      <translation>متوسط</translation>
+      <translation type="unfinished">Medium</translation>
     </message>
     <message>
       <source>Large</source>
-      <translation>بزرگ</translation>
+      <translation type="unfinished">Large</translation>
     </message>
     <message>
       <source>List View</source>
-      <translation>نمایش لیست</translation>
+      <translation type="unfinished">List View</translation>
     </message>
     <message>
       <source>Grid View</source>
-      <translation>شبکه ای (چهارخونه)</translation>
+      <translation type="unfinished">Grid View</translation>
     </message>
     <message>
       <source>Elf Viewer</source>
-      <translation>مشاهده گر Elf</translation>
+      <translation type="unfinished">Elf Viewer</translation>
     </message>
     <message>
       <source>Game Install Directory</source>
-      <translation>محل نصب بازی</translation>
+      <translation type="unfinished">Game Install Directory</translation>
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>دانلود چیت/پچ</translation>
+      <translation type="unfinished">Download Cheats/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
-      <translation>استخراج لیست بازی ها</translation>
+      <translation type="unfinished">Dump Game List</translation>
     </message>
     <message>
       <source>Trophy Viewer</source>
@@ -1285,107 +1285,107 @@
     </message>
     <message>
       <source>Search...</source>
-      <translation>جست و جو...</translation>
+      <translation type="unfinished">Search...</translation>
     </message>
     <message>
       <source>File</source>
-      <translation>فایل</translation>
+      <translation type="unfinished">File</translation>
     </message>
     <message>
       <source>View</source>
-      <translation>شخصی سازی</translation>
+      <translation type="unfinished">View</translation>
     </message>
     <message>
       <source>Game List Icons</source>
-      <translation>آیکون ها</translation>
+      <translation type="unfinished">Game List Icons</translation>
     </message>
     <message>
       <source>Game List Mode</source>
-      <translation>حالت نمایش لیست بازی ها</translation>
+      <translation type="unfinished">Game List Mode</translation>
     </message>
     <message>
       <source>Settings</source>
-      <translation>تنظیمات</translation>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
       <source>Utils</source>
-      <translation>ابزارها</translation>
+      <translation type="unfinished">Utils</translation>
     </message>
     <message>
       <source>Themes</source>
-      <translation>تم ها</translation>
+      <translation type="unfinished">Themes</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation>کمک</translation>
+      <translation type="unfinished">Help</translation>
     </message>
     <message>
       <source>Dark</source>
-      <translation>تیره</translation>
+      <translation type="unfinished">Dark</translation>
     </message>
     <message>
       <source>Light</source>
-      <translation>روشن</translation>
+      <translation type="unfinished">Light</translation>
     </message>
     <message>
       <source>Green</source>
-      <translation>سبز</translation>
+      <translation type="unfinished">Green</translation>
     </message>
     <message>
       <source>Blue</source>
-      <translation>آبی</translation>
+      <translation type="unfinished">Blue</translation>
     </message>
     <message>
       <source>Violet</source>
-      <translation>بنفش</translation>
+      <translation type="unfinished">Violet</translation>
     </message>
     <message>
       <source>toolBar</source>
-      <translation>نوار ابزار</translation>
+      <translation type="unfinished">toolBar</translation>
     </message>
     <message>
       <source>Game List</source>
-      <translation>لیست بازی</translation>
+      <translation type="unfinished">Game List</translation>
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>دانلود چیت برای همه بازی ها</translation>
+      <translation type="unfinished">Download Cheats For All Installed Games</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>دانلود پچ برای همه بازی ها</translation>
+      <translation type="unfinished">Download Patches For All Games</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>دانلود کامل شد✅</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>چیت برای همه بازی های شما دانلودشد✅</translation>
+      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>پچ ها با موفقیت دانلود شد✅</translation>
+      <translation type="unfinished">Patches Downloaded Successfully!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>✅تمام پچ های موجود برای همه بازی های شما دانلود شد</translation>
+      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
     </message>
     <message>
       <source>Games: </source>
-      <translation>بازی ها:</translation>
+      <translation type="unfinished">Games: </translation>
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation>ELF فایل های (*.bin *.elf *.oelf) </translation>
+      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>اجرای بازی</translation>
+      <translation type="unfinished">Game Boot</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation>فقط یک فایل انتخاب کنید!</translation>
+      <translation type="unfinished">Only one file can be selected!</translation>
     </message>
     <message>
       <source>Run Game</source>
@@ -1401,7 +1401,7 @@
     </message>
     <message>
       <source>shadPS4</source>
-      <translation>ShadPS4</translation>
+      <translation type="unfinished">shadPS4</translation>
     </message>
     <message>
       <source>Play</source>
@@ -1448,47 +1448,47 @@
     <name>SettingsDialog</name>
     <message>
       <source>Settings</source>
-      <translation>تنظیمات</translation>
+      <translation type="unfinished">Settings</translation>
     </message>
     <message>
       <source>General</source>
-      <translation>عمومی</translation>
+      <translation type="unfinished">General</translation>
     </message>
     <message>
       <source>System</source>
-      <translation>سیستم</translation>
+      <translation type="unfinished">System</translation>
     </message>
     <message>
       <source>Console Language</source>
-      <translation>زبان کنسول</translation>
+      <translation type="unfinished">Console Language</translation>
     </message>
     <message>
       <source>Emulator Language</source>
-      <translation>زبان شبیه ساز</translation>
+      <translation type="unfinished">Emulator Language</translation>
     </message>
     <message>
       <source>Emulator</source>
-      <translation>شبیه ساز</translation>
+      <translation type="unfinished">Emulator</translation>
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>زبان پیش‌فرض هنگام باز کردن تنظیمات</translation>
+      <translation type="unfinished">Default tab when opening settings</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>نمایش اندازه بازی در لیست</translation>
+      <translation type="unfinished">Show Game Size In List</translation>
     </message>
     <message>
       <source>Show Splash</source>
-      <translation>Splash نمایش</translation>
+      <translation type="unfinished">Show Splash</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>Discord Rich Presence را فعال کنید</translation>
+      <translation type="unfinished">Enable Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
-      <translation>نام کاربری</translation>
+      <translation type="unfinished">Username</translation>
     </message>
     <message>
       <source>Trophy Key</source>
@@ -1508,31 +1508,31 @@
     </message>
     <message>
       <source>Log Type</source>
-      <translation>Log نوع</translation>
+      <translation type="unfinished">Log Type</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>Log فیلتر</translation>
+      <translation type="unfinished">Log Filter</translation>
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>باز کردن مکان گزارش</translation>
+      <translation type="unfinished">Open Log Location</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation>ورودی</translation>
+      <translation type="unfinished">Input</translation>
     </message>
     <message>
       <source>Cursor</source>
-      <translation>نشانگر</translation>
+      <translation type="unfinished">Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>پنهان کردن نشانگر</translation>
+      <translation type="unfinished">Hide Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>مخفی کردن زمان توقف مکان نما</translation>
+      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
     </message>
     <message>
       <source>s</source>
@@ -1540,43 +1540,43 @@
     </message>
     <message>
       <source>Controller</source>
-      <translation>دسته بازی</translation>
+      <translation type="unfinished">Controller</translation>
     </message>
     <message>
       <source>Back Button Behavior</source>
-      <translation>رفتار دکمه بازگشت</translation>
+      <translation type="unfinished">Back Button Behavior</translation>
     </message>
     <message>
       <source>Graphics</source>
-      <translation>گرافیک</translation>
+      <translation type="unfinished">Graphics</translation>
     </message>
     <message>
       <source>GUI</source>
-      <translation>رابط کاربری</translation>
+      <translation type="unfinished">GUI</translation>
     </message>
     <message>
       <source>User</source>
-      <translation>کاربر</translation>
+      <translation type="unfinished">User</translation>
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>کارت گرافیک مورداستفاده</translation>
+      <translation type="unfinished">Graphics Device</translation>
     </message>
     <message>
       <source>Vblank Divider</source>
-      <translation>تقسیم‌کننده Vblank</translation>
+      <translation type="unfinished">Vblank Divider</translation>
     </message>
     <message>
       <source>Advanced</source>
-      <translation>...بیشتر</translation>
+      <translation type="unfinished">Advanced</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>فعال‌سازی ذخیره‌سازی شیدرها</translation>
+      <translation type="unfinished">Enable Shaders Dumping</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
-      <translation>NULL GPU فعال کردن</translation>
+      <translation type="unfinished">Enable NULL GPU</translation>
     </message>
     <message>
       <source>Enable HDR</source>
@@ -1584,23 +1584,23 @@
     </message>
     <message>
       <source>Paths</source>
-      <translation>مسیرها</translation>
+      <translation type="unfinished">Paths</translation>
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>پوشه های بازی</translation>
+      <translation type="unfinished">Game Folders</translation>
     </message>
     <message>
       <source>Add...</source>
-      <translation>افزودن...</translation>
+      <translation type="unfinished">Add...</translation>
     </message>
     <message>
       <source>Remove</source>
-      <translation>حذف</translation>
+      <translation type="unfinished">Remove</translation>
     </message>
     <message>
       <source>Debug</source>
-      <translation>دیباگ</translation>
+      <translation type="unfinished">Debug</translation>
     </message>
     <message>
       <source>Enable Debug Dumping</source>
@@ -1624,7 +1624,7 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>جمع آوری شیدرها</translation>
+      <translation type="unfinished">Collect Shaders</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1640,31 +1640,31 @@
     </message>
     <message>
       <source>Update</source>
-      <translation>به‌روزرسانی</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>بررسی به‌روزرسانی‌ها در زمان راه‌اندازی</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>نمایش دائم تاریخچه تغییرات</translation>
+      <translation type="unfinished">Always Show Changelog</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>کانال به‌روزرسانی</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>بررسی به‌روزرسانی‌ها</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>GUI Settings</source>
-      <translation>تنظیمات رابط کاربری</translation>
+      <translation type="unfinished">GUI Settings</translation>
     </message>
     <message>
       <source>Title Music</source>
-      <translation/>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
@@ -1684,195 +1684,195 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>پخش موسیقی عنوان</translation>
+      <translation type="unfinished">Play title music</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation>به‌روزرسانی پایگاه داده سازگاری هنگام راه‌اندازی</translation>
+      <translation type="unfinished">Update Compatibility Database On Startup</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
-      <translation>سازگاری بازی با سیستم</translation>
+      <translation type="unfinished">Game Compatibility</translation>
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation>نمایش داده‌های سازگاری</translation>
+      <translation type="unfinished">Display Compatibility Data</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation>به‌روزرسانی پایگاه داده سازگاری</translation>
+      <translation type="unfinished">Update Compatibility Database</translation>
     </message>
     <message>
       <source>Volume</source>
-      <translation>صدا</translation>
+      <translation type="unfinished">Volume</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>ذخیره</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation>اعمال</translation>
+      <translation type="unfinished">Apply</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>بازیابی پیش فرض ها</translation>
+      <translation type="unfinished">Restore Defaults</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>بستن</translation>
+      <translation type="unfinished">Close</translation>
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>ماوس خود را بر روی یک گزینه قرار دهید تا توضیحات آن نمایش داده شود.</translation>
+      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>زبان کنسول:\nزبانی را که بازی PS4 استفاده می‌کند تنظیم می‌کند.\nتوصیه می‌شود این را روی زبانی که بازی پشتیبانی می‌کند تنظیم کنید، که بسته به منطقه متفاوت خواهد بود.</translation>
+      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>زبان شبیه‌ساز:\nزبان رابط کاربری شبیه‌ساز را انتخاب می‌کند.</translation>
+      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>نمایش صفحه شروع:\nصفحه شروع بازی (تصویری ویژه) را هنگام بارگذاری بازی نمایش می‌دهد.</translation>
+      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>فعال کردن Discord Rich Presence:\nآیکون شبیه ساز و اطلاعات مربوطه را در نمایه Discord شما نمایش می دهد.</translation>
+      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>نام کاربری:\nنام کاربری حساب PS4 را تنظیم می‌کند که ممکن است توسط برخی بازی‌ها نمایش داده شود.</translation>
+      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation>کلید تروفی:\و کلیدی که برای رمزگشایی تروفی‌ها استفاده می‌شود. باید از کنسول جیلبریک شده شما دریافت شود.\باید فقط شامل کاراکترهای هگز باشد.</translation>
+      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>نوع لاگ:\nتنظیم می‌کند که آیا خروجی پنجره لاگ برای بهبود عملکرد همگام‌سازی شود یا خیر. این ممکن است تأثیر منفی بر شبیه‌سازی داشته باشد.</translation>
+      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>فیلتر گزارش:\nگزارش را فیلتر می‌کند تا فقط اطلاعات خاصی چاپ شود.\nمثال‌ها: &quot;هسته:ردیابی&quot; &quot;Lib.Pad:اشکال‌زدایی Common.Filesystem:خطا&quot; &quot;*:بحرانی&quot;\nسطوح: ردیابی، اشکال‌زدایی، اطلاعات، هشدار، خطا، بحرانی - به این ترتیب، یک سطح خاص تمام سطوح قبل از خود را در لیست بی‌صدا می‌کند و هر سطح بعد از خود را ثبت می‌کند.</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>به‌روزرسانی:\nانتشار: نسخه‌های رسمی که هر ماه منتشر می‌شوند و ممکن است بسیار قدیمی باشند، اما پایدارتر و تست‌ شده‌تر هستند.\nشبانه: نسخه‌های توسعه‌ای که شامل جدیدترین ویژگی‌ها و اصلاحات هستند، اما ممکن است دارای اشکال باشند و کمتر پایدار باشند.</translation>
+      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>تصویر پس‌زمینه: میزان شفافیت تصویر پس‌زمینه بازی را کنترل کنید.</translation>
+      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>پخش موسیقی عنوان:\nIدر صورتی که بازی از آن پشتیبانی کند، پخش موسیقی ویژه هنگام انتخاب بازی در رابط کاربری را فعال می‌کند.</translation>
+      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation>غیرفعال کردن نمایش جوایز:\nنمایش اعلان‌های جوایز درون بازی را غیرفعال می‌کند. پیشرفت جوایز همچنان از طریق نمایشگر جوایز (کلیک راست روی بازی در پنجره اصلی) قابل پیگیری است..</translation>
+      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>پنهان کردن نشانگر:\nانتخاب کنید که نشانگر چه زمانی ناپدید شود:\nهرگز: شما همیشه ماوس را خواهید دید.\nغیرفعال: زمانی را برای ناپدید شدن بعد از غیرفعالی تعیین کنید.\nهمیشه: شما هرگز ماوس را نخواهید دید.</translation>
+      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>زمانی را برای ناپدید شدن ماوس بعد از غیرفعالی تعیین کنید.</translation>
+      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>رفتار دکمه برگشت:\nدکمه برگشت کنترلر را طوری تنظیم می کند که ضربه زدن روی موقعیت مشخص شده روی صفحه لمسی PS4 را شبیه سازی کند.</translation>
+      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>نمایش داده‌های سازگاری:\nاطلاعات سازگاری بازی را به صورت جدول نمایش می‌دهد. برای دریافت اطلاعات به‌روز، گزینه &quot;به‌روزرسانی سازگاری هنگام راه‌اندازی&quot; را فعال کنید.</translation>
+      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>به‌روزرسانی سازگاری هنگام راه‌اندازی:\nبه‌طور خودکار پایگاه داده سازگاری را هنگام راه‌اندازی ShadPS4 به‌روزرسانی می‌کند.</translation>
+      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>به‌روزرسانی پایگاه داده سازگاری:\nپایگاه داده سازگاری را بلافاصله به‌روزرسانی می‌کند.</translation>
+      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
     </message>
     <message>
       <source>Never</source>
-      <translation>هرگز</translation>
+      <translation type="unfinished">Never</translation>
     </message>
     <message>
       <source>Idle</source>
-      <translation>بیکار</translation>
+      <translation type="unfinished">Idle</translation>
     </message>
     <message>
       <source>Always</source>
-      <translation>همیشه</translation>
+      <translation type="unfinished">Always</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>صفحه لمسی سمت چپ</translation>
+      <translation type="unfinished">Touchpad Left</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>صفحه لمسی سمت راست</translation>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>مرکز صفحه لمسی</translation>
+      <translation type="unfinished">Touchpad Center</translation>
     </message>
     <message>
       <source>None</source>
-      <translation>هیچ کدام</translation>
+      <translation type="unfinished">None</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>دستگاه گرافیکی:\nدر سیستم‌های با چندین پردازنده گرافیکی، از فهرست کشویی، پردازنده گرافیکی که شبیه‌ساز از آن استفاده می‌کند را انتخاب کنید، یا گزینه &quot;انتخاب خودکار&quot; را انتخاب کنید تا به طور خودکار تعیین شود.</translation>
+      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>عرض/ارتفاع:\nاندازه پنجره شبیه‌ساز را در هنگام راه‌اندازی تنظیم می‌کند، که در حین بازی قابل تغییر اندازه است.\nاین با وضوح داخل بازی متفاوت است.</translation>
+      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>تقسیم‌کننده Vblank:\nمیزان فریم ریت که شبیه‌ساز با آن به‌روزرسانی می‌شود، در این عدد ضرب می‌شود. تغییر این مقدار ممکن است تأثیرات منفی داشته باشد، مانند افزایش سرعت بازی یا خراب شدن عملکردهای حیاتی بازی که انتظار تغییر آن را ندارند!</translation>
+      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>فعال‌سازی ذخیره‌سازی شیدرها:\nبه‌منظور اشکال‌زدایی فنی، شیدرهای بازی را هنگام رندر شدن در یک پوشه ذخیره می‌کند.</translation>
+      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>فعال کردن پردازنده گرافیکی خالی:\برای رفع اشکال فنی، رندر بازی را طوری غیرفعال کنید که انگار هیچ کارت گرافیکی وجود ندارد.</translation>
+      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation>فعال کردن HDR و :\n این گزینه HDR را در بازی‌هایی که از آن پشتیبانی می‌کنند فعال می‌کند.\n مانیتور شما باید از فضای رنگی BT2020 PQ و فرمت swapchain RGB10A2 پشتیبانی کند.</translation>
+      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>پوشه های بازی:\nلیست پوشه هایی که باید بازی های نصب شده را بررسی کنید.</translation>
+      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>اضافه کردن:\nیک پوشه به لیست اضافه کنید.</translation>
+      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>حذف:\n یک پوشه را از لیست حذف کنید.</translation>
+      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>فعال‌سازی ذخیره‌سازی دیباگ:\nنمادهای import و export و اطلاعات هدر فایل برنامه در حال اجرای PS4 را در یک پوشه ذخیره می‌کند.</translation>
+      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>فعال کردن لایه‌های اعتبارسنجی Vulkan: \nسیستمی را فعال می‌کند که وضعیت رندرکننده Vulkan را اعتبارسنجی کرده و اطلاعات مربوط به وضعیت داخلی آن را ثبت می‌کند.\n این کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>فعال کردن اعتبارسنجی همگام‌سازی Vulkan: \nسیستمی را فعال می‌کند که زمان‌بندی وظایف رندر Vulkan را اعتبارسنجی می‌کند.\n این کار باعث کاهش عملکرد و احتمالاً تغییر رفتار شبیه‌سازی می‌شود.</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -1880,7 +1880,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>جمع‌آوری سایه‌زن‌ها:\n برای ویرایش سایه‌زن‌ها با منوی اشکال‌زدایی (Ctrl + F10) باید این گزینه فعال باشد.</translation>
+      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -1912,7 +1912,7 @@
     </message>
     <message>
       <source>Nightly</source>
-      <translation>اخرین نسخه شبانه</translation>
+      <translation type="unfinished">Nightly</translation>
     </message>
     <message>
       <source>Set the volume of the background music.</source>
@@ -1928,7 +1928,7 @@
     </message>
     <message>
       <source>Browse</source>
-      <translation>انتخاب دستی</translation>
+      <translation type="unfinished">Browse</translation>
     </message>
     <message>
       <source>async</source>
@@ -1936,7 +1936,7 @@
     </message>
     <message>
       <source>sync</source>
-      <translation>همزمان</translation>
+      <translation type="unfinished">sync</translation>
     </message>
     <message>
       <source>Auto Select</source>
@@ -1944,7 +1944,7 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation>محل نصب بازی ها</translation>
+      <translation type="unfinished">Directory to install games</translation>
     </message>
     <message>
       <source>Directory to save data</source>
@@ -2000,7 +2000,7 @@
     </message>
     <message>
       <source>Right</source>
-      <translation>راست</translation>
+      <translation type="unfinished">Right</translation>
     </message>
     <message>
       <source>Top</source>
@@ -2032,7 +2032,7 @@
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation>%1 از قبل وجود دارد</translation>
+      <translation type="unfinished">%1 already exists</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
@@ -2044,7 +2044,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation>پوشه تصاویر/صداهای تروفی سفارشی را باز کنید:\n شما می‌توانید تصاویر و صدای سفارشی به تروفی‌ها اضافه کنید.\n فایل‌ها را با نام‌های زیر به custom_trophy اضافه کنید:\ntrophy.wav یا trophy.mp3، bronze.png، gold.png، platinum.png، silver.png \nتوجه: صدا فقط در نسخه‌های QT کار می‌کند.</translation>
+      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
@@ -2055,7 +2055,7 @@
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>مشاهده جوایز</translation>
+      <translation type="unfinished">Trophy Viewer</translation>
     </message>
     <message>
       <source>Select Game:</source>
@@ -2075,7 +2075,7 @@
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation>نمایش جوایز مخفی</translation>
+      <translation type="unfinished">Show Hidden Trophies</translation>
     </message>
   </context>
 </TS>

@@ -28,6 +28,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
 void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
 void SharedMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_info,
                              const Profile& profile);
+void SharedMemorySimplifyPass(IR::Program& program, const Profile& profile);
 void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_info,
                                const Profile& profile);
 

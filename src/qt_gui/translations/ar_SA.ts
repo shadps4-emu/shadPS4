@@ -2049,7 +2049,7 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation>نسخ Vulkan غير مدعومة</translation>
     </message>
   </context>
   <context>

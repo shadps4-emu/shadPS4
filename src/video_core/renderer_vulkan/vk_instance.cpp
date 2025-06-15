@@ -445,7 +445,25 @@ bool Instance::CreateDevice() {
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
         },
 #ifdef __APPLE__
-        portability_features,
+        vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
+            .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
+            .events = portability_features.events,
+            .imageViewFormatReinterpretation = portability_features.imageViewFormatReinterpretation,
+            .imageViewFormatSwizzle = portability_features.imageViewFormatSwizzle,
+            .imageView2DOn3DImage = portability_features.imageView2DOn3DImage,
+            .multisampleArrayImage = portability_features.multisampleArrayImage,
+            .mutableComparisonSamplers = portability_features.mutableComparisonSamplers,
+            .pointPolygons = portability_features.pointPolygons,
+            .samplerMipLodBias = portability_features.samplerMipLodBias,
+            .separateStencilMaskRef = portability_features.separateStencilMaskRef,
+            .shaderSampleRateInterpolationFunctions =
+                portability_features.shaderSampleRateInterpolationFunctions,
+            .tessellationIsolines = portability_features.tessellationIsolines,
+            .tessellationPointMode = portability_features.tessellationPointMode,
+            .triangleFans = portability_features.triangleFans,
+            .vertexAttributeAccessBeyondStride =
+                portability_features.vertexAttributeAccessBeyondStride,
+        },
 #endif
     };
 
