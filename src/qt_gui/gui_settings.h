@@ -12,6 +12,7 @@ const QString general_settings = "general_settings";
 const QString main_window = "main_window";
 const QString game_list = "game_list";
 const QString game_grid = "game_grid";
+const QString favorites = "favorites";
 
 // general
 const gui_value gen_checkForUpdates = gui_value(general_settings, "checkForUpdates", false);
