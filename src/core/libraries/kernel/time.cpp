@@ -28,6 +28,7 @@
 namespace Libraries::Kernel {
 
 static u64 initial_ptc;
+static u64 initial_unbiased_ptc;
 static std::unique_ptr<Common::NativeClock> clock;
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
@@ -35,12 +36,11 @@ u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
-    // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
-    return clock->GetTimeUS(initial_ptc);
+    return clock->GetTimeUS(clock->GetUnbiasedUptime() - initial_unbiased_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return clock->GetUptime() - initial_ptc;
+    return clock->GetUnbiasedUptime() - initial_unbiased_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
@@ -511,6 +511,7 @@ s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
+    initial_unbiased_ptc = clock->GetUnbiasedUptime();
 
     // POSIX
     LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
