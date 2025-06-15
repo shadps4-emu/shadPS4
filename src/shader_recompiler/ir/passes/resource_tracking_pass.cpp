@@ -168,7 +168,7 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sampler == existing.sampler;
         })};
         return index;
     }
@@ -427,29 +427,45 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         // Read sampler sharp.
-        const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
+        const auto sampler_binding = [&] -> u32 {
             ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
             const IR::Value& handle = producer->Arg(1);
             // Inline sampler resource.
             if (handle.IsImmediate()) {
                 LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-                const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
-                const auto binding = descriptors.Add(SamplerResource{
-                    .sharp_idx = std::numeric_limits<u32>::max(),
-                    .inline_sampler = inline_sampler,
-                });
-                return {binding, inline_sampler};
+                const auto inline_sampler_arg = inst.Arg(5).InstRecursive();
+                const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+                    const auto opcode = inst->GetOpcode();
+                    if (opcode == IR::Opcode::CompositeConstructU32x4) {
+                        return inst;
+                    }
+                    return std::nullopt;
+                };
+                const auto result = IR::BreadthFirstSearch(inline_sampler_arg, pred);
+                ASSERT_MSG(result, "Unable to find immediate sampler");
+                const IR::Inst* inline_producer = result.value();
+                ASSERT(inline_producer &&
+                       inline_producer->GetOpcode() == IR::Opcode::CompositeConstructU32x4);
+
+                const auto [s1, s2, s3, s4] =
+                    std::tuple{inline_producer->Arg(0), inline_producer->Arg(1),
+                               inline_producer->Arg(2), inline_producer->Arg(3)};
+                ASSERT(s1.IsImmediate() && s2.IsImmediate() && s3.IsImmediate() &&
+                       s4.IsImmediate());
+                const auto inline_sampler = AmdGpu::Sampler{
+                    .raw0 = u64(s2.U32()) << 32 | u64(s1.U32()),
+                    .raw1 = u64(s4.U32()) << 32 | u64(s3.U32()),
+                };
+                const auto binding = descriptors.Add(SamplerResource{inline_sampler});
+                return binding;
             }
             // Normal sampler resource.
             const auto ssharp_handle = handle.InstRecursive();
             const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
             const auto ssharp = TrackSharp(ssharp_ud, info);
-            const auto binding = descriptors.Add(SamplerResource{
-                .sharp_idx = ssharp,
-                .associated_image = image_binding,
-                .disable_aniso = disable_aniso,
-            });
-            return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
+            const auto binding =
+                descriptors.Add(SamplerResource{ssharp, image_binding, disable_aniso});
+            return binding;
         }();
         // Patch image and sampler handle.
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
