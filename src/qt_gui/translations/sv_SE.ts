@@ -1153,10 +1153,6 @@
       <translation>Kunde inte spara</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Kan inte binda någon unik inmatning fler än en gång</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Tryck på en tangent</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
