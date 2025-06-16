@@ -1153,10 +1153,6 @@
       <translation>No s'ha pogut desar</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>No es pot assignar cap entrada única més d'una vegada</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Premeu una tecla</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Cancel·la</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
