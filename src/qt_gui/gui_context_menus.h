@@ -317,7 +317,6 @@ public:
 
         if (selected == toggleFavorite) {
             m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
-            widget->setCurrentCell(-1, -1);
             changedFavorite = 1;
         }
 

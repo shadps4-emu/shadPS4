@@ -66,6 +66,7 @@ public:
     std::shared_ptr<CompatibilityInfoClass> m_compat_info;
 
     int icon_size;
+    std::string last_favorite;
 
     static float parseAsFloat(const std::string& str, const int& offset) {
         return std::stof(str.substr(0, str.size() - offset));

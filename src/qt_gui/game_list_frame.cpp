@@ -16,6 +16,7 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
     : QTableWidget(parent), m_gui_settings(std::move(gui_settings)), m_game_info(game_info_get),
       m_compat_info(compat_info_get) {
     icon_size = m_gui_settings->GetValue(gui::gl_icon_size).toInt();
+    last_favorite = "";
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
     this->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -82,8 +83,10 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         int changedFavorite = m_gui_context_menus.RequestGameMenu(
             pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, true);
-        if (changedFavorite)
+        if (changedFavorite) {
+            last_favorite = m_game_info->m_games[this->currentRow()].serial;
             PopulateGameList(false);
+        }
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
@@ -92,10 +95,10 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
             QDesktopServices::openUrl(
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         } else if (column == 10) {
+            last_favorite = m_game_info->m_games[row].serial;
             QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
             bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
             m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
-            this->setCurrentCell(-1, -1);
             PopulateGameList(false);
         }
     });
@@ -141,6 +144,10 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
         SetFavoriteIcon(i, 10);
+
+        if (m_game_info->m_games[i].serial == last_favorite && !isInitialPopulation) {
+            this->setCurrentCell(i, 10);
+        }
 
         m_game_info->m_games[i].compatibility =
             m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
