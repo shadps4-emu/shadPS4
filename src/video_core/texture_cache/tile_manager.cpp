@@ -264,7 +264,7 @@ std::pair<vk::Buffer, u32> TileManager::TryDetile(vk::Buffer in_buffer, u32 in_o
                                 set_writes);
 
     DetilerParams params;
-    params.num_levels = (info.resources.levels);
+    params.num_levels = info.resources.levels;
     params.pitch0 = info.pitch >> (info.props.is_block ? 2u : 0u);
     params.height = info.size.height;
 
