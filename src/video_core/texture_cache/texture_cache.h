@@ -9,6 +9,7 @@
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/multi_level_page_table.h"
+#include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/sampler.h"
@@ -286,6 +287,7 @@ private:
     Vulkan::Scheduler& scheduler;
     BufferCache& buffer_cache;
     PageManager& tracker;
+    BlitHelper blit_helper;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;

@@ -1153,10 +1153,6 @@
       <translation>Не вдалося зберегти</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Не можна прив'язати кнопку вводу більш ніж один раз</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Натисніть клавішу</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Відмінити</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>

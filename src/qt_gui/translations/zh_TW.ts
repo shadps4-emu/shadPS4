@@ -1153,10 +1153,6 @@
       <translation>無法儲存</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>任何唯一的鍵位都不能重複連結</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>按下按鍵</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>取消</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
