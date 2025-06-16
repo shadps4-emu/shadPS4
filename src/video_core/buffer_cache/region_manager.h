@@ -81,14 +81,14 @@ public:
      */
     template <Type type, bool enable>
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
+        RENDERER_TRACE;
         const size_t offset = dirty_addr - cpu_addr;
         const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
         const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
         if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
             return;
         }
-        RENDERER_TRACE;
-        std::unique_lock lk{lock};
+        std::scoped_lock lk{lock};
         static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
@@ -98,7 +98,7 @@ public:
             bits.UnsetRange(start_page, end_page);
         }
         if constexpr (type == Type::CPU) {
-            UpdateProtection<!enable>(std::move(lk));
+            UpdateProtection<!enable>();
         }
     }
 
@@ -119,7 +119,7 @@ public:
         if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
             return;
         }
-        std::unique_lock lk{lock};
+        std::scoped_lock lk{lock};
         static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
@@ -132,7 +132,7 @@ public:
         if constexpr (clear) {
             bits.UnsetRange(start_page, end_page);
             if constexpr (type == Type::CPU) {
-                UpdateProtection<true>(std::move(lk));
+                UpdateProtection<true>();
             }
         }
     }
@@ -169,12 +169,11 @@ private:
      *
      * @tparam add_to_tracker True when the tracker should start tracking the new pages
      */
-    template <bool add_to_tracker, typename Lock>
-    void UpdateProtection(Lock&& lk) {
+    template <bool add_to_tracker>
+    void UpdateProtection() {
         RENDERER_TRACE;
         RegionBits mask = cpu ^ writeable;
         writeable = cpu;
-        lk.unlock();
         tracker->UpdatePageWatchersMasked<add_to_tracker>(cpu_addr, mask);
     }
 
