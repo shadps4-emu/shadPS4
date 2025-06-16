@@ -20,7 +20,7 @@ constexpr u64 NUM_REGION_PAGES = HIGHER_PAGE_SIZE / BYTES_PER_PAGE;
 enum class Type {
     CPU,
     GPU,
-    Untracked,
+    Writeable,
 };
 
 using RegionBits = Common::BitArray<NUM_REGION_PAGES>;

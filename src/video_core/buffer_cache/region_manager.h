@@ -29,7 +29,7 @@ public:
         : tracker{tracker_}, cpu_addr{cpu_addr_} {
         cpu.Fill();
         gpu.Clear();
-        untracked.Fill();
+        writeable.Fill();
     }
     explicit RegionManager() = default;
 
@@ -47,13 +47,13 @@ public:
 
     template <Type type>
     RegionBits& GetRegionBits() noexcept {
-        static_assert(type != Type::Untracked);
+        static_assert(type != Type::Writeable);
         if constexpr (type == Type::CPU) {
             return cpu;
         } else if constexpr (type == Type::GPU) {
             return gpu;
-        } else if constexpr (type == Type::Untracked) {
-            return untracked;
+        } else if constexpr (type == Type::Writeable) {
+            return writeable;
         } else {
             static_assert(false, "Invalid type");
         }
@@ -61,13 +61,13 @@ public:
 
     template <Type type>
     const RegionBits& GetRegionBits() const noexcept {
-        static_assert(type != Type::Untracked);
+        static_assert(type != Type::Writeable);
         if constexpr (type == Type::CPU) {
             return cpu;
         } else if constexpr (type == Type::GPU) {
             return gpu;
-        } else if constexpr (type == Type::Untracked) {
-            return untracked;
+        } else if constexpr (type == Type::Writeable) {
+            return writeable;
         } else {
             static_assert(false, "Invalid type");
         }
@@ -89,7 +89,7 @@ public:
         }
         RENDERER_TRACE;
         std::unique_lock lk{lock};
-        static_assert(type != Type::Untracked);
+        static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
         if constexpr (enable) {
@@ -120,13 +120,13 @@ public:
             return;
         }
         std::unique_lock lk{lock};
-        static_assert(type != Type::Untracked);
+        static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
         RegionBits mask{};
         mask.SetRange(start_page, end_page);
         if constexpr (type == Type::GPU) {
-            mask &= ~untracked;
+            mask &= ~writeable;
         }
         mask &= bits;
 
@@ -157,13 +157,13 @@ public:
             return false;
         }
         // std::scoped_lock lk{lock}; // Is this needed?
-        static_assert(type != Type::Untracked);
+        static_assert(type != Type::Writeable);
 
         const RegionBits& bits = GetRegionBits<type>();
         RegionBits test{};
         test.SetRange(start_page, end_page);
         if constexpr (type == Type::GPU) {
-            test &= ~untracked;
+            test &= ~writeable;
         }
         test &= bits;
         return test.Any();
@@ -182,8 +182,8 @@ private:
     template <bool add_to_tracker, typename Lock>
     void UpdateProtection(Lock&& lk) {
         RENDERER_TRACE;
-        RegionBits mask = cpu ^ untracked;
-        untracked = cpu;
+        RegionBits mask = cpu ^ writeable;
+        writeable = cpu;
         lk.unlock();
         tracker->UpdatePageWatchersMasked<add_to_tracker>(cpu_addr, mask);
     }
@@ -197,7 +197,7 @@ private:
     VAddr cpu_addr = 0;
     RegionBits cpu;
     RegionBits gpu;
-    RegionBits untracked;
+    RegionBits writeable;
 };
 
 } // namespace VideoCore
