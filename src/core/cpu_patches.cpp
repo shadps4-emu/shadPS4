@@ -88,7 +88,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
@@ -126,7 +127,8 @@ static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     return !cpu.has(Cpu::tSSE4a);
 }
 
-static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operands,
+                          Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -245,7 +247,8 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     }
 }
 
-static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* operands,
+                            Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -383,8 +386,44 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
     }
 }
 
+static void ReplaceMOVNT(void* address, u8 rep_prefix) {
+    // Find the opcode byte
+    // There can be any amount of prefixes but the instruction can't be more than 15 bytes
+    // And we know for sure this is a MOVNTSS/MOVNTSD
+    bool found = false;
+    bool rep_prefix_found = false;
+    int index = 0;
+    u8* ptr = reinterpret_cast<u8*>(address);
+    for (int i = 0; i < 15; i++) {
+        if (ptr[i] == rep_prefix) {
+            rep_prefix_found = true;
+        } else if (ptr[i] == 0x2B) {
+            index = i;
+            found = true;
+            break;
+        }
+    }
+
+    // Some sanity checks
+    ASSERT(found);
+    ASSERT(index >= 2);
+    ASSERT(ptr[index - 1] == 0x0F);
+    ASSERT(rep_prefix_found);
+
+    // This turns the MOVNTSS/MOVNTSD to a MOVSS/MOVSD m, xmm
+    ptr[index] = 0x11;
+}
+
+static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF3);
+}
+
+static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF2);
+}
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
-using InstructionGenerator = void (*)(const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
+using InstructionGenerator = void (*)(void*, const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
     /// Filter for more granular patch conditions past just the instruction mnemonic.
     PatchFilter filter;
@@ -400,6 +439,8 @@ static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
     // SSE4a
     {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
     {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
+    {ZYDIS_MNEMONIC_MOVNTSS, {FilterNoSSE4a, ReplaceMOVNTSS, false}},
+    {ZYDIS_MNEMONIC_MOVNTSD, {FilterNoSSE4a, ReplaceMOVNTSD, false}},
 
 #if defined(_WIN32)
     // Windows needs a trampoline.
@@ -477,7 +518,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                 auto& trampoline_gen = module->trampoline_gen;
                 const auto trampoline_ptr = trampoline_gen.getCurr();
 
-                patch_info.generator(operands, trampoline_gen);
+                patch_info.generator(code, operands, trampoline_gen);
 
                 // Return to the following instruction at the end of the trampoline.
                 trampoline_gen.jmp(code + instruction.length);
@@ -485,7 +526,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                 // Replace instruction with near jump to the trampoline.
                 patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
             } else {
-                patch_info.generator(operands, patch_gen);
+                patch_info.generator(code, operands, patch_gen);
             }
 
             const auto patch_size = patch_gen.getCurr() - code;

@@ -1153,10 +1153,6 @@
       <translation>Speichern nicht möglich</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Kann keine eindeutige Eingabe mehr als einmal zuordnen</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Drücken Sie eine Taste</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Abbrechen</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>

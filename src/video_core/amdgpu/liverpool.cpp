@@ -228,9 +228,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         const u32 type = header->type;
 
         switch (type) {
+        default:
+            UNREACHABLE_MSG("Wrong PM4 type {}", type);
+            break;
         case 0:
-        case 1:
-            UNREACHABLE_MSG("Unsupported PM4 type {}", type);
+            UNREACHABLE_MSG("Unimplemented PM4 type 0, base reg: {}, size: {}",
+                            header->type0.base.Value(), header->type0.NumWords());
             break;
         case 2:
             // Type-2 packet are used for padding purposes
@@ -765,6 +768,19 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
                 break;
             }
+            case PM4ItOpcode::CondExec: {
+                const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
+                if (cond_exec->command.Value() != 0) {
+                    LOG_WARNING(Render, "IT_COND_EXEC used a reserved command");
+                }
+                const auto skip = *cond_exec->Address() == false;
+                if (skip) {
+                    dcb = NextPacket(dcb,
+                                     header->type3.NumWords() + 1 + cond_exec->exec_count.Value());
+                    continue;
+                }
+                break;
+            }
             default:
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
@@ -811,6 +827,19 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
                 *queue.read_addr %= queue.ring_size_dw;
             }
             break;
+        }
+
+        if (header->type == 2) {
+            // Type-2 packet are used for padding purposes
+            next_dw_off = 1;
+            acb += next_dw_off;
+            acb_dwords -= next_dw_off;
+
+            if constexpr (!is_indirect) {
+                *queue.read_addr += next_dw_off;
+                *queue.read_addr %= queue.ring_size_dw;
+            }
+            continue;
         }
 
         if (header->type != 3) {

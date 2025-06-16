@@ -95,6 +95,46 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     return clamped_size;
 }
 
+void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
+    PrtArea& area = prt_areas[id];
+    if (area.mapped) {
+        rasterizer->UnmapMemory(area.start, area.end - area.start);
+    }
+
+    area.start = address;
+    area.end = address + size;
+    area.mapped = true;
+
+    // Pretend the entire PRT area is mapped to avoid GPU tracking errors.
+    // The caches will use CopySparseMemory to fetch data which avoids unmapped areas.
+    rasterizer->MapMemory(address, size);
+}
+
+void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
+    const bool is_sparse = std::ranges::any_of(
+        prt_areas, [&](const PrtArea& area) { return area.Overlaps(virtual_addr, size); });
+    if (!is_sparse) {
+        std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), size);
+        return;
+    }
+
+    auto vma = FindVMA(virtual_addr);
+    ASSERT_MSG(vma->second.Contains(virtual_addr, 0),
+               "Attempted to access invalid GPU address {:#x}", virtual_addr);
+    while (size) {
+        u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
+        if (vma->second.IsFree()) {
+            std::memset(dest, 0, copy_size);
+        } else {
+            std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), copy_size);
+        }
+        size -= copy_size;
+        virtual_addr += copy_size;
+        dest += copy_size;
+        ++vma;
+    }
+}
+
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;

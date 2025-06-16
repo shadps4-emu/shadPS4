@@ -28,8 +28,10 @@
 
 using namespace Common::FS;
 
-CheckUpdate::CheckUpdate(const bool showMessage, QWidget* parent)
-    : QDialog(parent), networkManager(new QNetworkAccessManager(this)) {
+CheckUpdate::CheckUpdate(std::shared_ptr<gui_settings> gui_settings, const bool showMessage,
+                         QWidget* parent)
+    : QDialog(parent), m_gui_settings(std::move(gui_settings)),
+      networkManager(new QNetworkAccessManager(this)) {
     setWindowTitle(tr("Auto Updater"));
     setFixedSize(0, 0);
     CheckForUpdates(showMessage);
@@ -43,7 +45,7 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
 
     bool checkName = true;
     while (checkName) {
-        updateChannel = QString::fromStdString(Config::getUpdateChannel());
+        updateChannel = m_gui_settings->GetValue(gui::gen_updateChannel).toString();
         if (updateChannel == "Nightly") {
             url = QUrl("https://api.github.com/repos/shadps4-emu/shadPS4/releases");
             checkName = false;
@@ -52,12 +54,10 @@ void CheckUpdate::CheckForUpdates(const bool showMessage) {
             checkName = false;
         } else {
             if (Common::g_is_release) {
-                Config::setUpdateChannel("Release");
+                m_gui_settings->SetValue(gui::gen_updateChannel, "Release");
             } else {
-                Config::setUpdateChannel("Nightly");
+                m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
             }
-            const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-            Config::save(config_dir / "config.toml");
         }
     }
 
@@ -198,7 +198,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
     titleLayout->addWidget(titleLabel);
     layout->addLayout(titleLayout);
 
-    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    QString updateChannel = m_gui_settings->GetValue(gui::gen_updateChannel).toString();
 
     QString updateText = QString("<p><b>" + tr("Update Channel") + ": </b>" + updateChannel +
                                  "<br>"
@@ -273,7 +273,7 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
                     }
                 });
 
-        if (Config::alwaysShowChangelog()) {
+        if (m_gui_settings->GetValue(gui::gen_showChangeLog).toBool()) {
             requestChangelog(currentRev, latestRev, downloadUrl, latestDate, currentDate);
             textField->setVisible(true);
             toggleButton->setText(tr("Hide Changelog"));
@@ -290,14 +290,14 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
 
     connect(noButton, &QPushButton::clicked, this, [this]() { close(); });
 
-    autoUpdateCheckBox->setChecked(Config::autoUpdate());
+    autoUpdateCheckBox->setChecked(m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool());
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-    connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+    connect(autoUpdateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
 #else
-    connect(autoUpdateCheckBox, &QCheckBox::checkStateChanged, this, [](Qt::CheckState state) {
+    connect(autoUpdateCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
 #endif
         const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-        Config::setAutoUpdate(state == Qt::Checked);
+        m_gui_settings->SetValue(gui::gen_checkForUpdates, (state == Qt::Checked));
         Config::save(user_dir / "config.toml");
     });
 

@@ -332,19 +332,20 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     sr.type = sym_type;
 
     const auto* record = m_hle_symbols.FindSymbol(sr);
-    if (!record) {
-        // Check if it an export function
-        const auto* p = FindExportedModule(*module, *library);
-        if (p && p->export_sym.GetSize() > 0) {
-            record = p->export_sym.FindSymbol(sr);
-        }
-    }
     if (record) {
         *return_info = *record;
-
         Core::Devtools::Widget::ModuleList::AddModule(sr.library);
-
         return true;
+    }
+
+    // Check if it an export function
+    const auto* p = FindExportedModule(*module, *library);
+    if (p && p->export_sym.GetSize() > 0) {
+        record = p->export_sym.FindSymbol(sr);
+        if (record) {
+            *return_info = *record;
+            return true;
+        }
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());

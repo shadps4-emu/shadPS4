@@ -9,6 +9,7 @@
 #include <vector>
 #include <boost/asio/steady_timer.hpp>
 
+#include <unordered_map>
 #include "common/rdtsc.h"
 #include "common/types.h"
 
@@ -135,6 +136,12 @@ private:
 };
 
 class EqueueInternal {
+    struct SmallTimer {
+        SceKernelEvent event;
+        std::chrono::steady_clock::time_point added;
+        std::chrono::microseconds interval;
+    };
+
 public:
     explicit EqueueInternal(std::string_view name) : m_name(name) {}
 
@@ -151,13 +158,14 @@ public:
     int GetTriggeredEvents(SceKernelEvent* ev, int num);
 
     bool AddSmallTimer(EqueueEvent& event);
-    bool HasSmallTimer() const {
-        return small_timer_event.event.data != 0;
+    bool HasSmallTimer() {
+        std::scoped_lock lock{m_mutex};
+        return !m_small_timers.empty();
     }
     bool RemoveSmallTimer(u64 id) {
-        if (HasSmallTimer() && small_timer_event.event.ident == id) {
-            small_timer_event = {};
-            return true;
+        if (HasSmallTimer()) {
+            std::scoped_lock lock{m_mutex};
+            return m_small_timers.erase(id) > 0;
         }
         return false;
     }
@@ -170,8 +178,8 @@ private:
     std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
-    EqueueEvent small_timer_event{};
     std::condition_variable m_cond;
+    std::unordered_map<u64, SmallTimer> m_small_timers;
 };
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);

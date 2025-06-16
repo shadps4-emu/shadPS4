@@ -33,13 +33,13 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
     }
 
     ButtonsList = {
-        ui->CrossButton,       ui->CircleButton,   ui->TriangleButton,   ui->SquareButton,
-        ui->L1Button,          ui->R1Button,       ui->L2Button,         ui->R2Button,
-        ui->L3Button,          ui->R3Button,       ui->TouchpadButton,   ui->OptionsButton,
-        ui->TouchpadButton,    ui->DpadUpButton,   ui->DpadDownButton,   ui->DpadLeftButton,
-        ui->DpadRightButton,   ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton,
-        ui->LStickRightButton, ui->RStickUpButton, ui->RStickDownButton, ui->RStickLeftButton,
-        ui->RStickRightButton, ui->LHalfButton,    ui->RHalfButton};
+        ui->CrossButton,    ui->CircleButton,     ui->TriangleButton,   ui->SquareButton,
+        ui->L1Button,       ui->R1Button,         ui->L2Button,         ui->R2Button,
+        ui->L3Button,       ui->R3Button,         ui->OptionsButton,    ui->TouchpadButton,
+        ui->DpadUpButton,   ui->DpadDownButton,   ui->DpadLeftButton,   ui->DpadRightButton,
+        ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
+        ui->RStickUpButton, ui->RStickDownButton, ui->RStickLeftButton, ui->RStickRightButton,
+        ui->LHalfButton,    ui->RHalfButton};
 
     ButtonConnects();
     SetUIValuestoMappings("default");
@@ -372,12 +372,29 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     file.close();
 
     // Prevent duplicate inputs for KBM as this breaks the engine
+    bool duplicateFound = false;
+    QSet<QString> duplicateMappings;
     for (auto it = inputs.begin(); it != inputs.end(); ++it) {
         if (std::find(it + 1, inputs.end(), *it) != inputs.end()) {
-            QMessageBox::information(this, tr("Unable to Save"),
-                                     tr("Cannot bind any unique input more than once"));
-            return;
+            duplicateFound = true;
+            duplicateMappings.insert(QString::fromStdString(*it));
         }
+    }
+
+    if (duplicateFound) {
+        QStringList duplicatesList;
+        for (const QString mapping : duplicateMappings) {
+            for (const auto& button : ButtonsList) {
+                if (button->text() == mapping)
+                    duplicatesList.append(button->objectName() + " - " + mapping);
+            }
+        }
+        QMessageBox::information(
+            this, tr("Unable to Save"),
+            // clang-format off
+QString(tr("Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:\n\n%1").arg(duplicatesList.join("\n"))));
+        // clang-format on
+        return;
     }
 
     std::vector<std::string> save;

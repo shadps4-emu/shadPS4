@@ -186,7 +186,9 @@ public:
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        return std::fwrite(data, sizeof(T), size, file);
+        auto bytes = std::fwrite(data, sizeof(T), size, file);
+        std::fflush(file);
+        return bytes;
     }
 
     template <typename T>
