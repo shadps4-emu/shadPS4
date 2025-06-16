@@ -80,9 +80,10 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info,
-                                            m_gui_settings, this, true);
-        PopulateGameList(false);
+        int changedFavorite = m_gui_context_menus.RequestGameMenu(
+            pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, true);
+        if (changedFavorite)
+            PopulateGameList(false);
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
