@@ -328,6 +328,7 @@ public:
         return render_state;
     }
 
+    /// Returns the current pipeline dynamic state tracking.
     DynamicState& GetDynamicState() {
         return dynamic_state;
     }
