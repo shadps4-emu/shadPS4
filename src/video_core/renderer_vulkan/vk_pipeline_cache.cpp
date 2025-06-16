@@ -346,8 +346,15 @@ bool PipelineCache::RefreshGraphicsKey() {
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
 
-        key.color_formats[remapped_cb] =
+        const auto format =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
+        key.color_formats[remapped_cb] = format;
+        if (!instance.IsFormatSupported(format, vk::FormatFeatureFlagBits2::eColorAttachment)) {
+            LOG_WARNING(Render_Vulkan,
+                        "color buffer format {} does not support COLOR_ATTACHMENT_BIT",
+                        vk::to_string(format));
+        }
+
         key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),

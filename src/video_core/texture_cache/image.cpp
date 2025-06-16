@@ -130,11 +130,24 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     constexpr auto tiling = vk::ImageTiling::eOptimal;
     const auto supported_format = instance->GetSupportedFormat(info.pixel_format, format_features);
-    const auto properties = instance->GetPhysicalDevice().getImageFormatProperties(
-        supported_format, info.type, tiling, usage_flags, flags);
-    const auto supported_samples = properties.result == vk::Result::eSuccess
-                                       ? properties.value.sampleCounts
-                                       : vk::SampleCountFlagBits::e1;
+    const vk::PhysicalDeviceImageFormatInfo2 format_info{
+        .format = supported_format,
+        .type = info.type,
+        .tiling = tiling,
+        .usage = usage_flags,
+        .flags = flags,
+    };
+    const auto image_format_properties =
+        instance->GetPhysicalDevice().getImageFormatProperties2(format_info);
+    if (image_format_properties.result == vk::Result::eErrorFormatNotSupported) {
+        LOG_ERROR(Render_Vulkan, "image format {} type {} is not supported (flags {}, usage {})",
+                  vk::to_string(supported_format), vk::to_string(info.type),
+                  vk::to_string(format_info.flags), vk::to_string(format_info.usage));
+    }
+    const auto supported_samples =
+        image_format_properties.result == vk::Result::eSuccess
+            ? image_format_properties.value.imageFormatProperties.sampleCounts
+            : vk::SampleCountFlagBits::e1;
 
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,

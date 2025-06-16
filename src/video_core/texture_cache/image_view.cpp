@@ -29,6 +29,24 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     }
 }
 
+bool IsViewTypeCompatible(vk::ImageViewType view_type, vk::ImageType image_type) {
+    switch (view_type) {
+    case vk::ImageViewType::e1D:
+    case vk::ImageViewType::e1DArray:
+        return image_type == vk::ImageType::e1D;
+    case vk::ImageViewType::e2D:
+    case vk::ImageViewType::e2DArray:
+        return image_type == vk::ImageType::e2D || image_type == vk::ImageType::e3D;
+    case vk::ImageViewType::eCube:
+    case vk::ImageViewType::eCubeArray:
+        return image_type == vk::ImageType::e2D;
+    case vk::ImageViewType::e3D:
+        return image_type == vk::ImageType::e3D;
+    default:
+        UNREACHABLE();
+    }
+}
+
 ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept
     : is_storage{desc.is_written} {
     const auto dfmt = image.GetDataFmt();
@@ -106,6 +124,11 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
             .layerCount = info.range.extent.layers,
         },
     };
+    if (!IsViewTypeCompatible(image_view_ci.viewType, image.info.type)) {
+        LOG_ERROR(Render_Vulkan, "image view type {} is incompatible with image type {}",
+                  vk::to_string(image_view_ci.viewType), vk::to_string(image.info.type));
+    }
+
     auto [view_result, view] = instance.GetDevice().createImageViewUnique(image_view_ci);
     ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(view_result));
