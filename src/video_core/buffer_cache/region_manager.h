@@ -125,6 +125,11 @@ public:
         RegionBits& bits = GetRegionBits<type>();
         RegionBits mask(bits, start_page, end_page);
 
+        // TODO: this will not be needed once we handle readbacks
+        if constexpr (type == Type::GPU) {
+            mask &= ~writeable;
+        }
+
         for (const auto& [start, end] : mask) {
             func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
         }
@@ -156,6 +161,12 @@ public:
 
         const RegionBits& bits = GetRegionBits<type>();
         RegionBits test(bits, start_page, end_page);
+
+        // TODO: this will not be needed once we handle readbacks
+        if constexpr (type == Type::GPU) {
+            test &= ~writeable;
+        }
+
         return test.Any();
     }
 
