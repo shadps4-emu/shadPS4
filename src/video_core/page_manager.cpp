@@ -259,7 +259,7 @@ struct PageManager::Impl {
         boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
 
         auto start_range = mask.FirstRange();
-        auto end_range = mask.LastRaange();
+        auto end_range = mask.LastRange();
 
         if (start_range.second == end_range.second) {
             // Optimization: if all pages are contiguous, use the regular UpdatePageWatchers

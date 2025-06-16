@@ -65,6 +65,45 @@ public:
     using pointer = const Range*;
     using reference = const Range&;
 
+    BitArray() = default;
+    BitArray(const BitArray& other) = default;
+    BitArray& operator=(const BitArray& other) = default;
+    BitArray(BitArray&& other) noexcept = default;
+    BitArray& operator=(BitArray&& other) noexcept = default;
+    ~BitArray() = default;
+
+    BitArray(const BitArray& other, size_t start, size_t end) {
+        if (start >= end || end > N) {
+            return;
+        }
+        const size_t first_word = start / BITS_PER_WORD;
+        const size_t last_word = (end - 1) / BITS_PER_WORD;
+        const size_t start_bit = start % BITS_PER_WORD;
+        const size_t end_bit = (end - 1) % BITS_PER_WORD;
+        const u64 start_mask = ~((1ULL << start_bit) - 1);
+        const u64 end_mask = end_bit == BITS_PER_WORD - 1 ? ~0ULL : (1ULL << (end_bit + 1)) - 1;
+        if (first_word == last_word) {
+            data[first_word] = other.data[first_word] & (start_mask & end_mask);
+        } else {
+            data[first_word] = other.data[first_word] & start_mask;
+            size_t i = first_word + 1;
+#ifdef BIT_ARRAY_USE_AVX
+            for (; i + WORDS_PER_AVX <= last_word; i += WORDS_PER_AVX) {
+                const __m256i current =
+                    _mm256_loadu_si256(reinterpret_cast<const __m256i*>(&other.data[i]));
+                _mm256_storeu_si256(reinterpret_cast<__m256i*>(&data[i]), current);
+            }
+#endif
+            for (; i < last_word; ++i) {
+                data[i] = other.data[i];
+            }
+            data[last_word] = other.data[last_word] & end_mask;
+        }
+    }
+
+    BitArray(const BitArray& other, const Range& range)
+        : BitArray(other, range.first, range.second) {}
+
     const_iterator begin() const {
         return Iterator(*this, 0);
     }
@@ -293,7 +332,7 @@ public:
         return {0, 0};
     }
 
-    inline constexpr Range LastRaange() const {
+    inline constexpr Range LastRange() const {
         return LastRangeFrom(N);
     }
 

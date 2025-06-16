@@ -123,12 +123,7 @@ public:
         static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
-        RegionBits mask{};
-        mask.SetRange(start_page, end_page);
-        if constexpr (type == Type::GPU) {
-            mask &= ~writeable;
-        }
-        mask &= bits;
+        RegionBits mask(bits, start_page, end_page);
 
         for (const auto& [start, end] : mask) {
             func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
@@ -160,12 +155,7 @@ public:
         static_assert(type != Type::Writeable);
 
         const RegionBits& bits = GetRegionBits<type>();
-        RegionBits test{};
-        test.SetRange(start_page, end_page);
-        if constexpr (type == Type::GPU) {
-            test &= ~writeable;
-        }
-        test &= bits;
+        RegionBits test(bits, start_page, end_page);
         return test.Any();
     }
 
