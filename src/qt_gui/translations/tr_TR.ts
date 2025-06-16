@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Dosya mevcut</translation>
+      <translation>Dosya Mevcut</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
@@ -1153,10 +1153,6 @@
       <translation>Kaydedilemedi</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Herhangi bir benzersiz girdi birden fazla kez bağlanamaz</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Bir tuşa basın</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>İptal</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
@@ -1221,7 +1225,7 @@
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation>shadPS4&apos;ten Çık</translation>
+      <translation>shadPS4 Çıkış</translation>
     </message>
     <message>
       <source>Exit the application.</source>
@@ -1381,7 +1385,7 @@
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>Oyun Başlatma</translation>
+      <translation>Oyun Başlat</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>

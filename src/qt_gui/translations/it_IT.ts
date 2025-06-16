@@ -1153,10 +1153,6 @@
       <translation>Impossibile Salvare</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Non è possibile associare qualsiasi input univoco più di una volta</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Premi un tasto</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Annulla</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>

@@ -438,7 +438,9 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
                 const IR::U32 addr{inst.Arg(0)};
-                const IR::U32 data{inst.Arg(1).Resolve()};
+                const IR::Value data = num_dwords == 2
+                                           ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
+                                           : inst.Arg(1).Resolve();
 
                 const auto SetOutput = [&](IR::U32 addr, IR::U32 value, AttributeRegion output_kind,
                                            u32 off_dw) {
@@ -466,10 +468,10 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
 
                 AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
                 if (num_dwords == 1) {
-                    SetOutput(addr, data, region, 0);
+                    SetOutput(addr, IR::U32{data}, region, 0);
                 } else {
                     for (auto i = 0; i < num_dwords; i++) {
-                        SetOutput(addr, IR::U32{data.Inst()->Arg(i)}, region, i);
+                        SetOutput(addr, IR::U32{ir.CompositeExtract(data, i)}, region, i);
                     }
                 }
                 inst.Invalidate();
@@ -499,7 +501,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                             ReadTessControlPointAttribute(addr, stride, ir, i, is_tcs_output_read);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;
@@ -578,7 +580,7 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         const IR::F32 component = GetInput(addr, i);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;
