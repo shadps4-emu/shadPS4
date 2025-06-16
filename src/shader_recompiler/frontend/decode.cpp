@@ -37,10 +37,8 @@ bool IsVop3BEncoding(Opcode opcode) {
            opcode == Opcode::V_MAD_U64_U32 || opcode == Opcode::V_MAD_I64_I32;
 }
 
-
-inline void GcnDecodeContext::decodeInstruction32(
-    void (GcnDecodeContext::*decodeFunc)(u32), OpcodeMap opcodeMap, GcnCodeSlice& code
-) {
+inline void GcnDecodeContext::decodeInstruction32(void (GcnDecodeContext::*decodeFunc)(u32),
+                                                  OpcodeMap opcodeMap, GcnCodeSlice& code) {
     u32 instruction = code.readu32();
     // Decode instruction using the provided decode function.
     (this->*decodeFunc)(instruction);
@@ -51,9 +49,8 @@ inline void GcnDecodeContext::decodeInstruction32(
     decodeLiteralConstant(opcodeMap, code);
 }
 
-inline void GcnDecodeContext::decodeInstruction64(
-    void (GcnDecodeContext::*decodeFunc)(uint64_t), OpcodeMap opcodeMap, GcnCodeSlice& code
-) {
+inline void GcnDecodeContext::decodeInstruction64(void (GcnDecodeContext::*decodeFunc)(uint64_t),
+                                                  OpcodeMap opcodeMap, GcnCodeSlice& code) {
     uint64_t instruction = code.readu64();
     // Decode instruction using the provided decode function.
     (this->*decodeFunc)(instruction);
@@ -96,7 +93,8 @@ inline void GcnDecodeContext::decodeInstructionFromMask6bit(GcnCodeSlice& code) 
     m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_6bit);
     switch (m_instruction.encoding) {
     case InstEncoding::VINTRP:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionVINTRP, OpcodeMap::OP_MAP_VINTRP, code);
+        decodeInstruction32(&GcnDecodeContext::decodeInstructionVINTRP, OpcodeMap::OP_MAP_VINTRP,
+                            code);
         break;
     case InstEncoding::VOP3:
         decodeInstruction64(&GcnDecodeContext::decodeInstructionVOP3, OpcodeMap::OP_MAP_VOP3, code);
@@ -108,10 +106,12 @@ inline void GcnDecodeContext::decodeInstructionFromMask6bit(GcnCodeSlice& code) 
         decodeInstruction64(&GcnDecodeContext::decodeInstructionDS, OpcodeMap::OP_MAP_DS, code);
         break;
     case InstEncoding::MUBUF:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionMUBUF, OpcodeMap::OP_MAP_MUBUF, code);
+        decodeInstruction64(&GcnDecodeContext::decodeInstructionMUBUF, OpcodeMap::OP_MAP_MUBUF,
+                            code);
         break;
     case InstEncoding::MTBUF:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionMTBUF, OpcodeMap::OP_MAP_MTBUF, code);
+        decodeInstruction64(&GcnDecodeContext::decodeInstructionMTBUF, OpcodeMap::OP_MAP_MTBUF,
+                            code);
         break;
     case InstEncoding::MIMG:
         decodeInstruction64(&GcnDecodeContext::decodeInstructionMIMG, OpcodeMap::OP_MAP_MIMG, code);

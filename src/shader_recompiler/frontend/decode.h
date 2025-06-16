@@ -58,15 +58,11 @@ private:
     void repairOperandType();
 
     OperandField getOperandField(uint32_t code);
-    
-    void decodeInstruction32(void (
-        GcnDecodeContext::*decodeFunc)(u32), 
-        OpcodeMap opcodeMap, GcnCodeSlice& code
-    );
-    void decodeInstruction64(void (
-        GcnDecodeContext::*decodeFunc)(uint64_t), 
-        OpcodeMap opcodeMap, GcnCodeSlice& code
-    );
+
+    void decodeInstruction32(void (GcnDecodeContext::*decodeFunc)(u32), OpcodeMap opcodeMap,
+                             GcnCodeSlice& code);
+    void decodeInstruction64(void (GcnDecodeContext::*decodeFunc)(uint64_t), OpcodeMap opcodeMap,
+                             GcnCodeSlice& code);
 
     void decodeInstructionFromMask9bit(GcnCodeSlice& code);
     void decodeInstructionFromMask7bit(GcnCodeSlice& code);
