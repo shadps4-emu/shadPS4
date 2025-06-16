@@ -51,7 +51,7 @@ Tcb* GetTcbBase() {
 // Apple x86_64
 
 // Reserve space in the 32-bit address range for allocating TCB pages.
-asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
+asm(".zerofill TCB_SPACE,TCB_SPACE,__tcb_space,0x3FC000");
 
 struct LdtPage {
     void* tcb;

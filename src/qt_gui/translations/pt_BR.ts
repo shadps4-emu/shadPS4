@@ -1153,10 +1153,6 @@
       <translation>Não foi possível salvar</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Não é possível vincular qualquer entrada única mais de uma vez</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Aperte uma tecla</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
@@ -2048,7 +2052,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Versão do Vulkan não suportada</translation>
     </message>
   </context>
   <context>
