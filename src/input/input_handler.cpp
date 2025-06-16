@@ -176,7 +176,7 @@ InputBinding GetBindingFromString(std::string& line) {
         if (string_to_keyboard_key_map.find(t) != string_to_keyboard_key_map.end()) {
             input = InputID(InputType::KeyboardMouse, string_to_keyboard_key_map.at(t));
         } else if (string_to_axis_map.find(t) != string_to_axis_map.end()) {
-            input = InputID(InputType::Axis, (u32)string_to_axis_map.at(t).axis);
+            input = InputID(InputType::Axis, string_to_axis_map.at(t).axis);
         } else if (string_to_cbutton_map.find(t) != string_to_cbutton_map.end()) {
             input = InputID(InputType::Controller, string_to_cbutton_map.at(t));
         } else {
@@ -411,7 +411,7 @@ void ParseInputConfig(const std::string game_id = "") {
 u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_WARNING(Input, "Something went wrong with wheel input parsing!");
-        return (u32)-1;
+        return UINT32_MAX;
     }
     if (event.wheel.y > 0) {
         return SDL_MOUSE_WHEEL_UP;
@@ -422,7 +422,7 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
     } else if (event.wheel.x < 0) {
         return SDL_MOUSE_WHEEL_LEFT;
     }
-    return (u32)-1;
+    return UINT32_MAX;
 }
 
 InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
@@ -432,16 +432,19 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
         return InputEvent(InputType::KeyboardMouse, e.key.key, e.key.down, 0);
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        return InputEvent(InputType::KeyboardMouse, (u32)e.button.button, e.button.down, 0);
+        return InputEvent(InputType::KeyboardMouse, static_cast<u32>(e.button.button),
+                          e.button.down, 0);
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
         return InputEvent(InputType::KeyboardMouse, GetMouseWheelEvent(e),
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        return InputEvent(InputType::Controller, (u32)e.gbutton.button, e.gbutton.down, 0);
+        return InputEvent(InputType::Controller, static_cast<u32>(e.gbutton.button),
+                          e.gbutton.down, 0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        return InputEvent(InputType::Axis, (u32)e.gaxis.axis, true, e.gaxis.value / 256);
+        return InputEvent(InputType::Axis, static_cast<u32>(e.gaxis.axis),
+                          true, e.gaxis.value / 256);
     default:
         return InputEvent();
     }
@@ -570,7 +573,7 @@ void ControllerOutput::FinalizeUpdate() {
 bool UpdatePressedKeys(InputEvent event) {
     // Skip invalid inputs
     InputID input = event.input;
-    if (input.sdl_id == (u32)-1) {
+    if (input.sdl_id == UINT32_MAX) {
         return false;
     }
     if (input.type == InputType::Axis) {
