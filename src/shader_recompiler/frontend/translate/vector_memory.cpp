@@ -531,8 +531,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     // Load first dword of T# and S#. We will use them as the handle that will guide resource
     // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
     // binding index.
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
     const IR::Value inline_sampler =
         ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
                               ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
