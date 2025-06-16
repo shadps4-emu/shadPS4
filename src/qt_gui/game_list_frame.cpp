@@ -54,10 +54,6 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
     this->horizontalHeader()->setSectionResizeMode(10, QHeaderView::Fixed);
     PopulateGameList();
 
-    connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
-        ToggleFavorite(row, column);
-        PopulateGameList(false);
-    });
     connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
     connect(this->verticalScrollBar(), &QScrollBar::valueChanged, this,
             &GameListFrame::RefreshListBackgroundImage);
@@ -94,6 +90,12 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
             auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
             QDesktopServices::openUrl(
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
+        } else if (column == 10) {
+            QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
+            bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+            m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
+            this->setCurrentCell(-1, -1);
+            PopulateGameList(false);
         }
     });
 }
@@ -453,27 +455,6 @@ void GameListFrame::SetFavoriteIcon(int row, int column) {
     if (column > 0) {
         this->horizontalHeader()->setSectionResizeMode(column - 1, QHeaderView::Stretch);
     }
-}
-
-void GameListFrame::ToggleFavorite(int row, int column) {
-    if (column != 10) {
-        return;
-    }
-
-    QWidget* cellWidget = this->cellWidget(row, column);
-    if (!cellWidget) {
-        return;
-    }
-
-    QLabel* label = cellWidget->findChild<QLabel*>("favoriteIcon");
-    if (!label) {
-        return;
-    }
-
-    QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
-    bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
-    m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
-    label->setVisible(!isFavorite);
 }
 
 QString GameListFrame::GetPlayTime(const std::string& serial) {

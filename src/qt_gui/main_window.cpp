@@ -841,13 +841,6 @@ void MainWindow::CreateConnects() {
 }
 
 void MainWindow::StartGame() {
-    // Ignore favorite column
-    if (m_game_list_frame->currentItem()->column() == 10) {
-        m_game_list_frame->ToggleFavorite(m_game_list_frame->currentItem()->row(),
-                                          m_game_list_frame->currentItem()->column());
-        return;
-    }
-
     BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
     int table_mode = m_gui_settings->GetValue(gui::gl_mode).toInt();

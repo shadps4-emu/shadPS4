@@ -38,7 +38,6 @@ public Q_SLOTS:
     void PlayBackgroundMusic(QTableWidgetItem* item);
     void onCurrentCellChanged(int currentRow, int currentColumn, int previousRow,
                               int previousColumn);
-    void ToggleFavorite(int row, int column);
 
 private:
     void SetTableItem(int row, int column, QString itemStr);

@@ -66,13 +66,22 @@ public:
 
         menu.addMenu(openFolderMenu);
 
-        QAction addToFavorites(tr("Add/Remove Favorite"), widget);
+        QString serialStr = QString::fromStdString(m_games[itemID].serial);
+        bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+
+        QAction* toggleFavorite;
+
+        if (isFavorite) {
+            toggleFavorite = new QAction(tr("Remove from Favorites"), widget);
+        } else {
+            toggleFavorite = new QAction(tr("Add to Favorites"), widget);
+        }
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
-        menu.addAction(&addToFavorites);
+        menu.addAction(toggleFavorite);
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
@@ -306,10 +315,9 @@ public:
             }
         }
 
-        if (selected == &addToFavorites) {
-            QString serialStr = QString::fromStdString(m_games[itemID].serial);
-            bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+        if (selected == toggleFavorite) {
             m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
+            widget->setCurrentCell(-1, -1);
         }
 
         if (selected == &openCheats) {
