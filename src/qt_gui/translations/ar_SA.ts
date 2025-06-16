@@ -1153,10 +1153,6 @@
       <translation>تعذّر الحفظ</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>لا يمكن تعيين نفس الزر لأكثر من وظيفة</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>اضغط زرًا</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>إلغاء</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
