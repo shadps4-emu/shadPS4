@@ -1153,10 +1153,6 @@
       <translation>Ruajtja Dështoi</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Asnjë hyrje unike nuk mund të caktohet më shumë se një herë</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Shtyp një tast</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Anulo</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
