@@ -1964,9 +1964,9 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
 
 Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
                                 const Value& address3, const Value& address4,
-                                TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
-                address4);
+                                const Value& inline_sampler, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
+                inline_sampler);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
