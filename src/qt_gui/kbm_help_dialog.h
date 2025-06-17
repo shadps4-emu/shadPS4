@@ -133,6 +133,8 @@ Controller:
             'options', touchpad', 'up', 'down', 'left', 'right'
         Input-only:
             'lpaddle_low', 'lpaddle_high'
+        Output-only:
+            'touchpad_left', 'touchpad_center', 'touchpad_right'
     Axes if you bind them to a button input:
         'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus',
         'axis_right_x_plus', ..., 'axis_right_y_minus',

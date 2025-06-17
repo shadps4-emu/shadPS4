@@ -23,6 +23,10 @@
 #define SDL_MOUSE_WHEEL_LEFT SDL_EVENT_MOUSE_WHEEL + 5
 #define SDL_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 7
 
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT SDL_GAMEPAD_BUTTON_COUNT + 1
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER SDL_GAMEPAD_BUTTON_COUNT + 2
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT SDL_GAMEPAD_BUTTON_COUNT + 3
+
 // idk who already used what where so I just chose a big number
 #define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
 
@@ -98,7 +102,9 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"options", SDL_GAMEPAD_BUTTON_START},
 
     // these are outputs only (touchpad can only be bound to itself)
-    {"touchpad", SDL_GAMEPAD_BUTTON_TOUCHPAD},
+    {"touchpad_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT},
+    {"touchpad_center", SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER},
+    {"touchpad_right", SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT},
     {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 
