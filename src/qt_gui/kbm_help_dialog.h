@@ -43,17 +43,17 @@ private:
     bool* help_open_ptr;
 
     QString quickstart() {
-        return QStringLiteral(R"(
+        return R"(
 The keyboard and controller remapping backend, GUI and documentation have been written by kalaposfos
 
 In this section, you will find information about the project, its features and help on setting up your ideal setup.
 To view the config file's syntax, check out the Syntax tab, for keybind names, visit Normal Keybinds and Special Bindings, and if you are here to view emulator-wide keybinds, you can find it in the FAQ section.
 This project started out because I didn't like the original unchangeable keybinds, but rather than waiting for someone else to do it, I implemented this myself. From the default keybinds, you can clearly tell this was a project built for Bloodborne, but ovbiously you can make adjustments however you like.
-)");
+)";
     }
 
     QString faq() {
-        return QStringLiteral(R"(
+        return R"(
 Q: What are the emulator-wide keybinds?
 A: -F12: Triggers Renderdoc capture
 -F11: Toggles fullscreen
@@ -77,11 +77,11 @@ A: If you're using per-game configs, it's the base from which all new games gene
 
 Q: What does the use Per-game Config checkbox do?
 A: It controls whether the config is loaded from CUSAXXXXX.ini for a game, or from default.ini. This way, if you only want to manage one set of bindings, you can do so, but if you want to use a different setup for every game, that's possible as well.
-)");
+)";
     }
 
     QString syntax() {
-        return QStringLiteral(R"(
+        return R"(
 This is the full list of currently supported mouse, keyboard and controller inputs, and how to use them.
 Emulator-reserved keys: F1 through F12
 
@@ -102,58 +102,62 @@ axis_left_y_minus = w;
 You can make a comment line by putting # as the first character.
 Whitespace doesn't matter, <output>=<input>; is just as valid as <output> = <input>;
 ';' at the ends of lines is also optional.
-)");
+)";
     }
 
+    // Changed this because string literals didn't work well with QString
+    // " is now my enemy
     QString bindings() {
-        return QStringLiteral(R"(
-The following names should be interpreted without the '' around them, and for inputs that have left and right versions, only the left one is shown, but the right can be inferred from that.
-    Example: 'lshift', 'rshift'
+        QString result;
+        result += """The following names should be interpreted without the '' around them, and for inputs that have left and right versions, only the left one is shown, but the right can be inferred from that.\n";
+        result += "Example: 'lshift', 'rshift'\n\n";
 
-Keyboard:
-Alphabet:
-        'a', 'b', ..., 'z'
-Numbers:
-        '0', '1', ..., '9'
-Keypad:
-        'kp 0', kp 1', ..., 'kp 9',
-        'kp .', 'kp ,', 'kp /', 'kp *', 'kp -', 'kp +', 'kp =', 'kp enter'
-Symbols:
-        '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '{', '}', '[', ']', '\', '|',
-        ';', ':', ''', '"', ',', '<', '.', '>', '/', '?'
-Special keys:
-        'escape (text editor only)', 'printscreen', 'scrolllock', 'pausebreak',
-        'backspace', 'insert', 'delete', 'home', 'end', 'pgup', 'pgdown', 'tab',
-        'capslock', 'enter', 'space'
-Arrow keys:
-        'up', 'down', 'left', 'right'
-Modifier keys:
-        'lctrl', 'lshift', 'lalt', 'lwin' = 'lmeta' (same input, different names, so if you are not on Windows and don't like calling this the Windows key, there is an alternative)
+        result += "Keyboard:\n";
+        result += "Alphabet:\n";
+        result += "        'a', 'b', ..., 'z'\n";
+        result += "Numbers:\n";
+        result += "        '0', '1', ..., '9'\n";
+        result += "Keypad:\n";
+        result += "        'kp 0', 'kp 1', ..., 'kp 9',\n";
+        result += "        'kp .', 'kp ,', 'kp /', 'kp *', 'kp -', 'kp +', 'kp =', 'kp enter'\n";
+        result += "Symbols:\n";
+        result += "        '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '{', '}', '[', ']', '\\', '|',\n";
+        result += "        ';', ':', ''', '\"', ',', '<', '.', '>', '/', '?'\n";
+        result += "Special keys:\n";
+        result += "        'escape (text editor only)', 'printscreen', 'scrolllock', 'pausebreak',\n";
+        result += "        'backspace', 'insert', 'delete', 'home', 'end', 'pgup', 'pgdown', 'tab',\n";
+        result += "        'capslock', 'enter', 'space'\n";
+        result += "Arrow keys:\n";
+        result += "        'up', 'down', 'left', 'right'\n";
+        result += "Modifier keys:\n";
+        result += "        'lctrl', 'lshift', 'lalt', 'lwin' = 'lmeta' (same input, different names, so if you are not on Windows and don't like calling this the Windows key, there is an alternative)\n\n";
 
-Mouse:
-        'leftbutton', 'rightbutton', 'middlebutton', 'sidebuttonforward', 'sidebuttonback'
-    The following wheel inputs cannot be bound to axis input, only button:
-        'mousewheelup', 'mousewheeldown', 'mousewheelleft', 'mousewheelright'
+        result += "Mouse:\n";
+        result += "        'leftbutton', 'rightbutton', 'middlebutton', 'sidebuttonforward',\n";
+        result += "        'sidebuttonback'\n";
+        result += "    The following wheel inputs cannot be bound to axis input, only button:\n";
+        result += "        'mousewheelup', 'mousewheeldown', 'mousewheelleft',\n";
+        result += "        'mousewheelright'\n\n";
 
-Controller:
-    The touchpad currently can't be rebound to anything else, but you can bind buttons to it.
-    If you have a controller that has different names for buttons, it will still work, just look up what are the equivalent names for that controller
-    The same left-right rule still applies here.
-    Buttons:
-        'triangle', 'circle', 'cross', 'square', 'l1', 'l3',
-        'options', touchpad', 'up', 'down', 'left', 'right'
-    Axes if you bind them to a button input:
-        'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus',
-        'axis_right_x_plus', ..., 'axis_right_y_minus',
-        'l2'
-    Axes if you bind them to another axis input:
-        'axis_left_x' 'axis_left_y' 'axis_right_x' 'axis_right_y',
-        'l2'
-)");
+        result += "Controller:\n";
+        result += "    The touchpad currently can't be rebound to anything else, but you can bind buttons to it.\n";
+        result += "    If you have a controller that has different names for buttons, it will still work, just look up what are the equivalent names for that controller\n";
+        result += "    The same left-right rule still applies here.\n";
+        result += "    Buttons:\n";
+        result += "        'triangle', 'circle', 'cross', 'square', 'l1', 'l3',\n";
+        result += "        'options', 'touchpad', 'up', 'down', 'left', 'right'\n";
+        result += "    Axes if you bind them to a button input:\n";
+        result += "        'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus',\n";
+        result += "        'axis_right_x_plus', ..., 'axis_right_y_minus',\n";
+        result += "        'l2'\n";
+        result += "    Axes if you bind them to another axis input:\n";
+        result += "        'axis_left_x', 'axis_left_y', 'axis_right_x', 'axis_right_y',\n";
+        result += "        'l2'\n";
+        return result;
     }
     
     QString special() {
-        return QStringLiteral(R"(
+        return R"(
 There are some extra bindings you can put into the config file, that don't correspond to a controller input, but rather something else.
 You can find these here, with detailed comments, examples and suggestions for most of them.
 
@@ -183,6 +187,6 @@ You can find these here, with detailed comments, examples and suggestions for mo
     Values go from 1 to 127 (no deadzone to max deadzone), first is the inner, second is the outer deadzone
     If you only want inner or outer deadzone, set the other to 1 or 127, respectively
     Devices: leftjoystick, rightjoystick, l2, r2
-)");
+)";
     }
 };
