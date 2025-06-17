@@ -90,11 +90,13 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     this->crtColumn = -1;
     QVector<GameInfo> m_games_;
     this->clearContents();
-    SortByFavorite();
-    if (fromSearch)
+    if (fromSearch) {
+        SortByFavorite(&m_games_search);
         m_games_ = m_games_search;
-    else
+    } else {
+        SortByFavorite(&(m_game_info->m_games));
         m_games_ = m_game_info->m_games;
+    }
     m_games_shared = std::make_shared<QVector<GameInfo>>(m_games_);
     icon_size =
         m_gui_settings->GetValue(gui::gg_icon_size).toInt(); // update icon size for resize event.
@@ -251,10 +253,10 @@ void GameGridFrame::SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_g
     label->setObjectName("favoriteIcon");
 }
 
-void GameGridFrame::SortByFavorite() {
-    std::sort(
-        m_game_info->m_games.begin(), m_game_info->m_games.end(),
-        [this](const GameInfo& a, const GameInfo& b) { return this->CompareWithFavorite(a, b); });
+void GameGridFrame::SortByFavorite(QVector<GameInfo>* game_list) {
+    std::sort(game_list->begin(), game_list->end(), [this](const GameInfo& a, const GameInfo& b) {
+        return this->CompareWithFavorite(a, b);
+    });
 }
 
 bool GameGridFrame::CompareWithFavorite(GameInfo a, GameInfo b) {

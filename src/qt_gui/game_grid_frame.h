@@ -49,7 +49,7 @@ public:
                            QWidget* parent = nullptr);
     void PopulateGameGrid(QVector<GameInfo> m_games, bool fromSearch);
     bool IsValidCellSelected();
-    void SortByFavorite();
+    void SortByFavorite(QVector<GameInfo>* game_list);
 
     bool cellClicked = false;
     int icon_size;
