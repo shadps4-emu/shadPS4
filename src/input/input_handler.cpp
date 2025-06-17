@@ -239,7 +239,7 @@ void ParseInputConfig(const std::string game_id = "") {
             line = line.substr(0, comment_pos);
         }
         // Remove trailing semicolon
-        if (!line.empty() && line[line.length() - 1] == ';') {
+        if (!line.empty() && std::distance(line_kpmask, line.end()) != 1 && line[line.length() - 1] == ';') {
             line = line.substr(0, line.length() - 1);
         }
         if (line.empty()) {
@@ -259,9 +259,11 @@ void ParseInputConfig(const std::string game_id = "") {
         std::size_t comma_pos = input_string.find(',');
 
         auto parseInt = [](const std::string& s) -> std::optional<int> {
-            try {
-                return std::stoi(s);
-            } catch (...) {
+            int value = 0;
+            auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+            if (ec == std::errc()) {
+                return value;
+            } else {
                 return std::nullopt;
             }
         };
@@ -413,7 +415,7 @@ void ParseInputConfig(const std::string game_id = "") {
 u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_WARNING(Input, "Something went wrong with wheel input parsing!");
-        return UINT32_MAX;
+        return SDL_INVALID_ID;
     }
     if (event.wheel.y > 0) {
         return SDL_MOUSE_WHEEL_UP;
@@ -424,7 +426,7 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
     } else if (event.wheel.x < 0) {
         return SDL_MOUSE_WHEEL_LEFT;
     }
-    return UINT32_MAX;
+    return SDL_INVALID_ID;
 }
 
 InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
@@ -575,7 +577,7 @@ void ControllerOutput::FinalizeUpdate() {
 bool UpdatePressedKeys(InputEvent event) {
     // Skip invalid inputs
     InputID input = event.input;
-    if (input.sdl_id == UINT32_MAX) {
+    if (input.sdl_id == SDL_INVALID_ID) {
         return false;
     }
     if (input.type == InputType::Axis) {

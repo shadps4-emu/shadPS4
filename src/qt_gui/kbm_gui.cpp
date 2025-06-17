@@ -189,25 +189,24 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
 
     add_mapping(ui->OptionsButton->text(), "options");
     add_mapping(ui->TouchpadButton->text(), "touchpad");
+    
     lines.push_back("");
 
     add_mapping(ui->LStickUpButton->text(), "axis_left_y_minus");
     add_mapping(ui->LStickDownButton->text(), "axis_left_y_plus");
     add_mapping(ui->LStickLeftButton->text(), "axis_left_x_minus");
     add_mapping(ui->LStickRightButton->text(), "axis_left_x_plus");
+    
     lines.push_back("");
 
     add_mapping(ui->RStickUpButton->text(), "axis_right_y_minus");
     add_mapping(ui->RStickDownButton->text(), "axis_right_y_plus");
     add_mapping(ui->RStickLeftButton->text(), "axis_right_x_minus");
     add_mapping(ui->RStickRightButton->text(), "axis_right_x_plus");
+    
     lines.push_back("");
 
-    input_string = ui->MouseJoystickBox->currentText().toStdString();
-    output_string = "mouse_to_joystick";
-    if (input_string != "unmapped")
-        lines.push_back(output_string + " = " + input_string);
-
+    add_mapping(ui->MouseJoystickBox->currentText(), "mouse_to_joystick");
     add_mapping(ui->LHalfButton->text(), "leftjoystick_halfmode");
     add_mapping(ui->RHalfButton->text(), "rightjoystick_halfmode");
 
@@ -226,6 +225,12 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
     while (std::getline(file, line)) {
         lineCount++;
 
+        // remove whitespace from the beginning of the line
+        auto line_kpmask = (line.substr(0, 2) == "kp ") ? line.begin() + 2 : line.begin();
+        line.erase(std::remove_if(line_kpmask, line.end(),
+                                  [](unsigned char c) { return std::isspace(c); }),
+                   line.end());
+        
         if (line.empty()) {
             lines.push_back(line);
             continue;
