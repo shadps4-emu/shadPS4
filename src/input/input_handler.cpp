@@ -223,24 +223,18 @@ void ParseInputConfig(const std::string game_id = "") {
     while (std::getline(file, line)) {
         lineCount++;
 
-        auto line_kpmask = (line.substr(0, 2) == "kp ") ? line.begin() + 2 : line.begin();
-
         // Strip the ; and whitespace
-        line.erase(std::remove_if(line_kpmask, line.end(),
+        line.erase(std::remove_if(line.begin(), line.end(),
                                   [](unsigned char c) { return std::isspace(c); }),
                    line.end());
-
         if (line.empty()) {
             continue;
         }
+
         // Truncate lines starting at #
         std::size_t comment_pos = line.find('#');
         if (comment_pos != std::string::npos) {
             line = line.substr(0, comment_pos);
-        }
-        // Remove trailing semicolon
-        if (!line.empty() && std::distance(line_kpmask, line.end()) != 1 && line[line.length() - 1] == ';') {
-            line = line.substr(0, line.length() - 1);
         }
         if (line.empty()) {
             continue;
@@ -256,14 +250,18 @@ void ParseInputConfig(const std::string game_id = "") {
 
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
-        std::size_t comma_pos = input_string.find(',');
+        // Remove trailing semicolon from input_string
+        if (!input_string.empty() && input_string[input_string.length() - 1] == ';') {
+            if (!(input_string == ";" || input_string == "kp;")) {
+                line = line.substr(0, line.length() - 1);
+            }
+        }
 
+        std::size_t comma_pos = input_string.find(',');
         auto parseInt = [](const std::string& s) -> std::optional<int> {
-            int value = 0;
-            auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
-            if (ec == std::errc()) {
-                return value;
-            } else {
+            try {
+                return std::stoi(s);
+            } catch (...) {
                 return std::nullopt;
             }
         };
@@ -377,7 +375,6 @@ void ParseInputConfig(const std::string game_id = "") {
         BindingConnection connection(InputID(), nullptr);
         auto button_it = string_to_cbutton_map.find(output_string);
         auto axis_it = string_to_axis_map.find(output_string);
-
         if (binding.IsEmpty()) {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
@@ -444,11 +441,11 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        return InputEvent(InputType::Controller, static_cast<u32>(e.gbutton.button),
-                          e.gbutton.down, 0);
+        return InputEvent(InputType::Controller, static_cast<u32>(e.gbutton.button), e.gbutton.down,
+                         0); // clang made me do it
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        return InputEvent(InputType::Axis, static_cast<u32>(e.gaxis.axis),
-                          true, e.gaxis.value / 256);
+        return InputEvent(InputType::Axis, static_cast<u32>(e.gaxis.axis), true,
+                         e.gaxis.value / 256); // this too
     default:
         return InputEvent();
     }

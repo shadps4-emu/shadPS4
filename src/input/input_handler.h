@@ -32,7 +32,6 @@
 
 #define KEY_TOGGLE 0x00200000
 
-
 #define SDL_INVALID_ID UINT32_MAX
 
 namespace Input {
@@ -164,7 +163,7 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"7", SDLK_7},
     {"8", SDLK_8},
     {"9", SDLK_9},
-    
+
     // symbols
     {"`", SDLK_GRAVE},
     {"~", SDLK_TILDE},
@@ -229,7 +228,7 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"down", SDLK_DOWN},
     {"left", SDLK_LEFT},
     {"right", SDLK_RIGHT},
-    
+
     // keypad
     {"kp0", SDLK_KP_0},
     {"kp1", SDLK_KP_1},
@@ -241,14 +240,14 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"kp7", SDLK_KP_7},
     {"kp8", SDLK_KP_8},
     {"kp9", SDLK_KP_9},
-    {"kp .", SDLK_KP_PERIOD},
-    {"kp ,", SDLK_KP_COMMA},
-    {"kp /", SDLK_KP_DIVIDE},
-    {"kp *", SDLK_KP_MULTIPLY},
-    {"kp -", SDLK_KP_MINUS},
-    {"kp +", SDLK_KP_PLUS},
-    {"kp =", SDLK_KP_EQUALS},
-    {"kp enter", SDLK_KP_ENTER},
+    {"kp.", SDLK_KP_PERIOD},
+    {"kp,", SDLK_KP_COMMA},
+    {"kp/", SDLK_KP_DIVIDE},
+    {"kp*", SDLK_KP_MULTIPLY},
+    {"kp-", SDLK_KP_MINUS},
+    {"kp+", SDLK_KP_PLUS},
+    {"kp=", SDLK_KP_EQUALS},
+    {"kpenter", SDLK_KP_ENTER},
 
     // mouse
     {"leftbutton", SDL_BUTTON_LEFT},

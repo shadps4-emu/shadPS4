@@ -168,14 +168,14 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
     add_mapping(ui->CircleButton->text(), "circle");
     add_mapping(ui->TriangleButton->text(), "triangle");
     add_mapping(ui->SquareButton->text(), "square");
-    
+
     lines.push_back("");
 
     add_mapping(ui->DpadUpButton->text(), "pad_up");
     add_mapping(ui->DpadDownButton->text(), "pad_down");
     add_mapping(ui->DpadLeftButton->text(), "pad_left");
     add_mapping(ui->DpadRightButton->text(), "pad_right");
-    
+
     lines.push_back("");
 
     add_mapping(ui->L1Button->text(), "l1");
@@ -184,26 +184,26 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
     add_mapping(ui->R2Button->text(), "r2");
     add_mapping(ui->L3Button->text(), "l3");
     add_mapping(ui->R3Button->text(), "r3");
-    
+
     lines.push_back("");
 
     add_mapping(ui->OptionsButton->text(), "options");
     add_mapping(ui->TouchpadButton->text(), "touchpad");
-    
+
     lines.push_back("");
 
     add_mapping(ui->LStickUpButton->text(), "axis_left_y_minus");
     add_mapping(ui->LStickDownButton->text(), "axis_left_y_plus");
     add_mapping(ui->LStickLeftButton->text(), "axis_left_x_minus");
     add_mapping(ui->LStickRightButton->text(), "axis_left_x_plus");
-    
+
     lines.push_back("");
 
     add_mapping(ui->RStickUpButton->text(), "axis_right_y_minus");
     add_mapping(ui->RStickDownButton->text(), "axis_right_y_plus");
     add_mapping(ui->RStickLeftButton->text(), "axis_right_x_minus");
     add_mapping(ui->RStickRightButton->text(), "axis_right_x_plus");
-    
+
     lines.push_back("");
 
     add_mapping(ui->MouseJoystickBox->currentText(), "mouse_to_joystick");
@@ -225,12 +225,6 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
     while (std::getline(file, line)) {
         lineCount++;
 
-        // remove whitespace from the beginning of the line
-        auto line_kpmask = (line.substr(0, 2) == "kp ") ? line.begin() + 2 : line.begin();
-        line.erase(std::remove_if(line_kpmask, line.end(),
-                                  [](unsigned char c) { return std::isspace(c); }),
-                   line.end());
-        
         if (line.empty()) {
             lines.push_back(line);
             continue;
@@ -293,10 +287,10 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
 }
 
 void KBMSettings::SetDefault() {
-    ui->CrossButton->setText("kp 2");
-    ui->CircleButton->setText("kp 6");
-    ui->TriangleButton->setText("kp 8");
-    ui->SquareButton->setText("kp 4");
+    ui->CrossButton->setText("kp2");
+    ui->CircleButton->setText("kp6");
+    ui->TriangleButton->setText("kp8");
+    ui->SquareButton->setText("kp4");
 
     ui->L1Button->setText("q");
     ui->L2Button->setText("e");
@@ -354,7 +348,6 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
 
         if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) ==
             ControllerInputs.end()) {
-                
             if (output_string == "cross") {
                 ui->CrossButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "circle") {
@@ -532,8 +525,8 @@ void KBMSettings::SetMapping(QString input) {
 }
 
 // Helper lambda to get the modified button text based on the current keyboard modifiers
-auto GetModifiedButton = [](Qt::KeyboardModifiers modifier,
-                            const std::string& m_button, const std::string& n_button) -> QString {
+auto GetModifiedButton = [](Qt::KeyboardModifiers modifier, const std::string& m_button,
+                            const std::string& n_button) -> QString {
     if (QApplication::keyboardModifiers() & modifier) {
         return QString::fromStdString(m_button);
     } else {
@@ -641,36 +634,36 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("z");
                 break;
             case Qt::Key_0:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 0", "0"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp0", "0"));
                 break;
             case Qt::Key_1:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 1", "1"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp1", "1"));
                 break;
             case Qt::Key_2:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 2", "2"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp2", "2"));
                 break;
             case Qt::Key_3:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 3", "3"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp3", "3"));
                 break;
             case Qt::Key_4:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 4", "4"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp4", "4"));
                 break;
             case Qt::Key_5:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 5", "5"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp5", "5"));
                 break;
             case Qt::Key_6:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 6", "6"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp6", "6"));
                 break;
             case Qt::Key_7:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 7", "7"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp7", "7"));
                 break;
             case Qt::Key_8:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 8", "8"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp8", "8"));
                 break;
             case Qt::Key_9:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 9", "9"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp9", "9"));
                 break;
-            
+
             // symbols
             case Qt::Key_Exclam:
                 pressedKeys.insert("!");
@@ -694,7 +687,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("&");
                 break;
             case Qt::Key_Asterisk:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp *", "*"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp*", "*"));
                 break;
             case Qt::Key_ParenLeft:
                 pressedKeys.insert("(");
@@ -703,16 +696,16 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert(")");
                 break;
             case Qt::Key_Minus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp -", "-"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp-", "-"));
                 break;
             case Qt::Key_Underscore:
                 pressedKeys.insert("_");
                 break;
             case Qt::Key_Equal:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp =", "="));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp=", "="));
                 break;
             case Qt::Key_Plus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp +", "+"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp+", "+"));
                 break;
             case Qt::Key_BracketLeft:
                 pressedKeys.insert("[");
@@ -745,24 +738,24 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("\"");
                 break;
             case Qt::Key_Comma:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp ,", ","));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp,", ","));
                 break;    
             case Qt::Key_Less:
                 pressedKeys.insert("<");
                 break;
             case Qt::Key_Period:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp .", "."));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp.", "."));
                 break;
             case Qt::Key_Greater:
                 pressedKeys.insert(">");
                 break;
             case Qt::Key_Slash:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp /", "/"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp/", "/"));
                 break;
             case Qt::Key_Question:
                 pressedKeys.insert("question");
                 break;
-            
+
             // special keys
             case Qt::Key_Print:
                 pressedKeys.insert("printscreen");
@@ -804,7 +797,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("enter");
                 break;
             case Qt::Key_Enter:
-                pressedKeys.insert(GetModifiedButton(Qt::ShiftModifier, "kp enter", "enter"));
+                pressedKeys.insert(GetModifiedButton(Qt::ShiftModifier, "kpenter", "enter"));
                 break;
             case Qt::Key_Shift:
                 if (keyEvent->nativeScanCode() == LSHIFT_KEY) {
@@ -851,12 +844,12 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             case Qt::Key_Right:
                 pressedKeys.insert("right");
                 break;
-            
+
             // cancel mapping
             case Qt::Key_Escape:
                 pressedKeys.insert("unmapped");
                 break;
-            
+
             // default case
             default:
                 break;
@@ -885,7 +878,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             case Qt::XButton2:
                 pressedKeys.insert("sidebuttonforward");
                 break;
-            
+
                 // default case
             default:
                 break;
@@ -920,16 +913,16 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (wheelEvent->angleDelta().x() > 5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
                     // QT changes scrolling to horizontal for all widgets with the alt modifier
-                    pressedKeys.insert(GetModifiedButton(Qt::AltModifier,
-                                                         "mousewheelup", "mousewheelright"));
+                    pressedKeys.insert(
+                        GetModifiedButton(Qt::AltModifier, "mousewheelup", "mousewheelright"));
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
                                              tr("Mousewheel cannot be mapped to stick outputs"));
                 }
             } else if (wheelEvent->angleDelta().x() < -5) {
                 if (std::find(AxisList.begin(), AxisList.end(), MappingButton) == AxisList.end()) {
-                    pressedKeys.insert(GetModifiedButton(Qt::AltModifier,
-                                                         "mousewheeldown", "mousewheelleft"));
+                    pressedKeys.insert(
+                        GetModifiedButton(Qt::AltModifier, "mousewheeldown", "mousewheelleft"));
                 } else {
                     QMessageBox::information(this, tr("Cannot set mapping"),
                                              tr("Mousewheel cannot be mapped to stick outputs"));

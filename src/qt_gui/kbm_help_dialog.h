@@ -155,7 +155,7 @@ Whitespace doesn't matter, <output>=<input>; is just as valid as <output> = <inp
         result += "        'l2'\n";
         return result;
     }
-    
+
     QString special() {
         return R"(
 There are some extra bindings you can put into the config file, that don't correspond to a controller input, but rather something else.
