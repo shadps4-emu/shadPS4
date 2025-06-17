@@ -194,6 +194,10 @@ int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, i
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
     auto* memory = Core::Memory::Instance();
+    if (memory->GetTotalDirectSize() < len) {
+        LOG_ERROR(Kernel_Vmm, "Length is too big!");
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
     const auto ret =
         memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
                           false, directMemoryStart, alignment);
