@@ -354,7 +354,7 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
 
         if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) ==
             ControllerInputs.end()) {
-
+                
             if (output_string == "cross") {
                 ui->CrossButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "circle") {
@@ -414,7 +414,7 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
                 if (comma_pos != std::string::npos) {
                     std::string DOstring = line.substr(equal_pos + 1, comma_pos);
                     float DOffsetValue = std::stof(DOstring) * 100.0;
-                    int DOffsetInt = int(DOffsetValue);
+                    int DOffsetInt = static_cast<int>(DOffsetValue);
                     ui->DeadzoneOffsetSlider->setValue(DOffsetInt);
                     QString LabelValue = QString::number(DOffsetInt / 100.0, 'f', 2);
                     QString LabelString = tr("Deadzone Offset (def 0.50):") + " " + LabelValue;
@@ -424,12 +424,8 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
                     std::size_t comma_pos2 = SMSOstring.find(',');
                     if (comma_pos2 != std::string::npos) {
                         std::string SMstring = SMSOstring.substr(0, comma_pos2);
-                        float SpeedMultValue = std::stof(SMstring) * 10.0;
-                        int SpeedMultInt = int(SpeedMultValue);
-                        if (SpeedMultInt < 1)
-                            SpeedMultInt = 1;
-                        if (SpeedMultInt > 50)
-                            SpeedMultInt = 50;
+                        float SpeedMultValue = std::clamp(std::stof(SMstring) * 10.0f, 1.0f, 50.0f);
+                        int SpeedMultInt = static_cast<int>(SpeedMultValue);
                         ui->SpeedMultiplierSlider->setValue(SpeedMultInt);
                         LabelValue = QString::number(SpeedMultInt / 10.0, 'f', 1);
                         LabelString = tr("Speed Multiplier (def 1.0):") + " " + LabelValue;
@@ -437,7 +433,7 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
 
                         std::string SOstring = SMSOstring.substr(comma_pos2 + 1);
                         float SOffsetValue = std::stof(SOstring) * 1000.0;
-                        int SOffsetInt = int(SOffsetValue);
+                        int SOffsetInt = static_cast<int>(SOffsetValue);
                         ui->SpeedOffsetSlider->setValue(SOffsetInt);
                         LabelValue = QString::number(SOffsetInt / 1000.0, 'f', 3);
                         LabelString = tr("Speed Offset (def 0.125):") + " " + LabelValue;
