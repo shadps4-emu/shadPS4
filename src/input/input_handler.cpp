@@ -223,8 +223,10 @@ void ParseInputConfig(const std::string game_id = "") {
     while (std::getline(file, line)) {
         lineCount++;
 
+        auto line_kpmask = (line.substr(0, 2) == "kp ") ? line.begin() + 2 : line.begin();
+
         // Strip the ; and whitespace
-        line.erase(std::remove_if(line.begin(), line.end(),
+        line.erase(std::remove_if(line_kpmask, line.end(),
                                   [](unsigned char c) { return std::isspace(c); }),
                    line.end());
 

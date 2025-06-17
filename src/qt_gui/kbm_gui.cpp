@@ -144,169 +144,63 @@ void KBMSettings::EnableMappingButtons() {
     }
 }
 
-void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
+void KBMSettings::SaveKBMConfig(bool close_on_save) {
     std::string output_string = "", input_string = "";
     std::vector<std::string> lines, inputs;
 
+    // Comment lines for config file
     lines.push_back("#Feeling lost? Check out the Help section!");
     lines.push_back("");
     lines.push_back("#Keyboard bindings");
     lines.push_back("");
 
-    input_string = ui->CrossButton->text().toStdString();
-    output_string = "cross";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
+    // Lambda to reduce repetitive code for mapping buttons to config lines
+    auto add_mapping = [&](const QString& buttonText, const std::string& output_name) {
+        input_string = buttonText.toStdString();
+        output_string = output_name;
+        lines.push_back(output_string + " = " + input_string);
+        if (input_string != "unmapped") {
+            inputs.push_back(input_string);
+        }
+    };
 
-    input_string = ui->CircleButton->text().toStdString();
-    output_string = "circle";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->TriangleButton->text().toStdString();
-    output_string = "triangle";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->SquareButton->text().toStdString();
-    output_string = "square";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->CrossButton->text(), "cross");
+    add_mapping(ui->CircleButton->text(), "circle");
+    add_mapping(ui->TriangleButton->text(), "triangle");
+    add_mapping(ui->SquareButton->text(), "square");
+    
     lines.push_back("");
 
-    input_string = ui->DpadUpButton->text().toStdString();
-    output_string = "pad_up";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->DpadDownButton->text().toStdString();
-    output_string = "pad_down";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->DpadLeftButton->text().toStdString();
-    output_string = "pad_left";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->DpadRightButton->text().toStdString();
-    output_string = "pad_right";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->DpadUpButton->text(), "pad_up");
+    add_mapping(ui->DpadDownButton->text(), "pad_down");
+    add_mapping(ui->DpadLeftButton->text(), "pad_left");
+    add_mapping(ui->DpadRightButton->text(), "pad_right");
+    
     lines.push_back("");
 
-    input_string = ui->L1Button->text().toStdString();
-    output_string = "l1";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->R1Button->text().toStdString();
-    output_string = "r1";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->L2Button->text().toStdString();
-    output_string = "l2";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->R2Button->text().toStdString();
-    output_string = "r2";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->L3Button->text().toStdString();
-    output_string = "l3";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->R3Button->text().toStdString();
-    output_string = "r3";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->L1Button->text(), "l1");
+    add_mapping(ui->R1Button->text(), "r1");
+    add_mapping(ui->L2Button->text(), "l2");
+    add_mapping(ui->R2Button->text(), "r2");
+    add_mapping(ui->L3Button->text(), "l3");
+    add_mapping(ui->R3Button->text(), "r3");
+    
     lines.push_back("");
 
-    input_string = ui->OptionsButton->text().toStdString();
-    output_string = "options";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->TouchpadButton->text().toStdString();
-    output_string = "touchpad";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->OptionsButton->text(), "options");
+    add_mapping(ui->TouchpadButton->text(), "touchpad");
     lines.push_back("");
 
-    input_string = ui->LStickUpButton->text().toStdString();
-    output_string = "axis_left_y_minus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->LStickDownButton->text().toStdString();
-    output_string = "axis_left_y_plus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->LStickLeftButton->text().toStdString();
-    output_string = "axis_left_x_minus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->LStickRightButton->text().toStdString();
-    output_string = "axis_left_x_plus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->LStickUpButton->text(), "axis_left_y_minus");
+    add_mapping(ui->LStickDownButton->text(), "axis_left_y_plus");
+    add_mapping(ui->LStickLeftButton->text(), "axis_left_x_minus");
+    add_mapping(ui->LStickRightButton->text(), "axis_left_x_plus");
     lines.push_back("");
 
-    input_string = ui->RStickUpButton->text().toStdString();
-    output_string = "axis_right_y_minus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->RStickDownButton->text().toStdString();
-    output_string = "axis_right_y_plus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->RStickLeftButton->text().toStdString();
-    output_string = "axis_right_x_minus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->RStickRightButton->text().toStdString();
-    output_string = "axis_right_x_plus";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
+    add_mapping(ui->RStickUpButton->text(), "axis_right_y_minus");
+    add_mapping(ui->RStickDownButton->text(), "axis_right_y_plus");
+    add_mapping(ui->RStickLeftButton->text(), "axis_right_x_minus");
+    add_mapping(ui->RStickRightButton->text(), "axis_right_x_plus");
     lines.push_back("");
 
     input_string = ui->MouseJoystickBox->currentText().toStdString();
@@ -314,17 +208,8 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     if (input_string != "unmapped")
         lines.push_back(output_string + " = " + input_string);
 
-    input_string = ui->LHalfButton->text().toStdString();
-    output_string = "leftjoystick_halfmode";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
-
-    input_string = ui->RHalfButton->text().toStdString();
-    output_string = "rightjoystick_halfmode";
-    lines.push_back(output_string + " = " + input_string);
-    if (input_string != "unmapped")
-        inputs.push_back(input_string);
+    add_mapping(ui->LHalfButton->text(), "leftjoystick_halfmode");
+    add_mapping(ui->RHalfButton->text(), "rightjoystick_halfmode");
 
     std::string DOString = std::format("{:.2f}", (ui->DeadzoneOffsetSlider->value() / 100.f));
     std::string SMString = std::format("{:.1f}", (ui->SpeedMultiplierSlider->value() / 10.f));
@@ -398,15 +283,15 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
 
-    if (CloseOnSave)
+    if (close_on_save)
         QWidget::close();
 }
 
 void KBMSettings::SetDefault() {
-    ui->CrossButton->setText("kp2");
-    ui->CircleButton->setText("kp6");
-    ui->TriangleButton->setText("kp8");
-    ui->SquareButton->setText("kp4");
+    ui->CrossButton->setText("kp 2");
+    ui->CircleButton->setText("kp 6");
+    ui->TriangleButton->setText("kp 8");
+    ui->SquareButton->setText("kp 4");
 
     ui->L1Button->setText("q");
     ui->L2Button->setText("e");
@@ -645,6 +530,16 @@ void KBMSettings::SetMapping(QString input) {
     MappingCompleted = true;
 }
 
+// Helper lambda to get the modified button text based on the current keyboard modifiers
+auto GetModifiedButton = [](Qt::KeyboardModifiers modifier,
+                            const std::string& m_button, const std::string& n_button) -> QString {
+    if (QApplication::keyboardModifiers() & modifier) {
+        return QString::fromStdString(m_button);
+    } else {
+        return QString::fromStdString(n_button);
+    }
+};
+
 bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::Close) {
         if (HelpWindowOpen) {
@@ -745,34 +640,34 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("z");
                 break;
             case Qt::Key_0:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp0", "0"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 0", "0"));
                 break;
             case Qt::Key_1:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp1", "1"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 1", "1"));
                 break;
             case Qt::Key_2:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp2", "2"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 2", "2"));
                 break;
             case Qt::Key_3:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp3", "3"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 3", "3"));
                 break;
             case Qt::Key_4:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp4", "4"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 4", "4"));
                 break;
             case Qt::Key_5:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp5", "5"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 5", "5"));
                 break;
             case Qt::Key_6:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp6", "6"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 6", "6"));
                 break;
             case Qt::Key_7:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp7", "7"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 7", "7"));
                 break;
             case Qt::Key_8:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp8", "8"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 8", "8"));
                 break;
             case Qt::Key_9:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp9", "9"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp 9", "9"));
                 break;
             
             // symbols
@@ -869,13 +764,13 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             
             // special keys
             case Qt::Key_Print:
-                pressedKeys.insert("print");
+                pressedKeys.insert("printscreen");
                 break;
             case Qt::Key_ScrollLock:
                 pressedKeys.insert("scrolllock");
                 break;
             case Qt::Key_Pause:
-                pressedKeys.insert("pause");
+                pressedKeys.insert("pausebreak");
                 break;
             case Qt::Key_Backspace:
                 pressedKeys.insert("backspace");
@@ -1044,24 +939,5 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
 
     return QDialog::eventFilter(obj, event);
 }
-
-// m_button is modified button name, n_button is normal button name
-QString KBMSettings::GetModifiedButton(Qt::KeyboardModifiers modifier,
-                                       std::string m_button, std::string n_button) {
-    if (QApplication::keyboardModifiers() & modifier) {
-        return QString::fromStdString(m_button);
-    } else {
-        return QString::fromStdString(n_button);
-    }
-}
-
-// // Lambda version of GetModifiedButton
-// auto GetModifiedButton = [](Qt::KeyboardModifiers modifier, const std::string& m_button, const std::string& n_button) -> QString {
-//     if (QApplication::keyboardModifiers() & modifier) {
-//         return QString::fromStdString(m_button);
-//     } else {
-//         return QString::fromStdString(n_button);
-//     }
-// };
 
 KBMSettings::~KBMSettings() {}

@@ -38,8 +38,6 @@ private:
     std::shared_ptr<GameInfoClass> m_game_info;
 
     bool eventFilter(QObject* obj, QEvent* event) override;
-    QString GetModifiedButton(Qt::KeyboardModifiers modifier,
-                              std::string m_button, std::string n_button);
     void ButtonConnects();
     void SetUIValuestoMappings(std::string config_id);
     void GetGameTitle();

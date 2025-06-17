@@ -4,6 +4,7 @@
 #include "kbm_help_dialog.h"
 
 #include <QApplication>
+//#include <QString>
 #include <QDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
