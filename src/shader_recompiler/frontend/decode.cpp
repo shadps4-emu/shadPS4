@@ -37,140 +37,144 @@ bool IsVop3BEncoding(Opcode opcode) {
            opcode == Opcode::V_MAD_U64_U32 || opcode == Opcode::V_MAD_I64_I32;
 }
 
-inline void GcnDecodeContext::decodeInstruction32(void (GcnDecodeContext::*decodeFunc)(u32),
-                                                  OpcodeMap opcodeMap, GcnCodeSlice& code) {
-    u32 instruction = code.readu32();
-    // Decode instruction using the provided decode function.
-    (this->*decodeFunc)(instruction);
-    // Update instruction meta info.
-    updateInstructionMeta(opcodeMap, sizeof(uint32_t));
-    // Detect literal constant. Only 32 bits instructions may have literal constant.
-    // Note: Literal constant decode must be performed after meta info updated.
-    decodeLiteralConstant(opcodeMap, code);
-}
-
-inline void GcnDecodeContext::decodeInstruction64(void (GcnDecodeContext::*decodeFunc)(uint64_t),
-                                                  OpcodeMap opcodeMap, GcnCodeSlice& code) {
-    uint64_t instruction = code.readu64();
-    // Decode instruction using the provided decode function.
-    (this->*decodeFunc)(instruction);
-    // Update instruction meta info.
-    updateInstructionMeta(opcodeMap, sizeof(uint64_t));
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask9bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_9bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::SOP1:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSOP1, OpcodeMap::OP_MAP_SOP1, code);
-        break;
-    case InstEncoding::SOPP:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSOPP, OpcodeMap::OP_MAP_SOPP, code);
-        break;
-    case InstEncoding::SOPC:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSOPC, OpcodeMap::OP_MAP_SOPC, code);
-        break;
-    default:
-        decodeInstructionFromMask7bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask7bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_7bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::VOP1:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionVOP1, OpcodeMap::OP_MAP_VOP1, code);
-        break;
-    case InstEncoding::VOPC:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionVOPC, OpcodeMap::OP_MAP_VOPC, code);
-        break;
-    default:
-        decodeInstructionFromMask6bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask6bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_6bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::VINTRP:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionVINTRP, OpcodeMap::OP_MAP_VINTRP,
-                            code);
-        break;
-    case InstEncoding::VOP3:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionVOP3, OpcodeMap::OP_MAP_VOP3, code);
-        break;
-    case InstEncoding::EXP:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionEXP, OpcodeMap::OP_MAP_EXP, code);
-        break;
-    case InstEncoding::DS:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionDS, OpcodeMap::OP_MAP_DS, code);
-        break;
-    case InstEncoding::MUBUF:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionMUBUF, OpcodeMap::OP_MAP_MUBUF,
-                            code);
-        break;
-    case InstEncoding::MTBUF:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionMTBUF, OpcodeMap::OP_MAP_MTBUF,
-                            code);
-        break;
-    case InstEncoding::MIMG:
-        decodeInstruction64(&GcnDecodeContext::decodeInstructionMIMG, OpcodeMap::OP_MAP_MIMG, code);
-        break;
-    default:
-        decodeInstructionFromMask5bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask5bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_5bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::SMRD:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSMRD, OpcodeMap::OP_MAP_SMRD, code);
-        break;
-    default:
-        decodeInstructionFromMask4bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask4bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_4bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::SOPK:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSOPK, OpcodeMap::OP_MAP_SOPK, code);
-        break;
-    default:
-        decodeInstructionFromMask2bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask2bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_2bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::SOP2:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionSOP2, OpcodeMap::OP_MAP_SOP2, code);
-        break;
-    default:
-        decodeInstructionFromMask1bit(code);
-    }
-}
-
-inline void GcnDecodeContext::decodeInstructionFromMask1bit(GcnCodeSlice& code) {
-    m_instruction.encoding = static_cast<InstEncoding>(code.at(0) & (u32)EncodingMask::MASK_1bit);
-    switch (m_instruction.encoding) {
-    case InstEncoding::VOP2:
-        decodeInstruction32(&GcnDecodeContext::decodeInstructionVOP2, OpcodeMap::OP_MAP_VOP2, code);
-        break;
-    default:
-        UNREACHABLE();
-        ASSERT_MSG("illegal encoding");
-    }
+inline static InstEncoding castToken(u32 token, EncodingMask mask) {
+    return static_cast<InstEncoding>(token & static_cast<u32>(mask));
 }
 
 GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
+    const u32 token = code.at(0);
+
     // Clear the instruction
     m_instruction = GcnInst();
 
-    decodeInstructionFromMask9bit(code);
+    OpcodeMap opcodeMap;
+    bool is64bit = false;
+
+    m_instruction.encoding = castToken(token, EncodingMask::MASK_7bit);
+    switch (m_instruction.encoding) {
+    case InstEncoding::VOP1:
+        opcodeMap = OpcodeMap::OP_MAP_VOP1;
+        decodeInstructionVOP1(code.readu32());
+        break;
+    case InstEncoding::VOPC:
+        opcodeMap = OpcodeMap::OP_MAP_VOPC;
+        decodeInstructionVOPC(code.readu32());
+        break;
+    default:
+
+        m_instruction.encoding = castToken(token, EncodingMask::MASK_1bit);
+        switch (m_instruction.encoding) {
+        case InstEncoding::VOP2:
+            opcodeMap = OpcodeMap::OP_MAP_VOP2;
+            decodeInstructionVOP2(code.readu32());
+            break;
+        default:
+
+            m_instruction.encoding = castToken(token, EncodingMask::MASK_9bit);
+            switch (m_instruction.encoding) {
+            case InstEncoding::SOP1:
+                opcodeMap = OpcodeMap::OP_MAP_SOP1;
+                decodeInstructionSOP1(code.readu32());
+                break;
+            case InstEncoding::SOPP:
+                opcodeMap = OpcodeMap::OP_MAP_SOPP;
+                decodeInstructionSOPP(code.readu32());
+                break;
+            case InstEncoding::SOPC:
+                opcodeMap = OpcodeMap::OP_MAP_SOPC;
+                decodeInstructionSOPC(code.readu32());
+                break;
+            default:
+
+                m_instruction.encoding = castToken(token, EncodingMask::MASK_6bit);
+                switch (m_instruction.encoding) {
+                case InstEncoding::VINTRP:
+                    opcodeMap = OpcodeMap::OP_MAP_VINTRP;
+                    decodeInstructionVINTRP(code.readu32());
+                    break;
+                case InstEncoding::VOP3:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_VOP3;
+                    decodeInstructionVOP3(code.readu64()); // VOP3 is 64 bits instruction
+                    break;
+                case InstEncoding::EXP:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_EXP;
+                    decodeInstructionEXP(code.readu64()); // EXP is 64 bits instruction
+                    break;
+                case InstEncoding::DS:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_DS;
+                    decodeInstructionDS(code.readu64()); // DS is 64 bits instruction
+                    break;
+                case InstEncoding::MUBUF:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_MUBUF;
+                    decodeInstructionMUBUF(code.readu64()); // MUBUF is 64 bits instruction
+                    break;
+                case InstEncoding::MTBUF:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_MTBUF;
+                    decodeInstructionMTBUF(code.readu64()); // MTBUF is 64 bits instruction
+                    break;
+                case InstEncoding::MIMG:
+                    is64bit = true;
+                    opcodeMap = OpcodeMap::OP_MAP_MIMG;
+                    decodeInstructionMIMG(code.readu64()); // MIMG is 64 bits instruction
+                    break;
+                default:
+
+                    m_instruction.encoding = castToken(token, EncodingMask::MASK_5bit);
+                    switch (m_instruction.encoding) {
+                    case InstEncoding::SMRD:
+                        opcodeMap = OpcodeMap::OP_MAP_SMRD;
+                        decodeInstructionSMRD(code.readu32());
+                        break;
+                    default:
+
+                        m_instruction.encoding = castToken(token, EncodingMask::MASK_4bit);
+                        switch (m_instruction.encoding) {
+                        case InstEncoding::SOPK:
+                            opcodeMap = OpcodeMap::OP_MAP_SOPK;
+                            decodeInstructionSOPK(code.readu32());
+                            break;
+                        default:
+
+                            m_instruction.encoding = castToken(token, EncodingMask::MASK_2bit);
+                            switch (m_instruction.encoding) {
+                            case InstEncoding::SOP2:
+                                opcodeMap = OpcodeMap::OP_MAP_SOP2;
+                                decodeInstructionSOP2(code.readu32());
+                                break;
+                            default:
+
+                                UNREACHABLE();
+                                ASSERT_MSG("illegal encoding");
+
+                            } // switch mask_2bit
+
+                        } // switch mask_4bit
+
+                    } // switch mask_5bit
+
+                } // switch mask_6bit
+
+            } // switch mask_9bit
+
+        } // switch mask_1bit
+
+    } // switch mask_7bit
+
+    if (is64bit) {
+        // Update instruction meta info.
+        updateInstructionMeta(opcodeMap, sizeof(uint64_t));
+    } else {
+        // Update instruction meta info.
+        updateInstructionMeta(opcodeMap, sizeof(uint32_t));
+        // Detect literal constant. Only 32 bits instructions may have literal constant.
+        // Note: Literal constant decode must be performed after meta info updated.
+        decodeLiteralConstant(opcodeMap, code);
+    }
 
     repairOperandType();
     return m_instruction;

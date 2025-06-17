@@ -59,19 +59,6 @@ private:
 
     OperandField getOperandField(uint32_t code);
 
-    void decodeInstruction32(void (GcnDecodeContext::*decodeFunc)(u32), OpcodeMap opcodeMap,
-                             GcnCodeSlice& code);
-    void decodeInstruction64(void (GcnDecodeContext::*decodeFunc)(uint64_t), OpcodeMap opcodeMap,
-                             GcnCodeSlice& code);
-
-    void decodeInstructionFromMask9bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask7bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask6bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask5bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask4bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask2bit(GcnCodeSlice& code);
-    void decodeInstructionFromMask1bit(GcnCodeSlice& code);
-
     void decodeLiteralConstant(OpcodeMap opcodeMap, GcnCodeSlice& code);
 
     // 32 bits encodings
