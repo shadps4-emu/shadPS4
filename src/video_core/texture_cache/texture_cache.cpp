@@ -22,7 +22,7 @@ static constexpr u64 NumFramesBeforeRemoval = 32;
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
-      tile_manager{instance, scheduler} {
+      blit_helper{instance, scheduler}, tile_manager{instance, scheduler} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
@@ -177,10 +177,20 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
         auto& new_image = slot_images[new_image_id];
         new_image.usage = cache_image.usage;
         new_image.flags &= ~ImageFlagBits::Dirty;
+        // When creating a depth buffer through overlap resolution don't clear it on first use.
+        new_image.info.meta_info.htile_clear_mask = 0;
 
-        // Perform depth<->color copy using the intermediate copy buffer.
-        const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
-        new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+        if (cache_image.info.num_samples == 1 && new_info.num_samples == 1) {
+            // Perform depth<->color copy using the intermediate copy buffer.
+            const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+            new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+        } else if (cache_image.info.num_samples == 1 && new_info.IsDepthStencil() &&
+                   new_info.num_samples > 1) {
+            // Perform a rendering pass to transfer the channels of source as samples in dest.
+            blit_helper.BlitColorToMsDepth(cache_image, new_image);
+        } else {
+            LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
+        }
 
         // Free the cache image.
         FreeImage(cache_image_id);
@@ -202,7 +212,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
         if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
-            image_info.num_bits != tex_cache_image.info.num_bits) {
+            image_info.num_bits * image_info.num_samples !=
+                tex_cache_image.info.num_bits * tex_cache_image.info.num_samples) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -470,8 +481,10 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     // Register meta data for this depth buffer
     if (!(image.flags & ImageFlagBits::MetaRegistered)) {
         if (desc.info.meta_info.htile_addr) {
-            surface_metas.emplace(desc.info.meta_info.htile_addr,
-                                  MetaDataInfo{.type = MetaDataInfo::Type::HTile});
+            surface_metas.emplace(
+                desc.info.meta_info.htile_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::HTile,
+                             .clear_mask = image.info.meta_info.htile_clear_mask});
             image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
             image.flags |= ImageFlagBits::MetaRegistered;
         }

@@ -11,11 +11,11 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <translation>shadPS4 és un emulador experimental de codi obert de la PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>Aquest programari no s'hauria de fer servir per jugar jocs que no has obtingut legalment.</translation>
     </message>
   </context>
   <context>
@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation>Els trucs i les correccions són experimentals.\nFes-les servir amb precaució.\n\nDescarrega trucs individualment seleccionant el repositori i clicant al botó de baixada.\nA la pestanya de correccions, et pots descarregar totes les correccions de cop, escull quines vols fer servir i desa la selecció.\n\nCom que no desenvolupem ni els trucs ni les correccions,\nhas d'informar de qualsevol problema als seus autors corresponents.\n\nHas creat un nou truc? Visita:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -66,11 +66,11 @@
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
+      <translation>Pots suprimir trucs que no vols abans de descarregar-los.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
+      <translation>Estàs segur que vols esborrar el fitxer seleccionat?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
@@ -102,19 +102,19 @@
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation type="unfinished">Unable to open files.json for reading.</translation>
+      <translation>Error en obrir fitxers .json per modificar-los.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation type="unfinished">No patch file found for the current serial.</translation>
+      <translation>No s'ha trobat fitxer de correccions pel número de sèrie actual.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation type="unfinished">Unable to open the file for reading.</translation>
+      <translation>No es pot obrir el fitxer per llegir-lo.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation type="unfinished">Unable to open the file for writing.</translation>
+      <translation>No es pot obrir el fitxer per modificar-lo.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
@@ -126,7 +126,7 @@
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation type="unfinished">Options saved successfully.</translation>
+      <translation>Opcions desades correctament.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
@@ -134,7 +134,7 @@
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation type="unfinished">The selected source is invalid.</translation>
+      <translation>La font seleccionada no és vàlida.</translation>
     </message>
     <message>
       <source>File Exists</source>
@@ -142,7 +142,7 @@
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
+      <translation>Aquest fitxer ja existeix. Estàs segur que el vols reemplaçar?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
@@ -150,7 +150,7 @@
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation type="unfinished">Failed to download file:</translation>
+      <translation>Error en descarregar el fitxer:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
@@ -158,15 +158,15 @@
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
+      <translation>No s'han trobat trucs per aquest joc en aquesta versió del repositori seleccionat, prova-ho amb un altre repositori o amb una versió diferent del joc.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation type="unfinished">Cheats Downloaded Successfully</translation>
+      <translation>S'han descarregat els trucs correctament</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
+      <translation>Has descarregat correctament els trucs per aquesta versió del joc des d'aquest repositori. Pots provar de descarregar des d'un altre repositori; si està disponible, també pots seleccionar el fitxer des d'una llista.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -182,27 +182,27 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
+      <translation>Has descarregat les correccions correctament! Totes les correccions disponibles per tots els jocs s'han descarregat, no cal descarregar-les individualment com passa amb els trucs. Si una correcció no apareix, pot ser que no existeixi per aquesta versió o per aquest número de sèrie del joc.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
+      <translation>Error en analitzar les dades JSON del HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation type="unfinished">Failed to retrieve HTML page.</translation>
+      <translation>Error en recuperar la pàgina HTML.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation type="unfinished">The game is in version: %1</translation>
+      <translation>La versió del joc és: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
+      <translation>La correcció descarregada només funció amb la versió: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation type="unfinished">You may need to update your game.</translation>
+      <translation>Cal actualitzar el joc.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -218,7 +218,7 @@
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation type="unfinished">Failed to open files.json for writing</translation>
+      <translation>Error en obrir fitxers .json per modificar-los</translation>
     </message>
     <message>
       <source>Author: </source>
@@ -226,11 +226,11 @@
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation type="unfinished">Directory does not exist:</translation>
+      <translation>Aquesta carpeta no existeix:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation type="unfinished">Failed to open files.json for reading.</translation>
+      <translation>Error en obrir fitxers .json per llegir-los.</translation>
     </message>
     <message>
       <source>Name:</source>
@@ -238,7 +238,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
+      <translation>No es poden aplicar trucs abans que s'iniciï el joc</translation>
     </message>
     <message>
       <source>Close</source>
@@ -261,11 +261,11 @@
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
+      <translation>L'actualització automàtica permet fer 60 comprovacions cada hora.\nTu has arribat a aquest límit. Torna a intentar-ho més tard.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation type="unfinished">Failed to parse update information.</translation>
+      <translation>Error en analitzar la informació de l'actualització.</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
@@ -277,11 +277,11 @@
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation type="unfinished">No download URL found for the specified asset.</translation>
+      <translation>No s'ha trobat la direcció web de descàrrega.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation type="unfinished">Your version is already up to date!</translation>
+      <translation>La teva versió ja és la més actualitzada!</translation>
     </message>
     <message>
       <source>Update Available</source>
@@ -309,7 +309,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation type="unfinished">Check for Updates at Startup</translation>
+      <translation>Comprova les actualitzacions a l'inici</translation>
     </message>
     <message>
       <source>Update</source>
@@ -329,7 +329,7 @@
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
+      <translation>S'ha produït un error de xarxa en intentar connectar a l'adreça web</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -337,11 +337,11 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
+      <translation>S'ha baixat l'actualització, clica OK per instal·lar-la.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation type="unfinished">Failed to save the update file at</translation>
+      <translation>Error en desar el fitxer d'actualització a</translation>
     </message>
     <message>
       <source>Starting Update...</source>
@@ -349,14 +349,14 @@
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation type="unfinished">Failed to create the update script file</translation>
+      <translation>Error en crear el fitxer de script d'actualització</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation type="unfinished">Fetching compatibility data, please wait</translation>
+      <translation>Obtenint dades de compatibilitat, espera si us plau</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -372,11 +372,11 @@
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
+      <translation>No s'ha pogut actualitzar les dades de compatibilitat! Prova-ho més tard.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
+      <translation>No es pot obrir el fitxer compatibility_data.json per modificar-lo.</translation>
     </message>
     <message>
       <source>Unknown</source>
@@ -431,7 +431,7 @@
     </message>
     <message>
       <source>Left Stick Deadzone (def:2 max:127)</source>
-      <translation type="unfinished">Left Stick Deadzone (def:2 max:127)</translation>
+      <translation>Zona morta de la palanca esquerra (per defecte:2 màxim:127)</translation>
     </message>
     <message>
       <source>Left Deadzone</source>
@@ -507,7 +507,7 @@
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
-      <translation type="unfinished">Right Stick Deadzone (def:2, max:127)</translation>
+      <translation>Zona morta de la palanca dreta (per defecte:2 màxim:127)</translation>
     </message>
     <message>
       <source>Right Deadzone</source>
@@ -535,7 +535,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>Canvia el color de la barra de llum</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -547,7 +547,7 @@
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
-      <translation type="unfinished">Cannot bind axis values more than once</translation>
+      <translation>No es pot vincular els valors de l'eix més d'una vegada</translation>
     </message>
     <message>
       <source>Save</source>
@@ -570,7 +570,7 @@
     <name>EditorDialog</name>
     <message>
       <source>Edit Keyboard + Mouse and Controller input bindings</source>
-      <translation type="unfinished">Edit Keyboard + Mouse and Controller input bindings</translation>
+      <translation>Edita les assignacions del teclat, ratolí i controlador</translation>
     </message>
     <message>
       <source>Use Per-Game configs</source>
@@ -582,11 +582,11 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation type="unfinished">Could not open the file for reading</translation>
+      <translation>No es pot obrir el fitxer per llegir-lo</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
-      <translation type="unfinished">Could not open the file for writing</translation>
+      <translation>No es pot obrir el fitxer per modificar-lo</translation>
     </message>
     <message>
       <source>Save Changes</source>
@@ -594,7 +594,7 @@
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation type="unfinished">Do you want to save changes?</translation>
+      <translation>Voleu desar els canvis?</translation>
     </message>
     <message>
       <source>Help</source>
@@ -602,11 +602,11 @@
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
-      <translation type="unfinished">Do you want to reset your custom default config to the original default config?</translation>
+      <translation>Vols reiniciar la configuració personalitzada a la configuració original per defecte?</translation>
     </message>
     <message>
       <source>Do you want to reset this config to your custom default config?</source>
-      <translation type="unfinished">Do you want to reset this config to your custom default config?</translation>
+      <translation>Vols reiniciar aquesta configuració a la configuració personalitzada per defecte?</translation>
     </message>
     <message>
       <source>Reset to Default</source>
@@ -624,7 +624,7 @@
     <name>GameInfoClass</name>
     <message>
       <source>Loading game list, please wait :3</source>
-      <translation type="unfinished">Loading game list, please wait :3</translation>
+      <translation>Carregant la llista de jocs, espera si us plau :3</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -639,11 +639,11 @@
     <name>GameInstallDialog</name>
     <message>
       <source>shadPS4 - Choose directory</source>
-      <translation type="unfinished">shadPS4 - Choose directory</translation>
+      <translation>shadPS4 - Selecciona carpeta</translation>
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation type="unfinished">Directory to install games</translation>
+      <translation>Carpeta per instal·lar jocs</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -655,7 +655,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation type="unfinished">Directory to install DLC</translation>
+      <translation>Carpeta per instal·lar DLC</translation>
     </message>
   </context>
   <context>
@@ -718,31 +718,31 @@
     </message>
     <message>
       <source>Compatibility is untested</source>
-      <translation type="unfinished">Compatibility is untested</translation>
+      <translation>No s'ha provat la compatibilitat</translation>
     </message>
     <message>
       <source>Game does not initialize properly / crashes the emulator</source>
-      <translation type="unfinished">Game does not initialize properly / crashes the emulator</translation>
+      <translation>El joc no s'inicialitza correctament / l'emulador fa fallida</translation>
     </message>
     <message>
       <source>Game boots, but only displays a blank screen</source>
-      <translation type="unfinished">Game boots, but only displays a blank screen</translation>
+      <translation>El joc s'inicia, però es queda en blanc</translation>
     </message>
     <message>
       <source>Game displays an image but does not go past the menu</source>
-      <translation type="unfinished">Game displays an image but does not go past the menu</translation>
+      <translation>El joc mostra imatges, però no es pot anar més enllà dels menús</translation>
     </message>
     <message>
       <source>Game has game-breaking glitches or unplayable performance</source>
-      <translation type="unfinished">Game has game-breaking glitches or unplayable performance</translation>
+      <translation>El joc té errors greus o un rendiment que no el fa jugable</translation>
     </message>
     <message>
       <source>Game can be completed with playable performance and no major glitches</source>
-      <translation type="unfinished">Game can be completed with playable performance and no major glitches</translation>
+      <translation>El joc pot ser completat amb un rendiment jugable i amb pocs errors greus</translation>
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation type="unfinished">Click to see details on github</translation>
+      <translation>Clica per veure els detalls a github</translation>
     </message>
     <message>
       <source>Last updated</source>
@@ -872,7 +872,7 @@
     </message>
     <message>
       <source>Shortcut created successfully!</source>
-      <translation type="unfinished">Shortcut created successfully!</translation>
+      <translation>S'ha creat la drecera correctament!</translation>
     </message>
     <message>
       <source>Error</source>
@@ -880,7 +880,7 @@
     </message>
     <message>
       <source>Error creating shortcut!</source>
-      <translation type="unfinished">Error creating shortcut!</translation>
+      <translation>Error en crear la drecera!</translation>
     </message>
     <message>
       <source>Game</source>
@@ -888,7 +888,7 @@
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>Aquest joc no té una actualització per esborrar!</translation>
     </message>
     <message>
       <source>Update</source>
@@ -896,7 +896,7 @@
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>Aquest joc no té un DLC per esborrar!</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -908,7 +908,7 @@
     </message>
     <message>
       <source>Are you sure you want to delete %1&apos;s %2 directory?</source>
-      <translation type="unfinished">Are you sure you want to delete %1&apos;s %2 directory?</translation>
+      <translation>Estàs segur que vols eliminar la carpeta %1 de %2?</translation>
     </message>
     <message>
       <source>Open Update Folder</source>
@@ -920,23 +920,23 @@
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>Aquest joc no té carpeta d'actualització per obrir!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>No s'ha trobat fitxer de registre per aquest joc!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>Error en convertir la icona.</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
-      <translation type="unfinished">This game has no save data to delete!</translation>
+      <translation>Aquest joc no té dades desades per esborrar!</translation>
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>Aquest joc no té trofeus desats per esborrar!</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1010,7 +1010,7 @@
     </message>
     <message>
       <source>hold to move left stick at half-speed</source>
-      <translation type="unfinished">hold to move left stick at half-speed</translation>
+      <translation>manté per moure la palanca esquerra a mitja velocitat</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -1066,7 +1066,7 @@
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
+      <translation>Pressiona F7 durant el joc per activar</translation>
     </message>
     <message>
       <source>R3</source>
@@ -1078,11 +1078,11 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation type="unfinished">Mouse Movement Parameters</translation>
+      <translation>Paràmetres de moviment del ratolí</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation type="unfinished">note: click Help Button/Special Keybindings for more information</translation>
+      <translation>nota: clica al botó Ajuda/Assignació de tecles especials per més informació</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1110,7 +1110,7 @@
     </message>
     <message>
       <source>hold to move right stick at half-speed</source>
-      <translation type="unfinished">hold to move right stick at half-speed</translation>
+      <translation>manté per moure la palanca dreta a mitja velocitat</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -1118,19 +1118,19 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation type="unfinished">Speed Offset (def 0.125):</translation>
+      <translation>Compensació de velocitat (0,125 per defecte):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation type="unfinished">Copy from Common Config</translation>
+      <translation>Copia de la configuració estàndard</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation type="unfinished">Deadzone Offset (def 0.50):</translation>
+      <translation>Desplaçament de zona morta (0,50 per defecte):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation type="unfinished">Speed Multiplier (def 1.0):</translation>
+      <translation>Multiplicador de velocitat (1,0 per defecte):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
@@ -1138,23 +1138,19 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation type="unfinished">This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</translation>
+      <translation>Aquest botó copia les assignacions de la configuració comuna al perfil seleccionat, i no es pot utilitzar si has seleccionat el perfil de la configuració comuna.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation type="unfinished">Copy values from Common Config</translation>
+      <translation>Copia els valors de la configuració estàndard</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation type="unfinished">Do you want to overwrite existing mappings with the mappings from the Common Config?</translation>
+      <translation>Vols sobreescriure l'assignació actual amb l'assignació de la configuració comuna?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
       <translation>No s'ha pogut desar</translation>
-    </message>
-    <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation type="unfinished">Cannot bind any unique input more than once</translation>
     </message>
     <message>
       <source>Press a key</source>
@@ -1166,7 +1162,7 @@
     </message>
     <message>
       <source>Mousewheel cannot be mapped to stick outputs</source>
-      <translation type="unfinished">Mousewheel cannot be mapped to stick outputs</translation>
+      <translation>La roda del ratolí no es pot assignar a les palanques</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Cancel·la</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>
@@ -1269,7 +1273,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation type="unfinished">Download Cheats/Patches</translation>
+      <translation>Descarrega Trucs/Correccions</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1281,7 +1285,7 @@
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
-      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
+      <translation>No s'han trobat jocs. Primer afegeix els teus jocs a la llibreria, si us plau.</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1349,11 +1353,11 @@
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation type="unfinished">Download Cheats For All Installed Games</translation>
+      <translation>Descarrega els trucs per tots els jocs instal·lats</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation type="unfinished">Download Patches For All Games</translation>
+      <translation>Descarrega les correccions per tots els jocs</translation>
     </message>
     <message>
       <source>Download Complete</source>
@@ -1361,15 +1365,15 @@
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
+      <translation>Has descarregat trucs per tots els jocs que tens instal·lats.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation type="unfinished">Patches Downloaded Successfully!</translation>
+      <translation>S'han descarregat les correccions correctament!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
+      <translation>S'han descarregat totes les correccions disponibles de tots els jocs.</translation>
     </message>
     <message>
       <source>Games: </source>
@@ -1377,7 +1381,7 @@
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
+      <translation>Fitxers ELF (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
@@ -1385,7 +1389,7 @@
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation type="unfinished">Only one file can be selected!</translation>
+      <translation>Només es pot seleccionar un fitxer!</translation>
     </message>
     <message>
       <source>Run Game</source>
@@ -1393,11 +1397,11 @@
     </message>
     <message>
       <source>Eboot.bin file not found</source>
-      <translation type="unfinished">Eboot.bin file not found</translation>
+      <translation>No s'ha trobat el fitxer Eboot.bin</translation>
     </message>
     <message>
       <source>Game is already running!</source>
-      <translation type="unfinished">Game is already running!</translation>
+      <translation>El joc ja està en funcionament!</translation>
     </message>
     <message>
       <source>shadPS4</source>
@@ -1441,7 +1445,7 @@
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation type="unfinished">Show Labels Under Icons</translation>
+      <translation>Mostra les etiquetes sota les icones</translation>
     </message>
   </context>
   <context>
@@ -1472,7 +1476,7 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation type="unfinished">Default tab when opening settings</translation>
+      <translation>Pestanya predeterminada en obrir la configuració</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
@@ -1484,7 +1488,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation type="unfinished">Enable Discord Rich Presence</translation>
+      <translation>Activa la Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1500,7 +1504,7 @@
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder</translation>
+      <translation>Obre la carpeta de trofeus/sons personalitzats</translation>
     </message>
     <message>
       <source>Logger</source>
@@ -1532,7 +1536,7 @@
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
+      <translation>Temps d'espera per ocultar el ratolí</translation>
     </message>
     <message>
       <source>s</source>
@@ -1608,19 +1612,19 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers</translation>
+      <translation>Activa les capes de validació de Vulkan</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation</translation>
+      <translation>Activa la validació de sincronització de Vulkan</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
-      <translation type="unfinished">Enable RenderDoc Debugging</translation>
+      <translation>Habilita la depuració de RenderDoc</translation>
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>Habilita el diagnòstic d'errors</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
@@ -1644,7 +1648,7 @@
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation type="unfinished">Check for Updates at Startup</translation>
+      <translation>Comprova les actualitzacions a l'inici</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
@@ -1668,7 +1672,7 @@
     </message>
     <message>
       <source>Disable Trophy Notification</source>
-      <translation type="unfinished">Disable Trophy Notification</translation>
+      <translation>Desactiva les notificacions de trofeus</translation>
     </message>
     <message>
       <source>Background Image</source>
@@ -1688,7 +1692,7 @@
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
-      <translation type="unfinished">Update Compatibility Database On Startup</translation>
+      <translation>Actualitza la base de dades de compatibilitat a l'inici</translation>
     </message>
     <message>
       <source>Game Compatibility</source>
@@ -1696,11 +1700,11 @@
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation type="unfinished">Display Compatibility Data</translation>
+      <translation>Mostra les dades de compatibilitat</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
-      <translation type="unfinished">Update Compatibility Database</translation>
+      <translation>S'ha actualitzat la base de dades de compatibilitat</translation>
     </message>
     <message>
       <source>Volume</source>
@@ -1724,79 +1728,79 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
+      <translation>Mou el ratolí sobre una opció per mostrar una descripció.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
+      <translation>Idioma de la consola:\nEstableix l'idioma que la consola PS4 fa servir.\nEs recomana seleccionar un idioma que el joc suporti, que pot variar en funció de la regió.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
+      <translation>Idioma de l'emulador:\nSelecciona l'idioma de l'interfície d'usuari de l'emulador.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
+      <translation>Mostra la pantalla d'inici:\nMostra la pantalla d'inici del joc (una imatge especial) mentre el joc s'està iniciant.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
+      <translation>Activa Discord Rich Presence:\nMostra la icona de l'emulador i informació rellevant en el teu perfil de Discord.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
+      <translation>Nom d'usuari:\nProveeix el nom d'usuari del compte de PS4, que es farà servir i es veurà en alguns jocs.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation type="unfinished">Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</translation>
+      <translation>Clau de trofeus:\nClau que es fa servir per desxifrar trofeus. Cal obtenir-la de la teva consola desbloquejada.\nAcostuma a tenir caràcters hexadecimals.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
+      <translation>Tipus de registre:\nEstableix si sincronitza la sortida de la finestra de registre per millorar el rendiment. Pot tenir reaccions adverses en el rendiment.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
+      <translation>Filtre del registre:\nFiltra el registre per mostrar només la informació especificada.\nExemples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNivells: Trace, Debug, Info, Warning, Error, Critical - en aquest ordre, un nivell específic silencia tots els nivells precedents de la llista i mostra només els nivells posteriors.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
+      <translation>Actualització:\nEstables: Versions oficials llançades cada mes que poden estar desactualitzades, però que són més resistents i estan més provades.\nDiàries: Versions de desenvolupament que tenen totes les últimes funcions i correccions, però poden contenir errors i son menys estables.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>Imatge de fons:\nControla la opacitat de la imatge de fons del joc.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
+      <translation>Reprodueix música del títol:\nSi el joc la conté, reprodueix la música del títol si es selecciona el joc a l'interfície gràfica.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
-      <translation type="unfinished">Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</translation>
+      <translation>Desactiva les notificacions de trofeus:\nDesactiva les notificacions de trofeus en el joc. El progrés en els trofeus es pot seguir en el visualitzador de trofeus (clicant botó dret del ratolí a la finestra principal).</translation>
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
+      <translation>Oculta el ratolí:\nSelecciona quan s'ocultarà el ratolí.\nMai: El ratolí serà sempre visible.\nInactiu: Estableix un temps perquè s'oculti el ratolí si està inactiu.\nSempre: El ratolí estarà sempre ocult.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
+      <translation>Temps d'espera per ocultar el ratolí:\nLa duració (en segons) després de la qual el ratolí s'amaga si es troba inactiu.</translation>
     </message>
     <message>
       <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation type="unfinished">Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</translation>
+      <translation>Comportament del botó posterior:\nEstableix el botó posterior del controlador per simular el toc en una posició especificada del touchpad de PS4.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
+      <translation>Mostra les dades de compatibilitat:\nMostra informació sobre la compatibilitat a la vista de graella. Pots activar l'actualització de compatibilitat a l'inici per obtenir més informació actualitzada.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation type="unfinished">Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</translation>
+      <translation>Actualitza la compatibilitat a l'inici:\nActualitza automàticament la base de dades de compatibilitat quan s'inicia shadPS4.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation type="unfinished">Update Compatibility Database:\nImmediately update the compatibility database.</translation>
+      <translation>Base de dades de compatibilitat:\nActualitza immediatament la base de dades de compatibilitat.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1828,83 +1832,83 @@
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
+      <translation>Dispositiu de gràfics:\nEn sistemes amb múltiples targetes gràfiques, selecciona la targeta gràfica que farà servir l'emulador de la llista,\n o clica a "Selecció automàtica" per determinar-la automàticament.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
+      <translation>Amplada/Alçada:\nEstableix les mides de la finestra de l'emulador quan s'inicia, durant el joc es pot canviar la mida.\nAixò és diferent que la resolució del joc.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>Divisor Vblank:\nLa taxa de fotogrames a la qual s'actualitza l'emulador és multiplicada per aquest valor. Canviar aquest valor pot tenir reaccions adverses, com incrementar la velocitat del joc, o trencar alguna funcionalitat crítica del joc que no s'espera aquest canvi.</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
+      <translation>Activa els abocats de shaders:\nPer la millora de la depuració tècnica, desa els shaders del joc en una carpeta mentre es renderitzen.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
+      <translation>Habilita GPU Nul·la:\nPer la millora de la depuració tècnica, desactiva el renderitzat del joc si no hi ha una targeta gràfica.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>Activa HDR:\nActiva HDR els jocs que ho suporten.\nEl teu monitor ha de donar suport a l'espai de color BT2020 PQ i al format de cadena d'intercanvi RGB10A2.</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
+      <translation>Carpetes de joc:\nLa llista de carpetes on comprovar si hi ha jocs instal·lats.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
+      <translation>Afegeix:\nAfegeix una carpeta a la llista.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
+      <translation>Elimina:\nElimina la carpeta de la llista.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
+      <translation>Activa l'abocat de depuració:\nDesa els símbols d'importació i exportació i la informació de l'encapçalament del fitxer de programa de PS4 que s'està executant ara mateix.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>Activa les capes de validació de Vulkan:\nActiva un sistema que valida l'estat del renderitzador de Vulkan i registra informació sobre el seu ús intern.\nAixò redueix el rendiment i pot canviar el comportament de l'emulador.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
+      <translation>Activa la validació de sincronització de Vulkan:\nActiva un sistema que valida la sincronització de Vulkan en les tasques de renderització.\nAixò pot reduir el rendiment i pot canviar el comportament de l'emulació.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
+      <translation>Activa la depuració RenderDoc:\nSi aquesta opció està activada, l'emulador tindrà compatibilitat amb RenderDoc per permetre capturar i analitzar els fotogrames renderitzats.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>Recopilar shaders:\nHas de tenir activada aquesta opció per editar els shaders amb el menú de depurador (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nNo funciona en les targetes gràfiques de Intel.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation type="unfinished">Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</translation>
+      <translation>Copia la memòria intermèdia de la GPU:\nEvita les condicions de carrera que impliquen més enviaments a la targeta gràfica.\nPot ajudar o no amb fer fallida del tipus 0 de PM4.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadors de depuració de convidat:\nInsereix informació des de l'emulador com marcadors específics de les targetes gràfiques AMB sobre les comandes Vulkan, així com proporcionar noms de depuració.\nSi aquesta opció està activada, caldria activar el diagnòstic d'errors.\nÉs útil per aplicacions com RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation type="unfinished">Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</translation>
+      <translation>Marcadors de depuració de convidat:\nInsereix qualsevol marcador que el joc ha afegit a la memòria intermèdia de les comandes.\nSi està activada aquesta opció, caldria activar el diagnòstic d'errors.\nÉs útil per aplicacions com RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>Carpeta de dades desades:\nLa carpeta on es desaran les dades el joc.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the save data path.</translation>
+      <translation>Navegador:\nCerca una carpeta que serà assignada com la carpeta de dades desades.</translation>
     </message>
     <message>
       <source>Release</source>
@@ -1916,7 +1920,7 @@
     </message>
     <message>
       <source>Set the volume of the background music.</source>
-      <translation type="unfinished">Set the volume of the background music.</translation>
+      <translation>Selecciona el volum de la música de fons.</translation>
     </message>
     <message>
       <source>Enable Motion Controls</source>
@@ -1944,11 +1948,11 @@
     </message>
     <message>
       <source>Directory to install games</source>
-      <translation type="unfinished">Directory to install games</translation>
+      <translation>Carpeta per instal·lar jocs</translation>
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation type="unfinished">Directory to save data</translation>
+      <translation>Carpeta de les dades desades</translation>
     </message>
     <message>
       <source>Video</source>
@@ -1968,7 +1972,7 @@
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>Pantalla completa (Sense vores)</translation>
     </message>
     <message>
       <source>Window Size</source>
@@ -1988,11 +1992,11 @@
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>Fitxers de registre independents:\nFes servir un fitxer de registre separat per cada joc.</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>Posició de les notificacions de trofeus</translation>
     </message>
     <message>
       <source>Left</source>
@@ -2020,15 +2024,15 @@
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation type="unfinished">Create Portable User Folder from Common User Folder</translation>
+      <translation>Crea la carpeta d'usuari portàtil a partir de la carpeta d'usuari estàndard</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
-      <translation type="unfinished">Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</translation>
+      <translation>Carpeta d'usuari portàtil:\nDesa la configuració i les dades de shadPS4 en la carpeta actual. Reinicia shadPS4 després de crear la carpeta d'usuari portàtil per començar a fer-la servir.</translation>
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>No s'ha pogut crear la carpeta d'usuari portàtil</translation>
     </message>
     <message>
       <source>%1 already exists</source>
@@ -2036,19 +2040,19 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>S'ha creat la carpeta d'usuari portàtil</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
-      <translation type="unfinished">%1 successfully created.</translation>
+      <translation>%1 s'ha creat correctament.</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
-      <translation type="unfinished">Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</translation>
+      <translation>Obre la carpeta de trofeus/sons personalitzats.\nPots afegir imatges i sons personalitzats als trofeus.\nAfeigeix els fitxers com custom_trophy amb els següents noms:\ntrophy.wav o trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNota: El so només funcionarà en les versions QT.</translation>
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> Versió de Vulkan no suportada</translation>
     </message>
   </context>
   <context>
@@ -2071,7 +2075,7 @@
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>Mostra els trofeus no aconseguits</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>

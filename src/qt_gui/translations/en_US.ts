@@ -1153,10 +1153,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Cannot bind any unique input more than once</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Press a key</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1183,6 +1179,12 @@
     <message>
         <source>Cancel</source>
         <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
