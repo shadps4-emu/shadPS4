@@ -442,10 +442,10 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
         return InputEvent(InputType::Controller, static_cast<u32>(e.gbutton.button), e.gbutton.down,
-                         0); // clang made me do it
+                          0); // clang made me do it
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         return InputEvent(InputType::Axis, static_cast<u32>(e.gaxis.axis), true,
-                         e.gaxis.value / 256); // this too
+                          e.gaxis.value / 256); // this too
     default:
         return InputEvent();
     }

@@ -757,7 +757,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 break;
             case Qt::Key_Comma:
                 pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp,", ","));
-                break;    
+                break;
             case Qt::Key_Less:
                 pressedKeys.insert("<");
                 break;
@@ -871,7 +871,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             // default case
             default:
                 break;
-            // bottom text
+                // bottom text
             }
             return true;
         }
@@ -900,7 +900,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 // default case
             default:
                 break;
-            // bottom text
+                // bottom text
             }
             return true;
         }
