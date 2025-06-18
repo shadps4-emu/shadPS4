@@ -168,7 +168,7 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx;
+            return desc.sampler == existing.sampler;
         })};
         return index;
     }
@@ -351,8 +351,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
 void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
         const auto opcode = inst->GetOpcode();
-        if (opcode == IR::Opcode::CompositeConstructU32x2 || // IMAGE_SAMPLE (image+sampler)
-            opcode == IR::Opcode::ReadConst ||               // IMAGE_LOAD (image only)
+        if (opcode == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
             opcode == IR::Opcode::GetUserData) {
             return inst;
         }
@@ -360,9 +359,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     };
     const auto result = IR::BreadthFirstSearch(&inst, pred);
     ASSERT_MSG(result, "Unable to find image sharp source");
-    const IR::Inst* producer = result.value();
-    const bool has_sampler = producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2;
-    const auto tsharp_handle = has_sampler ? producer->Arg(0).InstRecursive() : producer;
+    const IR::Inst* tsharp_handle = result.value();
 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle, info);
@@ -427,29 +424,32 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         // Read sampler sharp.
-        const auto [sampler_binding, sampler] = [&] -> std::pair<u32, AmdGpu::Sampler> {
-            ASSERT(producer->GetOpcode() == IR::Opcode::CompositeConstructU32x2);
-            const IR::Value& handle = producer->Arg(1);
+        const auto sampler_binding = [&] -> u32 {
+            const auto sampler = inst.Arg(5).InstRecursive();
+            ASSERT(sampler && sampler->GetOpcode() == IR::Opcode::CompositeConstructU32x4);
+            const auto handle = sampler->Arg(0);
             // Inline sampler resource.
             if (handle.IsImmediate()) {
-                LOG_WARNING(Render_Vulkan, "Inline sampler detected");
-                const auto inline_sampler = AmdGpu::Sampler{.raw0 = handle.U32()};
-                const auto binding = descriptors.Add(SamplerResource{
-                    .sharp_idx = std::numeric_limits<u32>::max(),
-                    .inline_sampler = inline_sampler,
-                });
-                return {binding, inline_sampler};
+                LOG_DEBUG(Render_Vulkan, "Inline sampler detected");
+                const auto [s1, s2, s3, s4] =
+                    std::tuple{sampler->Arg(0), sampler->Arg(1), sampler->Arg(2), sampler->Arg(3)};
+                ASSERT(s1.IsImmediate() && s2.IsImmediate() && s3.IsImmediate() &&
+                       s4.IsImmediate());
+                const auto inline_sampler = AmdGpu::Sampler{
+                    .raw0 = u64(s2.U32()) << 32 | u64(s1.U32()),
+                    .raw1 = u64(s4.U32()) << 32 | u64(s3.U32()),
+                };
+                const auto binding = descriptors.Add(SamplerResource{inline_sampler});
+                return binding;
+            } else {
+                // Normal sampler resource.
+                const auto ssharp_handle = handle.InstRecursive();
+                const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
+                const auto ssharp = TrackSharp(ssharp_ud, info);
+                const auto binding =
+                    descriptors.Add(SamplerResource{ssharp, image_binding, disable_aniso});
+                return binding;
             }
-            // Normal sampler resource.
-            const auto ssharp_handle = handle.InstRecursive();
-            const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-            const auto ssharp = TrackSharp(ssharp_ud, info);
-            const auto binding = descriptors.Add(SamplerResource{
-                .sharp_idx = ssharp,
-                .associated_image = image_binding,
-                .disable_aniso = disable_aniso,
-            });
-            return {binding, info.ReadUdSharp<AmdGpu::Sampler>(ssharp)};
         }();
         // Patch image and sampler handle.
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
