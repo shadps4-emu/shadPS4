@@ -5,6 +5,7 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 #include <string_view>
 #include "common/enum.h"
 #include "common/singleton.h"
@@ -92,7 +93,7 @@ struct VirtualMemoryArea {
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     bool disallow_merge = false;
-    std::string_view name = "";
+    std::string name = "";
     uintptr_t fd = 0;
     bool is_exec = false;
 
