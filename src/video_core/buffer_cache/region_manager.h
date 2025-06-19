@@ -188,7 +188,7 @@ private:
         if (mask.None()) {
             return; // No changes to the CPU tracking state
         }
-        
+
         writeable = cpu;
         tracker->UpdatePageWatchersForRegion<add_to_tracker>(cpu_addr, mask);
     }
