@@ -412,7 +412,7 @@ void ParseInputConfig(const std::string game_id = "") {
 u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_WARNING(Input, "Something went wrong with wheel input parsing!");
-        return SDL_INVALID_ID;
+        return SDL_UNMAPPED;
     }
     if (event.wheel.y > 0) {
         return SDL_MOUSE_WHEEL_UP;
@@ -423,7 +423,7 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
     } else if (event.wheel.x < 0) {
         return SDL_MOUSE_WHEEL_LEFT;
     }
-    return SDL_INVALID_ID;
+    return SDL_UNMAPPED;
 }
 
 InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
@@ -574,7 +574,7 @@ void ControllerOutput::FinalizeUpdate() {
 bool UpdatePressedKeys(InputEvent event) {
     // Skip invalid inputs
     InputID input = event.input;
-    if (input.sdl_id == SDL_INVALID_ID) {
+    if (input.sdl_id == SDL_UNMAPPED) {
         return false;
     }
     if (input.type == InputType::Axis) {
