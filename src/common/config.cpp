@@ -83,7 +83,6 @@ std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 u32 mw_themes = 0;
 std::vector<std::string> m_elf_viewer;
-std::vector<std::string> m_recent_files;
 std::string emulator_language = "en_US";
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
@@ -493,11 +492,6 @@ void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer = elfList;
 }
 
-void setRecentFiles(const std::vector<std::string>& recentFiles) {
-    m_recent_files.resize(recentFiles.size());
-    m_recent_files = recentFiles;
-}
-
 void setEmulatorLanguage(std::string language) {
     emulator_language = language;
 }
@@ -549,10 +543,6 @@ u32 getMainWindowTheme() {
 
 std::vector<std::string> getElfViewer() {
     return m_elf_viewer;
-}
-
-std::vector<std::string> getRecentFiles() {
-    return m_recent_files;
 }
 
 std::string getEmulatorLanguage() {
@@ -694,7 +684,6 @@ void load(const std::filesystem::path& path) {
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
-        m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
         emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
     }
 
@@ -892,7 +881,6 @@ void saveMainWindow(const std::filesystem::path& path) {
 
     data["GUI"]["theme"] = mw_themes;
     data["GUI"]["elfDirs"] = m_elf_viewer;
-    data["GUI"]["recentFiles"] = m_recent_files;
 
     // Sorting of TOML sections
     sortTomlSections(data);

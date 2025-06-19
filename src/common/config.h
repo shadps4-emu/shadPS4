@@ -139,7 +139,6 @@ const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 std::vector<std::string> getElfViewer();
-std::vector<std::string> getRecentFiles();
 std::string getEmulatorLanguage();
 
 void setDefaultValues();

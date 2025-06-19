@@ -1122,33 +1122,32 @@ void MainWindow::HandleResize(QResizeEvent* event) {
 }
 
 void MainWindow::AddRecentFiles(QString filePath) {
-    std::vector<std::string> vec = Config::getRecentFiles();
-    if (!vec.empty()) {
-        if (filePath.toStdString() == vec.at(0)) {
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_recentFiles));
+    if (!list.empty()) {
+        if (filePath == list.at(0)) {
             return;
         }
-        auto it = std::find(vec.begin(), vec.end(), filePath.toStdString());
-        if (it != vec.end()) {
-            vec.erase(it);
+        auto it = std::find(list.begin(), list.end(), filePath);
+        if (it != list.end()) {
+            list.erase(it);
         }
     }
-    vec.insert(vec.begin(), filePath.toStdString());
-    if (vec.size() > 6) {
-        vec.pop_back();
+    list.insert(list.begin(), filePath);
+    if (list.size() > 6) {
+        list.pop_back();
     }
-    Config::setRecentFiles(vec);
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
+    m_gui_settings->SetValue(gui::gen_recentFiles, gui_settings::List2Var(list));
     CreateRecentGameActions(); // Refresh the QActions.
 }
 
 void MainWindow::CreateRecentGameActions() {
     m_recent_files_group = new QActionGroup(this);
     ui->menuRecent->clear();
-    std::vector<std::string> vec = Config::getRecentFiles();
-    for (int i = 0; i < vec.size(); i++) {
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_recentFiles));
+
+    for (int i = 0; i < list.size(); i++) {
         QAction* recentFileAct = new QAction(this);
-        recentFileAct->setText(QString::fromStdString(vec.at(i)));
+        recentFileAct->setText(list.at(i));
         ui->menuRecent->addAction(recentFileAct);
         m_recent_files_group->addAction(recentFileAct);
     }
