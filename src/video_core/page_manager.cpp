@@ -189,12 +189,12 @@ struct PageManager::Impl {
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) {
         RENDERER_TRACE;
-        
+
         size_t page = addr >> PAGE_BITS;
         auto perms = cached_pages[page].Perm();
         u64 range_begin = 0;
         u64 range_bytes = 0;
-        
+
         const auto release_pending = [&] {
             if (range_bytes > 0) {
                 RENDERER_TRACE;
@@ -203,7 +203,7 @@ struct PageManager::Impl {
                 range_bytes = 0;
             }
         };
-        
+
         std::scoped_lock lk(lock);
 
         // Iterate requested pages
@@ -211,8 +211,8 @@ struct PageManager::Impl {
         const u64 aligned_addr = page << PAGE_BITS;
         const u64 aligned_end = page_end << PAGE_BITS;
         ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
-                    "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
-                    aligned_addr, aligned_end - aligned_addr);
+                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", aligned_addr,
+                   aligned_end - aligned_addr);
 
         for (; page != page_end; ++page) {
             PageState& state = cached_pages[page];
@@ -254,12 +254,12 @@ struct PageManager::Impl {
             UpdatePageWatchers<track>(start_addr, size);
             return;
         }
-        
+
         size_t base_page = (base_addr >> PAGE_BITS);
         auto perms = cached_pages[base_page + start_range.first].Perm();
         u64 range_begin = 0;
         u64 range_bytes = 0;
-        
+
         const auto release_pending = [&] {
             if (range_bytes > 0) {
                 RENDERER_TRACE;
@@ -268,7 +268,7 @@ struct PageManager::Impl {
                 range_bytes = 0;
             }
         };
-        
+
         std::scoped_lock lk(lock);
 
         // Iterate pages
@@ -277,8 +277,7 @@ struct PageManager::Impl {
             const bool update = mask.Get(page);
 
             // Apply the change to the page state
-            const u8 new_count =
-                update ? state.AddDelta<track ? 1 : -1>() : state.AddDelta<0>();
+            const u8 new_count = update ? state.AddDelta<track ? 1 : -1>() : state.AddDelta<0>();
 
             if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
                 // If the protection changed add pending (un)protect action
