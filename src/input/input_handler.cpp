@@ -251,10 +251,9 @@ void ParseInputConfig(const std::string game_id = "") {
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
         // Remove trailing semicolon from input_string
-        if (!input_string.empty() && input_string[input_string.length() - 1] == ';') {
-            if (!(input_string == ";" || input_string == "kp;")) {
-                line = line.substr(0, line.length() - 1);
-            }
+        if (!input_string.empty() && input_string[input_string.length() - 1] == ';' &&
+            input_string != ";") {
+            line = line.substr(0, line.length() - 1);
         }
 
         std::size_t comma_pos = input_string.find(',');
