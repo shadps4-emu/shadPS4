@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-#include "common/types.h"
 #include "common/assert.h"
+#include "common/types.h"
 #include "input/controller.h"
 #include "input_mouse.h"
 
@@ -20,7 +20,7 @@ MouseMode mouse_mode = MouseMode::Off;
 // Switches mouse to a set mode or turns mouse emulation off if it was already in that mode.
 // Returns whether the mode is turned on.
 bool ToggleMouseModeTo(MouseMode m) {
-    if(mouse_mode == m) {
+    if (mouse_mode == m) {
         mouse_mode = MouseMode::Off;
     } else {
         mouse_mode = m;
@@ -85,15 +85,14 @@ void EmulateGyro(GameController* controller, u32 interval) {
 
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
     auto* controller = (GameController*)param;
-    switch (mouse_mode)
-    {
+    switch (mouse_mode) {
     case MouseMode::Joystick:
         EmulateJoystick(controller, interval);
         break;
     case MouseMode::Gyro:
         EmulateGyro(controller, interval);
         break;
-    
+
     default:
         break;
     }
