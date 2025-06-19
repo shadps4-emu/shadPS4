@@ -481,7 +481,7 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
             return;
         }
         // Toggle mouse capture and gyro input emulation
-        else if (input_id == SDLK_F7) {
+        else if (input_id == SDLK_F6) {
             SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
                                            Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
             return;
