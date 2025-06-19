@@ -224,7 +224,10 @@ jobs:
         arch: clang_64
         archives: qtbase qttools
         modules: qtmultimedia
-        
+
+    - name: Workaround Qt <=6.9.1 issue
+      run: sed -i '' '/target_link_libraries(WrapOpenGL::WrapOpenGL INTERFACE ${__opengl_agl_fw_path})/d' ${{env.QT_ROOT_DIR}}/lib/cmake/Qt6/FindWrapOpenGL.cmake
+
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
