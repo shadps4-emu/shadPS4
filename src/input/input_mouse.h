@@ -8,11 +8,20 @@
 
 namespace Input {
 
-void ToggleMouseEnabled();
+enum MouseMode {
+    Off = 0,
+    Joystick,
+    Gyro,
+};
+
+bool ToggleMouseModeTo(MouseMode m);
 void SetMouseToJoystick(int joystick);
 void SetMouseParams(float mouse_deadzone_offset, float mouse_speed, float mouse_speed_offset);
 
-// Polls the mouse for changes, and simulates joystick movement from it.
+void EmulateJoystick(GameController* controller, u32 interval);
+void EmulateGyro(GameController* controller, u32 interval);
+
+// Polls the mouse for changes
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval);
 
 } // namespace Input

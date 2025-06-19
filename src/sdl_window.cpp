@@ -474,11 +474,16 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
             Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
             return;
         }
-        // Toggle mouse capture and movement input
+        // Toggle mouse capture and joystick input emulation
         else if (input_id == SDLK_F7) {
-            Input::ToggleMouseEnabled();
             SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           !SDL_GetWindowRelativeMouseMode(this->GetSDLWindow()));
+                                           Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+            return;
+        }
+        // Toggle mouse capture and gyro input emulation
+        else if (input_id == SDLK_F7) {
+            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                           Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
             return;
         }
         // Toggle fullscreen
