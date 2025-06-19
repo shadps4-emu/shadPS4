@@ -104,9 +104,10 @@ void TrophyViewer::updateTableFilters() {
     }
 }
 
-TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath, QString gameName,
+TrophyViewer::TrophyViewer(std::shared_ptr<gui_settings> gui_settings, QString trophyPath,
+                           QString gameTrpPath, QString gameName,
                            const QVector<TrophyGameInfo>& allTrophyGames)
-    : QMainWindow(), allTrophyGames_(allTrophyGames), currentGameName_(gameName) {
+    : QMainWindow(), allTrophyGames_(allTrophyGames), currentGameName_(gameName), m_gui_settings(std::move(gui_settings)) {
     this->setWindowTitle(tr("Trophy Viewer") + " - " + currentGameName_);
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);

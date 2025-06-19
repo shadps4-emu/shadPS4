@@ -1189,7 +1189,7 @@ void MainWindow::LoadTranslation() {
     }
 }
 
-void MainWindow::OnLanguageChanged(const std::string& locale) {
+void MainWindow::OnLanguageChanged(const QString& locale) {
     m_gui_settings->SetValue(gui::gen_guiLanguage, locale);
 
     LoadTranslation();
