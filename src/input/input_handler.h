@@ -32,7 +32,7 @@
 
 #define KEY_TOGGLE 0x00200000
 
-#define SDL_INVALID_ID UINT32_MAX
+#define SDL_UNMAPPED UINT32_MAX - 1
 
 namespace Input {
 using Input::Axis;
@@ -51,7 +51,7 @@ class InputID {
 public:
     InputType type;
     u32 sdl_id;
-    InputID(InputType d = InputType::Count, u32 i = SDL_INVALID_ID) : type(d), sdl_id(i) {}
+    InputID(InputType d = InputType::Count, u32 i = SDL_UNMAPPED) : type(d), sdl_id(i) {}
     bool operator==(const InputID& o) const {
         return type == o.type && sdl_id == o.sdl_id;
     }
@@ -259,6 +259,7 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"mousewheeldown", SDL_MOUSE_WHEEL_DOWN},
     {"mousewheelleft", SDL_MOUSE_WHEEL_LEFT},
     {"mousewheelright", SDL_MOUSE_WHEEL_RIGHT},
+    {"unmapped", SDL_UNMAPPED},
 };
 
 void ParseInputConfig(const std::string game_id);
