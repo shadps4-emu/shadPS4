@@ -337,7 +337,9 @@ void PageManager::UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask)
 
 template void PageManager::UpdatePageWatchers<true>(VAddr addr, u64 size) const;
 template void PageManager::UpdatePageWatchers<false>(VAddr addr, u64 size) const;
-template void PageManager::UpdatePageWatchersForRegion<true>(VAddr base_addr, RegionBits& mask) const;
-template void PageManager::UpdatePageWatchersForRegion<false>(VAddr base_addr, RegionBits& mask) const;
+template void PageManager::UpdatePageWatchersForRegion<true>(VAddr base_addr,
+                                                             RegionBits& mask) const;
+template void PageManager::UpdatePageWatchersForRegion<false>(VAddr base_addr,
+                                                              RegionBits& mask) const;
 
 } // namespace VideoCore
