@@ -32,6 +32,8 @@
 
 #define KEY_TOGGLE 0x00200000
 
+#define SDL_UNMAPPED UINT32_MAX - 1
+
 namespace Input {
 using Input::Axis;
 using Libraries::Pad::OrbisPadButtonDataOffset;
@@ -102,6 +104,10 @@ const std::map<std::string, u32> string_to_cbutton_map = {
 
     // this is only for input
     {"back", SDL_GAMEPAD_BUTTON_BACK},
+    {"lpaddle_high", SDL_GAMEPAD_BUTTON_LEFT_PADDLE1},
+    {"lpaddle_low", SDL_GAMEPAD_BUTTON_LEFT_PADDLE2},
+    {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
+    {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {
@@ -225,6 +231,7 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"kpenter", SDLK_KP_ENTER},
     {"kpequals", SDLK_KP_EQUALS},
     {"capslock", SDLK_CAPSLOCK},
+    {"unmapped", SDL_UNMAPPED},
 };
 
 void ParseInputConfig(const std::string game_id);
