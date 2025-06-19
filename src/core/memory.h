@@ -5,6 +5,7 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 #include <string_view>
 #include "common/enum.h"
 #include "common/singleton.h"
