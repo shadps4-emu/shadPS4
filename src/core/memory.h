@@ -93,7 +93,7 @@ struct VirtualMemoryArea {
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     bool disallow_merge = false;
-    std::string_view name = "";
+    std::string name = "";
     uintptr_t fd = 0;
     bool is_exec = false;
 
