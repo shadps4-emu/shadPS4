@@ -73,8 +73,14 @@ void EmulateJoystick(GameController* controller, u32 interval) {
     }
 }
 
+constexpr float constant_down_accel[3] = {0.0f, 10.0f, 0.0f};
 void EmulateGyro(GameController* controller, u32 interval) {
-    LOG_INFO(Input, "todo gyro");
+    // LOG_INFO(Input, "todo gyro");
+    float d_x = 0, d_y = 0;
+    SDL_GetRelativeMouseState(&d_x, &d_y);
+    controller->Acceleration(1, constant_down_accel);
+    float gyro_from_mouse[3] = {-d_y / 100, -d_x / 100, 0.0f};
+    controller->Gyro(1, gyro_from_mouse);
 }
 
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
