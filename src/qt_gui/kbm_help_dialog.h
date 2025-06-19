@@ -129,8 +129,10 @@ Controller:
     If you have a controller that has different names for buttons, it will still work, just look up what are the equivalent names for that controller
     The same left-right rule still applies here.
     Buttons:
-        'triangle', 'circle', 'cross', 'square', 'l1', 'l3',
-        'options', touchpad', 'up', 'down', 'left', 'right'
+            'triangle', 'circle', 'cross', 'square', 'l1', 'l3',
+            'options', touchpad', 'up', 'down', 'left', 'right'
+        Input-only:
+            'lpaddle_low', 'lpaddle_high'
     Axes if you bind them to a button input:
         'axis_left_x_plus', 'axis_left_x_minus', 'axis_left_y_plus', 'axis_left_y_minus',
         'axis_right_x_plus', ..., 'axis_right_y_minus',
