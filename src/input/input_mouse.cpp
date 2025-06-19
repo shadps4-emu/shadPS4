@@ -14,6 +14,7 @@ namespace Input {
 
 int mouse_joystick_binding = 0;
 float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
+bool mouse_gyro_roll_mode = false;
 Uint32 mouse_polling_id = 0;
 MouseMode mouse_mode = MouseMode::Off;
 
@@ -36,6 +37,10 @@ void SetMouseParams(float mdo, float ms, float mso) {
     mouse_deadzone_offset = mdo;
     mouse_speed = ms;
     mouse_speed_offset = mso;
+}
+
+void SetMouseGyroRollMode(bool mode) {
+    mouse_gyro_roll_mode = mode;
 }
 
 void EmulateJoystick(GameController* controller, u32 interval) {
@@ -80,6 +85,10 @@ void EmulateGyro(GameController* controller, u32 interval) {
     SDL_GetRelativeMouseState(&d_x, &d_y);
     controller->Acceleration(1, constant_down_accel);
     float gyro_from_mouse[3] = {-d_y / 100, -d_x / 100, 0.0f};
+    if (mouse_gyro_roll_mode) {
+        gyro_from_mouse[1] = 0.0f;
+        gyro_from_mouse[2] = -d_x / 100;
+    }
     controller->Gyro(1, gyro_from_mouse);
 }
 

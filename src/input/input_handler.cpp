@@ -66,6 +66,7 @@ auto output_array = std::array{
     ControllerOutput(LEFTJOYSTICK_HALFMODE),
     ControllerOutput(RIGHTJOYSTICK_HALFMODE),
     ControllerOutput(KEY_TOGGLE),
+    ControllerOutput(MOUSE_GYRO_ROLL_MODE),
 
     // Button mappings
     ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),           // Triangle
@@ -534,6 +535,9 @@ void ControllerOutput::FinalizeUpdate() {
         // to do it, and it would be inconvenient to force it here, when AddUpdate does the job just
         // fine, and a toggle doesn't have to checked against every input that's bound to it, it's
         // enough that one is pressed
+        case MOUSE_GYRO_ROLL_MODE:
+            SetMouseGyroRollMode(new_button_state);
+            break;
         default: // is a normal key (hopefully)
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
