@@ -57,12 +57,6 @@ struct PageManager::Impl {
         }
     };
 
-    struct UpdateProtectRange {
-        VAddr addr;
-        u64 size;
-        Core::MemoryPermission perms;
-    };
-
     static constexpr size_t ADDRESS_BITS = 40;
     static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PAGE_BITS);
     inline static Vulkan::Rasterizer* rasterizer;
@@ -195,69 +189,60 @@ struct PageManager::Impl {
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) {
         RENDERER_TRACE;
-        boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
-        {
-            std::scoped_lock lk(lock);
+        
+        size_t page = addr >> PAGE_BITS;
+        auto perms = cached_pages[page].Perm();
+        u64 range_begin = 0;
+        u64 range_bytes = 0;
+        
+        const auto release_pending = [&] {
+            if (range_bytes > 0) {
+                RENDERER_TRACE;
+                // Perform pending (un)protect action
+                Protect(range_begin << PAGE_BITS, range_bytes, perms);
+                range_bytes = 0;
+            }
+        };
+        
+        std::scoped_lock lk(lock);
 
-            size_t page = addr >> PAGE_BITS;
-            auto perms = cached_pages[page].Perm();
-            u64 range_begin = 0;
-            u64 range_bytes = 0;
+        // Iterate requested pages
+        const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+        const u64 aligned_addr = page << PAGE_BITS;
+        const u64 aligned_end = page_end << PAGE_BITS;
+        ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
+                    "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
+                    aligned_addr, aligned_end - aligned_addr);
 
-            const auto release_pending = [&] {
-                if (range_bytes > 0) {
-                    RENDERER_TRACE;
-                    // Add pending (un)protect action
-                    update_ranges.push_back({range_begin << PAGE_BITS, range_bytes, perms});
-                    range_bytes = 0;
-                }
-            };
+        for (; page != page_end; ++page) {
+            PageState& state = cached_pages[page];
 
-            // Iterate requested pages
-            const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
-            const u64 aligned_addr = page << PAGE_BITS;
-            const u64 aligned_end = page_end << PAGE_BITS;
-            ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
-                       "Attempted to track non-GPU memory at address {:#x}, size {:#x}.",
-                       aligned_addr, aligned_end - aligned_addr);
+            // Apply the change to the page state
+            const u8 new_count = state.AddDelta<track ? 1 : -1>();
 
-            for (; page != page_end; ++page) {
-                PageState& state = cached_pages[page];
-
-                // Apply the change to the page state
-                const u8 new_count = state.AddDelta<track ? 1 : -1>();
-
-                if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
-                    // If the protection changed add pending (un)protect action
-                    release_pending();
-                    perms = new_perms;
-                } else if (range_bytes != 0) {
-                    // If the protection did not change, extend the current range
-                    range_bytes += PAGE_SIZE;
-                }
-
-                // Only start a new range if the page must be (un)protected
-                if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
-                    range_begin = page;
-                    range_bytes = PAGE_SIZE;
-                }
+            if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
+                // If the protection changed add pending (un)protect action
+                release_pending();
+                perms = new_perms;
+            } else if (range_bytes != 0) {
+                // If the protection did not change, extend the current range
+                range_bytes += PAGE_SIZE;
             }
 
-            // Add pending (un)protect action
-            release_pending();
+            // Only start a new range if the page must be (un)protected
+            if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
+                range_begin = page;
+                range_bytes = PAGE_SIZE;
+            }
         }
 
-        // Flush deferred protects
-        for (const auto& range : update_ranges) {
-            Protect(range.addr, range.size, range.perms);
-        }
+        // Add pending (un)protect action
+        release_pending();
     }
 
     template <bool track>
     void UpdatePageWatchersMasked(VAddr base_addr, RegionBits& mask) {
         RENDERER_TRACE;
-        boost::container::small_vector<UpdateProtectRange, 16> update_ranges;
-
         auto start_range = mask.FirstRange();
         auto end_range = mask.LastRange();
 
@@ -269,61 +254,55 @@ struct PageManager::Impl {
             UpdatePageWatchers<track>(start_addr, size);
             return;
         }
+        
+        size_t base_page = (base_addr >> PAGE_BITS);
+        auto perms = cached_pages[base_page + start_range.first].Perm();
+        u64 range_begin = 0;
+        u64 range_bytes = 0;
+        
+        const auto release_pending = [&] {
+            if (range_bytes > 0) {
+                RENDERER_TRACE;
+                // Perform pending (un)protect action
+                Protect((range_begin << PAGE_BITS), range_bytes, perms);
+                range_bytes = 0;
+            }
+        };
+        
+        std::scoped_lock lk(lock);
 
-        {
-            std::scoped_lock lk(lock);
+        // Iterate pages
+        for (size_t page = start_range.first; page < end_range.second; ++page) {
+            PageState& state = cached_pages[base_page + page];
+            const bool update = mask.Get(page);
 
-            size_t base_page = (base_addr >> PAGE_BITS);
-            auto perms = cached_pages[base_page + start_range.first].Perm();
-            u64 range_begin = 0;
-            u64 range_bytes = 0;
+            // Apply the change to the page state
+            const u8 new_count =
+                update ? state.AddDelta<track ? 1 : -1>() : state.AddDelta<0>();
 
-            const auto release_pending = [&] {
-                if (range_bytes > 0) {
-                    RENDERER_TRACE;
-                    // Add pending (un)protect action
-                    update_ranges.push_back({range_begin << PAGE_BITS, range_bytes, perms});
-                    range_bytes = 0;
-                }
-            };
-
-            for (size_t page = start_range.first; page < end_range.second; ++page) {
-                PageState& state = cached_pages[base_page + page];
-                const bool update = mask.Get(page);
-
-                // Apply the change to the page state
-                const u8 new_count =
-                    update ? state.AddDelta<track ? 1 : -1>() : state.AddDelta<0>();
-
-                if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
-                    // If the protection changed add pending (un)protect action
-                    release_pending();
-                    perms = new_perms;
-                } else if (range_bytes != 0) {
-                    // If the protection did not change, extend the current range
-                    range_bytes += PAGE_SIZE;
-                }
-
-                // If the page is not being updated, skip it
-                if (!update) {
-                    continue;
-                }
-
-                // Only start a new range if the page must be (un)protected
-                if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
-                    range_begin = base_page + page;
-                    range_bytes = PAGE_SIZE;
-                }
+            if (auto new_perms = state.Perm(); new_perms != perms) [[unlikely]] {
+                // If the protection changed add pending (un)protect action
+                release_pending();
+                perms = new_perms;
+            } else if (range_bytes != 0) {
+                // If the protection did not change, extend the current range
+                range_bytes += PAGE_SIZE;
             }
 
-            // Add pending (un)protect action
-            release_pending();
+            // If the page is not being updated, skip it
+            if (!update) {
+                continue;
+            }
+
+            // Only start a new range if the page must be (un)protected
+            if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
+                range_begin = base_page + page;
+                range_bytes = PAGE_SIZE;
+            }
         }
 
-        // Flush deferred protects
-        for (const auto& range : update_ranges) {
-            Protect(range.addr, range.size, range.perms);
-        }
+        // Add pending (un)protect action
+        release_pending();
     }
 
     std::array<PageState, NUM_ADDRESS_PAGES> cached_pages{};
