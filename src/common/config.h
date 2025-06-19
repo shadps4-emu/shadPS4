@@ -131,15 +131,12 @@ void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonInstallDir(const std::filesystem::path& dir);
 void setMainWindowTheme(u32 theme);
 void setElfViewer(const std::vector<std::string>& elfList);
-void setRecentFiles(const std::vector<std::string>& recentFiles);
-void setEmulatorLanguage(std::string language);
 
 const std::vector<std::filesystem::path> getGameInstallDirs();
 const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
 std::vector<std::string> getElfViewer();
-std::string getEmulatorLanguage();
 
 void setDefaultValues();
 

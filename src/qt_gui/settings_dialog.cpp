@@ -886,4 +886,5 @@ void SettingsDialog::setDefaultValues() {
     } else {
         m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
     }
+    m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
 }

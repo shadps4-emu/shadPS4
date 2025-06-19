@@ -111,7 +111,7 @@ TrophyViewer::TrophyViewer(QString trophyPath, QString gameTrpPath, QString game
     this->setAttribute(Qt::WA_DeleteOnClose);
     tabWidget = new QTabWidget(this);
 
-    auto lan = Config::getEmulatorLanguage();
+    auto lan = m_gui_settings->GetValue(gui::gen_guiLanguage).toString();
     if (lan == "en_US" || lan == "zh_CN" || lan == "zh_TW" || lan == "ja_JP" || lan == "ko_KR" ||
         lan == "lt_LT" || lan == "nb_NO" || lan == "nl_NL") {
         useEuropeanDateFormat = false;

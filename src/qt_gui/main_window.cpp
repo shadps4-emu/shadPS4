@@ -771,7 +771,7 @@ void MainWindow::CreateConnects() {
 
         QString gameName = QString::fromStdString(firstGame.name);
         TrophyViewer* trophyViewer =
-            new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
+            new TrophyViewer(m_gui_settings, trophyPath, gameTrpPath, gameName, allTrophyGames);
         trophyViewer->show();
     });
 
@@ -1164,7 +1164,7 @@ void MainWindow::CreateRecentGameActions() {
 }
 
 void MainWindow::LoadTranslation() {
-    auto language = QString::fromStdString(Config::getEmulatorLanguage());
+    auto language = m_gui_settings->GetValue(gui::gen_guiLanguage).toString();
 
     const QString base_dir = QStringLiteral(":/translations");
     QString base_path = QStringLiteral("%1/%2.qm").arg(base_dir).arg(language);
@@ -1190,7 +1190,7 @@ void MainWindow::LoadTranslation() {
 }
 
 void MainWindow::OnLanguageChanged(const std::string& locale) {
-    Config::setEmulatorLanguage(locale);
+    m_gui_settings->SetValue(gui::gen_guiLanguage, locale);
 
     LoadTranslation();
 }

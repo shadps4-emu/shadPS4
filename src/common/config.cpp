@@ -83,7 +83,6 @@ std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 u32 mw_themes = 0;
 std::vector<std::string> m_elf_viewer;
-std::string emulator_language = "en_US";
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -492,10 +491,6 @@ void setElfViewer(const std::vector<std::string>& elfList) {
     m_elf_viewer = elfList;
 }
 
-void setEmulatorLanguage(std::string language) {
-    emulator_language = language;
-}
-
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
@@ -543,10 +538,6 @@ u32 getMainWindowTheme() {
 
 std::vector<std::string> getElfViewer() {
     return m_elf_viewer;
-}
-
-std::string getEmulatorLanguage() {
-    return emulator_language;
 }
 
 u32 GetLanguage() {
@@ -684,7 +675,6 @@ void load(const std::filesystem::path& path) {
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
         m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
-        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
     }
 
     if (data.contains("Settings")) {
@@ -696,19 +686,6 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
-    }
-
-    // Check if the loaded language is in the allowed list
-    const std::vector<std::string> allowed_languages = {
-        "ar_SA", "da_DK", "de_DE", "el_GR", "en_US", "es_ES", "fa_IR", "fi_FI",
-        "fr_FR", "hu_HU", "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nb_NO",
-        "nl_NL", "pl_PL", "pt_BR", "pt_PT", "ro_RO", "ru_RU", "sq_AL", "sv_SE",
-        "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW", "ca_ES", "sr_CS"};
-
-    if (std::find(allowed_languages.begin(), allowed_languages.end(), emulator_language) ==
-        allowed_languages.end()) {
-        emulator_language = "en_US"; // Default to en_US if not in the list
-        save(path);
     }
 }
 
@@ -844,7 +821,6 @@ void save(const std::filesystem::path& path) {
 
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-    data["GUI"]["emulatorLanguage"] = emulator_language;
     data["Settings"]["consoleLanguage"] = m_language;
 
     // Sorting of TOML sections
@@ -925,7 +901,6 @@ void setDefaultValues() {
     vkHostMarkers = false;
     vkGuestMarkers = false;
     rdocEnable = false;
-    emulator_language = "en_US";
     m_language = 1;
     gpuId = -1;
     compatibilityData = false;

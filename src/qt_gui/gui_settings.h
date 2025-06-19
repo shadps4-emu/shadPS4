@@ -19,6 +19,7 @@ const gui_value gen_showChangeLog = gui_value(general_settings, "showChangeLog",
 const gui_value gen_updateChannel = gui_value(general_settings, "updateChannel", "Release");
 const gui_value gen_recentFiles =
     gui_value(main_window, "recentFiles", QVariant::fromValue(QList<QString>()));
+const gui_value gen_guiLanguage = gui_value(general_settings, "guiLanguage", "en_US");
 
 // main window settings
 const gui_value mw_geometry = gui_value(main_window, "geometry", QByteArray());
