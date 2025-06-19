@@ -35,7 +35,7 @@ public:
     /// Updates watches in the pages touching the specified region
     /// using a mask.
     template <bool track>
-    void UpdatePageWatchersMasked(VAddr base_addr, RegionBits& mask) const;
+    void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const;
 
     /// Returns page aligned address.
     static constexpr VAddr GetPageAddr(VAddr addr) {

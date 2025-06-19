@@ -184,8 +184,13 @@ private:
     void UpdateProtection() {
         RENDERER_TRACE;
         RegionBits mask = cpu ^ writeable;
+
+        if (mask.None()) {
+            return; // No changes to the CPU tracking state
+        }
+        
         writeable = cpu;
-        tracker->UpdatePageWatchersMasked<add_to_tracker>(cpu_addr, mask);
+        tracker->UpdatePageWatchersForRegion<add_to_tracker>(cpu_addr, mask);
     }
 
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP

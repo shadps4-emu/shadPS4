@@ -241,7 +241,7 @@ struct PageManager::Impl {
     }
 
     template <bool track>
-    void UpdatePageWatchersMasked(VAddr base_addr, RegionBits& mask) {
+    void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) {
         RENDERER_TRACE;
         auto start_range = mask.FirstRange();
         auto end_range = mask.LastRange();
@@ -331,13 +331,13 @@ void PageManager::UpdatePageWatchers(VAddr addr, u64 size) const {
 }
 
 template <bool track>
-void PageManager::UpdatePageWatchersMasked(VAddr base_addr, RegionBits& mask) const {
-    impl->UpdatePageWatchersMasked<track>(base_addr, mask);
+void PageManager::UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const {
+    impl->UpdatePageWatchersForRegion<track>(base_addr, mask);
 }
 
 template void PageManager::UpdatePageWatchers<true>(VAddr addr, u64 size) const;
 template void PageManager::UpdatePageWatchers<false>(VAddr addr, u64 size) const;
-template void PageManager::UpdatePageWatchersMasked<true>(VAddr base_addr, RegionBits& mask) const;
-template void PageManager::UpdatePageWatchersMasked<false>(VAddr base_addr, RegionBits& mask) const;
+template void PageManager::UpdatePageWatchersForRegion<true>(VAddr base_addr, RegionBits& mask) const;
+template void PageManager::UpdatePageWatchersForRegion<false>(VAddr base_addr, RegionBits& mask) const;
 
 } // namespace VideoCore
