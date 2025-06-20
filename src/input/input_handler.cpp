@@ -68,20 +68,22 @@ auto output_array = std::array{
     ControllerOutput(KEY_TOGGLE),
 
     // Button mappings
-    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),          // Triangle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),           // Circle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),          // Cross
-    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),           // Square
-    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),  // L1
-    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),     // L3
-    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER), // R1
-    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),    // R3
-    ControllerOutput(SDL_GAMEPAD_BUTTON_START),          // Options
-    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD),       // TouchPad
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),        // Up
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),      // Down
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),      // Left
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),     // Right
+    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),           // Triangle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),            // Circle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),           // Cross
+    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),            // Square
+    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),   // L1
+    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),      // L3
+    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),  // R1
+    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),     // R3
+    ControllerOutput(SDL_GAMEPAD_BUTTON_START),           // Options
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT),   // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER), // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT),  // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),         // Up
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
 
     // Axis mappings
     // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -129,6 +131,12 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     case SDL_GAMEPAD_BUTTON_START:
         return OPBDO::Options;
     case SDL_GAMEPAD_BUTTON_TOUCHPAD:
+        return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
+        return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
+        return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
         return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_BACK:
         return OPBDO::TouchPad;
@@ -499,14 +507,21 @@ void ControllerOutput::FinalizeUpdate() {
     }
     old_button_state = new_button_state;
     old_param = *new_param;
-    float touchpad_x = 0;
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         switch (button) {
-        case SDL_GAMEPAD_BUTTON_TOUCHPAD:
-            touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
-                         : Config::getBackButtonBehavior() == "right" ? 0.75f
-                                                                      : 0.5f;
-            controller->SetTouchpadState(0, new_button_state, touchpad_x, 0.5f);
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
+            LOG_INFO(Input, "Topuchpad left");
+            controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
+            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            break;
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
+            LOG_INFO(Input, "Topuchpad center");
+            controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
+            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            break;
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
+            LOG_INFO(Input, "Topuchpad right");
+            controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case LEFTJOYSTICK_HALFMODE:

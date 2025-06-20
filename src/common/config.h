@@ -102,7 +102,6 @@ bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
 std::string getUserName();
 std::string getChooseHomeTab();
-std::string getBackButtonBehavior();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
 bool GetOverrideControllerColor();
@@ -116,7 +115,6 @@ void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
-void setBackButtonBehavior(const std::string& type);
 // Gui
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);

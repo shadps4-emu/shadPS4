@@ -1614,36 +1614,6 @@
                 <number>11</number>
                </property>
                <item>
-                <widget class="QGroupBox" name="backButtonBehaviorGroupBox">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="title">
-                  <string>Back Button Behavior</string>
-                 </property>
-                 <layout class="QVBoxLayout" name="BackButtonLayout">
-                  <property name="leftMargin">
-                   <number>11</number>
-                  </property>
-                  <item>
-                   <widget class="QComboBox" name="backButtonBehaviorComboBox"/>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
                 <widget class="QCheckBox" name="motionControlsCheckBox">
                  <property name="text">
                   <string>Enable Motion Controls</string>
