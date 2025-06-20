@@ -3,10 +3,12 @@
 
 #include "elf_viewer.h"
 
-ElfViewer::ElfViewer(QWidget* parent) : QTableWidget(parent) {
-    dir_list_std = Config::getElfViewer();
-    for (const auto& str : dir_list_std) {
-        dir_list.append(QString::fromStdString(str));
+ElfViewer::ElfViewer(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
+    : QTableWidget(parent), m_gui_settings(std::move(gui_settings)) {
+
+    list = gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_elfDirs));
+    for (const auto& str : list) {
+        dir_list.append(str);
     }
 
     CheckElfFolders();
@@ -55,11 +57,11 @@ void ElfViewer::OpenElfFolder() {
         }
         std::ranges::sort(m_elf_list);
         OpenElfFiles();
-        dir_list_std.clear();
+        list.clear();
         for (auto dir : dir_list) {
-            dir_list_std.push_back(dir.toStdString());
+            list.push_back(dir);
         }
-        Config::setElfViewer(dir_list_std);
+        m_gui_settings->SetValue(gui::gen_elfDirs, gui_settings::List2Var(list));
     } else {
         // qDebug() << "Folder selection canceled.";
     }
