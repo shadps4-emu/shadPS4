@@ -32,14 +32,34 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* 
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
 
-    ButtonsList = {
-        ui->CrossButton,    ui->CircleButton,     ui->TriangleButton,   ui->SquareButton,
-        ui->L1Button,       ui->R1Button,         ui->L2Button,         ui->R2Button,
-        ui->L3Button,       ui->R3Button,         ui->OptionsButton,    ui->TouchpadButton,
-        ui->DpadUpButton,   ui->DpadDownButton,   ui->DpadLeftButton,   ui->DpadRightButton,
-        ui->LStickUpButton, ui->LStickDownButton, ui->LStickLeftButton, ui->LStickRightButton,
-        ui->RStickUpButton, ui->RStickDownButton, ui->RStickLeftButton, ui->RStickRightButton,
-        ui->LHalfButton,    ui->RHalfButton};
+    ButtonsList = {ui->CrossButton,
+                   ui->CircleButton,
+                   ui->TriangleButton,
+                   ui->SquareButton,
+                   ui->L1Button,
+                   ui->R1Button,
+                   ui->L2Button,
+                   ui->R2Button,
+                   ui->L3Button,
+                   ui->R3Button,
+                   ui->OptionsButton,
+                   ui->TouchpadLeftButton,
+                   ui->TouchpadCenterButton,
+                   ui->TouchpadRightButton,
+                   ui->DpadUpButton,
+                   ui->DpadDownButton,
+                   ui->DpadLeftButton,
+                   ui->DpadRightButton,
+                   ui->LStickUpButton,
+                   ui->LStickDownButton,
+                   ui->LStickLeftButton,
+                   ui->LStickRightButton,
+                   ui->RStickUpButton,
+                   ui->RStickDownButton,
+                   ui->RStickLeftButton,
+                   ui->RStickRightButton,
+                   ui->LHalfButton,
+                   ui->RHalfButton};
 
     ButtonConnects();
     SetUIValuestoMappings("default");
@@ -249,12 +269,23 @@ void KBMSettings::SaveKBMConfig(bool CloseOnSave) {
     if (input_string != "unmapped")
         inputs.push_back(input_string);
 
-    input_string = ui->TouchpadButton->text().toStdString();
-    output_string = "touchpad";
+    input_string = ui->TouchpadLeftButton->text().toStdString();
+    output_string = "touchpad_left";
     lines.push_back(output_string + " = " + input_string);
     if (input_string != "unmapped")
         inputs.push_back(input_string);
 
+    input_string = ui->TouchpadCenterButton->text().toStdString();
+    output_string = "touchpad_center";
+    lines.push_back(output_string + " = " + input_string);
+    if (input_string != "unmapped")
+        inputs.push_back(input_string);
+
+    input_string = ui->TouchpadRightButton->text().toStdString();
+    output_string = "touchpad_right";
+    lines.push_back(output_string + " = " + input_string);
+    if (input_string != "unmapped")
+        inputs.push_back(input_string);
     lines.push_back("");
 
     input_string = ui->LStickUpButton->text().toStdString();
@@ -432,7 +463,9 @@ void KBMSettings::SetDefault() {
     ui->R2Button->setText("o");
     ui->R3Button->setText("m");
 
-    ui->TouchpadButton->setText("space");
+    ui->TouchpadLeftButton->setText("space");
+    ui->TouchpadCenterButton->setText("unmapped");
+    ui->TouchpadRightButton->setText("unmapped");
     ui->OptionsButton->setText("enter");
 
     ui->DpadUpButton->setText("up");
@@ -512,8 +545,12 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
                 ui->DpadRightButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "options") {
                 ui->OptionsButton->setText(QString::fromStdString(input_string));
-            } else if (output_string == "touchpad") {
-                ui->TouchpadButton->setText(QString::fromStdString(input_string));
+            } else if (output_string == "touchpad_left") {
+                ui->TouchpadLeftButton->setText(QString::fromStdString(input_string));
+            } else if (output_string == "touchpad_center") {
+                ui->TouchpadCenterButton->setText(QString::fromStdString(input_string));
+            } else if (output_string == "touchpad_right") {
+                ui->TouchpadRightButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "axis_left_x_minus") {
                 ui->LStickLeftButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "axis_left_x_plus") {

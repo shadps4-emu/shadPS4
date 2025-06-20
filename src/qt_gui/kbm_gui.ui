@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-     SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>KBMSettings</class>
  <widget class="QDialog" name="KBMSettings">
@@ -11,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1234</width>
-    <height>796</height>
+    <width>1235</width>
+    <height>842</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,8 +42,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1214</width>
-        <height>746</height>
+        <width>1215</width>
+        <height>792</height>
        </rect>
       </property>
       <widget class="QWidget" name="layoutWidget">
@@ -54,7 +52,7 @@
          <x>0</x>
          <y>0</y>
          <width>1211</width>
-         <height>741</height>
+         <height>791</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="RemapLayout">
@@ -793,7 +791,7 @@
              </layout>
             </item>
             <item>
-             <layout class="QVBoxLayout" name="layout_system_buttons" stretch="0">
+             <layout class="QVBoxLayout" name="layout_system_buttons" stretch="0,0">
               <item>
                <widget class="QGroupBox" name="groupBox_4">
                 <property name="sizePolicy">
@@ -825,8 +823,11 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="minimumHeight">
-                    <number>48</number>
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>24</height>
+                    </size>
                    </property>
                    <property name="focusPolicy">
                     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -844,14 +845,66 @@
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <property name="minimumHeight">
-                    <number>48</number>
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>24</height>
+                    </size>
                    </property>
                    <property name="focusPolicy">
                     <enum>Qt::FocusPolicy::NoFocus</enum>
                    </property>
                    <property name="text">
                     <string>Help</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="gb_options">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="title">
+                 <string>Options</string>
+                </property>
+                <layout class="QVBoxLayout" name="gb_start_layout">
+                 <property name="leftMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>5</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="OptionsButton">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="focusPolicy">
+                    <enum>Qt::FocusPolicy::NoFocus</enum>
+                   </property>
+                   <property name="text">
+                    <string>unmapped</string>
                    </property>
                   </widget>
                  </item>
@@ -1067,34 +1120,13 @@
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="gb_touchpad">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>160</width>
-                  <height>0</height>
-                 </size>
-                </property>
+               <widget class="QGroupBox" name="gb_touchpadleft">
                 <property name="title">
-                 <string>Touchpad Click</string>
+                 <string>Touchpad Left</string>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_9">
+                <layout class="QVBoxLayout" name="verticalLayout_17">
                  <item>
-                  <widget class="QPushButton" name="TouchpadButton">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="focusPolicy">
-                    <enum>Qt::FocusPolicy::NoFocus</enum>
-                   </property>
+                  <widget class="QPushButton" name="TouchpadLeftButton">
                    <property name="text">
                     <string>unmapped</string>
                    </property>
@@ -1144,6 +1176,22 @@
                    </property>
                    <property name="wordWrap">
                     <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="gb_touchpadcenter">
+                <property name="title">
+                 <string>Touchpad Center</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_11">
+                 <item>
+                  <widget class="QPushButton" name="TouchpadCenterButton">
+                   <property name="text">
+                    <string>unmapped</string>
                    </property>
                   </widget>
                  </item>
@@ -1204,7 +1252,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="gb_options">
+               <widget class="QGroupBox" name="gb_touchpadright">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -1218,23 +1266,11 @@
                  </size>
                 </property>
                 <property name="title">
-                 <string>Options</string>
+                 <string>Touchpad Right</string>
                 </property>
-                <layout class="QVBoxLayout" name="gb_start_layout">
-                 <property name="leftMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
+                <layout class="QVBoxLayout" name="verticalLayout_9">
                  <item>
-                  <widget class="QPushButton" name="OptionsButton">
+                  <widget class="QPushButton" name="TouchpadRightButton">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
