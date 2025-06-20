@@ -34,7 +34,8 @@ GameGridFrame::GameGridFrame(std::shared_ptr<gui_settings> gui_settings,
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
             &GameGridFrame::RefreshGridBackgroundImage);
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, this, false);
+        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info,
+                                            m_gui_settings, this, false);
     });
 }
 
