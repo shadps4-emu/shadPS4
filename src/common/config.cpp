@@ -81,7 +81,6 @@ static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-u32 mw_themes = 0;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -481,10 +480,6 @@ void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
 }
 
-void setMainWindowTheme(u32 theme) {
-    mw_themes = theme;
-}
-
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
@@ -524,10 +519,6 @@ std::filesystem::path getAddonInstallDir() {
         return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
     }
     return settings_addon_install_dir;
-}
-
-u32 getMainWindowTheme() {
-    return mw_themes;
 }
 
 u32 GetLanguage() {
@@ -639,7 +630,6 @@ void load(const std::filesystem::path& path) {
         const toml::value& gui = data.at("GUI");
 
         load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
-        mw_themes = toml::find_or<int>(gui, "theme", 0);
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
@@ -811,40 +801,6 @@ void save(const std::filesystem::path& path) {
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["Settings"]["consoleLanguage"] = m_language;
-
-    // Sorting of TOML sections
-    sortTomlSections(data);
-
-    std::ofstream file(path, std::ios::binary);
-    file << data;
-    file.close();
-
-    saveMainWindow(path);
-}
-
-void saveMainWindow(const std::filesystem::path& path) {
-    toml::ordered_value data;
-
-    std::error_code error;
-    if (std::filesystem::exists(path, error)) {
-        try {
-            std::ifstream ifs;
-            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifs.open(path, std::ios_base::binary);
-            data = toml::parse<toml::ordered_type_config>(
-                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
-        } catch (const std::exception& ex) {
-            fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
-            return;
-        }
-    } else {
-        if (error) {
-            fmt::print("Filesystem error: {}\n", error.message());
-        }
-        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
-    }
-
-    data["GUI"]["theme"] = mw_themes;
 
     // Sorting of TOML sections
     sortTomlSections(data);

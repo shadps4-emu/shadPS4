@@ -465,7 +465,7 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
         item->setTextAlignment(Qt::AlignCenter);
     item->setFont(QFont("Arial", 12, QFont::Bold));
 
-    Theme theme = static_cast<Theme>(Config::getMainWindowTheme());
+    Theme theme = static_cast<Theme>(m_gui_settings->GetValue(gui::gen_theme).toInt());
 
     if (theme == Theme::Light) {
         item->setForeground(QBrush(Qt::black));

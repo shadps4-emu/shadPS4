@@ -18,7 +18,6 @@ enum HideCursorState : int { Never, Idle, Always };
 
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
-void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
@@ -123,13 +122,10 @@ bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
 void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonInstallDir(const std::filesystem::path& dir);
-void setMainWindowTheme(u32 theme);
-void setElfViewer(const std::vector<std::string>& elfList);
 
 const std::vector<std::filesystem::path> getGameInstallDirs();
 const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
-u32 getMainWindowTheme();
 
 void setDefaultValues();
 

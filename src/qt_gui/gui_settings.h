@@ -22,6 +22,7 @@ const gui_value gen_recentFiles =
 const gui_value gen_guiLanguage = gui_value(general_settings, "guiLanguage", "en_US");
 const gui_value gen_elfDirs =
     gui_value(main_window, "elfDirs", QVariant::fromValue(QList<QString>()));
+const gui_value gen_theme = gui_value(general_settings, "theme", 0);
 
 // main window settings
 const gui_value mw_geometry = gui_value(main_window, "geometry", QByteArray());

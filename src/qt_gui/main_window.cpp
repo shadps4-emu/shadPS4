@@ -39,8 +39,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 MainWindow::~MainWindow() {
     SaveWindowState();
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
 }
 
 bool MainWindow::Init() {
@@ -492,7 +490,7 @@ void MainWindow::CreateConnects() {
 #endif
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
-        auto aboutDialog = new AboutDialog(this);
+        auto aboutDialog = new AboutDialog(m_gui_settings, this);
         aboutDialog->exec();
     });
 
@@ -778,7 +776,7 @@ void MainWindow::CreateConnects() {
     // Themes
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Dark));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Dark));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -786,7 +784,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Light));
         if (!isIconBlack) {
             SetUiIcons(true);
             isIconBlack = true;
@@ -794,7 +792,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeGreen, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Green, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Green));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Green));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -802,7 +800,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeBlue, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Blue, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Blue));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Blue));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -810,7 +808,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeViolet, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Violet, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Violet));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Violet));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -818,7 +816,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeGruvbox, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Gruvbox, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Gruvbox));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Gruvbox));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -826,7 +824,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeTokyoNight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::TokyoNight, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::TokyoNight));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::TokyoNight));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -834,7 +832,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeOled, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Oled, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Oled));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Oled));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -981,7 +979,7 @@ void MainWindow::InstallDirectory() {
 }
 
 void MainWindow::SetLastUsedTheme() {
-    Theme lastTheme = static_cast<Theme>(Config::getMainWindowTheme());
+    Theme lastTheme = static_cast<Theme>(m_gui_settings->GetValue(gui::gen_theme).toInt());
     m_window_themes.SetWindowTheme(lastTheme, ui->mw_searchbar);
 
     switch (lastTheme) {
