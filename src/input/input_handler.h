@@ -35,6 +35,7 @@
 #define BACK_BUTTON 0x00040000
 
 #define KEY_TOGGLE 0x00200000
+#define MOUSE_GYRO_ROLL_MODE 0x00400000
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -114,6 +115,7 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"lpaddle_low", SDL_GAMEPAD_BUTTON_LEFT_PADDLE2},
     {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
     {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
+    {"mouse_gyro_roll_mode", MOUSE_GYRO_ROLL_MODE},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {

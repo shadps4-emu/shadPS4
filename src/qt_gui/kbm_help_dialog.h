@@ -60,7 +60,8 @@ A: -F12: Triggers Renderdoc capture
 -Ctrl F10: Open the debug menu
 -F9: Pauses emultor, if the debug menu is open
 -F8: Reparses the config file while in-game
--F7: Toggles mouse capture and mouse input
+-F7: Toggles mouse-to-joystick emulation
+-F6: Toggles mouse-to-gyro emulation
 
 Q: How do I change between mouse and controller joystick input, and why is it even required?
 A: You can switch between them with F7, and it is required, because mouse input is done with polling, which means mouse movement is checked every frame, and if it didn't move, the code manually sets the emulator's virtual controller to 0 (back to the center), even if other input devices would update it.
@@ -175,6 +176,8 @@ You can find these here, with detailed comments, examples and suggestions for mo
     Values go from 1 to 127 (no deadzone to max deadzone), first is the inner, second is the outer deadzone
     If you only want inner or outer deadzone, set the other to 1 or 127, respectively
     Devices: leftjoystick, rightjoystick, l2, r2
+'mouse_gyro_roll_mode':
+    Controls whether moving the mouse sideways causes a panning or a rolling motion while mouse-to-gyro emulation is active.
 )";
     }
 };
