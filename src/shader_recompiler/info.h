@@ -215,7 +215,8 @@ struct Info {
     bool has_image_query{};
     bool has_perspective_interp{};
     bool has_linear_interp{};
-    bool uses_atomic_float_min_max{};
+    bool uses_buffer_atomic_float_min_max{};
+    bool uses_image_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
