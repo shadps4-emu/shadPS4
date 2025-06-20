@@ -1138,7 +1138,7 @@
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>Эта кнопка копирует настройки из общего конфига в текущий выбранный профиль, и не может быть использован, когда выбранный профиль это общий конфиг.</translation>
+      <translation>Эта кнопка копирует настройки из общего конфига в текущий выбранный профиль, и не может быть использован, когда выбранный профиль - это общий конфиг.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
@@ -1184,7 +1184,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
 
 %1</translation>
     </message>

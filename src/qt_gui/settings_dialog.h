@@ -32,7 +32,7 @@ public:
     int exec() override;
 
 signals:
-    void LanguageChanged(const std::string& locale);
+    void LanguageChanged(const QString& locale);
     void CompatibilityChanged();
     void BackgroundOpacityChanged(int opacity);
 

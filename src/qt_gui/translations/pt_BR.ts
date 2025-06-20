@@ -1184,7 +1184,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Não é possível atribuir a mesma entrada mais de uma vez. Entradas duplicadas foram atribuídas aos seguintes botões:
 
 %1</translation>
     </message>

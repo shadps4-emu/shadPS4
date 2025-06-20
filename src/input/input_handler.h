@@ -23,6 +23,10 @@
 #define SDL_MOUSE_WHEEL_LEFT SDL_EVENT_MOUSE_WHEEL + 5
 #define SDL_MOUSE_WHEEL_RIGHT SDL_EVENT_MOUSE_WHEEL + 7
 
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT SDL_GAMEPAD_BUTTON_COUNT + 1
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER SDL_GAMEPAD_BUTTON_COUNT + 2
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT SDL_GAMEPAD_BUTTON_COUNT + 3
+
 // idk who already used what where so I just chose a big number
 #define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
 
@@ -31,6 +35,9 @@
 #define BACK_BUTTON 0x00040000
 
 #define KEY_TOGGLE 0x00200000
+#define MOUSE_GYRO_ROLL_MODE 0x00400000
+
+#define SDL_UNMAPPED UINT32_MAX - 1
 
 namespace Input {
 using Input::Axis;
@@ -96,12 +103,19 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"options", SDL_GAMEPAD_BUTTON_START},
 
     // these are outputs only (touchpad can only be bound to itself)
-    {"touchpad", SDL_GAMEPAD_BUTTON_TOUCHPAD},
+    {"touchpad_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT},
+    {"touchpad_center", SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER},
+    {"touchpad_right", SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT},
     {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 
     // this is only for input
     {"back", SDL_GAMEPAD_BUTTON_BACK},
+    {"lpaddle_high", SDL_GAMEPAD_BUTTON_LEFT_PADDLE1},
+    {"lpaddle_low", SDL_GAMEPAD_BUTTON_LEFT_PADDLE2},
+    {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
+    {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
+    {"mouse_gyro_roll_mode", MOUSE_GYRO_ROLL_MODE},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {
@@ -225,6 +239,7 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"kpenter", SDLK_KP_ENTER},
     {"kpequals", SDLK_KP_EQUALS},
     {"capslock", SDLK_CAPSLOCK},
+    {"unmapped", SDL_UNMAPPED},
 };
 
 void ParseInputConfig(const std::string game_id);
