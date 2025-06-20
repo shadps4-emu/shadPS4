@@ -1184,7 +1184,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Nuk mund të caktohet e njëjta hyrje unike më shumë se një herë. Hyrjet e dublikuara janë caktuar në butonët e mëposhtëm:
 
 %1</translation>
     </message>
