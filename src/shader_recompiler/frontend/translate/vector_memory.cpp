@@ -90,6 +90,10 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Inc, inst);
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
+    case Opcode::BUFFER_ATOMIC_FMIN:
+        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+    case Opcode::BUFFER_ATOMIC_FMAX:
+        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -357,6 +361,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
             return ir.BufferAtomicInc(handle, address, buffer_info);
         case AtomicOp::Dec:
             return ir.BufferAtomicDec(handle, address, buffer_info);
+        case AtomicOp::Fmin:
+            return ir.BufferAtomicFMin(handle, address, vdata_val, buffer_info);
+        case AtomicOp::Fmax:
+            return ir.BufferAtomicFMax(handle, address, vdata_val, buffer_info);
         default:
             UNREACHABLE();
         }

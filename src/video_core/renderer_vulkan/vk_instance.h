@@ -165,6 +165,13 @@ public:
         return amd_shader_trinary_minmax;
     }
 
+    /// Returns true when the shaderBufferFloat32AtomicMinMax feature of
+    /// VK_EXT_shader_atomic_float2 is supported.
+    bool IsShaderAtomicFloatBuffer32MinMaxSupported() const {
+        return shader_atomic_float2 &&
+               shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax;
+    }
+
     /// Returns true when the shaderImageFloat32AtomicMinMax feature of
     /// VK_EXT_shader_atomic_float2 is supported.
     bool IsShaderAtomicFloatImage32MinMaxSupported() const {
