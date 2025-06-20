@@ -33,7 +33,7 @@ enum class Class : u8 {
     Common,                ///< Library routines
     Common_Filesystem,     ///< Filesystem interface library
     Common_Memory,         ///< Memory mapping and management functions
-	Common_Ntapi,          ///< Native Windows API
+    Common_Ntapi,          ///< Native Windows API
     Core,                  ///< LLE emulation core
     Core_Linker,           ///< The module linker
     Core_Devices,          ///< Devices emulation
