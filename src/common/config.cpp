@@ -82,7 +82,6 @@ std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 u32 mw_themes = 0;
-std::vector<std::string> m_elf_viewer;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -486,11 +485,6 @@ void setMainWindowTheme(u32 theme) {
     mw_themes = theme;
 }
 
-void setElfViewer(const std::vector<std::string>& elfList) {
-    m_elf_viewer.resize(elfList.size());
-    m_elf_viewer = elfList;
-}
-
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
@@ -534,10 +528,6 @@ std::filesystem::path getAddonInstallDir() {
 
 u32 getMainWindowTheme() {
     return mw_themes;
-}
-
-std::vector<std::string> getElfViewer() {
-    return m_elf_viewer;
 }
 
 u32 GetLanguage() {
@@ -674,7 +664,6 @@ void load(const std::filesystem::path& path) {
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
-        m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
     }
 
     if (data.contains("Settings")) {
@@ -856,7 +845,6 @@ void saveMainWindow(const std::filesystem::path& path) {
     }
 
     data["GUI"]["theme"] = mw_themes;
-    data["GUI"]["elfDirs"] = m_elf_viewer;
 
     // Sorting of TOML sections
     sortTomlSections(data);

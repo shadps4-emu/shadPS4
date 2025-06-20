@@ -297,7 +297,7 @@ void MainWindow::CreateDockWindows() {
     m_game_list_frame->setObjectName("gamelist");
     m_game_grid_frame.reset(new GameGridFrame(m_gui_settings, m_game_info, m_compat_info, this));
     m_game_grid_frame->setObjectName("gamegridlist");
-    m_elf_viewer.reset(new ElfViewer(this));
+    m_elf_viewer.reset(new ElfViewer(m_gui_settings, this));
     m_elf_viewer->setObjectName("elflist");
 
     int table_mode = m_gui_settings->GetValue(gui::gl_mode).toInt();

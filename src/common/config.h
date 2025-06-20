@@ -22,73 +22,94 @@ void saveMainWindow(const std::filesystem::path& path);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
+bool getIsFullscreen();
+void setIsFullscreen(bool enable);
+std::string getFullscreenMode();
+void setFullscreenMode(std::string mode);
+u32 getScreenWidth();
+u32 getScreenHeight();
+void setScreenWidth(u32 width);
+void setScreenHeight(u32 height);
+bool debugDump();
+void setDebugDump(bool enable);
+s32 getGpuId();
+void setGpuId(s32 selectedGpuId);
+bool allowHDR();
+void setAllowHDR(bool enable);
+bool collectShadersForDebug();
+void setCollectShaderForDebug(bool enable);
+bool showSplash();
+void setShowSplash(bool enable);
+std::string sideTrophy();
+void setSideTrophy(std::string side);
+bool nullGpu();
+void setNullGpu(bool enable);
+bool copyGPUCmdBuffers();
+void setCopyGPUCmdBuffers(bool enable);
+bool dumpShaders();
+void setDumpShaders(bool enable);
+u32 vblankDiv();
+void setVblankDiv(u32 value);
+bool getisTrophyPopupDisabled();
+void setisTrophyPopupDisabled(bool disable);
+s16 getCursorState();
+void setCursorState(s16 cursorState);
+bool vkValidationEnabled();
+void setVkValidation(bool enable);
+bool vkValidationSyncEnabled();
+void setVkSyncValidation(bool enable);
+bool getVkCrashDiagnosticEnabled();
+void setVkCrashDiagnosticEnabled(bool enable);
+bool getVkHostMarkersEnabled();
+void setVkHostMarkersEnabled(bool enable);
+bool getVkGuestMarkersEnabled();
+void setVkGuestMarkersEnabled(bool enable);
+bool getEnableDiscordRPC();
+void setEnableDiscordRPC(bool enable);
+bool isRdocEnabled();
+void setRdocEnabled(bool enable);
+std::string getLogType();
+void setLogType(const std::string& type);
+std::string getLogFilter();
+void setLogFilter(const std::string& type);
+double getTrophyNotificationDuration();
+void setTrophyNotificationDuration(double newTrophyNotificationDuration);
+int getCursorHideTimeout();
+void setCursorHideTimeout(int newcursorHideTimeout);
+void setSeparateLogFilesEnabled(bool enabled);
+bool getSeparateLogFilesEnabled();
+u32 GetLanguage();
+void setLanguage(u32 language);
+void setUseSpecialPad(bool use);
+bool getUseSpecialPad();
+void setSpecialPadClass(int type);
+int getSpecialPadClass();
+bool getPSNSignedIn();
+void setPSNSignedIn(bool sign); // no ui setting
+bool patchShaders();            // no set
+bool fpsColor();                // no set
+bool isNeoModeConsole();
+void setNeoMode(bool enable);  // no ui setting
+bool isDevKitConsole();        // no set
+bool vkValidationGpuEnabled(); // no set
+bool getIsMotionControlsEnabled();
+void setIsMotionControlsEnabled(bool use);
+
+// TODO
 bool GetLoadGameSizeEnabled();
 std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
-bool getIsFullscreen();
-std::string getFullscreenMode();
-bool isNeoModeConsole();
-bool isDevKitConsole();
-bool getisTrophyPopupDisabled();
-bool getEnableDiscordRPC();
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
-bool getPSNSignedIn();
-
-std::string getLogFilter();
-std::string getLogType();
 std::string getUserName();
 std::string getChooseHomeTab();
-
-s16 getCursorState();
-int getCursorHideTimeout();
-double getTrophyNotificationDuration();
 std::string getBackButtonBehavior();
-bool getUseSpecialPad();
-int getSpecialPadClass();
-bool getIsMotionControlsEnabled();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
 bool GetOverrideControllerColor();
 void SetOverrideControllerColor(bool enable);
 int* GetControllerCustomColor();
 void SetControllerCustomColor(int r, int b, int g);
-
-u32 getScreenWidth();
-u32 getScreenHeight();
-s32 getGpuId();
-bool allowHDR();
-
-bool debugDump();
-bool collectShadersForDebug();
-bool showSplash();
-std::string sideTrophy();
-bool nullGpu();
-bool copyGPUCmdBuffers();
-bool dumpShaders();
-bool patchShaders();
-bool isRdocEnabled();
-bool fpsColor();
-u32 vblankDiv();
-
-void setDebugDump(bool enable);
-void setCollectShaderForDebug(bool enable);
-void setShowSplash(bool enable);
-void setSideTrophy(std::string side);
-void setNullGpu(bool enable);
-void setAllowHDR(bool enable);
-void setCopyGPUCmdBuffers(bool enable);
-void setDumpShaders(bool enable);
-void setVblankDiv(u32 value);
-void setGpuId(s32 selectedGpuId);
-void setScreenWidth(u32 width);
-void setScreenHeight(u32 height);
-void setIsFullscreen(bool enable);
-void setFullscreenMode(std::string mode);
-void setisTrophyPopupDisabled(bool disable);
-void setEnableDiscordRPC(bool enable);
-void setLanguage(u32 language);
-void setNeoMode(bool enable);
 void setUserName(const std::string& type);
 void setChooseHomeTab(const std::string& type);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
@@ -96,34 +117,7 @@ void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
 void setCompatibilityEnabled(bool use);
 void setCheckCompatibilityOnStartup(bool use);
-void setPSNSignedIn(bool sign);
-
-void setCursorState(s16 cursorState);
-void setCursorHideTimeout(int newcursorHideTimeout);
-void setTrophyNotificationDuration(double newTrophyNotificationDuration);
 void setBackButtonBehavior(const std::string& type);
-void setUseSpecialPad(bool use);
-void setSpecialPadClass(int type);
-void setIsMotionControlsEnabled(bool use);
-
-void setLogType(const std::string& type);
-void setLogFilter(const std::string& type);
-void setSeparateLogFilesEnabled(bool enabled);
-bool getSeparateLogFilesEnabled();
-void setVkValidation(bool enable);
-void setVkSyncValidation(bool enable);
-void setRdocEnabled(bool enable);
-
-bool vkValidationEnabled();
-bool vkValidationSyncEnabled();
-bool vkValidationGpuEnabled();
-bool getVkCrashDiagnosticEnabled();
-bool getVkHostMarkersEnabled();
-bool getVkGuestMarkersEnabled();
-void setVkCrashDiagnosticEnabled(bool enable);
-void setVkHostMarkersEnabled(bool enable);
-void setVkGuestMarkersEnabled(bool enable);
-
 // Gui
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
@@ -136,13 +130,10 @@ const std::vector<std::filesystem::path> getGameInstallDirs();
 const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
 u32 getMainWindowTheme();
-std::vector<std::string> getElfViewer();
 
 void setDefaultValues();
 
 // todo: name and function location pending
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id = "");
 
-// settings
-u32 GetLanguage();
 }; // namespace Config
