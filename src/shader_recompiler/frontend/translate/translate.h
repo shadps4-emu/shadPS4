@@ -291,6 +291,7 @@ public:
     void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst);
     void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                       const GcnInst& inst);
+    template <typename T = IR::U32>
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Image Memory
