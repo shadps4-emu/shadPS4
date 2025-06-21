@@ -24,6 +24,24 @@
       }
     },
     {
+      "name": "x64-Clang-Debug-Qt",
+      "displayName": "Clang x64 Debug with Qt",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/x64-Clang-Debug-Qt",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Install/x64-Clang-Debug-Qt",
+        "ENABLE_QT_GUI": "ON"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
+      }
+    },
+    {
       "name": "x64-Clang-Release",
       "displayName": "Clang x64 Release",
       "generator": "Ninja",
@@ -41,6 +59,24 @@
       }
     },
     {
+      "name": "x64-Clang-Release-Qt",
+      "displayName": "Clang x64 Release with Qt",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/x64-Clang-Release-Qt",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Install/x64-Clang-Release-Qt",
+        "ENABLE_QT_GUI": "ON"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
+      }
+    },
+    {
       "name": "x64-Clang-RelWithDebInfo",
       "displayName": "Clang x64 RelWithDebInfo",
       "generator": "Ninja",
@@ -50,6 +86,24 @@
         "CMAKE_CXX_COMPILER": "clang-cl",
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/Install/x64-Clang-RelWithDebInfo"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
+      }
+    },
+    {
+      "name": "x64-Clang-RelWithDebInfo-Qt",
+      "displayName": "Clang x64 RelWithDebInfo with Qt",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/x64-Clang-RelWithDebInfo-Qt",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Install/x64-Clang-RelWithDebInfo-Qt",
+        "ENABLE_QT_GUI": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
