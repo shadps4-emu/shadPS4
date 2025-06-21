@@ -310,6 +310,19 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
     }
+    if (info.uses_buffer_int64_atomics || info.uses_shared_int64_atomics) {
+        if (info.uses_buffer_int64_atomics) {
+            ASSERT_MSG(ctx.profile.supports_buffer_int64_atomics,
+                       "Shader requires support for atomic Int64 buffer operations that your "
+                       "Vulkan instance does not advertise");
+        }
+        if (info.uses_shared_int64_atomics) {
+            ASSERT_MSG(ctx.profile.supports_shared_int64_atomics,
+                       "Shader requires support for atomic Int64 shared memory operations that "
+                       "your Vulkan instance does not advertise");
+        }
+        ctx.AddCapability(spv::Capability::Int64Atomics);
+    }
 }
 
 void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
