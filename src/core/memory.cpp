@@ -322,7 +322,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
     // Validate the requested physical address range
     if (phys_addr != -1) {
-        auto validated_size = 0;
+        u64 validated_size = 0;
         do {
             auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
             // If any requested dmem area is not allocated, return an error.
