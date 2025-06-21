@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -15,11 +16,11 @@ struct OrbisGameLiveStreamingStatus {
     bool isOnAir;
     u8 align[3];
     u32 spectatorCounts;
-    s32 userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     u8 reserved[60];
 };
 struct OrbisGameLiveStreamingStatus2 {
-    s32 userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     bool isOnAir;
     u8 align[3];
     u32 spectatorCounts;
