@@ -63,13 +63,17 @@ enum class VMAType : u32 {
 
 struct DirectMemoryArea {
     PAddr base = 0;
-    size_t size = 0;
-    int memory_type = 0;
+    u64 size = 0;
+    s32 memory_type = 0;
     bool is_pooled = false;
     bool is_free = true;
 
     PAddr GetEnd() const {
         return base + size;
+    }
+
+    bool Contains(PAddr addr, u64 size) const {
+        return addr >= base && (addr + size) <= (base + this->size);
     }
 
     bool CanMergeWith(const DirectMemoryArea& next) const {
@@ -88,7 +92,7 @@ struct DirectMemoryArea {
 
 struct VirtualMemoryArea {
     VAddr base = 0;
-    size_t size = 0;
+    u64 size = 0;
     PAddr phys_base = 0;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;

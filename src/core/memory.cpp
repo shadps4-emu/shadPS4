@@ -320,6 +320,28 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
+    // Validate the requested physical address range
+    if (phys_addr != -1) {
+        auto validated_size = 0;
+        do {
+            auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
+            // If any requested dmem area is not allocated, return an error.
+            if (dmem_area.is_free) {
+                LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                          phys_addr);
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            // Track how much we've validated.
+            validated_size += dmem_area.size - (phys_addr + validated_size - dmem_area.base);
+        } while (validated_size < size && phys_addr + validated_size < GetTotalDirectSize());
+        // If the requested range goes outside the dmem map, return an error.
+        if (validated_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                      phys_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    }
+
     // Limit the minumum address to SystemManagedVirtualBase to prevent hardware-specific issues.
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
 
