@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Kosketuslevyn Klikkaus</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Hiiri Joystickinä</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Ohjain</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Takaisin-painikkeen Käyttäytyminen</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafiikka</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>Aseta aika, milloin hiiri häviää oltuaan aktiivinen.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Näytä Yhteensopivuustiedot:\nNäyttää pelien yhteensopivuustiedot listanäkymässä. Ota käyttöön &quot;Päivitä Yhteensopivuustietokanta Käynnistäessä&quot; saadaksesi ajantasaista tietoa.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Aina</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Kosketuslevyn Vasen Puoli</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Kosketuslevyn Oikea Puoli</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Kosketuslevyn Keskikohta</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ei mitään</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
