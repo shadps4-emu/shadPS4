@@ -511,8 +511,16 @@ Value IREmitter::BufferAtomicFMin(const Value& handle, const Value& address, con
 
 Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
-                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return is_signed ? Inst(Opcode::BufferAtomicSMax64, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMax64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 Value IREmitter::BufferAtomicFMax(const Value& handle, const Value& address, const Value& value,

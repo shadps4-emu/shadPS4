@@ -387,6 +387,8 @@ bool Instance::CreateDevice() {
             .drawIndirectCount = vk12_features.drawIndirectCount,
             .storageBuffer8BitAccess = vk12_features.storageBuffer8BitAccess,
             .uniformAndStorageBuffer8BitAccess = vk12_features.uniformAndStorageBuffer8BitAccess,
+            .shaderBufferInt64Atomics = vk12_features.shaderBufferInt64Atomics,
+            .shaderSharedInt64Atomics = vk12_features.shaderSharedInt64Atomics,
             .shaderFloat16 = vk12_features.shaderFloat16,
             .shaderInt8 = vk12_features.shaderInt8,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,
