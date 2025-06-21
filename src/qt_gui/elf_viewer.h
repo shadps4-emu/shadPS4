@@ -11,7 +11,7 @@
 class ElfViewer : public QTableWidget {
     Q_OBJECT
 public:
-    explicit ElfViewer(QWidget* parent = nullptr);
+    explicit ElfViewer(std::shared_ptr<gui_settings> gui_settings, QWidget* parent = nullptr);
     QStringList m_elf_list;
 
 private:
@@ -21,7 +21,8 @@ private:
     Core::Loader::Elf m_elf_file;
     QStringList dir_list;
     QStringList elf_headers_list;
-    std::vector<std::string> dir_list_std;
+    QList<QString> list;
+    std::shared_ptr<gui_settings> m_gui_settings;
 
     void SetTableItem(QTableWidget* game_list, int row, int column, QString itemStr) {
         QTableWidgetItem* item = new QTableWidgetItem();

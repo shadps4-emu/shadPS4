@@ -75,3 +75,17 @@ void settings::SetValue(const QString& key, const QString& name, const QVariant&
         }
     }
 }
+QVariant settings::List2Var(const QList<QString>& list) {
+    QByteArray ba;
+    QDataStream stream(&ba, QIODevice::WriteOnly);
+    stream << list;
+    return QVariant(ba);
+}
+
+QList<QString> settings::Var2List(const QVariant& var) {
+    QList<QString> list;
+    QByteArray ba = var.toByteArray();
+    QDataStream stream(&ba, QIODevice::ReadOnly);
+    stream >> list;
+    return list;
+}

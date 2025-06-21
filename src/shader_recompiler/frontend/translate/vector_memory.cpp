@@ -90,6 +90,10 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Inc, inst);
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
+    case Opcode::BUFFER_ATOMIC_FMIN:
+        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+    case Opcode::BUFFER_ATOMIC_FMAX:
+        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -357,6 +361,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
             return ir.BufferAtomicInc(handle, address, buffer_info);
         case AtomicOp::Dec:
             return ir.BufferAtomicDec(handle, address, buffer_info);
+        case AtomicOp::Fmin:
+            return ir.BufferAtomicFMin(handle, address, vdata_val, buffer_info);
+        case AtomicOp::Fmax:
+            return ir.BufferAtomicFMax(handle, address, vdata_val, buffer_info);
         default:
             UNREACHABLE();
         }
@@ -531,8 +539,10 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     // Load first dword of T# and S#. We will use them as the handle that will guide resource
     // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
     // binding index.
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value inline_sampler =
+        ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
+                              ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
 
     // Determine how many address registers need to be passed.
     // The image type is unknown, so add all 4 possible base registers and resolve later.
@@ -568,7 +578,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     const IR::Value address4 = get_addr_reg(12);
 
     // Issue the placeholder IR instruction.
-    IR::Value texel = ir.ImageSampleRaw(handle, address1, address2, address3, address4, info);
+    IR::Value texel =
+        ir.ImageSampleRaw(handle, address1, address2, address3, address4, inline_sampler, info);
     if (info.is_depth && !gather) {
         // For non-gather depth sampling, only return a single value.
         texel = ir.CompositeExtract(texel, 0);

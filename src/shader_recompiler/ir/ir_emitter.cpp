@@ -504,10 +504,20 @@ Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, con
                      : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
 }
 
+Value IREmitter::BufferAtomicFMin(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMin32, Flags{info}, handle, address, value);
+}
+
 Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
     return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
                      : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicFMax(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMax32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, BufferInstInfo info) {
@@ -1964,9 +1974,9 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
 
 Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
                                 const Value& address3, const Value& address4,
-                                TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
-                address4);
+                                const Value& inline_sampler, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
+                inline_sampler);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,

@@ -4,6 +4,18 @@
 #include <QDialog>
 #include "game_info.h"
 
+// macros > declaring constants
+// also, we were only using one counterpart
+#ifdef _WIN32
+#define LCTRL_KEY 29
+#define LALT_KEY 56
+#define LSHIFT_KEY 42
+#else
+#define LCTRL_KEY 37
+#define LALT_KEY 64
+#define LSHIFT_KEY 50
+#endif
+
 namespace Ui {
 class KBMSettings;
 }
@@ -24,22 +36,6 @@ private Q_SLOTS:
 private:
     std::unique_ptr<Ui::KBMSettings> ui;
     std::shared_ptr<GameInfoClass> m_game_info;
-
-#ifdef _WIN32
-    const int lctrl = 29;
-    const int rctrl = 57373;
-    const int lalt = 56;
-    const int ralt = 57400;
-    const int lshift = 42;
-    const int rshift = 54;
-#else
-    const int lctrl = 37;
-    const int rctrl = 105;
-    const int lalt = 64;
-    const int ralt = 108;
-    const int lshift = 50;
-    const int rshift = 62;
-#endif
 
     bool eventFilter(QObject* obj, QEvent* event) override;
     void ButtonConnects();

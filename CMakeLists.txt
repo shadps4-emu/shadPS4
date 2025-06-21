@@ -653,6 +653,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/arch.h
            src/common/assert.cpp
            src/common/assert.h
+           src/common/bit_array.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
@@ -913,9 +914,10 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
                src/video_core/buffer_cache/buffer_cache.h
-               src/video_core/buffer_cache/memory_tracker_base.h
+               src/video_core/buffer_cache/memory_tracker.h
                src/video_core/buffer_cache/range_set.h
-               src/video_core/buffer_cache/word_manager.h
+               src/video_core/buffer_cache/region_definitions.h
+               src/video_core/buffer_cache/region_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
                src/video_core/renderer_vulkan/vk_common.cpp
@@ -952,6 +954,10 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/renderer_vulkan/host_passes/fsr_pass.h
                src/video_core/renderer_vulkan/host_passes/pp_pass.cpp
                src/video_core/renderer_vulkan/host_passes/pp_pass.h
+               src/video_core/texture_cache/blit_helper.cpp
+               src/video_core/texture_cache/blit_helper.h
+               src/video_core/texture_cache/host_compatibility.cpp
+               src/video_core/texture_cache/host_compatibility.h
                src/video_core/texture_cache/image.cpp
                src/video_core/texture_cache/image.h
                src/video_core/texture_cache/image_info.cpp
@@ -965,8 +971,6 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/texture_cache/tile_manager.cpp
                src/video_core/texture_cache/tile_manager.h
                src/video_core/texture_cache/types.h
-               src/video_core/texture_cache/host_compatibility.cpp
-               src/video_core/texture_cache/host_compatibility.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h
                src/video_core/multi_level_page_table.h

@@ -376,7 +376,7 @@ public:
 
             QString gameName = QString::fromStdString(m_games[itemID].name);
             TrophyViewer* trophyViewer =
-                new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
+                new TrophyViewer(m_gui_settings, trophyPath, gameTrpPath, gameName, allTrophyGames);
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
                     [trophyViewer]() { trophyViewer->deleteLater(); });

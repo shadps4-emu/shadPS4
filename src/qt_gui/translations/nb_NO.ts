@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Oppdateringen ble lastet ned, trykk OK for å installere.</translation>
+      <translation>Oppdateringen er lastet ned, trykk OK for å installere.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
@@ -990,7 +990,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation>Ikke satt opp</translation>
+      <translation>Ikke tildelt</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1153,10 +1153,6 @@
       <translation>Klarte ikke lagre</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Kan ikke tildele unike oppsett mer enn en gang</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Trykk på en tast</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
+
+%1</translation>
     </message>
   </context>
   <context>

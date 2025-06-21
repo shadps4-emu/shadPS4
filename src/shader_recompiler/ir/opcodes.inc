@@ -125,8 +125,10 @@ OPCODE(BufferAtomicIAdd64,                                  U64,            Opaq
 OPCODE(BufferAtomicISub32,                                  U32,            Opaque,         Opaque,         U32                                             )
 OPCODE(BufferAtomicSMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
 OPCODE(BufferAtomicUMin32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicFMin32,                                  U32,            Opaque,         Opaque,         F32                                             )
 OPCODE(BufferAtomicSMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
 OPCODE(BufferAtomicUMax32,                                  U32,            Opaque,         Opaque,         U32                                             )
+OPCODE(BufferAtomicFMax32,                                  U32,            Opaque,         Opaque,         F32                                             )
 OPCODE(BufferAtomicInc32,                                   U32,            Opaque,         Opaque,                                                         )
 OPCODE(BufferAtomicDec32,                                   U32,            Opaque,         Opaque,                                                         )
 OPCODE(BufferAtomicAnd32,                                   U32,            Opaque,         Opaque,         U32,                                            )
@@ -412,7 +414,7 @@ OPCODE(ConvertU8U32,                                        U8,             U32,
 OPCODE(ConvertU32U8,                                        U32,            U8,                                                                             )
 
 // Image operations
-OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         F32x4,          F32x4,          F32x4,          F32,            )
+OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         F32x4,          F32x4,          F32x4,          F32,            Opaque,      )
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         F32x4,          F32,            Opaque,                         )
 OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )
 OPCODE(ImageSampleDrefImplicitLod,                          F32x4,          Opaque,         Opaque,         F32,            F32,            Opaque,         )
