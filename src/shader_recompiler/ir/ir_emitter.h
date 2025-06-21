@@ -353,8 +353,7 @@ public:
 
     [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
                                        const Value& address2, const Value& address3,
-                                       const Value& address4, const Value& inline_sampler,
-                                       TextureInstInfo info);
+                                       const Value& address4, TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
                                                const F32& bias, const Value& offset,
