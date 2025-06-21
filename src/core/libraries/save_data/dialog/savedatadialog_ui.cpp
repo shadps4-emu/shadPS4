@@ -96,8 +96,14 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = param_sfo.GetLastWrite();
+            #ifdef __APPLE__
+            std::string date_str =
+                fmt::format("{:%d %b, %Y %R}",
+                            fmt::localtime(std::chrono::system_clock::to_time_t(last_write)));
+            #else
             auto sys_time = std::chrono::clock_cast<std::chrono::system_clock>(last_write);
             std::string date_str = fmt::format("{:%d %b, %Y %R}", sys_time);
+            #endif
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
