@@ -216,6 +216,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_trinary_minmax = instance_.IsAmdShaderTrinaryMinMaxSupported(),
         // TODO: Emitted bounds checks cause problems with phi control flow; needs to be fixed.
         .supports_robust_buffer_access = true, // instance_.IsRobustBufferAccess2Supported(),
+        .supports_buffer_fp32_atomic_min_max =
+            instance_.IsShaderAtomicFloatBuffer32MinMaxSupported(),
         .supports_image_fp32_atomic_min_max = instance_.IsShaderAtomicFloatImage32MinMaxSupported(),
         .supports_workgroup_explicit_memory_layout =
             instance_.IsWorkgroupMemoryExplicitLayoutSupported(),
@@ -346,8 +348,15 @@ bool PipelineCache::RefreshGraphicsKey() {
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
 
-        key.color_formats[remapped_cb] =
+        const auto format =
             LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
+        key.color_formats[remapped_cb] = format;
+        if (!instance.IsFormatSupported(format, vk::FormatFeatureFlagBits2::eColorAttachment)) {
+            LOG_WARNING(Render_Vulkan,
+                        "color buffer format {} does not support COLOR_ATTACHMENT_BIT",
+                        vk::to_string(format));
+        }
+
         key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),

@@ -201,6 +201,10 @@ int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context) {
     Common::SlotId contextId;
     contextId.index = context - 1;
 
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+
     ContextKey contextkey = trophy_contexts[contextId];
     trophy_contexts.erase(contextId);
     contexts_internal.erase(contextkey);

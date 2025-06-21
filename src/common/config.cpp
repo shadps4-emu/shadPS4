@@ -42,7 +42,6 @@ static std::string logFilter;
 static std::string logType = "sync";
 static std::string userName = "shadPS4";
 static std::string chooseHomeTab;
-static std::string backButtonBehavior = "left";
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
@@ -86,10 +85,6 @@ static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-u32 mw_themes = 0;
-std::vector<std::string> m_elf_viewer;
-std::vector<std::string> m_recent_files;
-std::string emulator_language = "en_US";
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -212,10 +207,6 @@ std::string getUserName() {
 
 std::string getChooseHomeTab() {
     return chooseHomeTab;
-}
-
-std::string getBackButtonBehavior() {
-    return backButtonBehavior;
 }
 
 bool getUseSpecialPad() {
@@ -433,10 +424,6 @@ void setChooseHomeTab(const std::string& type) {
     chooseHomeTab = type;
 }
 
-void setBackButtonBehavior(const std::string& type) {
-    backButtonBehavior = type;
-}
-
 void setUseSpecialPad(bool use) {
     useSpecialPad = use;
 }
@@ -489,24 +476,6 @@ void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
 }
 
-void setMainWindowTheme(u32 theme) {
-    mw_themes = theme;
-}
-
-void setElfViewer(const std::vector<std::string>& elfList) {
-    m_elf_viewer.resize(elfList.size());
-    m_elf_viewer = elfList;
-}
-
-void setRecentFiles(const std::vector<std::string>& recentFiles) {
-    m_recent_files.resize(recentFiles.size());
-    m_recent_files = recentFiles;
-}
-
-void setEmulatorLanguage(std::string language) {
-    emulator_language = language;
-}
-
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
@@ -546,22 +515,6 @@ std::filesystem::path getAddonInstallDir() {
         return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
     }
     return settings_addon_install_dir;
-}
-
-u32 getMainWindowTheme() {
-    return mw_themes;
-}
-
-std::vector<std::string> getElfViewer() {
-    return m_elf_viewer;
-}
-
-std::vector<std::string> getRecentFiles() {
-    return m_recent_files;
-}
-
-std::string getEmulatorLanguage() {
-    return emulator_language;
 }
 
 u32 GetLanguage() {
@@ -625,7 +578,6 @@ void load(const std::filesystem::path& path) {
 
         cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
-        backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
         isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
@@ -673,7 +625,6 @@ void load(const std::filesystem::path& path) {
         const toml::value& gui = data.at("GUI");
 
         load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
-        mw_themes = toml::find_or<int>(gui, "theme", 0);
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
@@ -698,9 +649,6 @@ void load(const std::filesystem::path& path) {
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
 
         settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
-        m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
-        m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
-        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
     }
 
     if (data.contains("Settings")) {
@@ -712,19 +660,6 @@ void load(const std::filesystem::path& path) {
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
-    }
-
-    // Check if the loaded language is in the allowed list
-    const std::vector<std::string> allowed_languages = {
-        "ar_SA", "da_DK", "de_DE", "el_GR", "en_US", "es_ES", "fa_IR", "fi_FI",
-        "fr_FR", "hu_HU", "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nb_NO",
-        "nl_NL", "pl_PL", "pt_BR", "pt_PT", "ro_RO", "ru_RU", "sq_AL", "sv_SE",
-        "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW", "ca_ES", "sr_CS"};
-
-    if (std::find(allowed_languages.begin(), allowed_languages.end(), emulator_language) ==
-        allowed_languages.end()) {
-        emulator_language = "en_US"; // Default to en_US if not in the list
-        save(path);
     }
 }
 
@@ -797,7 +732,6 @@ void save(const std::filesystem::path& path) {
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
-    data["Input"]["backButtonBehavior"] = backButtonBehavior;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
@@ -860,44 +794,7 @@ void save(const std::filesystem::path& path) {
 
     data["GUI"]["addonInstallDir"] =
         std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-    data["GUI"]["emulatorLanguage"] = emulator_language;
     data["Settings"]["consoleLanguage"] = m_language;
-
-    // Sorting of TOML sections
-    sortTomlSections(data);
-
-    std::ofstream file(path, std::ios::binary);
-    file << data;
-    file.close();
-
-    saveMainWindow(path);
-}
-
-void saveMainWindow(const std::filesystem::path& path) {
-    toml::ordered_value data;
-
-    std::error_code error;
-    if (std::filesystem::exists(path, error)) {
-        try {
-            std::ifstream ifs;
-            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifs.open(path, std::ios_base::binary);
-            data = toml::parse<toml::ordered_type_config>(
-                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
-        } catch (const std::exception& ex) {
-            fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
-            return;
-        }
-    } else {
-        if (error) {
-            fmt::print("Filesystem error: {}\n", error.message());
-        }
-        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
-    }
-
-    data["GUI"]["theme"] = mw_themes;
-    data["GUI"]["elfDirs"] = m_elf_viewer;
-    data["GUI"]["recentFiles"] = m_recent_files;
 
     // Sorting of TOML sections
     sortTomlSections(data);
@@ -925,7 +822,6 @@ void setDefaultValues() {
     cursorState = HideCursorState::Idle;
     cursorHideTimeout = 5;
     trophyNotificationDuration = 6.0;
-    backButtonBehavior = "left";
     useSpecialPad = false;
     specialPadClass = 1;
     isDebugDump = false;
@@ -942,7 +838,6 @@ void setDefaultValues() {
     vkHostMarkers = false;
     vkGuestMarkers = false;
     rdocEnable = false;
-    emulator_language = "en_US";
     m_language = 1;
     gpuId = -1;
     compatibilityData = false;
@@ -972,7 +867,7 @@ l3 = x
 r3 = m
 
 options = enter
-touchpad = space
+touchpad_center = space
 
 pad_up = up
 pad_down = down
@@ -1004,7 +899,7 @@ r2 = r2
 r3 = r3
 
 options = options
-touchpad = back
+touchpad_center = back
 
 pad_up = pad_up
 pad_down = pad_down

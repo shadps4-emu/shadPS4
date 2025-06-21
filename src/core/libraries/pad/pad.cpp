@@ -450,21 +450,18 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
 
     // Only do this on handle 1 for now
     if (engine && handle == 1) {
-        const auto gyro_poll_rate = engine->GetAccelPollRate();
-        if (gyro_poll_rate != 0.0f) {
-            auto now = std::chrono::steady_clock::now();
-            float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                                  now - controller->GetLastUpdate())
-                                  .count() /
-                              1000000.0f;
-            controller->SetLastUpdate(now);
-            Libraries::Pad::OrbisFQuaternion lastOrientation = controller->GetLastOrientation();
-            Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
-            GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
-                                                 deltaTime, lastOrientation, outputOrientation);
-            pData->orientation = outputOrientation;
-            controller->SetLastOrientation(outputOrientation);
-        }
+        auto now = std::chrono::steady_clock::now();
+        float deltaTime =
+            std::chrono::duration_cast<std::chrono::microseconds>(now - controller->GetLastUpdate())
+                .count() /
+            1000000.0f;
+        controller->SetLastUpdate(now);
+        Libraries::Pad::OrbisFQuaternion lastOrientation = controller->GetLastOrientation();
+        Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
+        GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity, deltaTime,
+                                             lastOrientation, outputOrientation);
+        pData->orientation = outputOrientation;
+        controller->SetLastOrientation(outputOrientation);
     }
     pData->touchData.touchNum =
         (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);

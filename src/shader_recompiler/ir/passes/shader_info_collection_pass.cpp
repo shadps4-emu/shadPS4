@@ -92,7 +92,11 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::ImageAtomicFMax32:
     case IR::Opcode::ImageAtomicFMin32:
-        info.uses_atomic_float_min_max = true;
+        info.uses_image_atomic_float_min_max = true;
+        break;
+    case IR::Opcode::BufferAtomicFMax32:
+    case IR::Opcode::BufferAtomicFMin32:
+        info.uses_buffer_atomic_float_min_max = true;
         break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;

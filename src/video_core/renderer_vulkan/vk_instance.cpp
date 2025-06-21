@@ -281,6 +281,8 @@ bool Instance::CreateDevice() {
     if (shader_atomic_float2) {
         shader_atomic_float2_features =
             feature_chain.get<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- shaderBufferFloat32AtomicMinMax: {}",
+                 shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax);
         LOG_INFO(Render_Vulkan, "- shaderImageFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderImageFloat32AtomicMinMax);
     }
@@ -433,6 +435,8 @@ bool Instance::CreateDevice() {
             .legacyVertexAttributes = true,
         },
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
+            .shaderBufferFloat32AtomicMinMax =
+                shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax,
             .shaderImageFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderImageFloat32AtomicMinMax,
         },
