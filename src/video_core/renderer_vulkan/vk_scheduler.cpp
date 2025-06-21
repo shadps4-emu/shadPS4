@@ -326,6 +326,12 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
             cmdbuf.setColorWriteMaskEXT(0, color_write_masks);
         }
     }
+    if (dirty_state.rasterization_samples) {
+        dirty_state.rasterization_samples = false;
+        if (instance.IsDynamicRasterizationSamplesSupported()) {
+            cmdbuf.setRasterizationSamplesEXT(rasterization_samples);
+        }
+    }
 }
 
 } // namespace Vulkan
