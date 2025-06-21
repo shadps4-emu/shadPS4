@@ -414,7 +414,7 @@ OPCODE(ConvertU8U32,                                        U8,             U32,
 OPCODE(ConvertU32U8,                                        U32,            U8,                                                                             )
 
 // Image operations
-OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         F32x4,          F32x4,          F32x4,          F32,            Opaque,      )
+OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         F32x4,          F32x4,          F32x4,          F32,            )
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         F32x4,          F32,            Opaque,                         )
 OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )
 OPCODE(ImageSampleDrefImplicitLod,                          F32x4,          Opaque,         Opaque,         F32,            F32,            Opaque,         )
