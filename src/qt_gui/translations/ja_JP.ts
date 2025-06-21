@@ -1057,10 +1057,6 @@
       <translation type="unfinished">L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation type="unfinished">Mouse to Joystick</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>コントローラー</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>戻るボタンの動作</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>グラフィックス</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>カーソルが非アクティブになってから隠すまでの時間を設定します。</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>戻るボタンの動作:\nコントローラーの戻るボタンを、PS4のタッチパッドの指定された位置をタッチするように設定します。</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>互換性に関するデータを表示:\nゲームの互換性に関する情報を表として表示します。常に最新情報を取得したい場合、&quot;起動時に互換性データベースを更新する&quot; を有効化してください。</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>常に</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>左タッチパッド</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>右タッチパッド</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>タッチパッド中央</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>なし</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
