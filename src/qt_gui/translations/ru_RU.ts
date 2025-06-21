@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Нажатие на тачпад</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Мышь в джойстик</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Контроллер</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Поведение кнопки назад</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Графика</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>Время скрытия курсора при бездействии:\nВремя (в секундах), через которое курсор исчезнет при бездействии.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Поведение кнопки «Назад»:\nНастраивает кнопку «Назад» контроллера на эмуляцию нажатия на указанную область на сенсорной панели контроллера PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Показывать данные совместимости:\nПоказывает информацию о совместимости игр в таблице. Включите «Обновлять базу совместимости при запуске» для получения актуальной информации.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Всегда</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Тачпад слева</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Тачпад справа</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Центр тачпада</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Нет</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
