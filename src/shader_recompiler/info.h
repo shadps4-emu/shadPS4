@@ -313,10 +313,12 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
     }
     if (!image.Valid()) {
         // Fall back to null image if unbound.
+        LOG_DEBUG(Render_Vulkan, "Encountered unbound image!");
         image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
     } else if (is_depth) {
         const auto data_fmt = image.GetDataFmt();
         if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
+            LOG_DEBUG(Render_Vulkan, "Encountered non-depth image used with depth instruction!");
             image = AmdGpu::Image::NullDepth();
         }
     }
