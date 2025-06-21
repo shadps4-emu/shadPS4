@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 if(WIN32 AND NOT CMAKE_PREFIX_PATH)
     file(GLOB QT_KITS LIST_DIRECTORIES true "C:/Qt/*/msvc*")
     list(SORT QT_KITS COMPARE NATURAL)
