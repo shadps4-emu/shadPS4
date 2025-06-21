@@ -504,10 +504,20 @@ Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, con
                      : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
 }
 
+Value IREmitter::BufferAtomicFMin(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMin32, Flags{info}, handle, address, value);
+}
+
 Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
     return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
                      : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicFMax(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMax32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, BufferInstInfo info) {

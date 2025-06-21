@@ -165,6 +165,13 @@ public:
         return amd_shader_trinary_minmax;
     }
 
+    /// Returns true when the shaderBufferFloat32AtomicMinMax feature of
+    /// VK_EXT_shader_atomic_float2 is supported.
+    bool IsShaderAtomicFloatBuffer32MinMaxSupported() const {
+        return shader_atomic_float2 &&
+               shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax;
+    }
+
     /// Returns true when the shaderImageFloat32AtomicMinMax feature of
     /// VK_EXT_shader_atomic_float2 is supported.
     bool IsShaderAtomicFloatImage32MinMaxSupported() const {
@@ -324,6 +331,9 @@ public:
         return driver_id != vk::DriverId::eMoltenvk;
     }
 
+    /// Determines if a format is supported for a set of feature flags.
+    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();
@@ -337,9 +347,6 @@ private:
 
     /// Gets the supported feature flags for a format.
     [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
-
-    /// Determines if a format is supported for a set of feature flags.
-    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
 private:
     vk::UniqueInstance instance;

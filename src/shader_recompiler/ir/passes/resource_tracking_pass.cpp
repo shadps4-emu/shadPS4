@@ -21,8 +21,10 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicISub32:
     case IR::Opcode::BufferAtomicSMin32:
     case IR::Opcode::BufferAtomicUMin32:
+    case IR::Opcode::BufferAtomicFMin32:
     case IR::Opcode::BufferAtomicSMax32:
     case IR::Opcode::BufferAtomicUMax32:
+    case IR::Opcode::BufferAtomicFMax32:
     case IR::Opcode::BufferAtomicInc32:
     case IR::Opcode::BufferAtomicDec32:
     case IR::Opcode::BufferAtomicAnd32:

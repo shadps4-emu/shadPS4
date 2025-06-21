@@ -50,9 +50,17 @@ Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
     });
 }
 
+template <bool is_float = false>
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
+    const auto type = [&] {
+        if constexpr (is_float) {
+            return ctx.F32[1];
+        } else {
+            return ctx.U32[1];
+        }
+    }();
     if (Sirit::ValidId(buffer.offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
     }
@@ -60,8 +68,8 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+    return AccessBoundsCheck<32, 1, is_float>(ctx, index, buffer.size_dwords, [&] {
+        return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
     });
 }
 
@@ -196,12 +204,48 @@ Id EmitBufferAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMin);
 }
 
+Id EmitBufferAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    if (ctx.profile.supports_buffer_fp32_atomic_min_max) {
+        return BufferAtomicU32<true>(ctx, inst, handle, address, value,
+                                     &Sirit::Module::OpAtomicFMin);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto sign_bit_set =
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitBufferAtomicUMax32(ctx, inst, handle, address, u32_value)),
+        EmitBitCastF32U32(ctx, EmitBufferAtomicSMin32(ctx, inst, handle, address, u32_value)));
+
+    return result;
+}
+
 Id EmitBufferAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMax);
 }
 
 Id EmitBufferAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMax);
+}
+
+Id EmitBufferAtomicFMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    if (ctx.profile.supports_buffer_fp32_atomic_min_max) {
+        return BufferAtomicU32<true>(ctx, inst, handle, address, value,
+                                     &Sirit::Module::OpAtomicFMax);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto sign_bit_set =
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitBufferAtomicUMin32(ctx, inst, handle, address, u32_value)),
+        EmitBitCastF32U32(ctx, EmitBufferAtomicSMax32(ctx, inst, handle, address, u32_value)));
+
+    return result;
 }
 
 Id EmitBufferAtomicInc32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
