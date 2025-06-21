@@ -5,6 +5,7 @@ path = [
     "REUSE.toml",
     "crowdin.yml",
     "CMakeSettings.json",
+    "CMakePresets.json",
     ".github/FUNDING.yml",
     ".github/shadps4.png",
 	".github/workflows/scripts/update_translation.sh",
