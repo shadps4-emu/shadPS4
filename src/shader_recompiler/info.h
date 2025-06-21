@@ -225,6 +225,7 @@ struct Info {
     bool uses_fp64{};
     bool uses_pack_10_11_11{};
     bool uses_unpack_10_11_11{};
+    bool uses_int64_atomics{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{};

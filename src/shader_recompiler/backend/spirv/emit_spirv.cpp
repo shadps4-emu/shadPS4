@@ -310,6 +310,9 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
         ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
     }
+    if (info.uses_int64_atomics) {
+        ctx.AddCapability(spv::Capability::Int64Atomics);
+    }
 }
 
 void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
