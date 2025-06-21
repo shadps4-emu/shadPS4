@@ -369,13 +369,14 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
     if (!image.Valid()) {
         LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
-        image = AmdGpu::Image::Null();
-    }
-    const auto data_fmt = image.GetDataFmt();
-    if (inst_info.is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
-        data_fmt != AmdGpu::DataFormat::Format32) {
-        LOG_ERROR(Render_Vulkan, "Shader compiled using non-depth image with depth instruction!");
-        image = AmdGpu::Image::NullDepth();
+        image = inst_info.is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
+    } else if (inst_info.is_depth) {
+        const auto data_fmt = image.GetDataFmt();
+        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
+            LOG_ERROR(Render_Vulkan,
+                      "Shader compiled using non-depth image with depth instruction!");
+            image = AmdGpu::Image::NullDepth();
+        }
     }
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;

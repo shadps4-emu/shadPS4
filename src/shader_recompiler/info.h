@@ -308,17 +308,17 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
     if (!is_r128) {
         image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
     } else {
-        AmdGpu::Buffer buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        const auto buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         memcpy(&image, &buf, sizeof(buf));
     }
     if (!image.Valid()) {
         // Fall back to null image if unbound.
-        return AmdGpu::Image::Null();
-    }
-    const auto data_fmt = image.GetDataFmt();
-    if (is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
-        data_fmt != AmdGpu::DataFormat::Format32) {
-        return AmdGpu::Image::NullDepth();
+        image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
+    } else if (is_depth) {
+        const auto data_fmt = image.GetDataFmt();
+        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
+            image = AmdGpu::Image::NullDepth();
+        }
     }
     return image;
 }
