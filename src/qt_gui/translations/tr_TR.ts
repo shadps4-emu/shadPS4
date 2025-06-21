@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Dokunmatik Yüzey Tıklaması</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mouse'dan Kontrolcü</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Kontrolcü</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Geri Dönme Butonu Davranışı</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafikler</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>İmleç İçin Hareketsizlik Zaman Aşımı:\nBoşta kalan imlecin kendini kaç saniye sonra gizleyeceğidir.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Geri düğmesi davranışı:\nKontrol cihazındaki geri düğmesini, PS4&apos;ün dokunmatik panelindeki belirlenen noktaya dokunmak için ayarlar.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Uyumluluk Verilerini Göster:\nOyun uyumluluk bilgilerini tablo görünümünde görüntüler. Güncel bilgileri almak için &quot;Başlangıçta Uyumluluk Veritabanını Güncelle&quot;yi etkinleştirin.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Her zaman</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Dokunmatik Yüzey Sol</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Dokunmatik Yüzey Sağ</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Dokunmatik Yüzey Orta</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Yok</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
