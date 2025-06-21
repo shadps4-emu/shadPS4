@@ -96,9 +96,16 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         } else if (column == 10) {
             last_favorite = m_game_info->m_games[row].serial;
-            QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
-            bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
-            m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
+            QString serialStr = QString::fromStdString(last_favorite);
+            QList<QString> list =
+                gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+            bool isFavorite = list.contains(serialStr);
+            if (isFavorite) {
+                list.removeOne(serialStr);
+            } else {
+                list.append(serialStr);
+            }
+            m_gui_settings->SetValue(gui::favorites_list, gui_settings::List2Var(list));
             PopulateGameList(false);
         }
     });
@@ -250,8 +257,9 @@ bool GameListFrame::CompareWithFavorite(GameInfo a, GameInfo b, int columnIndex,
     std::string serial_b = b.serial;
     QString serialStr_a = QString::fromStdString(a.serial);
     QString serialStr_b = QString::fromStdString(b.serial);
-    bool isFavorite_a = m_gui_settings->GetValue(gui::favorites, serialStr_a, false).toBool();
-    bool isFavorite_b = m_gui_settings->GetValue(gui::favorites, serialStr_b, false).toBool();
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite_a = list.contains(serialStr_a);
+    bool isFavorite_b = list.contains(serialStr_b);
     if (isFavorite_a != isFavorite_b) {
         return isFavorite_a;
     } else if (ascending) {
@@ -439,8 +447,10 @@ void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
 }
 
 void GameListFrame::SetFavoriteIcon(int row, int column) {
+
     QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
-    bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite = list.contains(serialStr);
 
     QTableWidgetItem* item = new QTableWidgetItem();
     QImage scaledPixmap = QImage(":images/favorite_icon.png");

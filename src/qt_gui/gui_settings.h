@@ -42,6 +42,10 @@ const gui_value gl_backgroundMusicVolume = gui_value(game_list, "backgroundMusic
 const gui_value gg_icon_size = gui_value(game_grid, "icon_size", 69);
 const gui_value gg_slider_pos = gui_value(game_grid, "slider_pos", 0);
 
+// favorites list
+const gui_value favorites_list =
+    gui_value(favorites, "favoritesList", QVariant::fromValue(QList<QString>()));
+
 } // namespace gui
 
 class gui_settings : public settings {

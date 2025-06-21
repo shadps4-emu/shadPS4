@@ -67,8 +67,8 @@ public:
         menu.addMenu(openFolderMenu);
 
         QString serialStr = QString::fromStdString(m_games[itemID].serial);
-        bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
-
+        QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+        bool isFavorite = list.contains(serialStr);
         QAction* toggleFavorite;
 
         if (isFavorite) {
@@ -316,7 +316,12 @@ public:
         }
 
         if (selected == toggleFavorite) {
-            m_gui_settings->SetValue(gui::favorites, serialStr, !isFavorite, true);
+            if (isFavorite) {
+                list.removeOne(serialStr);
+            } else {
+                list.append(serialStr);
+            }
+            m_gui_settings->SetValue(gui::favorites_list, gui_settings::List2Var(list));
             changedFavorite = 1;
         }
 

@@ -241,7 +241,8 @@ bool GameGridFrame::IsValidCellSelected() {
 void GameGridFrame::SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_games_,
                                     int gameCounter) {
     QString serialStr = QString::fromStdString(m_games_[gameCounter].serial);
-    bool isFavorite = m_gui_settings->GetValue(gui::favorites, serialStr, false).toBool();
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite = list.contains(serialStr);
 
     QLabel* label = new QLabel(parentWidget);
     label->setPixmap(QPixmap(":images/favorite_icon.png")
@@ -264,8 +265,9 @@ bool GameGridFrame::CompareWithFavorite(GameInfo a, GameInfo b) {
     std::string serial_b = b.serial;
     QString serialStr_a = QString::fromStdString(a.serial);
     QString serialStr_b = QString::fromStdString(b.serial);
-    bool isFavorite_a = m_gui_settings->GetValue(gui::favorites, serialStr_a, false).toBool();
-    bool isFavorite_b = m_gui_settings->GetValue(gui::favorites, serialStr_b, false).toBool();
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite_a = list.contains(serialStr_a);
+    bool isFavorite_b = list.contains(serialStr_b);
     if (isFavorite_a != isFavorite_b) {
         return isFavorite_a;
     } else {
