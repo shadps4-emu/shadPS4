@@ -19,7 +19,7 @@ public:
     ~ControlSettings();
 
 signals:
-    void gamepadInputEvent();
+    void PushGamepadEvent();
     void AxisChanged();
 
 private Q_SLOTS:
@@ -46,8 +46,10 @@ private:
 
     QList<QPushButton*> ButtonsList;
     QList<QPushButton*> AxisList;
+    QSet<QString> pressedButtons;
 
     bool isRunning = true;
+    bool triggerWasPressed = false;
     bool EnableButtonMapping = false;
     bool EnableAxisMapping = false;
     bool MappingCompleted = false;

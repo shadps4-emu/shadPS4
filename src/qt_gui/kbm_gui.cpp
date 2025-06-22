@@ -269,9 +269,17 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
 
-        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
-                ControllerInputs.end() ||
-            output_string == "analog_deadzone" || output_string == "override_controller_color") {
+        bool controllerInputdetected = false;
+        for (std::string input : ControllerInputs) {
+            // Needed to avoid detecting backspace while detecting back
+            if (input_string.contains(input) && !input_string.contains("backspace")) {
+                controllerInputdetected = true;
+                break;
+            }
+        }
+
+        if (controllerInputdetected || output_string == "analog_deadzone" ||
+            output_string == "override_controller_color") {
             lines.push_back(line);
         }
     }
@@ -388,8 +396,16 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
         std::string output_string = line.substr(0, equal_pos - 1);
         std::string input_string = line.substr(equal_pos + 2);
 
-        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) ==
-            ControllerInputs.end()) {
+        bool controllerInputdetected = false;
+        for (std::string input : ControllerInputs) {
+            // Needed to avoid detecting backspace while detecting back
+            if (input_string.contains(input) && !input_string.contains("backspace")) {
+                controllerInputdetected = true;
+                break;
+            }
+        }
+
+        if (!controllerInputdetected) {
             if (output_string == "cross") {
                 ui->CrossButton->setText(QString::fromStdString(input_string));
             } else if (output_string == "circle") {

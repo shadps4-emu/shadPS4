@@ -109,7 +109,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
         UpdateLightbarColor();
     });
 
-    connect(this, &ControlSettings::gamepadInputEvent, this,
+    connect(this, &ControlSettings::PushGamepadEvent, this,
             [this]() { CheckMapping(MappingButton); });
     connect(this, &ControlSettings::AxisChanged, this,
             [this]() { ConnectAxisInputs(MappingButton); });
@@ -171,9 +171,17 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
 
-        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
-                ControllerInputs.end() ||
-            output_string == "analog_deadzone" || output_string == "override_controller_color") {
+        bool controllerInputdetected = false;
+        for (std::string input : ControllerInputs) {
+            // Needed to avoid detecting backspace while detecting back
+            if (input_string.contains(input) && !input_string.contains("backspace")) {
+                controllerInputdetected = true;
+                break;
+            }
+        }
+
+        if (controllerInputdetected || output_string == "analog_deadzone" ||
+            output_string == "override_controller_color") {
             line.erase();
             continue;
         }
@@ -356,7 +364,6 @@ void ControlSettings::AddBoxItems() {
 }
 
 void ControlSettings::SetUIValuestoMappings() {
-
     std::string config_id;
     config_id = (ui->ProfileComboBox->currentText() == "Common Config")
                     ? "default"
@@ -391,9 +398,16 @@ void ControlSettings::SetUIValuestoMappings() {
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
 
-        if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
-                ControllerInputs.end() ||
-            output_string == "analog_deadzone" || output_string == "override_controller_color") {
+        bool controllerInputdetected = false;
+        for (std::string input : ControllerInputs) {
+            // Needed to avoid detecting backspace while detecting back
+            if (input_string.contains(input) && !input_string.contains("backspace")) {
+                controllerInputdetected = true;
+                break;
+            }
+        }
+
+        if (controllerInputdetected) {
             if (output_string == "cross") {
                 ui->CrossButton->setText(QString::fromStdString(input_string));
                 CrossExists = true;
@@ -464,60 +478,64 @@ void ControlSettings::SetUIValuestoMappings() {
                 ui->RStickUpButton->setText(QString::fromStdString(input_string));
                 ui->RStickDownButton->setText(QString::fromStdString(input_string));
                 RStickYExists = true;
-            } else if (input_string.contains("leftjoystick")) {
-                std::size_t comma_pos = line.find(',');
-                if (comma_pos != std::string::npos) {
-                    int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                    ui->LeftDeadzoneSlider->setValue(deadzonevalue);
-                    ui->LeftDeadzoneValue->setText(QString::number(deadzonevalue));
-                } else {
-                    ui->LeftDeadzoneSlider->setValue(2);
-                    ui->LeftDeadzoneValue->setText("2");
+            }
+        }
+
+        if (input_string.contains("leftjoystick")) {
+            std::size_t comma_pos = line.find(',');
+            if (comma_pos != std::string::npos) {
+                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
+                ui->LeftDeadzoneSlider->setValue(deadzonevalue);
+                ui->LeftDeadzoneValue->setText(QString::number(deadzonevalue));
+            } else {
+                ui->LeftDeadzoneSlider->setValue(2);
+                ui->LeftDeadzoneValue->setText("2");
+            }
+        }
+
+        if (input_string.contains("rightjoystick")) {
+            std::size_t comma_pos = line.find(',');
+            if (comma_pos != std::string::npos) {
+                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
+                ui->RightDeadzoneSlider->setValue(deadzonevalue);
+                ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
+            } else {
+                ui->RightDeadzoneSlider->setValue(2);
+                ui->RightDeadzoneValue->setText("2");
+            }
+        }
+
+        if (output_string == "override_controller_color") {
+            std::size_t comma_pos = line.find(',');
+            if (comma_pos != std::string::npos) {
+                std::string overridestring = line.substr(equal_pos + 1, comma_pos);
+                bool override = overridestring.contains("true") ? true : false;
+                ui->LightbarCheckBox->setChecked(override);
+
+                std::string lightbarstring = line.substr(comma_pos + 1);
+                std::size_t comma_pos2 = lightbarstring.find(',');
+                if (comma_pos2 != std::string::npos) {
+                    std::string Rstring = lightbarstring.substr(0, comma_pos2);
+                    ui->RSlider->setValue(std::stoi(Rstring));
+                    QString RedValue = QString("%1").arg(std::stoi(Rstring), 3, 10, QChar('0'));
+                    QString RValue = tr("R:") + " " + RedValue;
+                    ui->RLabel->setText(RValue);
                 }
-            } else if (input_string.contains("rightjoystick")) {
-                std::size_t comma_pos = line.find(',');
-                if (comma_pos != std::string::npos) {
-                    int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                    ui->RightDeadzoneSlider->setValue(deadzonevalue);
-                    ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
-                } else {
-                    ui->RightDeadzoneSlider->setValue(2);
-                    ui->RightDeadzoneValue->setText("2");
-                }
-            } else if (output_string == "override_controller_color") {
-                std::size_t comma_pos = line.find(',');
-                if (comma_pos != std::string::npos) {
-                    std::string overridestring = line.substr(equal_pos + 1, comma_pos);
-                    bool override = overridestring.contains("true") ? true : false;
-                    ui->LightbarCheckBox->setChecked(override);
 
-                    std::string lightbarstring = line.substr(comma_pos + 1);
-                    std::size_t comma_pos2 = lightbarstring.find(',');
-                    if (comma_pos2 != std::string::npos) {
-                        std::string Rstring = lightbarstring.substr(0, comma_pos2);
-                        ui->RSlider->setValue(std::stoi(Rstring));
-                        QString RedValue = QString("%1").arg(std::stoi(Rstring), 3, 10, QChar('0'));
-                        QString RValue = tr("R:") + " " + RedValue;
-                        ui->RLabel->setText(RValue);
-                    }
+                std::string GBstring = lightbarstring.substr(comma_pos2 + 1);
+                std::size_t comma_pos3 = GBstring.find(',');
+                if (comma_pos3 != std::string::npos) {
+                    std::string Gstring = GBstring.substr(0, comma_pos3);
+                    ui->GSlider->setValue(std::stoi(Gstring));
+                    QString GreenValue = QString("%1").arg(std::stoi(Gstring), 3, 10, QChar('0'));
+                    QString GValue = tr("G:") + " " + GreenValue;
+                    ui->GLabel->setText(GValue);
 
-                    std::string GBstring = lightbarstring.substr(comma_pos2 + 1);
-                    std::size_t comma_pos3 = GBstring.find(',');
-                    if (comma_pos3 != std::string::npos) {
-                        std::string Gstring = GBstring.substr(0, comma_pos3);
-                        ui->GSlider->setValue(std::stoi(Gstring));
-                        QString GreenValue =
-                            QString("%1").arg(std::stoi(Gstring), 3, 10, QChar('0'));
-                        QString GValue = tr("G:") + " " + GreenValue;
-                        ui->GLabel->setText(GValue);
-
-                        std::string Bstring = GBstring.substr(comma_pos3 + 1);
-                        ui->BSlider->setValue(std::stoi(Bstring));
-                        QString BlueValue =
-                            QString("%1").arg(std::stoi(Bstring), 3, 10, QChar('0'));
-                        QString BValue = tr("B:") + " " + BlueValue;
-                        ui->BLabel->setText(BValue);
-                    }
+                    std::string Bstring = GBstring.substr(comma_pos3 + 1);
+                    ui->BSlider->setValue(std::stoi(Bstring));
+                    QString BlueValue = QString("%1").arg(std::stoi(Bstring), 3, 10, QChar('0'));
+                    QString BValue = tr("B:") + " " + BlueValue;
+                    ui->BLabel->setText(BValue);
                 }
             }
         }
@@ -679,6 +697,7 @@ void ControlSettings::StartTimer(QPushButton*& button, bool isButton) {
     MappingTimer = 3;
     isButton ? EnableButtonMapping = true : EnableAxisMapping = true;
     MappingCompleted = false;
+    triggerWasPressed = false;
     mapping = button->text();
     DisableMappingButtons();
 
@@ -698,6 +717,19 @@ void ControlSettings::CheckMapping(QPushButton*& button) {
         ? button->setText(tr("Press a button") + " [" + QString::number(MappingTimer) + "]")
         : button->setText(tr("Move analog stick") + " [" + QString::number(MappingTimer) + "]");
 
+    if (pressedButtons.size() > 0) {
+        QStringList keyStrings;
+
+        for (const QString& buttonAction : pressedButtons) {
+            keyStrings << buttonAction;
+        }
+
+        QString combo = keyStrings.join(",");
+        SetMapping(combo);
+        MappingButton->setText(combo);
+        pressedButtons.clear();
+    }
+
     if (MappingCompleted || MappingTimer <= 0) {
         button->setText(mapping);
         EnableButtonMapping = false;
@@ -710,11 +742,13 @@ void ControlSettings::CheckMapping(QPushButton*& button) {
 void ControlSettings::SetMapping(QString input) {
     mapping = input;
     MappingCompleted = true;
-    emit gamepadInputEvent();
-    if (EnableAxisMapping)
+    if (EnableAxisMapping) {
         emit AxisChanged();
+        emit PushGamepadEvent();
+    }
 }
 
+// use QT events instead of SDL to override default event closing the window with escape
 bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress && EnableButtonMapping) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
@@ -734,116 +768,128 @@ void ControlSettings::pollSDLEvents() {
             return;
         }
 
-        while (SDL_WaitEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                isRunning = false;
-                SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
-                SDL_QuitSubSystem(SDL_INIT_EVENTS);
-                SDL_Quit();
+        if (event.type == SDL_EVENT_QUIT) {
+            isRunning = false;
+            SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+            SDL_QuitSubSystem(SDL_INIT_EVENTS);
+            SDL_Quit();
+        }
+
+        if (event.type == SDL_EVENT_GAMEPAD_ADDED)
+            CheckGamePad();
+
+        if (EnableButtonMapping) {
+            if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+                switch (event.gbutton.button) {
+                case SDL_GAMEPAD_BUTTON_SOUTH:
+                    pressedButtons.insert("cross");
+                    break;
+                case SDL_GAMEPAD_BUTTON_EAST:
+                    pressedButtons.insert("circle");
+                    break;
+                case SDL_GAMEPAD_BUTTON_NORTH:
+                    pressedButtons.insert("triangle");
+                    break;
+                case SDL_GAMEPAD_BUTTON_WEST:
+                    pressedButtons.insert("square");
+                    break;
+                case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+                    pressedButtons.insert("l1");
+                    break;
+                case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+                    pressedButtons.insert("r1");
+                    break;
+                case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+                    pressedButtons.insert("l3");
+                    break;
+                case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+                    pressedButtons.insert("r3");
+                    break;
+                case SDL_GAMEPAD_BUTTON_DPAD_UP:
+                    pressedButtons.insert("pad_up");
+                    break;
+                case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                    pressedButtons.insert("pad_down");
+                    break;
+                case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+                    pressedButtons.insert("pad_left");
+                    break;
+                case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+                    pressedButtons.insert("pad_right");
+                    break;
+                case SDL_GAMEPAD_BUTTON_BACK:
+                    pressedButtons.insert("back");
+                    break;
+                case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
+                    pressedButtons.insert("lpaddle_high");
+                    break;
+                case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
+                    pressedButtons.insert("rpaddle_high");
+                    break;
+                case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
+                    pressedButtons.insert("lpaddle_low");
+                    break;
+                case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
+                    pressedButtons.insert("rpaddle_low");
+                    break;
+                case SDL_GAMEPAD_BUTTON_START:
+                    pressedButtons.insert("options");
+                    break;
+                default:
+                    break;
+                }
             }
 
-            if (event.type == SDL_EVENT_GAMEPAD_ADDED)
-                CheckGamePad();
+            if (event.type == SDL_EVENT_GAMEPAD_BUTTON_UP) {
+                emit PushGamepadEvent();
+            }
 
-            if (EnableButtonMapping) {
-                if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
-                    switch (event.gbutton.button) {
+            if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+                // SDL trigger axis values range from 0 to 32000, set mapping on half movement
+                // Set zone for trigger release signal arbitrarily at 5000
+                switch (event.gaxis.axis) {
+                case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+                    if (event.gaxis.value > 16000) {
+                        pressedButtons.insert("l2");
+                        triggerWasPressed = true;
+                    } else if (event.gaxis.value < 5000) {
+                        if (triggerWasPressed)
+                            emit PushGamepadEvent();
+                    }
+                    break;
+                case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+                    if (event.gaxis.value > 16000) {
+                        pressedButtons.insert("r2");
+                        triggerWasPressed = true;
+                    } else if (event.gaxis.value < 5000) {
+                        if (triggerWasPressed)
+                            emit PushGamepadEvent();
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
 
-                    case SDL_GAMEPAD_BUTTON_SOUTH:
-                        SetMapping("cross");
+        } else if (EnableAxisMapping) {
+            if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+                // SDL stick axis values range from -32000 to 32000, set mapping on half movement
+                if (event.gaxis.value > 16000 || event.gaxis.value < -16000) {
+                    switch (event.gaxis.axis) {
+                    case SDL_GAMEPAD_AXIS_LEFTX:
+                        SetMapping("axis_left_x");
                         break;
-                    case SDL_GAMEPAD_BUTTON_EAST:
-                        SetMapping("circle");
+                    case SDL_GAMEPAD_AXIS_LEFTY:
+                        SetMapping("axis_left_y");
                         break;
-                    case SDL_GAMEPAD_BUTTON_NORTH:
-                        SetMapping("triangle");
+                    case SDL_GAMEPAD_AXIS_RIGHTX:
+                        SetMapping("axis_right_x");
                         break;
-                    case SDL_GAMEPAD_BUTTON_WEST:
-                        SetMapping("square");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-                        SetMapping("l1");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-                        SetMapping("r1");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
-                        SetMapping("l3");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-                        SetMapping("r3");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_DPAD_UP:
-                        SetMapping("pad_up");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-                        SetMapping("pad_down");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-                        SetMapping("pad_left");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-                        SetMapping("pad_right");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_BACK:
-                        SetMapping("back");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
-                        SetMapping("lpaddle_high");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
-                        SetMapping("rpaddle_high");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
-                        SetMapping("lpaddle_low");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
-                        SetMapping("rpaddle_low");
-                        break;
-                    case SDL_GAMEPAD_BUTTON_START:
-                        SetMapping("options");
+                    case SDL_GAMEPAD_AXIS_RIGHTY:
+                        SetMapping("axis_right_y");
                         break;
                     default:
                         break;
-                    }
-                }
-
-                if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
-                    // SDL trigger axis values range from 0-32000, set mapping on half movement
-                    if (event.gaxis.value > 16000) {
-                        switch (event.gaxis.axis) {
-                        case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
-                            SetMapping("l2");
-                            break;
-                        case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
-                            SetMapping("r2");
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                }
-
-            } else if (EnableAxisMapping) {
-                if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
-                    // SDL stick axis values range from -32000-32000, set mapping on half movement
-                    if (event.gaxis.value > 16000 || event.gaxis.value < -16000) {
-                        switch (event.gaxis.axis) {
-                        case SDL_GAMEPAD_AXIS_LEFTX:
-                            SetMapping("axis_left_x");
-                            break;
-                        case SDL_GAMEPAD_AXIS_LEFTY:
-                            SetMapping("axis_left_y");
-                            break;
-                        case SDL_GAMEPAD_AXIS_RIGHTX:
-                            SetMapping("axis_right_x");
-                            break;
-                        case SDL_GAMEPAD_AXIS_RIGHTY:
-                            SetMapping("axis_right_y");
-                            break;
-                        default:
-                            break;
-                        }
                     }
                 }
             }
