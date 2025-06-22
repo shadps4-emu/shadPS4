@@ -27,7 +27,7 @@ static constexpr size_t UboStreamBufferSize = 128_MB;
 static constexpr size_t DownloadBufferSize = 128_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
 static constexpr size_t MaxPageFaults = 1024;
-static constexpr size_t DownloadSizeThreshold = 2_MB;
+static constexpr size_t DownloadSizeThreshold = 1_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -188,7 +188,7 @@ void BufferCache::DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, 
     }
 }
 
-bool BufferCache::CommitPendingDownloads() {
+bool BufferCache::CommitPendingDownloads(bool wait_done) {
     if (pending_download_ranges.Empty()) {
         return false;
     }
@@ -254,7 +254,11 @@ bool BufferCache::CommitPendingDownloads() {
             }
         }
     });
-    scheduler.Flush();
+    if (wait_done) {
+        scheduler.Finish();
+    } else {
+        scheduler.Flush();
+    }
     return true;
 }
 

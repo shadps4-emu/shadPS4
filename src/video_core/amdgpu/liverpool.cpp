@@ -708,9 +708,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::Rewind: {
                 if (rasterizer) {
-                    const VAddr flush_addr = VAddr(reinterpret_cast<const u32*>(header));
-                    const u32 flush_size = dcb.size_bytes();
-                    rasterizer->ReadMemory(flush_addr, flush_size);
+                    rasterizer->CommitPendingDownloads(true);
                 }
                 const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
                 while (!rewind->Valid()) {
@@ -915,9 +913,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         }
         case PM4ItOpcode::Rewind: {
             if (rasterizer) {
-                const VAddr flush_addr = VAddr(reinterpret_cast<const u32*>(header));
-                const u32 flush_size = acb_dwords * sizeof(u32);
-                rasterizer->ReadMemory(flush_addr, flush_size);
+                rasterizer->CommitPendingDownloads(true);
             }
             const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
             while (!rewind->Valid()) {

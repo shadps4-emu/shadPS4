@@ -128,7 +128,7 @@ public:
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
     /// Schedules pending GPU modified ranges since last commit to be copied back the host memory.
-    bool CommitPendingDownloads();
+    bool CommitPendingDownloads(bool wait_done);
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,

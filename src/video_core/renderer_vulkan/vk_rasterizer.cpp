@@ -60,9 +60,9 @@ void Rasterizer::CpSync() {
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
 }
 
-bool Rasterizer::CommitPendingDownloads() {
+bool Rasterizer::CommitPendingDownloads(bool wait_done) {
     scheduler.PopPendingOperations();
-    return buffer_cache.CommitPendingDownloads();
+    return buffer_cache.CommitPendingDownloads(wait_done);
 }
 
 bool Rasterizer::FilterDraw() {

@@ -357,8 +357,8 @@ public:
     }
 
     /// Defers an operation until the gpu has reached the current cpu tick.
-    void DeferOperation(Common::UniqueFunction<void>&& func, bool prev_tick = false) {
-        pending_ops.emplace(std::move(func), prev_tick ? CurrentTick() - 1 : CurrentTick());
+    void DeferOperation(Common::UniqueFunction<void>&& func) {
+        pending_ops.emplace(std::move(func), CurrentTick());
     }
 
     static std::mutex submit_mutex;
