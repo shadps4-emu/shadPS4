@@ -874,7 +874,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 }
                 break;
             case Qt::Key_Meta:
-                activateWindow();
 #ifdef _WIN32
                 pressedKeys.insert("lwin");
 #else
@@ -885,7 +884,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 pressedKeys.insert("space");
                 break;
             case Qt::Key_Up:
-                activateWindow();
                 pressedKeys.insert("up");
                 break;
             case Qt::Key_Down:
