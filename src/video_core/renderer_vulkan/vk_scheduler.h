@@ -323,6 +323,9 @@ public:
     /// Ends current rendering scope.
     void EndRendering();
 
+    /// Attempts to execute pending operations whose tick the GPU has caught up with.
+    void PopPendingOperations();
+
     /// Returns the current render state.
     const RenderState& GetRenderState() const {
         return render_state;
@@ -354,8 +357,8 @@ public:
     }
 
     /// Defers an operation until the gpu has reached the current cpu tick.
-    void DeferOperation(Common::UniqueFunction<void>&& func) {
-        pending_ops.emplace(std::move(func), CurrentTick());
+    void DeferOperation(Common::UniqueFunction<void>&& func, bool prev_tick = false) {
+        pending_ops.emplace(std::move(func), prev_tick ? CurrentTick() - 1 : CurrentTick());
     }
 
     static std::mutex submit_mutex;

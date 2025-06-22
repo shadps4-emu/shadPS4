@@ -51,6 +51,7 @@ public:
 
     struct PageData {
         BufferId buffer_id{};
+        u64 fence_tick;
     };
 
     struct Traits {
@@ -125,8 +126,8 @@ public:
     /// Performs buffer to buffer data copy on the GPU.
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
-    /// Writes a value to GPU buffer. (uses staging buffer to temporarily store the data)
-    void WriteData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+    /// Schedules all GPU modified ranges since last commit to be copied back the host memory.
+    bool CommitAsyncFlushes();
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
@@ -170,7 +171,11 @@ private:
                                      });
     }
 
-    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
+    inline bool IsBufferInvalid(BufferId buffer_id) const {
+        return !buffer_id || slot_buffers[buffer_id].is_deleted;
+    }
+
+    void DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, u64 size);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
@@ -210,6 +215,7 @@ private:
     Buffer fault_buffer;
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    RangeSet pending_download_ranges;
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     MemoryTracker memory_tracker;

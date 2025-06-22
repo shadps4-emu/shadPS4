@@ -1532,6 +1532,10 @@ public:
         return mapped_queues[curr_qid].cs_state;
     }
 
+    inline u64 GetFenceTick() const {
+        return fence_tick;
+    }
+
     struct AscQueueInfo {
         static constexpr size_t Pm4BufferSize = 1024;
         VAddr map_addr;
@@ -1627,6 +1631,7 @@ private:
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
     int curr_qid{-1};
+    u64 fence_tick{0};
 };
 
 static_assert(GFX6_3D_REG_INDEX(ps_program) == 0x2C08);
