@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Klick på styrplatta</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus till styrspak</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbla inmatningar har mappats till följande knappar:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Handkontroller</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Beteende för bakåtknapp</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafik</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>Dölj pekare vid overksam:\nLängden (sekunder) efter vilken som muspekaren som har varit overksam döljer sig själv.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Beteende för bakåtknapp:\nStäller in handkontrollerns bakåtknapp för att emulera ett tryck på angivna positionen på PS4ns touchpad.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Visa kompatibilitetsdata:\nVisar information om spelkompatibilitet i tabellvyn. Aktivera &quot;Uppdatera kompatibilitet vid uppstart&quot; för att få uppdaterad information.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Alltid</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad vänster</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad höger</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Touchpad mitten</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ingen</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
