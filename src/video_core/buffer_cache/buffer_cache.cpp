@@ -240,7 +240,7 @@ bool BufferCache::CommitPendingDownloads() {
         Buffer& buffer = slot_buffers[buffer_id];
         cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), buffer_copies);
     }
-    scheduler.DeferOperation([this, download, offset, copies = std::move(copies)]() {
+    scheduler.DeferOperation([this, download, offset, copies]() {
         auto* memory = Core::Memory::Instance();
         for (auto it = copies.begin(); it != copies.end(); ++it) {
             auto& buffer_copies = it.value();
