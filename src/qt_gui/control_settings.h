@@ -34,11 +34,13 @@ private:
     std::unique_ptr<Ui::ControlSettings> ui;
     std::shared_ptr<GameInfoClass> m_game_info;
 
+    bool eventFilter(QObject* obj, QEvent* event) override;
     void AddBoxItems();
     void SetUIValuestoMappings();
     void GetGameTitle();
     void CheckGamePad();
     void pollSDLEvents();
+    void SetMapping(QString input);
     void DisableMappingButtons();
     void EnableMappingButtons();
 

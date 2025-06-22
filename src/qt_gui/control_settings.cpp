@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <QKeyEvent>
 #include <QMessageBox>
 #include <QPushButton>
 #include "common/logging/log.h"
@@ -23,6 +24,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     AddBoxItems();
     SetUIValuestoMappings();
     UpdateLightbarColor();
+    installEventFilter(this);
 
     ButtonsList = {ui->CrossButton,
                    ui->CircleButton,
@@ -705,16 +707,27 @@ void ControlSettings::CheckMapping(QPushButton*& button) {
     }
 }
 
+void ControlSettings::SetMapping(QString input) {
+    mapping = input;
+    MappingCompleted = true;
+    emit gamepadInputEvent();
+    if (EnableAxisMapping)
+        emit AxisChanged();
+}
+
+bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::KeyPress && EnableButtonMapping) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Escape) {
+            SetMapping("unmapped");
+            return true;
+        }
+    }
+    return QDialog::eventFilter(obj, event);
+}
+
 void ControlSettings::pollSDLEvents() {
     SDL_Event event;
-
-    auto SetMapping = [&](const QString& input) {
-        mapping = input;
-        MappingCompleted = true;
-        emit gamepadInputEvent();
-        if (EnableAxisMapping)
-            emit AxisChanged();
-    };
 
     while (isRunning) {
         if (!SDL_WaitEvent(&event)) {
