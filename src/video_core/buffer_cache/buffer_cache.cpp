@@ -30,7 +30,8 @@ static constexpr size_t MaxPageFaults = 1024;
 static constexpr size_t DownloadSizeThreshold = 2_MB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                         AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_, PageManager& tracker_)
+                         AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
+                         PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
@@ -182,8 +183,8 @@ void BufferCache::DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, 
     for (const auto& copy : copies) {
         const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
         const u64 dst_offset = copy.dstOffset - offset;
-        ASSERT(memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
-                                       download + dst_offset, copy.size));
+        ASSERT(memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                       copy.size));
     }
 }
 
@@ -400,7 +401,8 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
             return;
         } else if (!dst_gds) {
             // Write to backing memory to bypass memory protection.
-            ASSERT(memory->TryWriteBacking(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes));
+            ASSERT(memory->TryWriteBacking(std::bit_cast<void*>(dst), std::bit_cast<void*>(src),
+                                           num_bytes));
         }
         // Without a readback there's nothing we can do with this
         // Fallback to creating dst buffer on GPU to at least have this data there

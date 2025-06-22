@@ -71,7 +71,8 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         AmdGpu::Liverpool* liverpool, TextureCache& texture_cache, PageManager& tracker);
+                         AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
+                         PageManager& tracker);
     ~BufferCache();
 
     /// Returns a pointer to GDS device local buffer.
