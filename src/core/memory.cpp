@@ -835,7 +835,6 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
     }
 }
 
-
 s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {
     std::scoped_lock lk{mutex};

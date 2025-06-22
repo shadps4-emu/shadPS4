@@ -135,9 +135,8 @@ s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(u64 len, u64 alignment, s32 m
                                                    s64* physAddrOut);
 s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len);
 s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, u64 len);
-s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd,
-                                                    u64 alignment, u64* physAddrOut,
-                                                    u64* sizeOut);
+s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd, u64 alignment,
+                                                    u64* physAddrOut, u64* sizeOut);
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, s32 flags, OrbisVirtualQueryInfo* info,
                                        u64 infoSize);
 s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u64 alignment);

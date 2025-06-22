@@ -96,9 +96,8 @@ s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd,
-                                                    u64 alignment, u64* physAddrOut,
-                                                    u64* sizeOut) {
+s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd, u64 alignment,
+                                                    u64* physAddrOut, u64* sizeOut) {
     LOG_INFO(Kernel_Vmm, "called searchStart = {:#x}, searchEnd = {:#x}, alignment = {:#x}",
              searchStart, searchEnd, alignment);
 
