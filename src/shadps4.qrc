@@ -37,7 +37,7 @@
         <file>images/fullscreen_icon.png</file>
         <file>images/refreshlist_icon.png</file>
         <file>images/favorite_icon.png</file>
-	      <file>images/trophy_icon.png</file>
+        <file>images/trophy_icon.png</file>
         <file>images/users_icon.png</file>
     </qresource>
 </RCC>
