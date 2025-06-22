@@ -52,13 +52,13 @@ constexpr u32 ORBIS_KERNEL_MAXIMUM_NAME_LENGTH = 32;
 struct OrbisQueryInfo {
     uintptr_t start;
     uintptr_t end;
-    int memoryType;
+    s32 memoryType;
 };
 
 struct OrbisVirtualQueryInfo {
     uintptr_t start;
     uintptr_t end;
-    size_t offset;
+    u64 offset;
     s32 protection;
     s32 memory_type;
     u8 is_flexible : 1;
@@ -73,12 +73,12 @@ static_assert(sizeof(OrbisVirtualQueryInfo) == 72,
 
 struct OrbisKernelBatchMapEntry {
     void* start;
-    size_t offset;
-    size_t length;
+    u64 offset;
+    u64 length;
     char protection;
     char type;
-    short reserved;
-    int operation;
+    s16 reserved;
+    s32 operation;
 };
 
 enum class OrbisKernelMemoryPoolOpcode : u32 {
@@ -124,45 +124,44 @@ struct OrbisKernelMemoryPoolBatchEntry {
 };
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
-int PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
-                                               u64 alignment, int memoryType, s64* physAddrOut);
-int PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, int prot, int flags,
+s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
+                                               u64 alignment, s32 memoryType, s64* physAddrOut);
+s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
                                                s64 directMemoryStart, u64 alignment,
                                                const char* name);
-int PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, int prot, int flags,
+s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
                                           s64 directMemoryStart, u64 alignment);
-s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(size_t len, size_t alignment, int memoryType,
+s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(u64 len, u64 alignment, s32 memoryType,
                                                    s64* physAddrOut);
-s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, size_t len);
-s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, size_t len);
-s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd,
-                                                    size_t alignment, u64* physAddrOut,
-                                                    size_t* sizeOut);
-s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, int flags, OrbisVirtualQueryInfo* info,
-                                       size_t infoSize);
-s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, int flags, u64 alignment);
+s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len);
+s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, u64 len);
+s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchEnd, u64 alignment,
+                                                    u64* physAddrOut, u64* sizeOut);
+s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, s32 flags, OrbisVirtualQueryInfo* info,
+                                       u64 infoSize);
+s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u64 alignment);
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, u64 len, s32 prot, s32 flags,
                                                  const char* name);
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, u64 len, s32 prot, s32 flags);
-int PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot);
+s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot);
 
 s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot);
 
 s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s32 prot);
 
-int PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, int flags, OrbisQueryInfo* query_info,
-                                            size_t infoSize);
-s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(size_t* sizeOut);
+s32 PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, s32 flags, OrbisQueryInfo* query_info,
+                                            u64 infoSize);
+s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(u64* sizeOut);
 void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]);
-int PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, int* directMemoryTypeOut,
+s32 PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, s32* directMemoryTypeOut,
                                               void** directMemoryStartOut,
                                               void** directMemoryEndOut);
-int PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end);
+s32 PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end);
 
-s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, int numEntries,
-                                   int* numEntriesOut);
-s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, int numEntries,
-                                    int* numEntriesOut, int flags);
+s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, s32 numEntries,
+                                   s32* numEntriesOut);
+s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEntries,
+                                    s32* numEntriesOut, s32 flags);
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const char* name);
 
@@ -175,7 +174,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
                                           s32* num_processed, s32 flags);
 
-int PS4_SYSV_ABI sceKernelMunmap(void* addr, size_t len);
+s32 PS4_SYSV_ABI sceKernelMunmap(void* addr, u64 len);
 
 void RegisterMemory(Core::Loader::SymbolsResolver* sym);
 
