@@ -187,13 +187,12 @@ void BufferCache::DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, 
     }
 }
 
-bool BufferCache::CommitAsyncFlushes() {
+bool BufferCache::CommitPendingDownloads() {
     if (pending_download_ranges.Empty()) {
         return false;
     }
     using BufferCopies = boost::container::small_vector<vk::BufferCopy, 8>;
-    boost::container::small_vector<BufferCopies, 8> copies;
-    boost::container::small_vector<BufferId, 8> buffer_ids;
+    tsl::robin_map<BufferId, BufferCopies> copies;
     u64 total_size_bytes = 0;
     pending_download_ranges.ForEach([&](VAddr interval_lower, VAddr interval_upper) {
         const std::size_t size = interval_upper - interval_lower;
@@ -203,27 +202,16 @@ bool BufferCache::CommitAsyncFlushes() {
             const VAddr buffer_end = buffer_start + buffer.SizeBytes();
             const VAddr new_start = std::max(buffer_start, device_addr);
             const VAddr new_end = std::min(buffer_end, device_addr + size);
-            auto& buffer_copies = copies.emplace_back();
-            buffer_ids.emplace_back(buffer_id);
-            memory_tracker.ForEachDownloadRange<false>(new_start, new_end - new_start,
-                [&](u64 device_addr_out, u64 range_size) {
-                    const VAddr buffer_addr = buffer.CpuAddr();
-                    const auto add_download = [&](VAddr start, VAddr end) {
-                        const u64 new_offset = start - buffer_addr;
-                        const u64 new_size = end - start;
-                        buffer_copies.emplace_back(new_offset, total_size_bytes, new_size);
-                        // Align up to avoid cache conflicts
-                        constexpr u64 align = std::hardware_destructive_interference_size;
-                        constexpr u64 mask = ~(align - 1ULL);
-                        total_size_bytes += (new_size + align - 1) & mask;
-                    };
-                    gpu_modified_ranges.ForEachInRange(device_addr_out, range_size,
-                                                       add_download);
-                });
+            const u64 new_size = new_end - new_start;
+            copies[buffer_id].emplace_back(new_start - buffer_start, total_size_bytes, new_size);
+            // Align up to avoid cache conflicts
+            constexpr u64 align = std::hardware_destructive_interference_size;
+            constexpr u64 mask = ~(align - 1ULL);
+            total_size_bytes += (new_size + align - 1) & mask;
         });
     });
     pending_download_ranges.Clear();
-    if (copies.empty()) {
+    if (total_size_bytes == 0) {
         return false;
     }
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
@@ -239,26 +227,23 @@ bool BufferCache::CommitAsyncFlushes() {
         .memoryBarrierCount = 1u,
         .pMemoryBarriers = &read_barrier,
     });
-    for (s32 i = 0; i < buffer_ids.size(); ++i) {
-        auto& buffer_copies = copies[i];
+    for (auto it = copies.begin(); it != copies.end(); ++it) {
+        auto& buffer_copies = it.value();
         if (buffer_copies.empty()) {
             continue;
         }
         for (auto& copy : buffer_copies) {
             copy.dstOffset += offset;
         }
-        const BufferId buffer_id = buffer_ids[i];
+        const BufferId buffer_id = it.key();
         Buffer& buffer = slot_buffers[buffer_id];
         cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), buffer_copies);
     }
-    scheduler.DeferOperation([this, download, offset, buffer_ids, copies]() {
+    scheduler.DeferOperation([this, download, offset, copies = std::move(copies)]() {
         auto* memory = Core::Memory::Instance();
-        for (s32 i = 0; i < buffer_ids.size(); ++i) {
-            auto& buffer_copies = copies[i];
-            if (buffer_copies.empty()) {
-                continue;
-            }
-            const BufferId buffer_id = buffer_ids[i];
+        for (auto it = copies.begin(); it != copies.end(); ++it) {
+            auto& buffer_copies = it.value();
+            const BufferId buffer_id = it.key();
             Buffer& buffer = slot_buffers[buffer_id];
             for (auto& copy : buffer_copies) {
                 const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;

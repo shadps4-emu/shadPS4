@@ -621,7 +621,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::EventWriteEop: {
                 const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
                 if (rasterizer) {
-                    rasterizer->CommitAsyncFlushes();
+                    rasterizer->CommitPendingDownloads();
                 }
                 ++fence_tick;
                 event_eop->SignalFence([](void* address, u64 data, u32 num_bytes) {
@@ -1023,7 +1023,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
             ++fence_tick;
             if (rasterizer) {
-                rasterizer->CommitAsyncFlushes();
+                rasterizer->CommitPendingDownloads();
             }
             release_mem->SignalFence(static_cast<Platform::InterruptId>(queue.pipe_id));
             break;

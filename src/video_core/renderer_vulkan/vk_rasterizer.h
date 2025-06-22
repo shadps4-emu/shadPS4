@@ -65,7 +65,7 @@ public:
     void UnmapMemory(VAddr addr, u64 size);
 
     void CpSync();
-    bool CommitAsyncFlushes();
+    bool CommitPendingDownloads();
     u64 Flush();
     void Finish();
     void ProcessFaults();
