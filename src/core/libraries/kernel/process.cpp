@@ -103,7 +103,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->FindByAddress(addr);
     if (!module) {
-        return ORBIS_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
     const auto mod_info = module->GetModuleInfoEx();
 
@@ -120,12 +120,21 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
 
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, s32 flags,
                                                 Core::OrbisKernelModuleInfoEx* info) {
+    if (flags >= 3) {
+        std::memset(info, 0, sizeof(Core::OrbisKernelModuleInfoEx));
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (info == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
     LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->FindByAddress(addr);
     if (!module) {
-        return ORBIS_KERNEL_ERROR_EFAULT;
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
+
     *info = module->GetModuleInfoEx();
     return ORBIS_OK;
 }
