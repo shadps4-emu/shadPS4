@@ -138,7 +138,7 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
-    ASSERT_MSG(vma.Contains(virtual_addr, 0),
+    ASSERT_MSG(vma.Contains(virtual_addr, num_bytes),
                "Attempting to access out of bounds memory at address {:#x}", virtual_addr);
     if (vma.type != VMAType::Direct) {
         return false;
