@@ -118,11 +118,14 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, int flags,
+s32 PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, s32 flags,
                                                 Core::OrbisKernelModuleInfoEx* info) {
     LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->FindByAddress(addr);
+    if (!module) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
     *info = module->GetModuleInfoEx();
     return ORBIS_OK;
 }
