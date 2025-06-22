@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>觸控板點擊</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>滑鼠操控操縱桿</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>控制器</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>返回按鈕行為</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>圖形</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>空閒滑鼠指標隱藏逾時：\n閒置滑鼠指標隱藏自身之前的持續顯示時間（秒）。</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>返回按鈕行為：\n設定控制器&apos;的返回按鈕以模擬點擊 PS4 控制器觸控板上的指定位置。</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>顯示相容性資料：\n在表格顯視模式中顯示遊戲相容性資訊。啟用「啟動&quot;時更新相容性」以取得&quot;最新資訊。</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>始終</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>觸控板左側</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>觸控板右側</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>觸控板中間</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>無</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

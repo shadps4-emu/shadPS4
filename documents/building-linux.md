@@ -74,6 +74,7 @@ and install the dependencies on that container as cited above.
 This option is **highly recommended** for distributions with immutable/atomic filesystems (example: Fedora Kinoite, SteamOS).
 
 ### Cloning
+The project uses submodules to manage dependencies, and they need to be initialized before you can build the project. To achieve this, make sure you've cloned the repository with the --recursive flag
 
 ```bash
 git clone --recursive https://github.com/shadps4-emu/shadPS4.git

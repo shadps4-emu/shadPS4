@@ -23,6 +23,7 @@
 
 #include "common/types.h"
 #include "core/file_format/trp.h"
+#include "gui_settings.h"
 
 struct TrophyGameInfo {
     QString name;
@@ -34,7 +35,8 @@ class TrophyViewer : public QMainWindow {
     Q_OBJECT
 public:
     explicit TrophyViewer(
-        QString trophyPath, QString gameTrpPath, QString gameName = "",
+        std::shared_ptr<gui_settings> gui_settings, QString trophyPath, QString gameTrpPath,
+        QString gameName = "",
         const QVector<TrophyGameInfo>& allTrophyGames = QVector<TrophyGameInfo>());
 
     void updateTrophyInfo();
@@ -77,4 +79,5 @@ private:
         }
         return "Unknown";
     }
+    std::shared_ptr<gui_settings> m_gui_settings;
 };

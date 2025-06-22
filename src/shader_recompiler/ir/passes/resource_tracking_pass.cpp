@@ -21,8 +21,10 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicISub32:
     case IR::Opcode::BufferAtomicSMin32:
     case IR::Opcode::BufferAtomicUMin32:
+    case IR::Opcode::BufferAtomicFMin32:
     case IR::Opcode::BufferAtomicSMax32:
     case IR::Opcode::BufferAtomicUMax32:
+    case IR::Opcode::BufferAtomicFMax32:
     case IR::Opcode::BufferAtomicInc32:
     case IR::Opcode::BufferAtomicDec32:
     case IR::Opcode::BufferAtomicAnd32:
@@ -364,19 +366,17 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle, info);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    auto image = info.ReadUdSharp<AmdGpu::Image>(tsharp);
-    if (!image.Valid()) {
-        LOG_ERROR(Render_Vulkan, "Shader compiled with unbound image!");
-        image = AmdGpu::Image::Null();
-    }
-    const auto data_fmt = image.GetDataFmt();
-    if (inst_info.is_depth && data_fmt != AmdGpu::DataFormat::Format16 &&
-        data_fmt != AmdGpu::DataFormat::Format32) {
-        LOG_ERROR(Render_Vulkan, "Shader compiled using non-depth image with depth instruction!");
-        image = AmdGpu::Image::NullDepth();
-    }
-    ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
+    const ImageResource image_res = {
+        .sharp_idx = tsharp,
+        .is_depth = bool(inst_info.is_depth),
+        .is_atomic = IsImageAtomicInstruction(inst),
+        .is_array = bool(inst_info.is_array),
+        .is_written = is_written,
+        .is_r128 = bool(inst_info.is_r128),
+    };
+    auto image = image_res.GetSharp(info);
+    ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
 
     // Patch image instruction if image is FMask.
     if (image.IsFmask()) {
@@ -411,14 +411,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         }
     }
 
-    u32 image_binding = descriptors.Add(ImageResource{
-        .sharp_idx = tsharp,
-        .is_depth = bool(inst_info.is_depth),
-        .is_atomic = IsImageAtomicInstruction(inst),
-        .is_array = bool(inst_info.is_array),
-        .is_written = is_written,
-        .is_r128 = bool(inst_info.is_r128),
-    });
+    u32 image_binding = descriptors.Add(image_res);
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 

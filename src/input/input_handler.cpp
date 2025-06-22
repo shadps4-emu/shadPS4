@@ -66,22 +66,25 @@ auto output_array = std::array{
     ControllerOutput(LEFTJOYSTICK_HALFMODE),
     ControllerOutput(RIGHTJOYSTICK_HALFMODE),
     ControllerOutput(KEY_TOGGLE),
+    ControllerOutput(MOUSE_GYRO_ROLL_MODE),
 
     // Button mappings
-    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),          // Triangle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),           // Circle
-    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),          // Cross
-    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),           // Square
-    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),  // L1
-    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),     // L3
-    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER), // R1
-    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),    // R3
-    ControllerOutput(SDL_GAMEPAD_BUTTON_START),          // Options
-    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD),       // TouchPad
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),        // Up
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),      // Down
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),      // Left
-    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),     // Right
+    ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),           // Triangle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),            // Circle
+    ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),           // Cross
+    ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),            // Square
+    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),   // L1
+    ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),      // L3
+    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),  // R1
+    ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),     // R3
+    ControllerOutput(SDL_GAMEPAD_BUTTON_START),           // Options
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT),   // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER), // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT),  // TouchPad
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),         // Up
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
+    ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
 
     // Axis mappings
     // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -130,6 +133,12 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
         return OPBDO::Options;
     case SDL_GAMEPAD_BUTTON_TOUCHPAD:
         return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
+        return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
+        return OPBDO::TouchPad;
+    case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
+        return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_BACK:
         return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
@@ -176,7 +185,7 @@ InputBinding GetBindingFromString(std::string& line) {
         if (string_to_keyboard_key_map.find(t) != string_to_keyboard_key_map.end()) {
             input = InputID(InputType::KeyboardMouse, string_to_keyboard_key_map.at(t));
         } else if (string_to_axis_map.find(t) != string_to_axis_map.end()) {
-            input = InputID(InputType::Axis, (u32)string_to_axis_map.at(t).axis);
+            input = InputID(InputType::Axis, string_to_axis_map.at(t).axis);
         } else if (string_to_cbutton_map.find(t) != string_to_cbutton_map.end()) {
             input = InputID(InputType::Controller, string_to_cbutton_map.at(t));
         } else {
@@ -227,18 +236,14 @@ void ParseInputConfig(const std::string game_id = "") {
         line.erase(std::remove_if(line.begin(), line.end(),
                                   [](unsigned char c) { return std::isspace(c); }),
                    line.end());
-
         if (line.empty()) {
             continue;
         }
+
         // Truncate lines starting at #
         std::size_t comment_pos = line.find('#');
         if (comment_pos != std::string::npos) {
             line = line.substr(0, comment_pos);
-        }
-        // Remove trailing semicolon
-        if (!line.empty() && line[line.length() - 1] == ';') {
-            line = line.substr(0, line.length() - 1);
         }
         if (line.empty()) {
             continue;
@@ -254,8 +259,13 @@ void ParseInputConfig(const std::string game_id = "") {
 
         std::string output_string = line.substr(0, equal_pos);
         std::string input_string = line.substr(equal_pos + 1);
-        std::size_t comma_pos = input_string.find(',');
+        // Remove trailing semicolon from input_string
+        if (!input_string.empty() && input_string[input_string.length() - 1] == ';' &&
+            input_string != ";") {
+            line = line.substr(0, line.length() - 1);
+        }
 
+        std::size_t comma_pos = input_string.find(',');
         auto parseInt = [](const std::string& s) -> std::optional<int> {
             try {
                 return std::stoi(s);
@@ -373,7 +383,6 @@ void ParseInputConfig(const std::string game_id = "") {
         BindingConnection connection(InputID(), nullptr);
         auto button_it = string_to_cbutton_map.find(output_string);
         auto axis_it = string_to_axis_map.find(output_string);
-
         if (binding.IsEmpty()) {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
@@ -411,7 +420,7 @@ void ParseInputConfig(const std::string game_id = "") {
 u32 GetMouseWheelEvent(const SDL_Event& event) {
     if (event.type != SDL_EVENT_MOUSE_WHEEL && event.type != SDL_EVENT_MOUSE_WHEEL_OFF) {
         LOG_WARNING(Input, "Something went wrong with wheel input parsing!");
-        return (u32)-1;
+        return SDL_UNMAPPED;
     }
     if (event.wheel.y > 0) {
         return SDL_MOUSE_WHEEL_UP;
@@ -422,7 +431,7 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
     } else if (event.wheel.x < 0) {
         return SDL_MOUSE_WHEEL_LEFT;
     }
-    return (u32)-1;
+    return SDL_UNMAPPED;
 }
 
 InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
@@ -432,16 +441,19 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
         return InputEvent(InputType::KeyboardMouse, e.key.key, e.key.down, 0);
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        return InputEvent(InputType::KeyboardMouse, (u32)e.button.button, e.button.down, 0);
+        return InputEvent(InputType::KeyboardMouse, static_cast<u32>(e.button.button),
+                          e.button.down, 0);
     case SDL_EVENT_MOUSE_WHEEL:
     case SDL_EVENT_MOUSE_WHEEL_OFF:
         return InputEvent(InputType::KeyboardMouse, GetMouseWheelEvent(e),
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        return InputEvent(InputType::Controller, (u32)e.gbutton.button, e.gbutton.down, 0);
+        return InputEvent(InputType::Controller, static_cast<u32>(e.gbutton.button), e.gbutton.down,
+                          0); // clang made me do it
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        return InputEvent(InputType::Axis, (u32)e.gaxis.axis, true, e.gaxis.value / 256);
+        return InputEvent(InputType::Axis, static_cast<u32>(e.gaxis.axis), true,
+                          e.gaxis.value / 256); // this too
     default:
         return InputEvent();
     }
@@ -499,14 +511,21 @@ void ControllerOutput::FinalizeUpdate() {
     }
     old_button_state = new_button_state;
     old_param = *new_param;
-    float touchpad_x = 0;
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         switch (button) {
-        case SDL_GAMEPAD_BUTTON_TOUCHPAD:
-            touchpad_x = Config::getBackButtonBehavior() == "left"    ? 0.25f
-                         : Config::getBackButtonBehavior() == "right" ? 0.75f
-                                                                      : 0.5f;
-            controller->SetTouchpadState(0, new_button_state, touchpad_x, 0.5f);
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
+            LOG_INFO(Input, "Topuchpad left");
+            controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
+            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            break;
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
+            LOG_INFO(Input, "Topuchpad center");
+            controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
+            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            break;
+        case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
+            LOG_INFO(Input, "Topuchpad right");
+            controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case LEFTJOYSTICK_HALFMODE:
@@ -519,6 +538,9 @@ void ControllerOutput::FinalizeUpdate() {
         // to do it, and it would be inconvenient to force it here, when AddUpdate does the job just
         // fine, and a toggle doesn't have to checked against every input that's bound to it, it's
         // enough that one is pressed
+        case MOUSE_GYRO_ROLL_MODE:
+            SetMouseGyroRollMode(new_button_state);
+            break;
         default: // is a normal key (hopefully)
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
@@ -570,7 +592,7 @@ void ControllerOutput::FinalizeUpdate() {
 bool UpdatePressedKeys(InputEvent event) {
     // Skip invalid inputs
     InputID input = event.input;
-    if (input.sdl_id == (u32)-1) {
+    if (input.sdl_id == SDL_UNMAPPED) {
         return false;
     }
     if (input.type == InputType::Axis) {
