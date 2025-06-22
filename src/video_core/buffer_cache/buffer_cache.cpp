@@ -488,14 +488,11 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
+    const bool is_image_alias = SynchronizeBuffer(buffer, device_addr, size, is_texel_buffer);
     if (is_written) {
         memory_tracker.MarkRegionAsGpuModified(device_addr, size);
         gpu_modified_ranges.Add(device_addr, size);
-        // Don't attempt to download the requested buffer if
-        // - It's a texel buffer; Most often used for image copies
-        // - It's too large; Large buffers are rarely needed by CPU
-        if (!is_texel_buffer && size <= DownloadSizeThreshold) {
+        if (!is_image_alias && size <= DownloadSizeThreshold) {
             pending_download_ranges.Add(device_addr, size);
         }
     }
@@ -872,29 +869,24 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     }
 }
 
-void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
+bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
                                     bool is_texel_buffer) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     u64 total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
     memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
-        //const auto add_upload = [&](VAddr start, u64 size) {
-            copies.push_back(vk::BufferCopy{
-                .srcOffset = total_size_bytes,
-                .dstOffset = device_addr_out - buffer_start,
-                .size = range_size,
-            });
-            total_size_bytes += range_size;
-        //};
-        //gpu_modified_ranges.ForEachNotInRange(device_addr_out, range_size, add_upload);
+        copies.push_back(vk::BufferCopy{
+            .srcOffset = total_size_bytes,
+            .dstOffset = device_addr_out - buffer_start,
+            .size = range_size,
+        });
+        total_size_bytes += range_size;
     });
-    SCOPE_EXIT {
-        if (is_texel_buffer) {
-            SynchronizeBufferFromImage(buffer, device_addr, size);
-        }
-    };
     if (total_size_bytes == 0) {
-        return;
+        if (is_texel_buffer) {
+            return SynchronizeBufferFromImage(buffer, device_addr, size);
+        }
+        return false;
     }
     vk::Buffer src_buffer = staging_buffer.Handle();
     if (total_size_bytes < StagingBufferSize) {
@@ -957,6 +949,10 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &post_barrier,
     });
+    if (is_texel_buffer) {
+        return SynchronizeBufferFromImage(buffer, device_addr, size);
+    }
+    return false;
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
