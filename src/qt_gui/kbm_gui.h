@@ -26,6 +26,9 @@ public:
     explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
     ~KBMSettings();
 
+signals:
+    void PushKBMEvent();
+
 private Q_SLOTS:
     void SaveKBMConfig(bool CloseOnSave);
     void SetDefault();
@@ -50,7 +53,6 @@ private:
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
     QString mapping;
-    QString modifier;
     int MappingTimer;
     QTimer* timer;
     QPushButton* MappingButton;
