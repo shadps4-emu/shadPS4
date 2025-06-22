@@ -473,8 +473,13 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
-        auto configWindow = new ControlSettings(m_game_info, this);
-        configWindow->exec();
+        if (!isGameRunning) {
+            auto configWindow = new ControlSettings(m_game_info, this);
+            configWindow->exec();
+        } else {
+            QMessageBox::information(this, tr("Remapping not available"),
+                                     tr("Cannot remap controller while game is running"));
+        }
     });
 
     connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {

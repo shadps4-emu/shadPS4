@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <QComboBox>
 #include <QDialog>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_gamepad.h>
 #include "game_info.h"
 
 namespace Ui {
@@ -15,10 +18,17 @@ public:
                              QWidget* parent = nullptr);
     ~ControlSettings();
 
+signals:
+    void gamepadInputEvent();
+    void AxisChanged();
+
 private Q_SLOTS:
     void SaveControllerConfig(bool CloseOnSave);
     void SetDefault();
     void UpdateLightbarColor();
+    void CheckMapping(QPushButton*& button);
+    void StartTimer(QPushButton*& button, bool isButton);
+    void ConnectAxisInputs(QPushButton*& button);
 
 private:
     std::unique_ptr<Ui::ControlSettings> ui;
@@ -27,6 +37,23 @@ private:
     void AddBoxItems();
     void SetUIValuestoMappings();
     void GetGameTitle();
+    void CheckGamePad();
+    void pollSDLEvents();
+    void DisableMappingButtons();
+    void EnableMappingButtons();
+
+    QList<QPushButton*> ButtonsList;
+    QList<QPushButton*> AxisList;
+
+    bool isRunning = true;
+    bool EnableButtonMapping = false;
+    bool EnableAxisMapping = false;
+    bool MappingCompleted = false;
+    QString mapping;
+    int MappingTimer;
+    QTimer* timer;
+    QPushButton* MappingButton;
+    SDL_Gamepad* m_gamepad = nullptr;
 
     const std::vector<std::string> ControllerInputs = {
         "cross",        "circle",    "square",      "triangle",    "l1",
@@ -39,29 +66,10 @@ private:
         "pad_left",     "pad_right", "axis_left_x", "axis_left_y", "axis_right_x",
         "axis_right_y", "back"};
 
-    const QStringList ButtonOutputs = {"cross",
-                                       "circle",
-                                       "square",
-                                       "triangle",
-                                       "l1",
-                                       "r1",
-                                       "l2",
-                                       "r2",
-                                       "l3",
-
-                                       "r3",
-                                       "options",
-                                       "pad_up",
-
-                                       "pad_down",
-
-                                       "pad_left",
-                                       "pad_right",
-                                       "touchpad_left",
-                                       "touchpad_center",
-                                       "touchpad_right",
-                                       "unmapped"};
-
-    const QStringList StickOutputs = {"axis_left_x", "axis_left_y", "axis_right_x", "axis_right_y",
-                                      "unmapped"};
+protected:
+    void closeEvent(QCloseEvent* event) override {
+        SDL_Event quitLoop{};
+        quitLoop.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&quitLoop);
+    }
 };

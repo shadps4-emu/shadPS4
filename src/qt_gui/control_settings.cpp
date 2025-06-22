@@ -4,6 +4,7 @@
 #include <fstream>
 #include <QMessageBox>
 #include <QPushButton>
+#include "common/logging/log.h"
 #include "common/path_util.h"
 #include "control_settings.h"
 #include "ui_control_settings.h"
@@ -12,11 +13,49 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     : QDialog(parent), m_game_info(game_info_get), ui(new Ui::ControlSettings) {
 
     ui->setupUi(this);
-    ui->PerGameCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
+
+    SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+    SDL_InitSubSystem(SDL_INIT_EVENTS);
+
+    CheckGamePad();
+    QFuture<void> future = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
 
     AddBoxItems();
     SetUIValuestoMappings();
     UpdateLightbarColor();
+
+    ButtonsList = {ui->CrossButton,
+                   ui->CircleButton,
+                   ui->TriangleButton,
+                   ui->SquareButton,
+                   ui->L1Button,
+                   ui->R1Button,
+                   ui->L2Button,
+                   ui->R2Button,
+                   ui->L3Button,
+                   ui->R3Button,
+                   ui->OptionsButton,
+                   ui->TouchpadLeftButton,
+                   ui->TouchpadCenterButton,
+                   ui->TouchpadRightButton,
+                   ui->DpadUpButton,
+                   ui->DpadDownButton,
+                   ui->DpadLeftButton,
+                   ui->DpadRightButton};
+
+    AxisList = {ui->LStickUpButton,    ui->LStickDownButton, ui->LStickLeftButton,
+                ui->LStickRightButton, ui->RStickUpButton,   ui->RStickDownButton,
+                ui->RStickLeftButton,  ui->RStickRightButton};
+
+    for (auto& button : ButtonsList) {
+        connect(button, &QPushButton::clicked, this,
+                [this, &button]() { StartTimer(button, true); });
+    }
+
+    for (auto& button : AxisList) {
+        connect(button, &QPushButton::clicked, this,
+                [this, &button]() { StartTimer(button, false); });
+    }
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
         if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
@@ -33,6 +72,8 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
     ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setText(tr("Restore Defaults"));
     ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
 
+    ui->PerGameCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
+
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
 
     connect(ui->ProfileComboBox, &QComboBox::currentTextChanged, this, [this] {
@@ -44,24 +85,6 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
             [this](int value) { ui->LeftDeadzoneValue->setText(QString::number(value)); });
     connect(ui->RightDeadzoneSlider, &QSlider::valueChanged, this,
             [this](int value) { ui->RightDeadzoneValue->setText(QString::number(value)); });
-
-    connect(ui->LStickUpBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->LStickDownBox->setCurrentIndex(value); });
-    connect(ui->LStickDownBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->LStickUpBox->setCurrentIndex(value); });
-    connect(ui->LStickRightBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->LStickLeftBox->setCurrentIndex(value); });
-    connect(ui->LStickLeftBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->LStickRightBox->setCurrentIndex(value); });
-
-    connect(ui->RStickUpBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->RStickDownBox->setCurrentIndex(value); });
-    connect(ui->RStickDownBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->RStickUpBox->setCurrentIndex(value); });
-    connect(ui->RStickRightBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->RStickLeftBox->setCurrentIndex(value); });
-    connect(ui->RStickLeftBox, &QComboBox::currentIndexChanged, this,
-            [this](int value) { ui->RStickRightBox->setCurrentIndex(value); });
 
     connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
         QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
@@ -83,30 +106,35 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
         ui->BLabel->setText(BValue);
         UpdateLightbarColor();
     });
+
+    connect(this, &ControlSettings::gamepadInputEvent, this,
+            [this]() { CheckMapping(MappingButton); });
+    connect(this, &ControlSettings::AxisChanged, this,
+            [this]() { ConnectAxisInputs(MappingButton); });
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
-    QList<QComboBox*> list;
-    list << ui->RStickUpBox << ui->RStickRightBox << ui->LStickUpBox << ui->LStickRightBox;
+    QList<QPushButton*> list;
+    list << ui->RStickUpButton << ui->RStickRightButton << ui->LStickUpButton
+         << ui->LStickRightButton;
     int count_axis_left_x = 0, count_axis_left_y = 0, count_axis_right_x = 0,
         count_axis_right_y = 0;
     for (const auto& i : list) {
-        if (i->currentText() == "axis_left_x") {
+        if (i->text() == "axis_left_x") {
             count_axis_left_x = count_axis_left_x + 1;
-        } else if (i->currentText() == "axis_left_y") {
+        } else if (i->text() == "axis_left_y") {
             count_axis_left_y = count_axis_left_y + 1;
-        } else if (i->currentText() == "axis_right_x") {
+        } else if (i->text() == "axis_right_x") {
             count_axis_right_x = count_axis_right_x + 1;
-        } else if (i->currentText() == "axis_right_y") {
+        } else if (i->text() == "axis_right_y") {
             count_axis_right_y = count_axis_right_y + 1;
         }
     }
 
     if (count_axis_left_x > 1 | count_axis_left_y > 1 | count_axis_right_x > 1 |
         count_axis_right_y > 1) {
-        QMessageBox::StandardButton nosave;
-        nosave = QMessageBox::information(this, tr("Unable to Save"),
-                                          tr("Cannot bind axis values more than once"));
+        QMessageBox::information(this, tr("Unable to Save"),
+                                 tr("Cannot bind axis values more than once"));
         return;
     }
 
@@ -118,7 +146,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
     int lineCount = 0;
     std::string line;
-    std::vector<std::string> lines;
+    std::vector<std::string> lines, inputs;
     std::string output_string = "", input_string = "";
     std::fstream file(config_file);
 
@@ -152,92 +180,60 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
     file.close();
 
-    input_string = "cross";
-    output_string = ui->ABox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
+    // Lambda to reduce repetitive code for mapping buttons to config lines
+    auto add_mapping = [&](const QString& buttonText, const std::string& output_name) {
+        input_string = buttonText.toStdString();
+        output_string = output_name;
+        if (input_string != "unmapped") {
+            lines.push_back(output_string + " = " + input_string);
+            inputs.push_back(input_string);
+        }
+    };
 
-    input_string = "circle";
-    output_string = ui->BBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "square";
-    output_string = ui->XBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "triangle";
-    output_string = ui->YBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    lines.push_back("");
-
-    input_string = "l1";
-    output_string = ui->LBBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "r1";
-    output_string = ui->RBBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "l2";
-    output_string = ui->LTBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "r2";
-    output_string = ui->RTBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "l3";
-    output_string = ui->LClickBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "r3";
-    output_string = ui->RClickBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
+    add_mapping(ui->CrossButton->text(), "cross");
+    add_mapping(ui->CircleButton->text(), "circle");
+    add_mapping(ui->SquareButton->text(), "square");
+    add_mapping(ui->TriangleButton->text(), "triangle");
 
     lines.push_back("");
 
-    input_string = "back";
-    output_string = ui->BackBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "options";
-    output_string = ui->StartBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    lines.push_back("");
-
-    input_string = "pad_up";
-    output_string = ui->DpadUpBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "pad_down";
-    output_string = ui->DpadDownBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "pad_left";
-    output_string = ui->DpadLeftBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
-
-    input_string = "pad_right";
-    output_string = ui->DpadRightBox->currentText().toStdString();
-    lines.push_back(output_string + " = " + input_string);
+    add_mapping(ui->L1Button->text(), "l1");
+    add_mapping(ui->R1Button->text(), "r1");
+    add_mapping(ui->L2Button->text(), "l2");
+    add_mapping(ui->R2Button->text(), "r2");
+    add_mapping(ui->L3Button->text(), "l3");
+    add_mapping(ui->R3Button->text(), "r3");
 
     lines.push_back("");
 
-    input_string = "axis_left_x";
-    output_string = ui->LStickRightBox->currentText().toStdString();
+    add_mapping(ui->TouchpadLeftButton->text(), "touchpad_left");
+    add_mapping(ui->TouchpadCenterButton->text(), "touchpad_center");
+    add_mapping(ui->TouchpadRightButton->text(), "touchpad_right");
+    add_mapping(ui->OptionsButton->text(), "options");
+
+    lines.push_back("");
+
+    add_mapping(ui->DpadUpButton->text(), "pad_up");
+    add_mapping(ui->DpadDownButton->text(), "pad_down");
+    add_mapping(ui->DpadLeftButton->text(), "pad_left");
+    add_mapping(ui->DpadRightButton->text(), "pad_right");
+
+    lines.push_back("");
+
+    output_string = "axis_left_x";
+    input_string = ui->LStickRightButton->text().toStdString();
     lines.push_back(output_string + " = " + input_string);
 
-    input_string = "axis_left_y";
-    output_string = ui->LStickUpBox->currentText().toStdString();
+    output_string = "axis_left_y";
+    input_string = ui->LStickUpButton->text().toStdString();
     lines.push_back(output_string + " = " + input_string);
 
-    input_string = "axis_right_x";
-    output_string = ui->RStickRightBox->currentText().toStdString();
+    output_string = "axis_right_x";
+    input_string = ui->RStickRightButton->text().toStdString();
     lines.push_back(output_string + " = " + input_string);
 
-    input_string = "axis_right_y";
-    output_string = ui->RStickUpBox->currentText().toStdString();
+    output_string = "axis_right_y";
+    input_string = ui->RStickUpButton->text().toStdString();
     lines.push_back(output_string + " = " + input_string);
 
     lines.push_back("");
@@ -256,6 +252,33 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     std::string LightBarB = std::to_string(ui->BSlider->value());
     lines.push_back("override_controller_color = " + OverrideLB + ", " + LightBarR + ", " +
                     LightBarG + ", " + LightBarB);
+
+    // Prevent duplicate inputs that break the input engine
+    bool duplicateFound = false;
+    QSet<QString> duplicateMappings;
+
+    for (auto it = inputs.begin(); it != inputs.end(); ++it) {
+        if (std::find(it + 1, inputs.end(), *it) != inputs.end()) {
+            duplicateFound = true;
+            duplicateMappings.insert(QString::fromStdString(*it));
+        }
+    }
+
+    if (duplicateFound) {
+        QStringList duplicatesList;
+        for (const QString mapping : duplicateMappings) {
+            for (const auto& button : ButtonsList) {
+                if (button->text() == mapping)
+                    duplicatesList.append(button->objectName() + " - " + mapping);
+            }
+        }
+        QMessageBox::information(
+            this, tr("Unable to Save"),
+            // clang-format off
+            QString(tr("Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:\n\n%1").arg(duplicatesList.join("\n"))));
+        // clang-format on
+        return;
+    }
 
     std::vector<std::string> save;
     bool CurrentLineEmpty = false, LastLineEmpty = false;
@@ -283,31 +306,33 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 }
 
 void ControlSettings::SetDefault() {
-    ui->ABox->setCurrentIndex(0);
-    ui->BBox->setCurrentIndex(1);
-    ui->XBox->setCurrentIndex(2);
-    ui->YBox->setCurrentIndex(3);
-    ui->DpadUpBox->setCurrentIndex(11);
-    ui->DpadDownBox->setCurrentIndex(12);
-    ui->DpadLeftBox->setCurrentIndex(13);
-    ui->DpadRightBox->setCurrentIndex(14);
-    ui->LClickBox->setCurrentIndex(8);
-    ui->RClickBox->setCurrentIndex(9);
-    ui->LBBox->setCurrentIndex(4);
-    ui->RBBox->setCurrentIndex(5);
-    ui->LTBox->setCurrentIndex(6);
-    ui->RTBox->setCurrentIndex(7);
-    ui->StartBox->setCurrentIndex(10);
-    ui->BackBox->setCurrentIndex(15);
+    ui->CrossButton->setText("cross");
+    ui->CircleButton->setText("circle");
+    ui->SquareButton->setText("square");
+    ui->TriangleButton->setText("triangle");
+    ui->DpadUpButton->setText("pad_up");
+    ui->DpadDownButton->setText("pad_down");
+    ui->DpadLeftButton->setText("pad_left");
+    ui->DpadRightButton->setText("pad_right");
+    ui->L3Button->setText("l3");
+    ui->R3Button->setText("r3");
+    ui->L1Button->setText("l1");
+    ui->R1Button->setText("r1");
+    ui->L2Button->setText("l2");
+    ui->R2Button->setText("r2");
+    ui->OptionsButton->setText("options");
+    ui->TouchpadLeftButton->setText("back");
+    ui->TouchpadCenterButton->setText("unmapped");
+    ui->TouchpadRightButton->setText("unmapped");
 
-    ui->LStickUpBox->setCurrentIndex(1);
-    ui->LStickDownBox->setCurrentIndex(1);
-    ui->LStickLeftBox->setCurrentIndex(0);
-    ui->LStickRightBox->setCurrentIndex(0);
-    ui->RStickUpBox->setCurrentIndex(3);
-    ui->RStickDownBox->setCurrentIndex(3);
-    ui->RStickLeftBox->setCurrentIndex(2);
-    ui->RStickRightBox->setCurrentIndex(2);
+    ui->LStickUpButton->setText("axis_left_y");
+    ui->LStickDownButton->setText("axis_left_y");
+    ui->LStickLeftButton->setText("axis_left_x");
+    ui->LStickRightButton->setText("axis_left_x");
+    ui->RStickUpButton->setText("axis_right_y");
+    ui->RStickDownButton->setText("axis_right_y");
+    ui->RStickLeftButton->setText("axis_right_x");
+    ui->RStickRightButton->setText("axis_right_x");
 
     ui->LeftDeadzoneSlider->setValue(2);
     ui->RightDeadzoneSlider->setValue(2);
@@ -320,32 +345,6 @@ void ControlSettings::SetDefault() {
 }
 
 void ControlSettings::AddBoxItems() {
-    ui->DpadUpBox->addItems(ButtonOutputs);
-    ui->DpadDownBox->addItems(ButtonOutputs);
-    ui->DpadLeftBox->addItems(ButtonOutputs);
-    ui->DpadRightBox->addItems(ButtonOutputs);
-    ui->LBBox->addItems(ButtonOutputs);
-    ui->RBBox->addItems(ButtonOutputs);
-    ui->LTBox->addItems(ButtonOutputs);
-    ui->RTBox->addItems(ButtonOutputs);
-    ui->RClickBox->addItems(ButtonOutputs);
-    ui->LClickBox->addItems(ButtonOutputs);
-    ui->StartBox->addItems(ButtonOutputs);
-    ui->ABox->addItems(ButtonOutputs);
-    ui->BBox->addItems(ButtonOutputs);
-    ui->XBox->addItems(ButtonOutputs);
-    ui->YBox->addItems(ButtonOutputs);
-    ui->BackBox->addItems(ButtonOutputs);
-
-    ui->LStickUpBox->addItems(StickOutputs);
-    ui->LStickDownBox->addItems(StickOutputs);
-    ui->LStickLeftBox->addItems(StickOutputs);
-    ui->LStickRightBox->addItems(StickOutputs);
-    ui->RStickUpBox->addItems(StickOutputs);
-    ui->RStickDownBox->addItems(StickOutputs);
-    ui->RStickLeftBox->addItems(StickOutputs);
-    ui->RStickRightBox->addItems(StickOutputs);
-
     ui->ProfileComboBox->addItem("Common Config");
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
@@ -355,6 +354,7 @@ void ControlSettings::AddBoxItems() {
 }
 
 void ControlSettings::SetUIValuestoMappings() {
+
     std::string config_id;
     config_id = (ui->ProfileComboBox->currentText() == "Common Config")
                     ? "default"
@@ -366,7 +366,8 @@ void ControlSettings::SetUIValuestoMappings() {
     bool CrossExists = false, CircleExists = false, SquareExists = false, TriangleExists = false,
          L1Exists = false, L2Exists = false, L3Exists = false, R1Exists = false, R2Exists = false,
          R3Exists = false, DPadUpExists = false, DPadDownExists = false, DPadLeftExists = false,
-         DPadRightExists = false, StartExists = false, BackExists = false, LStickXExists = false,
+         DPadRightExists = false, OptionsExists = false, TouchpadLeftExists = false,
+         TouchpadCenterExists = false, TouchpadRightExists = false, LStickXExists = false,
          LStickYExists = false, RStickXExists = false, RStickYExists = false;
     int lineCount = 0;
     std::string line = "";
@@ -391,69 +392,75 @@ void ControlSettings::SetUIValuestoMappings() {
         if (std::find(ControllerInputs.begin(), ControllerInputs.end(), input_string) !=
                 ControllerInputs.end() ||
             output_string == "analog_deadzone" || output_string == "override_controller_color") {
-            if (input_string == "cross") {
-                ui->ABox->setCurrentText(QString::fromStdString(output_string));
+            if (output_string == "cross") {
+                ui->CrossButton->setText(QString::fromStdString(input_string));
                 CrossExists = true;
-            } else if (input_string == "circle") {
-                ui->BBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "circle") {
+                ui->CircleButton->setText(QString::fromStdString(input_string));
                 CircleExists = true;
-            } else if (input_string == "square") {
-                ui->XBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "square") {
+                ui->SquareButton->setText(QString::fromStdString(input_string));
                 SquareExists = true;
-            } else if (input_string == "triangle") {
-                ui->YBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "triangle") {
+                ui->TriangleButton->setText(QString::fromStdString(input_string));
                 TriangleExists = true;
-            } else if (input_string == "l1") {
-                ui->LBBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "l1") {
+                ui->L1Button->setText(QString::fromStdString(input_string));
                 L1Exists = true;
-            } else if (input_string == "l2") {
-                ui->LTBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "l2") {
+                ui->L2Button->setText(QString::fromStdString(input_string));
                 L2Exists = true;
-            } else if (input_string == "r1") {
-                ui->RBBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "r1") {
+                ui->R1Button->setText(QString::fromStdString(input_string));
                 R1Exists = true;
-            } else if (input_string == "r2") {
-                ui->RTBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "r2") {
+                ui->R2Button->setText(QString::fromStdString(input_string));
                 R2Exists = true;
-            } else if (input_string == "l3") {
-                ui->LClickBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "l3") {
+                ui->L3Button->setText(QString::fromStdString(input_string));
                 L3Exists = true;
-            } else if (input_string == "r3") {
-                ui->RClickBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "r3") {
+                ui->R3Button->setText(QString::fromStdString(input_string));
                 R3Exists = true;
-            } else if (input_string == "pad_up") {
-                ui->DpadUpBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "pad_up") {
+                ui->DpadUpButton->setText(QString::fromStdString(input_string));
                 DPadUpExists = true;
-            } else if (input_string == "pad_down") {
-                ui->DpadDownBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "pad_down") {
+                ui->DpadDownButton->setText(QString::fromStdString(input_string));
                 DPadDownExists = true;
-            } else if (input_string == "pad_left") {
-                ui->DpadLeftBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "pad_left") {
+                ui->DpadLeftButton->setText(QString::fromStdString(input_string));
                 DPadLeftExists = true;
-            } else if (input_string == "pad_right") {
-                ui->DpadRightBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "pad_right") {
+                ui->DpadRightButton->setText(QString::fromStdString(input_string));
                 DPadRightExists = true;
-            } else if (input_string == "options") {
-                ui->StartBox->setCurrentText(QString::fromStdString(output_string));
-                StartExists = true;
-            } else if (input_string == "back") {
-                ui->BackBox->setCurrentText(QString::fromStdString(output_string));
-                BackExists = true;
-            } else if (input_string == "axis_left_x") {
-                ui->LStickRightBox->setCurrentText(QString::fromStdString(output_string));
-                ui->LStickLeftBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "options") {
+                ui->OptionsButton->setText(QString::fromStdString(input_string));
+                OptionsExists = true;
+            } else if (output_string == "touchpad_left") {
+                ui->TouchpadLeftButton->setText(QString::fromStdString(input_string));
+                TouchpadLeftExists = true;
+            } else if (output_string == "touchpad_center") {
+                ui->TouchpadCenterButton->setText(QString::fromStdString(input_string));
+                TouchpadCenterExists = true;
+            } else if (output_string == "touchpad_right") {
+                ui->TouchpadRightButton->setText(QString::fromStdString(input_string));
+                TouchpadRightExists = true;
+            } else if (output_string == "axis_left_x") {
+                ui->LStickRightButton->setText(QString::fromStdString(input_string));
+                ui->LStickLeftButton->setText(QString::fromStdString(input_string));
                 LStickXExists = true;
-            } else if (input_string == "axis_left_y") {
-                ui->LStickUpBox->setCurrentText(QString::fromStdString(output_string));
-                ui->LStickDownBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "axis_left_y") {
+                ui->LStickUpButton->setText(QString::fromStdString(input_string));
+                ui->LStickDownButton->setText(QString::fromStdString(input_string));
                 LStickYExists = true;
-            } else if (input_string == "axis_right_x") {
-                ui->RStickRightBox->setCurrentText(QString::fromStdString(output_string));
-                ui->RStickLeftBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "axis_right_x") {
+                ui->RStickRightButton->setText(QString::fromStdString(input_string));
+                ui->RStickLeftButton->setText(QString::fromStdString(input_string));
                 RStickXExists = true;
-            } else if (input_string == "axis_right_y") {
-                ui->RStickUpBox->setCurrentText(QString::fromStdString(output_string));
-                ui->RStickDownBox->setCurrentText(QString::fromStdString(output_string));
+            } else if (output_string == "axis_right_y") {
+                ui->RStickUpButton->setText(QString::fromStdString(input_string));
+                ui->RStickDownButton->setText(QString::fromStdString(input_string));
                 RStickYExists = true;
             } else if (input_string.contains("leftjoystick")) {
                 std::size_t comma_pos = line.find(',');
@@ -517,53 +524,57 @@ void ControlSettings::SetUIValuestoMappings() {
 
     // If an entry does not exist in the config file, we assume the user wants it unmapped
     if (!CrossExists)
-        ui->ABox->setCurrentText("unmapped");
+        ui->CrossButton->setText("unmapped");
     if (!CircleExists)
-        ui->BBox->setCurrentText("unmapped");
+        ui->CircleButton->setText("unmapped");
     if (!SquareExists)
-        ui->XBox->setCurrentText("unmapped");
+        ui->SquareButton->setText("unmapped");
     if (!TriangleExists)
-        ui->YBox->setCurrentText("unmapped");
+        ui->TriangleButton->setText("unmapped");
     if (!L1Exists)
-        ui->LBBox->setCurrentText("unmapped");
+        ui->L1Button->setText("unmapped");
     if (!L2Exists)
-        ui->LTBox->setCurrentText("unmapped");
+        ui->L2Button->setText("unmapped");
     if (!L3Exists)
-        ui->LClickBox->setCurrentText("unmapped");
+        ui->L3Button->setText("unmapped");
     if (!R1Exists)
-        ui->RBBox->setCurrentText("unmapped");
+        ui->R1Button->setText("unmapped");
     if (!R2Exists)
-        ui->RTBox->setCurrentText("unmapped");
+        ui->R2Button->setText("unmapped");
     if (!R3Exists)
-        ui->RClickBox->setCurrentText("unmapped");
+        ui->R3Button->setText("unmapped");
     if (!DPadUpExists)
-        ui->DpadUpBox->setCurrentText("unmapped");
+        ui->DpadUpButton->setText("unmapped");
     if (!DPadDownExists)
-        ui->DpadDownBox->setCurrentText("unmapped");
+        ui->DpadDownButton->setText("unmapped");
     if (!DPadLeftExists)
-        ui->DpadLeftBox->setCurrentText("unmapped");
+        ui->DpadLeftButton->setText("unmapped");
     if (!DPadRightExists)
-        ui->DpadRightBox->setCurrentText("unmapped");
-    if (!BackExists)
-        ui->BackBox->setCurrentText("unmapped");
-    if (!StartExists)
-        ui->StartBox->setCurrentText("unmapped");
+        ui->DpadRightButton->setText("unmapped");
+    if (!TouchpadLeftExists)
+        ui->TouchpadLeftButton->setText("unmapped");
+    if (!TouchpadCenterExists)
+        ui->TouchpadCenterButton->setText("unmapped");
+    if (!TouchpadRightExists)
+        ui->TouchpadRightButton->setText("unmapped");
+    if (!OptionsExists)
+        ui->OptionsButton->setText("unmapped");
 
     if (!LStickXExists) {
-        ui->LStickRightBox->setCurrentText("unmapped");
-        ui->LStickLeftBox->setCurrentText("unmapped");
+        ui->LStickRightButton->setText("unmapped");
+        ui->LStickLeftButton->setText("unmapped");
     }
     if (!LStickYExists) {
-        ui->LStickUpBox->setCurrentText("unmapped");
-        ui->LStickDownBox->setCurrentText("unmapped");
+        ui->LStickUpButton->setText("unmapped");
+        ui->LStickDownButton->setText("unmapped");
     }
     if (!RStickXExists) {
-        ui->RStickRightBox->setCurrentText("unmapped");
-        ui->RStickLeftBox->setCurrentText("unmapped");
+        ui->RStickRightButton->setText("unmapped");
+        ui->RStickLeftButton->setText("unmapped");
     }
     if (!RStickYExists) {
-        ui->RStickUpBox->setCurrentText("unmapped");
-        ui->RStickDownBox->setCurrentText("unmapped");
+        ui->RStickUpButton->setText("unmapped");
+        ui->RStickDownButton->setText("unmapped");
     }
 }
 
@@ -587,6 +598,244 @@ void ControlSettings::UpdateLightbarColor() {
     QString BValue = QString::number(ui->BSlider->value());
     QString colorstring = "background-color: rgb(" + RValue + "," + GValue + "," + BValue + ")";
     ui->LightbarColorFrame->setStyleSheet(colorstring);
+}
+
+void ControlSettings::CheckGamePad() {
+    if (m_gamepad) {
+        SDL_CloseGamepad(m_gamepad);
+        m_gamepad = nullptr;
+    }
+
+    int gamepad_count;
+    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
+
+    if (!gamepads) {
+        LOG_ERROR(Input, "Cannot get gamepad list: {}", SDL_GetError());
+        return;
+    }
+
+    if (gamepad_count == 0) {
+        LOG_INFO(Input, "No gamepad found!");
+        SDL_free(gamepads);
+        return;
+    }
+
+    LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
+    m_gamepad = SDL_OpenGamepad(gamepads[0]);
+
+    if (!m_gamepad) {
+        LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
+        SDL_free(gamepads);
+        return;
+    }
+
+    SDL_free(gamepads);
+}
+
+void ControlSettings::DisableMappingButtons() {
+    for (const auto& i : ButtonsList) {
+        i->setEnabled(false);
+    }
+
+    for (const auto& i : AxisList) {
+        i->setEnabled(false);
+    }
+}
+
+void ControlSettings::EnableMappingButtons() {
+    for (const auto& i : ButtonsList) {
+        i->setEnabled(true);
+    }
+
+    for (const auto& i : AxisList) {
+        i->setEnabled(true);
+    }
+}
+
+void ControlSettings::ConnectAxisInputs(QPushButton*& button) {
+    QString input = button->text();
+    if (button == ui->LStickUpButton) {
+        ui->LStickDownButton->setText(input);
+    } else if (button == ui->LStickDownButton) {
+        ui->LStickUpButton->setText(input);
+    } else if (button == ui->LStickLeftButton) {
+        ui->LStickRightButton->setText(input);
+    } else if (button == ui->LStickRightButton) {
+        ui->LStickLeftButton->setText(input);
+    } else if (button == ui->RStickUpButton) {
+        ui->RStickDownButton->setText(input);
+    } else if (button == ui->RStickDownButton) {
+        ui->RStickUpButton->setText(input);
+    } else if (button == ui->RStickLeftButton) {
+        ui->RStickRightButton->setText(input);
+    } else if (button == ui->RStickRightButton) {
+        ui->RStickLeftButton->setText(input);
+    }
+}
+
+void ControlSettings::StartTimer(QPushButton*& button, bool isButton) {
+    MappingTimer = 3;
+    isButton ? EnableButtonMapping = true : EnableAxisMapping = true;
+    MappingCompleted = false;
+    mapping = button->text();
+    DisableMappingButtons();
+
+    EnableButtonMapping
+        ? button->setText(tr("Press a button") + " [" + QString::number(MappingTimer) + "]")
+        : button->setText(tr("Move analog stick") + " [" + QString::number(MappingTimer) + "]");
+
+    timer = new QTimer(this);
+    MappingButton = button;
+    timer->start(1000);
+    connect(timer, &QTimer::timeout, this, [this]() { CheckMapping(MappingButton); });
+}
+
+void ControlSettings::CheckMapping(QPushButton*& button) {
+    MappingTimer -= 1;
+    EnableButtonMapping
+        ? button->setText(tr("Press a button") + " [" + QString::number(MappingTimer) + "]")
+        : button->setText(tr("Move analog stick") + " [" + QString::number(MappingTimer) + "]");
+
+    if (MappingCompleted || MappingTimer <= 0) {
+        button->setText(mapping);
+        EnableButtonMapping = false;
+        EnableAxisMapping = false;
+        EnableMappingButtons();
+        timer->stop();
+    }
+}
+
+void ControlSettings::pollSDLEvents() {
+    SDL_Event event;
+
+    auto SetMapping = [&](const QString& input) {
+        mapping = input;
+        MappingCompleted = true;
+        emit gamepadInputEvent();
+        if (EnableAxisMapping)
+            emit AxisChanged();
+    };
+
+    while (isRunning) {
+        if (!SDL_WaitEvent(&event)) {
+            return;
+        }
+
+        while (SDL_WaitEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
+                isRunning = false;
+                SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+                SDL_QuitSubSystem(SDL_INIT_EVENTS);
+                SDL_Quit();
+            }
+
+            if (event.type == SDL_EVENT_GAMEPAD_ADDED)
+                CheckGamePad();
+
+            if (EnableButtonMapping) {
+                if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+                    switch (event.gbutton.button) {
+
+                    case SDL_GAMEPAD_BUTTON_SOUTH:
+                        SetMapping("cross");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_EAST:
+                        SetMapping("circle");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_NORTH:
+                        SetMapping("triangle");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_WEST:
+                        SetMapping("square");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+                        SetMapping("l1");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+                        SetMapping("r1");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+                        SetMapping("l3");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+                        SetMapping("r3");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_DPAD_UP:
+                        SetMapping("pad_up");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                        SetMapping("pad_down");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+                        SetMapping("pad_left");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+                        SetMapping("pad_right");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_BACK:
+                        SetMapping("back");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
+                        SetMapping("lpaddle_high");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
+                        SetMapping("rpaddle_high");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
+                        SetMapping("lpaddle_low");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
+                        SetMapping("rpaddle_low");
+                        break;
+                    case SDL_GAMEPAD_BUTTON_START:
+                        SetMapping("options");
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+                    // SDL trigger axis values range from 0-32000, set mapping on half movement
+                    if (event.gaxis.value > 16000) {
+                        switch (event.gaxis.axis) {
+                        case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+                            SetMapping("l2");
+                            break;
+                        case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+                            SetMapping("r2");
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+
+            } else if (EnableAxisMapping) {
+                if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+                    // SDL stick axis values range from -32000-32000, set mapping on half movement
+                    if (event.gaxis.value > 16000 || event.gaxis.value < -16000) {
+                        switch (event.gaxis.axis) {
+                        case SDL_GAMEPAD_AXIS_LEFTX:
+                            SetMapping("axis_left_x");
+                            break;
+                        case SDL_GAMEPAD_AXIS_LEFTY:
+                            SetMapping("axis_left_y");
+                            break;
+                        case SDL_GAMEPAD_AXIS_RIGHTX:
+                            SetMapping("axis_right_x");
+                            break;
+                        case SDL_GAMEPAD_AXIS_RIGHTY:
+                            SetMapping("axis_right_y");
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 ControlSettings::~ControlSettings() {}
