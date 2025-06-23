@@ -928,7 +928,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation>!</translation>
+      <translation/>
     </message>
     <message>
       <source>Failed to convert icon.</source>
