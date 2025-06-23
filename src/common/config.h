@@ -130,5 +130,6 @@ void setDefaultValues();
 // todo: name and function location pending
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id = "");
 std::string getDefaultUserId();
+std::string getActiveUserId();
 
 }; // namespace Config

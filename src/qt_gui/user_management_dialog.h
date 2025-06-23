@@ -16,4 +16,5 @@ private:
     void Init();
 
     QTableWidget* m_table = nullptr;
+    std::string m_active_user;
 };

@@ -79,6 +79,10 @@ std::string selectedUserid{"00000001"};
 std::string getDefaultUserId() {
     return userid;
 }
+std::string getActiveUserId() {
+    return selectedUserid;
+}
+
 // Gui
 static bool load_game_size = true;
 static std::vector<GameInstallDir> settings_install_dirs = {};

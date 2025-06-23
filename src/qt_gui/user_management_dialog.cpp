@@ -45,8 +45,8 @@ void user_manager_dialog::Init() {
     QPushButton* push_create_user = new QPushButton(tr("&Create User"), this);
     push_create_user->setAutoDefault(false);
 
-    QPushButton* push_rename_user = new QPushButton(tr("&Rename User"), this);
-    push_rename_user->setAutoDefault(false);
+    QPushButton* push_edit_user = new QPushButton(tr("&Edit User"), this);
+    push_edit_user->setAutoDefault(false);
 
     QPushButton* push_close = new QPushButton(tr("&Close"), this);
     push_close->setAutoDefault(false);
@@ -54,7 +54,7 @@ void user_manager_dialog::Init() {
     // Button Layout
     QHBoxLayout* hbox_buttons = new QHBoxLayout();
     hbox_buttons->addWidget(push_create_user);
-    hbox_buttons->addWidget(push_rename_user);
+    hbox_buttons->addWidget(push_edit_user);
     hbox_buttons->addWidget(push_remove_user);
     hbox_buttons->addStretch();
     hbox_buttons->addWidget(push_close);
@@ -65,4 +65,8 @@ void user_manager_dialog::Init() {
     vbox_main->addWidget(m_table);
     vbox_main->addLayout(hbox_buttons);
     setLayout(vbox_main);
+
+    // get active user
+    m_active_user = Config::getActiveUserId();
+
 }
