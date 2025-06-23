@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <new>
+#include <semaphore>
 #include "common/alignment.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
@@ -145,14 +146,15 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size) {
     }
     std::binary_semaphore sem{0};
     liverpool->SendCommand([this, &sem, device_addr, size] {
-        ForEachBufferInRange(device_addr, size, [this, device_addr, size](BufferId buffer_id, Buffer& buffer) {
-            const VAddr buffer_start = buffer.CpuAddr();
-            const VAddr buffer_end = buffer_start + buffer.SizeBytes();
-            const VAddr download_start = std::max(buffer_start, device_addr);
-            const VAddr download_end = std::min(buffer_end, device_addr + size);
-            const u64 download_size = download_end - download_start;
-            DownloadBufferMemory(buffer, download_start, download_size);
-        });
+        ForEachBufferInRange(
+            device_addr, size, [this, device_addr, size](BufferId buffer_id, Buffer& buffer) {
+                const VAddr buffer_start = buffer.CpuAddr();
+                const VAddr buffer_end = buffer_start + buffer.SizeBytes();
+                const VAddr download_start = std::max(buffer_start, device_addr);
+                const VAddr download_end = std::min<VAddr>(buffer_end, device_addr + size);
+                const u64 download_size = download_end - download_start;
+                DownloadBufferMemory(buffer, download_start, download_size);
+            });
         sem.release();
     });
     sem.acquire();
@@ -266,7 +268,8 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
                 const u64 dst_offset = copy.dstOffset - offset;
                 if (!memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
                                              download + dst_offset, copy.size)) {
-                    std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset, copy.size);
+                    std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                copy.size);
                 }
             }
         }

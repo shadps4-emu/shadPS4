@@ -831,7 +831,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         if (queue.tmp_dwords > 0) [[unlikely]] {
             header = reinterpret_cast<const PM4Header*>(queue.tmp_packet.data());
             next_dw_off = header->type3.NumWords() + 1 - queue.tmp_dwords;
-            std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb.data(), next_dw_off * sizeof(u32));
+            std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb.data(),
+                        next_dw_off * sizeof(u32));
             queue.tmp_dwords = 0;
         }
 
@@ -872,8 +873,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task = ProcessCompute<true>({indirect_buffer->Address<const u32>(),
-                                             indirect_buffer->ib_size}, vqid);
+            auto task = ProcessCompute<true>(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
             RESUME_ASC(task, vqid);
 
             while (!task.handle.done()) {
