@@ -1090,7 +1090,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>Merk: Trykk på hjelpeknappen for mer informasjon</translation>
+      <translation>Merk: Trykk på «Hjelp»-knappen for mer informasjon</translation>
     </message>
     <message>
       <source>Face Buttons</source>
