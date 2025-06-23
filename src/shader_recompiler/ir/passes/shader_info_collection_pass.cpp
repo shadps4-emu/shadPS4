@@ -136,6 +136,10 @@ void CollectShaderInfoPass(IR::Program& program) {
         }
     }
 
+    program.info.readconst_types = Info::ReadConstType::None;
+    program.info.dma_types = IR::Type::Void;
+    return;
+
     if (program.info.dma_types != IR::Type::Void) {
         program.info.buffers.push_back({
             .used_types = IR::Type::U64,

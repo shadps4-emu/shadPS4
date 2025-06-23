@@ -7,6 +7,7 @@
 #include "common/alignment.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
+#include "common/thread.h"
 #include "common/types.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -27,7 +28,7 @@ static constexpr size_t UboStreamBufferSize = 128_MB;
 static constexpr size_t DownloadBufferSize = 128_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
 static constexpr size_t MaxPageFaults = 1024;
-static constexpr size_t DownloadSizeThreshold = 1_MB;
+static constexpr size_t DownloadSizeThreshold = 512_KB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -128,16 +129,24 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
                           "Fault Buffer Parser Pipeline");
 
     instance.GetDevice().destroyShaderModule(module);
+
+    async_download_thread = std::jthread{std::bind_front(&BufferCache::DownloadThread, this)};
 }
 
 BufferCache::~BufferCache() = default;
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
     const bool is_tracked = IsRegionRegistered(device_addr, size);
-    if (is_tracked) {
-        // Mark the page as CPU modified to stop tracking writes.
-        memory_tracker.MarkRegionAsCpuModified(device_addr, size);
+    if (!is_tracked) {
+        return;
     }
+
+    // Wait for any pending downloads to this page.
+    const u64 target_tick = page_table[device_addr >> CACHING_PAGEBITS].target_tick;
+    WaitForTargetTick(target_tick);
+
+    // Mark the page as CPU modified to stop tracking writes.
+    memory_tracker.MarkRegionAsCpuModified(device_addr, size);
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size) {
@@ -215,6 +224,11 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
     pending_download_ranges.ForEach([&](VAddr interval_lower, VAddr interval_upper) {
         const std::size_t size = interval_upper - interval_lower;
         const VAddr device_addr = interval_lower;
+        const u64 page_begin = device_addr >> CACHING_PAGEBITS;
+        const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
+        for (u64 page = page_begin; page != page_end; ++page) {
+            page_table[page].target_tick = current_download_tick;
+        }
         ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
             const VAddr buffer_start = buffer.CpuAddr();
             const VAddr buffer_end = buffer_start + buffer.SizeBytes();
@@ -257,14 +271,14 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
         Buffer& buffer = slot_buffers[buffer_id];
         cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), buffer_copies);
     }
-    scheduler.DeferOperation([this, download, offset, copies]() {
+    const auto writeback_host = [this, download, offset, copies = std::move(copies)]() {
         auto* memory = Core::Memory::Instance();
         for (auto it = copies.begin(); it != copies.end(); ++it) {
             auto& buffer_copies = it.value();
             const BufferId buffer_id = it.key();
-            Buffer& buffer = slot_buffers[buffer_id];
+            const VAddr buffer_base = slot_buffers[buffer_id].CpuAddr();
             for (auto& copy : buffer_copies) {
-                const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
+                const VAddr copy_device_addr = buffer_base + copy.srcOffset;
                 const u64 dst_offset = copy.dstOffset - offset;
                 if (!memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
                                              download + dst_offset, copy.size)) {
@@ -273,12 +287,18 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
                 }
             }
         }
-    });
-    if (wait_done) {
-        scheduler.Finish();
-    } else {
-        scheduler.Flush();
+    };
+    {
+        std::scoped_lock lk{queue_mutex};
+        async_downloads.emplace(std::move(writeback_host), scheduler.CurrentTick(),
+                                current_download_tick);
     }
+    queue_cv.notify_one();
+    scheduler.Flush();
+    if (wait_done) {
+        WaitForTargetTick(current_download_tick);
+    }
+    ++current_download_tick;
     return true;
 }
 
@@ -1231,6 +1251,31 @@ void BufferCache::DeleteBuffer(BufferId buffer_id) {
     Unregister(buffer_id);
     scheduler.DeferOperation([this, buffer_id] { slot_buffers.erase(buffer_id); });
     buffer.is_deleted = true;
+}
+
+void BufferCache::DownloadThread(std::stop_token stoken) {
+    Common::SetCurrentThreadName("shadPS4:GpuCommandProcessor");
+
+    while (!stoken.stop_requested()) {
+        PendingDownload download;
+        {
+            std::unique_lock lk{queue_mutex};
+            Common::CondvarWait(queue_cv, lk, stoken, [this] { return !async_downloads.empty(); });
+            if (stoken.stop_requested()) {
+                break;
+            }
+            download = std::move(async_downloads.front());
+            async_downloads.pop();
+        }
+
+        // Wait for GPU to complete its work and writeback data to host
+        scheduler.Wait(download.gpu_tick);
+        download.callback();
+
+        // Signal completion of download
+        download_tick.store(download.signal_tick);
+        download_tick.notify_all();
+    }
 }
 
 } // namespace VideoCore

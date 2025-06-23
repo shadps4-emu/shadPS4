@@ -166,14 +166,21 @@ void EmitGetGotoVariable(EmitContext&) {
 using PointerType = EmitContext::PointerType;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
-    const u32 flatbuf_off_dw = inst->Flags<u32>();
+    const u32 flatbuf_offset = inst->Flags<u32>();
+    const auto& flatbuf_buffer{ctx.buffers.back()};
+    ASSERT(flatbuf_buffer.binding >= 0 && flatbuf_buffer.buffer_type == BufferType::Flatbuf);
+    const auto [flatbuf_buffer_id, flatbuf_pointer_type] = flatbuf_buffer[PointerType::U32];
+    const auto ptr{ctx.OpAccessChain(flatbuf_pointer_type, flatbuf_buffer_id, ctx.u32_zero_value,
+                                     ctx.ConstU32(flatbuf_offset))};
+    return ctx.OpLoad(ctx.U32[1], ptr);
+
     // We can only provide a fallback for immediate offsets.
-    if (flatbuf_off_dw == 0) {
-        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);
-    } else {
-        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset,
-                                  ctx.ConstU32(flatbuf_off_dw));
-    }
+    // if (flatbuf_off_dw == 0) {
+    //    return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);
+    //} else {
+    //    return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset,
+    //                              ctx.ConstU32(flatbuf_off_dw));
+    //}
 }
 
 template <PointerType type>
