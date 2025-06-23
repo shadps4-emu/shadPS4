@@ -379,6 +379,7 @@ private:
         u64 gpu_tick;
     };
     std::queue<PendingOp> pending_ops;
+    u32 op_scope{};
     RenderState render_state;
     DynamicState dynamic_state;
     bool is_rendering = false;

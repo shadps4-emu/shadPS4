@@ -68,7 +68,10 @@ void Scheduler::EndRendering() {
 void Scheduler::PopPendingOperations() {
     master_semaphore.Refresh();
     while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
+        ASSERT(op_scope == 0);
+        ++op_scope;
         pending_ops.front().callback();
+        --op_scope;
         pending_ops.pop();
     }
 }
