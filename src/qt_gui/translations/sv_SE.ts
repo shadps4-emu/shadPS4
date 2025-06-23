@@ -750,7 +750,7 @@
     </message>
     <message>
       <source>Favorite</source>
-      <translation type="unfinished">Favorite</translation>
+      <translation>Favorit</translation>
     </message>
   </context>
   <context>
@@ -956,11 +956,11 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>Ta bort från favoriter</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
-      <translation type="unfinished">Add to Favorites</translation>
+      <translation>Lägg till i favoriter</translation>
     </message>
   </context>
   <context>
