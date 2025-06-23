@@ -488,7 +488,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         uses_dma |= stage->dma_types != Shader::IR::Type::Void;
     }
 
-    if (uses_dma && !fault_process_pending) {
+    if (uses_dma) {
         // We only use fault buffer for DMA right now.
         {
             // TODO: GPU might have written to memory (for example with EVENT_WRITE_EOP)

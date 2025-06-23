@@ -1587,6 +1587,7 @@ private:
     template <bool is_indirect = false>
     Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
 
+    void ProcessCommands();
     void Process(std::stop_token stoken);
 
     struct GpuQueue {
