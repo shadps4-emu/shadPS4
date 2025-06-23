@@ -140,8 +140,14 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size) {
-    Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-    DownloadBufferMemory(buffer, device_addr, size);
+    ForEachBufferInRange(device_addr, size, [this, device_addr, size](BufferId buffer_id, Buffer& buffer) {
+        const VAddr buffer_start = buffer.CpuAddr();
+        const VAddr buffer_end = buffer_start + buffer.SizeBytes();
+        const VAddr download_start = std::max(buffer_start, device_addr);
+        const VAddr download_end = std::min(buffer_end, device_addr + size);
+        const u64 download_size = download_end - download_start;
+        DownloadBufferMemory(buffer, download_start, download_size);
+    });
 }
 
 void BufferCache::DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, u64 size) {
