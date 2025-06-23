@@ -62,9 +62,6 @@ void Rasterizer::CpSync() {
 }
 
 bool Rasterizer::CommitPendingDownloads(bool wait_done) {
-    SCOPE_EXIT {
-        scheduler.PopPendingOperations();
-    };
     return buffer_cache.CommitPendingDownloads(wait_done);
 }
 

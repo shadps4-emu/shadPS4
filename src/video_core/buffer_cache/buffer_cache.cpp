@@ -288,13 +288,13 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
             }
         }
     };
+    const u64 wait_tick = scheduler.CurrentTick();
+    scheduler.Flush();
     {
         std::scoped_lock lk{queue_mutex};
-        async_downloads.emplace(std::move(writeback_host), scheduler.CurrentTick(),
-                                current_download_tick);
+        async_downloads.emplace(std::move(writeback_host), wait_tick, current_download_tick);
     }
     queue_cv.notify_one();
-    scheduler.Flush();
     if (wait_done) {
         WaitForTargetTick(current_download_tick);
     }
