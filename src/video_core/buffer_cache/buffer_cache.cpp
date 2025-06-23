@@ -6,7 +6,6 @@
 #include "common/alignment.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
-#include "common/scope_exit.h"
 #include "common/types.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -183,8 +182,10 @@ void BufferCache::DownloadBufferMemory(const Buffer& buffer, VAddr device_addr, 
     for (const auto& copy : copies) {
         const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
         const u64 dst_offset = copy.dstOffset - offset;
-        ASSERT(memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
-                                       copy.size));
+        if (!memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                     copy.size)) {
+            std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset, copy.size);
+        }
     }
 }
 
@@ -249,8 +250,10 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
             for (auto& copy : buffer_copies) {
                 const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
                 const u64 dst_offset = copy.dstOffset - offset;
-                ASSERT(memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
-                                               download + dst_offset, copy.size));
+                if (!memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
+                                             download + dst_offset, copy.size)) {
+                    std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset, copy.size);
+                }
             }
         }
     });

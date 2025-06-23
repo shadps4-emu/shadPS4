@@ -135,16 +135,25 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
     }
 }
 
-bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
-    const VAddr virtual_addr = std::bit_cast<VAddr>(address);
-    const auto& vma = FindVMA(virtual_addr)->second;
-    ASSERT_MSG(vma.Contains(virtual_addr, num_bytes),
+bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 size) {
+    VAddr virtual_addr = std::bit_cast<VAddr>(address);
+    const u8* src_data = std::bit_cast<const u8*>(data);
+    auto vma = FindVMA(virtual_addr);
+    ASSERT_MSG(vma->second.Contains(virtual_addr, 0),
                "Attempting to access out of bounds memory at address {:#x}", virtual_addr);
-    if (vma.type != VMAType::Direct) {
-        return false;
+    while (size) {
+        if (vma->second.type != VMAType::Direct) {
+            return false;
+        }
+        const u64 offset_in_vma = virtual_addr - vma->first;
+        u64 copy_size = std::min<u64>(vma->second.size - offset_in_vma, size);
+        u8* backing = impl.BackingBase() + vma->second.phys_base + offset_in_vma;
+        std::memcpy(backing, src_data, copy_size);
+        size -= copy_size;
+        virtual_addr += copy_size;
+        src_data += copy_size;
+        ++vma;
     }
-    u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
-    memcpy(backing, data, num_bytes);
     return true;
 }
 
