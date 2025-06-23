@@ -71,9 +71,10 @@ int bgm_volume_backup;
 
 static std::vector<QString> m_physical_devices;
 
-SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_info,
+SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
+                               std::shared_ptr<CompatibilityInfoClass> m_compat_info,
                                QWidget* parent)
-    : QDialog(parent), ui(new Ui::SettingsDialog) {
+    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
@@ -122,11 +123,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
     ui->hideCursorComboBox->addItem(tr("Idle"));
     ui->hideCursorComboBox->addItem(tr("Always"));
 
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
-    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
-
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
@@ -147,6 +143,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
                     Config::save(config_dir / "config.toml");
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     Config::setDefaultValues();
+                    setDefaultValues();
                     Config::save(config_dir / "config.toml");
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
@@ -175,28 +172,34 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
     {
 #ifdef ENABLE_UPDATER
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-        connect(ui->updateCheckBox, &QCheckBox::stateChanged, this,
-                [](int state) { Config::setAutoUpdate(state == Qt::Checked); });
+        connect(ui->updateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
+        });
 
-        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this,
-                [](int state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
+        connect(ui->changelogCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            m_gui_settings->SetValue(gui::gen_showChangeLog, state == Qt::Checked);
+        });
 #else
         connect(ui->updateCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) { Config::setAutoUpdate(state == Qt::Checked); });
+                [this](Qt::CheckState state) {
+                    m_gui_settings->SetValue(gui::gen_checkForUpdates, state == Qt::Checked);
+                });
 
         connect(ui->changelogCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) { Config::setAlwaysShowChangelog(state == Qt::Checked); });
+                [this](Qt::CheckState state) {
+                    m_gui_settings->SetValue(gui::gen_showChangeLog, state == Qt::Checked);
+                });
 #endif
 
         connect(ui->updateComboBox, &QComboBox::currentTextChanged, this,
                 [this](const QString& channel) {
                     if (channelMap.contains(channel)) {
-                        Config::setUpdateChannel(channelMap.value(channel).toStdString());
+                        m_gui_settings->SetValue(gui::gen_updateChannel, channelMap.value(channel));
                     }
                 });
 
-        connect(ui->checkUpdateButton, &QPushButton::clicked, this, []() {
-            auto checkUpdate = new CheckUpdate(true);
+        connect(ui->checkUpdateButton, &QPushButton::clicked, this, [this]() {
+            auto checkUpdate = new CheckUpdate(m_gui_settings, true);
             checkUpdate->exec();
         });
 #else
@@ -235,12 +238,12 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
                 [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
-        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [](int state) {
+        connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
 #else
         connect(ui->showBackgroundImageCheckBox, &QCheckBox::checkStateChanged, this,
-                [](Qt::CheckState state) {
+                [this](Qt::CheckState state) {
 #endif
-            Config::setShowBackgroundImage(state == Qt::Checked);
+            m_gui_settings->SetValue(gui::gl_showBackgroundImage, state == Qt::Checked);
         });
     }
 
@@ -358,7 +361,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<CompatibilityInfoClass> m_compat_
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
-        ui->backButtonBehaviorGroupBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
@@ -448,7 +450,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
-    ui->playBGMCheckBox->setChecked(toml::find_or<bool>(data, "General", "playBGM", false));
+    ui->playBGMCheckBox->setChecked(m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool());
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
     ui->popUpDurationSpinBox->setValue(Config::getTrophyNotificationDuration());
@@ -460,7 +462,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->radioButton_Top->setChecked(side == "top");
     ui->radioButton_Bottom->setChecked(side == "bottom");
 
-    ui->BGMVolumeSlider->setValue(toml::find_or<int>(data, "General", "BGMvolume", 50));
+    ui->BGMVolumeSlider->setValue(m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt());
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     QString translatedText_FullscreenMode =
@@ -501,11 +503,10 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "General", "checkCompatibilityOnStartup", false));
 
 #ifdef ENABLE_UPDATER
-    ui->updateCheckBox->setChecked(toml::find_or<bool>(data, "General", "autoUpdate", false));
-    ui->changelogCheckBox->setChecked(
-        toml::find_or<bool>(data, "General", "alwaysShowChangelog", false));
+    ui->updateCheckBox->setChecked(m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool());
+    ui->changelogCheckBox->setChecked(m_gui_settings->GetValue(gui::gen_showChangeLog).toBool());
 
-    QString updateChannel = QString::fromStdString(Config::getUpdateChannel());
+    QString updateChannel = m_gui_settings->GetValue(gui::gen_updateChannel).toString();
     ui->updateComboBox->setCurrentText(
         channelMap.key(updateChannel != "Release" && updateChannel != "Nightly"
                            ? (Common::g_is_release ? "Release" : "Nightly")
@@ -527,20 +528,19 @@ void SettingsDialog::LoadValuesFromConfig() {
         indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 
-    QString backButtonBehavior = QString::fromStdString(
-        toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
-    int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
-    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
     ui->motionControlsCheckBox->setChecked(
         toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     ResetInstallFolders();
-    ui->backgroundImageOpacitySlider->setValue(Config::getBackgroundImageOpacity());
-    ui->showBackgroundImageCheckBox->setChecked(Config::getShowBackgroundImage());
+    ui->backgroundImageOpacitySlider->setValue(
+        m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt());
+    ui->showBackgroundImageCheckBox->setChecked(
+        m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool());
 
-    backgroundImageOpacitySlider_backup = Config::getBackgroundImageOpacity();
-    bgm_volume_backup = Config::getBGMvolume();
+    backgroundImageOpacitySlider_backup =
+        m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
+    bgm_volume_backup = m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -584,7 +584,7 @@ void SettingsDialog::OnLanguageChanged(int index) {
 
     ui->retranslateUi(this);
 
-    emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString().toStdString());
+    emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString());
 }
 
 void SettingsDialog::OnCursorStateChanged(s16 index) {
@@ -656,8 +656,6 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("Hide Idle Cursor Timeout:\\nThe duration (seconds) after which the cursor that has been idle hides itself.");
-    } else if (elementName == "backButtonBehaviorGroupBox") {
-        text = tr("Back Button Behavior:\\nSets the controller's back button to emulate tapping the specified position on the PS4 touchpad.");
     }
 
     // Graphics
@@ -735,8 +733,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
 
 void SettingsDialog::UpdateSettings() {
 
-    const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
-    Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
     Config::setIsFullscreen(screenModeMap.value(ui->displayModeComboBox->currentText()) !=
                             "Windowed");
     Config::setFullscreenMode(
@@ -754,8 +750,7 @@ void SettingsDialog::UpdateSettings() {
     } else if (ui->radioButton_Bottom->isChecked()) {
         Config::setSideTrophy("bottom");
     }
-
-    Config::setPlayBGM(ui->playBGMCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
@@ -764,7 +759,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorState(ui->hideCursorComboBox->currentIndex());
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
-    Config::setBGMvolume(ui->BGMVolumeSlider->value());
+    m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, ui->BGMVolumeSlider->value());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setScreenWidth(ui->widthSpinBox->value());
@@ -784,16 +779,19 @@ void SettingsDialog::UpdateSettings() {
     Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked());
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
-    Config::setAutoUpdate(ui->updateCheckBox->isChecked());
-    Config::setAlwaysShowChangelog(ui->changelogCheckBox->isChecked());
-    Config::setUpdateChannel(channelMap.value(ui->updateComboBox->currentText()).toStdString());
+    m_gui_settings->SetValue(gui::gen_checkForUpdates, ui->updateCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gen_showChangeLog, ui->changelogCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gen_updateChannel,
+                             channelMap.value(ui->updateComboBox->currentText()));
     Config::setChooseHomeTab(
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString());
     Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
     Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
-    Config::setBackgroundImageOpacity(ui->backgroundImageOpacitySlider->value());
+    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
+                             std::clamp(ui->backgroundImageOpacitySlider->value(), 0, 100));
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
-    Config::setShowBackgroundImage(ui->showBackgroundImageCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gl_showBackgroundImage,
+                             ui->showBackgroundImageCheckBox->isChecked());
 
     std::vector<Config::GameInstallDir> dirs_with_states;
     for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
@@ -861,4 +859,18 @@ void SettingsDialog::ResetInstallFolders() {
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
+}
+void SettingsDialog::setDefaultValues() {
+    m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
+    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
+    m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
+    m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
+    m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
+    m_gui_settings->SetValue(gui::gen_showChangeLog, false);
+    if (Common::g_is_release) {
+        m_gui_settings->SetValue(gui::gen_updateChannel, "Release");
+    } else {
+        m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
+    }
+    m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
 }

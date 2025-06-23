@@ -21,6 +21,7 @@ class MntPoints {
     static constexpr bool NeedsCaseInsensitiveSearch = true;
 #endif
 public:
+    static bool ignore_game_patches;
     struct MntPair {
         std::filesystem::path host_path;
         std::string mount; // e.g /app0

@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Oppdateringen ble lastet ned, trykk OK for å installere.</translation>
+      <translation>Oppdateringen er lastet ned, trykk OK for å installere.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
@@ -990,7 +990,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation>Ikke satt opp</translation>
+      <translation>Ikke tildelt</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1055,10 +1055,6 @@
     <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Touchpad Click</source>
-      <translation>Berøringsplateknapp</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1153,10 +1149,6 @@
       <translation>Klarte ikke lagre</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Kan ikke tildele unike oppsett mer enn en gang</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Trykk på en tast</translation>
     </message>
@@ -1183,6 +1175,26 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1555,6 @@
       <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Tilbakeknapp atferd</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafikk</translation>
     </message>
@@ -1783,10 +1791,6 @@
       <translation>Sett en tid for når musepekeren forsvinner etter å ha vært inaktiv.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Atferd for tilbaketasten:\nSetter tilbaketasten på kontrolleren til å imitere et trykk på den angitte posisjonen på PS4s berøringsplate.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Bruk «Oppdater database ved oppstart» for oppdatert informasjon.</translation>
     </message>
@@ -1809,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Alltid</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Berøringsplate venstre</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Berøringsplate høyre</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Berøringsplate midten</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ingen</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

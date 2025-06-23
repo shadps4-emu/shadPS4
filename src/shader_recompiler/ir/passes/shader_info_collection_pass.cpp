@@ -34,11 +34,29 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_patches |= 1U << IR::GenericPatchIndex(patch);
         break;
     }
+    case IR::Opcode::LoadSharedU16:
+    case IR::Opcode::WriteSharedU16:
+        info.shared_types |= IR::Type::U16;
+        break;
     case IR::Opcode::LoadSharedU32:
-    case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU32:
+    case IR::Opcode::SharedAtomicIAdd32:
+    case IR::Opcode::SharedAtomicISub32:
+    case IR::Opcode::SharedAtomicSMin32:
+    case IR::Opcode::SharedAtomicUMin32:
+    case IR::Opcode::SharedAtomicSMax32:
+    case IR::Opcode::SharedAtomicUMax32:
+    case IR::Opcode::SharedAtomicInc32:
+    case IR::Opcode::SharedAtomicDec32:
+    case IR::Opcode::SharedAtomicAnd32:
+    case IR::Opcode::SharedAtomicOr32:
+    case IR::Opcode::SharedAtomicXor32:
+        info.shared_types |= IR::Type::U32;
+        break;
+    case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU64:
-        info.uses_shared = true;
+    case IR::Opcode::SharedAtomicIAdd64:
+        info.shared_types |= IR::Type::U64;
         break;
     case IR::Opcode::ConvertF16F32:
     case IR::Opcode::ConvertF32F16:
@@ -74,7 +92,11 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::ImageAtomicFMax32:
     case IR::Opcode::ImageAtomicFMin32:
-        info.uses_atomic_float_min_max = true;
+        info.uses_image_atomic_float_min_max = true;
+        break;
+    case IR::Opcode::BufferAtomicFMax32:
+    case IR::Opcode::BufferAtomicFMin32:
+        info.uses_buffer_atomic_float_min_max = true;
         break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;

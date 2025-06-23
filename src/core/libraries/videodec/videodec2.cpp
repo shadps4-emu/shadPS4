@@ -140,7 +140,7 @@ s32 PS4_SYSV_ABI sceVideodec2Flush(OrbisVideodec2Decoder decoder,
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (frameBuffer->thisSize != sizeof(OrbisVideodec2FrameBuffer) ||
-        outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+        (outputInfo->thisSize | 8) != sizeof(OrbisVideodec2OutputInfo)) {
         LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
@@ -167,7 +167,7 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
         LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
-    if (outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+    if ((outputInfo->thisSize | 8) != sizeof(OrbisVideodec2OutputInfo)) {
         LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
@@ -179,7 +179,7 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
     if (p1stPictureInfoOut) {
         OrbisVideodec2AvcPictureInfo* picInfo =
             static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
-        if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
+        if ((picInfo->thisSize | 16) != sizeof(OrbisVideodec2AvcPictureInfo)) {
             LOG_ERROR(Lib_Vdec2, "Invalid struct size");
             return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
         }

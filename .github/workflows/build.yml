@@ -76,17 +76,12 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-    - name: Setup VS Environment
-      uses: ilammy/msvc-dev-cmd@v1.13.0
-      with:
-        arch: amd64
 
     - name: Configure CMake
       run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -111,7 +106,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.0
+        version: 6.9.1
         host: windows
         target: desktop
         arch: win64_msvc2022_64
@@ -130,17 +125,12 @@ jobs:
             ${{ env.cache-name }}-
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
         append-timestamp: false
         key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-
-    - name: Setup VS Environment
-      uses: ilammy/msvc-dev-cmd@v1.13.0
-      with:
-        arch: amd64
 
     - name: Configure CMake
       run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_QT_GUI=ON -DENABLE_UPDATER=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -186,7 +176,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{runner.os}}-sdl-cache-cmake-build
       with:
@@ -228,13 +218,16 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.0
+        version: 6.9.1
         host: mac
         target: desktop
         arch: clang_64
         archives: qtbase qttools
         modules: qtmultimedia
-        
+
+    - name: Workaround Qt <=6.9.1 issue
+      run: sed -i '' '/target_link_libraries(WrapOpenGL::WrapOpenGL INTERFACE ${__opengl_agl_fw_path})/d' ${{env.QT_ROOT_DIR}}/lib/cmake/Qt6/FindWrapOpenGL.cmake
+
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
       env: 
@@ -247,7 +240,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{runner.os}}-qt-cache-cmake-build
       with:
@@ -301,7 +294,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-cache-cmake-build
       with:
@@ -362,7 +355,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-cache-cmake-build
       with:
@@ -409,7 +402,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-build
       with:
@@ -445,7 +438,7 @@ jobs:
             ${{ env.cache-name }}- 
 
     - name: Cache CMake Build
-      uses: hendrikmuhs/ccache-action@v1.2.17
+      uses: hendrikmuhs/ccache-action@v1.2.18
       env:
           cache-name: ${{ runner.os }}-qt-gcc-cache-cmake-build
       with:
@@ -494,7 +487,7 @@ jobs:
       with:
         token: ${{ secrets.SHADPS4_TOKEN_REPO }}
         name: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
-        tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
+        tag: "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.fullhash }}"
         draft: false
         prerelease: true
         body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/shadps4-emu/shadPS4/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
@@ -530,14 +523,14 @@ jobs:
 
           # Check if release already exists and get ID
           release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/releases/tags/Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}" | jq -r '.id')
+            "https://api.github.com/repos/$REPO/releases/tags/Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.fullhash }}" | jq -r '.id')
 
           if [[ "$release_id" == "null" ]]; then
             echo "Creating release in $REPO for $filename"
             release_id=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
               -H "Accept: application/vnd.github.v3+json" \
               -d '{
-                "tag_name": "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
+                "tag_name": "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.fullhash }}",
                 "name": "Pre-release-shadPS4-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
                 "draft": false,
                 "prerelease": true,

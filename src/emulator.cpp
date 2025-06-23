@@ -58,10 +58,7 @@ Emulator::Emulator() {
 #endif
 }
 
-Emulator::~Emulator() {
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
-}
+Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
     if (std::filesystem::is_directory(file)) {
@@ -75,7 +72,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
         // If an executable was launched from a separate update directory,
         // use the base game directory as the game folder.
-        const auto base_name = game_folder_name.substr(0, game_folder_name.size() - 7);
+        const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
         const auto base_path = game_folder.parent_path() / base_name;
         if (std::filesystem::is_directory(base_path)) {
             game_folder = base_path;

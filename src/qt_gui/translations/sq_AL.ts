@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Klikim i Panelit me Prekje</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Miu në Levë</translation>
     </message>
@@ -1153,10 +1149,6 @@
       <translation>Ruajtja Dështoi</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Asnjë hyrje unike nuk mund të caktohet më shumë se një herë</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Shtyp një tast</translation>
     </message>
@@ -1183,6 +1175,26 @@
     <message>
       <source>Cancel</source>
       <translation>Anulo</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Nuk mund të caktohet e njëjta hyrje unike më shumë se një herë. Hyrjet e dublikuara janë caktuar në butonët e mëposhtëm:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1555,6 @@
       <translation>Dorezë</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Sjellja e butonit mbrapa</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafika</translation>
     </message>
@@ -1783,10 +1791,6 @@
       <translation>Koha për fshehjen e kursorit joaktiv:\nKohëzgjatja (në sekonda) pas së cilës kursori që nuk ka qënë në veprim fshihet.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Sjellja e butonit mbrapa:\nLejon të përcaktohet se në cilën pjesë të panelit me prekje të dorezës do të imitojë një prekje butoni mbrapa.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Shfaq të dhënat e përputhshmërisë:\nShfaq informacionin e përputhshmërisë së lojës në formë tabele. Aktivizo &quot;Përditëso përputhshmërinë gjatë nisjes&quot; për të marrë informacion të përditësuar.</translation>
     </message>
@@ -1809,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Gjithmonë</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Paneli me Prekje Majtas</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Paneli me Prekje Djathtas</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Paneli me Prekje në Qendër</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Asnjë</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

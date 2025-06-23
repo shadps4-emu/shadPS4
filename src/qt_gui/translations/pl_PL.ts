@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Kliknięcie Touchpada</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mysz na Joystick</translation>
     </message>
@@ -1153,10 +1149,6 @@
       <translation>Zapisywanie nie powiodło się</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Nie można powiązać żadnych unikalnych danych wejściowych więcej niż raz</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Naciśnij klawisz</translation>
     </message>
@@ -1183,6 +1175,26 @@
     <message>
       <source>Cancel</source>
       <translation>Anuluj</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1555,6 @@
       <translation>Kontroler</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Zachowanie przycisku wstecz</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafika</translation>
     </message>
@@ -1783,10 +1791,6 @@
       <translation>Ustaw czas, po którym mysz zniknie po bezczynności.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Zachowanie przycisku Wstecz:\nUstawia przycisk Wstecz kontrolera tak, aby emulował dotknięcie określonego miejsca na panelu dotykowym PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Wyświetl dane zgodności:\nWyświetla informacje o kompatybilności gry w widoku tabeli. Włącz opcję „Aktualizuj zgodność przy uruchomieniu”, aby uzyskać aktualne informacje.</translation>
     </message>
@@ -1809,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Zawsze</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad Lewy</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad Prawy</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Touchpad Środkowy</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Brak</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

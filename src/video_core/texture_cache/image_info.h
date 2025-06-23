@@ -25,6 +25,11 @@ struct ImageInfo {
     bool IsTiled() const {
         return tiling_mode != AmdGpu::TilingMode::Display_Linear;
     }
+    Extent3D BlockDim() const {
+        const u32 shift = props.is_block ? 2 : 0;
+        return Extent3D{size.width >> shift, size.height >> shift, size.depth};
+    }
+
     bool IsBlockCoded() const;
     bool IsPacked() const;
     bool IsDepthStencil() const;
@@ -33,24 +38,8 @@ struct ImageInfo {
     s32 MipOf(const ImageInfo& info) const;
     s32 SliceOf(const ImageInfo& info, s32 mip) const;
 
-    /// Verifies if images are compatible for subresource merging.
-    bool IsCompatible(const ImageInfo& info) const {
-        return (pixel_format == info.pixel_format && num_samples == info.num_samples &&
-                num_bits == info.num_bits);
-    }
-
-    bool IsTilingCompatible(u32 lhs, u32 rhs) const {
-        if (lhs == rhs) {
-            return true;
-        }
-        if (lhs == 0x0e && rhs == 0x0d) {
-            return true;
-        }
-        if (lhs == 0x0d && rhs == 0x0e) {
-            return true;
-        }
-        return false;
-    }
+    bool IsCompatible(const ImageInfo& info) const;
+    bool IsTilingCompatible(u32 lhs, u32 rhs) const;
 
     void UpdateSize();
 
@@ -58,6 +47,7 @@ struct ImageInfo {
         VAddr cmask_addr;
         VAddr fmask_addr;
         VAddr htile_addr;
+        u32 htile_clear_mask{u32(-1)};
     } meta_info{};
 
     struct {

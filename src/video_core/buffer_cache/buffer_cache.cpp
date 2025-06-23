@@ -6,6 +6,7 @@
 #include "common/debug.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
+#include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/host_shaders/fault_buffer_process_comp.h"
@@ -22,16 +23,18 @@ static constexpr size_t DataShareBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t UboStreamBufferSize = 128_MB;
 static constexpr size_t DownloadBufferSize = 128_MB;
+static constexpr size_t DeviceBufferSize = 128_MB;
 static constexpr size_t MaxPageFaults = 1024;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          Vulkan::Rasterizer& rasterizer_, AmdGpu::Liverpool* liverpool_,
                          TextureCache& texture_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, rasterizer{rasterizer_}, liverpool{liverpool_},
-      texture_cache{texture_cache_}, tracker{tracker_},
+      memory{Core::Memory::Instance()}, texture_cache{texture_cache_}, tracker{tracker_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
-      download_buffer(instance, scheduler, MemoryUsage::Download, DownloadBufferSize),
+      download_buffer{instance, scheduler, MemoryUsage::Download, DownloadBufferSize},
+      device_buffer{instance, scheduler, MemoryUsage::DeviceLocal, DeviceBufferSize},
       gds_buffer{instance, scheduler, MemoryUsage::Stream, 0, AllFlags, DataShareBufferSize},
       bda_pagetable_buffer{instance, scheduler, MemoryUsage::DeviceLocal,
                            0,        AllFlags,  BDA_PAGETABLE_SIZE},
@@ -293,7 +296,7 @@ void BufferCache::BindIndexBuffer(u32 index_offset) {
 
 void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
     ASSERT_MSG(address % 4 == 0, "GDS offset must be dword aligned");
-    if (!is_gds && !IsRegionRegistered(address, num_bytes)) {
+    if (!is_gds && !IsRegionGpuModified(address, num_bytes)) {
         memcpy(std::bit_cast<void*>(address), value, num_bytes);
         return;
     }
@@ -347,7 +350,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     return {&buffer, buffer.Offset(device_addr)};
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, bool prefer_gpu) {
+std::pair<Buffer*, u32> BufferCache::ObtainBufferForImage(VAddr gpu_addr, u32 size) {
     // Check if any buffer contains the full requested range.
     const u64 page = gpu_addr >> CACHING_PAGEBITS;
     const BufferId buffer_id = page_table[page].buffer_id;
@@ -360,12 +363,14 @@ std::pair<Buffer*, u32> BufferCache::ObtainViewBuffer(VAddr gpu_addr, u32 size, 
     }
     // If no buffer contains the full requested range but some buffer within was GPU-modified,
     // fall back to ObtainBuffer to create a full buffer and avoid losing GPU modifications.
-    // This is only done if the request prefers to use GPU memory, otherwise we can skip it.
-    if (prefer_gpu && memory_tracker.IsRegionGpuModified(gpu_addr, size)) {
+    if (memory_tracker.IsRegionGpuModified(gpu_addr, size)) {
         return ObtainBuffer(gpu_addr, size, false, false);
     }
+
     // In all other cases, just do a CPU copy to the staging buffer.
-    const u32 offset = staging_buffer.Copy(gpu_addr, size, 16);
+    const auto [data, offset] = staging_buffer.Map(size, 16);
+    memory->CopySparseMemory(gpu_addr, data, size);
+    staging_buffer.Commit();
     return {&staging_buffer, offset};
 }
 
@@ -798,24 +803,45 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    static constexpr FindFlags find_flags =
-        FindFlags::NoCreate | FindFlags::RelaxDim | FindFlags::RelaxFmt | FindFlags::RelaxSize;
-    TextureCache::BaseDesc desc{};
-    desc.info.guest_address = device_addr;
-    desc.info.guest_size = size;
-    const ImageId image_id = texture_cache.FindImage(desc, find_flags);
-    if (!image_id) {
+    boost::container::small_vector<ImageId, 6> image_ids;
+    texture_cache.ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
+        if (image.info.guest_address != device_addr) {
+            return;
+        }
+        // Only perform sync if image is:
+        // - GPU modified; otherwise there are no changes to synchronize.
+        // - Not CPU dirty; otherwise we could overwrite CPU changes with stale GPU changes.
+        // - Not GPU dirty; otherwise we could overwrite GPU changes with stale image data.
+        if (False(image.flags & ImageFlagBits::GpuModified) ||
+            True(image.flags & ImageFlagBits::Dirty)) {
+            return;
+        }
+        image_ids.push_back(image_id);
+    });
+    if (image_ids.empty()) {
         return false;
+    }
+    ImageId image_id{};
+    if (image_ids.size() == 1) {
+        // Sometimes image size might not exactly match with requested buffer size
+        // If we only found 1 candidate image use it without too many questions.
+        image_id = image_ids[0];
+    } else {
+        for (s32 i = 0; i < image_ids.size(); ++i) {
+            Image& image = texture_cache.GetImage(image_ids[i]);
+            if (image.info.guest_size == size) {
+                image_id = image_ids[i];
+                break;
+            }
+        }
+        if (!image_id) {
+            LOG_WARNING(Render_Vulkan,
+                        "Failed to find exact image match for copy addr={:#x}, size={:#x}",
+                        device_addr, size);
+            return false;
+        }
     }
     Image& image = texture_cache.GetImage(image_id);
-    // Only perform sync if image is:
-    // - GPU modified; otherwise there are no changes to synchronize.
-    // - Not CPU dirty; otherwise we could overwrite CPU changes with stale GPU changes.
-    // - Not GPU dirty; otherwise we could overwrite GPU changes with stale image data.
-    if (False(image.flags & ImageFlagBits::GpuModified) ||
-        True(image.flags & ImageFlagBits::Dirty)) {
-        return false;
-    }
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);

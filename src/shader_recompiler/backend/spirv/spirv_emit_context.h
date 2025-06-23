@@ -203,6 +203,14 @@ public:
         return final_result;
     }
 
+    Id EmitSharedMemoryAccess(const Id result_type, const Id shared_mem, const Id index) {
+        if (std::popcount(static_cast<u32>(info.shared_types)) > 1) {
+            return OpAccessChain(result_type, shared_mem, u32_zero_value, index);
+        }
+        // Workgroup layout struct omitted.
+        return OpAccessChain(result_type, shared_mem, index);
+    }
+
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
@@ -235,17 +243,16 @@ public:
     Id false_value{};
     Id u8_one_value{};
     Id u8_zero_value{};
+    Id u16_zero_value{};
     Id u32_one_value{};
     Id u32_zero_value{};
     Id f32_zero_value{};
     Id u64_one_value{};
     Id u64_zero_value{};
 
-    Id shared_u8{};
     Id shared_u16{};
     Id shared_u32{};
-    Id shared_u32x2{};
-    Id shared_u32x4{};
+    Id shared_u64{};
 
     Id input_u32{};
     Id input_f32{};
@@ -285,16 +292,16 @@ public:
     Id image_u32{};
     Id image_f32{};
 
-    Id shared_memory_u8{};
     Id shared_memory_u16{};
     Id shared_memory_u32{};
-    Id shared_memory_u32x2{};
-    Id shared_memory_u32x4{};
+    Id shared_memory_u64{};
 
+    Id shared_memory_u16_type{};
     Id shared_memory_u32_type{};
+    Id shared_memory_u64_type{};
 
-    Id interpolate_func{};
-    Id gl_bary_coord_id{};
+    Id bary_coord_persp_id{};
+    Id bary_coord_linear_id{};
 
     struct TextureDefinition {
         const VectorIds* data_types;
@@ -320,6 +327,7 @@ public:
         Id size;
         Id size_shorts;
         Id size_dwords;
+        Id size_qwords;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
         const BufferSpv& operator[](PointerType alias) const {

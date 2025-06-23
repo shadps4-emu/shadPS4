@@ -212,7 +212,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
-                          vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
+                          vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
+                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -280,8 +281,24 @@ bool Instance::CreateDevice() {
     if (shader_atomic_float2) {
         shader_atomic_float2_features =
             feature_chain.get<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- shaderBufferFloat32AtomicMinMax: {}",
+                 shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax);
         LOG_INFO(Render_Vulkan, "- shaderImageFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderImageFloat32AtomicMinMax);
+    }
+    workgroup_memory_explicit_layout =
+        add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
+    if (workgroup_memory_explicit_layout) {
+        workgroup_memory_explicit_layout_features =
+            feature_chain.get<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+        LOG_INFO(Render_Vulkan, "- workgroupMemoryExplicitLayout: {}",
+                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout);
+        LOG_INFO(Render_Vulkan, "- workgroupMemoryExplicitLayoutScalarBlockLayout: {}",
+                 workgroup_memory_explicit_layout_features
+                     .workgroupMemoryExplicitLayoutScalarBlockLayout);
+        LOG_INFO(
+            Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
+            workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -340,6 +357,7 @@ bool Instance::CreateDevice() {
                 .independentBlend = features.independentBlend,
                 .geometryShader = features.geometryShader,
                 .tessellationShader = features.tessellationShader,
+                .sampleRateShading = features.sampleRateShading,
                 .dualSrcBlend = features.dualSrcBlend,
                 .logicOp = features.logicOp,
                 .multiDrawIndirect = features.multiDrawIndirect,
@@ -417,11 +435,40 @@ bool Instance::CreateDevice() {
             .legacyVertexAttributes = true,
         },
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
+            .shaderBufferFloat32AtomicMinMax =
+                shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax,
             .shaderImageFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderImageFloat32AtomicMinMax,
         },
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR{
+            .workgroupMemoryExplicitLayout =
+                workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout,
+            .workgroupMemoryExplicitLayoutScalarBlockLayout =
+                workgroup_memory_explicit_layout_features
+                    .workgroupMemoryExplicitLayoutScalarBlockLayout,
+            .workgroupMemoryExplicitLayout16BitAccess =
+                workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
+        },
 #ifdef __APPLE__
-        portability_features,
+        vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
+            .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
+            .events = portability_features.events,
+            .imageViewFormatReinterpretation = portability_features.imageViewFormatReinterpretation,
+            .imageViewFormatSwizzle = portability_features.imageViewFormatSwizzle,
+            .imageView2DOn3DImage = portability_features.imageView2DOn3DImage,
+            .multisampleArrayImage = portability_features.multisampleArrayImage,
+            .mutableComparisonSamplers = portability_features.mutableComparisonSamplers,
+            .pointPolygons = portability_features.pointPolygons,
+            .samplerMipLodBias = portability_features.samplerMipLodBias,
+            .separateStencilMaskRef = portability_features.separateStencilMaskRef,
+            .shaderSampleRateInterpolationFunctions =
+                portability_features.shaderSampleRateInterpolationFunctions,
+            .tessellationIsolines = portability_features.tessellationIsolines,
+            .tessellationPointMode = portability_features.tessellationPointMode,
+            .triangleFans = portability_features.triangleFans,
+            .vertexAttributeAccessBeyondStride =
+                portability_features.vertexAttributeAccessBeyondStride,
+        },
 #endif
     };
 
@@ -451,6 +498,9 @@ bool Instance::CreateDevice() {
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
+    }
+    if (!workgroup_memory_explicit_layout) {
+        device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

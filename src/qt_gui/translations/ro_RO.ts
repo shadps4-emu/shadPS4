@@ -1057,10 +1057,6 @@
       <translation type="unfinished">L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation type="unfinished">Mouse to Joystick</translation>
     </message>
@@ -1153,10 +1149,6 @@
       <translation type="unfinished">Unable to Save</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation type="unfinished">Cannot bind any unique input more than once</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation type="unfinished">Press a key</translation>
     </message>
@@ -1183,6 +1175,26 @@
     <message>
       <source>Cancel</source>
       <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1555,6 @@
       <translation>Controler</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportament buton înapoi</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation type="unfinished">Graphics</translation>
     </message>
@@ -1783,10 +1791,6 @@
       <translation>Setați un timp pentru ca mouse-ul să dispară după ce a fost inactiv.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportamentul butonului înapoi:\nSetează butonul înapoi al controlerului să imite atingerea poziției specificate pe touchpad-ul PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation type="unfinished">Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</translation>
     </message>
@@ -1809,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Întotdeauna</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad Stânga</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad Dreapta</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centru Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Niciunul</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

@@ -165,10 +165,23 @@ public:
         return amd_shader_trinary_minmax;
     }
 
+    /// Returns true when the shaderBufferFloat32AtomicMinMax feature of
+    /// VK_EXT_shader_atomic_float2 is supported.
+    bool IsShaderAtomicFloatBuffer32MinMaxSupported() const {
+        return shader_atomic_float2 &&
+               shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax;
+    }
+
     /// Returns true when the shaderImageFloat32AtomicMinMax feature of
     /// VK_EXT_shader_atomic_float2 is supported.
     bool IsShaderAtomicFloatImage32MinMaxSupported() const {
         return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
+    }
+
+    /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
+    bool IsWorkgroupMemoryExplicitLayoutSupported() const {
+        return workgroup_memory_explicit_layout &&
+               workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -318,6 +331,9 @@ public:
         return driver_id != vk::DriverId::eMoltenvk;
     }
 
+    /// Determines if a format is supported for a set of feature flags.
+    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();
@@ -331,9 +347,6 @@ private:
 
     /// Gets the supported feature flags for a format.
     [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
-
-    /// Determines if a format is supported for a set of feature flags.
-    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
 private:
     vk::UniqueInstance instance;
@@ -349,6 +362,8 @@ private:
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
+    vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
+        workgroup_memory_explicit_layout_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -374,6 +389,7 @@ private:
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
     bool shader_atomic_float2{};
+    bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
 };
 

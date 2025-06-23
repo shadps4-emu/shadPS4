@@ -164,10 +164,12 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t
     }
 
     const auto ctx_id = trophy_contexts.insert(user_id, service_label);
-    contexts_internal[key].context_id = ctx_id.index;
-    LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", ctx_id.index,
-             user_id, service_label);
-    *context = ctx_id.index;
+
+    *context = ctx_id.index + 1;
+    contexts_internal[key].context_id = *context;
+    LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", *context, user_id,
+             service_label);
+
     return ORBIS_OK;
 }
 
@@ -179,21 +181,27 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateHandle(OrbisNpTrophyHandle* handle) {
     if (trophy_handles.size() >= MaxTrophyHandles) {
         return ORBIS_NP_TROPHY_ERROR_HANDLE_EXCEEDS_MAX;
     }
-    const auto handle_id = trophy_handles.insert();
-    LOG_INFO(Lib_NpTrophy, "New handle = {}", handle_id.index);
 
-    *handle = handle_id.index;
+    const auto handle_id = trophy_handles.insert();
+
+    *handle = handle_id.index + 1;
+    LOG_INFO(Lib_NpTrophy, "New handle = {}", *handle);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context) {
     LOG_INFO(Lib_NpTrophy, "Destroyed Context {}", context);
 
-    if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT)
+    if (context == ORBIS_NP_TROPHY_INVALID_CONTEXT) {
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
 
     Common::SlotId contextId;
-    contextId.index = context;
+    contextId.index = context - 1;
+
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
 
     ContextKey contextkey = trophy_contexts[contextId];
     trophy_contexts.erase(contextId);
@@ -206,15 +214,17 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
 
-    if (handle >= trophy_handles.size()) {
+    s32 handle_index = handle - 1;
+    if (handle_index >= trophy_handles.size()) {
         LOG_ERROR(Lib_NpTrophy, "Invalid handle {}", handle);
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
     }
-    if (!trophy_handles.is_allocated({static_cast<u32>(handle)})) {
+
+    if (!trophy_handles.is_allocated({static_cast<u32>(handle_index)})) {
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
     }
 
-    trophy_handles.erase({static_cast<u32>(handle)});
+    trophy_handles.erase({static_cast<u32>(handle_index)});
     LOG_INFO(Lib_NpTrophy, "Handle {} destroyed", handle);
     return ORBIS_OK;
 }

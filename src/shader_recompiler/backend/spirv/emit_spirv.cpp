@@ -271,7 +271,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (info.has_image_query) {
         ctx.AddCapability(spv::Capability::ImageQuery);
     }
-    if (info.uses_atomic_float_min_max && profile.supports_image_fp32_atomic_min_max) {
+    if ((info.uses_image_atomic_float_min_max && profile.supports_image_fp32_atomic_min_max) ||
+        (info.uses_buffer_atomic_float_min_max && profile.supports_buffer_fp32_atomic_min_max)) {
         ctx.AddExtension("SPV_EXT_shader_atomic_float_min_max");
         ctx.AddCapability(spv::Capability::AtomicFloat32MinMaxEXT);
     }
@@ -302,6 +303,12 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (info.dma_types != IR::Type::Void) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
+    }
+    const auto shared_type_count = std::popcount(static_cast<u32>(info.shared_types));
+    if (shared_type_count > 1 && profile.supports_workgroup_explicit_memory_layout) {
+        ctx.AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
     }
 }
 
