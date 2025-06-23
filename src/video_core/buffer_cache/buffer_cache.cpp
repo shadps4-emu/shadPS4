@@ -282,8 +282,8 @@ bool BufferCache::CommitPendingDownloads(bool wait_done) {
                 const u64 dst_offset = copy.dstOffset - offset;
                 if (!memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
                                              download + dst_offset, copy.size)) {
-                    std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
-                                copy.size);
+                    //std::memcpy(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                    //            copy.size);
                 }
             }
         }
