@@ -327,8 +327,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
         //     V_CMP_{OP8}_U64
+    case Opcode::V_CMP_EQ_U64:
+        return V_CMP_EQ_U64(NegateMode::None, inst);
     case Opcode::V_CMP_NE_U64:
-        return V_CMP_NE_U64(inst);
+        return V_CMP_EQ_U64(NegateMode::Result, inst);
 
     case Opcode::V_CMP_CLASS_F32:
         return V_CMP_CLASS_F32(inst);
@@ -996,7 +998,46 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
     }
 }
 
-void Translator::V_CMP_NE_U64(const GcnInst& inst) {
+// General case for V_CMP_U64 is not yet implemented
+// void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
+//     const IR::U64 src0{GetSrc64(inst.src[0])};
+//     const IR::U64 src1{GetSrc64(inst.src[1])};
+//     const IR::U1 result = [&] {
+//         switch (op) {
+//         case ConditionOp::F:
+//             return ir.Imm1(false);
+//         case ConditionOp::TRU:
+//             return ir.Imm1(true);
+//         case ConditionOp::EQ:
+//             return ir.IEqual(src0, src1);
+//         case ConditionOp::LG:
+//             return ir.INotEqual(src0, src1);
+//         case ConditionOp::GT:
+//             return ir.IGreaterThan(src0, src1, is_signed);
+//         case ConditionOp::LT:
+//             return ir.ILessThan(src0, src1, is_signed);
+//         case ConditionOp::LE:
+//             return ir.ILessThanEqual(src0, src1, is_signed);
+//         case ConditionOp::GE:
+//             return ir.IGreaterThanEqual(src0, src1, is_signed);
+//         default:
+//             UNREACHABLE();
+//         }
+//     }();
+//     if (set_exec) {
+//         ir.SetExec(result);
+//     }
+//     switch (inst.dst[1].field) {
+//     case OperandField::VccLo:
+//         return ir.SetVcc(result);
+//     case OperandField::ScalarGPR:
+//         return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
+//     default:
+//         UNREACHABLE();
+//     }
+// }
+
+void Translator::V_CMP_EQ_U64(NegateMode negate, const GcnInst& inst) {
     const auto get_src = [&](const InstOperand& operand) {
         switch (operand.field) {
         case OperandField::VccLo:
@@ -1011,23 +1052,26 @@ void Translator::V_CMP_NE_U64(const GcnInst& inst) {
             UNREACHABLE();
         }
     };
+
     const IR::U1 src0{get_src(inst.src[0])};
     auto op = [&inst, this](auto x) {
         switch (inst.src[1].field) {
         case OperandField::ConstZero:
-            return x;
-        case OperandField::SignedConstIntNeg:
             return ir.LogicalNot(x);
+        case OperandField::SignedConstIntNeg:
+            return x;
         default:
             UNREACHABLE_MSG("unhandled V_CMP_NE_U64 source argument {}", u32(inst.src[1].field));
         }
     };
+
+    auto result = negate == NegateMode::Result ? ir.LogicalNot(op(src0)) : src0;
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
-        ir.SetVcc(op(src0));
+        ir.SetVcc(result);
         break;
     case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), op(src0));
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
         break;
     default:
         UNREACHABLE();

@@ -1704,12 +1704,32 @@ U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
     }
 }
 
-U1 IREmitter::ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SLessThanEqual : Opcode::ULessThanEqual, lhs, rhs);
+U1 IREmitter::ILessThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SLessThanEqual32 : Opcode::ULessThanEqual32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SLessThanEqual64 : Opcode::ULessThanEqual64, lhs, rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
-U1 IREmitter::IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SGreaterThan : Opcode::UGreaterThan, lhs, rhs);
+U1 IREmitter::IGreaterThan(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThan32 : Opcode::UGreaterThan32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThan64 : Opcode::UGreaterThan64, lhs, rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
 U1 IREmitter::INotEqual(const U32U64& lhs, const U32U64& rhs) {
@@ -1726,8 +1746,20 @@ U1 IREmitter::INotEqual(const U32U64& lhs, const U32U64& rhs) {
     }
 }
 
-U1 IREmitter::IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual : Opcode::UGreaterThanEqual, lhs, rhs);
+U1 IREmitter::IGreaterThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual32 : Opcode::UGreaterThanEqual32, lhs,
+                        rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual64 : Opcode::UGreaterThanEqual64, lhs,
+                        rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
 U1 IREmitter::LogicalOr(const U1& a, const U1& b) {

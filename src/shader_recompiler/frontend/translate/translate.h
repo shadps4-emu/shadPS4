@@ -20,7 +20,7 @@ namespace Shader::Gcn {
 enum class ConditionOp : u32 {
     F,
     EQ,
-    LG,
+    LG, // NE
     GT,
     GE,
     LT,
@@ -230,7 +230,8 @@ public:
     // VOPC
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
-    void V_CMP_NE_U64(const GcnInst& inst);
+    void V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
+    void V_CMP_EQ_U64(NegateMode negate, const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
 
     // VOP3a
