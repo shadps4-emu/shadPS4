@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Click al touchpad</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Ratolí a palanca</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation>No es pot assignar una entrada més d'una vegada. S'han assignat de manera duplicada pels següents botons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Touchpad esquerra</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Touchpad centre</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Touchpad dreta</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Controlador</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportament del botó de retrocés</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Gràfics</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>Temps d'espera per ocultar el ratolí:\nLa duració (en segons) després de la qual el ratolí s'amaga si es troba inactiu.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportament del botó posterior:\nEstableix el botó posterior del controlador per simular el toc en una posició especificada del touchpad de PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Mostra les dades de compatibilitat:\nMostra informació sobre la compatibilitat a la vista de graella. Pots activar l'actualització de compatibilitat a l'inici per obtenir més informació actualitzada.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Sempre</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad esquerra</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad dret</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centre del Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Cap</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
