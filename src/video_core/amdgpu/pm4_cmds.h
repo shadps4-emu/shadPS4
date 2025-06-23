@@ -421,7 +421,7 @@ struct PM4CmdEventWriteEop {
     PM4Type3Header header;
     union {
         u32 event_control;
-        BitField<0, 6, u32> event_type;  ///< Event type written to VGT_EVENT_INITIATOR
+        BitField<0, 6, EventType> event_type;  ///< Event type written to VGT_EVENT_INITIATOR
         BitField<8, 4, u32> event_index; ///< Event index
     };
     u32 address_lo;
