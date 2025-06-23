@@ -748,6 +748,10 @@
         <source>Last updated</source>
         <translation>Last updated</translation>
     </message>
+    <message>
+        <source>Favorite</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>GameListUtils</name>
@@ -948,6 +952,14 @@
     </message>
     <message>
         <source>SFO Viewer for </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove from Favorites</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Add to Favorites</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
