@@ -972,7 +972,12 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", samp_desc.sharp_idx));
+        auto sharp_desc = std::holds_alternative<u32>(samp_desc.sampler)
+                              ? fmt::format("sgpr:{}", std::get<u32>(samp_desc.sampler))
+                              : fmt::format("inline:{:#x}:{:#x}",
+                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw0,
+                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw1);
+        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
         samplers.push_back(id);
         interfaces.push_back(id);
     }
@@ -995,19 +1000,26 @@ void EmitContext::DefineSharedMemory() {
 
         const u32 num_elements{Common::DivCeil(shared_memory_size, element_size)};
         const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
-        Decorate(array_type, spv::Decoration::ArrayStride, element_size);
 
-        const Id struct_type{TypeStruct(array_type)};
-        MemberDecorate(struct_type, 0u, spv::Decoration::Offset, 0u);
+        const auto mem_type = [&] {
+            if (num_types > 1) {
+                const Id struct_type{TypeStruct(array_type)};
+                Decorate(struct_type, spv::Decoration::Block);
+                MemberDecorate(struct_type, 0u, spv::Decoration::Offset, 0u);
+                return struct_type;
+            } else {
+                return array_type;
+            }
+        }();
 
-        const Id pointer = TypePointer(spv::StorageClass::Workgroup, struct_type);
+        const Id pointer = TypePointer(spv::StorageClass::Workgroup, mem_type);
         const Id element_pointer = TypePointer(spv::StorageClass::Workgroup, element_type);
         const Id variable = AddGlobalVariable(pointer, spv::StorageClass::Workgroup);
         Name(variable, name);
         interfaces.push_back(variable);
 
         if (num_types > 1) {
-            Decorate(struct_type, spv::Decoration::Block);
+            Decorate(array_type, spv::Decoration::ArrayStride, element_size);
             Decorate(variable, spv::Decoration::Aliased);
         }
 

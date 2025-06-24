@@ -293,6 +293,7 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     }
+
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
@@ -750,7 +751,24 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_ENOTEMPTY;
         return -1;
     }
+
+    // On Windows, std::filesystem::rename will error if the file has been opened before.
     std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto file = h->GetFile(src_path);
+    if (file) {
+        // We need to force ReadWrite if the file had Write access before
+        // Otherwise f.Open will clear the file contents.
+        auto access_mode = file->f.GetAccessMode() == Common::FS::FileAccessMode::Write
+                               ? Common::FS::FileAccessMode::ReadWrite
+                               : file->f.GetAccessMode();
+        file->f.Close();
+        std::filesystem::remove(src_path);
+        file->f.Open(dst_path, access_mode);
+    } else {
+        std::filesystem::remove(src_path);
+    }
+
     return ORBIS_OK;
 }
 

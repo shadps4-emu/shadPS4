@@ -1153,10 +1153,6 @@
       <translation>Kaydedilemedi</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Herhangi bir benzersiz girdi birden fazla kez bağlanamaz</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Bir tuşa basın</translation>
     </message>
@@ -1183,6 +1179,14 @@
     <message>
       <source>Cancel</source>
       <translation>İptal</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
     </message>
   </context>
   <context>

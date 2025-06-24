@@ -71,8 +71,10 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicISub32:
     case Opcode::BufferAtomicSMin32:
     case Opcode::BufferAtomicUMin32:
+    case Opcode::BufferAtomicFMin32:
     case Opcode::BufferAtomicSMax32:
     case Opcode::BufferAtomicUMax32:
+    case Opcode::BufferAtomicFMax32:
     case Opcode::BufferAtomicInc32:
     case Opcode::BufferAtomicDec32:
     case Opcode::BufferAtomicAnd32:
