@@ -752,6 +752,8 @@ void ControlSettings::CheckMapping(QPushButton*& button) {
         button->setText(mapping);
         EnableButtonMapping = false;
         EnableAxisMapping = false;
+        L2Pressed = false;
+        R2Pressed = false;
         EnableMappingButtons();
         timer->stop();
     }
@@ -844,19 +846,32 @@ void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
         if (Type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
             // SDL trigger axis values range from 0 to 32000, set mapping on half movement
             // Set zone for trigger release signal arbitrarily at 5000
-            if (Value > 16000) {
-                switch (Input) {
-                case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+            switch (Input) {
+            case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+                if (Value > 16000) {
                     pressedButtons.insert("l2");
-                    break;
-                case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
-                    pressedButtons.insert("r2");
-                    break;
-                default:
-                    break;
+                    L2Pressed = true;
+                } else if (Value < 5000) {
+                    if (L2Pressed)
+                        emit PushGamepadEvent();
                 }
+                break;
+            case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+                if (Value > 16000) {
+                    pressedButtons.insert("r2");
+                    R2Pressed = true;
+                } else if (Value < 5000) {
+                    if (R2Pressed)
+                        emit PushGamepadEvent();
+                }
+                break;
+            default:
+                break;
             }
         }
+
+        if (Type == SDL_EVENT_GAMEPAD_BUTTON_UP)
+            emit PushGamepadEvent();
 
     } else if (EnableAxisMapping) {
         if (Type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {

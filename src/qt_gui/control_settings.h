@@ -51,6 +51,8 @@ private:
     QSet<QString> pressedButtons;
 
     bool GameRunning;
+    bool L2Pressed = false;
+    bool R2Pressed = false;
     bool EnableButtonMapping = false;
     bool EnableAxisMapping = false;
     bool MappingCompleted = false;
