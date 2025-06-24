@@ -18,9 +18,6 @@ Wrapper* Wrapper::GetInstance() {
 }
 
 bool Wrapper::ProcessEvent(SDL_Event* event) {
-    if (!wrapperActive)
-        return false;
-
     switch (event->type) {
     case SDL_EVENT_QUIT:
         emit SDLEvent(SDL_EVENT_QUIT, 0, 0);

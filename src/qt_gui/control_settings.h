@@ -44,6 +44,7 @@ private:
     void SetMapping(QString input);
     void DisableMappingButtons();
     void EnableMappingButtons();
+    void cleanup();
 
     QList<QPushButton*> ButtonsList;
     QList<QPushButton*> AxisList;
@@ -73,8 +74,6 @@ private:
 
 protected:
     void closeEvent(QCloseEvent* event) override {
-        SDL_Event quitLoop{};
-        quitLoop.type = SDL_EVENT_QUIT;
-        SDL_PushEvent(&quitLoop);
+        cleanup();
     }
 };

@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "control_settings.h"
+#include "sdl_window.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
@@ -22,6 +23,9 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         SDL_InitSubSystem(SDL_INIT_EVENTS);
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+        SDL_Event pauseGame{};
+        pauseGame.type = SDL_EVENT_TOGGLE_PAUSE;
+        SDL_PushEvent(&pauseGame);
     }
 
     CheckGamePad();
@@ -775,19 +779,6 @@ bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
-    if (Type == SDL_EVENT_QUIT) {
-        SdlEventWrapper::Wrapper::wrapperActive = false;
-        if (gamepad)
-            SDL_CloseGamepad(gamepad);
-        if (!GameRunning) {
-            SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
-            SDL_QuitSubSystem(SDL_INIT_EVENTS);
-            SDL_Quit();
-        } else {
-            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
-        }
-    }
-
     if (Type == SDL_EVENT_GAMEPAD_ADDED) {
         if (!GameRunning)
             CheckGamePad();
@@ -905,6 +896,23 @@ void ControlSettings::pollSDLEvents() {
         }
 
         SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
+    }
+}
+
+void ControlSettings::cleanup() {
+    SdlEventWrapper::Wrapper::wrapperActive = false;
+    if (gamepad)
+        SDL_CloseGamepad(gamepad);
+
+    if (!GameRunning) {
+        SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+        SDL_QuitSubSystem(SDL_INIT_EVENTS);
+        SDL_Quit();
+    } else {
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        SDL_Event resumeGame{};
+        resumeGame.type = SDL_EVENT_TOGGLE_PAUSE;
+        SDL_PushEvent(&resumeGame);
     }
 }
 
