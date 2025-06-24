@@ -750,7 +750,7 @@
     </message>
     <message>
       <source>Favorite</source>
-      <translation type="unfinished">Favorite</translation>
+      <translation>Të Preferuarat</translation>
     </message>
   </context>
   <context>
@@ -956,11 +956,11 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>Hiq nga të Preferuarat</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
-      <translation type="unfinished">Add to Favorites</translation>
+      <translation>Shto në të Preferuarat</translation>
     </message>
   </context>
   <context>
@@ -1198,15 +1198,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Paneli me Prekje Majtas</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Paneli me Prekje në Qendër</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Paneli me Prekje Djathtas</translation>
     </message>
   </context>
   <context>
