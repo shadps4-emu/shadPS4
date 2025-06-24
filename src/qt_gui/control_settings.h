@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <QComboBox>
 #include <QDialog>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gamepad.h>
 #include "game_info.h"
+#include "sdl_event_wrapper.h"
 
 namespace Ui {
 class ControlSettings;
@@ -14,7 +14,7 @@ class ControlSettings;
 class ControlSettings : public QDialog {
     Q_OBJECT
 public:
-    explicit ControlSettings(std::shared_ptr<GameInfoClass> game_info_get,
+    explicit ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool GameRunning,
                              QWidget* parent = nullptr);
     ~ControlSettings();
 
@@ -39,6 +39,7 @@ private:
     void SetUIValuestoMappings();
     void GetGameTitle();
     void CheckGamePad();
+    void processSDLEvents(int Type, int Input, int Value);
     void pollSDLEvents();
     void SetMapping(QString input);
     void DisableMappingButtons();
@@ -48,8 +49,7 @@ private:
     QList<QPushButton*> AxisList;
     QSet<QString> pressedButtons;
 
-    bool isRunning = true;
-    bool triggerWasPressed = false;
+    bool GameRunning;
     bool EnableButtonMapping = false;
     bool EnableAxisMapping = false;
     bool MappingCompleted = false;
@@ -57,7 +57,8 @@ private:
     int MappingTimer;
     QTimer* timer;
     QPushButton* MappingButton;
-    SDL_Gamepad* m_gamepad = nullptr;
+    SDL_Gamepad* gamepad = nullptr;
+    SdlEventWrapper::Wrapper* RemapWrapper;
 
     const std::vector<std::string> ControllerInputs = {
         "cross",        "circle",    "square",      "triangle",    "l1",

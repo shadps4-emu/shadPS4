@@ -10,17 +10,21 @@
 #include "control_settings.h"
 #include "ui_control_settings.h"
 
-ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent)
-    : QDialog(parent), m_game_info(game_info_get), ui(new Ui::ControlSettings) {
+ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
+                                 QWidget* parent)
+    : QDialog(parent), m_game_info(game_info_get), GameRunning(isGameRunning),
+      ui(new Ui::ControlSettings) {
 
     ui->setupUi(this);
 
-    SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-    SDL_InitSubSystem(SDL_INIT_EVENTS);
+    if (!GameRunning) {
+        SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+        SDL_InitSubSystem(SDL_INIT_EVENTS);
+    } else {
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    }
 
     CheckGamePad();
-    QFuture<void> future = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
-
     AddBoxItems();
     SetUIValuestoMappings();
     UpdateLightbarColor();
@@ -113,6 +117,14 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, Q
             [this]() { CheckMapping(MappingButton); });
     connect(this, &ControlSettings::AxisChanged, this,
             [this]() { ConnectAxisInputs(MappingButton); });
+
+    RemapWrapper = SdlEventWrapper::Wrapper::GetInstance();
+    SdlEventWrapper::Wrapper::wrapperActive = true;
+    QObject::connect(RemapWrapper, &SdlEventWrapper::Wrapper::SDLEvent, this,
+                     &ControlSettings::processSDLEvents);
+
+    if (!GameRunning)
+        QFuture<void> future = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
@@ -621,9 +633,12 @@ void ControlSettings::UpdateLightbarColor() {
 }
 
 void ControlSettings::CheckGamePad() {
-    if (m_gamepad) {
-        SDL_CloseGamepad(m_gamepad);
-        m_gamepad = nullptr;
+    if (GameRunning)
+        return;
+
+    if (gamepad) {
+        SDL_CloseGamepad(gamepad);
+        gamepad = nullptr;
     }
 
     int gamepad_count;
@@ -641,9 +656,9 @@ void ControlSettings::CheckGamePad() {
     }
 
     LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-    m_gamepad = SDL_OpenGamepad(gamepads[0]);
+    gamepad = SDL_OpenGamepad(gamepads[0]);
 
-    if (!m_gamepad) {
+    if (!gamepad) {
         LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
         SDL_free(gamepads);
         return;
@@ -697,7 +712,6 @@ void ControlSettings::StartTimer(QPushButton*& button, bool isButton) {
     MappingTimer = 3;
     isButton ? EnableButtonMapping = true : EnableAxisMapping = true;
     MappingCompleted = false;
-    triggerWasPressed = false;
     mapping = button->text();
     DisableMappingButtons();
 
@@ -743,8 +757,8 @@ void ControlSettings::SetMapping(QString input) {
     mapping = input;
     MappingCompleted = true;
     if (EnableAxisMapping) {
-        emit AxisChanged();
         emit PushGamepadEvent();
+        emit AxisChanged();
     }
 }
 
@@ -760,140 +774,137 @@ bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
     return QDialog::eventFilter(obj, event);
 }
 
+void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
+    if (Type == SDL_EVENT_QUIT) {
+        SdlEventWrapper::Wrapper::wrapperActive = false;
+        if (gamepad)
+            SDL_CloseGamepad(gamepad);
+        if (!GameRunning) {
+            SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+            SDL_QuitSubSystem(SDL_INIT_EVENTS);
+            SDL_Quit();
+        } else {
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        }
+    }
+
+    if (Type == SDL_EVENT_GAMEPAD_ADDED) {
+        if (!GameRunning)
+            CheckGamePad();
+    }
+
+    if (EnableButtonMapping) {
+        if (Type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+            switch (Input) {
+            case SDL_GAMEPAD_BUTTON_SOUTH:
+                pressedButtons.insert("cross");
+                break;
+            case SDL_GAMEPAD_BUTTON_EAST:
+                pressedButtons.insert("circle");
+                break;
+            case SDL_GAMEPAD_BUTTON_NORTH:
+                pressedButtons.insert("triangle");
+                break;
+            case SDL_GAMEPAD_BUTTON_WEST:
+                pressedButtons.insert("square");
+                break;
+            case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+                pressedButtons.insert("l1");
+                break;
+            case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+                pressedButtons.insert("r1");
+                break;
+            case SDL_GAMEPAD_BUTTON_LEFT_STICK:
+                pressedButtons.insert("l3");
+                break;
+            case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
+                pressedButtons.insert("r3");
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_UP:
+                pressedButtons.insert("pad_up");
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                pressedButtons.insert("pad_down");
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+                pressedButtons.insert("pad_left");
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+                pressedButtons.insert("pad_right");
+                break;
+            case SDL_GAMEPAD_BUTTON_BACK:
+                pressedButtons.insert("back");
+                break;
+            case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
+                pressedButtons.insert("lpaddle_high");
+                break;
+            case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
+                pressedButtons.insert("rpaddle_high");
+                break;
+            case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
+                pressedButtons.insert("lpaddle_low");
+                break;
+            case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
+                pressedButtons.insert("rpaddle_low");
+                break;
+            case SDL_GAMEPAD_BUTTON_START:
+                pressedButtons.insert("options");
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (Type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+            // SDL trigger axis values range from 0 to 32000, set mapping on half movement
+            // Set zone for trigger release signal arbitrarily at 5000
+            if (Value > 16000) {
+                switch (Input) {
+                case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+                    pressedButtons.insert("l2");
+                    break;
+                case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
+                    pressedButtons.insert("r2");
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+    } else if (EnableAxisMapping) {
+        if (Type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
+            // SDL stick axis values range from -32000 to 32000, set mapping on half movement
+            if (Value > 16000 || Value < -16000) {
+                switch (Input) {
+                case SDL_GAMEPAD_AXIS_LEFTX:
+                    SetMapping("axis_left_x");
+                    break;
+                case SDL_GAMEPAD_AXIS_LEFTY:
+                    SetMapping("axis_left_y");
+                    break;
+                case SDL_GAMEPAD_AXIS_RIGHTX:
+                    SetMapping("axis_right_x");
+                    break;
+                case SDL_GAMEPAD_AXIS_RIGHTY:
+                    SetMapping("axis_right_y");
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void ControlSettings::pollSDLEvents() {
     SDL_Event event;
-
-    while (isRunning) {
+    while (SdlEventWrapper::Wrapper::wrapperActive) {
         if (!SDL_WaitEvent(&event)) {
             return;
         }
 
-        if (event.type == SDL_EVENT_QUIT) {
-            isRunning = false;
-            SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
-            SDL_QuitSubSystem(SDL_INIT_EVENTS);
-            SDL_Quit();
-        }
-
-        if (event.type == SDL_EVENT_GAMEPAD_ADDED)
-            CheckGamePad();
-
-        if (EnableButtonMapping) {
-            if (event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
-                switch (event.gbutton.button) {
-                case SDL_GAMEPAD_BUTTON_SOUTH:
-                    pressedButtons.insert("cross");
-                    break;
-                case SDL_GAMEPAD_BUTTON_EAST:
-                    pressedButtons.insert("circle");
-                    break;
-                case SDL_GAMEPAD_BUTTON_NORTH:
-                    pressedButtons.insert("triangle");
-                    break;
-                case SDL_GAMEPAD_BUTTON_WEST:
-                    pressedButtons.insert("square");
-                    break;
-                case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-                    pressedButtons.insert("l1");
-                    break;
-                case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-                    pressedButtons.insert("r1");
-                    break;
-                case SDL_GAMEPAD_BUTTON_LEFT_STICK:
-                    pressedButtons.insert("l3");
-                    break;
-                case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-                    pressedButtons.insert("r3");
-                    break;
-                case SDL_GAMEPAD_BUTTON_DPAD_UP:
-                    pressedButtons.insert("pad_up");
-                    break;
-                case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-                    pressedButtons.insert("pad_down");
-                    break;
-                case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-                    pressedButtons.insert("pad_left");
-                    break;
-                case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-                    pressedButtons.insert("pad_right");
-                    break;
-                case SDL_GAMEPAD_BUTTON_BACK:
-                    pressedButtons.insert("back");
-                    break;
-                case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
-                    pressedButtons.insert("lpaddle_high");
-                    break;
-                case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
-                    pressedButtons.insert("rpaddle_high");
-                    break;
-                case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
-                    pressedButtons.insert("lpaddle_low");
-                    break;
-                case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
-                    pressedButtons.insert("rpaddle_low");
-                    break;
-                case SDL_GAMEPAD_BUTTON_START:
-                    pressedButtons.insert("options");
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            if (event.type == SDL_EVENT_GAMEPAD_BUTTON_UP) {
-                emit PushGamepadEvent();
-            }
-
-            if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
-                // SDL trigger axis values range from 0 to 32000, set mapping on half movement
-                // Set zone for trigger release signal arbitrarily at 5000
-                switch (event.gaxis.axis) {
-                case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
-                    if (event.gaxis.value > 16000) {
-                        pressedButtons.insert("l2");
-                        triggerWasPressed = true;
-                    } else if (event.gaxis.value < 5000) {
-                        if (triggerWasPressed)
-                            emit PushGamepadEvent();
-                    }
-                    break;
-                case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
-                    if (event.gaxis.value > 16000) {
-                        pressedButtons.insert("r2");
-                        triggerWasPressed = true;
-                    } else if (event.gaxis.value < 5000) {
-                        if (triggerWasPressed)
-                            emit PushGamepadEvent();
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
-
-        } else if (EnableAxisMapping) {
-            if (event.type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
-                // SDL stick axis values range from -32000 to 32000, set mapping on half movement
-                if (event.gaxis.value > 16000 || event.gaxis.value < -16000) {
-                    switch (event.gaxis.axis) {
-                    case SDL_GAMEPAD_AXIS_LEFTX:
-                        SetMapping("axis_left_x");
-                        break;
-                    case SDL_GAMEPAD_AXIS_LEFTY:
-                        SetMapping("axis_left_y");
-                        break;
-                    case SDL_GAMEPAD_AXIS_RIGHTX:
-                        SetMapping("axis_right_x");
-                        break;
-                    case SDL_GAMEPAD_AXIS_RIGHTY:
-                        SetMapping("axis_right_y");
-                        break;
-                    default:
-                        break;
-                    }
-                }
-            }
-        }
+        SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
     }
 }
 
