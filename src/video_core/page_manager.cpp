@@ -190,10 +190,10 @@ struct PageManager::Impl {
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) {
         RENDERER_TRACE;
-        
+
         size_t page = addr >> PAGE_BITS;
         const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
-        
+
         const size_t lock_start = page / PAGES_PER_LOCK;
         const size_t lock_end = Common::DivCeil(page_end, PAGES_PER_LOCK);
         for (size_t i = lock_start; i < lock_end; ++i) {
@@ -214,7 +214,6 @@ struct PageManager::Impl {
                 potential_range_bytes = 0;
             }
         };
-
 
         // Iterate requested pages
         const u64 aligned_addr = page << PAGE_BITS;
@@ -273,7 +272,7 @@ struct PageManager::Impl {
             UpdatePageWatchers<track>(start_addr, size);
             return;
         }
-        
+
         size_t base_page = (base_addr >> PAGE_BITS);
         ASSERT(base_page % PAGES_PER_LOCK == 0);
         std::scoped_lock lk(locks[base_page / PAGES_PER_LOCK]);
