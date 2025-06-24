@@ -1057,10 +1057,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Clique do Touchpad</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Rato para Manípulo</translation>
     </message>
@@ -1187,6 +1183,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1555,6 @@
       <translation>Comando</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportamento do Botão Voltar</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Gráficos</translation>
     </message>
@@ -1787,10 +1791,6 @@
       <translation>Tempo de Espera para Ocultar o Cursor:\nDefine o tempo em segundos para o rato desaparecer após ficar inativo.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportamento do Botão Voltar:\nConfigura o botão Voltar do comando para emular um toque na posição especificada no touchpad do PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Exibir Dados de Compatibilidade:\nExibe informações de compatibilidade dos jogos em visualização de tabela.\nAtivar &quot;Atualizar Base de Dados de Compatibilidade no Arranque&quot; para obter informações atualizadas.</translation>
     </message>
@@ -1813,22 +1813,6 @@
     <message>
       <source>Always</source>
       <translation>Sempre</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Esquerda do Touchpad</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Direita do Touchpad</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centro do Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Nenhum</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

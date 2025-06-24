@@ -561,10 +561,8 @@ void MainWindow::CreateConnects() {
         m_game_grid_frame->hide();
         m_elf_viewer->hide();
         m_game_list_frame->show();
-        if (m_game_list_frame->item(0, 0) == nullptr) {
-            m_game_list_frame->clearContents();
-            m_game_list_frame->PopulateGameList();
-        }
+        m_game_list_frame->clearContents();
+        m_game_list_frame->PopulateGameList();
         isTableList = true;
         m_gui_settings->SetValue(gui::gl_mode, 0);
         int slider_pos = m_gui_settings->GetValue(gui::gl_slider_pos).toInt();
