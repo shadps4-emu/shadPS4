@@ -212,7 +212,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, spec.info->uses_lane_id);
         hash = HashCombine(hash, spec.info->uses_group_quad);
         hash = HashCombine(hash, spec.info->uses_group_ballot);
-        hash = HashCombine(hash, spec.info->uses_shared);
         hash = HashCombine(hash, spec.info->uses_fp16);
         hash = HashCombine(hash, spec.info->uses_fp64);
         hash = HashCombine(hash, spec.info->uses_pack_10_11_11);
@@ -220,7 +219,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, spec.info->stores_tess_level_outer);
         hash = HashCombine(hash, spec.info->stores_tess_level_inner);
         hash = HashCombine(hash, spec.info->translation_failed);
-        hash = HashCombine(hash, spec.info->has_readconst);
         hash = HashCombine(hash, spec.info->mrt_mask);
         hash = HashCombine(hash, spec.info->has_fetch_shader);
         hash = HashCombine(hash, spec.info->fetch_shader_sgpr_base);
@@ -292,14 +290,29 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     writeBin(info_serialized, samplerCount); // Sampler Amount
 
     for (const auto& sampler : info.samplers) {
-        writeBin(info_serialized, sampler.sharp_idx);
-        writeBin(info_serialized, sampler.associated_image);
-        writeBin(info_serialized, sampler.disable_aniso);
+        if (std::holds_alternative<u32>(sampler.sampler))
+        {
+            std::uint8_t tag = 0;
+            writeBin(info_serialized, tag);
 
-        writeBin(info_serialized, sampler.inline_sampler.raw0);
-        writeBin(info_serialized, sampler.inline_sampler.raw1);
+            u32 sharp_idx = std::get<u32>(sampler.sampler);
+            writeBin(info_serialized, sharp_idx);
+        }
+        else
+        {
+            std::uint8_t tag = 1;
+            writeBin(info_serialized, tag);
 
+            const AmdGpu::Sampler& hw_sampler =
+                std::get<AmdGpu::Sampler>(sampler.sampler);
+            writeBin(info_serialized, hw_sampler);
+        }
 
+        std::uint8_t packed =
+            static_cast<std::uint8_t>((sampler.disable_aniso & 0x1) << 4) |
+            static_cast<std::uint8_t>(sampler.associated_image & 0xF);
+
+        writeBin(info_serialized, packed);
     }
 
     // FMask-Resources
@@ -316,9 +329,7 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
 
     for (auto const& [loc, attr_pair] : info.gs_copy_data.attr_map) {
         writeBin(info_serialized, loc);
-        // Das erste Element des Paars ist ein Shader::IR::Attribute, ein Enum
         writeBin(info_serialized, static_cast<u32>(attr_pair.first));
-        // Das zweite Element ist ein u32
         writeBin(info_serialized, attr_pair.second);
     }
     
@@ -333,33 +344,7 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     }
 
     writeBin(info_serialized, info.srt_info.flattened_bufsize_dw);
-    bool has_walker_func = (info.srt_info.walker_func != nullptr);
-    writeBin(info_serialized, static_cast<u8>(has_walker_func ? 1 : 0));
 
-    if (has_walker_func) {
-        // Größe des JIT-Codes ermitteln
-        const u8* walker_start = reinterpret_cast<const u8*>(info.srt_info.walker_func);
-
-        // Wir müssen die Größe des generierten Codes bestimmen
-        // Dies kann aus der Xbyak::CodeGenerator Instanz extrahiert werden
-        // Alternativ können wir die Distanz zum nächsten Ret-Befehl berechnen
-        size_t walker_size = 0;
-        const u8* ptr = walker_start;
-        const u32 MAX_CODE_SIZE = 4096; // Sicherheitsbegrenzung
-
-        // Suche nach Ret-Befehl (C3 in x86/x64)
-        for (walker_size = 0; walker_size < MAX_CODE_SIZE; walker_size++) {
-            // Einfacher Ret-Befehl (C3)
-            if (ptr[walker_size] == 0xC3) {
-                walker_size++; // Ret einschließen
-                break;
-            }
-        }
-
-        // Speichere Größe und JIT-Code
-        writeBin(info_serialized, static_cast<u32>(walker_size));
-        info_serialized.write(reinterpret_cast<const char*>(walker_start), walker_size);
-    }
     // Flat UD
 
     u32 flatCount = static_cast<u32>(info.flattened_ud_buf.size());
@@ -381,7 +366,6 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     writeBin(info_serialized, static_cast<u8>(info.uses_lane_id ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.uses_group_quad ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.uses_group_ballot ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_shared ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.uses_fp16 ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.uses_fp64 ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.uses_pack_10_11_11 ? 1 : 0));
@@ -389,7 +373,6 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     writeBin(info_serialized, static_cast<u8>(info.stores_tess_level_outer ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.stores_tess_level_inner ? 1 : 0));
     writeBin(info_serialized, static_cast<u8>(info.translation_failed ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.has_readconst ? 1 : 0));
 
     // MRT Mask
     writeBin(info_serialized, info.mrt_mask);
@@ -404,14 +387,14 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
     writeBin(info_serialized, info.l_stage);
     writeBin(info_serialized, info.pgm_hash);
 
-    // AttributeFlags für loads
+    // AttributeFlags for loads
     u32 loads_size = static_cast<u32>(info.loads.flags.size());
     writeBin(info_serialized, loads_size);
     for (size_t i = 0; i < info.loads.flags.size(); ++i) {
         writeBin(info_serialized, info.loads.flags[i]);
     }
 
-    // AttributeFlags für stores
+    // AttributeFlags for stores
     u32 stores_size = static_cast<u32>(info.stores.flags.size());
     writeBin(info_serialized, stores_size);
     for (size_t i = 0; i < info.stores.flags.size(); ++i) {
@@ -555,22 +538,32 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
 
     info.samplers.clear();
     info.samplers.reserve(samplerCount);
-    for (u32 i = 0; i < samplerCount; ++i) {
-        Shader::SamplerResource sampler;
-        readBin(info_serialized, sampler.sharp_idx);
+    for (u32 i = 0; i < samplerCount; ++i)
+    {
+        std::uint8_t tag;
+        readBin(info_serialized, tag);
 
-        u32 associated_image;
-        readBin(info_serialized, associated_image);
-        sampler.associated_image = associated_image;
+        Shader::SamplerResource sampler{0, 0, false}; // Dummy-Init
 
-        u32 disable_aniso;
-        readBin(info_serialized, disable_aniso);
-        sampler.disable_aniso = disable_aniso;
+        if (tag == 0)
+        {
+            u32 sharp_idx;
+            readBin(info_serialized, sharp_idx);
+            sampler.sampler = sharp_idx;
+        }
+        else
+        {
+            AmdGpu::Sampler hw_sampler;
+            readBin(info_serialized, hw_sampler);
+            sampler.sampler = hw_sampler;
+        }
 
-        // Inline-Sampler deserialisieren
-        readBin(info_serialized, sampler.inline_sampler.raw0);
-        readBin(info_serialized, sampler.inline_sampler.raw1);
-        
+        std::uint8_t packed;
+        readBin(info_serialized, packed);
+
+        sampler.associated_image = packed & 0xF;
+        sampler.disable_aniso    = (packed >> 4) & 0x1;
+
         info.samplers.push_back(std::move(sampler));
     }
 
@@ -598,11 +591,7 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
         readBin(info_serialized, loc);
         readBin(info_serialized, attribute_value);
         readBin(info_serialized, idx);
-
-        // Umwandeln des numerischen Werts zurück in das Shader::IR::Attribute-Enum
         Shader::IR::Attribute attribute = static_cast<Shader::IR::Attribute>(attribute_value);
-
-        // Einfügen in die Map mit dem richtigen Paar-Typ
         info.gs_copy_data.attr_map.emplace(loc, std::make_pair(attribute, idx));
     }
 
@@ -620,36 +609,7 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     }
 
     readBin(info_serialized, info.srt_info.flattened_bufsize_dw);
-    // Laden des walker_func JIT-Codes
-    u8 has_walker_func;
-    readBin(info_serialized, has_walker_func);
 
-    if (has_walker_func == 1) {
-        // Größe des JIT-Codes lesen
-        u32 walker_size;
-        readBin(info_serialized, walker_size);
-
-        // Speicher für ausführbaren Code allokieren
-        void* code_memory = nullptr;
-#ifdef _WIN32
-        code_memory =
-            VirtualAlloc(nullptr, walker_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-#else
-        code_memory = mmap(nullptr, walker_size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#endif
-
-        if (!code_memory) {
-            LOG_ERROR(Render_Vulkan, "Konnte keinen ausführbaren Speicher für JIT-Code allokieren");
-            return;
-        }
-
-        // JIT-Code laden
-        info_serialized.read(reinterpret_cast<char*>(code_memory), walker_size);
-
-        // JIT-Funktion zuweisen
-        info.srt_info.walker_func = reinterpret_cast<Shader::PFN_SrtWalker>(code_memory);
-    }
     // Flat UD
 
     u32 flatCount;
@@ -684,8 +644,6 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     readBin(info_serialized, flag_value);
     info.uses_group_ballot = (flag_value == 1);
     readBin(info_serialized, flag_value);
-    info.uses_shared = (flag_value == 1);
-    readBin(info_serialized, flag_value);
     info.uses_fp16 = (flag_value == 1);
     readBin(info_serialized, flag_value);
     info.uses_fp64 = (flag_value == 1);
@@ -699,8 +657,6 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     info.stores_tess_level_inner = (flag_value == 1);
     readBin(info_serialized, flag_value);
     info.translation_failed = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.has_readconst = (flag_value == 1);
 
     // MRT Mask
     readBin(info_serialized, info.mrt_mask);
@@ -716,14 +672,14 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     readBin(info_serialized, info.l_stage);
     readBin(info_serialized, info.pgm_hash);
 
-    // AttributeFlags für loads
+    // AttributeFlags for loads
     u32 loads_size;
     readBin(info_serialized, loads_size);
     for (size_t i = 0; i < loads_size; ++i) {
         readBin(info_serialized, info.loads.flags[i]);
     }
 
-    // AttributeFlags für stores
+    // AttributeFlags for stores
     u32 stores_size;
     readBin(info_serialized, stores_size);
     for (size_t i = 0; i < stores_size; ++i) {
@@ -750,18 +706,11 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
 
     // Check if there are any remaining bytes in the stream
     if (info_serialized.peek() != EOF) {
-        LOG_WARNING(Render_Vulkan, "Es sind noch Bytes im Stream übrig");
+        LOG_WARNING(Render_Vulkan, "There are remaining bytes in the cache file");
     }
 }
 
 bool CheckShaderCache(std::string shader_id) {
-    // Überprüfen, ob das Verzeichnis existiert
-    if (!std::filesystem::exists(shader_cache_dir)) {
-        LOG_INFO(Render_Vulkan, "Shader-Cache-Verzeichnis existiert nicht");
-        return false;
-    }
-
-    // Überprüfen, ob sowohl die SPIR-V-Datei als auch die Ressourcendatei existieren
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / (shader_id + ".spv");
     std::filesystem::path resources_file_path = shader_cache_dir / (shader_id + ".resources");
 
@@ -776,7 +725,6 @@ bool CheckShaderCache(std::string shader_id) {
         return false;
     }
 
-    // Überprüfen, ob die Dateien lesbar und nicht leer sind
     Common::FS::IOFile spirv_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
     Common::FS::IOFile resources_file(resources_file_path, Common::FS::FileAccessMode::Read);
 
@@ -787,8 +735,7 @@ bool CheckShaderCache(std::string shader_id) {
     resources_file.Close();
 
     if (!spirv_valid || !resources_valid) {
-        LOG_WARNING(Render_Vulkan, "Ungueltige Dateien im Shader-Cache für ID: {}", shader_id);
-        // Fehlerhafte Dateien entfernen, um zukünftige Probleme zu vermeiden
+        LOG_WARNING(Render_Vulkan, "Invalid cache file for shader with ID: {}", shader_id);
         if (std::filesystem::exists(spirv_cache_file_path)) {
             std::filesystem::remove(spirv_cache_file_path);
         }
@@ -798,7 +745,7 @@ bool CheckShaderCache(std::string shader_id) {
         return false;
     }
 
-    LOG_INFO(Render_Vulkan, "Shader mit ID {} im Cache gefunden", shader_id);
+    LOG_INFO(Render_Vulkan, "Found shader with ID {} in the cache", shader_id);
     return true;
 }
 
@@ -815,13 +762,11 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
                                            Common::FS::FileAccessMode::Read);
     
-       // Lese die Ressourcendaten
     std::vector<char> resources_data;
     resources_data.resize(resources_dump_file.GetSize());
     resources_dump_file.Read(resources_data);
     resources_dump_file.Close();
 
-    // Verarbeite die gespeicherten Daten
     std::istringstream combined_stream(std::string(resources_data.begin(), resources_data.end()));
 
     std::istringstream info_stream;
@@ -831,19 +776,16 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
 }
 
 void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized) {
-    // SPIR-V-Datei speichern
     std::string spirv_cache_filename = shader_id + ".spv";
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
     Common::FS::IOFile shader_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Write);
     shader_cache_file.WriteSpan(std::span<const u32>(spv));
     shader_cache_file.Close();
 
-    // Resources-Datei vorbereiten
     std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
                                            Common::FS::FileAccessMode::Write);
 
-    // Die Streams müssen zurückgesetzt werden, bevor wir sie lesen können
     if (std::ostringstream* info_oss = dynamic_cast<std::ostringstream*>(&info_serialized)) {
         std::string info_data = info_oss->str();
         resources_dump_file.WriteSpan(std::span<const char>(info_data.data(), info_data.size()));
