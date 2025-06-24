@@ -84,7 +84,8 @@ public:
         RENDERER_TRACE;
         const size_t offset = dirty_addr - cpu_addr;
         const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
         if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return;
         }
@@ -115,7 +116,8 @@ public:
         RENDERER_TRACE;
         const size_t offset = query_cpu_range - cpu_addr;
         const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
         if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return;
         }
@@ -152,7 +154,8 @@ public:
     [[nodiscard]] bool IsRegionModified(u64 offset, u64 size) const noexcept {
         RENDERER_TRACE;
         const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
         if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return false;
         }
