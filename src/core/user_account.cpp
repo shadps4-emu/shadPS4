@@ -36,7 +36,19 @@ user_account::user_account(const std::string& user_id) {
 
 std::map<u32, user_account> user_account::GetUserAccounts(const std::string& base_dir) {
     std::map<u32, user_account> user_list;
-    // TODO
+    for (const auto& entry : std::filesystem::directory_iterator(base_dir)) {
+        if (entry.is_directory()) {
+            std::string folder_name = entry.path().filename().string();
+            const u32 key = check_user(folder_name);
+            if (key == 0) {
+                continue;
+            }
+            const std::filesystem::path account_file = entry.path() / "localuser.json";
+            if (std::filesystem::exists(account_file)) {
+                user_list.emplace(key, user_account(folder_name));
+            }
+        }
+    }
 
     return user_list;
 }

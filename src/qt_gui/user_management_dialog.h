@@ -5,6 +5,7 @@
 
 #include <QDialog>
 #include <QTableWidget>
+#include <core/user_account.h>
 
 class user_manager_dialog : public QDialog {
     Q_OBJECT
@@ -14,7 +15,9 @@ public:
 
 private:
     void Init();
+    void RefreshTable();
 
     QTableWidget* m_table = nullptr;
     std::string m_active_user;
+    std::map<u32, user_account> m_user_list;
 };

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include <charconv>
 #include <map>
 #include <string>
 #include "common/types.h"
@@ -22,6 +23,15 @@ public:
 
     static std::map<u32, user_account> GetUserAccounts(const std::string& base_dir);
     static void createdDefaultUser();
+    static u32 check_user(const std::string& user) {
+        u32 id = 0;
+
+        if (user.size() == 8) {
+            std::from_chars(&user.front(), &user.back() + 1, id);
+        }
+
+        return id;
+    }
 
 private:
     std::string m_user_id;

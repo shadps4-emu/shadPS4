@@ -1,3 +1,4 @@
+#include "user_management_dialog.h"
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -14,6 +15,8 @@
 #include <QPushButton>
 #include <QRegularExpressionValidator>
 #include <QScreen>
+#include <common/path_util.h>
+#include "common/config.h"
 #include "user_management_dialog.h"
 
 user_manager_dialog::user_manager_dialog(QWidget* parent) : QDialog(parent) {
@@ -68,5 +71,56 @@ void user_manager_dialog::Init() {
 
     // get active user
     m_active_user = Config::getActiveUserId();
+    RefreshTable();
+}
+void user_manager_dialog::RefreshTable() {
 
+    // For indicating logged-in user.
+    QFont bold_font;
+    bold_font.setBold(true);
+
+    m_user_list.clear();
+    const auto& home_dir = Common::FS::GetUserPathString(Common::FS::PathType::HomeDir);
+    m_user_list = user_account::GetUserAccounts(home_dir);
+
+    // Clear and then repopulate the table with the list gathered above.
+    m_table->setRowCount(static_cast<int>(m_user_list.size()));
+
+    int row = 0;
+    for (auto& [id, account] : m_user_list) {
+        QTableWidgetItem* user_id_item =
+            new QTableWidgetItem(QString::fromStdString(account.GetUserId()));
+        user_id_item->setData(Qt::UserRole, id);
+        user_id_item->setFlags(user_id_item->flags() & ~Qt::ItemIsEditable);
+        m_table->setItem(row, 0, user_id_item);
+
+        QTableWidgetItem* username_item =
+            new QTableWidgetItem(QString::fromStdString(account.GetUsername()));
+        username_item->setData(Qt::UserRole, id);
+        username_item->setFlags(username_item->flags() & ~Qt::ItemIsEditable);
+        m_table->setItem(row, 1, username_item);
+
+        // make bold the user that is active
+        if (m_active_user.starts_with(account.GetUserId())) {
+            user_id_item->setFont(bold_font);
+            username_item->setFont(bold_font);
+        }
+        ++row;
+    }
+
+    // GUI resizing
+    m_table->horizontalHeader()->resizeSections(QHeaderView::ResizeToContents);
+    m_table->verticalHeader()->resizeSections(QHeaderView::ResizeToContents);
+
+    const QSize table_size(m_table->verticalHeader()->width() +
+                               m_table->horizontalHeader()->length() + m_table->frameWidth() * 2,
+                           m_table->horizontalHeader()->height() +
+                               m_table->verticalHeader()->length() + m_table->frameWidth() * 2);
+
+    const QSize preferred_size =
+        minimumSize().expandedTo(sizeHint() - m_table->sizeHint() + table_size).expandedTo(size());
+    const QSize max_size(preferred_size.width(),
+                         static_cast<int>(QGuiApplication::primaryScreen()->size().height() * 0.6));
+
+    resize(preferred_size.boundedTo(max_size));
 }
