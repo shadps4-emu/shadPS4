@@ -779,11 +779,6 @@ bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
-    if (Type == SDL_EVENT_GAMEPAD_ADDED) {
-        if (!GameRunning)
-            CheckGamePad();
-    }
-
     if (EnableButtonMapping) {
         if (Type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
             switch (Input) {
@@ -891,8 +886,17 @@ void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
 void ControlSettings::pollSDLEvents() {
     SDL_Event event;
     while (SdlEventWrapper::Wrapper::wrapperActive) {
+
         if (!SDL_WaitEvent(&event)) {
             return;
+        }
+
+        if (event.type == SDL_EVENT_QUIT) {
+            return;
+        }
+
+        if (event.type == SDL_EVENT_GAMEPAD_ADDED) {
+            CheckGamePad();
         }
 
         SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);

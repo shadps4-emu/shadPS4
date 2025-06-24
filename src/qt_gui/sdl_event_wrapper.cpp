@@ -22,9 +22,6 @@ bool Wrapper::ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_QUIT:
         emit SDLEvent(SDL_EVENT_QUIT, 0, 0);
         return true;
-    case SDL_EVENT_GAMEPAD_ADDED:
-        emit SDLEvent(SDL_EVENT_GAMEPAD_ADDED, 0, 0);
-        return true;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
         emit SDLEvent(SDL_EVENT_GAMEPAD_BUTTON_DOWN, event->gbutton.button, 0);
         return true;
