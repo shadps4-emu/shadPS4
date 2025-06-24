@@ -27,9 +27,6 @@ std::unordered_map<std::string, std::vector<u32>> g_ud_storage;
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     u64 hash = 0;
 
-    // Start mit dem Hash der RuntimeInfo
-    // Die RuntimeInfo enthält verschiedene Unions, daher müssen wir basierend auf dem Stage-Typ
-    // hashen
     const auto& runtime_info = spec.runtime_info;
     hash = HashCombine(hash, static_cast<u32>(runtime_info.stage));
     hash = HashCombine(hash, runtime_info.num_user_data);
@@ -38,7 +35,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     hash = HashCombine(hash, static_cast<u32>(runtime_info.fp_denorm_mode32));
     hash = HashCombine(hash, static_cast<u32>(runtime_info.fp_round_mode32));
 
-    // Abhängig vom Stage-Typ die spezifischen RuntimeInfo-Felder hashen
     switch (runtime_info.stage) {
     case Shader::Stage::Local:
         hash = HashCombine(hash, runtime_info.ls_info.ls_stride);
@@ -49,7 +45,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         break;
     case Shader::Stage::Vertex:
         hash = HashCombine(hash, runtime_info.vs_info.num_outputs);
-        // Hash der Output-Maps
         for (size_t i = 0;
              i < runtime_info.vs_info.num_outputs && i < runtime_info.vs_info.outputs.size(); ++i) {
             const auto& output_map = runtime_info.vs_info.outputs[i];
@@ -78,7 +73,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, runtime_info.gs_info.in_vertex_data_size);
         hash = HashCombine(hash, runtime_info.gs_info.out_vertex_data_size);
         hash = HashCombine(hash, static_cast<u32>(runtime_info.gs_info.in_primitive));
-        // Hash der Output-Primitive-Types für alle Streams
         for (const auto& out_prim : runtime_info.gs_info.out_primitive) {
             hash = HashCombine(hash, static_cast<u32>(out_prim));
         }
@@ -89,7 +83,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, runtime_info.fs_info.addr_flags.raw);
         hash = HashCombine(hash, runtime_info.fs_info.num_inputs);
 
-        // Hash der PS-Inputs
         for (u32 i = 0;
              i < runtime_info.fs_info.num_inputs && i < runtime_info.fs_info.inputs.size(); ++i) {
             const auto& input = runtime_info.fs_info.inputs[i];
@@ -99,7 +92,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
             hash = HashCombine(hash, input.default_value);
         }
 
-        // Hash der ColorBuffers
         for (const auto& color_buffer : runtime_info.fs_info.color_buffers) {
             hash = HashCombine(hash, static_cast<u32>(color_buffer.num_format));
             hash = HashCombine(hash, static_cast<u32>(color_buffer.num_conversion));
@@ -120,14 +112,12 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         break;
     }
 
-    // Hash des FetchShader-Daten
     if (spec.fetch_shader_data) {
         const auto& fetch_shader = *spec.fetch_shader_data;
         hash = HashCombine(hash, fetch_shader.size);
         hash = HashCombine(hash, static_cast<u64>(fetch_shader.vertex_offset_sgpr));
         hash = HashCombine(hash, static_cast<u64>(fetch_shader.instance_offset_sgpr));
 
-        // Hash der Attribute
         for (const auto& attr : fetch_shader.attributes) {
             hash = HashCombine(hash, static_cast<u64>(attr.semantic));
             hash = HashCombine(hash, static_cast<u64>(attr.dest_vgpr));
@@ -138,7 +128,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         }
     }
 
-    // Hash der VS-Attribut-Spezialisierungen
     for (const auto& vs_attrib : spec.vs_attribs) {
         hash = HashCombine(hash, vs_attrib.num_components);
         hash = HashCombine(hash, static_cast<u32>(vs_attrib.num_class));
@@ -148,7 +137,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, vs_attrib.dst_select.a);
     }
 
-    // Hash des Bitsets
     const std::string bitset_str = spec.bitset.to_string();
     for (size_t i = 0; i < bitset_str.size(); i += 8) {
         size_t end = std::min(i + 8, bitset_str.size());
@@ -162,7 +150,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, value);
     }
 
-    // Hash der Buffer-Spezialisierungen
     for (const auto& buffer : spec.buffers) {
         hash = HashCombine(hash, buffer.stride);
         hash = HashCombine(hash, buffer.is_storage);
@@ -185,7 +172,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         }
     }
 
-    // Hash der Bild-Spezialisierungen
     for (const auto& image : spec.images) {
         hash = HashCombine(hash, static_cast<u32>(image.type));
         hash = HashCombine(hash, image.is_integer);
@@ -202,23 +188,19 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, static_cast<u32>(image.num_conversion));
     }
 
-    // Hash der FMask-Spezialisierungen
     for (const auto& fmask : spec.fmasks) {
         hash = HashCombine(hash, fmask.width);
         hash = HashCombine(hash, fmask.height);
     }
 
-    // Hash der Sampler-Spezialisierungen
     for (const auto& sampler : spec.samplers) {
         hash = HashCombine(hash, sampler.force_unnormalized);
     }
 
-    // Hash der Start-Bindings
     hash = HashCombine(hash, spec.start.buffer);
     hash = HashCombine(hash, spec.start.unified);
     hash = HashCombine(hash, spec.start.user_data);
 
-    // Hash vom info pointer
     if (spec.info) {
         hash = HashCombine(hash, spec.info->pgm_hash);
         hash = HashCombine(hash, static_cast<u32>(spec.info->stage));
@@ -243,7 +225,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
         hash = HashCombine(hash, spec.info->has_fetch_shader);
         hash = HashCombine(hash, spec.info->fetch_shader_sgpr_base);
 
-        // Hash der Flags für loads und stores
         for (size_t i = 0; i < spec.info->loads.flags.size(); ++i) {
             hash = HashCombine(hash, spec.info->loads.flags[i]);
         }
@@ -252,10 +233,8 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
             hash = HashCombine(hash, spec.info->stores.flags[i]);
         }
 
-        // Hash der UserDataMask
         hash = HashCombine(hash, spec.info->ud_mask.mask);
 
-        // Hash der uses_patches
         hash = HashCombine(hash, spec.info->uses_patches);
     }
 
@@ -263,10 +242,8 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
 }
 
 void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
-    // UD Mask
     writeBin(info_serialized, info.ud_mask.mask);
 
-    // Buffer-Resources
     u32 bufferCount = static_cast<u32>(info.buffers.size());
     writeBin(info_serialized, bufferCount); // Buffer Amount
 
