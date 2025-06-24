@@ -59,6 +59,7 @@ struct PageManager::Impl {
 
     static constexpr size_t ADDRESS_BITS = 40;
     static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PAGE_BITS);
+    static constexpr size_t NUM_ADDRESS_LOCKS = NUM_ADDRESS_PAGES / PAGES_PER_LOCK;
     inline static Vulkan::Rasterizer* rasterizer;
 #ifdef ENABLE_USERFAULTFD
     Impl(Vulkan::Rasterizer* rasterizer_) {
@@ -189,11 +190,20 @@ struct PageManager::Impl {
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) {
         RENDERER_TRACE;
-
+        
         size_t page = addr >> PAGE_BITS;
+        const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+        
+        const size_t lock_start = page / PAGES_PER_LOCK;
+        const size_t lock_end = Common::DivCeil(page_end, PAGES_PER_LOCK);
+        for (size_t i = lock_start; i < lock_end; ++i) {
+            locks[i].lock();
+        }
+
         auto perms = cached_pages[page].Perm();
         u64 range_begin = 0;
         u64 range_bytes = 0;
+        u64 potential_range_bytes = 0;
 
         const auto release_pending = [&] {
             if (range_bytes > 0) {
@@ -201,13 +211,12 @@ struct PageManager::Impl {
                 // Perform pending (un)protect action
                 Protect(range_begin << PAGE_BITS, range_bytes, perms);
                 range_bytes = 0;
+                potential_range_bytes = 0;
             }
         };
 
-        std::scoped_lock lk(lock);
 
         // Iterate requested pages
-        const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
         const u64 aligned_addr = page << PAGE_BITS;
         const u64 aligned_end = page_end << PAGE_BITS;
         ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
@@ -225,19 +234,29 @@ struct PageManager::Impl {
                 release_pending();
                 perms = new_perms;
             } else if (range_bytes != 0) {
-                // If the protection did not change, extend the current range
-                range_bytes += PAGE_SIZE;
+                // If the protection did not change, extend the potential range
+                potential_range_bytes += PAGE_SIZE;
             }
 
             // Only start a new range if the page must be (un)protected
-            if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
-                range_begin = page;
-                range_bytes = PAGE_SIZE;
+            if ((new_count == 0 && !track) || (new_count == 1 && track)) {
+                if (range_bytes == 0) {
+                    // Start a new potential range
+                    range_begin = page;
+                    potential_range_bytes = PAGE_SIZE;
+                }
+                // Extend current range up to potential range
+                range_bytes = potential_range_bytes;
             }
         }
 
         // Add pending (un)protect action
         release_pending();
+
+        // Unlock all locks
+        for (size_t i = lock_start; i < lock_end; ++i) {
+            locks[i].unlock();
+        }
     }
 
     template <bool track>
@@ -254,11 +273,14 @@ struct PageManager::Impl {
             UpdatePageWatchers<track>(start_addr, size);
             return;
         }
-
+        
         size_t base_page = (base_addr >> PAGE_BITS);
+        ASSERT(base_page % PAGES_PER_LOCK == 0);
+        std::scoped_lock lk(locks[base_page / PAGES_PER_LOCK]);
         auto perms = cached_pages[base_page + start_range.first].Perm();
         u64 range_begin = 0;
         u64 range_bytes = 0;
+        u64 potential_range_bytes = 0;
 
         const auto release_pending = [&] {
             if (range_bytes > 0) {
@@ -266,10 +288,9 @@ struct PageManager::Impl {
                 // Perform pending (un)protect action
                 Protect((range_begin << PAGE_BITS), range_bytes, perms);
                 range_bytes = 0;
+                potential_range_bytes = 0;
             }
         };
-
-        std::scoped_lock lk(lock);
 
         // Iterate pages
         for (size_t page = start_range.first; page < end_range.second; ++page) {
@@ -284,8 +305,8 @@ struct PageManager::Impl {
                 release_pending();
                 perms = new_perms;
             } else if (range_bytes != 0) {
-                // If the protection did not change, extend the current range
-                range_bytes += PAGE_SIZE;
+                // If the protection did not change, extend the potential range
+                potential_range_bytes += PAGE_SIZE;
             }
 
             // If the page is not being updated, skip it
@@ -293,10 +314,15 @@ struct PageManager::Impl {
                 continue;
             }
 
-            // Only start a new range if the page must be (un)protected
-            if (range_bytes == 0 && ((new_count == 0 && !track) || (new_count == 1 && track))) {
-                range_begin = base_page + page;
-                range_bytes = PAGE_SIZE;
+            // If the page must be (un)protected
+            if ((new_count == 0 && !track) || (new_count == 1 && track)) {
+                if (range_bytes == 0) {
+                    // Start a new potential range
+                    range_begin = base_page + page;
+                    potential_range_bytes = PAGE_SIZE;
+                }
+                // Extend current rango up to potential range
+                range_bytes = potential_range_bytes;
             }
         }
 
@@ -306,10 +332,11 @@ struct PageManager::Impl {
 
     std::array<PageState, NUM_ADDRESS_PAGES> cached_pages{};
 #ifdef __linux__
-    Common::AdaptiveMutex lock;
+    using LockType = Common::AdaptiveMutex;
 #else
-    Common::SpinLock lock;
+    using LockType = Common::SpinLock;
 #endif
+    std::array<LockType, NUM_ADDRESS_LOCKS> locks{};
 };
 
 PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
