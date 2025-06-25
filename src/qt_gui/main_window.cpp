@@ -478,7 +478,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
-        auto kbmWindow = new KBMSettings(m_game_info, this);
+        auto kbmWindow = new KBMSettings(m_game_info, isGameRunning, this);
         kbmWindow->exec();
     });
 

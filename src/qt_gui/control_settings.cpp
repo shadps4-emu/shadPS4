@@ -918,7 +918,7 @@ void ControlSettings::pollSDLEvents() {
     }
 }
 
-void ControlSettings::cleanup() {
+void ControlSettings::Cleanup() {
     SdlEventWrapper::Wrapper::wrapperActive = false;
     if (gamepad)
         SDL_CloseGamepad(gamepad);
