@@ -145,7 +145,7 @@ void CollectShaderInfoPass(IR::Program& program) {
             .is_written = true,
         });
         info.buffers.push_back({
-            .used_types = IR::Type::U8,
+            .used_types = IR::Type::U32,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,

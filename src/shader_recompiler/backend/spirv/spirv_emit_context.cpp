@@ -1170,14 +1170,14 @@ Id EmitContext::DefineGetBdaPointer() {
     // First time acces, mark as fault
     AddLabel(fault_label);
     const auto& fault_buffer{buffers[fault_buffer_index]};
-    const auto [fault_buffer_id, fault_pointer_type] = fault_buffer.Alias(PointerType::U8);
-    const auto page_div8{OpShiftRightLogical(U32[1], page32, ConstU32(3U))};
-    const auto page_mod8{OpBitwiseAnd(U32[1], page32, ConstU32(7U))};
-    const auto page_mask{OpShiftLeftLogical(U8, u8_one_value, page_mod8)};
+    const auto [fault_buffer_id, fault_pointer_type] = fault_buffer.Alias(PointerType::U32);
+    const auto page_div32{OpShiftRightLogical(U32[1], page32, ConstU32(5U))};
+    const auto page_mod32{OpBitwiseAnd(U32[1], page32, ConstU32(31U))};
+    const auto page_mask{OpShiftLeftLogical(U32[1], u32_one_value, page_mod32)};
     const auto fault_ptr{
-        OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div8)};
-    const auto fault_value{OpLoad(U8, fault_ptr)};
-    const auto fault_value_masked{OpBitwiseOr(U8, fault_value, page_mask)};
+        OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div32)};
+    const auto fault_value{OpLoad(U32[1], fault_ptr)};
+    const auto fault_value_masked{OpBitwiseOr(U32[1], fault_value, page_mask)};
     OpStore(fault_ptr, fault_value_masked);
 
     // Return null pointer
