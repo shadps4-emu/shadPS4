@@ -112,7 +112,7 @@ HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
 }
 
 // Helper functions that store the text contents for each tab inb the HelpDialog menu
-QString HelpDialog::quickstart() {
+constexpr QString HelpDialog::quickstart() {
     return R"(
 The keyboard and controller remapping backend, GUI, and documentation have been written by kalaposfos.
 
@@ -121,7 +121,7 @@ To view the config file's syntax, check out the Syntax tab, for keybind names, v
 This project began because I disliked the original, unchangeable keybinds. Rather than waiting for someone else to do it, I implemented this myself. From the default keybinds, you can clearly tell this was a project built for Bloodborne, but obviously, you can make adjustments however you like.)";
 }
 
-QString HelpDialog::syntax() {
+constexpr QString HelpDialog::syntax() {
     return R"(
 Below is the file format for mouse, keyboard, and controller inputs:
 
@@ -147,7 +147,7 @@ Examples:
     axis_left_y_minus = w;)";
 }
 
-QString HelpDialog::bindings() {
+constexpr QString HelpDialog::bindings() {
     return R"(
 The following names should be interpreted without the '' around them. For inputs that have left and right versions, only the left one is shown, but the right version also works.
     (Example: 'lshift', 'rshift')
@@ -212,15 +212,12 @@ Symbols (expanded):
     & 'ampersand'
     * 'asterisk'
     ( 'lparen'
-    ) 'rparen'
     - 'minus'
     _ 'underscore'
     = 'equals'
     + 'plus'
     [ 'lbracket'
-    ] 'rbracket'
     { 'lbrace'
-    } 'rbrace'
     \ 'backslash'
     | 'pipe'
     ; 'semicolon'
@@ -235,7 +232,7 @@ Symbols (expanded):
     ? 'question')";
 }
 
-QString HelpDialog::special() {
+constexpr QString HelpDialog::special() {
     return R"(
 There are some extra bindings you can put in the config file that don't correspond to a controller input but something else.
 You can find these here, with detailed comments, examples, and suggestions for most of them.
@@ -272,7 +269,7 @@ You can find these here, with detailed comments, examples, and suggestions for m
     Controls whether moving the mouse sideways causes a panning or a rolling motion while mouse-to-gyro emulation is active.)";
 }
 
-QString HelpDialog::faq() {
+constexpr QString HelpDialog::faq() {
     return R"(
 Q: What are the emulator-wide keybinds?
 A:
