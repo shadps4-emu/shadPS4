@@ -21,6 +21,7 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
     if (!GameRunning) {
         SDL_InitSubSystem(SDL_INIT_GAMEPAD);
         SDL_InitSubSystem(SDL_INIT_EVENTS);
+        CheckGamePad();
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
         SDL_Event pauseGame{};
@@ -28,7 +29,6 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         SDL_PushEvent(&pauseGame);
     }
 
-    CheckGamePad();
     AddBoxItems();
     SetUIValuestoMappings();
     UpdateLightbarColor();
