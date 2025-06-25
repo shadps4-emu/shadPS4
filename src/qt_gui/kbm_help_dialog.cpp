@@ -121,35 +121,6 @@ To view the config file's syntax, check out the Syntax tab, for keybind names, v
 This project began because I disliked the original, unchangeable keybinds. Rather than waiting for someone else to do it, I implemented this myself. From the default keybinds, you can clearly tell this was a project built for Bloodborne, but obviously, you can make adjustments however you like.)";
 }
 
-QString HelpDialog::faq() {
-    return R"(
-Q: What are the emulator-wide keybinds?
-A:
--F12: Triggers Renderdoc capture
--F11: Toggles fullscreen
--F10: Toggles FPS counter
--Ctrl+F10: Open the debug menu
--F9: Pauses the emulator if the debug menu is open
--F8: Reparses the config file while in-game
--F7: Toggles mouse capture and mouse input
--F6: Toggles mouse-to-gyro emulation
-
-Q: How do I switch between mouse and controller joystick input? Why is it even required?
-A: Pressing F7 toggles between mouse and controller joystick input. It is required because the program polls the mouse input, which means it checks mouse movement every frame. If it didn't move, the code would manually set the emulator's virtual controller to 0 (to the center), even if other input devices would update it.
-
-Q: What happens if I accidentally make a typo in the config?
-A: The code recognises the line as wrong and skips it, so the rest of the file will get parsed, but that line in question will be treated like a comment line. You can find these lines in the log if you search for 'input_handler'.
-
-Q: I want to bind <input> to <output>, but your code doesn't support <input>!
-A: Some keys are intentionally omitted, but if you read the bindings through, and you're sure it is not there and isn't one of the intentionally disabled ones, open an issue on https://github.com/shadps4-emu/shadPS4.
-
-Q: What does default.ini do?
-A: If you're using per-game configs, it's the base from which all new games generate their config file. If you use the unified config, then default.ini is used for every game directly instead.
-
-Q: What does the use Per-game Config checkbox do?
-A: It controls whether the config is loaded from CUSAXXXXX.ini for a game or from default.ini. This way, if you only want to manage one set of bindings, you can do so, but if you want to use a different setup for every game, that's possible as well.)";
-}
-
 QString HelpDialog::syntax() {
     return R"(
 Below is the file format for mouse, keyboard, and controller inputs:
@@ -187,13 +158,12 @@ Keyboard:
     Numbers:
         '0', '1', ..., '9'
     Keypad:
-        'kp 0', 'kp 1', ..., 'kp 9',
-        'kp .', 'kp ,', 'kp /', 'kp *', 'kp -', 'kp +', 'kp =', 'kp enter'
+        'kp0', 'kp1', ..., 'kp9',
+        'kpperiod', 'kpcomma', 'kpslash', 'kpasterisk', 'kpminus', 'kpplus', 'kpequals', 'kpenter'
     Symbols:
-        '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '{', '}', '[', ']', '\', '|',
-        ';', ':', ''', '"', ',', '<', '.', '>', '/', '?'
+        (See below)
     Special keys:
-        'escape (text editor only)', 'printscreen', 'scrolllock', 'pausebreak',
+        'escape' (text editor only), 'printscreen', 'scrolllock', 'pausebreak',
         'backspace', 'insert', 'delete', 'home', 'end', 'pgup', 'pgdown', 'tab',
         'capslock', 'enter', 'space'
     Arrow keys:
@@ -228,7 +198,41 @@ Controller:
         'l2'
 
 Invalid Inputs:
-    'F1-F12' are reserved for emulator-wide keybinds, and cannot be bound to controller inputs.)";
+    'F1-F12' are reserved for emulator-wide keybinds, and cannot be bound to controller inputs.
+    
+Symbols (expanded):
+    ` 'grave'
+    ~ 'tilde'
+    ! 'exclamation'
+    @ 'at'
+    # 'hash'
+    $ 'dollar'
+    % 'percent'
+    ^ 'caret'
+    & 'ampersand'
+    * 'asterisk'
+    ( 'lparen'
+    ) 'rparen'
+    - 'minus'
+    _ 'underscore'
+    = 'equals'
+    + 'plus'
+    [ 'lbracket'
+    ] 'rbracket'
+    { 'lbrace'
+    } 'rbrace'
+    \ 'backslash'
+    | 'pipe'
+    ; 'semicolon'
+    : 'colon'
+    ' 'apostrophe'
+    " 'quote'
+    , 'comma'
+    < 'less'
+    . 'period'
+    > 'greater'
+    / 'slash'
+    ? 'question')";
 }
 
 QString HelpDialog::special() {
@@ -266,4 +270,36 @@ You can find these here, with detailed comments, examples, and suggestions for m
 
 'mouse_gyro_roll_mode':
     Controls whether moving the mouse sideways causes a panning or a rolling motion while mouse-to-gyro emulation is active.)";
+}
+
+QString HelpDialog::faq() {
+    return R"(
+Q: What are the emulator-wide keybinds?
+A:
+-F12: Triggers Renderdoc capture
+-F11: Toggles fullscreen
+-F10: Toggles FPS counter
+-Ctrl+F10: Open the debug menu
+-F9: Pauses the emulator if the debug menu is open
+-F8: Reparses the config file while in-game
+-F7: Toggles mouse capture and mouse input
+-F6: Toggles mouse-to-gyro emulation
+
+Q: How do I switch between mouse and controller joystick input? Why is it even required?
+A: Pressing F7 toggles between mouse and controller joystick input. It is required because the program polls the mouse input, which means it checks mouse movement every frame. If it didn't move, the code would manually set the emulator's virtual controller to 0 (to the center), even if other input devices would update it.
+
+Q: What in the world is a 'grave' key?
+A: (`). It represents one of the many symbols you can bind to a key. You can find the various symbols and their names in the Bindings tab.
+
+Q: What happens if I accidentally make a typo in the config?
+A: The code recognises the line as wrong and skips it, so the rest of the file will get parsed, but that line in question will be treated like a comment line. You can find these lines in the log if you search for 'input_handler'.
+
+Q: I want to bind <input> to <output>, but your code doesn't support <input>!
+A: Some keys are intentionally omitted, but if you read the bindings through, and you're sure it is not there and isn't one of the intentionally disabled ones, open an issue on https://github.com/shadps4-emu/shadPS4.
+
+Q: What does default.ini do?
+A: If you're using per-game configs, it's the base from which all new games generate their config file. If you use the unified config, then default.ini is used for every game directly instead.
+
+Q: What does the use Per-game Config checkbox do?
+A: It controls whether the config is loaded from CUSAXXXXX.ini for a game or from default.ini. This way, if you only want to manage one set of bindings, you can do so, but if you want to use a different setup for every game, that's possible as well.)";
 }
