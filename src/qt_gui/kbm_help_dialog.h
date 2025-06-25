@@ -42,9 +42,9 @@ protected:
 private:
     bool* help_open_ptr;
 
-    QString quickstart();
-    QString faq();
-    QString syntax();
-    QString bindings();
-    QString special();
+    constexpr QString quickstart();
+    constexpr QString faq();
+    constexpr QString syntax();
+    constexpr QString bindings();
+    constexpr QString special();
 };

@@ -112,7 +112,7 @@ HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
 }
 
 // Helper functions that store the text contents for each tab inb the HelpDialog menu
-QString HelpDialog::quickstart() {
+constexpr QString HelpDialog::quickstart() {
     return R"(
 The keyboard and controller remapping backend, GUI, and documentation have been written by kalaposfos.
 
@@ -121,7 +121,7 @@ To view the config file's syntax, check out the Syntax tab, for keybind names, v
 This project began because I disliked the original, unchangeable keybinds. Rather than waiting for someone else to do it, I implemented this myself. From the default keybinds, you can clearly tell this was a project built for Bloodborne, but obviously, you can make adjustments however you like.)";
 }
 
-QString HelpDialog::faq() {
+constexpr QString HelpDialog::faq() {
     return R"(
 Q: What are the emulator-wide keybinds?
 A:
@@ -150,7 +150,7 @@ Q: What does the use Per-game Config checkbox do?
 A: It controls whether the config is loaded from CUSAXXXXX.ini for a game or from default.ini. This way, if you only want to manage one set of bindings, you can do so, but if you want to use a different setup for every game, that's possible as well.)";
 }
 
-QString HelpDialog::syntax() {
+constexpr QString HelpDialog::syntax() {
     return R"(
 Below is the file format for mouse, keyboard, and controller inputs:
 
@@ -176,7 +176,7 @@ Examples:
     axis_left_y_minus = w;)";
 }
 
-QString HelpDialog::bindings() {
+constexpr QString HelpDialog::bindings() {
     return R"(
 The following names should be interpreted without the '' around them. For inputs that have left and right versions, only the left one is shown, but the right version also works.
     (Example: 'lshift', 'rshift')
@@ -187,11 +187,13 @@ Keyboard:
     Numbers:
         '0', '1', ..., '9'
     Keypad:
-        'kp 0', 'kp 1', ..., 'kp 9',
-        'kp .', 'kp ,', 'kp /', 'kp *', 'kp -', 'kp +', 'kp =', 'kp enter'
+        'kp0', 'kp1', ..., 'kp9'
+        'kpperiod', 'kpcomma', 'kpdivide', 'kpmultiply', 'kpminus', 'kpplus', 'kpequals', 'kpenter'
     Symbols:
-        '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '{', '}', '[', ']', '\', '|',
-        ';', ':', ''', '"', ',', '<', '.', '>', '/', '?'
+        'grave', 'tilde', 'exclaim', 'at', 'hash', 'dollar', 'percent', 'caret', 'ampersand', 'asterisk'
+        'lparenthesis', 'rparenthesis', 'minus', 'plus', 'underscore', 'equals'
+        'lbracket', 'rbracket', 'lbrace', 'rbrace', 'less', 'greater', 'slash', 'backslash', 'pipe'
+        'period', 'colon', 'comma', 'semicolon', 'apostrophe', 'doubleapostrophe', 'question'
     Special keys:
         'escape (text editor only)', 'printscreen', 'scrolllock', 'pausebreak',
         'backspace', 'insert', 'delete', 'home', 'end', 'pgup', 'pgdown', 'tab',
@@ -231,7 +233,7 @@ Invalid Inputs:
     'F1-F12' are reserved for emulator-wide keybinds, and cannot be bound to controller inputs.)";
 }
 
-QString HelpDialog::special() {
+constexpr QString HelpDialog::special() {
     return R"(
 There are some extra bindings you can put in the config file that don't correspond to a controller input but something else.
 You can find these here, with detailed comments, examples, and suggestions for most of them.
