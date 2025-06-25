@@ -1192,7 +1192,9 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>Aynı tuş birden fazla kez atanamaz. Aşağıdaki tuşlara birden fazla giriş atanmış</translation>
+      <translation>Aynı tuş birden fazla kez atanamaz. Aşağıdaki tuşlara birden fazla giriş atanmış:
+
+%1</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
