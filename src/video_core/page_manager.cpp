@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/container/small_vector.hpp>
+#include <boost/thread/lock_algorithms.hpp>
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/signal_context.h"
@@ -194,11 +195,14 @@ struct PageManager::Impl {
         size_t page = addr >> PAGE_BITS;
         const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
 
-        const size_t lock_start = page / PAGES_PER_LOCK;
+        // Acquire locks for the range of pages
+        size_t lock_start = page / PAGES_PER_LOCK;
         const size_t lock_end = Common::DivCeil(page_end, PAGES_PER_LOCK);
-        for (size_t i = lock_start; i < lock_end; ++i) {
-            locks[i].lock();
+        boost::container::small_vector<std::unique_lock<LockType>, 8> unique_locks;
+        for (; lock_start < lock_end; ++lock_start) {
+            unique_locks.emplace_back(locks[lock_start], std::defer_lock);
         }
+        boost::lock(unique_locks.begin(), unique_locks.end());
 
         auto perms = cached_pages[page].Perm();
         u64 range_begin = 0;
@@ -251,11 +255,6 @@ struct PageManager::Impl {
 
         // Add pending (un)protect action
         release_pending();
-
-        // Unlock all locks
-        for (size_t i = lock_start; i < lock_end; ++i) {
-            locks[i].unlock();
-        }
     }
 
     template <bool track>
