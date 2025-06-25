@@ -105,6 +105,32 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     }
 }
 
+u32 BufferAddressShift(const IR::Inst& inst, AmdGpu::DataFormat data_format) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferU8:
+    case IR::Opcode::StoreBufferU8:
+        return 0;
+    case IR::Opcode::LoadBufferU16:
+    case IR::Opcode::StoreBufferU16:
+        return 1;
+    case IR::Opcode::LoadBufferU64:
+    case IR::Opcode::StoreBufferU64:
+    case IR::Opcode::BufferAtomicIAdd64:
+        return 3;
+    case IR::Opcode::LoadBufferFormatF32:
+    case IR::Opcode::StoreBufferFormatF32: {
+        const auto num_comps = AmdGpu::NumComponents(data_format);
+        const auto num_bytes = (AmdGpu::NumBitsPerBlock(data_format) >> 3) / num_comps;
+        return std::bit_width(num_bytes) - 1;
+    }
+    case IR::Opcode::ReadConstBuffer:
+        // Provided address is already in dwords
+        return 0;
+    default:
+        return 2;
+    }
+}
+
 bool IsImageAtomicInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::ImageAtomicIAdd32:
@@ -544,6 +570,15 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     } else {
         // buffer_offset = index * const_stride + offset
         buffer_offset = ir.IAdd(ir.IMul(index, const_stride), offset);
+    }
+
+    const auto is_inst_typed = inst_info.inst_data_fmt != AmdGpu::DataFormat::FormatInvalid;
+    const auto data_format = is_inst_typed
+                                 ? AmdGpu::RemapDataFormat(inst_info.inst_data_fmt.Value())
+                                 : buffer.GetDataFmt();
+    const u32 shift = BufferAddressShift(inst, data_format);
+    if (shift != 0) {
+        buffer_offset = ir.ShiftRightLogical(buffer_offset, ir.Imm32(shift));
     }
     return buffer_offset;
 }

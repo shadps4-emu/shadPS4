@@ -213,7 +213,7 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
     // Can this be done with memory access? Like we do now with ReadConst
     const auto& srt_flatbuf = buffers[flatbuf_index];
     ASSERT(srt_flatbuf.buffer_type == BufferType::Flatbuf);
-    const auto [id, pointer_type] = srt_flatbuf[PointerType::U32];
+    const auto [id, pointer_type] = srt_flatbuf.Alias(PointerType::U32);
 
     const auto rsrc1{
         OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
@@ -229,38 +229,70 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
 }
 
 void EmitContext::DefineBufferProperties() {
+    if (!profile.needs_buffer_offsets && profile.supports_robust_buffer_access) {
+        return;
+    }
     for (u32 i = 0; i < buffers.size(); i++) {
-        BufferDefinition& buffer = buffers[i];
+        auto& buffer = buffers[i];
+        const auto& desc = info.buffers[i];
+        const u32 binding = buffer.binding;
         if (buffer.buffer_type != BufferType::Guest) {
             continue;
         }
-        const u32 binding = buffer.binding;
-        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-        const u32 comp = (binding & 0xf) >> 2;
-        const u32 offset = (binding & 0x3) << 3;
-        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                   push_data_block, ConstU32(half), ConstU32(comp))};
-        const Id value{OpLoad(U32[1], ptr)};
-        buffer.offset = OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U));
-        Name(buffer.offset, fmt::format("buf{}_off", binding));
-        buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
-        Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
 
-        // Only load size if performing bounds checks and the buffer is both guest and not inline.
-        if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
-            const BufferResource& desc = info.buffers[i];
-            if (desc.sharp_idx == std::numeric_limits<u32>::max()) {
-                buffer.size = ConstU32(desc.inline_cbuf.GetSize());
-            } else {
-                buffer.size = GetBufferSize(desc.sharp_idx);
+        // Only load and apply buffer offsets if host GPU alignment is larger than guest.
+        if (profile.needs_buffer_offsets) {
+            const u32 half = PushData::BufOffsetIndex + (binding >> 4);
+            const u32 comp = (binding & 0xf) >> 2;
+            const u32 offset = (binding & 0x3) << 3;
+            const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                       push_data_block, ConstU32(half), ConstU32(comp))};
+            const Id value{OpLoad(U32[1], ptr)};
+
+            const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
+            Name(buf_offset, fmt::format("buf{}_off", binding));
+            buffer.Offset(PointerSize::B8) = buf_offset;
+
+            if (True(desc.used_types & IR::Type::U16)) {
+                const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
+                Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
+                buffer.Offset(PointerSize::B16) = buf_word_offset;
             }
-            Name(buffer.size, fmt::format("buf{}_size", binding));
-            buffer.size_shorts = OpShiftRightLogical(U32[1], buffer.size, ConstU32(1U));
-            Name(buffer.size_shorts, fmt::format("buf{}_short_size", binding));
-            buffer.size_dwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(2U));
-            Name(buffer.size_dwords, fmt::format("buf{}_dword_size", binding));
-            buffer.size_qwords = OpShiftRightLogical(U32[1], buffer.size, ConstU32(3U));
-            Name(buffer.size_qwords, fmt::format("buf{}_qword_size", binding));
+            if (True(desc.used_types & IR::Type::U32)) {
+                const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
+                Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
+                buffer.Offset(PointerSize::B32) = buf_dword_offset;
+            }
+            if (True(desc.used_types & IR::Type::U64)) {
+                const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
+                Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
+                buffer.Offset(PointerSize::B64) = buf_qword_offset;
+            }
+        }
+
+        // Only load size if performing bounds checks.
+        if (!profile.supports_robust_buffer_access) {
+            const Id buf_size{desc.sharp_idx == std::numeric_limits<u32>::max()
+                                  ? ConstU32(desc.inline_cbuf.GetSize())
+                                  : GetBufferSize(desc.sharp_idx)};
+            Name(buf_size, fmt::format("buf{}_size", binding));
+            buffer.Size(PointerSize::B8) = buf_size;
+
+            if (True(desc.used_types & IR::Type::U16)) {
+                const Id buf_word_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(1U))};
+                Name(buf_word_size, fmt::format("buf{}_short_size", binding));
+                buffer.Size(PointerSize::B16) = buf_word_size;
+            }
+            if (True(desc.used_types & IR::Type::U32)) {
+                const Id buf_dword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(2U))};
+                Name(buf_dword_size, fmt::format("buf{}_dword_size", binding));
+                buffer.Size(PointerSize::B32) = buf_dword_size;
+            }
+            if (True(desc.used_types & IR::Type::U64)) {
+                const Id buf_qword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(3U))};
+                Name(buf_qword_size, fmt::format("buf{}_qword_size", binding));
+                buffer.Size(PointerSize::B64) = buf_qword_size;
+            }
         }
     }
 }
@@ -752,8 +784,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 };
 
 void EmitContext::DefineBuffers() {
-    if (!profile.supports_robust_buffer_access &&
-        info.readconst_types == Info::ReadConstType::None) {
+    if (!profile.supports_robust_buffer_access && !info.uses_dma) {
         // In case Flatbuf has not already been bound by IR and is needed
         // to query buffer sizes, bind it now.
         info.buffers.push_back({
@@ -782,23 +813,23 @@ void EmitContext::DefineBuffers() {
         // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U64)) {
-            spv_buffer[PointerType::U64] =
+            spv_buffer.Alias(PointerType::U64) =
                 DefineBuffer(is_storage, desc.is_written, 3, desc.buffer_type, U64);
         }
         if (True(desc.used_types & IR::Type::U32)) {
-            spv_buffer[PointerType::U32] =
+            spv_buffer.Alias(PointerType::U32) =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
-            spv_buffer[PointerType::F32] =
+            spv_buffer.Alias(PointerType::F32) =
                 DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
-            spv_buffer[PointerType::U16] =
+            spv_buffer.Alias(PointerType::U16) =
                 DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
-            spv_buffer[PointerType::U8] =
+            spv_buffer.Alias(PointerType::U8) =
                 DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
         }
         ++binding.unified;
@@ -1127,7 +1158,7 @@ Id EmitContext::DefineGetBdaPointer() {
     const auto page{OpShiftRightLogical(U64, address, caching_pagebits)};
     const auto page32{OpUConvert(U32[1], page)};
     const auto& bda_buffer{buffers[bda_pagetable_index]};
-    const auto [bda_buffer_id, bda_pointer_type] = bda_buffer[PointerType::U64];
+    const auto [bda_buffer_id, bda_pointer_type] = bda_buffer.Alias(PointerType::U64);
     const auto bda_ptr{OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32)};
     const auto bda{OpLoad(U64, bda_ptr)};
 
@@ -1139,7 +1170,7 @@ Id EmitContext::DefineGetBdaPointer() {
     // First time acces, mark as fault
     AddLabel(fault_label);
     const auto& fault_buffer{buffers[fault_buffer_index]};
-    const auto [fault_buffer_id, fault_pointer_type] = fault_buffer[PointerType::U8];
+    const auto [fault_buffer_id, fault_pointer_type] = fault_buffer.Alias(PointerType::U8);
     const auto page_div8{OpShiftRightLogical(U32[1], page32, ConstU32(3U))};
     const auto page_mod8{OpBitwiseAnd(U32[1], page32, ConstU32(7U))};
     const auto page_mask{OpShiftLeftLogical(U8, u8_one_value, page_mod8)};
@@ -1191,7 +1222,8 @@ Id EmitContext::DefineReadConst(bool dynamic) {
             const auto& flatbuf_buffer{buffers[flatbuf_index]};
             ASSERT(flatbuf_buffer.binding >= 0 &&
                    flatbuf_buffer.buffer_type == BufferType::Flatbuf);
-            const auto [flatbuf_buffer_id, flatbuf_pointer_type] = flatbuf_buffer[PointerType::U32];
+            const auto [flatbuf_buffer_id, flatbuf_pointer_type] =
+                flatbuf_buffer.Alias(PointerType::U32);
             const auto ptr{OpAccessChain(flatbuf_pointer_type, flatbuf_buffer_id, u32_zero_value,
                                          flatbuf_offset)};
             return OpLoad(U32[1], ptr);

@@ -42,17 +42,6 @@ public:
                          Bindings& binding);
     ~EmitContext();
 
-    enum class PointerType : u32 {
-        U8,
-        U16,
-        F16,
-        U32,
-        F32,
-        U64,
-        F64,
-        NumAlias,
-    };
-
     Id Def(const IR::Value& value);
 
     void DefineBufferProperties();
@@ -294,6 +283,24 @@ public:
         bool is_storage = false;
     };
 
+    enum class PointerType : u32 {
+        U8,
+        U16,
+        U32,
+        F32,
+        U64,
+        F64,
+        NumAlias,
+    };
+
+    enum class PointerSize : u32 {
+        B8,
+        B16,
+        B32,
+        B64,
+        NumClass,
+    };
+
     struct BufferSpv {
         Id id;
         Id pointer_type;
@@ -302,20 +309,23 @@ public:
     struct BufferDefinition {
         u32 binding;
         BufferType buffer_type;
-        Id offset;
-        Id offset_dwords;
-        Id size;
-        Id size_shorts;
-        Id size_dwords;
-        Id size_qwords;
+        std::array<Id, u32(PointerSize::NumClass)> offsets;
+        std::array<Id, u32(PointerSize::NumClass)> sizes;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
-        const BufferSpv& operator[](PointerType alias) const {
-            return aliases[u32(alias)];
+        template <class Self>
+        auto& Alias(this Self& self, PointerType alias) {
+            return self.aliases[u32(alias)];
         }
 
-        BufferSpv& operator[](PointerType alias) {
-            return aliases[u32(alias)];
+        template <class Self>
+        auto& Offset(this Self& self, PointerSize size) {
+            return self.offsets[u32(size)];
+        }
+
+        template <class Self>
+        auto& Size(this Self& self, PointerSize size) {
+            return self.sizes[u32(size)];
         }
     };
 
