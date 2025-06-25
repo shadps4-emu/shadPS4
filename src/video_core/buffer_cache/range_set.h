@@ -45,6 +45,10 @@ struct RangeSet {
         m_ranges_set.clear();
     }
 
+    bool Empty() const {
+        return m_ranges_set.empty();
+    }
+
     bool Contains(VAddr base_address, size_t size) const {
         const VAddr end_address = base_address + size;
         IntervalType interval{base_address, end_address};
@@ -110,6 +114,7 @@ struct RangeSet {
         }
     }
 
+private:
     IntervalSet m_ranges_set;
 };
 

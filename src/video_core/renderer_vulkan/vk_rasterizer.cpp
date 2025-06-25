@@ -3,6 +3,7 @@
 
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/scope_exit.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -36,7 +37,7 @@ static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, *this, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -58,6 +59,10 @@ void Rasterizer::CpSync() {
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
                            vk::PipelineStageFlagBits::eDrawIndirect,
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
+}
+
+bool Rasterizer::CommitPendingDownloads(bool wait_done) {
+    return buffer_cache.CommitPendingDownloads(wait_done);
 }
 
 bool Rasterizer::FilterDraw() {
@@ -272,6 +277,8 @@ void Rasterizer::EliminateFastClear() {
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
+    scheduler.PopPendingOperations();
+
     if (!FilterDraw()) {
         return;
     }
@@ -316,6 +323,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 stride,
                               u32 max_count, VAddr count_address) {
     RENDERER_TRACE;
+
+    scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
         return;
@@ -380,6 +389,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
+    scheduler.PopPendingOperations();
+
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
@@ -406,6 +417,8 @@ void Rasterizer::DispatchDirect() {
 
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
+
+    scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
@@ -472,8 +485,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         uses_dma |= stage->dma_types != Shader::IR::Type::Void;
     }
 
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
-
     if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
@@ -489,6 +500,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     fault_process_pending |= uses_dma;
+
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     return true;
 }
@@ -947,6 +960,10 @@ void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, boo
     buffer_cache.InlineData(address, value, num_bytes, is_gds);
 }
 
+void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
+    buffer_cache.CopyBuffer(dst, src, num_bytes, dst_gds, src_gds);
+}
+
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
     auto* gds_buf = buffer_cache.GetGdsBuffer();
     u32 value;
@@ -959,8 +976,17 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.InvalidateMemory(addr, size, false);
+    buffer_cache.InvalidateMemory(addr, size);
     texture_cache.InvalidateMemory(addr, size);
+    return true;
+}
+
+bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
+    if (!IsMapped(addr, size)) {
+        // Not GPU mapped memory, can skip invalidation logic entirely.
+        return false;
+    }
+    buffer_cache.ReadMemory(addr, size);
     return true;
 }
 
@@ -984,7 +1010,7 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
-    buffer_cache.InvalidateMemory(addr, size, true);
+    buffer_cache.ReadMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {

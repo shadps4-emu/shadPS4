@@ -323,6 +323,9 @@ public:
     /// Ends current rendering scope.
     void EndRendering();
 
+    /// Attempts to execute pending operations whose tick the GPU has caught up with.
+    void PopPendingOperations();
+
     /// Returns the current render state.
     const RenderState& GetRenderState() const {
         return render_state;
@@ -376,6 +379,7 @@ private:
         u64 gpu_tick;
     };
     std::queue<PendingOp> pending_ops;
+    u32 op_scope{};
     RenderState render_state;
     DynamicState dynamic_state;
     bool is_rendering = false;
