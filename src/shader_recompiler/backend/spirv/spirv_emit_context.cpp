@@ -71,7 +71,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
                          Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
-    if (info.dma_types != IR::Type::Void) {
+    if (info.uses_dma) {
         SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
@@ -169,34 +169,8 @@ void EmitContext::DefineArithmeticTypes() {
     if (info.uses_fp64) {
         frexp_result_f64 = Name(TypeStruct(F64[1], S32[1]), "frexp_result_f64");
     }
-
-    if (True(info.dma_types & IR::Type::F64)) {
-        physical_pointer_types[PointerType::F64] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F64[1]);
-    }
-    if (True(info.dma_types & IR::Type::U64)) {
-        physical_pointer_types[PointerType::U64] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U64);
-    }
-    if (True(info.dma_types & IR::Type::F32)) {
-        physical_pointer_types[PointerType::F32] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F32[1]);
-    }
-    if (True(info.dma_types & IR::Type::U32)) {
-        physical_pointer_types[PointerType::U32] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
-    }
-    if (True(info.dma_types & IR::Type::F16)) {
-        physical_pointer_types[PointerType::F16] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, F16[1]);
-    }
-    if (True(info.dma_types & IR::Type::U16)) {
-        physical_pointer_types[PointerType::U16] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U16);
-    }
-    if (True(info.dma_types & IR::Type::U8)) {
-        physical_pointer_types[PointerType::U8] =
-            TypePointer(spv::StorageClass::PhysicalStorageBuffer, U8);
+    if (info.uses_dma) {
+        physical_pointer_type_u32 = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
     }
 }
 
@@ -272,8 +246,7 @@ void EmitContext::DefineBufferProperties() {
         buffer.offset_dwords = OpShiftRightLogical(U32[1], buffer.offset, ConstU32(2U));
         Name(buffer.offset_dwords, fmt::format("buf{}_dword_off", binding));
 
-        // Only need to load size if performing bounds checks and the buffer is both guest and not
-        // inline.
+        // Only load size if performing bounds checks and the buffer is both guest and not inline.
         if (!profile.supports_robust_buffer_access && buffer.buffer_type == BufferType::Guest) {
             const BufferResource& desc = info.buffers[i];
             if (desc.sharp_idx == std::numeric_limits<u32>::max()) {
@@ -1211,7 +1184,7 @@ Id EmitContext::DefineReadConst(bool dynamic) {
     const auto offset_bytes{OpShiftLeftLogical(U32[1], offset, ConstU32(2U))};
     const auto addr{OpIAdd(U64, base_addr, OpUConvert(U64, offset_bytes))};
 
-    const auto result = EmitMemoryRead(U32[1], addr, [&]() {
+    const auto result = EmitDwordMemoryRead(addr, [&]() {
         if (dynamic) {
             return u32_zero_value;
         } else {
@@ -1239,7 +1212,7 @@ void EmitContext::DefineFunctions() {
         uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
         uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
-    if (info.dma_types != IR::Type::Void) {
+    if (info.uses_dma) {
         get_bda_pointer = DefineGetBdaPointer();
     }
 

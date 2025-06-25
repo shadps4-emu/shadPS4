@@ -468,17 +468,12 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
-
-        uses_dma |= stage->dma_types != Shader::IR::Type::Void;
+        uses_dma |= stage->uses_dma;
     }
-
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
-            // TODO: GPU might have written to memory (for example with EVENT_WRITE_EOP)
-            // we need to account for that and synchronize.
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
             for (auto& range : mapped_ranges) {
                 buffer_cache.SynchronizeBuffersInRange(range.lower(),
@@ -489,6 +484,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     fault_process_pending |= uses_dma;
+
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     return true;
 }

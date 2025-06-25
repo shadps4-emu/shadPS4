@@ -155,25 +155,7 @@ public:
         return last_label;
     }
 
-    PointerType PointerTypeFromType(Id type) {
-        if (type.value == U8.value)
-            return PointerType::U8;
-        if (type.value == U16.value)
-            return PointerType::U16;
-        if (type.value == F16[1].value)
-            return PointerType::F16;
-        if (type.value == U32[1].value)
-            return PointerType::U32;
-        if (type.value == F32[1].value)
-            return PointerType::F32;
-        if (type.value == U64.value)
-            return PointerType::U64;
-        if (type.value == F64[1].value)
-            return PointerType::F64;
-        UNREACHABLE_MSG("Unknown type for pointer");
-    }
-
-    Id EmitMemoryRead(Id type, Id address, auto&& fallback) {
+    Id EmitDwordMemoryRead(Id address, auto&& fallback) {
         const Id available_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id merge_label = OpLabel();
@@ -185,10 +167,8 @@ public:
 
         // Available
         AddLabel(available_label);
-        const auto pointer_type = PointerTypeFromType(type);
-        const Id pointer_type_id = physical_pointer_types[pointer_type];
-        const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
-        const Id result = OpLoad(type, addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
+        const Id addr_ptr = OpConvertUToPtr(physical_pointer_type_u32, addr);
+        const Id result = OpLoad(U32[1], addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
         OpBranch(merge_label);
 
         // Fallback
@@ -199,7 +179,7 @@ public:
         // Merge
         AddLabel(merge_label);
         const Id final_result =
-            OpPhi(type, fallback_result, fallback_label, result, available_label);
+            OpPhi(U32[1], fallback_result, fallback_label, result, available_label);
         return final_result;
     }
 
@@ -339,29 +319,17 @@ public:
         }
     };
 
-    struct PhysicalPointerTypes {
-        std::array<Id, u32(PointerType::NumAlias)> types;
-
-        const Id& operator[](PointerType type) const {
-            return types[u32(type)];
-        }
-
-        Id& operator[](PointerType type) {
-            return types[u32(type)];
-        }
-    };
-
     Bindings& binding;
     boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
-    PhysicalPointerTypes physical_pointer_types;
     std::unordered_map<u32, Id> first_to_last_label_map;
 
     size_t flatbuf_index{};
     size_t bda_pagetable_index{};
     size_t fault_buffer_index{};
+    Id physical_pointer_type_u32;
 
     Id sampler_type{};
     Id sampler_pointer_type{};
