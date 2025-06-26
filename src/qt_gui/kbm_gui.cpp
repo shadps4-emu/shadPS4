@@ -10,28 +10,22 @@
 #include <SDL3/SDL_events.h>
 
 #include "common/path_util.h"
+#include "input/input_handler.h"
 #include "kbm_config_dialog.h"
 #include "kbm_gui.h"
 #include "kbm_help_dialog.h"
-#include "sdl_window.h"
 #include "ui_kbm_gui.h"
 
 HelpDialog* HelpWindow;
 KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
-                         QWidget* parent)
+                         std::string GameRunningSerial, QWidget* parent)
     : QDialog(parent), m_game_info(game_info_get), GameRunning(isGameRunning),
-      ui(new Ui::KBMSettings) {
+      RunningGameSerial(GameRunningSerial), ui(new Ui::KBMSettings) {
 
     ui->setupUi(this);
     ui->PerGameCheckBox->setChecked(!Config::GetUseUnifiedInputConfig());
     ui->TextEditorButton->setFocus();
     this->setFocusPolicy(Qt::StrongFocus);
-
-    if (GameRunning) {
-        SDL_Event pauseGame{};
-        pauseGame.type = SDL_EVENT_TOGGLE_PAUSE;
-        SDL_PushEvent(&pauseGame);
-    }
 
     ui->MouseJoystickBox->addItem("none");
     ui->MouseJoystickBox->addItem("right");
@@ -339,6 +333,11 @@ QString(tr("Cannot bind any unique input more than once. Duplicate inputs mapped
 
     Config::SetUseUnifiedInputConfig(!ui->PerGameCheckBox->isChecked());
     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+
+    if (GameRunning) {
+        Config::GetUseUnifiedInputConfig() ? Input::ParseInputConfig("default")
+                                           : Input::ParseInputConfig(RunningGameSerial);
+    }
 
     if (close_on_save)
         QWidget::close();
@@ -1009,14 +1008,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
         }
     }
     return QDialog::eventFilter(obj, event);
-}
-
-void KBMSettings::Cleanup() {
-    if (GameRunning) {
-        SDL_Event resumeGame{};
-        resumeGame.type = SDL_EVENT_TOGGLE_PAUSE;
-        SDL_PushEvent(&resumeGame);
-    }
 }
 
 KBMSettings::~KBMSettings() {}

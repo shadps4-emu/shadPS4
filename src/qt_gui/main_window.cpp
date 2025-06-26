@@ -473,12 +473,13 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
-        ControlSettings* remapWindow = new ControlSettings(m_game_info, isGameRunning, this);
+        ControlSettings* remapWindow =
+            new ControlSettings(m_game_info, isGameRunning, runningGameSerial, this);
         remapWindow->exec();
     });
 
     connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
-        auto kbmWindow = new KBMSettings(m_game_info, isGameRunning, this);
+        auto kbmWindow = new KBMSettings(m_game_info, isGameRunning, runningGameSerial, this);
         kbmWindow->exec();
     });
 
@@ -846,12 +847,14 @@ void MainWindow::StartGame() {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
+            runningGameSerial = m_game_info->m_games[itemID].serial;
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
+            runningGameSerial = m_game_info->m_games[itemID].serial;
         }
     } else {
         if (m_elf_viewer->currentItem()) {

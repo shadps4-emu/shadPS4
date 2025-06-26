@@ -15,7 +15,7 @@ class ControlSettings : public QDialog {
     Q_OBJECT
 public:
     explicit ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool GameRunning,
-                             QWidget* parent = nullptr);
+                             std::string GameRunningSerial, QWidget* parent = nullptr);
     ~ControlSettings();
 
 signals:
@@ -50,6 +50,7 @@ private:
     QList<QPushButton*> AxisList;
     QSet<QString> pressedButtons;
 
+    std::string RunningGameSerial;
     bool GameRunning;
     bool L2Pressed = false;
     bool R2Pressed = false;

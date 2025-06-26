@@ -24,7 +24,7 @@ class KBMSettings : public QDialog {
     Q_OBJECT
 public:
     explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool GameRunning,
-                         QWidget* parent = nullptr);
+                         std::string GameRunningSerial, QWidget* parent = nullptr);
     ~KBMSettings();
 
 private Q_SLOTS:
@@ -47,6 +47,7 @@ private:
     void SetMapping(QString input);
     void Cleanup();
 
+    std::string RunningGameSerial;
     QSet<QString> pressedKeys;
     bool GameRunning;
     bool EnableMapping = false;
@@ -69,9 +70,4 @@ private:
 
         "pad_left",     "pad_right", "axis_left_x", "axis_left_y", "axis_right_x",
         "axis_right_y", "back"};
-
-protected:
-    void closeEvent(QCloseEvent* event) override {
-        Cleanup();
-    }
 };

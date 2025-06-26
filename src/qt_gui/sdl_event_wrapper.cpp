@@ -19,6 +19,10 @@ Wrapper* Wrapper::GetInstance() {
 
 bool Wrapper::ProcessEvent(SDL_Event* event) {
     switch (event->type) {
+    case SDL_EVENT_GAMEPAD_ADDED:
+        return false;
+    case SDL_EVENT_GAMEPAD_REMOVED:
+        return false;
     case SDL_EVENT_QUIT:
         emit SDLEvent(SDL_EVENT_QUIT, 0, 0);
         return true;
@@ -31,8 +35,9 @@ bool Wrapper::ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         emit SDLEvent(SDL_EVENT_GAMEPAD_AXIS_MOTION, event->gaxis.axis, event->gaxis.value);
         return true;
+    // block all other SDL events while wrapper is active
     default:
-        return false;
+        return true;
     }
 }
 Wrapper::~Wrapper() {}

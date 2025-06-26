@@ -8,13 +8,13 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "control_settings.h"
-#include "sdl_window.h"
+#include "input/input_handler.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
-                                 QWidget* parent)
+                                 std::string GameRunningSerial, QWidget* parent)
     : QDialog(parent), m_game_info(game_info_get), GameRunning(isGameRunning),
-      ui(new Ui::ControlSettings) {
+      RunningGameSerial(GameRunningSerial), ui(new Ui::ControlSettings) {
 
     ui->setupUi(this);
 
@@ -24,9 +24,6 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         CheckGamePad();
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
-        SDL_Event pauseGame{};
-        pauseGame.type = SDL_EVENT_TOGGLE_PAUSE;
-        SDL_PushEvent(&pauseGame);
     }
 
     AddBoxItems();
@@ -326,6 +323,11 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     Config::SetControllerCustomColor(ui->RSlider->value(), ui->GSlider->value(),
                                      ui->BSlider->value());
     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+
+    if (GameRunning) {
+        Config::GetUseUnifiedInputConfig() ? Input::ParseInputConfig("default")
+                                           : Input::ParseInputConfig(RunningGameSerial);
+    }
 
     if (CloseOnSave)
         QWidget::close();
@@ -929,9 +931,6 @@ void ControlSettings::Cleanup() {
         SDL_Quit();
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
-        SDL_Event resumeGame{};
-        resumeGame.type = SDL_EVENT_TOGGLE_PAUSE;
-        SDL_PushEvent(&resumeGame);
     }
 }
 
