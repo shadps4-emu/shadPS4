@@ -25,18 +25,9 @@
     {
       "name": "x64-Clang-Debug",
       "displayName": "Clang x64 Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/Build/x64-Clang-Debug",
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Install/x64-Clang-Debug"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "intelliSenseMode": "windows-clang-x64"
-        }
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
