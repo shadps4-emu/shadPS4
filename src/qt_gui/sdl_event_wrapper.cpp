@@ -19,6 +19,10 @@ Wrapper* Wrapper::GetInstance() {
 
 bool Wrapper::ProcessEvent(SDL_Event* event) {
     switch (event->type) {
+    case SDL_EVENT_WINDOW_RESTORED:
+        return false;
+    case SDL_EVENT_WINDOW_EXPOSED:
+        return false;
     case SDL_EVENT_GAMEPAD_ADDED:
         return false;
     case SDL_EVENT_GAMEPAD_REMOVED:
