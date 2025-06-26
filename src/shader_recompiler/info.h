@@ -238,7 +238,7 @@ struct Info {
         Dynamic = 1 << 1,
     };
     ReadConstType readconst_types{};
-    IR::Type dma_types{IR::Type::Void};
+    bool uses_dma{false};
 
     explicit Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
         : stage{stage_}, l_stage{l_stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},

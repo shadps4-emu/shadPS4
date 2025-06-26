@@ -225,6 +225,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
         // When binding a UBO, we calculate its size considering the offset in the larger buffer
         // cache underlying resource. In some cases, it may produce sizes exceeding the system
         // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
