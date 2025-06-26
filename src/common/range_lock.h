@@ -58,7 +58,7 @@ void LockRange(Iterator begin, Iterator end) {
     if (begin == end) {
         return;
     }
-    
+
     bool start_with_begin = true;
     Iterator second = begin;
     ++second;
@@ -87,7 +87,7 @@ void LockRange(Iterator begin, Iterator end) {
                     guard.release();
                     return;
                 }
-                
+
                 start_with_begin = false;
                 next = failed_lock;
             } else {
