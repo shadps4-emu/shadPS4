@@ -124,8 +124,9 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
     QObject::connect(RemapWrapper, &SdlEventWrapper::Wrapper::SDLEvent, this,
                      &ControlSettings::processSDLEvents);
 
-    if (!GameRunning)
-        QFuture<void> future = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
+    if (!GameRunning) {
+        Polling = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
+    }
 }
 
 void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
@@ -926,6 +927,11 @@ void ControlSettings::Cleanup() {
         SDL_CloseGamepad(gamepad);
 
     if (!GameRunning) {
+        SDL_Event quitLoop{};
+        quitLoop.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&quitLoop);
+        Polling.waitForFinished();
+
         SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
         SDL_QuitSubSystem(SDL_INIT_EVENTS);
         SDL_Quit();

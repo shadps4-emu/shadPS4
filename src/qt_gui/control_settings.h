@@ -63,6 +63,7 @@ private:
     QPushButton* MappingButton;
     SDL_Gamepad* gamepad = nullptr;
     SdlEventWrapper::Wrapper* RemapWrapper;
+    QFuture<void> Polling;
 
     const std::vector<std::string> ControllerInputs = {
         "cross",        "circle",    "square",      "triangle",    "l1",
