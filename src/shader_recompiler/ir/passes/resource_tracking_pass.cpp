@@ -119,9 +119,26 @@ u32 BufferAddressShift(const IR::Inst& inst, AmdGpu::DataFormat data_format) {
         return 3;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32: {
-        const auto num_comps = AmdGpu::NumComponents(data_format);
-        const auto num_bytes = (AmdGpu::NumBitsPerBlock(data_format) >> 3) / num_comps;
-        return std::bit_width(num_bytes) - 1;
+        switch (data_format) {
+        case AmdGpu::DataFormat::Format8:
+            return 0;
+        case AmdGpu::DataFormat::Format8_8:
+        case AmdGpu::DataFormat::Format16:
+            return 1;
+        case AmdGpu::DataFormat::Format8_8_8_8:
+        case AmdGpu::DataFormat::Format16_16:
+        case AmdGpu::DataFormat::Format10_11_11:
+        case AmdGpu::DataFormat::Format2_10_10_10:
+        case AmdGpu::DataFormat::Format16_16_16_16:
+        case AmdGpu::DataFormat::Format32:
+        case AmdGpu::DataFormat::Format32_32:
+        case AmdGpu::DataFormat::Format32_32_32:
+        case AmdGpu::DataFormat::Format32_32_32_32:
+            return 2;
+        default:
+            return 0;
+        }
+        break;
     }
     case IR::Opcode::ReadConstBuffer:
         // Provided address is already in dwords
