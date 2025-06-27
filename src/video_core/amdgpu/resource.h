@@ -389,14 +389,6 @@ enum class ClampMode : u64 {
     MirrorOnceBorder = 7,
 };
 
-enum class AnisoRatio : u64 {
-    One,
-    Two,
-    Four,
-    Eight,
-    Sixteen,
-};
-
 enum class DepthCompare : u64 {
     Never = 0,
     Less = 1,
@@ -451,7 +443,7 @@ struct Sampler {
         BitField<0, 3, ClampMode> clamp_x;
         BitField<3, 3, ClampMode> clamp_y;
         BitField<6, 3, ClampMode> clamp_z;
-        BitField<9, 3, AnisoRatio> max_aniso;
+        BitField<9, 3, u64> max_aniso;
         BitField<12, 3, DepthCompare> depth_compare_func;
         BitField<15, 1, u64> force_unnormalized;
         BitField<16, 3, u64> aniso_threshold;
@@ -504,20 +496,7 @@ struct Sampler {
     }
 
     float MaxAniso() const {
-        switch (max_aniso.Value()) {
-        case AnisoRatio::One:
-            return 1.0f;
-        case AnisoRatio::Two:
-            return 2.0f;
-        case AnisoRatio::Four:
-            return 4.0f;
-        case AnisoRatio::Eight:
-            return 8.0f;
-        case AnisoRatio::Sixteen:
-            return 16.0f;
-        default:
-            UNREACHABLE();
-        }
+        return static_cast<float>(2 ^ max_aniso.Value());
     }
 };
 
