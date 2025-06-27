@@ -23,7 +23,8 @@ class KBMSettings;
 class KBMSettings : public QDialog {
     Q_OBJECT
 public:
-    explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, QWidget* parent = nullptr);
+    explicit KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool GameRunning,
+                         std::string GameRunningSerial, QWidget* parent = nullptr);
     ~KBMSettings();
 
 signals:
@@ -47,8 +48,11 @@ private:
     void DisableMappingButtons();
     void EnableMappingButtons();
     void SetMapping(QString input);
+    void Cleanup();
 
+    std::string RunningGameSerial;
     QSet<QString> pressedKeys;
+    bool GameRunning;
     bool EnableMapping = false;
     bool MappingCompleted = false;
     bool HelpWindowOpen = false;
