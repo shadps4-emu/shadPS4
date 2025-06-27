@@ -7,6 +7,7 @@
 #include "system_error"
 #include "unordered_map"
 
+#include <core/user_account.h>
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/memory_patcher.h"
@@ -26,6 +27,8 @@ int main(int argc, char* argv[]) {
     // Load configurations
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
+
+    user_account::createdDefaultUser();
 
     bool has_game_argument = false;
     std::string game_path;

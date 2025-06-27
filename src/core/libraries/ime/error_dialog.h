@@ -11,8 +11,6 @@ class SymbolsResolver;
 }
 namespace Libraries::ErrorDialog {
 
-using OrbisUserServiceUserId = s32;
-
 struct Param;
 
 CommonDialog::Error PS4_SYSV_ABI sceErrorDialogClose();

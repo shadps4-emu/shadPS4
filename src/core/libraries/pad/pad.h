@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/enum.h"
 #include "common/types.h"
 
@@ -276,7 +277,8 @@ int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
                                                    OrbisPadExtendedControllerInformation* pInfo);
 int PS4_SYSV_ABI scePadGetExtensionUnitInfo();
 int PS4_SYSV_ABI scePadGetFeatureReport();
-int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index);
+int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                                 s32 index);
 int PS4_SYSV_ABI scePadGetIdleCount();
 int PS4_SYSV_ABI scePadGetInfo();
 int PS4_SYSV_ABI scePadGetInfoByPortType();
@@ -294,8 +296,10 @@ int PS4_SYSV_ABI scePadIsMoveReproductionModel();
 int PS4_SYSV_ABI scePadIsValidHandle();
 int PS4_SYSV_ABI scePadMbusInit();
 int PS4_SYSV_ABI scePadMbusTerm();
-int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam);
-int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index, const OrbisPadOpenExtParam* pParam);
+int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                            s32 index, const OrbisPadOpenParam* pParam);
+int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                               s32 index, const OrbisPadOpenExtParam* pParam);
 int PS4_SYSV_ABI scePadOpenExt2();
 int PS4_SYSV_ABI scePadOutputReport();
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num);
