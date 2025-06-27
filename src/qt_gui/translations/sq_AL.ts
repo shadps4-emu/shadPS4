@@ -748,6 +748,10 @@
       <source>Last updated</source>
       <translation>Përditësuar për herë të fundit</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Të Preferuarat</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -949,6 +953,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>Shikuesi SFO për </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Hiq nga të Preferuarat</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Shto në të Preferuarat</translation>
     </message>
   </context>
   <context>
@@ -1186,15 +1198,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Paneli me Prekje Majtas</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Paneli me Prekje në Qendër</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Paneli me Prekje Djathtas</translation>
     </message>
   </context>
   <context>

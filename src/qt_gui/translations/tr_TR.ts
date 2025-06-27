@@ -748,6 +748,10 @@
       <source>Last updated</source>
       <translation>Son güncelleme</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -949,6 +953,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>SFO Görüntüleyici: </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
     </message>
   </context>
   <context>
@@ -1180,7 +1192,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Aynı tuş birden fazla kez atanamaz. Aşağıdaki tuşlara birden fazla giriş atanmış:
 
 %1</translation>
     </message>

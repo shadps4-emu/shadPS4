@@ -748,6 +748,10 @@
       <source>Last updated</source>
       <translation>Cập nhật lần cuối</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -924,7 +928,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation>!</translation>
+      <translation/>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -949,6 +953,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation type="unfinished">SFO Viewer for </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
     </message>
   </context>
   <context>

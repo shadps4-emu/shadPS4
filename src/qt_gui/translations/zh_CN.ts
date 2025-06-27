@@ -748,6 +748,10 @@
       <source>Last updated</source>
       <translation>最后更新</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation>收藏</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -949,6 +953,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>SFO 查看器 - </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>从收藏中移除</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>添加至收藏</translation>
     </message>
   </context>
   <context>

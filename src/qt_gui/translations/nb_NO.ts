@@ -748,6 +748,10 @@
       <source>Last updated</source>
       <translation>Sist oppdatert</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favoritter</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -950,6 +954,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO-viser for </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Fjern fra favoritter</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Legg til i favoritter</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1078,7 +1090,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>Merk: Trykk på hjelpeknappen for mer informasjon</translation>
+      <translation>Merk: Trykk på «Hjelp»-knappen for mer informasjon</translation>
     </message>
     <message>
       <source>Face Buttons</source>
