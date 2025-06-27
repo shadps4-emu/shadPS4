@@ -711,92 +711,98 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 break;
 
             // symbols
+            case Qt::Key_QuoteLeft:
+                pressedKeys.insert("grave");
+                break;
+            case Qt::Key_AsciiTilde:
+                pressedKeys.insert("tilde");
+                break;
             case Qt::Key_Exclam:
-                pressedKeys.insert("!");
+                pressedKeys.insert("exclamation");
                 break;
             case Qt::Key_At:
-                pressedKeys.insert("@");
+                pressedKeys.insert("at");
                 break;
             case Qt::Key_NumberSign:
-                pressedKeys.insert("#");
+                pressedKeys.insert("hash");
                 break;
             case Qt::Key_Dollar:
-                pressedKeys.insert("$");
+                pressedKeys.insert("dollar");
                 break;
             case Qt::Key_Percent:
-                pressedKeys.insert("%");
+                pressedKeys.insert("percent");
                 break;
             case Qt::Key_AsciiCircum:
-                pressedKeys.insert("^");
+                pressedKeys.insert("caret");
                 break;
             case Qt::Key_Ampersand:
-                pressedKeys.insert("&");
+                pressedKeys.insert("ampersand");
                 break;
             case Qt::Key_Asterisk:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp*", "*"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpasterisk", "asterisk"));
                 break;
             case Qt::Key_ParenLeft:
-                pressedKeys.insert("(");
+                pressedKeys.insert("lparen");
                 break;
             case Qt::Key_ParenRight:
-                pressedKeys.insert(")");
+                pressedKeys.insert("rparen");
                 break;
             case Qt::Key_Minus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp-", "-"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpminus", "minus"));
                 break;
             case Qt::Key_Underscore:
-                pressedKeys.insert("_");
+                pressedKeys.insert("underscore");
                 break;
             case Qt::Key_Equal:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp=", "="));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpequals", "equals"));
                 break;
             case Qt::Key_Plus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp+", "+"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpplus", "plus"));
                 break;
             case Qt::Key_BracketLeft:
-                pressedKeys.insert("[");
+                pressedKeys.insert("lbracket");
                 break;
             case Qt::Key_BracketRight:
-                pressedKeys.insert("]");
+                pressedKeys.insert("rbracket");
                 break;
             case Qt::Key_BraceLeft:
-                pressedKeys.insert("{");
+                pressedKeys.insert("lbrace");
                 break;
             case Qt::Key_BraceRight:
-                pressedKeys.insert("}");
+                pressedKeys.insert("rbrace");
                 break;
             case Qt::Key_Backslash:
-                pressedKeys.insert("\\");
+                pressedKeys.insert("backslash");
                 break;
             case Qt::Key_Bar:
-                pressedKeys.insert("|");
+                pressedKeys.insert("pipe");
                 break;
             case Qt::Key_Semicolon:
-                pressedKeys.insert(";");
+                pressedKeys.insert("semicolon");
                 break;
             case Qt::Key_Colon:
-                pressedKeys.insert(":");
+                pressedKeys.insert("colon");
                 break;
             case Qt::Key_Apostrophe:
-                pressedKeys.insert("'");
+                pressedKeys.insert("apostrophe");
                 break;
             case Qt::Key_QuoteDbl:
-                pressedKeys.insert("\"");
+                pressedKeys.insert("quote");
                 break;
             case Qt::Key_Comma:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp,", ","));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpcomma", "comma"));
                 break;
             case Qt::Key_Less:
-                pressedKeys.insert("<");
+                pressedKeys.insert("less");
                 break;
             case Qt::Key_Period:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp.", "."));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpperiod", "period"));
                 break;
             case Qt::Key_Greater:
-                pressedKeys.insert(">");
+                pressedKeys.insert("greater");
                 break;
             case Qt::Key_Slash:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp/", "/"));
+                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpslash", "slash"));
                 break;
             case Qt::Key_Question:
                 pressedKeys.insert("question");
