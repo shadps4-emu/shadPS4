@@ -511,7 +511,8 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
     // will need its full emulation anyways.
     for (const auto& desc : info.buffers) {
         const VAddr address = desc.GetSharp(info).base_address;
-        if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
+        if (!desc.IsSpecial() && desc.is_written && !desc.is_read &&
+            texture_cache.ClearMeta(address)) {
             // Assume all slices were updates
             LOG_TRACE(Render_Vulkan, "Metadata update skipped");
             return true;
