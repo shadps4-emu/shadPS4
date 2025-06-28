@@ -5,7 +5,7 @@
     "minor": 30,
     "patch": 0
   },
-  "include": [ "CMake${hostSystemName}Presets.json" ],
+  "include": ["CMake${hostSystemName}Presets.json"],
   "configurePresets": [
     {
       "name": "x64-Clang-Debug",
