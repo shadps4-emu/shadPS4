@@ -17,6 +17,8 @@ union SDL_Event;
 
 namespace Input {
 
+extern SDL_Gamepad* m_gamepad;
+
 class SDLInputEngine : public Engine {
 public:
     ~SDLInputEngine() override;
@@ -28,8 +30,6 @@ public:
     State ReadState() override;
 
 private:
-    SDL_Gamepad* m_gamepad = nullptr;
-
     float m_gyro_poll_rate = 0.0f;
     float m_accel_poll_rate = 0.0f;
 };

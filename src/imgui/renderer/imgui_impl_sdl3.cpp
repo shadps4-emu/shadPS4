@@ -7,6 +7,7 @@
 #include "common/config.h"
 #include "core/debug_state.h"
 #include "imgui_impl_sdl3.h"
+#include "sdl_window.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -730,21 +731,25 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    /*
-    // Update list of gamepads to use
-    if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
-        CloseGamepads();
-        int sdl_gamepads_count = 0;
-        const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
-        for (int n = 0; n < sdl_gamepads_count; n++)
-            if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
-                bd->gamepads.push_back(gamepad);
-                if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
-                    break;
-            }
+    SDL_Gamepad* SDLGamepad = Input::m_gamepad;
+    if (SDLGamepad) {
+        bd->gamepads.push_back(SDLGamepad);
+    } else {
+        // Update list of gamepads to use
+        if (bd->want_update_gamepads_list &&
+            bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
+            CloseGamepads();
+            int sdl_gamepads_count = 0;
+            const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
+            for (int n = 0; n < sdl_gamepads_count; n++)
+                if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
+                    bd->gamepads.push_back(gamepad);
+                    if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
+                        break;
+                }
             bd->want_update_gamepads_list = false;
+        }
     }
-    */
 
     // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.
     if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0)

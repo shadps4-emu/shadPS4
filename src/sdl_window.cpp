@@ -31,6 +31,8 @@
 
 namespace Input {
 
+SDL_Gamepad* m_gamepad = nullptr;
+
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
 static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
