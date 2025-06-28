@@ -1,27 +1,12 @@
 {
-  "version": 5,
+  "version": 9,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 24,
+    "minor": 30,
     "patch": 0
   },
+  "include": [ "CMake${hostSystemName}Presets.json" ],
   "configurePresets": [
-    {
-      "name": "x64-Clang-Base",
-      "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/Build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Build/${presetName}"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "intelliSenseMode": "windows-clang-x64"
-        }
-      }
-    },
     {
       "name": "x64-Clang-Debug",
       "displayName": "Clang x64 Debug",
