@@ -197,6 +197,7 @@ public:
         auto& buffer = buffer_resources[index];
         buffer.used_types |= desc.used_types;
         buffer.is_written |= desc.is_written;
+        buffer.is_read |= desc.is_read;
         buffer.is_formatted |= desc.is_formatted;
         return index;
     }
@@ -367,6 +368,7 @@ s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
         .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
         .inline_cbuf = cbuf,
         .buffer_type = BufferType::Guest,
+        .is_read = true,
     });
 }
 
@@ -378,11 +380,13 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         IR::Inst* producer = handle->Arg(0).InstRecursive();
         SharpLocation sharp;
         std::tie(sharp, buffer) = TrackSharp<AmdGpu::Buffer>(producer, info);
+        const bool is_written = IsBufferStore(inst);
         binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
             .buffer_type = BufferType::Guest,
-            .is_written = IsBufferStore(inst),
+            .is_written = is_written,
+            .is_read = !is_written,
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
                             inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
         });
