@@ -7,18 +7,14 @@
   },
   "configurePresets": [
     {
-      "name": "x64-Clang-Base-Windows",
+      "name": "x64-Clang-Base",
       "hidden": true,
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/Build/${presetName}",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
+        "CMAKE_CXX_COMPILER": "clang-cl",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/Build/${presetName}"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -27,25 +23,9 @@
       }
     },
     {
-      "name": "x64-Clang-Base-Linux",
-      "hidden": true,
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
-      },
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/Build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++"
-      }
-    },
-    {
       "name": "x64-Clang-Debug",
-      "hidden": false,
       "displayName": "Clang x64 Debug",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -53,7 +33,7 @@
     {
       "name": "x64-Clang-Debug-Qt",
       "displayName": "Clang x64 Debug with Qt",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "ENABLE_QT_GUI": "ON"
@@ -62,7 +42,7 @@
     {
       "name": "x64-Clang-Release",
       "displayName": "Clang x64 Release",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -70,7 +50,7 @@
     {
       "name": "x64-Clang-Release-Qt",
       "displayName": "Clang x64 Release with Qt",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "ENABLE_QT_GUI": "ON"
@@ -79,7 +59,7 @@
     {
       "name": "x64-Clang-RelWithDebInfo",
       "displayName": "Clang x64 RelWithDebInfo",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
@@ -87,7 +67,7 @@
     {
       "name": "x64-Clang-RelWithDebInfo-Qt",
       "displayName": "Clang x64 RelWithDebInfo with Qt",
-      "inherits": ["x64-Clang-Base-Linux", "x64-Clang-Base-Windows"],
+      "inherits": ["x64-Clang-Base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "ENABLE_QT_GUI": "ON"
