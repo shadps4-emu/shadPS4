@@ -730,6 +730,7 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
+    /*
     // Update list of gamepads to use
     if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
         CloseGamepads();
@@ -741,8 +742,9 @@ static void UpdateGamepads() {
                 if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
                     break;
             }
-        bd->want_update_gamepads_list = false;
+            bd->want_update_gamepads_list = false;
     }
+    */
 
     // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.
     if ((io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) == 0)

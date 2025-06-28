@@ -21,6 +21,7 @@
 #include "video_core/renderdoc.h"
 
 #ifdef ENABLE_QT_GUI
+#include "qt_gui/control_settings.h"
 #include "qt_gui/sdl_event_wrapper.h"
 #endif
 
@@ -100,6 +101,7 @@ void SDLInputEngine::Init() {
     if (m_gamepad) {
         SDL_CloseGamepad(m_gamepad);
         m_gamepad = nullptr;
+        LOG_WARNING(Input, "closed gamepad");
     }
 
     int gamepad_count;
@@ -114,12 +116,51 @@ void SDLInputEngine::Init() {
         return;
     }
 
-    LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-    m_gamepad = SDL_OpenGamepad(gamepads[0]);
+    std::string activeGamepad = "";
+    std::string defaultGamepad = Config::getDefaultControllerID();
+#ifdef ENABLE_QT_GUI
+    activeGamepad = ControllerSelect::ActiveGamepad;
+#endif
+
+    // If user selects an active gamepad, use that, otherwise, try the default
     if (!m_gamepad) {
-        LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
-        SDL_free(gamepads);
-        return;
+        if (activeGamepad != "") {
+            for (int i = 0; i < gamepad_count; i++) {
+                char pszGUID[33];
+                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+                std::string currentGUID = std::string(pszGUID);
+                if (currentGUID == activeGamepad) {
+                    m_gamepad = SDL_OpenGamepad(gamepads[i]);
+                    if (!m_gamepad) {
+                        LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+                    }
+                    break;
+                }
+            }
+        } else if (Config::getDefaultControllerID() != "") {
+            for (int i = 0; i < gamepad_count; i++) {
+                char pszGUID[33];
+                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+                std::string currentGUID = std::string(pszGUID);
+                if (currentGUID == Config::getDefaultControllerID()) {
+                    m_gamepad = SDL_OpenGamepad(gamepads[i]);
+                    if (!m_gamepad) {
+                        LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!m_gamepad) {
+        LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
+        m_gamepad = SDL_OpenGamepad(gamepads[0]);
+        if (!m_gamepad) {
+            LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+            SDL_free(gamepads);
+            return;
+        }
     }
 
     SDL_Joystick* joystick = SDL_GetGamepadJoystick(m_gamepad);
@@ -425,6 +466,9 @@ void WindowSDL::WaitEvent() {
             SDL_Log("Game Paused");
             DebugState.PauseGuestThreads();
         }
+        break;
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        controller->GetEngine()->Init();
         break;
     default:
         break;

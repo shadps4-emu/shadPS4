@@ -9,7 +9,11 @@
 #include "common/path_util.h"
 #include "control_settings.h"
 #include "input/input_handler.h"
+#include "sdl_window.h"
 #include "ui_control_settings.h"
+
+std::string ControllerSelect::ActiveGamepad = "";
+std::string ControllerSelect::DefaultGamepad = "";
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
                                  std::string GameRunningSerial, QWidget* parent)
@@ -21,7 +25,6 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
     if (!GameRunning) {
         SDL_InitSubSystem(SDL_INIT_GAMEPAD);
         SDL_InitSubSystem(SDL_INIT_EVENTS);
-        CheckGamePad();
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
@@ -29,6 +32,8 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
     AddBoxItems();
     SetUIValuestoMappings();
     UpdateLightbarColor();
+    CheckGamePad();
+    ResetActiveControllerBox();
     installEventFilter(this);
 
     ButtonsList = {ui->CrossButton,
@@ -119,6 +124,18 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
     connect(this, &ControlSettings::AxisChanged, this,
             [this]() { ConnectAxisInputs(MappingButton); });
 
+    connect(ui->ActiveGamepadBox, &QComboBox::currentIndexChanged, this,
+            &ControlSettings::ActiveControllerChanged);
+    connect(ui->DefaultGamepadButton, &QPushButton::clicked, this, [this]() {
+        char pszGUID[33];
+        SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[ui->ActiveGamepadBox->currentIndex()]),
+                         pszGUID, 33);
+        Config::setDefaultControllerID(std::string(pszGUID));
+        Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+        QMessageBox::information(this, tr("Default Controller Selected"),
+                                 tr("Active controller set as default"));
+    });
+
     RemapWrapper = SdlEventWrapper::Wrapper::GetInstance();
     SdlEventWrapper::Wrapper::wrapperActive = true;
     QObject::connect(RemapWrapper, &SdlEventWrapper::Wrapper::SDLEvent, this,
@@ -126,6 +143,99 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
 
     if (!GameRunning) {
         Polling = QtConcurrent::run(&ControlSettings::pollSDLEvents, this);
+    }
+}
+
+void ControlSettings::ActiveControllerChanged(int value) {
+    char pszGUID[33];
+    SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[value]), pszGUID, 33);
+    QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);
+    ui->ActiveGamepadLabel->setText("ID: " + GUID);
+    ControllerSelect::ActiveGamepad = std::string(pszGUID);
+
+    if (!GameRunning) {
+        if (gamepad) {
+            SDL_CloseGamepad(gamepad);
+            gamepad = nullptr;
+        }
+
+        gamepads = SDL_GetGamepads(&gamepad_count);
+        if (!gamepads) {
+            LOG_ERROR(Input, "Cannot get gamepad list: {}", SDL_GetError());
+            return;
+        }
+
+        for (int i = 0; i < gamepad_count; i++) {
+            char pszGUID[33];
+            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+            std::string currentGUID = std::string(pszGUID);
+            if (currentGUID == ControllerSelect::ActiveGamepad) {
+                gamepad = SDL_OpenGamepad(gamepads[i]);
+                LOG_WARNING(Input, "Opened gamepad: {}", i);
+                if (!gamepad) {
+                    LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+                }
+                break;
+            }
+        }
+
+        if (!gamepad) {
+            LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+            return;
+        }
+    }
+}
+
+void ControlSettings::ResetActiveControllerBox() {
+    SDL_free(gamepads);
+    gamepads = SDL_GetGamepads(&gamepad_count);
+    if (!gamepads) {
+        LOG_ERROR(Input, "Cannot get gamepad list: {}", SDL_GetError());
+        return;
+    }
+
+    if (gamepad_count == 0) {
+        ui->ActiveGamepadBox->addItem("No gamepads detected");
+        ui->ActiveGamepadBox->setCurrentIndex(0);
+        LOG_INFO(Input, "No gamepad found!");
+        return;
+    } else {
+        for (int i = 0; i < gamepad_count; i++) {
+            QString name = SDL_GetGamepadNameForID(gamepads[i]);
+            ui->ActiveGamepadBox->addItem(QString("%1: %2").arg(QString::number(i + 1), name));
+        }
+    }
+
+    char pszGUID[33];
+    if (ControllerSelect::ActiveGamepad != "") {
+        for (int i = 0; i < gamepad_count; i++) {
+            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+            std::string currentGUID = std::string(pszGUID);
+            if (currentGUID == ControllerSelect::ActiveGamepad) {
+                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+                QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);
+                ui->ActiveGamepadLabel->setText("ID: " + GUID);
+                ui->ActiveGamepadBox->setCurrentIndex(i);
+                break;
+            }
+        }
+    } else if (Config::getDefaultControllerID() != "") {
+        for (int i = 0; i < gamepad_count; i++) {
+            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+            std::string currentGUID = std::string(pszGUID);
+            if (currentGUID == Config::getDefaultControllerID()) {
+                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+                QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);
+                ui->ActiveGamepadLabel->setText("ID: " + GUID);
+                ui->ActiveGamepadBox->setCurrentIndex(i);
+                break;
+            }
+        }
+    } else {
+        SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[0]), pszGUID, 33);
+        QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);
+        ui->ActiveGamepadLabel->setText("ID: " + GUID);
+        ui->ActiveGamepadBox->setCurrentIndex(0);
     }
 }
 
@@ -640,38 +750,42 @@ void ControlSettings::UpdateLightbarColor() {
 }
 
 void ControlSettings::CheckGamePad() {
-    if (GameRunning)
-        return;
-
-    if (gamepad) {
+    if ((gamepad)) {
         SDL_CloseGamepad(gamepad);
         gamepad = nullptr;
     }
 
-    int gamepad_count;
-    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
-
+    gamepads = SDL_GetGamepads(&gamepad_count);
     if (!gamepads) {
         LOG_ERROR(Input, "Cannot get gamepad list: {}", SDL_GetError());
         return;
     }
 
-    if (gamepad_count == 0) {
-        LOG_INFO(Input, "No gamepad found!");
-        SDL_free(gamepads);
-        return;
+    if (!GameRunning) {
+        if (ControllerSelect::ActiveGamepad != "") {
+            for (int i = 0; i < gamepad_count; i++) {
+                char pszGUID[33];
+                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+                std::string currentGUID = std::string(pszGUID);
+                if (currentGUID == ControllerSelect::ActiveGamepad) {
+                    gamepad = SDL_OpenGamepad(gamepads[i]);
+                    LOG_WARNING(Input, "Opened gamepad: {}", i);
+                    if (!gamepad) {
+                        LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+                    }
+                    break;
+                }
+            }
+        } else {
+            LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
+            gamepad = SDL_OpenGamepad(gamepads[0]);
+        }
+
+        if (!gamepad) {
+            LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
+            return;
+        }
     }
-
-    LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-    gamepad = SDL_OpenGamepad(gamepads[0]);
-
-    if (!gamepad) {
-        LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
-        SDL_free(gamepads);
-        return;
-    }
-
-    SDL_free(gamepads);
 }
 
 void ControlSettings::DisableMappingButtons() {
@@ -914,6 +1028,8 @@ void ControlSettings::pollSDLEvents() {
         }
 
         if (event.type == SDL_EVENT_GAMEPAD_ADDED) {
+            ui->ActiveGamepadBox->clear();
+            ResetActiveControllerBox();
             CheckGamePad();
         }
 
@@ -923,8 +1039,12 @@ void ControlSettings::pollSDLEvents() {
 
 void ControlSettings::Cleanup() {
     SdlEventWrapper::Wrapper::wrapperActive = false;
-    if (gamepad)
+    if (gamepad) {
         SDL_CloseGamepad(gamepad);
+        gamepad = nullptr;
+    }
+
+    SDL_free(gamepads);
 
     if (!GameRunning) {
         SDL_Event quitLoop{};
@@ -937,6 +1057,9 @@ void ControlSettings::Cleanup() {
         SDL_Quit();
     } else {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        SDL_Event checkGamepad{};
+        checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
+        SDL_PushEvent(&checkGamepad);
     }
 }
 
