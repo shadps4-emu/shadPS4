@@ -13,7 +13,6 @@
 #include "ui_control_settings.h"
 
 std::string ControllerSelect::ActiveGamepad = "";
-std::string ControllerSelect::DefaultGamepad = "";
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
                                  std::string GameRunningSerial, QWidget* parent)
@@ -130,6 +129,9 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         char pszGUID[33];
         SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[ui->ActiveGamepadBox->currentIndex()]),
                          pszGUID, 33);
+        ui->DefaultGamepadName->setText(ui->ActiveGamepadBox->currentText());
+        ui->DefaultGamepadLabel->setText("ID: " +
+                                         QString::fromStdString(std::string(pszGUID)).right(16));
         Config::setDefaultControllerID(std::string(pszGUID));
         Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
         QMessageBox::information(this, tr("Default Controller Selected"),
@@ -207,6 +209,26 @@ void ControlSettings::ResetActiveControllerBox() {
     }
 
     char pszGUID[33];
+    int defaultIndex;
+    QString defaultID = "";
+
+    if (Config::getDefaultControllerID() != "") {
+        for (int i = 0; i < gamepad_count; i++) {
+            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
+            std::string currentGUID = std::string(pszGUID);
+            if (currentGUID == Config::getDefaultControllerID()) {
+                defaultIndex = i;
+                defaultID = QString::fromStdString(std::string(pszGUID)).right(16);
+                ui->DefaultGamepadName->setText(SDL_GetGamepadNameForID(gamepads[i]));
+                ui->DefaultGamepadLabel->setText("ID: " + defaultID);
+                break;
+            }
+        }
+
+        if (defaultID == "")
+            ui->DefaultGamepadName->setText("Default controller not connected");
+    }
+
     if (ControllerSelect::ActiveGamepad != "") {
         for (int i = 0; i < gamepad_count; i++) {
             SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
@@ -220,17 +242,8 @@ void ControlSettings::ResetActiveControllerBox() {
             }
         }
     } else if (Config::getDefaultControllerID() != "") {
-        for (int i = 0; i < gamepad_count; i++) {
-            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
-            std::string currentGUID = std::string(pszGUID);
-            if (currentGUID == Config::getDefaultControllerID()) {
-                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
-                QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);
-                ui->ActiveGamepadLabel->setText("ID: " + GUID);
-                ui->ActiveGamepadBox->setCurrentIndex(i);
-                break;
-            }
-        }
+        ui->ActiveGamepadLabel->setText(defaultID);
+        ui->ActiveGamepadBox->setCurrentIndex(defaultIndex);
     } else {
         SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[0]), pszGUID, 33);
         QString GUID = QString::fromStdString(std::string(pszGUID)).right(16);

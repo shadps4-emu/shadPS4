@@ -88,5 +88,4 @@ protected:
 
 namespace ControllerSelect {
 extern std::string ActiveGamepad;
-extern std::string DefaultGamepad;
 } // namespace ControllerSelect

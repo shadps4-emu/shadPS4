@@ -735,7 +735,7 @@
                    </font>
                   </property>
                   <property name="text">
-                   <string>Gamepad ID</string>
+                   <string>n/a</string>
                   </property>
                   <property name="alignment">
                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
