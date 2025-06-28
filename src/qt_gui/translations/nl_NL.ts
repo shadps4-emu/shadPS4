@@ -610,7 +610,7 @@
     </message>
     <message>
       <source>Could not open the file for reading</source>
-      <translation/>
+      <translation type="unfinished">Could not open the file for reading</translation>
     </message>
     <message>
       <source>Could not open the file for writing</source>
