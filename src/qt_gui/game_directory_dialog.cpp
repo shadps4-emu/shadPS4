@@ -47,6 +47,14 @@ void GameDirectoryDialog::BrowseAddonsDirectory() {
 QWidget* GameDirectoryDialog::SetupGamesDirectory() {
     auto group = new QGroupBox(tr("Games Directory"));
     auto layout = new QHBoxLayout(group);
+    // Input.
+    m_gamesDirectory = new QLineEdit();
+    QString directory;
+    std::filesystem::path directory_path =
+        Config::getGameDirectories().empty() ? "" : Config::getGameDirectories().front();
+    Common::FS::PathToQString(directory, directory_path);
+    m_gamesDirectory->setText(directory);
+    m_gamesDirectory->setMinimumWidth(400);
 
     layout->addWidget(m_gamesDirectory);
 
@@ -67,7 +75,7 @@ QWidget* GameDirectoryDialog::SetupAddonsDirectory() {
     // Input.
     m_addonsDirectory = new QLineEdit();
     QString directories;
-    Common::FS::PathToQString(directories, Config::getAddonDirectories());
+    Common::FS::PathToQString(directories, Config::getAddonDirectory());
     m_addonsDirectory->setText(directories);
     m_addonsDirectory->setMinimumWidth(400);
 

@@ -121,9 +121,9 @@ void removeGameDirectories(const std::filesystem::path& dir);
 void setGameDirectoriesEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonDirectories(const std::filesystem::path& dir);
 
-const std::vector<std::filesystem::path>& getGameDirectories();
-const std::vector<bool>& getGameDirectoriesEnabled();
-const std::filesystem::path& getAddonDirectories();
+std::vector<std::filesystem::path> getGameDirectories();
+std::vector<bool> getGameDirectoriesEnabled();
+std::filesystem::path getAddonDirectory();
 
 void setDefaultValues();
 

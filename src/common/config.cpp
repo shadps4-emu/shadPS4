@@ -77,9 +77,9 @@ static bool isPSNSignedIn = false;
 // Gui
 static bool load_game_size = true;
 static std::vector<GameDirectories> settings_directories = {};
-static std::vector<bool> directories_enabled = {};
-static std::filesystem::path settings_addon_directories = {};
-static std::filesystem::path save_data_path = {};
+std::vector<bool> directories_enabled = {};
+std::filesystem::path settings_addon_directories = {};
+std::filesystem::path save_data_path = {};
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -486,7 +486,7 @@ void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
 }
 
-const std::vector<std::filesystem::path> getGameDirectories() {
+std::vector<std::filesystem::path> Config::getGameDirectories() {
     std::vector<std::filesystem::path> enabled_dirs;
     for (const auto& dir : settings_directories) {
         if (dir.enabled) {
@@ -496,7 +496,7 @@ const std::vector<std::filesystem::path> getGameDirectories() {
     return enabled_dirs;
 }
 
-const std::vector<bool> getGameDirsEnabled() {
+std::vector<bool> Config::getGameDirectoriesEnabled() {
     std::vector<bool> enabled_dirs;
     for (const auto& dir : settings_directories) {
         enabled_dirs.push_back(dir.enabled);

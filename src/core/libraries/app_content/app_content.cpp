@@ -57,7 +57,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            OrbisAppContentMountPoint* mount_point) {
     LOG_INFO(Lib_AppContent, "called");
 
-    const auto& mount_dir = Config::getAddonDirectories() / title_id / entitlement_label->data;
+    const auto& mount_dir = Config::getAddonDirectory() / title_id / entitlement_label->data;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     for (int i = 0; i < addcont_count; i++) {
@@ -244,7 +244,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     LOG_ERROR(Lib_AppContent, "(DUMMY) called");
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
-    const auto addons_dir = Config::getAddonDirectories();
+    const auto addons_dir = Config::getAddonDirectory();
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
         title_id = *value;
     } else {
