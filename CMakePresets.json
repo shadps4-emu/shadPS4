@@ -1,44 +1,12 @@
 {
-  "version": 5,
+  "version": 9,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 24,
+    "minor": 30,
     "patch": 0
   },
+  "include": ["CMake${hostSystemName}Presets.json"],
   "configurePresets": [
-    {
-      "name": "Base",
-      "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/Build/${presetName}",
-      "installDir": "${sourceDir}/Install/${presetName}"
-    },
-    {
-      "name": "Qt-GUI",
-      "hidden": true,
-      "cacheVariables": {
-        "ENABLE_QT_GUI": "ON"
-      }
-    },
-    {
-      "name": "x64-Windows-Base",
-      "inherits": [ "Base" ],
-      "hidden": true,
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "intelliSenseMode": "windows-clang-x64"
-        }
-      }
-    },
     {
       "name": "x64-Clang-Debug",
       "displayName": "Clang x64 Debug",
