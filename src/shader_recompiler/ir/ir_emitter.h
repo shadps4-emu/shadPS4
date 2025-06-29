@@ -299,10 +299,10 @@ public:
 
     [[nodiscard]] U1 ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
-    [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 ILessThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 INotEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
 
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalAnd(const U1& a, const U1& b);
