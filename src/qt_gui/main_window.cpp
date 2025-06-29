@@ -709,7 +709,7 @@ void MainWindow::CreateConnects() {
                        .arg(game_path);
         }
     });
-        
+
     connect(ui->bootGameAct, &QAction::triggered, this, &MainWindow::BootGame);
     connect(ui->gamePathAct, &QAction::triggered, this, &MainWindow::Directories);
 

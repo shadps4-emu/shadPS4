@@ -107,18 +107,18 @@ void GameDirectoryDialog::Save() {
 
     if (gamesDirectory.isEmpty() || !QDir(gamesDirectory).exists() ||
         !QDir::isAbsolutePath(gamesDirectory)) {
-        QMessageBox::critical(this, tr("Error"),"The value location for games is not valid.");
+        QMessageBox::critical(this, tr("Error"), "The value location for games is not valid.");
         return;
     }
 
     if (addonsDirectory.isEmpty() || !QDir::isAbsolutePath(addonsDirectory)) {
-        QMessageBox::critical(this, tr("Error"),"The value location for DLC is not valid.");
+        QMessageBox::critical(this, tr("Error"), "The value location for DLC is not valid.");
         return;
     }
     QDir addonsDir(addonsDirectory);
     if (!addonsDir.exists()) {
         if (!addonsDir.mkpath(".")) {
-            QMessageBox::critical(this, tr("Error"),"The DLC location could not be created.");
+            QMessageBox::critical(this, tr("Error"), "The DLC location could not be created.");
             return;
         }
     }
