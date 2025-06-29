@@ -39,10 +39,10 @@ GameInfoClass::~GameInfoClass() = default;
 
 void GameInfoClass::GetGameInfo(QWidget* parent) {
     QStringList filePaths;
-    for (const auto& installLoc : Config::getGameDirectories()) {
-        QString Directories;
-        Common::FS::PathToQString(Directories, installLoc);
-        ScanDirectoryRecursively(Directories, filePaths, 0);
+    for (const auto& directoriesLoc : Config::getGameDirectories()) {
+        QString directories;
+        Common::FS::PathToQString(directories, directoriesLoc);
+        ScanDirectoryRecursively(directories, filePaths, 0);
     }
 
     m_games = QtConcurrent::mapped(filePaths, [&](const QString& path) {

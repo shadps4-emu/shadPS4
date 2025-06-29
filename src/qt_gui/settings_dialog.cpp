@@ -826,7 +826,7 @@ void SettingsDialog::ResetInstallFolders() {
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
         const auto directories_array =
-            toml::find_or<std::vector<std::u8string>>(gui, "directories", {});
+            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
 
         std::vector<bool> directories_enabled;
         try {
