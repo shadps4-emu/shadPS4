@@ -73,6 +73,7 @@ static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static std::string trophyKey;
 static bool isPSNSignedIn = false;
+static std::string defaultControllerID = "";
 
 // Gui
 static bool load_game_size = true;
@@ -528,6 +529,14 @@ void setPSNSignedIn(bool sign) {
     isPSNSignedIn = sign;
 }
 
+std::string getDefaultControllerID() {
+    return defaultControllerID;
+}
+
+void setDefaultControllerID(std::string id) {
+    defaultControllerID = id;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -566,6 +575,7 @@ void load(const std::filesystem::path& path) {
         checkCompatibilityOnStartup =
             toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
+        defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
     }
 
     if (data.contains("Input")) {
@@ -725,6 +735,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["General"]["defaultControllerID"] = defaultControllerID;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["useSpecialPad"] = useSpecialPad;

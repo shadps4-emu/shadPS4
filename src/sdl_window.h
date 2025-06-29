@@ -9,12 +9,15 @@
 #include "string"
 #define SDL_EVENT_TOGGLE_FULLSCREEN (SDL_EVENT_USER + 1)
 #define SDL_EVENT_TOGGLE_PAUSE (SDL_EVENT_USER + 2)
+#define SDL_EVENT_CHANGE_CONTROLLER (SDL_EVENT_USER + 3)
 
 struct SDL_Window;
 struct SDL_Gamepad;
 union SDL_Event;
 
 namespace Input {
+
+extern SDL_Gamepad* m_gamepad;
 
 class SDLInputEngine : public Engine {
 public:
@@ -27,8 +30,6 @@ public:
     State ReadState() override;
 
 private:
-    SDL_Gamepad* m_gamepad = nullptr;
-
     float m_gyro_poll_rate = 0.0f;
     float m_accel_poll_rate = 0.0f;
 };
