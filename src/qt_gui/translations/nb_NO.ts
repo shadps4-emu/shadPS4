@@ -527,71 +527,71 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>Ikke tildelt</translation>
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
+      <translation>Options</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Venstre berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Midt berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Høyre berøringsplate</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>Triangel</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>Firkant</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>Sirkel</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>Kryss</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
 
 %1</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Trykk på en knapp</translation>
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation>Flytt på analog stikke</translation>
     </message>
   </context>
   <context>
