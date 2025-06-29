@@ -734,6 +734,7 @@ static void UpdateGamepads() {
     SDL_Gamepad* SDLGamepad = Input::m_gamepad;
     if (SDLGamepad) {
         bd->gamepads.push_back(SDLGamepad);
+        bd->want_update_gamepads_list = false;
     } else {
         // Update list of gamepads to use
         if (bd->want_update_gamepads_list &&
