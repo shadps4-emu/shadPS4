@@ -102,7 +102,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_lane_id = true;
         break;
     case IR::Opcode::ReadConst:
-        if (info.readconst_types == Info::ReadConstType::None) {
+        if (!info.uses_dma) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 // We can't guarantee that flatbuf will not grow past UBO
@@ -116,7 +116,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         } else {
             info.readconst_types |= Info::ReadConstType::Dynamic;
         }
-        info.dma_types |= IR::Type::U32;
+        info.uses_dma = true;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
@@ -130,21 +130,22 @@ void Visit(Info& info, const IR::Inst& inst) {
 }
 
 void CollectShaderInfoPass(IR::Program& program) {
+    auto& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(program.info, inst);
+            Visit(info, inst);
         }
     }
 
-    if (program.info.dma_types != IR::Type::Void) {
-        program.info.buffers.push_back({
+    if (info.uses_dma) {
+        info.buffers.push_back({
             .used_types = IR::Type::U64,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
-        program.info.buffers.push_back({
-            .used_types = IR::Type::U8,
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,

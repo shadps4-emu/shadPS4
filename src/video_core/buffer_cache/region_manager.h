@@ -83,9 +83,10 @@ public:
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
         RENDERER_TRACE;
         const size_t offset = dirty_addr - cpu_addr;
-        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
-        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+        const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return;
         }
         std::scoped_lock lk{lock};
@@ -114,9 +115,10 @@ public:
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
         RENDERER_TRACE;
         const size_t offset = query_cpu_range - cpu_addr;
-        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
-        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+        const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return;
         }
         std::scoped_lock lk{lock};
@@ -131,7 +133,7 @@ public:
         }
 
         for (const auto& [start, end] : mask) {
-            func(cpu_addr + start * BYTES_PER_PAGE, (end - start) * BYTES_PER_PAGE);
+            func(cpu_addr + start * TRACKER_BYTES_PER_PAGE, (end - start) * TRACKER_BYTES_PER_PAGE);
         }
 
         if constexpr (clear) {
@@ -151,9 +153,10 @@ public:
     template <Type type>
     [[nodiscard]] bool IsRegionModified(u64 offset, u64 size) const noexcept {
         RENDERER_TRACE;
-        const size_t start_page = SanitizeAddress(offset) / BYTES_PER_PAGE;
-        const size_t end_page = Common::DivCeil(SanitizeAddress(offset + size), BYTES_PER_PAGE);
-        if (start_page >= NUM_REGION_PAGES || end_page <= start_page) {
+        const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
+        const size_t end_page =
+            Common::DivCeil(SanitizeAddress(offset + size), TRACKER_BYTES_PER_PAGE);
+        if (start_page >= NUM_PAGES_PER_REGION || end_page <= start_page) {
             return false;
         }
         // std::scoped_lock lk{lock}; // Is this needed?

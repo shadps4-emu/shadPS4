@@ -683,6 +683,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/path_util.h
            src/common/object_pool.h
            src/common/polyfill_thread.h
+           src/common/range_lock.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/recursive_lock.cpp
@@ -1067,6 +1068,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/gui_settings.h
            src/qt_gui/settings.cpp
            src/qt_gui/settings.h
+           src/qt_gui/sdl_event_wrapper.cpp
+           src/qt_gui/sdl_event_wrapper.h
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}
