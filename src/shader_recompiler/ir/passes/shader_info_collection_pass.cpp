@@ -53,9 +53,11 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicXor32:
         info.shared_types |= IR::Type::U32;
         break;
+    case IR::Opcode::SharedAtomicIAdd64:
+        info.uses_shared_int64_atomics = true;
+        [[fallthrough]];
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU64:
-    case IR::Opcode::SharedAtomicIAdd64:
         info.shared_types |= IR::Type::U64;
         break;
     case IR::Opcode::ConvertF16F32:
@@ -97,6 +99,11 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicFMax32:
     case IR::Opcode::BufferAtomicFMin32:
         info.uses_buffer_atomic_float_min_max = true;
+        break;
+    case IR::Opcode::BufferAtomicIAdd64:
+    case IR::Opcode::BufferAtomicSMax64:
+    case IR::Opcode::BufferAtomicUMax64:
+        info.uses_buffer_int64_atomics = true;
         break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;

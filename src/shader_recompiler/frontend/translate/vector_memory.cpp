@@ -78,8 +78,12 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Umin, inst);
     case Opcode::BUFFER_ATOMIC_SMAX:
         return BUFFER_ATOMIC(AtomicOp::Smax, inst);
+    case Opcode::BUFFER_ATOMIC_SMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smax, inst);
     case Opcode::BUFFER_ATOMIC_UMAX:
         return BUFFER_ATOMIC(AtomicOp::Umax, inst);
+    case Opcode::BUFFER_ATOMIC_UMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umax, inst);
     case Opcode::BUFFER_ATOMIC_AND:
         return BUFFER_ATOMIC(AtomicOp::And, inst);
     case Opcode::BUFFER_ATOMIC_OR:
@@ -304,6 +308,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     }
 }
 
+template <typename T>
 void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -328,7 +333,17 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
 
-    IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
+    IR::Value vdata_val = [&] {
+        if constexpr (std::is_same_v<T, IR::U32>) {
+            return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::U64>) {
+            return ir.PackUint2x32(
+                ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
+                                      ir.GetVectorReg<Shader::IR::U32>(vdata + 1)));
+        } else {
+            static_assert(false, "buffer_atomic: type not supported");
+        }
+    }();
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));

@@ -341,7 +341,7 @@ bool Instance::CreateDevice() {
     const auto topology_list_restart_features =
         feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
-    const auto vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
+    vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
@@ -387,6 +387,8 @@ bool Instance::CreateDevice() {
             .drawIndirectCount = vk12_features.drawIndirectCount,
             .storageBuffer8BitAccess = vk12_features.storageBuffer8BitAccess,
             .uniformAndStorageBuffer8BitAccess = vk12_features.uniformAndStorageBuffer8BitAccess,
+            .shaderBufferInt64Atomics = vk12_features.shaderBufferInt64Atomics,
+            .shaderSharedInt64Atomics = vk12_features.shaderSharedInt64Atomics,
             .shaderFloat16 = vk12_features.shaderFloat16,
             .shaderInt8 = vk12_features.shaderInt8,
             .scalarBlockLayout = vk12_features.scalarBlockLayout,

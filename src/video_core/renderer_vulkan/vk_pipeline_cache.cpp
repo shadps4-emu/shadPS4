@@ -219,6 +219,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_buffer_fp32_atomic_min_max =
             instance_.IsShaderAtomicFloatBuffer32MinMaxSupported(),
         .supports_image_fp32_atomic_min_max = instance_.IsShaderAtomicFloatImage32MinMaxSupported(),
+        .supports_buffer_int64_atomics = instance_.IsBufferInt64AtomicsSupported(),
+        .supports_shared_int64_atomics = instance_.IsSharedInt64AtomicsSupported(),
         .supports_workgroup_explicit_memory_layout =
             instance_.IsWorkgroupMemoryExplicitLayoutSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
