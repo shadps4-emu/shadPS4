@@ -426,8 +426,6 @@ void CheckUpdate::DownloadUpdate(const QString& url) {
         if (file.open(QIODevice::WriteOnly)) {
             file.write(reply->readAll());
             file.close();
-            QMessageBox::information(this, tr("Download Complete"),
-                                     tr("The update has been downloaded, press OK to install."));
             Install();
         } else {
             QMessageBox::warning(
