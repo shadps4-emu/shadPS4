@@ -45,7 +45,7 @@ private:
     void OnCursorStateChanged(s16 index);
     void closeEvent(QCloseEvent* event) override;
     void setDefaultValues();
-
+     
     std::unique_ptr<Ui::SettingsDialog> ui;
 
     std::map<std::string, int> languages;

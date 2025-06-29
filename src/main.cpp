@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
 
-             Config::addGameInstallDir(config_path);
+             Config::addGameDirectories(config_path);
              Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
              std::cout << "Game folder successfully saved.\n";
              exit(0);
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
     }
 
     // If no game directory is set and no command line argument, prompt for it
-    if (Config::getGameInstallDirs().empty()) {
+    if (Config::getGameDirectories().empty()) {
         std::cout << "Warning: No game folder set, please set it by calling shadps4"
                      " with the --add-game-folder <folder_name> argument\n";
     }
@@ -189,11 +189,11 @@ int main(int argc, char* argv[]) {
 
     // Check if the provided path is a valid file
     if (!std::filesystem::exists(eboot_path)) {
-        // If not a file, treat it as a game ID and search in install directories recursively
+        // If not a file, treat it as a game ID and search in directories recursively
         bool game_found = false;
         const int max_depth = 5;
-        for (const auto& install_dir : Config::getGameInstallDirs()) {
-            if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
+        for (const auto& directories : Config::getGameDirectories()) {
+            if (auto found_path = Common::FS::FindGameByID(directories, game_path, max_depth)) {
                 eboot_path = *found_path;
                 game_found = true;
                 break;

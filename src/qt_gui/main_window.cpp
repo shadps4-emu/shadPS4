@@ -709,10 +709,9 @@ void MainWindow::CreateConnects() {
                        .arg(game_path);
         }
     });
-
-    // Package install.
+        
     connect(ui->bootGameAct, &QAction::triggered, this, &MainWindow::BootGame);
-    connect(ui->gameInstallPathAct, &QAction::triggered, this, &MainWindow::InstallDirectory);
+    connect(ui->gamePathAct, &QAction::triggered, this, &MainWindow::Directories);
 
     // elf viewer
     connect(ui->addElfFolderAct, &QAction::triggered, m_elf_viewer.data(),
@@ -973,8 +972,8 @@ void MainWindow::BootGame() {
     }
 }
 
-void MainWindow::InstallDirectory() {
-    GameInstallDialog dlg;
+void MainWindow::Directories() {
+    GameDirectoryDialog dlg;
     dlg.exec();
     RefreshGameTable();
 }
@@ -1085,7 +1084,7 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->aboutAct->setIcon(RecolorIcon(ui->aboutAct->icon(), isWhite));
     ui->setlistModeListAct->setIcon(RecolorIcon(ui->setlistModeListAct->icon(), isWhite));
     ui->setlistModeGridAct->setIcon(RecolorIcon(ui->setlistModeGridAct->icon(), isWhite));
-    ui->gameInstallPathAct->setIcon(RecolorIcon(ui->gameInstallPathAct->icon(), isWhite));
+    ui->gamePathAct->setIcon(RecolorIcon(ui->gamePathAct->icon(), isWhite));
     ui->menuThemes->setIcon(RecolorIcon(ui->menuThemes->icon(), isWhite));
     ui->menuGame_List_Icons->setIcon(RecolorIcon(ui->menuGame_List_Icons->icon(), isWhite));
     ui->menuUtils->setIcon(RecolorIcon(ui->menuUtils->icon(), isWhite));

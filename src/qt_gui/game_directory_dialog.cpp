@@ -12,9 +12,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "game_install_dialog.h"
+#include "game_directory_dialog.h"
 
-GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
+GameDirectoryDialog::GameDirectoryDialog() : m_gamesDirectory(nullptr) {
     auto layout = new QVBoxLayout(this);
 
     layout->addWidget(SetupGamesDirectory());
@@ -26,9 +26,9 @@ GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     setWindowIcon(QIcon(":images/shadps4.ico"));
 }
 
-GameInstallDialog::~GameInstallDialog() {}
+GameDirectoryDialog::~GameDirectoryDialog() {}
 
-void GameInstallDialog::BrowseGamesDirectory() {
+void GameDirectoryDialog::BrowseGamesDirectory() {
     auto path = QFileDialog::getExistingDirectory(this, tr("Games Directory"));
 
     if (!path.isEmpty()) {
@@ -36,7 +36,7 @@ void GameInstallDialog::BrowseGamesDirectory() {
     }
 }
 
-void GameInstallDialog::BrowseAddonsDirectory() {
+void GameDirectoryDialog::BrowseAddonsDirectory() {
     auto path = QFileDialog::getExistingDirectory(this, tr("DLC Directory"));
 
     if (!path.isEmpty()) {
@@ -44,7 +44,7 @@ void GameInstallDialog::BrowseAddonsDirectory() {
     }
 }
 
-QWidget* GameInstallDialog::SetupGamesDirectory() {
+QWidget* GameDirectoryDialog::SetupGamesDirectory() {
     auto group = new QGroupBox(tr("Games Directory"));
     auto layout = new QHBoxLayout(group);
 
@@ -53,22 +53,22 @@ QWidget* GameInstallDialog::SetupGamesDirectory() {
     // Browse button.
     auto browse = new QPushButton(tr("Browse"));
 
-    connect(browse, &QPushButton::clicked, this, &GameInstallDialog::BrowseGamesDirectory);
+    connect(browse, &QPushButton::clicked, this, &GameDirectoryDialog::BrowseGamesDirectory);
 
     layout->addWidget(browse);
 
     return group;
 }
 
-QWidget* GameInstallDialog::SetupAddonsDirectory() {
+QWidget* GameDirectoryDialog::SetupAddonsDirectory() {
     auto group = new QGroupBox(tr("DLC Directory"));
     auto layout = new QHBoxLayout(group);
 
     // Input.
     m_addonsDirectory = new QLineEdit();
-    QString install_dir;
-    Common::FS::PathToQString(install_dir, Config::getAddonInstallDir());
-    m_addonsDirectory->setText(install_dir);
+    QString directories;
+    Common::FS::PathToQString(directories, Config::getAddonDirectories());
+    m_addonsDirectory->setText(directories);
     m_addonsDirectory->setMinimumWidth(400);
 
     layout->addWidget(m_addonsDirectory);
@@ -76,49 +76,46 @@ QWidget* GameInstallDialog::SetupAddonsDirectory() {
     // Browse button.
     auto browse = new QPushButton(tr("Browse"));
 
-    connect(browse, &QPushButton::clicked, this, &GameInstallDialog::BrowseAddonsDirectory);
+    connect(browse, &QPushButton::clicked, this, &GameDirectoryDialog::BrowseAddonsDirectory);
 
     layout->addWidget(browse);
 
     return group;
 }
 
-QWidget* GameInstallDialog::SetupDialogActions() {
+QWidget* GameDirectoryDialog::SetupDialogActions() {
     auto actions = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
-    connect(actions, &QDialogButtonBox::accepted, this, &GameInstallDialog::Save);
-    connect(actions, &QDialogButtonBox::rejected, this, &GameInstallDialog::reject);
+    connect(actions, &QDialogButtonBox::accepted, this, &GameDirectoryDialog::Save);
+    connect(actions, &QDialogButtonBox::rejected, this, &GameDirectoryDialog::reject);
 
     return actions;
 }
 
-void GameInstallDialog::Save() {
+void GameDirectoryDialog::Save() {
     // Check games directory.
     auto gamesDirectory = m_gamesDirectory->text();
     auto addonsDirectory = m_addonsDirectory->text();
 
     if (gamesDirectory.isEmpty() || !QDir(gamesDirectory).exists() ||
         !QDir::isAbsolutePath(gamesDirectory)) {
-        QMessageBox::critical(this, tr("Error"),
-                              "The value for location for games is not valid.");
+        QMessageBox::critical(this, tr("Error"),"The value location for games is not valid.");
         return;
     }
 
     if (addonsDirectory.isEmpty() || !QDir::isAbsolutePath(addonsDirectory)) {
-        QMessageBox::critical(this, tr("Error"),
-                              "The value for location for DLC is not valid.");
+        QMessageBox::critical(this, tr("Error"),"The value location for DLC is not valid.");
         return;
     }
     QDir addonsDir(addonsDirectory);
     if (!addonsDir.exists()) {
         if (!addonsDir.mkpath(".")) {
-            QMessageBox::critical(this, tr("Error"),
-                                  "The DLC location could not be created.");
+            QMessageBox::critical(this, tr("Error"),"The DLC location could not be created.");
             return;
         }
     }
-    Config::addGameInstallDir(Common::FS::PathFromQString(gamesDirectory));
-    Config::setAddonInstallDir(Common::FS::PathFromQString(addonsDirectory));
+    Config::addGameDirectories(Common::FS::PathFromQString(gamesDirectory));
+    Config::setAddonDirectories(Common::FS::PathFromQString(addonsDirectory));
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::save(config_dir / "config.toml");
     accept();

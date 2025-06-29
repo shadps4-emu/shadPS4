@@ -267,9 +267,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     {
         connect(ui->addFolderButton, &QPushButton::clicked, this, [this]() {
             QString file_path_string =
-                QFileDialog::getExistingDirectory(this, tr("Directory to install games"));
+                QFileDialog::getExistingDirectory(this, tr("Games directories"));
             auto file_path = Common::FS::PathFromQString(file_path_string);
-            if (!file_path.empty() && Config::addGameInstallDir(file_path, true)) {
+            if (!file_path.empty() && Config::addGameDirectories(file_path, true)) {
                 QListWidgetItem* item = new QListWidgetItem(file_path_string);
                 item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
                 item->setCheckState(Qt::Checked);
@@ -287,7 +287,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             QString item_path_string = selected_item ? selected_item->text() : QString();
             if (!item_path_string.isEmpty()) {
                 auto file_path = Common::FS::PathFromQString(item_path_string);
-                Config::removeGameInstallDir(file_path);
+                Config::removeGameDirectories(file_path);
                 delete selected_item;
             }
         });
@@ -793,7 +793,7 @@ void SettingsDialog::UpdateSettings() {
     m_gui_settings->SetValue(gui::gl_showBackgroundImage,
                              ui->showBackgroundImageCheckBox->isChecked());
 
-    std::vector<Config::GameInstallDir> dirs_with_states;
+    std::vector<Config::GameDirectories> dirs_with_states;
     for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
         QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
         QString path_string = item->text();
@@ -802,7 +802,7 @@ void SettingsDialog::UpdateSettings() {
 
         dirs_with_states.push_back({path, enabled});
     }
-    Config::setAllGameInstallDirs(dirs_with_states);
+    Config::setAllGameDirectories(dirs_with_states);
 
 #ifdef ENABLE_DISCORD_RPC
     auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
@@ -825,28 +825,28 @@ void SettingsDialog::ResetInstallFolders() {
 
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
-        const auto install_dir_array =
-            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
+        const auto directories_array =
+            toml::find_or<std::vector<std::u8string>>(gui, "directories", {});
 
-        std::vector<bool> install_dirs_enabled;
+        std::vector<bool> directories_enabled;
         try {
-            install_dirs_enabled = Config::getGameInstallDirsEnabled();
+            directories_enabled = Config::getGameDirectoriesEnabled();
         } catch (...) {
             // If it does not exist, assume that all are enabled.
-            install_dirs_enabled.resize(install_dir_array.size(), true);
+            directories_enabled.resize(directories_array.size(), true);
         }
 
-        if (install_dirs_enabled.size() < install_dir_array.size()) {
-            install_dirs_enabled.resize(install_dir_array.size(), true);
+        if (directories_enabled.size() < directories_array.size()) {
+            directories_enabled.resize(directories_array.size(), true);
         }
 
-        std::vector<Config::GameInstallDir> settings_install_dirs_config;
+        std::vector<Config::GameDirectories> settings_directories_config;
 
-        for (size_t i = 0; i < install_dir_array.size(); i++) {
-            std::filesystem::path dir = install_dir_array[i];
-            bool enabled = install_dirs_enabled[i];
+        for (size_t i = 0; i < directories_array.size(); i++) {
+            std::filesystem::path dir = directories_array[i];
+            bool enabled = directories_enabled[i];
 
-            settings_install_dirs_config.push_back({dir, enabled});
+            settings_directories_config.push_back({dir, enabled});
 
             QString path_string;
             Common::FS::PathToQString(path_string, dir);
@@ -857,7 +857,7 @@ void SettingsDialog::ResetInstallFolders() {
             ui->gameFoldersListWidget->addItem(item);
         }
 
-        Config::setAllGameInstallDirs(settings_install_dirs_config);
+        Config::setAllGameDirectories(settings_directories_config);
     }
 }
 void SettingsDialog::setDefaultValues() {

@@ -10,11 +10,11 @@
 
 class QLineEdit;
 
-class GameInstallDialog final : public QDialog {
+class GameDirectoryDialog final : public QDialog {
     Q_OBJECT
 public:
-    GameInstallDialog();
-    ~GameInstallDialog();
+    GameDirectoryDialog();
+    ~GameDirectoryDialog();
 
 private slots:
     void BrowseGamesDirectory();

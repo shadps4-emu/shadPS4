@@ -504,7 +504,7 @@ public:
                 game_update_path = folder_path + "-patch";
             }
             Common::FS::PathToQString(
-                dlc_path, Config::getAddonInstallDir() /
+                dlc_path, Config::getAddonDirectories() /
                               Common::FS::PathFromQString(folder_path).parent_path().filename());
             Common::FS::PathToQString(save_data_path,
                                       Config::GetSaveDataPath() / "1" / m_games[itemID].save_dir);

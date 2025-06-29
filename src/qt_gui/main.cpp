@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
 
-             Config::addGameInstallDir(config_path);
+             Config::addGameDirectories(config_path);
              Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
              std::cout << "Game folder successfully saved.\n";
              exit(0);
@@ -162,8 +162,8 @@ int main(int argc, char* argv[]) {
     }
 
     // If no game directories are set and no command line argument, prompt for it
-    if (Config::getGameInstallDirsEnabled().empty() && !has_command_line_argument) {
-        GameInstallDialog dlg;
+    if (Config::getGameDirectoriesEnabled().empty() && !has_command_line_argument) {
+        GameDirectoryDialog dlg;
         dlg.exec();
     }
 
@@ -190,8 +190,8 @@ int main(int argc, char* argv[]) {
             // If not a file, treat it as a game ID and search in install directories recursively
             bool game_found = false;
             const int max_depth = 5;
-            for (const auto& install_dir : Config::getGameInstallDirs()) {
-                if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
+            for (const auto& directories : Config::getGameDirectories()) {
+                if (auto found_path = Common::FS::FindGameByID(directories, game_path, max_depth)) {
                     game_file_path = *found_path;
                     game_found = true;
                     break;

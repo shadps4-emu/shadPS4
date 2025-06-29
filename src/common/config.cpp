@@ -76,10 +76,10 @@ static bool isPSNSignedIn = false;
 
 // Gui
 static bool load_game_size = true;
-static std::vector<GameInstallDir> settings_install_dirs = {};
-std::vector<bool> install_dirs_enabled = {};
-std::filesystem::path settings_addon_install_dir = {};
-std::filesystem::path save_data_path = {};
+static std::vector<GameDirectories> settings_directories = {};
+static std::vector<bool> directories_enabled = {};
+static std::filesystem::path settings_addon_directories = {};
+static std::filesystem::path save_data_path = {};
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
@@ -439,56 +439,56 @@ void setCheckCompatibilityOnStartup(bool use) {
     checkCompatibilityOnStartup = use;
 }
 
-bool addGameInstallDir(const std::filesystem::path& dir, bool enabled) {
-    for (const auto& install_dir : settings_install_dirs) {
-        if (install_dir.path == dir) {
+bool addGameDirectories(const std::filesystem::path& dir, bool enabled) {
+    for (const auto& directories : settings_directories) {
+        if (directories.path == dir) {
             return false;
         }
     }
-    settings_install_dirs.push_back({dir, enabled});
+    settings_directories.push_back({dir, enabled});
     return true;
 }
 
-void removeGameInstallDir(const std::filesystem::path& dir) {
-    auto iterator =
-        std::find_if(settings_install_dirs.begin(), settings_install_dirs.end(),
-                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
-    if (iterator != settings_install_dirs.end()) {
-        settings_install_dirs.erase(iterator);
+void removeGameDirectories(const std::filesystem::path& dir) {
+    auto iterator = std::find_if(
+        settings_directories.begin(), settings_directories.end(),
+        [&dir](const GameDirectories& directories) { return directories.path == dir; });
+    if (iterator != settings_directories.end()) {
+        settings_directories.erase(iterator);
     }
 }
 
-void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
-    auto iterator =
-        std::find_if(settings_install_dirs.begin(), settings_install_dirs.end(),
-                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
-    if (iterator != settings_install_dirs.end()) {
+void setGameDirectoriesEnabled(const std::filesystem::path& dir, bool enabled) {
+    auto iterator = std::find_if(
+        settings_directories.begin(), settings_directories.end(),
+        [&dir](const GameDirectories& directories) { return directories.path == dir; });
+    if (iterator != settings_directories.end()) {
         iterator->enabled = enabled;
     }
 }
 
-void setAddonInstallDir(const std::filesystem::path& dir) {
-    settings_addon_install_dir = dir;
+void setAddonDirectories(const std::filesystem::path& dir) {
+    settings_addon_directories = dir;
 }
 
-void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
-    settings_install_dirs.clear();
+void setGameDirectories(const std::vector<std::filesystem::path>& dirs_config) {
+    settings_directories.clear();
     for (const auto& dir : dirs_config) {
-        settings_install_dirs.push_back({dir, true});
+        settings_directories.push_back({dir, true});
     }
 }
 
-void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config) {
-    settings_install_dirs = dirs_config;
+void setAllGameDirectories(const std::vector<GameDirectories>& dirs_config) {
+    settings_directories = dirs_config;
 }
 
 void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
 }
 
-const std::vector<std::filesystem::path> getGameInstallDirs() {
+const std::vector<std::filesystem::path> getGameDirectories() {
     std::vector<std::filesystem::path> enabled_dirs;
-    for (const auto& dir : settings_install_dirs) {
+    for (const auto& dir : settings_directories) {
         if (dir.enabled) {
             enabled_dirs.push_back(dir.path);
         }
@@ -496,20 +496,20 @@ const std::vector<std::filesystem::path> getGameInstallDirs() {
     return enabled_dirs;
 }
 
-const std::vector<bool> getGameInstallDirsEnabled() {
+const std::vector<bool> getGameDirsEnabled() {
     std::vector<bool> enabled_dirs;
-    for (const auto& dir : settings_install_dirs) {
+    for (const auto& dir : settings_directories) {
         enabled_dirs.push_back(dir.enabled);
     }
     return enabled_dirs;
 }
 
-std::filesystem::path getAddonInstallDir() {
-    if (settings_addon_install_dir.empty()) {
+std::filesystem::path getAddonDirectory() {
+    if (settings_addon_directories.empty()) {
         // Default for users without a config file or a config file from before this option existed
         return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
     }
-    return settings_addon_install_dir;
+    return settings_addon_directories;
 }
 
 u32 GetLanguage() {
@@ -621,29 +621,29 @@ void load(const std::filesystem::path& path) {
 
         load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
 
-        const auto install_dir_array =
-            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
+        const auto directories_array =
+            toml::find_or<std::vector<std::u8string>>(gui, "Directories", {});
 
         try {
-            install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
+            directories_enabled = toml::find<std::vector<bool>>(gui, "DirectoriesEnabled");
         } catch (...) {
             // If it does not exist, assume that all are enabled.
-            install_dirs_enabled.resize(install_dir_array.size(), true);
+            directories_enabled.resize(directories_array.size(), true);
         }
 
-        if (install_dirs_enabled.size() < install_dir_array.size()) {
-            install_dirs_enabled.resize(install_dir_array.size(), true);
+        if (directories_enabled.size() < directories_array.size()) {
+            directories_enabled.resize(directories_array.size(), true);
         }
 
-        settings_install_dirs.clear();
-        for (size_t i = 0; i < install_dir_array.size(); i++) {
-            settings_install_dirs.push_back(
-                {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
+        settings_directories.clear();
+        for (size_t i = 0; i < directories_array.size(); i++) {
+            settings_directories.push_back(
+                {std::filesystem::path{directories_array[i]}, directories_enabled[i]});
         }
 
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
 
-        settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
+        settings_addon_directories = toml::find_fs_path_or(gui, "addonDirectories", {});
     }
 
     if (data.contains("Settings")) {
@@ -755,8 +755,8 @@ void save(const std::filesystem::path& path) {
     data["Debug"]["FPSColor"] = isFpsColor;
     data["Keys"]["TrophyKey"] = trophyKey;
 
-    std::vector<std::string> install_dirs;
-    std::vector<bool> install_dirs_enabled;
+    std::vector<std::string> directories;
+    std::vector<bool> directories_enabled;
 
     // temporary structure for ordering
     struct DirEntry {
@@ -765,7 +765,7 @@ void save(const std::filesystem::path& path) {
     };
 
     std::vector<DirEntry> sorted_dirs;
-    for (const auto& dirInfo : settings_install_dirs) {
+    for (const auto& dirInfo : settings_directories) {
         sorted_dirs.push_back(
             {std::string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
     }
@@ -778,17 +778,17 @@ void save(const std::filesystem::path& path) {
     });
 
     for (const auto& entry : sorted_dirs) {
-        install_dirs.push_back(entry.path_str);
-        install_dirs_enabled.push_back(entry.enabled);
+        directories.push_back(entry.path_str);
+        directories_enabled.push_back(entry.enabled);
     }
 
-    data["GUI"]["installDirs"] = install_dirs;
-    data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
+    data["GUI"]["Directories"] = directories;
+    data["GUI"]["DirectoriesEnabled"] = directories_enabled;
     data["GUI"]["saveDataPath"] = std::string{fmt::UTF(save_data_path.u8string()).data};
     data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
-    data["GUI"]["addonInstallDir"] =
-        std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+    data["GUI"]["addonDirectories"] =
+        std::string{fmt::UTF(settings_addon_directories.u8string()).data};
     data["Settings"]["consoleLanguage"] = m_language;
 
     // Sorting of TOML sections

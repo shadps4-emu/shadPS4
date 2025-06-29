@@ -23,7 +23,7 @@ public:
     QAction* setlistModeListAct;
     QAction* setlistModeGridAct;
     QAction* setlistElfAct;
-    QAction* gameInstallPathAct;
+    QAction* gamePathAct;
     QAction* downloadCheatsPatchesAct;
     QAction* dumpGameListAct;
     QAction* trophyViewerAct;
@@ -131,9 +131,9 @@ public:
         setlistElfAct = new QAction(MainWindow);
         setlistElfAct->setObjectName("setlistElfAct");
         setlistElfAct->setCheckable(true);
-        gameInstallPathAct = new QAction(MainWindow);
-        gameInstallPathAct->setObjectName("gameInstallPathAct");
-        gameInstallPathAct->setIcon(QIcon(":images/folder_icon.png"));
+        gamePathAct = new QAction(MainWindow);
+        gamePathAct->setObjectName("gamePathAct");
+        gamePathAct->setIcon(QIcon(":images/folder_icon.png"));
         downloadCheatsPatchesAct = new QAction(MainWindow);
         downloadCheatsPatchesAct->setObjectName("downloadCheatsPatchesAct");
         downloadCheatsPatchesAct->setIcon(QIcon(":images/update_icon.png"));
@@ -329,7 +329,7 @@ public:
         menuGame_List_Mode->addAction(setlistModeGridAct);
         menuGame_List_Mode->addAction(setlistElfAct);
         menuSettings->addAction(configureAct);
-        menuSettings->addAction(gameInstallPathAct);
+        menuSettings->addAction(gamePathAct);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
@@ -381,8 +381,8 @@ public:
         setlistModeGridAct->setText(
             QCoreApplication::translate("MainWindow", "Grid View", nullptr));
         setlistElfAct->setText(QCoreApplication::translate("MainWindow", "Elf Viewer", nullptr));
-        gameInstallPathAct->setText(
-            QCoreApplication::translate("MainWindow", "Game Install Directory", nullptr));
+        gamePathAct->setText(
+            QCoreApplication::translate("MainWindow", "Game Directory", nullptr));
         downloadCheatsPatchesAct->setText(
             QCoreApplication::translate("MainWindow", "Download Cheats/Patches", nullptr));
         dumpGameListAct->setText(
