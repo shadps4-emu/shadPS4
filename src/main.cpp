@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
 
-             Config::setAddonInstallDir(config_path);
+             Config::getAddonDirectory(config_path);
              Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
              std::cout << "Addon folder successfully saved.\n";
              exit(0);

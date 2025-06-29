@@ -486,7 +486,7 @@ void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
 }
 
-std::vector<std::filesystem::path> Config::getGameDirectories() {
+std::vector<std::filesystem::path> getGameDirectories() {
     std::vector<std::filesystem::path> enabled_dirs;
     for (const auto& dir : settings_directories) {
         if (dir.enabled) {
@@ -496,12 +496,12 @@ std::vector<std::filesystem::path> Config::getGameDirectories() {
     return enabled_dirs;
 }
 
-std::vector<bool> Config::getGameDirectoriesEnabled() {
-    std::vector<bool> enabled_dirs;
+std::vector<bool> getGameDirectoriesEnabled() {
+    std::vector<bool> enabled;
     for (const auto& dir : settings_directories) {
-        enabled_dirs.push_back(dir.enabled);
+        enabled.push_back(dir.enabled);
     }
-    return enabled_dirs;
+    return enabled;
 }
 
 std::filesystem::path getAddonDirectory() {
