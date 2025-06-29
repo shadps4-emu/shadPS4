@@ -9,7 +9,7 @@
 #include "common/memory_patcher.h"
 #include "core/file_sys/fs.h"
 #include "emulator.h"
-#include "game_install_dialog.h"
+#include "game_directory_dialog.h"
 #include "main_window.h"
 
 #ifdef _WIN32

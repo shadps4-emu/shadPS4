@@ -12,9 +12,9 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "game_directory_dialog.h"
+#include "game_install_dialog.h"
 
-GameInstallDialog::GameDirectoryDialog() : m_gamesDirectory(nullptr) {
+GameInstallDialog::GameInstallDialog() : m_gamesDirectory(nullptr) {
     auto layout = new QVBoxLayout(this);
 
     layout->addWidget(SetupGamesDirectory());
@@ -26,7 +26,7 @@ GameInstallDialog::GameDirectoryDialog() : m_gamesDirectory(nullptr) {
     setWindowIcon(QIcon(":images/shadps4.ico"));
 }
 
-GameInstallDialog::~GameDirectoryDialog() {}
+GameInstallDialog::~GameInstallDialog() {}
 
 void GameInstallDialog::BrowseGamesDirectory() {
     auto path = QFileDialog::getExistingDirectory(this, tr("Games Directory"));
