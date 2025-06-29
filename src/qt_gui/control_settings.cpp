@@ -122,9 +122,9 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
             [this]() { CheckMapping(MappingButton); });
     connect(this, &ControlSettings::AxisChanged, this,
             [this]() { ConnectAxisInputs(MappingButton); });
-
     connect(ui->ActiveGamepadBox, &QComboBox::currentIndexChanged, this,
             &ControlSettings::ActiveControllerChanged);
+
     connect(ui->DefaultGamepadButton, &QPushButton::clicked, this, [this]() {
         char pszGUID[33];
         SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[ui->ActiveGamepadBox->currentIndex()]),
@@ -136,6 +136,18 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
         QMessageBox::information(this, tr("Default Controller Selected"),
                                  tr("Active controller set as default"));
+    });
+
+    connect(ui->RemoveDefaultGamepadButton, &QPushButton::clicked, this, [this]() {
+        char pszGUID[33];
+        SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[ui->ActiveGamepadBox->currentIndex()]),
+                         pszGUID, 33);
+        ui->DefaultGamepadName->setText("No default selected");
+        ui->DefaultGamepadLabel->setText("n/a");
+        Config::setDefaultControllerID("");
+        Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+        QMessageBox::information(this, tr("Default Controller Removed"),
+                                 tr("No default controller currently selected"));
     });
 
     RemapWrapper = SdlEventWrapper::Wrapper::GetInstance();
