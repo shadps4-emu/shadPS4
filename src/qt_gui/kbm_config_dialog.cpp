@@ -219,7 +219,7 @@ bool EditorDialog::hasUnsavedChanges() {
 void EditorDialog::loadInstalledGames() {
     previous_game = "default";
     QStringList filePaths;
-    for (const auto& installLoc : Config::getGameInstallDirs()) {
+    for (const auto& installLoc : Config::getGameDirectories()) {
         QString installDir;
         Common::FS::PathToQString(installDir, installLoc);
         QDir parentFolder(installDir);
