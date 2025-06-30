@@ -88,4 +88,23 @@ static void DrawCenteredText(const char* text, const char* text_end = nullptr,
     SetCursorPos(pos + content);
 }
 
+inline void DrawCaretForInputText(const char* text, int caret_index, ImVec2 input_pos,
+                                  float padding_x = 4.0f, float padding_y = 3.0f) {
+    ImVec2 text_size = ImGui::CalcTextSize(text, text + caret_index);
+    float caret_x = input_pos.x + padding_x + text_size.x;
+    float caret_y = input_pos.y + padding_y;
+
+    float caret_height = ImGui::GetTextLineHeight();
+
+    // Optional: make caret blink like ImGui does
+    float time = ImGui::GetTime();
+    bool visible = (fmodf(time, 1.2f) < 0.8f);
+    if (!visible)
+        return;
+
+    ImGui::GetWindowDrawList()->AddLine(ImVec2(caret_x, caret_y),
+                                        ImVec2(caret_x, caret_y + caret_height),
+                                        IM_COL32(255, 255, 255, 255), 1.0f);
+}
+
 } // namespace ImGui
