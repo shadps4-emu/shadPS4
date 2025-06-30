@@ -514,17 +514,14 @@ void ControllerOutput::FinalizeUpdate() {
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
-            LOG_INFO(Input, "Topuchpad left");
             controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
-            LOG_INFO(Input, "Topuchpad center");
             controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
-            LOG_INFO(Input, "Topuchpad right");
             controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
             controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
