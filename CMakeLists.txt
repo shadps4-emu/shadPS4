@@ -657,6 +657,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/arch.h
            src/common/assert.cpp
            src/common/assert.h
+           src/common/binary_helper.h
            src/common/bit_array.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
@@ -925,6 +926,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/buffer_cache/region_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
+               src/video_core/renderer_vulkan/shader_cache.cpp
+               src/video_core/renderer_vulkan/shader_cache.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
