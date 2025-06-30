@@ -591,7 +591,7 @@
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation>Двиньте аналоговый стик</translation>
     </message>
   </context>
   <context>
