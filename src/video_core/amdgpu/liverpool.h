@@ -1519,7 +1519,7 @@ public:
         submit_cv.notify_one();
     }
 
-    void reserveCopyBufferSpace() {
+    void ReserveCopyBufferSpace() {
         GpuQueue& gfx_queue = mapped_queues[GfxQueueId];
         std::scoped_lock<std::mutex> lk(gfx_queue.m_access);
 
@@ -1582,7 +1582,7 @@ private:
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     template <bool is_indirect = false>
-    Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
+    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
 
     void ProcessCommands();
     void Process(std::stop_token stoken);

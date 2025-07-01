@@ -812,31 +812,32 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 }
 
 template <bool is_indirect>
-Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid) {
+Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
     auto& queue = asc_queues[{vqid}];
 
-    auto base_addr = reinterpret_cast<VAddr>(acb);
-    while (acb_dwords > 0) {
+    auto base_addr = reinterpret_cast<VAddr>(acb.data());
+    while (!acb.empty()) {
         ProcessCommands();
 
-        auto* header = reinterpret_cast<const PM4Header*>(acb);
+        auto* header = reinterpret_cast<const PM4Header*>(acb.data());
         u32 next_dw_off = header->type3.NumWords() + 1;
 
         // If we have a buffered packet, use it.
         if (queue.tmp_dwords > 0) [[unlikely]] {
             header = reinterpret_cast<const PM4Header*>(queue.tmp_packet.data());
             next_dw_off = header->type3.NumWords() + 1 - queue.tmp_dwords;
-            std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb, next_dw_off * sizeof(u32));
+            std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb.data(),
+                        next_dw_off * sizeof(u32));
             queue.tmp_dwords = 0;
         }
 
         // If the packet is split across ring boundary, buffer until next submission
-        if (next_dw_off > acb_dwords) [[unlikely]] {
-            std::memcpy(queue.tmp_packet.data(), acb, acb_dwords * sizeof(u32));
-            queue.tmp_dwords = acb_dwords;
+        if (next_dw_off > acb.size()) [[unlikely]] {
+            std::memcpy(queue.tmp_packet.data(), acb.data(), acb.size_bytes());
+            queue.tmp_dwords = acb.size();
             if constexpr (!is_indirect) {
-                *queue.read_addr += acb_dwords;
+                *queue.read_addr += acb.size();
                 *queue.read_addr %= queue.ring_size_dw;
             }
             break;
@@ -845,9 +846,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         if (header->type == 2) {
             // Type-2 packet are used for padding purposes
             next_dw_off = 1;
-            acb += next_dw_off;
-            acb_dwords -= next_dw_off;
-
+            acb = NextPacket(acb, next_dw_off);
             if constexpr (!is_indirect) {
                 *queue.read_addr += next_dw_off;
                 *queue.read_addr %= queue.ring_size_dw;
@@ -869,8 +868,8 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task = ProcessCompute<true>(indirect_buffer->Address<const u32>(),
-                                             indirect_buffer->ib_size, vqid);
+            auto task = ProcessCompute<true>(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
             RESUME_ASC(task, vqid);
 
             while (!task.handle.done()) {
@@ -1032,8 +1031,7 @@ Liverpool::Task Liverpool::ProcessCompute(const u32* acb, u32 acb_dwords, u32 vq
                             static_cast<u32>(opcode), header->type3.NumWords());
         }
 
-        acb += next_dw_off;
-        acb_dwords -= next_dw_off;
+        acb = NextPacket(acb, next_dw_off);
 
         if constexpr (!is_indirect) {
             *queue.read_addr += next_dw_off;
@@ -1103,7 +1101,7 @@ void Liverpool::SubmitAsc(u32 gnm_vqid, std::span<const u32> acb) {
     auto& queue = mapped_queues[gnm_vqid];
 
     const auto vqid = gnm_vqid - 1;
-    const auto& task = ProcessCompute(acb.data(), acb.size(), vqid);
+    const auto& task = ProcessCompute(acb, vqid);
     {
         std::scoped_lock lock{queue.m_access};
         queue.submits.emplace(task.handle);
