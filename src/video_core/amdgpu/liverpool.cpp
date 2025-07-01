@@ -77,7 +77,7 @@ void Liverpool::ProcessCommands() {
     while (num_commands) {
         Common::UniqueFunction<void> callback{};
         {
-            std::unique_lock lk{submit_mutex};
+            std::scoped_lock lk{submit_mutex};
             callback = std::move(command_queue.front());
             command_queue.pop();
             --num_commands;

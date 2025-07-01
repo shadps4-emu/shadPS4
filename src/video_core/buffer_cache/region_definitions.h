@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include "common/bit_array.h"
 #include "common/types.h"
 
@@ -20,7 +19,6 @@ constexpr u64 NUM_PAGES_PER_REGION = TRACKER_HIGHER_PAGE_SIZE / TRACKER_BYTES_PE
 enum class Type {
     CPU,
     GPU,
-    Writeable,
 };
 
 using RegionBits = Common::BitArray<NUM_PAGES_PER_REGION>;

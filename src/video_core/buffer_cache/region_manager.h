@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include "common/config.h"
 #include "common/div_ceil.h"
 
 #ifdef __linux__
@@ -47,29 +48,19 @@ public:
 
     template <Type type>
     RegionBits& GetRegionBits() noexcept {
-        static_assert(type != Type::Writeable);
         if constexpr (type == Type::CPU) {
             return cpu;
         } else if constexpr (type == Type::GPU) {
             return gpu;
-        } else if constexpr (type == Type::Writeable) {
-            return writeable;
-        } else {
-            static_assert(false, "Invalid type");
         }
     }
 
     template <Type type>
     const RegionBits& GetRegionBits() const noexcept {
-        static_assert(type != Type::Writeable);
         if constexpr (type == Type::CPU) {
             return cpu;
         } else if constexpr (type == Type::GPU) {
             return gpu;
-        } else if constexpr (type == Type::Writeable) {
-            return writeable;
-        } else {
-            static_assert(false, "Invalid type");
         }
     }
 
@@ -90,7 +81,6 @@ public:
             return;
         }
         std::scoped_lock lk{lock};
-        static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
         if constexpr (enable) {
@@ -100,7 +90,7 @@ public:
         }
         if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
-        } else {
+        } else if (Config::readbacks()) {
             UpdateProtection<enable, true>();
         }
     }
@@ -124,7 +114,6 @@ public:
             return;
         }
         std::scoped_lock lk{lock};
-        static_assert(type != Type::Writeable);
 
         RegionBits& bits = GetRegionBits<type>();
         RegionBits mask(bits, start_page, end_page);
@@ -137,7 +126,7 @@ public:
             bits.UnsetRange(start_page, end_page);
             if constexpr (type == Type::CPU) {
                 UpdateProtection<true, false>();
-            } else {
+            } else if (Config::readbacks()) {
                 UpdateProtection<false, true>();
             }
         }
@@ -159,7 +148,6 @@ public:
             return false;
         }
         std::scoped_lock lk{lock};
-        static_assert(type != Type::Writeable);
 
         const RegionBits& bits = GetRegionBits<type>();
         RegionBits test(bits, start_page, end_page);
