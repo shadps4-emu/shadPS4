@@ -495,7 +495,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation>Overstyr farge på lyslinja</translation>
+      <translation>Overstyr farge på lyslisten</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -1226,15 +1226,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Berøringsplate venstre</translation>
+      <translation>Venstre berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Berøringsplate midten</translation>
+      <translation>Midt berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Berøringsplate høyre</translation>
+      <translation>Høyre berøringsplate</translation>
     </message>
   </context>
   <context>
