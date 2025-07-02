@@ -711,7 +711,6 @@ void load(const std::filesystem::path& path) {
         fmt::print("Outdated config detected, updating config file.\n");
         save(path);
     }
-    
 }
 
 void sortTomlSections(toml::ordered_value& data) {
