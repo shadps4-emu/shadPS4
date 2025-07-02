@@ -97,6 +97,8 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::LoadBufferU64:
     case IR::Opcode::StoreBufferU64:
     case IR::Opcode::BufferAtomicIAdd64:
+    case IR::Opcode::BufferAtomicSMax64:
+    case IR::Opcode::BufferAtomicUMax64:
         return IR::Type::U64;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32:
@@ -118,6 +120,8 @@ u32 BufferAddressShift(const IR::Inst& inst, AmdGpu::DataFormat data_format) {
     case IR::Opcode::LoadBufferU64:
     case IR::Opcode::StoreBufferU64:
     case IR::Opcode::BufferAtomicIAdd64:
+    case IR::Opcode::BufferAtomicSMax64:
+    case IR::Opcode::BufferAtomicUMax64:
         return 3;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32: {
