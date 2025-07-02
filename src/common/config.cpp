@@ -573,9 +573,10 @@ void load(const std::filesystem::path& path) {
         isNeo = toml::find_or<bool>(general, "isPS4Pro", isNeo);
         isDevKit = toml::find_or<bool>(general, "isDevKit", isDevKit);
         isPSNSignedIn = toml::find_or<bool>(general, "isPSNSignedIn", isPSNSignedIn);
-        isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", isTrophyPopupDisabled);
-        trophyNotificationDuration =
-            toml::find_or<double>(general, "trophyNotificationDuration", trophyNotificationDuration);
+        isTrophyPopupDisabled =
+            toml::find_or<bool>(general, "isTrophyPopupDisabled", isTrophyPopupDisabled);
+        trophyNotificationDuration = toml::find_or<double>(general, "trophyNotificationDuration",
+                                                           trophyNotificationDuration);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
         logFilter = toml::find_or<std::string>(general, "logFilter", logFilter);
         logType = toml::find_or<std::string>(general, "logType", logType);
@@ -583,8 +584,8 @@ void load(const std::filesystem::path& path) {
         isShowSplash = toml::find_or<bool>(general, "showSplash", isShowSplash);
         isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", isSideTrophy);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
-        checkCompatibilityOnStartup =
-            toml::find_or<bool>(general, "checkCompatibilityOnStartup", checkCompatibilityOnStartup);
+        checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
+                                                          checkCompatibilityOnStartup);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
     }
 
@@ -595,8 +596,10 @@ void load(const std::filesystem::path& path) {
         cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", cursorHideTimeout);
         useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", useSpecialPad);
         specialPadClass = toml::find_or<int>(input, "specialPadClass", specialPadClass);
-        isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
-        useUnifiedInputConfig = toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
+        isMotionControlsEnabled =
+            toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
+        useUnifiedInputConfig =
+            toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
     }
 
     if (data.contains("GPU")) {
@@ -632,7 +635,8 @@ void load(const std::filesystem::path& path) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump = toml::find_or<bool>(debug, "DebugDump", isDebugDump);
-        isSeparateLogFilesEnabled = toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
+        isSeparateLogFilesEnabled =
+            toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
     }
@@ -664,7 +668,8 @@ void load(const std::filesystem::path& path) {
 
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
 
-        settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
+        settings_addon_install_dir =
+            toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
     }
 
     if (data.contains("Settings")) {
