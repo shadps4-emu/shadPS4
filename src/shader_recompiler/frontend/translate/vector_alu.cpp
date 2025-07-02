@@ -558,27 +558,31 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     if (!is_low) {
-        // v_mbcnt_hi_u32_b32 v2, -1, 0
+        // v_mbcnt_hi_u32_b32 vX, -1, 0
         if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
             inst.src[1].field == OperandField::ConstZero) {
             return;
         }
-        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0
-        if (inst.src[0].field == OperandField::ExecHi &&
-            inst.src[1].field == OperandField::ConstZero) {
-            return;
+        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
+        if ((inst.src[0].field == OperandField::ExecHi ||
+             inst.src[0].field == OperandField::VccHi) &&
+            (inst.src[1].field == OperandField::ConstZero ||
+             inst.src[1].field == OperandField::VectorGPR)) {
+            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
+        UNREACHABLE();
     } else {
-        // v_mbcnt_lo_u32_b32 v2, -1, vX
+        // v_mbcnt_lo_u32_b32 vY, -1, vX
         // used combined with above to fetch lane id in non-compute stages
         if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
-            SetDst(inst.dst[0], ir.LaneId());
+            return SetDst(inst.dst[0], ir.LaneId());
         }
-        // v_mbcnt_lo_u32_b32 v20, exec_lo, vX
-        // used combined in above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo) {
-            SetDst(inst.dst[0], ir.Imm32(0));
+        // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
+        // used combined with above for append buffer indexing.
+        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo) {
+            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
+        UNREACHABLE();
     }
 }
 
