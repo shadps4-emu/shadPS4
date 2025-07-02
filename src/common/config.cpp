@@ -677,6 +677,9 @@ void load(const std::filesystem::path& path) {
         const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", trophyKey);
     }
+
+    // Run save after loading to generate any missing fields with default values.
+    save(path);
 }
 
 void sortTomlSections(toml::ordered_value& data) {
