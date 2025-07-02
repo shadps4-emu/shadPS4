@@ -15,8 +15,13 @@ class Rasterizer;
 namespace VideoCore {
 
 class PageManager {
-    static constexpr size_t PAGE_BITS = 12;
-    static constexpr size_t PAGE_SIZE = 1ULL << PAGE_BITS;
+    // Use the same page size as the tracker.
+    static constexpr size_t PAGE_BITS = TRACKER_PAGE_BITS;
+    static constexpr size_t PAGE_SIZE = TRACKER_BYTES_PER_PAGE;
+
+    // Keep the lock granularity the same as region granularity. (since each regions has
+    // itself a lock)
+    static constexpr size_t PAGES_PER_LOCK = NUM_PAGES_PER_REGION;
 
 public:
     explicit PageManager(Vulkan::Rasterizer* rasterizer);
@@ -32,9 +37,8 @@ public:
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) const;
 
-    /// Updates watches in the pages touching the specified region
-    /// using a mask.
-    template <bool track>
+    /// Updates watches in the pages touching the specified region using a mask.
+    template <bool track, bool is_read = false>
     void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const;
 
     /// Returns page aligned address.

@@ -454,31 +454,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>L1 / LB</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>L2 / LT</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Back</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R1 / RB</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R2 / RT</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>L3</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Options / Start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -487,22 +463,6 @@
     </message>
     <message>
         <source>Face Buttons</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Triangle / Y</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Square / X</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Circle / B</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Cross / A</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -564,6 +524,72 @@
     <message>
         <source>Cancel</source>
         <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+        <source>unmapped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Touchpad Left</source>
+        <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+        <source>Touchpad Center</source>
+        <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+        <source>Touchpad Right</source>
+        <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+        <source>Triangle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Circle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cross</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Press a button</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Move analog stick</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

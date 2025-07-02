@@ -11,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1043</width>
-    <height>792</height>
+    <width>1114</width>
+    <height>794</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,8 +33,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1019</width>
-        <height>732</height>
+        <width>1094</width>
+        <height>744</height>
        </rect>
       </property>
       <widget class="QWidget" name="layoutWidget">
@@ -42,8 +42,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1021</width>
-         <height>731</height>
+         <width>1091</width>
+         <height>741</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="RemapLayout">
@@ -110,7 +110,7 @@
                  <widget class="QGroupBox" name="gb_dpad_up">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -125,12 +125,9 @@
                   </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_4">
                    <item>
-                    <widget class="QComboBox" name="DpadUpBox">
-                     <property name="editable">
-                      <bool>false</bool>
-                     </property>
-                     <property name="sizeAdjustPolicy">
-                      <enum>QComboBox::SizeAdjustPolicy::AdjustToContents</enum>
+                    <widget class="QPushButton" name="DpadUpButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -161,7 +158,11 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="DpadLeftBox"/>
+                   <widget class="QPushButton" name="DpadLeftButton">
+                    <property name="text">
+                     <string>unmapped</string>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -185,9 +186,9 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="DpadRightBox">
-                    <property name="editable">
-                     <bool>false</bool>
+                   <widget class="QPushButton" name="DpadRightButton">
+                    <property name="text">
+                     <string>unmapped</string>
                     </property>
                    </widget>
                   </item>
@@ -213,6 +214,12 @@
                 </property>
                 <item>
                  <widget class="QGroupBox" name="gb_dpad_down">
+                  <property name="minimumSize">
+                   <size>
+                    <width>152</width>
+                    <height>0</height>
+                   </size>
+                  </property>
                   <property name="maximumSize">
                    <size>
                     <width>124</width>
@@ -224,21 +231,9 @@
                   </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_3">
                    <item>
-                    <widget class="QComboBox" name="DpadDownBox">
-                     <property name="enabled">
-                      <bool>true</bool>
-                     </property>
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>0</width>
-                       <height>0</height>
-                      </size>
+                    <widget class="QPushButton" name="DpadDownButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -378,7 +373,7 @@
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>16777215</height>
                    </size>
                   </property>
@@ -387,9 +382,9 @@
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_10">
                    <item>
-                    <widget class="QComboBox" name="LStickUpBox">
-                     <property name="enabled">
-                      <bool>true</bool>
+                    <widget class="QPushButton" name="LStickUpButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -420,9 +415,9 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="LStickLeftBox">
-                    <property name="enabled">
-                     <bool>true</bool>
+                   <widget class="QPushButton" name="LStickLeftButton">
+                    <property name="text">
+                     <string>unmapped</string>
                     </property>
                    </widget>
                   </item>
@@ -454,9 +449,9 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="LStickRightBox">
-                    <property name="enabled">
-                     <bool>true</bool>
+                   <widget class="QPushButton" name="LStickRightButton">
+                    <property name="text">
+                     <string>unmapped</string>
                     </property>
                    </widget>
                   </item>
@@ -484,7 +479,7 @@
                  <widget class="QGroupBox" name="gb_left_stick_down">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -499,15 +494,9 @@
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_8">
                    <item>
-                    <widget class="QComboBox" name="LStickDownBox">
-                     <property name="enabled">
-                      <bool>true</bool>
-                     </property>
-                     <property name="editable">
-                      <bool>false</bool>
-                     </property>
-                     <property name="frame">
-                      <bool>false</bool>
+                    <widget class="QPushButton" name="LStickDownButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -618,145 +607,186 @@
              <number>0</number>
             </property>
             <item>
-             <layout class="QVBoxLayout" name="layout_l1_l2">
-              <item>
-               <widget class="QGroupBox" name="gb_l1">
-                <property name="title">
-                 <string>L1 / LB</string>
-                </property>
-                <layout class="QVBoxLayout" name="gb_l1_layout">
-                 <property name="leftMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
-                 <item>
-                  <widget class="QComboBox" name="LBBox"/>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="gb_l2">
-                <property name="title">
-                 <string>L2 / LT</string>
-                </property>
-                <layout class="QVBoxLayout" name="gb_l2_layout">
-                 <property name="leftMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
-                 <item>
-                  <widget class="QComboBox" name="LTBox"/>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
              <layout class="QVBoxLayout" name="layout_system_buttons">
               <item>
-               <spacer name="verticalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
-                </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Policy::Preferred</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>20</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
                <layout class="QVBoxLayout" name="verticalLayout_4">
-                <property name="spacing">
-                 <number>10</number>
-                </property>
                 <item>
-                 <widget class="QGroupBox" name="groupBox_2">
-                  <property name="title">
-                   <string>Back</string>
-                  </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_9">
-                   <item>
-                    <widget class="QComboBox" name="BackBox"/>
-                   </item>
-                  </layout>
-                 </widget>
+                 <layout class="QHBoxLayout" name="horizontalLayout_13">
+                  <item>
+                   <widget class="QGroupBox" name="gb_l1">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="title">
+                     <string>L1</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="gb_l1_layout">
+                     <property name="leftMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="L1Button">
+                       <property name="text">
+                        <string>unmapped</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Policy::Fixed</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>133</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="gb_r1">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="title">
+                     <string>R1</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="gb_r1_layout">
+                     <property name="leftMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="R1Button">
+                       <property name="text">
+                        <string>unmapped</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_14">
+                  <item>
+                   <widget class="QGroupBox" name="gb_l2">
+                    <property name="title">
+                     <string>L2</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="gb_l2_layout">
+                     <property name="leftMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="L2Button">
+                       <property name="text">
+                        <string>unmapped</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="gb_start">
+                    <property name="title">
+                     <string>Options</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="gb_start_layout">
+                     <property name="leftMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="OptionsButton">
+                       <property name="text">
+                        <string>unmapped</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="gb_r2">
+                    <property name="title">
+                     <string>R2</string>
+                    </property>
+                    <layout class="QVBoxLayout" name="gb_r2_layout">
+                     <property name="leftMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QPushButton" name="R2Button">
+                       <property name="text">
+                        <string>unmapped</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                </layout>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="layout_r1_r2">
-              <item>
-               <widget class="QGroupBox" name="gb_r1">
-                <property name="title">
-                 <string>R1 / RB</string>
-                </property>
-                <layout class="QVBoxLayout" name="gb_r1_layout">
-                 <property name="leftMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
-                 <item>
-                  <widget class="QComboBox" name="RBBox"/>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QGroupBox" name="gb_r2">
-                <property name="title">
-                 <string>R2 / RT</string>
-                </property>
-                <layout class="QVBoxLayout" name="gb_r2_layout">
-                 <property name="leftMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="topMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="rightMargin">
-                  <number>5</number>
-                 </property>
-                 <property name="bottomMargin">
-                  <number>5</number>
-                 </property>
-                 <item>
-                  <widget class="QComboBox" name="RTBox"/>
-                 </item>
-                </layout>
-               </widget>
               </item>
              </layout>
             </item>
@@ -806,7 +836,7 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="layout_middle_bottom">
+           <layout class="QVBoxLayout" name="verticalLayout_9">
             <property name="spacing">
              <number>10</number>
             </property>
@@ -814,76 +844,144 @@
              <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
             </property>
             <item>
-             <widget class="QGroupBox" name="gb_l3">
-              <property name="title">
-               <string>L3</string>
-              </property>
-              <layout class="QVBoxLayout" name="gb_l3_layout">
-               <property name="leftMargin">
-                <number>5</number>
-               </property>
-               <property name="topMargin">
-                <number>5</number>
-               </property>
-               <property name="rightMargin">
-                <number>5</number>
-               </property>
-               <property name="bottomMargin">
-                <number>5</number>
-               </property>
-               <item>
-                <widget class="QComboBox" name="LClickBox"/>
-               </item>
-              </layout>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
+               <widget class="QGroupBox" name="gb_l3">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="title">
+                 <string>L3</string>
+                </property>
+                <layout class="QVBoxLayout" name="gb_l3_layout">
+                 <property name="leftMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>5</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="L3Button">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Fixed</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>133</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="gb_r3">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="title">
+                 <string>R3</string>
+                </property>
+                <layout class="QVBoxLayout" name="gb_r3_layout">
+                 <property name="leftMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>5</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="R3Button">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
-             <widget class="QGroupBox" name="gb_start">
-              <property name="title">
-               <string>Options / Start</string>
-              </property>
-              <layout class="QVBoxLayout" name="gb_start_layout">
-               <property name="leftMargin">
-                <number>5</number>
-               </property>
-               <property name="topMargin">
-                <number>5</number>
-               </property>
-               <property name="rightMargin">
-                <number>5</number>
-               </property>
-               <property name="bottomMargin">
-                <number>5</number>
-               </property>
-               <item>
-                <widget class="QComboBox" name="StartBox"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="gb_r3">
-              <property name="title">
-               <string>R3</string>
-              </property>
-              <layout class="QVBoxLayout" name="gb_r3_layout">
-               <property name="leftMargin">
-                <number>5</number>
-               </property>
-               <property name="topMargin">
-                <number>5</number>
-               </property>
-               <property name="rightMargin">
-                <number>5</number>
-               </property>
-               <property name="bottomMargin">
-                <number>5</number>
-               </property>
-               <item>
-                <widget class="QComboBox" name="RClickBox"/>
-               </item>
-              </layout>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <item>
+               <widget class="QGroupBox" name="gb_touchleft">
+                <property name="title">
+                 <string>Touchpad Left</string>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_5">
+                 <item>
+                  <widget class="QPushButton" name="TouchpadLeftButton">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="gb_touchcenter">
+                <property name="title">
+                 <string>Touchpad Center</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_11">
+                 <item>
+                  <widget class="QPushButton" name="TouchpadCenterButton">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="gb_touchright">
+                <property name="title">
+                 <string>Touchpad Right</string>
+                </property>
+                <layout class="QVBoxLayout" name="verticalLayout_12">
+                 <item>
+                  <widget class="QPushButton" name="TouchpadRightButton">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </item>
@@ -1104,7 +1202,7 @@
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1115,19 +1213,13 @@
                    </size>
                   </property>
                   <property name="title">
-                   <string>Triangle / Y</string>
+                   <string>Triangle</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_3">
                    <item>
-                    <widget class="QComboBox" name="YBox">
-                     <property name="enabled">
-                      <bool>true</bool>
-                     </property>
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
+                    <widget class="QPushButton" name="TriangleButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -1142,7 +1234,7 @@
                <item>
                 <widget class="QGroupBox" name="gb_square">
                  <property name="title">
-                  <string>Square / X</string>
+                  <string>Square</string>
                  </property>
                  <layout class="QVBoxLayout" name="gb_square_layout">
                   <property name="leftMargin">
@@ -1158,7 +1250,11 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="XBox"/>
+                   <widget class="QPushButton" name="SquareButton">
+                    <property name="text">
+                     <string>unmapped</string>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -1166,7 +1262,7 @@
                <item>
                 <widget class="QGroupBox" name="gb_circle">
                  <property name="title">
-                  <string>Circle / B</string>
+                  <string>Circle</string>
                  </property>
                  <layout class="QVBoxLayout" name="gb_circle_layout">
                   <property name="leftMargin">
@@ -1182,7 +1278,11 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="BBox"/>
+                   <widget class="QPushButton" name="CircleButton">
+                    <property name="text">
+                     <string>unmapped</string>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -1208,7 +1308,7 @@
                  <widget class="QGroupBox" name="gb_cross">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1219,11 +1319,15 @@
                    </size>
                   </property>
                   <property name="title">
-                   <string>Cross / A</string>
+                   <string>Cross</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_5">
                    <item>
-                    <widget class="QComboBox" name="ABox"/>
+                    <widget class="QPushButton" name="CrossButton">
+                     <property name="text">
+                      <string>unmapped</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
@@ -1361,7 +1465,7 @@
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>1231321</height>
                    </size>
                   </property>
@@ -1370,9 +1474,9 @@
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_7">
                    <item>
-                    <widget class="QComboBox" name="RStickUpBox">
-                     <property name="enabled">
-                      <bool>true</bool>
+                    <widget class="QPushButton" name="RStickUpButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
@@ -1403,9 +1507,9 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="RStickLeftBox">
-                    <property name="enabled">
-                     <bool>true</bool>
+                   <widget class="QPushButton" name="RStickLeftButton">
+                    <property name="text">
+                     <string>unmapped</string>
                     </property>
                    </widget>
                   </item>
@@ -1431,7 +1535,11 @@
                    <number>5</number>
                   </property>
                   <item>
-                   <widget class="QComboBox" name="RStickRightBox"/>
+                   <widget class="QPushButton" name="RStickRightButton">
+                    <property name="text">
+                     <string>unmapped</string>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -1457,7 +1565,7 @@
                  <widget class="QGroupBox" name="gb_right_stick_down">
                   <property name="minimumSize">
                    <size>
-                    <width>124</width>
+                    <width>152</width>
                     <height>0</height>
                    </size>
                   </property>
@@ -1472,9 +1580,9 @@
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_6">
                    <item>
-                    <widget class="QComboBox" name="RStickDownBox">
-                     <property name="enabled">
-                      <bool>true</bool>
+                    <widget class="QPushButton" name="RStickDownButton">
+                     <property name="text">
+                      <string>unmapped</string>
                      </property>
                     </widget>
                    </item>
