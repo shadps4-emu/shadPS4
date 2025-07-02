@@ -54,6 +54,8 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
+
+// These two entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 
@@ -97,7 +99,10 @@ std::filesystem::path save_data_path = {};
 u32 m_language = 1; // english
 
 // Keys
-static std::string trophyKey;
+static std::string trophyKey = "";
+
+// Expected number of items in the config file
+static constexpr u64 total_entries = 50;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -567,6 +572,9 @@ void load(const std::filesystem::path& path) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
+
+    u64 entry_count = 0;
+
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
@@ -587,6 +595,8 @@ void load(const std::filesystem::path& path) {
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+
+        entry_count += general.size();
     }
 
     if (data.contains("Input")) {
@@ -600,6 +610,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
+
+        entry_count += input.size();
     }
 
     if (data.contains("GPU")) {
@@ -616,6 +628,8 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
+
+        entry_count += gpu.size();
     }
 
     if (data.contains("Vulkan")) {
@@ -629,6 +643,8 @@ void load(const std::filesystem::path& path) {
         vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", vkHostMarkers);
         vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", vkGuestMarkers);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", rdocEnable);
+
+        entry_count += vk.size();
     }
 
     if (data.contains("Debug")) {
@@ -639,6 +655,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
+
+        entry_count += debug.size();
     }
 
     if (data.contains("GUI")) {
@@ -670,21 +688,30 @@ void load(const std::filesystem::path& path) {
 
         settings_addon_install_dir =
             toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
+
+        entry_count += gui.size();
     }
 
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
-
         m_language = toml::find_or<int>(settings, "consoleLanguage", m_language);
+
+        entry_count += settings.size();
     }
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", trophyKey);
+
+        entry_count += keys.size();
     }
 
     // Run save after loading to generate any missing fields with default values.
-    save(path);
+    if (entry_count != total_entries) {
+        fmt::print("Outdated config detected, updating config file.\n");
+        save(path);
+    }
+    
 }
 
 void sortTomlSections(toml::ordered_value& data) {
