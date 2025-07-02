@@ -328,9 +328,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 
         //     V_CMP_{OP8}_U64
     case Opcode::V_CMP_EQ_U64:
-        return V_CMP_EQ_U64(ConditionOp::EQ, inst);
+        return V_CMP_U64(ConditionOp::EQ, false, false, inst);
     case Opcode::V_CMP_NE_U64:
-        return V_CMP_EQ_U64(ConditionOp::LG, inst);
+        return V_CMP_U64(ConditionOp::LG, false, false, inst);
 
     case Opcode::V_CMP_CLASS_F32:
         return V_CMP_CLASS_F32(inst);
@@ -998,46 +998,7 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
     }
 }
 
-// General case for V_CMP_U64 is not yet implemented
-// void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-//     const IR::U64 src0{GetSrc64(inst.src[0])};
-//     const IR::U64 src1{GetSrc64(inst.src[1])};
-//     const IR::U1 result = [&] {
-//         switch (op) {
-//         case ConditionOp::F:
-//             return ir.Imm1(false);
-//         case ConditionOp::TRU:
-//             return ir.Imm1(true);
-//         case ConditionOp::EQ:
-//             return ir.IEqual(src0, src1);
-//         case ConditionOp::LG:
-//             return ir.INotEqual(src0, src1);
-//         case ConditionOp::GT:
-//             return ir.IGreaterThan(src0, src1, is_signed);
-//         case ConditionOp::LT:
-//             return ir.ILessThan(src0, src1, is_signed);
-//         case ConditionOp::LE:
-//             return ir.ILessThanEqual(src0, src1, is_signed);
-//         case ConditionOp::GE:
-//             return ir.IGreaterThanEqual(src0, src1, is_signed);
-//         default:
-//             UNREACHABLE();
-//         }
-//     }();
-//     if (set_exec) {
-//         ir.SetExec(result);
-//     }
-//     switch (inst.dst[1].field) {
-//     case OperandField::VccLo:
-//         return ir.SetVcc(result);
-//     case OperandField::ScalarGPR:
-//         return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
-//     default:
-//         UNREACHABLE();
-//     }
-// }
-
-void Translator::V_CMP_EQ_U64(ConditionOp op, const GcnInst& inst) {
+void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::U1 result = [&] {
@@ -1047,9 +1008,16 @@ void Translator::V_CMP_EQ_U64(ConditionOp op, const GcnInst& inst) {
         case ConditionOp::LG: // NE
             return ir.INotEqual(src0, src1);
         default:
-            UNREACHABLE_MSG("Unsupported V_CMP_EQ_U64 condition operation: {}", u32(op));
+            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
     }();
+
+    if (is_signed) {
+        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
+    }
+    if (set_exec) {
+        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
+    }
 
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
