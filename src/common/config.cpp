@@ -31,30 +31,47 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 
 namespace Config {
 
+// General
 static bool isNeo = false;
 static bool isDevKit = false;
+static bool isPSNSignedIn = false;
 static bool isTrophyPopupDisabled = false;
+static double trophyNotificationDuration = 6.0;
 static bool enableDiscordRPC = false;
-static u32 screenWidth = 1280;
-static u32 screenHeight = 720;
-static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
-static std::string logFilter;
+static std::string logFilter = "";
 static std::string logType = "sync";
 static std::string userName = "shadPS4";
-static std::string chooseHomeTab;
+static std::string chooseHomeTab = "General";
+static bool isShowSplash = false;
+static std::string isSideTrophy = "right";
+static bool compatibilityData = false;
+static bool checkCompatibilityOnStartup = false;
+
+// Input
+static int cursorState = HideCursorState::Idle;
+static int cursorHideTimeout = 5; // 5 seconds (default)
 static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
-static bool isDebugDump = false;
-static bool isShaderDebug = false;
-static bool isShowSplash = false;
-static std::string isSideTrophy = "right";
+static bool useUnifiedInputConfig = true;
+static bool overrideControllerColor = false;
+static int controllerCustomColorRGB[3] = {0, 0, 255};
+
+// GPU
+static u32 screenWidth = 1280;
+static u32 screenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
 static bool shouldDumpShaders = false;
-static bool shouldPatchShaders = true;
+static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
+static bool isFullscreen = false;
+static std::string fullscreenMode = "Windowed";
+static bool isHDRAllowed = false;
+
+// Vulkan
+static s32 gpuId = -1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
@@ -62,31 +79,25 @@ static bool vkCrashDiagnostic = false;
 static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
-static bool isFpsColor = true;
-static bool isSeparateLogFilesEnabled = false;
-static int cursorState = HideCursorState::Idle;
-static int cursorHideTimeout = 5; // 5 seconds (default)
-static double trophyNotificationDuration = 6.0;
-static bool useUnifiedInputConfig = true;
-static bool overrideControllerColor = false;
-static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool compatibilityData = false;
-static bool checkCompatibilityOnStartup = false;
-static std::string trophyKey;
-static bool isPSNSignedIn = false;
 
-// Gui
+// Debug
+static bool isDebugDump = false;
+static bool isShaderDebug = false;
+static bool isSeparateLogFilesEnabled = false;
+static bool isFpsColor = true;
+
+// GUI
 static bool load_game_size = true;
 static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-static bool isFullscreen = false;
-static std::string fullscreenMode = "Windowed";
-static bool isHDRAllowed = false;
 
-// Language
+// Settings
 u32 m_language = 1; // english
+
+// Keys
+static std::string trophyKey;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -811,32 +822,49 @@ void save(const std::filesystem::path& path) {
 }
 
 void setDefaultValues() {
-    isHDRAllowed = false;
+    // General
     isNeo = false;
     isDevKit = false;
     isPSNSignedIn = false;
-    isFullscreen = false;
     isTrophyPopupDisabled = false;
-    enableDiscordRPC = true;
-    screenWidth = 1280;
-    screenHeight = 720;
+    trophyNotificationDuration = 6.0;
+    enableDiscordRPC = false;
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";
-
     chooseHomeTab = "General";
-    cursorState = HideCursorState::Idle;
-    cursorHideTimeout = 5;
-    trophyNotificationDuration = 6.0;
-    useSpecialPad = false;
-    specialPadClass = 1;
-    isDebugDump = false;
-    isShaderDebug = false;
     isShowSplash = false;
     isSideTrophy = "right";
+    compatibilityData = false;
+    checkCompatibilityOnStartup = false;
+
+    // Input
+    cursorState = HideCursorState::Idle;
+    cursorHideTimeout = 5;
+    useSpecialPad = false;
+    specialPadClass = 1;
+    isMotionControlsEnabled = true;
+    useUnifiedInputConfig = true;
+    overrideControllerColor = false;
+    controllerCustomColorRGB[0] = 0;
+    controllerCustomColorRGB[1] = 0;
+    controllerCustomColorRGB[2] = 255;
+
+    // GPU
+    screenWidth = 1280;
+    screenHeight = 720;
     isNullGpu = false;
+    shouldCopyGPUBuffers = false;
+    readbacksEnabled = false;
     shouldDumpShaders = false;
+    shouldPatchShaders = false;
     vblankDivider = 1;
+    isFullscreen = false;
+    fullscreenMode = "Windowed";
+    isHDRAllowed = false;
+
+    // Vulkan
+    gpuId = -1;
     vkValidation = false;
     vkValidationSync = false;
     vkValidationGpu = false;
@@ -844,10 +872,18 @@ void setDefaultValues() {
     vkHostMarkers = false;
     vkGuestMarkers = false;
     rdocEnable = false;
+
+    // Debug
+    isDebugDump = false;
+    isShaderDebug = false;
+    isSeparateLogFilesEnabled = false;
+    isFpsColor = true;
+
+    // GUI
+    load_game_size = true;
+
+    // Settings
     m_language = 1;
-    gpuId = -1;
-    compatibilityData = false;
-    checkCompatibilityOnStartup = false;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {
