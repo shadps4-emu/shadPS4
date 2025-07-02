@@ -454,32 +454,8 @@
       <translation>Использовать настройки для каждой игры</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Назад</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Кнопки действий</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Треугольник / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Квадрат / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Круг / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Крест / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Отмена</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Тачпад слева</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Тачпад центр</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Тачпад справа</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Треугольник</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Квадрат</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Круг</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Крест</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Нажмите кнопку</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Последнее обновление</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Избранное</translation>
     </message>
   </context>
   <context>
@@ -949,6 +981,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>Просмотр SFO для</translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Удалить из избранного</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Добавить в избранное</translation>
     </message>
   </context>
   <context>

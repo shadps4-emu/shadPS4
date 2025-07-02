@@ -30,12 +30,14 @@ struct Profile {
     bool supports_robust_buffer_access{};
     bool supports_buffer_fp32_atomic_min_max{};
     bool supports_image_fp32_atomic_min_max{};
+    bool supports_buffer_int64_atomics{};
+    bool supports_shared_int64_atomics{};
     bool supports_workgroup_explicit_memory_layout{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
-    u64 min_ssbo_alignment{};
+    bool needs_buffer_offsets{};
     u64 max_ubo_size{};
     u32 max_viewport_width{};
     u32 max_viewport_height{};

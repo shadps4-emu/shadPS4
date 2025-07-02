@@ -36,7 +36,7 @@ static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, *this, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -468,17 +468,12 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
-
-        uses_dma |= stage->dma_types != Shader::IR::Type::Void;
+        uses_dma |= stage->uses_dma;
     }
-
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
-            // TODO: GPU might have written to memory (for example with EVENT_WRITE_EOP)
-            // we need to account for that and synchronize.
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
             for (auto& range : mapped_ranges) {
                 buffer_cache.SynchronizeBuffersInRange(range.lower(),
@@ -489,6 +484,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     fault_process_pending |= uses_dma;
+
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     return true;
 }
@@ -514,7 +511,8 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
     // will need its full emulation anyways.
     for (const auto& desc : info.buffers) {
         const VAddr address = desc.GetSharp(info).base_address;
-        if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
+        if (!desc.IsSpecial() && desc.is_written && !desc.is_read &&
+            texture_cache.ClearMeta(address)) {
             // Assume all slices were updates
             LOG_TRACE(Render_Vulkan, "Metadata update skipped");
             return true;
@@ -947,6 +945,10 @@ void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, boo
     buffer_cache.InlineData(address, value, num_bytes, is_gds);
 }
 
+void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
+    buffer_cache.CopyBuffer(dst, src, num_bytes, dst_gds, src_gds);
+}
+
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
     auto* gds_buf = buffer_cache.GetGdsBuffer();
     u32 value;
@@ -959,8 +961,17 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.InvalidateMemory(addr, size, false);
+    buffer_cache.InvalidateMemory(addr, size);
     texture_cache.InvalidateMemory(addr, size);
+    return true;
+}
+
+bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
+    if (!IsMapped(addr, size)) {
+        // Not GPU mapped memory, can skip invalidation logic entirely.
+        return false;
+    }
+    buffer_cache.ReadMemory(addr, size);
     return true;
 }
 
@@ -984,7 +995,7 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
-    buffer_cache.InvalidateMemory(addr, size, true);
+    buffer_cache.InvalidateMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
