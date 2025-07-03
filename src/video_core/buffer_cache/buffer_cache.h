@@ -113,7 +113,7 @@ public:
     void InvalidateMemory(VAddr device_addr, u64 size);
 
     /// Waits on pending downloads in the logical page range.
-    void ReadMemory(VAddr device_addr, u64 size);
+    void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
 
     /// Binds host vertex buffers for the current draw.
     void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
@@ -176,7 +176,7 @@ private:
         return !buffer_id || slot_buffers[buffer_id].is_deleted;
     }
 
-    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
+    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
@@ -191,7 +191,8 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_texel_buffer);
+    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
+                           bool is_texel_buffer);
 
     bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
 
