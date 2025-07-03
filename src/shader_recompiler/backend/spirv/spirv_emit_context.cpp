@@ -784,19 +784,6 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 };
 
 void EmitContext::DefineBuffers() {
-    if (!profile.supports_robust_buffer_access && !info.uses_dma) {
-        // In case Flatbuf has not already been bound by IR and is needed
-        // to query buffer sizes, bind it now.
-        info.buffers.push_back({
-            .used_types = IR::Type::U32,
-            // We can't guarantee that flatbuf will not grow past UBO
-            // limit if there are a lot of ReadConsts. (We could specialize)
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
-            .buffer_type = BufferType::Flatbuf,
-        });
-        // In the future we may want to read buffer sizes from GPU memory if available.
-        // info.readconst_types |= Info::ReadConstType::Immediate;
-    }
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
         const bool is_storage = desc.IsStorage(buf_sharp, profile);
@@ -1219,14 +1206,7 @@ Id EmitContext::DefineReadConst(bool dynamic) {
         if (dynamic) {
             return u32_zero_value;
         } else {
-            const auto& flatbuf_buffer{buffers[flatbuf_index]};
-            ASSERT(flatbuf_buffer.binding >= 0 &&
-                   flatbuf_buffer.buffer_type == BufferType::Flatbuf);
-            const auto [flatbuf_buffer_id, flatbuf_pointer_type] =
-                flatbuf_buffer.Alias(PointerType::U32);
-            const auto ptr{OpAccessChain(flatbuf_pointer_type, flatbuf_buffer_id, u32_zero_value,
-                                         flatbuf_offset)};
-            return OpLoad(U32[1], ptr);
+            return EmitFlatbufferLoad(flatbuf_offset);
         }
     });
 
