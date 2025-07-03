@@ -631,7 +631,8 @@ void load(const std::filesystem::path& path) {
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
-        directMemoryAccessEnabled = toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
+        directMemoryAccessEnabled =
+            toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
