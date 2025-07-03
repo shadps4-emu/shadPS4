@@ -327,8 +327,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
         //     V_CMP_{OP8}_U64
+    case Opcode::V_CMP_EQ_U64:
+        return V_CMP_U64(ConditionOp::EQ, false, false, inst);
     case Opcode::V_CMP_NE_U64:
-        return V_CMP_NE_U64(inst);
+        return V_CMP_U64(ConditionOp::LG, false, false, inst);
 
     case Opcode::V_CMP_CLASS_F32:
         return V_CMP_CLASS_F32(inst);
@@ -556,27 +558,31 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
     if (!is_low) {
-        // v_mbcnt_hi_u32_b32 v2, -1, 0
+        // v_mbcnt_hi_u32_b32 vX, -1, 0
         if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
             inst.src[1].field == OperandField::ConstZero) {
             return;
         }
-        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0
-        if (inst.src[0].field == OperandField::ExecHi &&
-            inst.src[1].field == OperandField::ConstZero) {
-            return;
+        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
+        if ((inst.src[0].field == OperandField::ExecHi ||
+             inst.src[0].field == OperandField::VccHi) &&
+            (inst.src[1].field == OperandField::ConstZero ||
+             inst.src[1].field == OperandField::VectorGPR)) {
+            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
+        UNREACHABLE();
     } else {
-        // v_mbcnt_lo_u32_b32 v2, -1, vX
+        // v_mbcnt_lo_u32_b32 vY, -1, vX
         // used combined with above to fetch lane id in non-compute stages
         if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
-            SetDst(inst.dst[0], ir.LaneId());
+            return SetDst(inst.dst[0], ir.LaneId());
         }
-        // v_mbcnt_lo_u32_b32 v20, exec_lo, vX
-        // used combined in above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo) {
-            SetDst(inst.dst[0], ir.Imm32(0));
+        // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
+        // used combined with above for append buffer indexing.
+        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo) {
+            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
+        UNREACHABLE();
     }
 }
 
@@ -996,39 +1002,32 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
     }
 }
 
-void Translator::V_CMP_NE_U64(const GcnInst& inst) {
-    const auto get_src = [&](const InstOperand& operand) {
-        switch (operand.field) {
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        case OperandField::ExecLo:
-            return ir.GetExec();
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
-        case OperandField::ConstZero:
-            return ir.Imm1(false);
+void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::U1 result = [&] {
+        switch (op) {
+        case ConditionOp::EQ:
+            return ir.IEqual(src0, src1);
+        case ConditionOp::LG: // NE
+            return ir.INotEqual(src0, src1);
         default:
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
-    };
-    const IR::U1 src0{get_src(inst.src[0])};
-    auto op = [&inst, this](auto x) {
-        switch (inst.src[1].field) {
-        case OperandField::ConstZero:
-            return x;
-        case OperandField::SignedConstIntNeg:
-            return ir.LogicalNot(x);
-        default:
-            UNREACHABLE_MSG("unhandled V_CMP_NE_U64 source argument {}", u32(inst.src[1].field));
-        }
-    };
+    }();
+
+    if (is_signed) {
+        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
+    }
+    if (set_exec) {
+        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
+    }
+
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
-        ir.SetVcc(op(src0));
-        break;
+        return ir.SetVcc(result);
     case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), op(src0));
-        break;
+        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
     default:
         UNREACHABLE();
     }
