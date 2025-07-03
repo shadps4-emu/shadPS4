@@ -74,8 +74,12 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::BUFFER_ATOMIC_SMIN:
         return BUFFER_ATOMIC(AtomicOp::Smin, inst);
+    case Opcode::BUFFER_ATOMIC_SMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smin, inst);
     case Opcode::BUFFER_ATOMIC_UMIN:
         return BUFFER_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::BUFFER_ATOMIC_UMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umin, inst);
     case Opcode::BUFFER_ATOMIC_SMAX:
         return BUFFER_ATOMIC(AtomicOp::Smax, inst);
     case Opcode::BUFFER_ATOMIC_SMAX_X2:

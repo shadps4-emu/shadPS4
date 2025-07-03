@@ -180,6 +180,16 @@ public:
         return OpAccessChain(result_type, shared_mem, index);
     }
 
+    Id EmitFlatbufferLoad(Id flatbuf_offset) {
+        const auto& flatbuf_buffer{buffers[flatbuf_index]};
+        ASSERT(flatbuf_buffer.binding >= 0 && flatbuf_buffer.buffer_type == BufferType::Flatbuf);
+        const auto [flatbuf_buffer_id, flatbuf_pointer_type] =
+            flatbuf_buffer.aliases[u32(PointerType::U32)];
+        const auto ptr{
+            OpAccessChain(flatbuf_pointer_type, flatbuf_buffer_id, u32_zero_value, flatbuf_offset)};
+        return OpLoad(U32[1], ptr);
+    }
+
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;

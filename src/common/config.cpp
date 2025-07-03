@@ -65,6 +65,7 @@ static u32 screenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
+static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
 static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
@@ -102,7 +103,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 50;
+static constexpr u64 total_entries = 51;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -261,6 +262,10 @@ bool readbacks() {
     return readbacksEnabled;
 }
 
+bool directMemoryAccess() {
+    return directMemoryAccessEnabled;
+}
+
 bool dumpShaders() {
     return shouldDumpShaders;
 }
@@ -367,6 +372,10 @@ void setCopyGPUCmdBuffers(bool enable) {
 
 void setReadbacks(bool enable) {
     readbacksEnabled = enable;
+}
+
+void setDirectMemoryAccess(bool enable) {
+    directMemoryAccessEnabled = enable;
 }
 
 void setDumpShaders(bool enable) {
@@ -622,6 +631,7 @@ void load(const std::filesystem::path& path) {
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
+        directMemoryAccessEnabled = toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
@@ -791,6 +801,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["readbacks"] = readbacksEnabled;
+    data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["patchShaders"] = shouldPatchShaders;
     data["GPU"]["vblankDivider"] = vblankDivider;
@@ -890,6 +901,7 @@ void setDefaultValues() {
     isNullGpu = false;
     shouldCopyGPUBuffers = false;
     readbacksEnabled = false;
+    directMemoryAccessEnabled = false;
     shouldDumpShaders = false;
     shouldPatchShaders = false;
     vblankDivider = 1;
