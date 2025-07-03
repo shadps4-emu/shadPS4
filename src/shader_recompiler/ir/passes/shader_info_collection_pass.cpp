@@ -102,7 +102,9 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::BufferAtomicIAdd64:
     case IR::Opcode::BufferAtomicSMax64:
+    case IR::Opcode::BufferAtomicSMin64:
     case IR::Opcode::BufferAtomicUMax64:
+    case IR::Opcode::BufferAtomicUMin64:
         info.uses_buffer_int64_atomics = true;
         break;
     case IR::Opcode::LaneId:
