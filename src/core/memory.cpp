@@ -414,9 +414,10 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             rasterizer->MapMemory(mapped_addr, size);
         }
         *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
+
+        TRACK_ALLOC(*out_addr, size, "VMEM");
     }
 
-    TRACK_ALLOC(*out_addr, size, "VMEM");
     return ORBIS_OK;
 }
 
