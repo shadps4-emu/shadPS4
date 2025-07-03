@@ -471,7 +471,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         uses_dma |= stage->uses_dma;
     }
 
-    if (uses_dma && !fault_process_pending) {
+    if (uses_dma) {
         // We only use fault buffer for DMA right now.
         {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
