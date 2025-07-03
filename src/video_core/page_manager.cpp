@@ -201,7 +201,8 @@ struct PageManager::Impl {
         RENDERER_TRACE;
         auto* memory = Core::Memory::Instance();
         auto& impl = memory->GetAddressSpace();
-        // ASSERT(perms != Core::MemoryPermission::Write);
+        ASSERT_MSG(perms != Core::MemoryPermission::Write,
+                   "Attempted to protect region as write-only which is not a valid permission");
         impl.Protect(address, size, perms);
     }
 
