@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_bounds.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -167,6 +168,9 @@ using PointerSize = EmitContext::PointerSize;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
+    if (!Config::directMemoryAccess()) {
+        return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
+    }
     // We can only provide a fallback for immediate offsets.
     if (flatbuf_off_dw == 0) {
         return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);

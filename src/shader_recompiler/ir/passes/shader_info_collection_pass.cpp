@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "shader_recompiler/ir/program.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
@@ -138,12 +139,31 @@ void Visit(Info& info, const IR::Inst& inst) {
     }
 }
 
-void CollectShaderInfoPass(IR::Program& program) {
+void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
     auto& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             Visit(info, inst);
         }
+    }
+
+    // In case Flatbuf has not already been bound by IR and is needed
+    // to query buffer sizes, bind it now.
+    if (!profile.supports_robust_buffer_access && !info.uses_dma) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            // We can't guarantee that flatbuf will not grow past UBO
+            // limit if there are a lot of ReadConsts. (We could specialize)
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
+            .buffer_type = BufferType::Flatbuf,
+        });
+        // In the future we may want to read buffer sizes from GPU memory if available.
+        // info.readconst_types |= Info::ReadConstType::Immediate;
+    }
+
+    if (!Config::directMemoryAccess()) {
+        info.uses_dma = false;
+        info.readconst_types = Info::ReadConstType::None;
     }
 
     if (info.uses_dma) {
