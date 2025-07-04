@@ -801,6 +801,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/user_account.cpp
+         src/core/user_account.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
@@ -1069,6 +1071,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/gui_settings.h
            src/qt_gui/settings.cpp
            src/qt_gui/settings.h
+           src/qt_gui/user_management_dialog.cpp
+           src/qt_gui/user_management_dialog.h
            src/qt_gui/sdl_event_wrapper.cpp
            src/qt_gui/sdl_event_wrapper.h
            ${EMULATOR}
@@ -1112,7 +1116,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb nlohmann_json::nlohmann_json)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

@@ -230,3 +230,7 @@ if (APPLE)
         add_subdirectory(MoltenVK)
     endif()
 endif()
+
+#nlohmann json 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(json)

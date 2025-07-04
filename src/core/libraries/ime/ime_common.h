@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
 
@@ -141,7 +142,7 @@ struct OrbisImeKeycode {
 };
 
 struct OrbisImeKeyboardResourceIdArray {
-    s32 userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     u32 resourceId[5];
 };
 
