@@ -140,8 +140,12 @@ public:
                                          const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicFMin(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicFMax(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
                                         BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
@@ -295,10 +299,10 @@ public:
 
     [[nodiscard]] U1 ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
-    [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 ILessThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 INotEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
 
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalAnd(const U1& a, const U1& b);
@@ -349,7 +353,8 @@ public:
 
     [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
                                        const Value& address2, const Value& address3,
-                                       const Value& address4, TextureInstInfo info);
+                                       const Value& address4, const Value& inline_sampler,
+                                       TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
                                                const F32& bias, const Value& offset,

@@ -337,7 +337,7 @@
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Oppdateringen ble lastet ned, trykk OK for å installere.</translation>
+      <translation>Oppdateringen er lastet ned, trykk OK for å installere.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
@@ -454,32 +454,8 @@
       <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Tilbake</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Handlingsknapper</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangel / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Firkant / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Sirkel / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Kryss / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Sist oppdatert</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favoritter</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO-viser for </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Fjern fra favoritter</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Legg til i favoritter</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -990,7 +1030,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation>Ikke satt opp</translation>
+      <translation>Ikke tildelt</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1057,10 +1097,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Berøringsplateknapp</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus til styrespak</translation>
     </message>
@@ -1082,7 +1118,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>Merk: Trykk på hjelpeknappen for mer informasjon</translation>
+      <translation>Merk: Trykk på «Hjelp»-knappen for mer informasjon</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1184,9 +1220,21 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Berøringsplate venstre</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Berøringsplate midten</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Berøringsplate høyre</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1595,6 @@
       <translation>Kontroller</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Tilbakeknapp atferd</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafikk</translation>
     </message>
@@ -1787,10 +1831,6 @@
       <translation>Sett en tid for når musepekeren forsvinner etter å ha vært inaktiv.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Atferd for tilbaketasten:\nSetter tilbaketasten på kontrolleren til å imitere et trykk på den angitte posisjonen på PS4s berøringsplate.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Vis kompatibilitets-data:\nViser informasjon om spillkompatibilitet i tabellvisning. Bruk «Oppdater database ved oppstart» for oppdatert informasjon.</translation>
     </message>
@@ -1813,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Alltid</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Berøringsplate venstre</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Berøringsplate høyre</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Berøringsplate midten</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ingen</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

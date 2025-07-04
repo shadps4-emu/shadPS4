@@ -58,10 +58,7 @@ Emulator::Emulator() {
 #endif
 }
 
-Emulator::~Emulator() {
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
-}
+Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
     if (std::filesystem::is_directory(file)) {
@@ -135,6 +132,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+    LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
+    LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
     LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());

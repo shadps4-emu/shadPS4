@@ -74,12 +74,20 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::BUFFER_ATOMIC_SMIN:
         return BUFFER_ATOMIC(AtomicOp::Smin, inst);
+    case Opcode::BUFFER_ATOMIC_SMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smin, inst);
     case Opcode::BUFFER_ATOMIC_UMIN:
         return BUFFER_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::BUFFER_ATOMIC_UMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umin, inst);
     case Opcode::BUFFER_ATOMIC_SMAX:
         return BUFFER_ATOMIC(AtomicOp::Smax, inst);
+    case Opcode::BUFFER_ATOMIC_SMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smax, inst);
     case Opcode::BUFFER_ATOMIC_UMAX:
         return BUFFER_ATOMIC(AtomicOp::Umax, inst);
+    case Opcode::BUFFER_ATOMIC_UMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umax, inst);
     case Opcode::BUFFER_ATOMIC_AND:
         return BUFFER_ATOMIC(AtomicOp::And, inst);
     case Opcode::BUFFER_ATOMIC_OR:
@@ -90,6 +98,10 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::Inc, inst);
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
+    case Opcode::BUFFER_ATOMIC_FMIN:
+        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+    case Opcode::BUFFER_ATOMIC_FMAX:
+        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -300,6 +312,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     }
 }
 
+template <typename T>
 void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -324,7 +337,17 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
 
-    IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
+    IR::Value vdata_val = [&] {
+        if constexpr (std::is_same_v<T, IR::U32>) {
+            return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::U64>) {
+            return ir.PackUint2x32(
+                ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
+                                      ir.GetVectorReg<Shader::IR::U32>(vdata + 1)));
+        } else {
+            static_assert(false, "buffer_atomic: type not supported");
+        }
+    }();
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));
@@ -357,6 +380,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
             return ir.BufferAtomicInc(handle, address, buffer_info);
         case AtomicOp::Dec:
             return ir.BufferAtomicDec(handle, address, buffer_info);
+        case AtomicOp::Fmin:
+            return ir.BufferAtomicFMin(handle, address, vdata_val, buffer_info);
+        case AtomicOp::Fmax:
+            return ir.BufferAtomicFMax(handle, address, vdata_val, buffer_info);
         default:
             UNREACHABLE();
         }
@@ -531,8 +558,10 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     // Load first dword of T# and S#. We will use them as the handle that will guide resource
     // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
     // binding index.
-    const IR::Value handle =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(sampler_reg));
+    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value inline_sampler =
+        ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
+                              ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
 
     // Determine how many address registers need to be passed.
     // The image type is unknown, so add all 4 possible base registers and resolve later.
@@ -568,7 +597,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     const IR::Value address4 = get_addr_reg(12);
 
     // Issue the placeholder IR instruction.
-    IR::Value texel = ir.ImageSampleRaw(handle, address1, address2, address3, address4, info);
+    IR::Value texel =
+        ir.ImageSampleRaw(handle, address1, address2, address3, address4, inline_sampler, info);
     if (info.is_depth && !gather) {
         // For non-gather depth sampling, only return a single value.
         texel = ir.CompositeExtract(texel, 0);

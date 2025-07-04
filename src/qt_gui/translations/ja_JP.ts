@@ -454,32 +454,8 @@
       <translation type="unfinished">Use per-game configs</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation type="unfinished">Back</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation type="unfinished">Face Buttons</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>三角 / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>四角 / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>丸 / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>バツ / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -523,15 +483,15 @@
     </message>
     <message>
       <source>R:</source>
-      <translation type="unfinished">R:</translation>
+      <translation>R:</translation>
     </message>
     <message>
       <source>G:</source>
-      <translation type="unfinished">G:</translation>
+      <translation>G:</translation>
     </message>
     <message>
       <source>B:</source>
-      <translation type="unfinished">B:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -551,19 +511,87 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>保存</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>適用</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>デフォルトに戻す</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>キャンセル</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -574,11 +602,11 @@
     </message>
     <message>
       <source>Use Per-Game configs</source>
-      <translation type="unfinished">Use Per-Game configs</translation>
+      <translation>ゲームごとの設定を使用する</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>エラー</translation>
     </message>
     <message>
       <source>Could not open the file for reading</source>
@@ -590,11 +618,11 @@
     </message>
     <message>
       <source>Save Changes</source>
-      <translation type="unfinished">Save Changes</translation>
+      <translation>変更を保存</translation>
     </message>
     <message>
       <source>Do you want to save changes?</source>
-      <translation type="unfinished">Do you want to save changes?</translation>
+      <translation>変更を保存しますか？</translation>
     </message>
     <message>
       <source>Help</source>
@@ -610,7 +638,7 @@
     </message>
     <message>
       <source>Reset to Default</source>
-      <translation type="unfinished">Reset to Default</translation>
+      <translation>デフォルトに戻す</translation>
     </message>
   </context>
   <context>
@@ -748,6 +776,10 @@
       <source>Last updated</source>
       <translation>最終更新</translation>
     </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
+    </message>
   </context>
   <context>
     <name>GameListUtils</name>
@@ -848,7 +880,7 @@
     </message>
     <message>
       <source>Delete Trophy</source>
-      <translation type="unfinished">Delete Trophy</translation>
+      <translation>トロフィーを削除</translation>
     </message>
     <message>
       <source>Compatibility...</source>
@@ -944,11 +976,19 @@
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>トロフィー</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
       <translation type="unfinished">SFO Viewer for </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
     </message>
   </context>
   <context>
@@ -959,7 +999,7 @@
     </message>
     <message>
       <source>FAQ</source>
-      <translation type="unfinished">FAQ</translation>
+      <translation>FAQ</translation>
     </message>
     <message>
       <source>Syntax</source>
@@ -982,11 +1022,11 @@
     </message>
     <message>
       <source>D-Pad</source>
-      <translation type="unfinished">D-Pad</translation>
+      <translation>十字キー</translation>
     </message>
     <message>
       <source>Up</source>
-      <translation type="unfinished">Up</translation>
+      <translation>上</translation>
     </message>
     <message>
       <source>unmapped</source>
@@ -994,15 +1034,15 @@
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>左</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>右</translation>
     </message>
     <message>
       <source>Down</source>
-      <translation type="unfinished">Down</translation>
+      <translation>下</translation>
     </message>
     <message>
       <source>Left Analog Halfmode</source>
@@ -1014,7 +1054,7 @@
     </message>
     <message>
       <source>Left Stick</source>
-      <translation type="unfinished">Left Stick</translation>
+      <translation>左スティック</translation>
     </message>
     <message>
       <source>Config Selection</source>
@@ -1030,11 +1070,11 @@
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Text Editor</source>
@@ -1046,19 +1086,15 @@
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>L3</source>
-      <translation type="unfinished">L3</translation>
-    </message>
-    <message>
-      <source>Touchpad Click</source>
-      <translation type="unfinished">Touchpad Click</translation>
+      <translation>L3</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1070,7 +1106,7 @@
     </message>
     <message>
       <source>R3</source>
-      <translation type="unfinished">R3</translation>
+      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1166,19 +1202,19 @@
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>保存</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>適用</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>デフォルトに戻す</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>キャンセル</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
@@ -1187,6 +1223,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1409,43 +1457,43 @@
     </message>
     <message>
       <source>Play</source>
-      <translation type="unfinished">Play</translation>
+      <translation>プレイ</translation>
     </message>
     <message>
       <source>Pause</source>
-      <translation type="unfinished">Pause</translation>
+      <translation>一時停止</translation>
     </message>
     <message>
       <source>Stop</source>
-      <translation type="unfinished">Stop</translation>
+      <translation>停止</translation>
     </message>
     <message>
       <source>Restart</source>
-      <translation type="unfinished">Restart</translation>
+      <translation>再起動</translation>
     </message>
     <message>
       <source>Full Screen</source>
-      <translation type="unfinished">Full Screen</translation>
+      <translation>全画面表示</translation>
     </message>
     <message>
       <source>Controllers</source>
-      <translation type="unfinished">Controllers</translation>
+      <translation>コントローラー</translation>
     </message>
     <message>
       <source>Keyboard</source>
-      <translation type="unfinished">Keyboard</translation>
+      <translation>キーボード</translation>
     </message>
     <message>
       <source>Refresh List</source>
-      <translation type="unfinished">Refresh List</translation>
+      <translation>リストの更新</translation>
     </message>
     <message>
       <source>Resume</source>
-      <translation type="unfinished">Resume</translation>
+      <translation>再開</translation>
     </message>
     <message>
       <source>Show Labels Under Icons</source>
-      <translation type="unfinished">Show Labels Under Icons</translation>
+      <translation>アイコンの下にラベルを表示</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1595,6 @@
       <translation>コントローラー</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>戻るボタンの動作</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>グラフィックス</translation>
     </message>
@@ -1632,7 +1676,7 @@
     </message>
     <message>
       <source>Copy GPU Buffers</source>
-      <translation type="unfinished">Copy GPU Buffers</translation>
+      <translation>GPU バッファーをコピー</translation>
     </message>
     <message>
       <source>Host Debug Markers</source>
@@ -1787,10 +1831,6 @@
       <translation>カーソルが非アクティブになってから隠すまでの時間を設定します。</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>戻るボタンの動作:\nコントローラーの戻るボタンを、PS4のタッチパッドの指定された位置をタッチするように設定します。</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>互換性に関するデータを表示:\nゲームの互換性に関する情報を表として表示します。常に最新情報を取得したい場合、&quot;起動時に互換性データベースを更新する&quot; を有効化してください。</translation>
     </message>
@@ -1813,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>常に</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>左タッチパッド</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>右タッチパッド</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>タッチパッド中央</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>なし</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
@@ -1960,31 +1984,31 @@
     </message>
     <message>
       <source>Display Mode</source>
-      <translation type="unfinished">Display Mode</translation>
+      <translation>表示モード</translation>
     </message>
     <message>
       <source>Windowed</source>
-      <translation type="unfinished">Windowed</translation>
+      <translation>ウィンドウ表示</translation>
     </message>
     <message>
       <source>Fullscreen</source>
-      <translation type="unfinished">Fullscreen</translation>
+      <translation>全画面表示</translation>
     </message>
     <message>
       <source>Fullscreen (Borderless)</source>
-      <translation type="unfinished">Fullscreen (Borderless)</translation>
+      <translation>全画面表示(ボーダレス)</translation>
     </message>
     <message>
       <source>Window Size</source>
-      <translation type="unfinished">Window Size</translation>
+      <translation>ウィンドウサイズ</translation>
     </message>
     <message>
       <source>W:</source>
-      <translation type="unfinished">W:</translation>
+      <translation>W:</translation>
     </message>
     <message>
       <source>H:</source>
-      <translation type="unfinished">H:</translation>
+      <translation>H:</translation>
     </message>
     <message>
       <source>Separate Log Files</source>
@@ -2000,11 +2024,11 @@
     </message>
     <message>
       <source>Left</source>
-      <translation type="unfinished">Left</translation>
+      <translation>左</translation>
     </message>
     <message>
       <source>Right</source>
-      <translation type="unfinished">Right</translation>
+      <translation>右</translation>
     </message>
     <message>
       <source>Top</source>
@@ -2016,7 +2040,7 @@
     </message>
     <message>
       <source>Notification Duration</source>
-      <translation type="unfinished">Notification Duration</translation>
+      <translation>通知表示時間</translation>
     </message>
     <message>
       <source>Portable User Folder</source>
@@ -2036,7 +2060,7 @@
     </message>
     <message>
       <source>%1 already exists</source>
-      <translation type="unfinished">%1 already exists</translation>
+      <translation>%1 は既に存在します</translation>
     </message>
     <message>
       <source>Portable user folder created</source>
@@ -2052,7 +2076,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * サポートされていないVulkanバージョン</translation>
     </message>
   </context>
   <context>
@@ -2071,15 +2095,15 @@
     </message>
     <message>
       <source>Show Earned Trophies</source>
-      <translation type="unfinished">Show Earned Trophies</translation>
+      <translation>獲得したトロフィーを表示</translation>
     </message>
     <message>
       <source>Show Not Earned Trophies</source>
-      <translation type="unfinished">Show Not Earned Trophies</translation>
+      <translation>未獲得のトロフィーを表示</translation>
     </message>
     <message>
       <source>Show Hidden Trophies</source>
-      <translation type="unfinished">Show Hidden Trophies</translation>
+      <translation>隠しトロフィーを表示</translation>
     </message>
   </context>
 </TS>

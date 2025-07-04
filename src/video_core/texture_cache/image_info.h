@@ -47,6 +47,7 @@ struct ImageInfo {
         VAddr cmask_addr;
         VAddr fmask_addr;
         VAddr htile_addr;
+        u32 htile_clear_mask{u32(-1)};
     } meta_info{};
 
     struct {

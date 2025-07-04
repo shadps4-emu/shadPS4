@@ -454,32 +454,8 @@
       <translation>Utiliser les configurations par jeu</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Retour</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Touches d'action</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangle / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Carré / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Rond / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Croix / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Annuler</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Dernière mise à jour</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>Visionneuse SFO pour </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1055,10 +1095,6 @@
     <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Touchpad Click</source>
-      <translation>Clic tactile</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1187,6 +1223,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1595,6 @@
       <translation>Manette</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportement du bouton retour</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Graphismes</translation>
     </message>
@@ -1787,10 +1831,6 @@
       <translation>Définissez un temps pour que la souris disparaisse après être inactif.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportement du bouton retour:\nDéfinit le bouton de retour de la manette pour imiter le toucher de la position spécifiée sur le pavé tactile PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Afficher les données de compatibilité:\nAffiche les informations de compatibilité des jeux dans une colonne dédiée. Activez &quot;Mettre à jour la compatibilité au démarrage&quot; pour avoir des informations à jour.</translation>
     </message>
@@ -1813,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Toujours</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Pavé Tactile Gauche</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Pavé Tactile Droit</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centre du Pavé Tactile</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Aucun</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

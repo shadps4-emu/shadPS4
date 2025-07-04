@@ -454,32 +454,8 @@
       <translation>Käytä pelikohtaisia asetuksia</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Back</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Etunäppäimet</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Kolmio / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Neliö / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Ympyrä / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Rasti / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Peruuta</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Viimeksi päivitetty</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation type="unfinished">SFO Viewer for </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1055,10 +1095,6 @@
     <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Touchpad Click</source>
-      <translation>Kosketuslevyn Klikkaus</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1187,6 +1223,18 @@
       <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1595,6 @@
       <translation>Ohjain</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Takaisin-painikkeen Käyttäytyminen</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafiikka</translation>
     </message>
@@ -1787,10 +1831,6 @@
       <translation>Aseta aika, milloin hiiri häviää oltuaan aktiivinen.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Takaisin-napin käyttäytyminen:\nAsettaa ohjaimen takaisin-napin jäljittelemään kosketusta PS4:n kosketuslevyn määritettyyn kohtaan.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Näytä Yhteensopivuustiedot:\nNäyttää pelien yhteensopivuustiedot listanäkymässä. Ota käyttöön &quot;Päivitä Yhteensopivuustietokanta Käynnistäessä&quot; saadaksesi ajantasaista tietoa.</translation>
     </message>
@@ -1813,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Aina</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Kosketuslevyn Vasen Puoli</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Kosketuslevyn Oikea Puoli</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Kosketuslevyn Keskikohta</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ei mitään</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

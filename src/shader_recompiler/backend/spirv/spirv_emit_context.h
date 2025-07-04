@@ -42,17 +42,6 @@ public:
                          Bindings& binding);
     ~EmitContext();
 
-    enum class PointerType : u32 {
-        U8,
-        U16,
-        F16,
-        U32,
-        F32,
-        U64,
-        F64,
-        NumAlias,
-    };
-
     Id Def(const IR::Value& value);
 
     void DefineBufferProperties();
@@ -155,25 +144,7 @@ public:
         return last_label;
     }
 
-    PointerType PointerTypeFromType(Id type) {
-        if (type.value == U8.value)
-            return PointerType::U8;
-        if (type.value == U16.value)
-            return PointerType::U16;
-        if (type.value == F16[1].value)
-            return PointerType::F16;
-        if (type.value == U32[1].value)
-            return PointerType::U32;
-        if (type.value == F32[1].value)
-            return PointerType::F32;
-        if (type.value == U64.value)
-            return PointerType::U64;
-        if (type.value == F64[1].value)
-            return PointerType::F64;
-        UNREACHABLE_MSG("Unknown type for pointer");
-    }
-
-    Id EmitMemoryRead(Id type, Id address, auto&& fallback) {
+    Id EmitDwordMemoryRead(Id address, auto&& fallback) {
         const Id available_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id merge_label = OpLabel();
@@ -185,10 +156,8 @@ public:
 
         // Available
         AddLabel(available_label);
-        const auto pointer_type = PointerTypeFromType(type);
-        const Id pointer_type_id = physical_pointer_types[pointer_type];
-        const Id addr_ptr = OpConvertUToPtr(pointer_type_id, addr);
-        const Id result = OpLoad(type, addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
+        const Id addr_ptr = OpConvertUToPtr(physical_pointer_type_u32, addr);
+        const Id result = OpLoad(U32[1], addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
         OpBranch(merge_label);
 
         // Fallback
@@ -199,8 +168,26 @@ public:
         // Merge
         AddLabel(merge_label);
         const Id final_result =
-            OpPhi(type, fallback_result, fallback_label, result, available_label);
+            OpPhi(U32[1], fallback_result, fallback_label, result, available_label);
         return final_result;
+    }
+
+    Id EmitSharedMemoryAccess(const Id result_type, const Id shared_mem, const Id index) {
+        if (std::popcount(static_cast<u32>(info.shared_types)) > 1) {
+            return OpAccessChain(result_type, shared_mem, u32_zero_value, index);
+        }
+        // Workgroup layout struct omitted.
+        return OpAccessChain(result_type, shared_mem, index);
+    }
+
+    Id EmitFlatbufferLoad(Id flatbuf_offset) {
+        const auto& flatbuf_buffer{buffers[flatbuf_index]};
+        ASSERT(flatbuf_buffer.binding >= 0 && flatbuf_buffer.buffer_type == BufferType::Flatbuf);
+        const auto [flatbuf_buffer_id, flatbuf_pointer_type] =
+            flatbuf_buffer.aliases[u32(PointerType::U32)];
+        const auto ptr{
+            OpAccessChain(flatbuf_pointer_type, flatbuf_buffer_id, u32_zero_value, flatbuf_offset)};
+        return OpLoad(U32[1], ptr);
     }
 
     Info& info;
@@ -306,6 +293,24 @@ public:
         bool is_storage = false;
     };
 
+    enum class PointerType : u32 {
+        U8,
+        U16,
+        U32,
+        F32,
+        U64,
+        F64,
+        NumAlias,
+    };
+
+    enum class PointerSize : u32 {
+        B8,
+        B16,
+        B32,
+        B64,
+        NumClass,
+    };
+
     struct BufferSpv {
         Id id;
         Id pointer_type;
@@ -314,32 +319,23 @@ public:
     struct BufferDefinition {
         u32 binding;
         BufferType buffer_type;
-        Id offset;
-        Id offset_dwords;
-        Id size;
-        Id size_shorts;
-        Id size_dwords;
-        Id size_qwords;
+        std::array<Id, u32(PointerSize::NumClass)> offsets;
+        std::array<Id, u32(PointerSize::NumClass)> sizes;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
-        const BufferSpv& operator[](PointerType alias) const {
-            return aliases[u32(alias)];
+        template <class Self>
+        auto& Alias(this Self& self, PointerType alias) {
+            return self.aliases[u32(alias)];
         }
 
-        BufferSpv& operator[](PointerType alias) {
-            return aliases[u32(alias)];
-        }
-    };
-
-    struct PhysicalPointerTypes {
-        std::array<Id, u32(PointerType::NumAlias)> types;
-
-        const Id& operator[](PointerType type) const {
-            return types[u32(type)];
+        template <class Self>
+        auto& Offset(this Self& self, PointerSize size) {
+            return self.offsets[u32(size)];
         }
 
-        Id& operator[](PointerType type) {
-            return types[u32(type)];
+        template <class Self>
+        auto& Size(this Self& self, PointerSize size) {
+            return self.sizes[u32(size)];
         }
     };
 
@@ -348,12 +344,12 @@ public:
     boost::container::small_vector<BufferDefinition, 16> buffers;
     boost::container::small_vector<TextureDefinition, 8> images;
     boost::container::small_vector<Id, 4> samplers;
-    PhysicalPointerTypes physical_pointer_types;
     std::unordered_map<u32, Id> first_to_last_label_map;
 
     size_t flatbuf_index{};
     size_t bda_pagetable_index{};
     size_t fault_buffer_index{};
+    Id physical_pointer_type_u32;
 
     Id sampler_type{};
     Id sampler_pointer_type{};

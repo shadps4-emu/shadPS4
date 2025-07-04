@@ -165,10 +165,27 @@ public:
         return amd_shader_trinary_minmax;
     }
 
+    /// Returns true when the shaderBufferFloat32AtomicMinMax feature of
+    /// VK_EXT_shader_atomic_float2 is supported.
+    bool IsShaderAtomicFloatBuffer32MinMaxSupported() const {
+        return shader_atomic_float2 &&
+               shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax;
+    }
+
     /// Returns true when the shaderImageFloat32AtomicMinMax feature of
     /// VK_EXT_shader_atomic_float2 is supported.
     bool IsShaderAtomicFloatImage32MinMaxSupported() const {
         return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
+    }
+
+    /// Returns true if 64-bit integer atomic operations can be used on buffers
+    bool IsBufferInt64AtomicsSupported() const {
+        return vk12_features.shaderBufferInt64Atomics;
+    }
+
+    /// Returns true if 64-bit integer atomic operations can be used on shared memory
+    bool IsSharedInt64AtomicsSupported() const {
+        return vk12_features.shaderSharedInt64Atomics;
     }
 
     /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
@@ -324,6 +341,9 @@ public:
         return driver_id != vk::DriverId::eMoltenvk;
     }
 
+    /// Determines if a format is supported for a set of feature flags.
+    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
+
 private:
     /// Creates the logical device opportunistically enabling extensions
     bool CreateDevice();
@@ -338,9 +358,6 @@ private:
     /// Gets the supported feature flags for a format.
     [[nodiscard]] vk::FormatFeatureFlags2 GetFormatFeatureFlags(vk::Format format) const;
 
-    /// Determines if a format is supported for a set of feature flags.
-    [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
-
 private:
     vk::UniqueInstance instance;
     vk::PhysicalDevice physical_device;
@@ -351,6 +368,7 @@ private:
     vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
+    vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;

@@ -7,7 +7,11 @@
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
 namespace Shader::Backend::SPIRV {
+
 namespace {
+using PointerType = EmitContext::PointerType;
+using PointerSize = EmitContext::PointerSize;
+
 std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
     const Id scope{ctx.ConstU32(static_cast<u32>(spv::Scope::Device))};
     const Id semantics{ctx.u32_zero_value};
@@ -19,8 +23,7 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
-    const Id pointer{
-        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
@@ -32,8 +35,7 @@ Id SharedAtomicU32IncDec(EmitContext& ctx, Id offset,
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
-    const Id pointer{
-        ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, ctx.u32_zero_value, index)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
@@ -45,40 +47,45 @@ Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
     const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
-    const Id pointer{
-        ctx.OpAccessChain(ctx.shared_u64, ctx.shared_memory_u64, ctx.u32_zero_value, index)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
         return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
     });
 }
 
+template <bool is_float = false>
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    const auto type = [&] {
+        if constexpr (is_float) {
+            return ctx.F32[1];
+        } else {
+            return ctx.U32[1];
+        }
+    }();
+    if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, value);
+    return AccessBoundsCheck<32, 1, is_float>(ctx, address, buffer.Size(PointerSize::B32), [&] {
+        return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
     });
 }
 
 Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
+    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
     });
 }
@@ -87,14 +94,13 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
                           Id cmp_value,
                           Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(2u));
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, buffer.size_dwords, [&] {
+    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
         return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
     });
 }
@@ -102,14 +108,13 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
-    if (Sirit::ValidId(buffer.offset)) {
-        address = ctx.OpIAdd(ctx.U32[1], address, buffer.offset);
+    if (const Id offset = buffer.Offset(PointerSize::B64); Sirit::ValidId(offset)) {
+        address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const Id index = ctx.OpShiftRightLogical(ctx.U32[1], address, ctx.ConstU32(3u));
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U64];
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index);
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U64);
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<64>(ctx, index, buffer.size_qwords, [&] {
+    return AccessBoundsCheck<64>(ctx, address, buffer.Size(PointerSize::B64), [&] {
         return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
     });
 }
@@ -195,16 +200,68 @@ Id EmitBufferAtomicSMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMin);
 }
 
+Id EmitBufferAtomicSMin64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU64(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMin);
+}
+
 Id EmitBufferAtomicUMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMin);
+}
+
+Id EmitBufferAtomicUMin64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU64(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMin);
+}
+
+Id EmitBufferAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    if (ctx.profile.supports_buffer_fp32_atomic_min_max) {
+        return BufferAtomicU32<true>(ctx, inst, handle, address, value,
+                                     &Sirit::Module::OpAtomicFMin);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto sign_bit_set =
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitBufferAtomicUMax32(ctx, inst, handle, address, u32_value)),
+        EmitBitCastF32U32(ctx, EmitBufferAtomicSMin32(ctx, inst, handle, address, u32_value)));
+
+    return result;
 }
 
 Id EmitBufferAtomicSMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMax);
 }
 
+Id EmitBufferAtomicSMax64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU64(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicSMax);
+}
+
 Id EmitBufferAtomicUMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     return BufferAtomicU32(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMax);
+}
+
+Id EmitBufferAtomicUMax64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    return BufferAtomicU64(ctx, inst, handle, address, value, &Sirit::Module::OpAtomicUMax);
+}
+
+Id EmitBufferAtomicFMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
+    if (ctx.profile.supports_buffer_fp32_atomic_min_max) {
+        return BufferAtomicU32<true>(ctx, inst, handle, address, value,
+                                     &Sirit::Module::OpAtomicFMax);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto sign_bit_set =
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitBufferAtomicUMin32(ctx, inst, handle, address, u32_value)),
+        EmitBitCastF32U32(ctx, EmitBufferAtomicSMax32(ctx, inst, handle, address, u32_value)));
+
+    return result;
 }
 
 Id EmitBufferAtomicInc32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
@@ -319,7 +376,7 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
 
 Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
     const auto& buffer = ctx.buffers[binding];
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return ctx.OpAtomicIIncrement(ctx.U32[1], ptr, scope, semantics);
@@ -327,7 +384,7 @@ Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
 
 Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
     const auto& buffer = ctx.buffers[binding];
-    const auto [id, pointer_type] = buffer[EmitContext::PointerType::U32];
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return ctx.OpAtomicIDecrement(ctx.U32[1], ptr, scope, semantics);

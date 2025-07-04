@@ -123,11 +123,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     ui->hideCursorComboBox->addItem(tr("Idle"));
     ui->hideCursorComboBox->addItem(tr("Always"));
 
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Left"), "left");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Center"), "center");
-    ui->backButtonBehaviorComboBox->addItem(tr("Touchpad Right"), "right");
-    ui->backButtonBehaviorComboBox->addItem(tr("None"), "none");
-
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
 
@@ -366,7 +361,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
-        ui->backButtonBehaviorGroupBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
@@ -534,10 +528,6 @@ void SettingsDialog::LoadValuesFromConfig() {
         indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 
-    QString backButtonBehavior = QString::fromStdString(
-        toml::find_or<std::string>(data, "Input", "backButtonBehavior", "left"));
-    int index = ui->backButtonBehaviorComboBox->findData(backButtonBehavior);
-    ui->backButtonBehaviorComboBox->setCurrentIndex(index != -1 ? index : 0);
     ui->motionControlsCheckBox->setChecked(
         toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
@@ -594,7 +584,7 @@ void SettingsDialog::OnLanguageChanged(int index) {
 
     ui->retranslateUi(this);
 
-    emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString().toStdString());
+    emit LanguageChanged(ui->emulatorLanguageComboBox->itemData(index).toString());
 }
 
 void SettingsDialog::OnCursorStateChanged(s16 index) {
@@ -666,8 +656,6 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("Hide Idle Cursor Timeout:\\nThe duration (seconds) after which the cursor that has been idle hides itself.");
-    } else if (elementName == "backButtonBehaviorGroupBox") {
-        text = tr("Back Button Behavior:\\nSets the controller's back button to emulate tapping the specified position on the PS4 touchpad.");
     }
 
     // Graphics
@@ -745,8 +733,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
 
 void SettingsDialog::UpdateSettings() {
 
-    const QVector<std::string> TouchPadIndex = {"left", "center", "right", "none"};
-    Config::setBackButtonBehavior(TouchPadIndex[ui->backButtonBehaviorComboBox->currentIndex()]);
     Config::setIsFullscreen(screenModeMap.value(ui->displayModeComboBox->currentText()) !=
                             "Windowed");
     Config::setFullscreenMode(
@@ -886,4 +872,5 @@ void SettingsDialog::setDefaultValues() {
     } else {
         m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
     }
+    m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
 }

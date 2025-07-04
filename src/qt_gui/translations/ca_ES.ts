@@ -454,32 +454,8 @@
       <translation>Fes servir configuracions per cada joc</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Torna</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Opcions / Executa</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Botons d'acció</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangle / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Quadrat / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Cercle / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Creu / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Cancel·la</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Darrera actualització</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Preferit</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>Visualitzador SFO per </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Esborra dels preferits</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Afegeix a preferits</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1055,10 +1095,6 @@
     <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Touchpad Click</source>
-      <translation>Click al touchpad</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1184,9 +1220,21 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>No es pot assignar una entrada més d'una vegada. S'han assignat de manera duplicada pels següents botons:
 
 %1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Touchpad esquerra</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Touchpad centre</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Touchpad dreta</translation>
     </message>
   </context>
   <context>
@@ -1547,10 +1595,6 @@
       <translation>Controlador</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportament del botó de retrocés</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Gràfics</translation>
     </message>
@@ -1787,10 +1831,6 @@
       <translation>Temps d'espera per ocultar el ratolí:\nLa duració (en segons) després de la qual el ratolí s'amaga si es troba inactiu.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportament del botó posterior:\nEstableix el botó posterior del controlador per simular el toc en una posició especificada del touchpad de PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Mostra les dades de compatibilitat:\nMostra informació sobre la compatibilitat a la vista de graella. Pots activar l'actualització de compatibilitat a l'inici per obtenir més informació actualitzada.</translation>
     </message>
@@ -1813,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Sempre</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad esquerra</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad dret</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centre del Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Cap</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

@@ -34,7 +34,9 @@ GameGridFrame::GameGridFrame(std::shared_ptr<gui_settings> gui_settings,
     connect(this->horizontalScrollBar(), &QScrollBar::valueChanged, this,
             &GameGridFrame::RefreshGridBackgroundImage);
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, this, false);
+        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info,
+                                            m_gui_settings, this, false);
+        PopulateGameGrid(m_game_info->m_games, false);
     });
 }
 
@@ -88,10 +90,13 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     this->crtColumn = -1;
     QVector<GameInfo> m_games_;
     this->clearContents();
-    if (fromSearch)
+    if (fromSearch) {
+        SortByFavorite(&m_games_search);
         m_games_ = m_games_search;
-    else
+    } else {
+        SortByFavorite(&(m_game_info->m_games));
         m_games_ = m_game_info->m_games;
+    }
     m_games_shared = std::make_shared<QVector<GameInfo>>(m_games_);
     icon_size =
         m_gui_settings->GetValue(gui::gg_icon_size).toInt(); // update icon size for resize event.
@@ -110,14 +115,21 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
     for (int i = 0; i < m_games_.size(); i++) {
         QWidget* widget = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout();
-        QLabel* image_label = new QLabel();
+
+        QWidget* image_container = new QWidget();
+        image_container->setFixedSize(icon_size, icon_size);
+
+        QLabel* image_label = new QLabel(image_container);
         QImage icon = m_games_[gameCounter].icon.scaled(
             QSize(icon_size, icon_size), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
         image_label->setFixedSize(icon.width(), icon.height());
         image_label->setPixmap(QPixmap::fromImage(icon));
+        image_label->move(0, 0);
+        SetFavoriteIcon(image_container, m_games_, gameCounter);
+
         QLabel* name_label = new QLabel(QString::fromStdString(m_games_[gameCounter].serial));
         name_label->setAlignment(Qt::AlignHCenter);
-        layout->addWidget(image_label);
+        layout->addWidget(image_container);
         layout->addWidget(name_label);
 
         // Resizing of font-size.
@@ -224,4 +236,44 @@ void GameGridFrame::resizeEvent(QResizeEvent* event) {
 
 bool GameGridFrame::IsValidCellSelected() {
     return validCellSelected;
+}
+
+void GameGridFrame::SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_games_,
+                                    int gameCounter) {
+    QString serialStr = QString::fromStdString(m_games_[gameCounter].serial);
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite = list.contains(serialStr);
+
+    QLabel* label = new QLabel(parentWidget);
+    label->setPixmap(QPixmap(":images/favorite_icon.png")
+                         .scaled(icon_size / 3.8, icon_size / 3.8, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation));
+    label->move(icon_size - icon_size / 4, 2);
+    label->raise();
+    label->setVisible(isFavorite);
+    label->setObjectName("favoriteIcon");
+}
+
+void GameGridFrame::SortByFavorite(QVector<GameInfo>* game_list) {
+    std::sort(game_list->begin(), game_list->end(), [this](const GameInfo& a, const GameInfo& b) {
+        return this->CompareWithFavorite(a, b);
+    });
+}
+
+bool GameGridFrame::CompareWithFavorite(GameInfo a, GameInfo b) {
+    std::string serial_a = a.serial;
+    std::string serial_b = b.serial;
+    QString serialStr_a = QString::fromStdString(a.serial);
+    QString serialStr_b = QString::fromStdString(b.serial);
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite_a = list.contains(serialStr_a);
+    bool isFavorite_b = list.contains(serialStr_b);
+    if (isFavorite_a != isFavorite_b) {
+        return isFavorite_a;
+    } else {
+        std::string name_a = a.name, name_b = b.name;
+        std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
+        std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
+        return name_a < name_b;
+    }
 }

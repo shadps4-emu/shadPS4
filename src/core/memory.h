@@ -5,6 +5,7 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 #include <string_view>
 #include "common/enum.h"
 #include "common/singleton.h"
@@ -62,8 +63,8 @@ enum class VMAType : u32 {
 
 struct DirectMemoryArea {
     PAddr base = 0;
-    size_t size = 0;
-    int memory_type = 0;
+    u64 size = 0;
+    s32 memory_type = 0;
     bool is_pooled = false;
     bool is_free = true;
 
@@ -87,7 +88,7 @@ struct DirectMemoryArea {
 
 struct VirtualMemoryArea {
     VAddr base = 0;
-    size_t size = 0;
+    u64 size = 0;
     PAddr phys_base = 0;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
@@ -96,7 +97,7 @@ struct VirtualMemoryArea {
     uintptr_t fd = 0;
     bool is_exec = false;
 
-    bool Contains(VAddr addr, size_t size) const {
+    bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
     }
 
@@ -183,14 +184,13 @@ public:
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
 
-    PAddr PoolExpand(PAddr search_start, PAddr search_end, size_t size, u64 alignment);
+    PAddr PoolExpand(PAddr search_start, PAddr search_end, u64 size, u64 alignment);
 
-    PAddr Allocate(PAddr search_start, PAddr search_end, size_t size, u64 alignment,
-                   int memory_type);
+    PAddr Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment, s32 memory_type);
 
-    void Free(PAddr phys_addr, size_t size);
+    void Free(PAddr phys_addr, u64 size);
 
-    int PoolCommit(VAddr virtual_addr, size_t size, MemoryProt prot);
+    s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot);
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
@@ -199,34 +199,34 @@ public:
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
 
-    s32 PoolDecommit(VAddr virtual_addr, size_t size);
+    s32 PoolDecommit(VAddr virtual_addr, u64 size);
 
-    s32 UnmapMemory(VAddr virtual_addr, size_t size);
+    s32 UnmapMemory(VAddr virtual_addr, u64 size);
 
-    int QueryProtection(VAddr addr, void** start, void** end, u32* prot);
+    s32 QueryProtection(VAddr addr, void** start, void** end, u32* prot);
 
-    s32 Protect(VAddr addr, size_t size, MemoryProt prot);
+    s32 Protect(VAddr addr, u64 size, MemoryProt prot);
 
-    s64 ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, size_t size, MemoryProt prot);
+    s64 ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, u64 size, MemoryProt prot);
 
-    int VirtualQuery(VAddr addr, int flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
+    s32 VirtualQuery(VAddr addr, s32 flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 
-    int DirectMemoryQuery(PAddr addr, bool find_next,
+    s32 DirectMemoryQuery(PAddr addr, bool find_next,
                           ::Libraries::Kernel::OrbisQueryInfo* out_info);
 
-    int DirectQueryAvailable(PAddr search_start, PAddr search_end, size_t alignment,
-                             PAddr* phys_addr_out, size_t* size_out);
+    s32 DirectQueryAvailable(PAddr search_start, PAddr search_end, u64 alignment,
+                             PAddr* phys_addr_out, u64* size_out);
 
-    int GetDirectMemoryType(PAddr addr, int* directMemoryTypeOut, void** directMemoryStartOut,
+    s32 GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut, void** directMemoryStartOut,
                             void** directMemoryEndOut);
+
+    s32 IsStack(VAddr addr, void** start, void** end);
 
     s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
 
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
-
-    int IsStack(VAddr addr, void** start, void** end);
 
 private:
     VMAHandle FindVMA(VAddr target) {
@@ -257,15 +257,15 @@ private:
         return iter;
     }
 
-    VAddr SearchFree(VAddr virtual_addr, size_t size, u32 alignment = 0);
+    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
 
-    VMAHandle CarveVMA(VAddr virtual_addr, size_t size);
+    VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
-    DMemHandle CarveDmemArea(PAddr addr, size_t size);
+    DMemHandle CarveDmemArea(PAddr addr, u64 size);
 
-    VMAHandle Split(VMAHandle vma_handle, size_t offset_in_vma);
+    VMAHandle Split(VMAHandle vma_handle, u64 offset_in_vma);
 
-    DMemHandle Split(DMemHandle dmem_handle, size_t offset_in_area);
+    DMemHandle Split(DMemHandle dmem_handle, u64 offset_in_area);
 
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
@@ -276,10 +276,10 @@ private:
     DMemMap dmem_map;
     VMAMap vma_map;
     std::mutex mutex;
-    size_t total_direct_size{};
-    size_t total_flexible_size{};
-    size_t flexible_usage{};
-    size_t pool_budget{};
+    u64 total_direct_size{};
+    u64 total_flexible_size{};
+    u64 flexible_usage{};
+    u64 pool_budget{};
     Vulkan::Rasterizer* rasterizer{};
 
     struct PrtArea {
