@@ -11,11 +11,11 @@
 #include "common/path_util.h"
 
 #ifdef _WIN32
-#include "common/ntapi.h"
-
+#include <fcntl.h>
 #include <io.h>
 #include <share.h>
 #include <windows.h>
+#include "common/ntapi.h"
 #else
 #include <unistd.h>
 #endif
@@ -172,8 +172,11 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
 
 int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
     Close();
-
+#ifdef _WIN32
+    file_path = RemoveTrailingSeparator(path);
+#else
     file_path = path;
+#endif
     file_access_mode = mode;
     file_type = type;
 
@@ -193,9 +196,22 @@ int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileS
 #endif
 
     if (!IsOpen()) {
+#ifdef _WIN32
+        file = OpenDirAsFilePtr(
+            path.c_str(), AccessModeToWStr(mode, type),
+            fs::is_directory(
+                path)); // this can't be used with fread, fwrite etc . Let's hope it will not needed
+        result = errno;
+        if (!IsOpen()) {
+            const auto ec = std::error_code{result, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                      PathToUTF8String(file_path), ec.message());
+        }
+#else
         const auto ec = std::error_code{result, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
                   PathToUTF8String(file_path), ec.message());
+#endif
     }
 
     return result;
@@ -415,5 +431,44 @@ u64 GetDirectorySize(const std::filesystem::path& path) {
     }
     return total;
 }
+#ifdef _WIN32
+FILE* OpenDirAsFilePtr(const wchar_t* path, const wchar_t* mode, bool isDirectory = false) {
+    DWORD access = 0;
+    DWORD creation = OPEN_EXISTING;
+    DWORD flags = FILE_ATTRIBUTE_NORMAL;
+    DWORD share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+
+    // Handle access based on mode
+    if (wcschr(mode, L'r'))
+        access |= GENERIC_READ;
+    if (wcschr(mode, L'w') || wcschr(mode, L'a'))
+        access |= GENERIC_WRITE;
+
+    // Add backup semantics if this is a directory
+    if (isDirectory) {
+        flags |= FILE_FLAG_BACKUP_SEMANTICS;
+    }
+
+    HANDLE hFile = CreateFileW(path, access, share, nullptr, creation, flags, nullptr);
+
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return nullptr;
+    }
+
+    int fd = _open_osfhandle((intptr_t)hFile, _O_BINARY);
+    if (fd == -1) {
+        CloseHandle(hFile);
+        return nullptr;
+    }
+
+    FILE* file = _fdopen(fd, (wcschr(mode, L'w') || wcschr(mode, L'a')) ? "wb" : "rb");
+    if (!file) {
+        _close(fd);
+        return nullptr;
+    }
+
+    return file;
+}
+#endif
 
 } // namespace Common::FS
