@@ -11,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1114</width>
-    <height>794</height>
+    <width>1124</width>
+    <height>847</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,8 +33,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>1094</width>
-        <height>744</height>
+        <width>1104</width>
+        <height>797</height>
        </rect>
       </property>
       <widget class="QWidget" name="layoutWidget">
@@ -42,8 +42,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1091</width>
-         <height>741</height>
+         <width>1101</width>
+         <height>791</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="RemapLayout">
@@ -247,12 +247,80 @@
            </widget>
           </item>
           <item>
+           <widget class="QGroupBox" name="groupBox_5">
+            <property name="title">
+             <string>L1 and L2</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_13">
+             <item>
+              <widget class="QGroupBox" name="gb_l2">
+               <property name="title">
+                <string>L2</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_l2_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="L2Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_l1">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="title">
+                <string>L1</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_l1_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="L1Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Policy::Maximum</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -512,7 +580,7 @@
          </layout>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_middle" stretch="0,0,0,0,0">
+         <layout class="QVBoxLayout" name="verticalLayout_middle" stretch="0,0,0,0">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -598,199 +666,117 @@
                </property>
               </widget>
              </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="layout_middle_top">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <item>
-             <layout class="QVBoxLayout" name="layout_system_buttons">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
+             <item>
+              <widget class="QGroupBox" name="groupBox_2">
+               <property name="font">
+                <font>
+                 <pointsize>9</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="title">
+                <string>Active Gamepad</string>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_7">
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_13">
-                  <item>
-                   <widget class="QGroupBox" name="gb_l1">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="title">
-                     <string>L1</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="gb_l1_layout">
-                     <property name="leftMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>5</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="L1Button">
-                       <property name="text">
-                        <string>unmapped</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_2">
-                    <property name="orientation">
-                     <enum>Qt::Orientation::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Policy::Fixed</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>133</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="gb_r1">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="title">
-                     <string>R1</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="gb_r1_layout">
-                     <property name="leftMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>5</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="R1Button">
-                       <property name="text">
-                        <string>unmapped</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
+                 <widget class="QComboBox" name="ActiveGamepadBox">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                    <bold>false</bold>
+                   </font>
+                  </property>
+                 </widget>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_14">
-                  <item>
-                   <widget class="QGroupBox" name="gb_l2">
-                    <property name="title">
-                     <string>L2</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="gb_l2_layout">
-                     <property name="leftMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>5</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="L2Button">
-                       <property name="text">
-                        <string>unmapped</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="gb_start">
-                    <property name="title">
-                     <string>Options</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="gb_start_layout">
-                     <property name="leftMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>5</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="OptionsButton">
-                       <property name="text">
-                        <string>unmapped</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="gb_r2">
-                    <property name="title">
-                     <string>R2</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="gb_r2_layout">
-                     <property name="leftMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>5</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>5</number>
-                     </property>
-                     <item>
-                      <widget class="QPushButton" name="R2Button">
-                       <property name="text">
-                        <string>unmapped</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
+                 <widget class="QLabel" name="ActiveGamepadLabel">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                    <bold>false</bold>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>Gamepad ID</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                  </property>
+                 </widget>
                 </item>
                </layout>
-              </item>
-             </layout>
-            </item>
-           </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="groupBox_4">
+               <property name="font">
+                <font>
+                 <pointsize>9</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="title">
+                <string>Default Gamepad</string>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_12">
+                <item>
+                 <widget class="QLabel" name="DefaultGamepadName">
+                  <property name="text">
+                   <string>No default selected</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="DefaultGamepadLabel">
+                  <property name="font">
+                   <font>
+                    <pointsize>9</pointsize>
+                    <bold>false</bold>
+                   </font>
+                  </property>
+                  <property name="text">
+                   <string>n/a</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_19">
+               <item>
+                <widget class="QPushButton" name="DefaultGamepadButton">
+                 <property name="font">
+                  <font>
+                   <pointsize>9</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Set Active Gamepad as Default</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="RemoveDefaultGamepadButton">
+                 <property name="font">
+                  <font>
+                   <pointsize>9</pointsize>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Remove Default Gamepad</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
            <widget class="QWidget" name="widget_controller" native="true">
@@ -880,20 +866,32 @@
                </widget>
               </item>
               <item>
-               <spacer name="horizontalSpacer">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Horizontal</enum>
+               <widget class="QGroupBox" name="gb_start">
+                <property name="title">
+                 <string>Options</string>
                 </property>
-                <property name="sizeType">
-                 <enum>QSizePolicy::Policy::Fixed</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>133</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
+                <layout class="QVBoxLayout" name="gb_start_layout">
+                 <property name="leftMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>5</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>5</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="OptionsButton">
+                   <property name="text">
+                    <string>unmapped</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
               </item>
               <item>
                <widget class="QGroupBox" name="gb_r3">
@@ -1339,12 +1337,83 @@
            </widget>
           </item>
           <item>
+           <widget class="QGroupBox" name="groupBox_6">
+            <property name="title">
+             <string>R1 and R2</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_14">
+             <item>
+              <widget class="QGroupBox" name="gb_r2">
+               <property name="title">
+                <string>R2</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_r2_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="R2Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_r1">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="title">
+                <string>R1</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_r1_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="R1Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer_2">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
             </property>
             <property name="sizeType">
-             <enum>QSizePolicy::Policy::Maximum</enum>
+             <enum>QSizePolicy::Policy::Expanding</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
