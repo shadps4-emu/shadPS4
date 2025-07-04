@@ -142,14 +142,18 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);
-                ASSERT(it != info.gs_copy_data.attr_map.cend());
-                const auto& [attr, comp] = it->second;
+                if (it == info.gs_copy_data.attr_map.cend()) {
+                    LOG_ERROR(Render_Recompiler, "attr_map missing entry: {}", vc_read_ofs);
+                    inst.Invalidate();
+                } else {
+                    const auto& [attr, comp] = it->second;
 
-                inst.ReplaceOpcode(IR::Opcode::SetAttribute);
-                inst.ClearArgs();
-                inst.SetArg(0, IR::Value{attr});
-                inst.SetArg(1, data);
-                inst.SetArg(2, ir.Imm32(comp));
+                    inst.ReplaceOpcode(IR::Opcode::SetAttribute);
+                    inst.ClearArgs();
+                    inst.SetArg(0, IR::Value{attr});
+                    inst.SetArg(1, data);
+                    inst.SetArg(2, ir.Imm32(comp));
+                }
                 break;
             }
             default:

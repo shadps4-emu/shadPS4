@@ -699,7 +699,7 @@ struct PM4CmdWaitRegMem {
 struct PM4CmdWriteData {
     PM4Type3Header header;
     union {
-        BitField<8, 11, u32> dst_sel;
+        BitField<8, 4, u32> dst_sel;
         BitField<16, 1, u32> wr_one_addr;
         BitField<20, 1, u32> wr_confirm;
         BitField<30, 1, u32> engine_sel;
