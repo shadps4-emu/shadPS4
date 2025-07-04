@@ -39,14 +39,10 @@ void FmtLogMessage(Class log_class, Level log_level, const char* filename, unsig
     Common::Log::FmtLogMessage(log_class, log_level, Common::Log::TrimSourcePath(__FILE__),        \
                                __LINE__, __func__, __VA_ARGS__)
 
-#ifdef _DEBUG
 #define LOG_TRACE(log_class, ...)                                                                  \
     Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Trace,           \
                                Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
                                __VA_ARGS__)
-#else
-#define LOG_TRACE(log_class, fmt, ...) (void(0))
-#endif
 
 #define LOG_DEBUG(log_class, ...)                                                                  \
     Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Debug,           \
