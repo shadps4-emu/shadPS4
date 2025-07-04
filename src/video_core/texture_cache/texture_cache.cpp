@@ -451,16 +451,20 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     UpdateImage(image_id);
 
     // Register meta data for this color buffer
-    if (desc.info.meta_info.cmask_addr) {
-        surface_metas.emplace(desc.info.meta_info.cmask_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::CMask});
-        image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
-    }
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (desc.info.meta_info.cmask_addr) {
+            surface_metas.emplace(desc.info.meta_info.cmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::CMask});
+            image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
 
-    if (desc.info.meta_info.fmask_addr) {
-        surface_metas.emplace(desc.info.meta_info.fmask_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::FMask});
-        image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
+        if (desc.info.meta_info.fmask_addr) {
+            surface_metas.emplace(desc.info.meta_info.fmask_addr,
+                                  MetaDataInfo{.type = MetaDataInfo::Type::FMask});
+            image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
     }
 
     return RegisterImageView(image_id, desc.view_info);
@@ -475,11 +479,15 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     UpdateImage(image_id);
 
     // Register meta data for this depth buffer
-    if (desc.info.meta_info.htile_addr) {
-        surface_metas.emplace(desc.info.meta_info.htile_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::HTile,
-                                           .clear_mask = image.info.meta_info.htile_clear_mask});
-        image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
+    if (!(image.flags & ImageFlagBits::MetaRegistered)) {
+        if (desc.info.meta_info.htile_addr) {
+            surface_metas.emplace(
+                desc.info.meta_info.htile_addr,
+                MetaDataInfo{.type = MetaDataInfo::Type::HTile,
+                             .clear_mask = image.info.meta_info.htile_clear_mask});
+            image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
+            image.flags |= ImageFlagBits::MetaRegistered;
+        }
     }
 
     // If there is a stencil attachment, link depth and stencil.
