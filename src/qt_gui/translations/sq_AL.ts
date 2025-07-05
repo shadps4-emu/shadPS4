@@ -581,17 +581,17 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Nuk mund të caktohet e njëjta hyrje unike më shumë se një herë. Hyrjet e dyfishta janë caktuar në butonët e mëposhtëm:
 
 %1</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Shtyp një buton</translation>
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation>Lëviz levën</translation>
     </message>
   </context>
   <context>
