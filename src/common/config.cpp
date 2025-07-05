@@ -35,8 +35,10 @@ static bool isNeo = false;
 static bool isDevKit = false;
 static bool isTrophyPopupDisabled = false;
 static bool enableDiscordRPC = false;
-static u32 screenWidth = 1280;
-static u32 screenHeight = 720;
+static u32 windowWidth = 1280;
+static u32 windowHeight = 720;
+static u32 internalScreenWidth = 1280;
+static u32 internalScreenHeight = 720;
 static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
 static std::string logFilter;
 static std::string logType = "sync";
@@ -178,12 +180,20 @@ double getTrophyNotificationDuration() {
     return trophyNotificationDuration;
 }
 
-u32 getScreenWidth() {
-    return screenWidth;
+u32 getWindowWidth() {
+    return windowWidth;
 }
 
-u32 getScreenHeight() {
-    return screenHeight;
+u32 getWindowHeight() {
+    return windowHeight;
+}
+
+u32 getInternalScreenWidth() {
+    return internalScreenHeight;
+}
+
+u32 getInternalScreenHeight() {
+    return internalScreenHeight;
 }
 
 s32 getGpuId() {
@@ -318,12 +328,20 @@ void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
 
-void setScreenWidth(u32 width) {
-    screenWidth = width;
+void setWindowWidth(u32 width) {
+    windowWidth = width;
 }
 
-void setScreenHeight(u32 height) {
-    screenHeight = height;
+void setWindowHeight(u32 height) {
+    windowHeight = height;
+}
+
+void setInternalScreenWidth(u32 width) {
+    internalScreenWidth = width;
+}
+
+void setInternalScreenHeight(u32 height) {
+    internalScreenHeight = height;
 }
 
 void setDebugDump(bool enable) {
@@ -600,8 +618,10 @@ void load(const std::filesystem::path& path) {
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
-        screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
-        screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
+        windowWidth = toml::find_or<int>(gpu, "screenWidth", windowWidth);
+        windowHeight = toml::find_or<int>(gpu, "screenHeight", windowHeight);
+        internalScreenWidth = toml::find_or<int>(gpu, "internalScreenWidth", internalScreenWidth);
+        internalScreenHeight = toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", false);
@@ -751,8 +771,10 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
-    data["GPU"]["screenWidth"] = screenWidth;
-    data["GPU"]["screenHeight"] = screenHeight;
+    data["GPU"]["screenWidth"] = windowWidth;
+    data["GPU"]["screenHeight"] = windowHeight;
+    data["GPU"]["internalScreenWidth"] = internalScreenWidth;
+    data["GPU"]["internalScreenHeight"] = internalScreenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["readbacks"] = readbacksEnabled;
@@ -829,8 +851,8 @@ void setDefaultValues() {
     isFullscreen = false;
     isTrophyPopupDisabled = false;
     enableDiscordRPC = true;
-    screenWidth = 1280;
-    screenHeight = 720;
+    windowWidth = 1280;
+    windowHeight = 720;
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";

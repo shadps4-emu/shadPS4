@@ -762,8 +762,8 @@ void SettingsDialog::UpdateSettings() {
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, ui->BGMVolumeSlider->value());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
-    Config::setScreenWidth(ui->widthSpinBox->value());
-    Config::setScreenHeight(ui->heightSpinBox->value());
+    Config::setWindowWidth(ui->widthSpinBox->value());
+    Config::setWindowHeight(ui->heightSpinBox->value());
     Config::setVblankDiv(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
