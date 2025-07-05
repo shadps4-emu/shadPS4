@@ -475,10 +475,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         // We only use fault buffer for DMA right now.
         {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-            for (auto& range : mapped_ranges) {
-                buffer_cache.SynchronizeBuffersInRange(range.lower(),
-                                                       range.upper() - range.lower());
-            }
+            mapped_ranges.ForEach(
+                [&](const VAddr addr, u64 size) {
+                    buffer_cache.SynchronizeBuffersInRange(addr, size);
+                });
         }
         buffer_cache.MemoryBarrier();
     }
@@ -979,16 +979,14 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
         // There is no memory, so not mapped.
         return false;
     }
-    const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
-
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-    return boost::icl::contains(mapped_ranges, range);
+    return mapped_ranges.Contains(addr, size);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
-        mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+        mapped_ranges.Add(addr, size);
     }
     page_manager.OnGpuMap(addr, size);
 }
@@ -999,7 +997,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     page_manager.OnGpuUnmap(addr, size);
     {
         std::scoped_lock lock{mapped_ranges_mutex};
-        mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+        mapped_ranges.Subtract(addr, size);
     }
 }
 

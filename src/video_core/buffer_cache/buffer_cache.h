@@ -8,8 +8,8 @@
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
-#include "video_core/buffer_cache/range_set.h"
 #include "video_core/multi_level_page_table.h"
+#include "video_core/range_set.h"
 
 namespace AmdGpu {
 struct Liverpool;
