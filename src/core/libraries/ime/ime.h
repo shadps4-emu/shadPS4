@@ -26,7 +26,8 @@ enum class OrbisImeKeyboardOption : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
 
-enum class OrbisImeOption : u32 {
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/* enum class OrbisImeOption : u32 {
     DEFAULT = 0,
     MULTILINE = 1,
     NO_AUTO_CAPITALIZATION = 2,
@@ -35,6 +36,7 @@ enum class OrbisImeOption : u32 {
     EXT_KEYBOARD = 16,
     NO_LEARNING = 32,
     FIXED_POSITION = 64,
+    DISABLE_COPY_PASTE = 128, // Source: psOff
     DISABLE_RESUME = 256,
     DISABLE_AUTO_SPACE = 512,
     DISABLE_POSITION_ADJUSTMENT = 2048,
@@ -42,7 +44,7 @@ enum class OrbisImeOption : u32 {
     USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
     USE_2K_COORDINATES = 16384,
 };
-DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption)
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption)*/
 
 struct OrbisImeKeyboardParam {
     OrbisImeKeyboardOption option;
@@ -53,17 +55,17 @@ struct OrbisImeKeyboardParam {
 };
 
 struct OrbisImeParam {
-    s32 user_id;
+    s32 user_id; // Todo: switch to OrbisUserServiceUserId
     OrbisImeType type;
-    u64 supported_languages;
+    u64 supported_languages; // OrbisImeLanguage flags
     OrbisImeEnterLabel enter_label;
     OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
     OrbisImeOption option;
     u32 maxTextLength;
     char16_t* inputTextBuffer;
-    float posx;
-    float posy;
+    f32 posx;
+    f32 posy;
     OrbisImeHorizontalAlignment horizontal_alignment;
     OrbisImeVerticalAlignment vertical_alignment;
     void* work;
@@ -106,7 +108,7 @@ s32 PS4_SYSV_ABI sceImeKeyboardOpen(s32 userId, const OrbisImeKeyboardParam* par
 int PS4_SYSV_ABI sceImeKeyboardOpenInternal();
 int PS4_SYSV_ABI sceImeKeyboardSetMode();
 int PS4_SYSV_ABI sceImeKeyboardUpdate();
-s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const void* extended);
+s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExtended* extended);
 int PS4_SYSV_ABI sceImeOpenInternal();
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param);
 int PS4_SYSV_ABI sceImeSetCandidateIndex();

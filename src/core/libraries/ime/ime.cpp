@@ -43,8 +43,8 @@ public:
             openEvent.param.rect.x = m_param.ime.posx;
             openEvent.param.rect.y = m_param.ime.posy;
         } else {
-            openEvent.param.resource_id_array.userId = 1;
-            openEvent.param.resource_id_array.resourceId[0] = 1;
+            openEvent.param.resource_id_array.user_id = 1;
+            openEvent.param.resource_id_array.resource_id[0] = 1;
         }
 
         // Are we supposed to call the event handler on init with
@@ -304,7 +304,7 @@ int PS4_SYSV_ABI sceImeKeyboardUpdate() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const void* extended) {
+s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExtended* extended) {
     LOG_INFO(Lib_Ime, "called");
 
     if (!param) {

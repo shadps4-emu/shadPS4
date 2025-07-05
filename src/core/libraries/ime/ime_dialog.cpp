@@ -20,19 +20,19 @@ static OrbisImeDialogResult g_ime_dlg_result{};
 static ImeDialogState g_ime_dlg_state{};
 static ImeDialogUi g_ime_dlg_ui;
 
-static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
-    if (False(~option &
-              (OrbisImeDialogOption::Multiline | OrbisImeDialogOption::NoAutoCompletion))) {
+static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
+    if (False(~option & (OrbisImeOption::MULTILINE |
+                         OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */))) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::Multiline) && type != OrbisImeType::Default &&
+    if (True(option & OrbisImeOption::MULTILINE) && type != OrbisImeType::Default &&
         type != OrbisImeType::BasicLatin) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::NoAutoCompletion) && type != OrbisImeType::Number &&
-        type != OrbisImeType::BasicLatin) {
+    if (True(option & OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */) &&
+        type != OrbisImeType::Number && type != OrbisImeType::BasicLatin) {
         return false;
     }
 
@@ -96,7 +96,7 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
     case OrbisImeType::Url:
     case OrbisImeType::Mail:
         *width = 500; // original: 793
-        if (True(param->option & OrbisImeDialogOption::Multiline)) {
+        if (True(param->option & OrbisImeOption::MULTILINE)) {
             *height = 300; // original: 576
         } else {
             *height = 150; // original: 476
@@ -168,15 +168,13 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     // TODO: do correct param->supportedLanguages validation
 
     if (param->posx < 0.0f ||
-        param->posx >=
-            MAX_X_POSITIONS[False(param->option & OrbisImeDialogOption::LargeResolution)]) {
+        param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->posx");
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
-        param->posy >=
-            MAX_Y_POSITIONS[False(param->option & OrbisImeDialogOption::LargeResolution)]) {
+        param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_INFO(Lib_ImeDialog, "Invalid param->posy");
         return Error::INVALID_POSY;
     }

@@ -15,7 +15,8 @@ namespace Libraries::ImeDialog {
 
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
-enum class Error : u32 {
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/* enum class Error : u32 {
     OK = 0x0,
     BUSY = 0x80bc0001,
     NOT_OPENED = 0x80bc0002,
@@ -55,7 +56,7 @@ enum class Error : u32 {
     DIALOG_NOT_RUNNING = 0x80bc0105,
     DIALOG_NOT_FINISHED = 0x80bc0106,
     DIALOG_NOT_IN_USE = 0x80bc0107,
-};
+};*/
 
 enum class OrbisImeDialogStatus : u32 {
     None = 0,
@@ -69,7 +70,8 @@ enum class OrbisImeDialogEndStatus : u32 {
     Aborted = 2,
 };
 
-enum class OrbisImeDialogOption : u32 {
+/*OrbisImeOption flags must be used instead, so just remove it*/
+/* enum class OrbisImeDialogOption : u32 {
     Default = 0,
     Multiline = 1,
     NoAutoCorrection = 2,
@@ -77,28 +79,31 @@ enum class OrbisImeDialogOption : u32 {
     // TODO: Document missing options
     LargeResolution = 1024,
 };
-DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDialogOption)*/
 
-enum class OrbisImePanelPriority : u32 {
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/* enum class OrbisImePanelPriority : u32 {
     Default = 0,
     Alphabet = 1,
     Symbol = 2,
     Accent = 3,
-};
+};*/
 
-struct OrbisImeColor {
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/* struct OrbisImeColor {
     u8 r;
     u8 g;
     u8 b;
     u8 a;
-};
+};*/
 
 struct OrbisImeDialogResult {
     OrbisImeDialogEndStatus endstatus;
     s32 reserved[12];
 };
 
-struct OrbisImeKeycode {
+/*Already defined in ime_common.h, so remove from here*/
+/* struct OrbisImeKeycode {
     u16 keycode;
     char16_t character;
     u32 status;
@@ -106,24 +111,25 @@ struct OrbisImeKeycode {
     s32 user_id;
     u32 resource_id;
     u64 timestamp;
-};
+};*/
 
-using OrbisImeExtKeyboardFilter = PS4_SYSV_ABI int (*)(const OrbisImeKeycode* srcKeycode,
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/*using OrbisImeExtKeyboardFilter = PS4_SYSV_ABI int (*)(const OrbisImeKeycode* srcKeycode,
                                                        u16* outKeycode, u32* outStatus,
-                                                       void* reserved);
+                                                       void* reserved);*/
 
 struct OrbisImeDialogParam {
     s32 user_id;
     OrbisImeType type;
-    u64 supported_languages;
+    u64 supported_languages; // OrbisImeLanguage flags
     OrbisImeEnterLabel enter_label;
     OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
-    OrbisImeDialogOption option;
+    OrbisImeOption option; // it uses OrbisImeOption flags, so, OrbisImeDialogOption not exists
     u32 max_text_length;
     char16_t* input_text_buffer;
-    float posx;
-    float posy;
+    f32 posx;
+    f32 posy;
     OrbisImeHorizontalAlignment horizontal_alignment;
     OrbisImeVerticalAlignment vertical_alignment;
     const char16_t* placeholder;
@@ -131,8 +137,9 @@ struct OrbisImeDialogParam {
     s8 reserved[16];
 };
 
-struct OrbisImeParamExtended {
-    u32 option; // OrbisImeDialogOptionExtended
+/*Needed for both, Ime & ImeDialog, so, move to ime_common.h*/
+/* struct OrbisImeParamExtended {
+    u32 option; // OrbisImeOptionExtended
     OrbisImeColor color_base;
     OrbisImeColor color_line;
     OrbisImeColor color_text_field;
@@ -145,10 +152,10 @@ struct OrbisImeParamExtended {
     OrbisImePanelPriority priority;
     char* additional_dictionary_path;
     OrbisImeExtKeyboardFilter ext_keyboard_filter;
-    uint32_t disable_device;
-    uint32_t ext_keyboard_mode;
-    int8_t reserved[60];
-};
+    u32 disable_device;
+    u32 ext_keyboard_mode;
+    s8 reserved[60];
+};*/
 
 Error PS4_SYSV_ABI sceImeDialogAbort();
 Error PS4_SYSV_ABI sceImeDialogForceClose();

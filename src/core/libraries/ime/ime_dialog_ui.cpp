@@ -26,7 +26,7 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     }
 
     user_id = param->user_id;
-    is_multi_line = True(param->option & OrbisImeDialogOption::Multiline);
+    is_multi_line = True(param->option & OrbisImeOption::MULTILINE);
     is_numeric = param->type == OrbisImeType::Number;
     type = param->type;
     enter_label = param->enter_label;
