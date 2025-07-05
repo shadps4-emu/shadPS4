@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <deque>
+#include <shared_mutex>
 #include <type_traits>
 #include <vector>
 #include "common/debug.h"
@@ -24,8 +25,9 @@ public:
     ~MemoryTracker() = default;
 
     /// Returns true if a region has been modified from the CPU
+    template <bool locking = true>
     bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
-        return IteratePages<true>(
+        return IteratePages<true, locking>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::CPU>(offset, size);
@@ -33,8 +35,9 @@ public:
     }
 
     /// Returns true if a region has been modified from the GPU
+    template <bool locking = true>
     bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
-        return IteratePages<false>(
+        return IteratePages<false, locking>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
                 std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::GPU>(offset, size);
@@ -42,8 +45,9 @@ public:
     }
 
     /// Mark region as CPU modified, notifying the device_tracker about this change
+    template <bool locking = true>
     void MarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size) {
-        IteratePages<false>(dirty_cpu_addr, query_size,
+        IteratePages<false, locking>(dirty_cpu_addr, query_size,
                             [](RegionManager* manager, u64 offset, size_t size) {
                                 std::scoped_lock lk{manager->lock};
                                 manager->template ChangeRegionState<Type::CPU, true>(
@@ -52,8 +56,9 @@ public:
     }
 
     /// Unmark region as modified from the host GPU
+    template <bool locking = true>
     void UnmarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
-        IteratePages<false>(dirty_cpu_addr, query_size,
+        IteratePages<false, locking>(dirty_cpu_addr, query_size,
                             [](RegionManager* manager, u64 offset, size_t size) {
                                 std::scoped_lock lk{manager->lock};
                                 manager->template ChangeRegionState<Type::GPU, false>(
@@ -62,8 +67,9 @@ public:
     }
 
     /// Removes all protection from a page and ensures GPU data has been flushed if requested
+    template <bool locking = true>
     void InvalidateRegion(VAddr cpu_addr, u64 size, bool try_flush, auto&& on_flush) noexcept {
-        IteratePages<false>(
+        IteratePages<false, locking>(
             cpu_addr, size,
             [try_flush, &on_flush](RegionManager* manager, u64 offset, size_t size) {
                 const bool should_flush = [&] {
@@ -86,8 +92,9 @@ public:
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
+    template <bool locking = true>
     void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, bool is_written, auto&& func) {
-        IteratePages<true>(query_cpu_range, query_size,
+        IteratePages<true, locking>(query_cpu_range, query_size,
                            [&func, is_written](RegionManager* manager, u64 offset, size_t size) {
                                std::scoped_lock lk{manager->lock};
                                manager->template ForEachModifiedRange<Type::CPU, true>(
@@ -100,15 +107,26 @@ public:
     }
 
     /// Call 'func' for each GPU modified range and unmark those pages as GPU modified
-    template <bool clear>
+    template <bool clear, bool locking = true>
     void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
-        IteratePages<false>(query_cpu_range, query_size,
+        IteratePages<false, locking>(query_cpu_range, query_size,
                             [&func](RegionManager* manager, u64 offset, size_t size) {
                                 std::scoped_lock lk{manager->lock};
                                 manager->template ForEachModifiedRange<Type::GPU, clear>(
                                     manager->GetCpuAddr() + offset, size, func);
                             });
     }
+
+    /// Lck the memory tracker.
+    void Lock() {
+        global_lock.lock();
+    }
+
+    /// Unlock the memory tracker.
+    void Unlock() {
+        global_lock.unlock();
+    }
+
 
 private:
     /**
@@ -118,9 +136,12 @@ private:
      * @param func Callback for each word manager.
      * @return
      */
-    template <bool create_region_on_fail, typename Func>
+    template <bool create_region_on_fail, bool locking, typename Func>
     bool IteratePages(VAddr cpu_address, size_t size, Func&& func) {
         RENDERER_TRACE;
+        if constexpr (locking) {
+            std::shared_lock lock{global_lock};
+        }
         using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         std::size_t remaining_size{size};
@@ -177,6 +198,7 @@ private:
     std::deque<std::array<RegionManager, MANAGER_POOL_SIZE>> manager_pool;
     std::vector<RegionManager*> free_managers;
     std::array<RegionManager*, NUM_HIGH_PAGES> top_tier{};
+    std::shared_mutex global_lock;
 };
 
 } // namespace VideoCore

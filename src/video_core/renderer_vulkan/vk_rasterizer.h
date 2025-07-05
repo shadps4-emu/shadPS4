@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <shared_mutex>
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"

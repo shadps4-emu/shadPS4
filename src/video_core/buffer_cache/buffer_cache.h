@@ -5,7 +5,6 @@
 
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include "common/div_ceil.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -156,8 +155,8 @@ public:
     /// Synchronizes all buffers in the specified range.
     void SynchronizeBuffersInRange(VAddr device_addr, u64 size);
 
-    /// Synchronizes all buffers neede for DMA.
-    void SynchronizeDmaBuffers();
+    /// Synchronizes all buffers for DMA.
+    void SynchronizeBuffersForDma();
 
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();

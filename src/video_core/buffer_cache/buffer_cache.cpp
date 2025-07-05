@@ -996,6 +996,10 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
     });
 }
 
+void BufferCache::SynchronizeBuffersForDma() {
+    
+}
+
 void BufferCache::MemoryBarrier() {
     // Vulkan doesn't know which buffer we access in a shader if we use
     // BufferDeviceAddress. We need a full memory barrier.
