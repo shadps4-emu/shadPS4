@@ -445,7 +445,8 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    driver = std::make_unique<VideoOutDriver>(Config::getInternalScreenWidth(), Config::getInternalScreenHeight());
+    driver = std::make_unique<VideoOutDriver>(Config::getInternalScreenWidth(),
+                                              Config::getInternalScreenHeight());
 
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetFlipStatus);

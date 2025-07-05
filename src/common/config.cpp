@@ -423,6 +423,7 @@ void setCursorState(s16 newCursorState) {
 void setCursorHideTimeout(int newcursorHideTimeout) {
     cursorHideTimeout = newcursorHideTimeout;
 }
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration = newTrophyNotificationDuration;
 }
@@ -621,7 +622,8 @@ void load(const std::filesystem::path& path) {
         windowWidth = toml::find_or<int>(gpu, "screenWidth", windowWidth);
         windowHeight = toml::find_or<int>(gpu, "screenHeight", windowHeight);
         internalScreenWidth = toml::find_or<int>(gpu, "internalScreenWidth", internalScreenWidth);
-        internalScreenHeight = toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
+        internalScreenHeight = toml::find_or<
+            int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", false);
