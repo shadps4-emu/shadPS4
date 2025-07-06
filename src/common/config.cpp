@@ -31,33 +31,52 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 
 namespace Config {
 
+// General
 static bool isNeo = false;
 static bool isDevKit = false;
+static bool isPSNSignedIn = false;
 static bool isTrophyPopupDisabled = false;
+static double trophyNotificationDuration = 6.0;
 static bool enableDiscordRPC = false;
+static std::string logFilter = "";
+static std::string logType = "sync";
+static std::string userName = "shadPS4";
+static std::string chooseHomeTab = "General";
+static bool isShowSplash = false;
+static std::string isSideTrophy = "right";
+static bool compatibilityData = false;
+static bool checkCompatibilityOnStartup = false;
+
+// Input
+static int cursorState = HideCursorState::Idle;
+static int cursorHideTimeout = 5; // 5 seconds (default)
+static bool useSpecialPad = false;
+static int specialPadClass = 1;
+static bool isMotionControlsEnabled = true;
+static bool useUnifiedInputConfig = true;
+
+// These two entries aren't stored in the config
+static bool overrideControllerColor = false;
+static int controllerCustomColorRGB[3] = {0, 0, 255};
+
+// GPU
 static u32 windowWidth = 1280;
 static u32 windowHeight = 720;
 static u32 internalScreenWidth = 1280;
 static u32 internalScreenHeight = 720;
-static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
-static std::string logFilter;
-static std::string logType = "sync";
-static std::string userName = "shadPS4";
-static std::string chooseHomeTab;
-static bool useSpecialPad = false;
-static int specialPadClass = 1;
-static bool isMotionControlsEnabled = true;
-static bool isDebugDump = false;
-static bool isShaderDebug = false;
-static bool isShowSplash = false;
-static std::string isSideTrophy = "right";
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
 static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
-static bool shouldPatchShaders = true;
+static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
+static bool isFullscreen = false;
+static std::string fullscreenMode = "Windowed";
+static bool isHDRAllowed = false;
+
+// Vulkan
+static s32 gpuId = -1;
 static bool vkValidation = false;
 static bool vkValidationSync = false;
 static bool vkValidationGpu = false;
@@ -65,31 +84,28 @@ static bool vkCrashDiagnostic = false;
 static bool vkHostMarkers = false;
 static bool vkGuestMarkers = false;
 static bool rdocEnable = false;
-static bool isFpsColor = true;
-static bool isSeparateLogFilesEnabled = false;
-static int cursorState = HideCursorState::Idle;
-static int cursorHideTimeout = 5; // 5 seconds (default)
-static double trophyNotificationDuration = 6.0;
-static bool useUnifiedInputConfig = true;
-static bool overrideControllerColor = false;
-static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool compatibilityData = false;
-static bool checkCompatibilityOnStartup = false;
-static std::string trophyKey;
-static bool isPSNSignedIn = false;
 
-// Gui
+// Debug
+static bool isDebugDump = false;
+static bool isShaderDebug = false;
+static bool isSeparateLogFilesEnabled = false;
+static bool isFpsColor = true;
+
+// GUI
 static bool load_game_size = true;
 static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-static bool isFullscreen = false;
-static std::string fullscreenMode = "Windowed";
-static bool isHDRAllowed = false;
 
-// Language
+// Settings
 u32 m_language = 1; // english
+
+// Keys
+static std::string trophyKey = "";
+
+// Expected number of items in the config file
+static constexpr u64 total_entries = 51;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -584,36 +600,46 @@ void load(const std::filesystem::path& path) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
+
+    u64 entry_count = 0;
+
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
-        isDevKit = toml::find_or<bool>(general, "isDevKit", false);
-        isPSNSignedIn = toml::find_or<bool>(general, "isPSNSignedIn", false);
-        isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
-        trophyNotificationDuration =
-            toml::find_or<double>(general, "trophyNotificationDuration", 5.0);
-        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
-        logFilter = toml::find_or<std::string>(general, "logFilter", "");
-        logType = toml::find_or<std::string>(general, "logType", "sync");
-        userName = toml::find_or<std::string>(general, "userName", "shadPS4");
-        isShowSplash = toml::find_or<bool>(general, "showSplash", true);
-        isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
-        compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
-        checkCompatibilityOnStartup =
-            toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
-        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
+        isNeo = toml::find_or<bool>(general, "isPS4Pro", isNeo);
+        isDevKit = toml::find_or<bool>(general, "isDevKit", isDevKit);
+        isPSNSignedIn = toml::find_or<bool>(general, "isPSNSignedIn", isPSNSignedIn);
+        isTrophyPopupDisabled =
+            toml::find_or<bool>(general, "isTrophyPopupDisabled", isTrophyPopupDisabled);
+        trophyNotificationDuration = toml::find_or<double>(general, "trophyNotificationDuration",
+                                                           trophyNotificationDuration);
+        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
+        logFilter = toml::find_or<std::string>(general, "logFilter", logFilter);
+        logType = toml::find_or<std::string>(general, "logType", logType);
+        userName = toml::find_or<std::string>(general, "userName", userName);
+        isShowSplash = toml::find_or<bool>(general, "showSplash", isShowSplash);
+        isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", isSideTrophy);
+        compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
+        checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
+                                                          checkCompatibilityOnStartup);
+        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+
+        entry_count += general.size();
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
-        cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
-        cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
-        useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
-        specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
-        isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
-        useUnifiedInputConfig = toml::find_or<bool>(input, "useUnifiedInputConfig", true);
+        cursorState = toml::find_or<int>(input, "cursorState", cursorState);
+        cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", cursorHideTimeout);
+        useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", useSpecialPad);
+        specialPadClass = toml::find_or<int>(input, "specialPadClass", specialPadClass);
+        isMotionControlsEnabled =
+            toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
+        useUnifiedInputConfig =
+            toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
+
+        entry_count += input.size();
     }
 
     if (data.contains("GPU")) {
@@ -624,44 +650,52 @@ void load(const std::filesystem::path& path) {
         internalScreenWidth = toml::find_or<int>(gpu, "internalScreenWidth", internalScreenWidth);
         internalScreenHeight =
             toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
-        isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
-        shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
-        readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", false);
-        directMemoryAccessEnabled = toml::find_or<bool>(gpu, "directMemoryAccess", false);
-        shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
-        shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
-        vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
-        isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
-        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", "Windowed");
-        isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
+        isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
+        shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
+        readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
+        directMemoryAccessEnabled =
+            toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
+        shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
+        shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
+        vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
+        isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
+        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
+        isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
+
+        entry_count += gpu.size();
     }
 
     if (data.contains("Vulkan")) {
         const toml::value& vk = data.at("Vulkan");
 
-        gpuId = toml::find_or<int>(vk, "gpuId", -1);
-        vkValidation = toml::find_or<bool>(vk, "validation", false);
-        vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
-        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
-        vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
-        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", false);
-        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", false);
-        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
+        gpuId = toml::find_or<int>(vk, "gpuId", gpuId);
+        vkValidation = toml::find_or<bool>(vk, "validation", vkValidation);
+        vkValidationSync = toml::find_or<bool>(vk, "validation_sync", vkValidationSync);
+        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", vkValidationGpu);
+        vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", vkCrashDiagnostic);
+        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", vkHostMarkers);
+        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", vkGuestMarkers);
+        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", rdocEnable);
+
+        entry_count += vk.size();
     }
 
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
-        isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
-        isSeparateLogFilesEnabled = toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", false);
-        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
-        isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
+        isDebugDump = toml::find_or<bool>(debug, "DebugDump", isDebugDump);
+        isSeparateLogFilesEnabled =
+            toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
+        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
+        isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
+
+        entry_count += debug.size();
     }
 
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
 
-        load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
+        load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", load_game_size);
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
@@ -683,20 +717,32 @@ void load(const std::filesystem::path& path) {
                 {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
         }
 
-        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
+        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
 
-        settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
+        settings_addon_install_dir =
+            toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
+
+        entry_count += gui.size();
     }
 
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
+        m_language = toml::find_or<int>(settings, "consoleLanguage", m_language);
 
-        m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
+        entry_count += settings.size();
     }
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
-        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
+        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", trophyKey);
+
+        entry_count += keys.size();
+    }
+
+    // Run save after loading to generate any missing fields with default values.
+    if (entry_count != total_entries) {
+        fmt::print("Outdated config detected, updating config file.\n");
+        save(path);
     }
 }
 
@@ -846,32 +892,52 @@ void save(const std::filesystem::path& path) {
 }
 
 void setDefaultValues() {
-    isHDRAllowed = false;
+    // General
     isNeo = false;
     isDevKit = false;
     isPSNSignedIn = false;
-    isFullscreen = false;
     isTrophyPopupDisabled = false;
-    enableDiscordRPC = true;
-    windowWidth = 1280;
-    windowHeight = 720;
+    trophyNotificationDuration = 6.0;
+    enableDiscordRPC = false;
     logFilter = "";
     logType = "sync";
     userName = "shadPS4";
-
     chooseHomeTab = "General";
-    cursorState = HideCursorState::Idle;
-    cursorHideTimeout = 5;
-    trophyNotificationDuration = 6.0;
-    useSpecialPad = false;
-    specialPadClass = 1;
-    isDebugDump = false;
-    isShaderDebug = false;
     isShowSplash = false;
     isSideTrophy = "right";
+    compatibilityData = false;
+    checkCompatibilityOnStartup = false;
+
+    // Input
+    cursorState = HideCursorState::Idle;
+    cursorHideTimeout = 5;
+    useSpecialPad = false;
+    specialPadClass = 1;
+    isMotionControlsEnabled = true;
+    useUnifiedInputConfig = true;
+    overrideControllerColor = false;
+    controllerCustomColorRGB[0] = 0;
+    controllerCustomColorRGB[1] = 0;
+    controllerCustomColorRGB[2] = 255;
+
+    // GPU
+    windowWidth = 1280;
+    windowHeight = 720;
+    internalScreenWidth = 1280;
+    internalScreenHeight = 720;
     isNullGpu = false;
+    shouldCopyGPUBuffers = false;
+    readbacksEnabled = false;
+    directMemoryAccessEnabled = false;
     shouldDumpShaders = false;
+    shouldPatchShaders = false;
     vblankDivider = 1;
+    isFullscreen = false;
+    fullscreenMode = "Windowed";
+    isHDRAllowed = false;
+
+    // Vulkan
+    gpuId = -1;
     vkValidation = false;
     vkValidationSync = false;
     vkValidationGpu = false;
@@ -879,10 +945,18 @@ void setDefaultValues() {
     vkHostMarkers = false;
     vkGuestMarkers = false;
     rdocEnable = false;
+
+    // Debug
+    isDebugDump = false;
+    isShaderDebug = false;
+    isSeparateLogFilesEnabled = false;
+    isFpsColor = true;
+
+    // GUI
+    load_game_size = true;
+
+    // Settings
     m_language = 1;
-    gpuId = -1;
-    compatibilityData = false;
-    checkCompatibilityOnStartup = false;
 }
 
 constexpr std::string_view GetDefaultKeyboardConfig() {
