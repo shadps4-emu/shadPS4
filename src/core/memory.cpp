@@ -342,7 +342,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
     }
 
-    // Limit the minumum address to SystemManagedVirtualBase to prevent hardware-specific issues.
+    // Limit the minimum address to SystemManagedVirtualBase to prevent hardware-specific issues.
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
 
     // Fixed mapping means the virtual address must exactly match the provided one.
