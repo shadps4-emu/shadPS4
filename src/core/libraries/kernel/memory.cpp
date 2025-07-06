@@ -711,6 +711,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
                  sceKernelConfiguredFlexibleMemorySize);
 
     LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMprotect);
+    LIB_FUNCTION("YQOfxL4QfeU", "libkernel", 1, "libkernel", 1, 1, posix_mprotect);
     LIB_FUNCTION("YQOfxL4QfeU", "libScePosix", 1, "libkernel", 1, 1, posix_mprotect);
     LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMtypeprotect);
 
