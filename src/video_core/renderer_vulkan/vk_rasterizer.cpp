@@ -36,7 +36,7 @@ static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, *this, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -475,12 +475,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         // We only use fault buffer for DMA right now.
         {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-            mapped_ranges.ForEach(
-                [&](const VAddr addr, u64 size) {
-                    buffer_cache.SynchronizeBuffersInRange(addr, size);
-                });
+            buffer_cache.SynchronizeBuffersForDma();
         }
-        buffer_cache.MemoryBarrier();
     }
 
     fault_process_pending |= uses_dma;

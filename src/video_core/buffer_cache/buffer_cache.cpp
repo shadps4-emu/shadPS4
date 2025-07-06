@@ -29,9 +29,9 @@ static constexpr size_t DeviceBufferSize = 128_MB;
 static constexpr size_t MaxPageFaults = 1024;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                         AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
-                         PageManager& tracker)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+                         Vulkan::Rasterizer& rasterizer_, AmdGpu::Liverpool* liverpool_,
+                         TextureCache& texture_cache_, PageManager& tracker)
+    : instance{instance_}, scheduler{scheduler_}, rasterizer{rasterizer_}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, texture_cache{texture_cache_},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
@@ -817,7 +817,7 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
                                     bool is_texel_buffer) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     VAddr buffer_start = buffer.CpuAddr();
-    memory_tracker->ForEachUploadRange(
+    memory_tracker->ForEachUploadRange<true>(
         device_addr, size, is_written, [&](u64 device_addr_out, u64 range_size) {
             const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
             copies.push_back(vk::BufferCopy{
@@ -996,7 +996,54 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 }
 
 void BufferCache::SynchronizeBuffersForDma() {
-    
+    RENDERER_TRACE;
+    boost::container::small_vector<Buffer*, 64> buffers;
+    boost::container::small_vector<vk::BufferMemoryBarrier2, 64> barriers;
+    boost::container::small_vector<vk::BufferCopy, 4> copies;
+    const auto& mapped_ranges = rasterizer.GetMappedRanges();
+    memory_tracker->Lock();
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
+        ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
+            if (memory_tracker->IsRegionCpuModified<false>(device_addr, size)) {
+                barriers.push_back(vk::BufferMemoryBarrier2{
+                    .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                    .srcAccessMask =
+                        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+                        vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
+                    .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                    .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                    .buffer = buffer.Handle(),
+                    .offset = 0,
+                    .size = buffer.SizeBytes(),
+                });
+                buffers.push_back(&buffer);
+            }
+        });
+    });
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = static_cast<u32>(barriers.size()),
+        .pBufferMemoryBarriers = barriers.data(),
+    });
+    for (auto* buffer : buffers) {
+        memory_tracker->ForEachUploadRange<false, false>(
+            buffer->CpuAddr(), buffer->SizeBytes(), false,
+            [&](u64 device_addr_out, u64 range_size) {
+                const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
+                copies.push_back(vk::BufferCopy{
+                    .srcOffset = offset,
+                    .dstOffset = device_addr_out - buffer->CpuAddr(),
+                    .size = range_size,
+                });
+            });
+        cmdbuf.copyBuffer(staging_buffer.Handle(), buffer->Handle(), copies);
+        copies.clear();
+    }
+    memory_tracker->UnmarkAllRegionsAsCpuModified<false>();
+    MemoryBarrier();
+    memory_tracker->Unlock();
 }
 
 void BufferCache::MemoryBarrier() {

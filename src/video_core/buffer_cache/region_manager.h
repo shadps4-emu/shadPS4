@@ -137,6 +137,24 @@ public:
     }
 
     /**
+     * Chagnes state of all pages in the region
+     */
+    template <Type type, bool enable>
+    void ChangeAllRegionState() noexcept {
+        RENDERER_TRACE;
+        if constexpr (enable) {
+            GetRegionBits<type>().Fill();
+        } else {
+            GetRegionBits<type>().Clear();
+        }
+        if constexpr (type == Type::CPU) {
+            UpdateProtection<!enable, false>();
+        } else if (Config::readbacks()) {
+            UpdateProtection<enable, true>();
+        }
+    }
+
+    /**
      * Returns true when a region has been modified
      *
      * @param offset Offset in bytes from the start of the buffer

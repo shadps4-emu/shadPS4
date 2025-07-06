@@ -21,7 +21,8 @@ class MemoryManager;
 
 namespace Vulkan {
 class GraphicsPipeline;
-}
+class Rasterizer;
+} // namespace Vulkan
 
 namespace VideoCore {
 
@@ -70,8 +71,8 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
-                         PageManager& tracker);
+                         Vulkan::Rasterizer& rasterizer, AmdGpu::Liverpool* liverpool,
+                         TextureCache& texture_cache, PageManager& tracker);
     ~BufferCache();
 
     /// Returns a pointer to GDS device local buffer.
@@ -203,6 +204,7 @@ private:
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    Vulkan::Rasterizer& rasterizer;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     TextureCache& texture_cache;

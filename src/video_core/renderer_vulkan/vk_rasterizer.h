@@ -7,9 +7,9 @@
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/range_set.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/texture_cache/texture_cache.h"
-#include "video_core/range_set.h"
 
 namespace AmdGpu {
 struct Liverpool;
@@ -41,6 +41,10 @@ public:
 
     [[nodiscard]] VideoCore::TextureCache& GetTextureCache() noexcept {
         return texture_cache;
+    }
+
+    [[nodiscard]] const VideoCore::RangeSet& GetMappedRanges() const noexcept {
+        return mapped_ranges;
     }
 
     void Draw(bool is_indexed, u32 index_offset = 0);
