@@ -817,7 +817,7 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
                                     bool is_texel_buffer) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     VAddr buffer_start = buffer.CpuAddr();
-    memory_tracker->ForEachUploadRange<true>(
+    memory_tracker->ForEachUploadRange(
         device_addr, size, is_written, [&](u64 device_addr_out, u64 range_size) {
             const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
             copies.push_back(vk::BufferCopy{
@@ -997,6 +997,7 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 
 void BufferCache::SynchronizeBuffersForDma() {
     RENDERER_TRACE;
+    LOG_WARNING(Render_Vulkan, "SYNC RANGES FOR DMA");
     boost::container::small_vector<Buffer*, 64> buffers;
     boost::container::small_vector<vk::BufferMemoryBarrier2, 64> barriers;
     boost::container::small_vector<vk::BufferCopy, 4> copies;
@@ -1028,7 +1029,7 @@ void BufferCache::SynchronizeBuffersForDma() {
         .pBufferMemoryBarriers = barriers.data(),
     });
     for (auto* buffer : buffers) {
-        memory_tracker->ForEachUploadRange<false, false>(
+        memory_tracker->ForEachUploadRange<true, false>(
             buffer->CpuAddr(), buffer->SizeBytes(), false,
             [&](u64 device_addr_out, u64 range_size) {
                 const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
@@ -1041,8 +1042,8 @@ void BufferCache::SynchronizeBuffersForDma() {
         cmdbuf.copyBuffer(staging_buffer.Handle(), buffer->Handle(), copies);
         copies.clear();
     }
-    memory_tracker->UnmarkAllRegionsAsCpuModified<false>();
     MemoryBarrier();
+    memory_tracker->PerformDeferredProtections<Type::CPU, false, false>();
     memory_tracker->Unlock();
 }
 

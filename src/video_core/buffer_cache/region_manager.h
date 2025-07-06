@@ -70,13 +70,27 @@ public:
         }
     }
 
+    template <Type type, bool enable>
+    void PerformDeferredProtections() {
+        bool was_deferred = True(deferred_protection & type);
+        if (!was_deferred) {
+            return;
+        }
+        deferred_protection &= ~type;
+        if constexpr (type == Type::CPU) {
+            UpdateProtection<!enable, false>();
+        } else if constexpr (type == Type::GPU) {
+            UpdateProtection<enable, true>();
+        }
+    }
+
     /**
      * Change the state of a range of pages
      *
      * @param dirty_addr    Base address to mark or unmark as modified
      * @param size          Size in bytes to mark or unmark as modified
      */
-    template <Type type, bool enable>
+    template <Type type, bool enable, bool defer_protect>
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
         RENDERER_TRACE;
         const size_t offset = dirty_addr - cpu_addr;
@@ -93,7 +107,9 @@ public:
         } else {
             bits.UnsetRange(start_page, end_page);
         }
-        if constexpr (type == Type::CPU) {
+        if constexpr (defer_protect) {
+            deferred_protection |= type;
+        } else if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
         } else if (Config::readbacks()) {
             UpdateProtection<enable, true>();
@@ -108,7 +124,7 @@ public:
      * @param size            Size in bytes of the CPU range to loop over
      * @param func            Function to call for each turned off region
      */
-    template <Type type, bool clear>
+    template <Type type, bool clear, bool defer_protect>
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
         RENDERER_TRACE;
         const size_t offset = query_cpu_range - cpu_addr;
@@ -124,7 +140,9 @@ public:
 
         if constexpr (clear) {
             bits.UnsetRange(start_page, end_page);
-            if constexpr (type == Type::CPU) {
+            if constexpr (defer_protect) {
+                deferred_protection |= type;
+            } else if constexpr (type == Type::CPU) {
                 UpdateProtection<true, false>();
             } else if (Config::readbacks()) {
                 UpdateProtection<false, true>();
@@ -133,24 +151,6 @@ public:
 
         for (const auto& [start, end] : mask) {
             func(cpu_addr + start * TRACKER_BYTES_PER_PAGE, (end - start) * TRACKER_BYTES_PER_PAGE);
-        }
-    }
-
-    /**
-     * Chagnes state of all pages in the region
-     */
-    template <Type type, bool enable>
-    void ChangeAllRegionState() noexcept {
-        RENDERER_TRACE;
-        if constexpr (enable) {
-            GetRegionBits<type>().Fill();
-        } else {
-            GetRegionBits<type>().Clear();
-        }
-        if constexpr (type == Type::CPU) {
-            UpdateProtection<!enable, false>();
-        } else if (Config::readbacks()) {
-            UpdateProtection<enable, true>();
         }
     }
 
@@ -204,6 +204,7 @@ private:
 
     PageManager* tracker;
     VAddr cpu_addr = 0;
+    Type deferred_protection = Type::None;
     RegionBits cpu;
     RegionBits gpu;
     RegionBits writeable;
