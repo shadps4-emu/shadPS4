@@ -105,7 +105,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 51;
+static constexpr u64 total_entries = 53;
 
 bool allowHDR() {
     return isHDRAllowed;
