@@ -358,9 +358,17 @@ enum PosixPageProtection {
 [[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
     if (True(prot & Core::MemoryProt::CpuReadWrite) ||
         True(prot & Core::MemoryProt::GpuReadWrite)) {
-        return PAGE_READWRITE;
+        if (True(prot & Core::MemoryProt::CpuExec)) {
+            return PAGE_EXECUTE_READWRITE;
+        } else {
+            return PAGE_READWRITE;
+        }
     } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        return PAGE_READONLY;
+        if (True(prot & Core::MemoryProt::CpuExec)) {
+            return PAGE_EXECUTE_READ;
+        } else {
+            return PAGE_READONLY;
+        }
     } else {
         return PAGE_NOACCESS;
     }
