@@ -353,7 +353,7 @@ Id EmitFPIsInf32(EmitContext& ctx, Id value);
 Id EmitFPIsInf64(EmitContext& ctx, Id value);
 Id EmitIAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitIAdd64(EmitContext& ctx, Id a, Id b);
-Id EmitIAddCary32(EmitContext& ctx, Id a, Id b);
+Id EmitIAddCarry32(EmitContext& ctx, Id a, Id b);
 Id EmitISub32(EmitContext& ctx, Id a, Id b);
 Id EmitISub64(EmitContext& ctx, Id a, Id b);
 Id EmitSMulHi(EmitContext& ctx, Id a, Id b);

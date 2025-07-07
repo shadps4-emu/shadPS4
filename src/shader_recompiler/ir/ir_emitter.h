@@ -254,7 +254,7 @@ public:
     [[nodiscard]] F32F64 FPMedTri(const F32F64& a, const F32F64& b, const F32F64& c);
 
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
-    [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
+    [[nodiscard]] Value IAddCarry(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 IMulHi(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 IMul(const U32U64& a, const U32U64& b);
