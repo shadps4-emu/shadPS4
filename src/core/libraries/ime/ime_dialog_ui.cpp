@@ -21,12 +21,16 @@ namespace Libraries::ImeDialog {
 
 ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
                                const OrbisImeParamExtended* extended) {
+    LOG_INFO(Lib_ImeDialog, ">> ImeDialogState::Ctor: param={}, text_buffer={}",
+             static_cast<const void*>(param),
+             static_cast<void*>(param ? param->input_text_buffer : nullptr));
     if (!param) {
+        LOG_ERROR(Lib_ImeDialog, "   param==nullptr, returning without init");
         return;
     }
 
     user_id = param->user_id;
-    is_multi_line = True(param->option & OrbisImeDialogOption::Multiline);
+    is_multi_line = True(param->option & OrbisImeOption::MULTILINE);
     is_numeric = param->type == OrbisImeType::Number;
     type = param->type;
     enter_label = param->enter_label;
@@ -220,6 +224,7 @@ void ImeDialogUi::Free() {
 
 void ImeDialogUi::Draw() {
     std::unique_lock lock{draw_mutex};
+    LOG_INFO(Lib_ImeDialog, ">> ImeDialogUi::Draw: first_render=%d", first_render);
 
     if (!state) {
         return;
@@ -259,9 +264,13 @@ void ImeDialogUi::Draw() {
         }
 
         if (state->is_multi_line) {
+            LOG_INFO(Lib_ImeDialog, "   Drawing multi-line widget…");
             DrawMultiLineInputText();
+            LOG_INFO(Lib_ImeDialog, "   Done DrawMultiLineInputText");
         } else {
+            LOG_INFO(Lib_ImeDialog, "   Drawing input text widget…");
             DrawInputText();
+            LOG_INFO(Lib_ImeDialog, "   Done DrawInputText");
         }
 
         SetCursorPosY(GetCursorPosY() + 10.0f);
@@ -306,6 +315,7 @@ void ImeDialogUi::Draw() {
     End();
 
     first_render = false;
+    LOG_INFO(Lib_ImeDialog, "<< ImeDialogUi::Draw complete");
 }
 
 void ImeDialogUi::DrawInputText() {
@@ -316,7 +326,7 @@ void ImeDialogUi::DrawInputText() {
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
     if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
-                    state->max_text_length, input_size, ImGuiInputTextFlags_CallbackCharFilter,
+                    state->max_text_length + 1, input_size, ImGuiInputTextFlags_CallbackCharFilter,
                     InputTextCallback, this)) {
         state->input_changed = true;
     }
@@ -332,7 +342,7 @@ void ImeDialogUi::DrawMultiLineInputText() {
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
     if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
-                    state->max_text_length, input_size, flags, InputTextCallback, this)) {
+                    state->max_text_length + 1, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
@@ -341,13 +351,19 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ImeDialogUi* ui = static_cast<ImeDialogUi*>(data->UserData);
     ASSERT(ui);
 
+    LOG_DEBUG(Lib_ImeDialog, ">> InputTextCallback: EventFlag={}, EventChar={}", data->EventFlag,
+              data->EventChar);
+
     // Should we filter punctuation?
     if (ui->state->is_numeric && (data->EventChar < '0' || data->EventChar > '9') &&
         data->EventChar != '\b' && data->EventChar != ',' && data->EventChar != '.') {
+        LOG_INFO(Lib_ImeDialog, "InputTextCallback: rejecting non-digit char '{}'",
+                 static_cast<char>(data->EventChar));
         return 1;
     }
 
     if (!ui->state->keyboard_filter) {
+        LOG_DEBUG(Lib_ImeDialog, "InputTextCallback: no keyboard_filter, accepting char");
         return 0;
     }
 
@@ -367,16 +383,20 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     };
 
     if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
-        LOG_ERROR(Lib_ImeDialog, "Failed to convert orbis char to utf8");
+        LOG_ERROR(Lib_ImeDialog, "InputTextCallback: ConvertUTF8ToOrbis failed");
         return 0;
     }
+    LOG_DEBUG(Lib_ImeDialog, "InputTextCallback: converted to Orbis char={:#X}",
+              static_cast<uint16_t>(src_keycode.character));
     src_keycode.keycode = src_keycode.character; // TODO set this to the correct value
 
     u16 out_keycode;
     u32 out_status;
 
-    ui->state->CallKeyboardFilter(&src_keycode, &out_keycode, &out_status);
-
+    bool keep = ui->state->CallKeyboardFilter(&src_keycode, &out_keycode, &out_status);
+    LOG_DEBUG(Lib_ImeDialog,
+              "InputTextCallback: CallKeyboardFilter returned %s (keycode=0x%X, status=0x%X)",
+              keep ? "true" : "false", out_keycode, out_status);
     // TODO. set the keycode
 
     return 0;

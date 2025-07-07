@@ -199,7 +199,7 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         eventParam.caret_index = data->CursorPos;
         eventParam.area_num = 1;
 
-        eventParam.text_area[0].mode = 1; // Edit mode
+        eventParam.text_area[0].mode = OrbisImeTextAreaMode::Edit;
         eventParam.text_area[0].index = data->CursorPos;
         eventParam.text_area[0].length = data->BufTextLen;
 
