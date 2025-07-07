@@ -72,22 +72,22 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
         return;
     }
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.size.width * image.info.size.height *
+    const u32 download_size = image.info.pitch * image.info.size.height *
                               image.info.resources.layers * (image.info.num_bits / 8);
-    // ASSERT(download_size == image.info.guest_size);
+    ASSERT(download_size <= image.info.guest_size);
     const auto [download, offset] = download_buffer.Map(download_size);
     download_buffer.Commit();
     const vk::BufferImageCopy image_download = {
         .bufferOffset = offset,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
+        .bufferRowLength = image.info.pitch,
+        .bufferImageHeight = image.info.size.height,
         .imageSubresource =
             {
                 .aspectMask = image.info.IsDepthStencil() ? vk::ImageAspectFlagBits::eDepth
                                                           : vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                .layerCount = image.info.resources.layers,
             },
         .imageOffset = {0, 0, 0},
         .imageExtent = {image.info.size.width, image.info.size.height, 1},
@@ -528,9 +528,6 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
-        download_images.emplace(image_id);
-    }
     image.usage.depth_target = 1u;
     image.usage.stencil = image.info.HasStencil();
     UpdateImage(image_id);
