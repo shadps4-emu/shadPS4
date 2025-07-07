@@ -5,6 +5,7 @@
 #include <xxhash.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -486,7 +487,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
+        if (Config::readbackLinearImages() &&
+            image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
             download_images.emplace(image_id);
         }
     }
@@ -498,7 +500,8 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
+    if (Config::readbackLinearImages() &&
+        image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;
