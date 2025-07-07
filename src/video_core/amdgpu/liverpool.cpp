@@ -135,9 +135,8 @@ void Liverpool::Process(std::stop_token stoken) {
 
         if (submit_done) {
             VideoCore::EndCapture();
-
             if (rasterizer) {
-                rasterizer->ProcessFaults();
+                rasterizer->EndCommandList();
                 rasterizer->Flush();
             }
             submit_done = false;
