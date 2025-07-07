@@ -3,8 +3,107 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
+
+constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
+constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
+
+enum class Error : u32 {
+    OK = 0x0,
+    BUSY = 0x80bc0001,
+    NOT_OPENED = 0x80bc0002,
+    NO_MEMORY = 0x80bc0003,
+    CONNECTION_FAILED = 0x80bc0004,
+    TOO_MANY_REQUESTS = 0x80bc0005,
+    INVALID_TEXT = 0x80bc0006,
+    EVENT_OVERFLOW = 0x80bc0007,
+    NOT_ACTIVE = 0x80bc0008,
+    IME_SUSPENDING = 0x80bc0009,
+    DEVICE_IN_USE = 0x80bc000a,
+    INVALID_USER_ID = 0x80bc0010,
+    INVALID_TYPE = 0x80bc0011,
+    INVALID_SUPPORTED_LANGUAGES = 0x80bc0012,
+    INVALID_ENTER_LABEL = 0x80bc0013,
+    INVALID_INPUT_METHOD = 0x80bc0014,
+    INVALID_OPTION = 0x80bc0015,
+    INVALID_MAX_TEXT_LENGTH = 0x80bc0016,
+    INVALID_INPUT_TEXT_BUFFER = 0x80bc0017,
+    INVALID_POSX = 0x80bc0018,
+    INVALID_POSY = 0x80bc0019,
+    INVALID_HORIZONTALIGNMENT = 0x80bc001a,
+    INVALID_VERTICALALIGNMENT = 0x80bc001b,
+    INVALID_EXTENDED = 0x80bc001c,
+    INVALID_KEYBOARD_TYPE = 0x80bc001d,
+    INVALID_WORK = 0x80bc0020,
+    INVALID_ARG = 0x80bc0021,
+    INVALID_HANDLER = 0x80bc0022,
+    NO_RESOURCE_ID = 0x80bc0023,
+    INVALID_MODE = 0x80bc0024,
+    INVALID_PARAM = 0x80bc0030,
+    INVALID_ADDRESS = 0x80bc0031,
+    INVALID_RESERVED = 0x80bc0032,
+    INVALID_TIMING = 0x80bc0033,
+    INTERNAL = 0x80bc00ff,
+    DIALOG_INVALID_TITLE = 0x80bc0101,
+    DIALOG_NOT_RUNNING = 0x80bc0105,
+    DIALOG_NOT_FINISHED = 0x80bc0106,
+    DIALOG_NOT_IN_USE = 0x80bc0107
+};
+
+enum class OrbisImeOption : u32 {
+    DEFAULT = 0,
+    MULTILINE = 1,
+    NO_AUTO_CAPITALIZATION = 2,
+    PASSWORD = 4,
+    LANGUAGES_FORCED = 8,
+    EXT_KEYBOARD = 16,
+    NO_LEARNING = 32,
+    FIXED_POSITION = 64,
+    DISABLE_COPY_PASTE = 128,
+    DISABLE_RESUME = 256,
+    DISABLE_AUTO_SPACE = 512,
+    DISABLE_POSITION_ADJUSTMENT = 2048,
+    EXPANDED_PREEDIT_BUFFER = 4096,
+    USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
+    USE_2K_COORDINATES = 16384,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption);
+
+enum class OrbisImeLanguage : u64 {
+    DANISH = 0x0000000000000001,
+    GERMAN = 0x0000000000000002,
+    ENGLISH_US = 0x0000000000000004,
+    SPANISH = 0x0000000000000008,
+    FRENCH = 0x0000000000000010,
+    ITALIAN = 0x0000000000000020,
+    DUTCH = 0x0000000000000040,
+    NORWEGIAN = 0x0000000000000080,
+    POLISH = 0x0000000000000100,
+    PORTUGUESE_PT = 0x0000000000000200,
+    RUSSIAN = 0x0000000000000400,
+    FINNISH = 0x0000000000000800,
+    SWEDISH = 0x0000000000001000,
+    JAPANESE = 0x0000000000002000,
+    KOREAN = 0x0000000000004000,
+    SIMPLIFIED_CHINESE = 0x0000000000008000,
+    TRADITIONAL_CHINESE = 0x0000000000010000,
+    PORTUGUESE_BR = 0x0000000000020000,
+    ENGLISH_GB = 0x0000000000040000,
+    TURKISH = 0x0000000000080000,
+    SPANISH_LA = 0x0000000000100000,
+    ARABIC = 0x0000000001000000,
+    FRENCH_CA = 0x0000000002000000,
+    THAI = 0x0000000004000000,
+    CZECH = 0x0000000008000000,
+    GREEK = 0x0000000010000000,
+    INDONESIAN = 0x0000000020000000,
+    VIETNAMESE = 0x0000000040000000,
+    ROMANIAN = 0x0000000080000000,
+    HUNGARIAN = 0x0000000100000000,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeLanguage);
 
 enum class OrbisImeType : u32 {
     Default = 0,
@@ -41,6 +140,7 @@ enum class OrbisImeEventId : u32 {
     Open = 0,
     UpdateText = 1,
     UpdateCaret = 2,
+    ChangeSize = 3,
     PressClose = 4,
     PressEnter = 5,
     Abort = 6,
@@ -51,6 +151,10 @@ enum class OrbisImeEventId : u32 {
     CandidateDone = 11,
     CandidateCancel = 12,
     ChangeDevice = 14,
+    JumpToNextObject = 15,
+    JumpToBeforeObject = 16,
+    ChangeWindowType = 17,
+
     ChangeInputMethodState = 18,
 
     KeyboardOpen = 256,
@@ -110,6 +214,13 @@ enum class OrbisImeDeviceType : u32 {
     RemoteOsk = 3,
 };
 
+enum class OrbisImePanelPriority : u32 {
+    Default = 0,
+    Alphabet = 1,
+    Symbol = 2,
+    Accent = 3,
+};
+
 struct OrbisImeRect {
     f32 x;
     f32 y;
@@ -117,8 +228,22 @@ struct OrbisImeRect {
     u32 height;
 };
 
+struct OrbisImeColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+};
+
+enum class OrbisImeTextAreaMode : u32 {
+    Disable = 0,
+    Edit = 1,
+    Preedit = 2,
+    Select = 3,
+};
+
 struct OrbisImeTextAreaProperty {
-    u32 mode; // OrbisImeTextAreaMode
+    OrbisImeTextAreaMode mode;
     u32 index;
     s32 length;
 };
@@ -135,14 +260,14 @@ struct OrbisImeKeycode {
     char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
-    s32 user_id;
+    s32 user_id; // Todo: switch to OrbisUserServiceUserId
     u32 resource_id;
     Libraries::Rtc::OrbisRtcTick timestamp;
 };
 
 struct OrbisImeKeyboardResourceIdArray {
-    s32 userId;
-    u32 resourceId[5];
+    s32 user_id; // Todo: switch to OrbisUserServiceUserId
+    u32 resource_id[5];
 };
 
 enum class OrbisImeCaretMovementDirection : u32 {
@@ -159,6 +284,16 @@ enum class OrbisImeCaretMovementDirection : u32 {
     Bottom = 10,
 };
 
+enum class OrbisImePanelType : u32 {
+    Hide = 0,
+    Osk = 1,
+    Dialog = 2,
+    Candidate = 3,
+    Edit = 4,
+    EditAndCandidate = 5,
+    Accessibility = 6,
+};
+
 union OrbisImeEventParam {
     OrbisImeRect rect;
     OrbisImeEditText text;
@@ -168,6 +303,7 @@ union OrbisImeEventParam {
     char16_t* candidate_word;
     s32 candidate_index;
     OrbisImeDeviceType device_type;
+    OrbisImePanelType panel_type;
     u32 input_method_state;
     s8 reserved[64];
 };
@@ -177,7 +313,95 @@ struct OrbisImeEvent {
     OrbisImeEventParam param;
 };
 
+using OrbisImeExtKeyboardFilter = PS4_SYSV_ABI int (*)(const OrbisImeKeycode* srcKeycode,
+                                                       u16* outKeycode, u32* outStatus,
+                                                       void* reserved);
+
 using OrbisImeTextFilter = PS4_SYSV_ABI int (*)(char16_t* outText, u32* outTextLength,
                                                 const char16_t* srcText, u32 srcTextLength);
 
 using OrbisImeEventHandler = PS4_SYSV_ABI void (*)(void* arg, const OrbisImeEvent* e);
+
+enum class OrbisImeKeyboardOption : u32 {
+    Default = 0,
+    Repeat = 1,
+    RepeatEachKey = 2,
+    AddOsk = 4,
+    EffectiveWithIme = 8,
+    DisableResume = 16,
+    DisableCapslockWithoutShift = 32,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
+
+struct OrbisImeKeyboardParam {
+    OrbisImeKeyboardOption option;
+    s8 reserved1[4];
+    void* arg;
+    OrbisImeEventHandler handler;
+    s8 reserved2[8];
+};
+
+struct OrbisImeParam {
+    s32 user_id; // Todo: switch to OrbisUserServiceUserId
+    OrbisImeType type;
+    u64 supported_languages; // OrbisImeLanguage flags
+    OrbisImeEnterLabel enter_label;
+    OrbisImeInputMethod input_method;
+    OrbisImeTextFilter filter;
+    OrbisImeOption option;
+    u32 maxTextLength;
+    char16_t* inputTextBuffer;
+    f32 posx;
+    f32 posy;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
+    void* work;
+    void* arg;
+    OrbisImeEventHandler handler;
+    s8 reserved[8];
+};
+
+struct OrbisImeCaret {
+    f32 x;
+    f32 y;
+    u32 height;
+    u32 index;
+};
+
+struct OrbisImeDialogParam {
+    s32 user_id;
+    OrbisImeType type;
+    u64 supported_languages; // OrbisImeLanguage flags
+    OrbisImeEnterLabel enter_label;
+    OrbisImeInputMethod input_method;
+    OrbisImeTextFilter filter;
+    OrbisImeOption option;
+    u32 max_text_length;
+    char16_t* input_text_buffer;
+    f32 posx;
+    f32 posy;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
+    const char16_t* placeholder;
+    const char16_t* title;
+    s8 reserved[16];
+};
+
+struct OrbisImeParamExtended {
+    u32 option; // OrbisImeExtOption flags
+    OrbisImeColor color_base;
+    OrbisImeColor color_line;
+    OrbisImeColor color_text_field;
+    OrbisImeColor color_preedit;
+    OrbisImeColor color_button_default;
+    OrbisImeColor color_button_function;
+    OrbisImeColor color_button_symbol;
+    OrbisImeColor color_text;
+    OrbisImeColor color_special;
+    OrbisImePanelPriority priority;
+    char* additional_dictionary_path;
+    OrbisImeExtKeyboardFilter ext_keyboard_filter;
+    u32 disable_device;
+    u32 ext_keyboard_mode;
+    s8 reserved[60];
+};

@@ -20,19 +20,19 @@ static OrbisImeDialogResult g_ime_dlg_result{};
 static ImeDialogState g_ime_dlg_state{};
 static ImeDialogUi g_ime_dlg_ui;
 
-static bool IsValidOption(OrbisImeDialogOption option, OrbisImeType type) {
-    if (False(~option &
-              (OrbisImeDialogOption::Multiline | OrbisImeDialogOption::NoAutoCompletion))) {
+static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
+    if (False(~option & (OrbisImeOption::MULTILINE |
+                         OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */))) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::Multiline) && type != OrbisImeType::Default &&
+    if (True(option & OrbisImeOption::MULTILINE) && type != OrbisImeType::Default &&
         type != OrbisImeType::BasicLatin) {
         return false;
     }
 
-    if (True(option & OrbisImeDialogOption::NoAutoCompletion) && type != OrbisImeType::Number &&
-        type != OrbisImeType::BasicLatin) {
+    if (True(option & OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */) &&
+        type != OrbisImeType::Number && type != OrbisImeType::BasicLatin) {
         return false;
     }
 
@@ -96,7 +96,7 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
     case OrbisImeType::Url:
     case OrbisImeType::Mail:
         *width = 500; // original: 793
-        if (True(param->option & OrbisImeDialogOption::Multiline)) {
+        if (True(param->option & OrbisImeOption::MULTILINE)) {
             *height = 300; // original: 576
         } else {
             *height = 150; // original: 476
@@ -149,18 +149,20 @@ OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
 }
 
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
+    LOG_INFO(Lib_ImeDialog, ">> sceImeDialogInit: entering, param={}, extended={}",
+             static_cast<void*>(param), static_cast<void*>(extended));
     if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
-        LOG_INFO(Lib_ImeDialog, "IME dialog is already running");
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: busy (status=%u)", (u32)g_ime_dlg_status);
         return Error::BUSY;
     }
 
     if (param == nullptr) {
-        LOG_INFO(Lib_ImeDialog, "called with param (NULL)");
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: param is null");
         return Error::INVALID_ADDRESS;
     }
 
     if (!magic_enum::enum_contains(param->type)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->type");
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid param->type=%u", (u32)param->type);
         return Error::INVALID_ADDRESS;
     }
 
@@ -168,16 +170,14 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     // TODO: do correct param->supportedLanguages validation
 
     if (param->posx < 0.0f ||
-        param->posx >=
-            MAX_X_POSITIONS[False(param->option & OrbisImeDialogOption::LargeResolution)]) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->posx");
+        param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx=%f", param->posx);
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
-        param->posy >=
-            MAX_Y_POSITIONS[False(param->option & OrbisImeDialogOption::LargeResolution)]) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->posy");
+        param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy=%f", param->posy);
         return Error::INVALID_POSY;
     }
 
@@ -192,12 +192,13 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     }
 
     if (!IsValidOption(param->option, param->type)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->option");
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid option=0x%X for type=%u",
+                  static_cast<u32>(param->option), (u32)param->type);
         return Error::INVALID_PARAM;
     }
 
     if (param->input_text_buffer == nullptr) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->inputTextBuffer");
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: input_text_buffer is null");
         return Error::INVALID_INPUT_TEXT_BUFFER;
     }
 
@@ -220,9 +221,16 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         }
     }
 
-    if (param->max_text_length > ORBIS_IME_DIALOG_MAX_TEXT_LENGTH) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->maxTextLength");
+    if (param->max_text_length == 0 || param->max_text_length > ORBIS_IME_MAX_TEXT_LENGTH) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid max_text_length=%u",
+                  param->max_text_length);
         return Error::INVALID_MAX_TEXT_LENGTH;
+    }
+
+    // Title string validation
+    if (param->title != nullptr && !std::char_traits<char16_t>::length(param->title)) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: title is empty");
+        return Error::INVALID_PARAM;
     }
 
     g_ime_dlg_result = {};
@@ -230,6 +238,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     g_ime_dlg_status = OrbisImeDialogStatus::Running;
     g_ime_dlg_ui = ImeDialogUi(&g_ime_dlg_state, &g_ime_dlg_status, &g_ime_dlg_result);
 
+    LOG_INFO(Lib_ImeDialog, "<< sceImeDialogInit: successful, status now=Running");
     return Error::OK;
 }
 
