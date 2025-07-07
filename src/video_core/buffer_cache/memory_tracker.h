@@ -150,42 +150,47 @@ private:
     template <bool create_region_on_fail, bool locking, typename Func>
     bool IterateRegions(VAddr cpu_address, size_t size, Func&& func) {
         RENDERER_TRACE;
+        const auto run = [&]() {
+            using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
+            static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
+            std::size_t remaining_size{size};
+            std::size_t page_index{cpu_address >> TRACKER_HIGHER_PAGE_BITS};
+            u64 page_offset{cpu_address & TRACKER_HIGHER_PAGE_MASK};
+            while (remaining_size > 0) {
+                const std::size_t copy_amount{
+                    std::min<std::size_t>(TRACKER_HIGHER_PAGE_SIZE - page_offset, remaining_size)};
+                auto* manager{top_tier[page_index]};
+                if (manager) {
+                    if constexpr (BOOL_BREAK) {
+                        if (func(manager, page_offset, copy_amount)) {
+                            return true;
+                        }
+                    } else {
+                        func(manager, page_offset, copy_amount);
+                    }
+                } else if constexpr (create_region_on_fail) {
+                    CreateRegion(page_index);
+                    manager = top_tier[page_index];
+                    if constexpr (BOOL_BREAK) {
+                        if (func(manager, page_offset, copy_amount)) {
+                            return true;
+                        }
+                    } else {
+                        func(manager, page_offset, copy_amount);
+                    }
+                }
+                page_index++;
+                page_offset = 0;
+                remaining_size -= copy_amount;
+            }
+            return false;
+        };
         if constexpr (locking) {
             std::shared_lock lock{global_lock};
+            return run();
+        } else {
+            return run();
         }
-        using FuncReturn = typename std::invoke_result<Func, RegionManager*, u64, size_t>::type;
-        static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-        std::size_t remaining_size{size};
-        std::size_t page_index{cpu_address >> TRACKER_HIGHER_PAGE_BITS};
-        u64 page_offset{cpu_address & TRACKER_HIGHER_PAGE_MASK};
-        while (remaining_size > 0) {
-            const std::size_t copy_amount{
-                std::min<std::size_t>(TRACKER_HIGHER_PAGE_SIZE - page_offset, remaining_size)};
-            auto* manager{top_tier[page_index]};
-            if (manager) {
-                if constexpr (BOOL_BREAK) {
-                    if (func(manager, page_offset, copy_amount)) {
-                        return true;
-                    }
-                } else {
-                    func(manager, page_offset, copy_amount);
-                }
-            } else if constexpr (create_region_on_fail) {
-                CreateRegion(page_index);
-                manager = top_tier[page_index];
-                if constexpr (BOOL_BREAK) {
-                    if (func(manager, page_offset, copy_amount)) {
-                        return true;
-                    }
-                } else {
-                    func(manager, page_offset, copy_amount);
-                }
-            }
-            page_index++;
-            page_offset = 0;
-            remaining_size -= copy_amount;
-        }
-        return false;
     }
 
     /**
@@ -196,15 +201,20 @@ private:
     template <bool locking, typename Func>
     void ForEachRegion(Func&& func) {
         RENDERER_TRACE;
-        if constexpr (locking) {
-            std::shared_lock lock{global_lock};
-        }
-        for (auto& pool : manager_pool) {
-            for (auto& manager : pool) {
-                if (manager.GetCpuAddr() != 0) {
-                    func(&manager);
+        const auto run = [&]() {
+            for (auto& pool : manager_pool) {
+                for (auto& manager : pool) {
+                    if (manager.GetCpuAddr() != 0) {
+                        func(&manager);
+                    }
                 }
             }
+        };
+        if constexpr (locking) {
+            std::shared_lock lock{global_lock};
+            run();
+        } else {
+            run();
         }
     }
 
