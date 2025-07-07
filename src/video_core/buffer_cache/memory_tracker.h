@@ -56,7 +56,7 @@ public:
     }
 
     /// Unmark region as modified from the host GPU
-    template <bool defer_protect = true, bool locking = false>
+    template <bool defer_protect = false, bool locking = true>
     void UnmarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) noexcept {
         IterateRegions<false, locking>(dirty_cpu_addr, query_size,
                                        [](RegionManager* manager, u64 offset, size_t size) {
