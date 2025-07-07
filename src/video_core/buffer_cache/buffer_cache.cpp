@@ -997,53 +997,52 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 
 void BufferCache::SynchronizeBuffersForDma() {
     RENDERER_TRACE;
-    LOG_WARNING(Render_Vulkan, "SYNC RANGES FOR DMA");
     boost::container::small_vector<Buffer*, 64> buffers;
-    boost::container::small_vector<vk::BufferMemoryBarrier2, 64> barriers;
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     const auto& mapped_ranges = rasterizer.GetMappedRanges();
+    bool barrier_recorded = false;
     memory_tracker->Lock();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
         ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
-            if (memory_tracker->IsRegionCpuModified<false>(device_addr, size)) {
-                barriers.push_back(vk::BufferMemoryBarrier2{
-                    .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-                    .srcAccessMask =
-                        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
-                        vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
-                    .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                    .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                    .buffer = buffer.Handle(),
-                    .offset = 0,
-                    .size = buffer.SizeBytes(),
+            memory_tracker->ForEachUploadRange<true, false>(
+                buffer.CpuAddr(), buffer.SizeBytes(), false,
+                [&](u64 device_addr_out, u64 range_size) {
+                    if (!barrier_recorded) {
+                        barrier_recorded = true;
+                        const vk::BufferMemoryBarrier2 barrier = {
+                            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead |
+                                             vk::AccessFlagBits2::eMemoryWrite |
+                                             vk::AccessFlagBits2::eTransferRead |
+                                             vk::AccessFlagBits2::eTransferWrite,
+                            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+                            .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                            .buffer = buffer.Handle(),
+                            .offset = 0,
+                            .size = buffer.SizeBytes(),
+                        };
+                        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+                            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+                            .bufferMemoryBarrierCount = 1,
+                            .pBufferMemoryBarriers = &barrier,
+                        });
+                    }
+                    const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
+                    copies.push_back(vk::BufferCopy{
+                        .srcOffset = offset,
+                        .dstOffset = device_addr_out - buffer.CpuAddr(),
+                        .size = range_size,
+                    });
                 });
-                buffers.push_back(&buffer);
-            }
+            cmdbuf.copyBuffer(staging_buffer.Handle(), buffer.Handle(), copies);
+            copies.clear();
+            barrier_recorded = false;
         });
     });
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = static_cast<u32>(barriers.size()),
-        .pBufferMemoryBarriers = barriers.data(),
-    });
-    for (auto* buffer : buffers) {
-        memory_tracker->ForEachUploadRange<true, false>(
-            buffer->CpuAddr(), buffer->SizeBytes(), false,
-            [&](u64 device_addr_out, u64 range_size) {
-                const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
-                copies.push_back(vk::BufferCopy{
-                    .srcOffset = offset,
-                    .dstOffset = device_addr_out - buffer->CpuAddr(),
-                    .size = range_size,
-                });
-            });
-        cmdbuf.copyBuffer(staging_buffer.Handle(), buffer->Handle(), copies);
-        copies.clear();
-    }
-    MemoryBarrier();
     memory_tracker->PerformDeferredProtections<Type::CPU, false, false>();
+    MemoryBarrier();
     memory_tracker->Unlock();
 }
 
