@@ -342,7 +342,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
     }
 
-    // Limit the minumum address to SystemManagedVirtualBase to prevent hardware-specific issues.
+    // Limit the minimum address to SystemManagedVirtualBase to prevent hardware-specific issues.
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
 
     // Fixed mapping means the virtual address must exactly match the provided one.
@@ -631,6 +631,9 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, u64 size
     if (True(prot & MemoryProt::CpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
+    if (True(prot & MemoryProt::CpuExec)) {
+        perms |= Core::MemoryPermission::Execute;
+    }
     if (True(prot & MemoryProt::GpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
@@ -650,9 +653,9 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     std::scoped_lock lk{mutex};
 
     // Validate protection flags
-    constexpr static MemoryProt valid_flags = MemoryProt::NoAccess | MemoryProt::CpuRead |
-                                              MemoryProt::CpuReadWrite | MemoryProt::GpuRead |
-                                              MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
+    constexpr static MemoryProt valid_flags =
+        MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuReadWrite |
+        MemoryProt::CpuExec | MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
 
     MemoryProt invalid_flags = prot & ~valid_flags;
     if (invalid_flags != MemoryProt::NoAccess) {
