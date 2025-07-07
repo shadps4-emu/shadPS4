@@ -169,7 +169,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
 
     if (recreate) {
         auto new_info = requested_info;
-        new_info.resources = std::min(requested_info.resources, cache_image.info.resources);
+        new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
         const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
         RegisterImage(new_image_id);
 
