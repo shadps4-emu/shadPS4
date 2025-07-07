@@ -5,7 +5,9 @@
 #include <xxhash.h>
 
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/debug.h"
+#include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -56,6 +58,50 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
 
     null_images.emplace(format, null_id);
     return null_id;
+}
+
+void TextureCache::ProcessDownloadImages() {
+    for (const ImageId image_id : download_images) {
+        DownloadImageMemory(image_id);
+    }
+    download_images.clear();
+}
+
+void TextureCache::DownloadImageMemory(ImageId image_id) {
+    Image& image = slot_images[image_id];
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return;
+    }
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
+    const u32 download_size = image.info.pitch * image.info.size.height *
+                              image.info.resources.layers * (image.info.num_bits / 8);
+    ASSERT(download_size <= image.info.guest_size);
+    const auto [download, offset] = download_buffer.Map(download_size);
+    download_buffer.Commit();
+    const vk::BufferImageCopy image_download = {
+        .bufferOffset = offset,
+        .bufferRowLength = image.info.pitch,
+        .bufferImageHeight = image.info.size.height,
+        .imageSubresource =
+            {
+                .aspectMask = image.info.IsDepthStencil() ? vk::ImageAspectFlagBits::eDepth
+                                                          : vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = image.info.resources.layers,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {image.info.size.width, image.info.size.height, 1},
+    };
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal,
+                             download_buffer.Handle(), image_download);
+    scheduler.DeferOperation([device_addr = image.info.guest_address, download, download_size] {
+        auto* memory = Core::Memory::Instance();
+        memory->TryWriteBacking(std::bit_cast<u8*>(device_addr), download, download_size);
+    });
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
@@ -169,7 +215,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
 
     if (recreate) {
         auto new_info = requested_info;
-        new_info.resources = std::min(requested_info.resources, cache_image.info.resources);
+        new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
         const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
         RegisterImage(new_image_id);
 
@@ -437,16 +483,27 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     return slot_image_views[view_id];
 }
 
-ImageView& TextureCache::FindTexture(ImageId image_id, const ImageViewInfo& view_info) {
+ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
+    if (desc.type == BindingType::Storage) {
+        image.flags |= ImageFlagBits::GpuModified;
+        if (Config::readbackLinearImages() &&
+            image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
+            download_images.emplace(image_id);
+        }
+    }
     UpdateImage(image_id);
-    return RegisterImageView(image_id, view_info);
+    return RegisterImageView(image_id, desc.view_info);
 }
 
 ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    if (Config::readbackLinearImages() &&
+        image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear) {
+        download_images.emplace(image_id);
+    }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
 

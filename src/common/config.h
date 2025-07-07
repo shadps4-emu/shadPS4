@@ -51,6 +51,7 @@ bool copyGPUCmdBuffers();
 void setCopyGPUCmdBuffers(bool enable);
 bool readbacks();
 void setReadbacks(bool enable);
+bool readbackLinearImages();
 bool directMemoryAccess();
 void setDirectMemoryAccess(bool enable);
 bool dumpShaders();

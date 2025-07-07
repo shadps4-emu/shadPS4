@@ -67,6 +67,7 @@ static u32 internalScreenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
+static bool readbackLinearImagesEnabled = false;
 static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
 static bool shouldPatchShaders = false;
@@ -105,7 +106,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 53;
+static constexpr u64 total_entries = 54;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -270,6 +271,10 @@ bool copyGPUCmdBuffers() {
 
 bool readbacks() {
     return readbacksEnabled;
+}
+
+bool readbackLinearImages() {
+    return readbackLinearImagesEnabled;
 }
 
 bool directMemoryAccess() {
@@ -653,6 +658,8 @@ void load(const std::filesystem::path& path) {
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
+        readbackLinearImagesEnabled =
+            toml::find_or<bool>(gpu, "readbackLinearImages", readbackLinearImagesEnabled);
         directMemoryAccessEnabled =
             toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
@@ -826,6 +833,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["readbacks"] = readbacksEnabled;
+    data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled;
     data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["patchShaders"] = shouldPatchShaders;
@@ -928,6 +936,7 @@ void setDefaultValues() {
     isNullGpu = false;
     shouldCopyGPUBuffers = false;
     readbacksEnabled = false;
+    readbackLinearImagesEnabled = false;
     directMemoryAccessEnabled = false;
     shouldDumpShaders = false;
     shouldPatchShaders = false;
