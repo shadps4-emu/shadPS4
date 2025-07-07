@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <boost/container/small_vector.hpp>
 #include <tsl/robin_map.h>
 
@@ -105,11 +106,14 @@ public:
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
+    /// Schedules a copy of pending images for download back to CPU memory.
+    void ProcessDownloadImages();
+
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(BaseDesc& desc, FindFlags flags = {});
 
     /// Retrieves an image view with the properties of the specified image id.
-    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageViewInfo& view_info);
+    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
@@ -252,6 +256,9 @@ private:
     /// Gets or creates a null image for a particular format.
     ImageId GetNullImage(vk::Format format);
 
+    /// Copies image memory back to CPU.
+    void DownloadImageMemory(ImageId image_id);
+
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -293,6 +300,7 @@ private:
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_map<vk::Format, ImageId> null_images;
+    std::unordered_set<ImageId> download_images;
     PageTable page_table;
     std::mutex mutex;
 

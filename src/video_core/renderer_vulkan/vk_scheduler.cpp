@@ -101,6 +101,14 @@ void Scheduler::Wait(u64 tick) {
     }
 }
 
+void Scheduler::PopPendingOperations() {
+    master_semaphore.Refresh();
+    while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
+        pending_ops.front().callback();
+        pending_ops.pop();
+    }
+}
+
 void Scheduler::AllocateWorkerCommandBuffers() {
     const vk::CommandBufferBeginInfo begin_info = {
         .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
@@ -175,10 +183,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     AllocateWorkerCommandBuffers();
 
     // Apply pending operations
-    while (!pending_ops.empty() && IsFree(pending_ops.front().gpu_tick)) {
-        pending_ops.front().callback();
-        pending_ops.pop();
-    }
+    PopPendingOperations();
 }
 
 void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf) {
