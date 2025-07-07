@@ -222,7 +222,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(
-        Config::getScreenWidth(), Config::getScreenHeight(), controller, window_title);
+        Config::getWindowWidth(), Config::getWindowHeight(), controller, window_title);
 
     g_window = window.get();
 
