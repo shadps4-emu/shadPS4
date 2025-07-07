@@ -60,7 +60,7 @@ Id EmitIAdd64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIAdd(ctx.U64, a, b);
 }
 
-Id EmitIAddCary32(EmitContext& ctx, Id a, Id b) {
+Id EmitIAddCarry32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIAddCarry(ctx.full_result_u32x2, a, b);
 }
 

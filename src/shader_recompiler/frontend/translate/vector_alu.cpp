@@ -623,12 +623,15 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
-    const IR::U32 result{ir.IAdd(ir.IAdd(src0, src1), carry)};
-    SetDst(inst.dst[0], result);
+    const IR::Value tmp1{ir.IAddCarry(src0, src1)};
+    const IR::U32 result1{ir.CompositeExtract(tmp1, 0)};
+    const IR::U32 carry_out1{ir.CompositeExtract(tmp1, 1)};
+    const IR::Value tmp2{ir.IAddCarry(result1, carry)};
+    const IR::U32 result2{ir.CompositeExtract(tmp2, 0)};
+    const IR::U32 carry_out2{ir.CompositeExtract(tmp2, 1)};
+    SetDst(inst.dst[0], result2);
 
-    const IR::U1 less_src0{ir.ILessThan(result, src0, false)};
-    const IR::U1 less_src1{ir.ILessThan(result, src1, false)};
-    const IR::U1 did_overflow{ir.LogicalOr(less_src0, less_src1)};
+    const IR::U1 did_overflow{ir.INotEqual(ir.BitwiseOr(carry_out1, carry_out2), ir.Imm32(0))};
     SetCarryOut(inst, did_overflow);
 }
 
