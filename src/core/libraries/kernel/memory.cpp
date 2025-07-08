@@ -57,17 +57,17 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
 
     auto* memory = Core::Memory::Instance();
     PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
-    if (phys_addr == -1) {
-        return ORBIS_KERNEL_ERROR_EAGAIN;
-    }
-
-    *physAddrOut = static_cast<s64>(phys_addr);
 
     LOG_INFO(Kernel_Vmm,
              "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, "
              "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
              searchStart, searchEnd, len, alignment, memoryType, phys_addr);
 
+    if (phys_addr == -1) {
+        return ORBIS_KERNEL_ERROR_EAGAIN;
+    }
+    
+    *physAddrOut = static_cast<s64>(phys_addr);
     return ORBIS_OK;
 }
 
