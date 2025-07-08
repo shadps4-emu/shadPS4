@@ -66,7 +66,7 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     if (phys_addr == -1) {
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
-    
+
     *physAddrOut = static_cast<s64>(phys_addr);
     return ORBIS_OK;
 }
