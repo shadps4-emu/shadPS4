@@ -62,17 +62,17 @@ public:
     }
 
     /// Removes all protection from a page and ensures GPU data has been flushed if requested
-    void InvalidateRegion(VAddr cpu_addr, u64 size, bool try_flush, auto&& on_flush) noexcept {
+    void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
         IteratePages<false>(
-            cpu_addr, size,
-            [try_flush, &on_flush](RegionManager* manager, u64 offset, size_t size) {
+            cpu_addr, size, [&on_flush](RegionManager* manager, u64 offset, size_t size) {
                 const bool should_flush = [&] {
                     // Perform both the GPU modification check and CPU state change with the lock
                     // in case we are racing with GPU thread trying to mark the page as GPU
                     // modified. If we need to flush the flush function is going to perform CPU
                     // state change.
                     std::scoped_lock lk{manager->lock};
-                    if (try_flush && manager->template IsRegionModified<Type::GPU>(offset, size)) {
+                    if (Config::readbacks() &&
+                        manager->template IsRegionModified<Type::GPU>(offset, size)) {
                         return true;
                     }
                     manager->template ChangeRegionState<Type::CPU, true>(
@@ -86,17 +86,27 @@ public:
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
-    void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, bool is_written, auto&& func) {
+    void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, bool is_written, auto&& func,
+                            auto&& on_upload) {
         IteratePages<true>(query_cpu_range, query_size,
                            [&func, is_written](RegionManager* manager, u64 offset, size_t size) {
-                               std::scoped_lock lk{manager->lock};
+                               manager->lock.lock();
                                manager->template ForEachModifiedRange<Type::CPU, true>(
                                    manager->GetCpuAddr() + offset, size, func);
-                               if (is_written) {
-                                   manager->template ChangeRegionState<Type::GPU, true>(
-                                       manager->GetCpuAddr() + offset, size);
+                               if (!is_written) {
+                                   manager->lock.unlock();
                                }
                            });
+        on_upload();
+        if (!is_written) {
+            return;
+        }
+        IteratePages<false>(query_cpu_range, query_size,
+                            [&func, is_written](RegionManager* manager, u64 offset, size_t size) {
+                                manager->template ChangeRegionState<Type::GPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                                manager->lock.unlock();
+                            });
     }
 
     /// Call 'func' for each GPU modified range and unmark those pages as GPU modified
