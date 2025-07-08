@@ -379,7 +379,7 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
                                                   // the current language?)
         .user_id = ui->state->user_id,
         .resource_id = 0,
-        .timestamp = 0,
+        .timestamp = {0},
     };
 
     if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
