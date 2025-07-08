@@ -194,6 +194,9 @@ private:
     void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                            bool is_texel_buffer);
 
+    vk::Buffer UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
+                            size_t total_size_bytes);
+
     bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
 
     void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);

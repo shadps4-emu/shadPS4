@@ -347,7 +347,11 @@ public:
     }
 
     /// Returns true when a tick has been triggered by the GPU.
-    [[nodiscard]] bool IsFree(u64 tick) const noexcept {
+    [[nodiscard]] bool IsFree(u64 tick) noexcept {
+        if (master_semaphore.IsFree(tick)) {
+            return true;
+        }
+        master_semaphore.Refresh();
         return master_semaphore.IsFree(tick);
     }
 
