@@ -818,47 +818,21 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
+    vk::Buffer src_buffer = VK_NULL_HANDLE;
     memory_tracker->ForEachUploadRange(
         device_addr, size, is_written,
         [&](u64 device_addr_out, u64 range_size) {
             copies.emplace_back(total_size_bytes, device_addr_out - buffer_start, range_size);
             total_size_bytes += range_size;
         },
-        [&] { UploadCopies(buffer, copies, total_size_bytes); });
-    if (is_texel_buffer) {
-        SynchronizeBufferFromImage(buffer, device_addr, size);
-    }
-}
-
-void BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
-                               size_t total_size_bytes) {
-    if (copies.empty()) {
+        [&] { src_buffer = UploadCopies(buffer, copies, total_size_bytes); });
+    SCOPE_EXIT {
+        if (is_texel_buffer) {
+            SynchronizeBufferFromImage(buffer, device_addr, size);
+        }
+    };
+    if (!src_buffer) {
         return;
-    }
-    vk::Buffer src_buffer = staging_buffer.Handle();
-    const auto [staging, offset] = staging_buffer.Map(total_size_bytes);
-    if (staging) {
-        for (auto& copy : copies) {
-            u8* const src_pointer = staging + copy.srcOffset;
-            const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
-            // Apply the staging offset
-            copy.srcOffset += offset;
-        }
-        staging_buffer.Commit();
-    } else {
-        // For large one time transfers use a temporary host buffer.
-        auto temp_buffer =
-            std::make_unique<Buffer>(instance, scheduler, MemoryUsage::Upload, 0,
-                                     vk::BufferUsageFlagBits::eTransferSrc, total_size_bytes);
-        src_buffer = temp_buffer->Handle();
-        u8* const staging = temp_buffer->mapped_data.data();
-        for (const auto& copy : copies) {
-            u8* const src_pointer = staging + copy.srcOffset;
-            const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
-        }
-        scheduler.DeferOperation([buffer = std::move(temp_buffer)]() mutable { buffer.reset(); });
     }
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -892,6 +866,39 @@ void BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &post_barrier,
     });
+}
+
+vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
+                                     size_t total_size_bytes) {
+    if (copies.empty()) {
+        return VK_NULL_HANDLE;
+    }
+    const auto [staging, offset] = staging_buffer.Map(total_size_bytes);
+    if (staging) {
+        for (auto& copy : copies) {
+            u8* const src_pointer = staging + copy.srcOffset;
+            const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
+            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
+            // Apply the staging offset
+            copy.srcOffset += offset;
+        }
+        staging_buffer.Commit();
+        return staging_buffer.Handle();
+    } else {
+        // For large one time transfers use a temporary host buffer.
+        auto temp_buffer =
+            std::make_unique<Buffer>(instance, scheduler, MemoryUsage::Upload, 0,
+                                     vk::BufferUsageFlagBits::eTransferSrc, total_size_bytes);
+        const vk::Buffer src_buffer = temp_buffer->Handle();
+        u8* const staging = temp_buffer->mapped_data.data();
+        for (const auto& copy : copies) {
+            u8* const src_pointer = staging + copy.srcOffset;
+            const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
+            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
+        }
+        scheduler.DeferOperation([buffer = std::move(temp_buffer)]() mutable { buffer.reset(); });
+        return src_buffer;
+    }
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
