@@ -96,18 +96,24 @@ public:
     [[nodiscard]] F32 GetPatch(Patch patch);
     void SetPatch(Patch patch, const F32& value);
 
-    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
-    void WriteShared(int bit_size, const Value& value, const U32& offset);
+    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset,
+                                   bool is_gds = false);
+    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false);
 
-    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data);
-    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicInc(const U32& address);
-    [[nodiscard]] U32 SharedAtomicDec(const U32& address);
-    [[nodiscard]] U32 SharedAtomicAnd(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
+    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicIMin(const U32& address, const U32U64& data, bool is_signed,
+                                          bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
+                                          bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
+
+    template <typename T = U32>
+    [[nodiscard]] T SharedAtomicInc(const U32& address, bool is_gds);
+    template <typename T = U32>
+    [[nodiscard]] T SharedAtomicDec(const U32& address, bool is_gds);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);

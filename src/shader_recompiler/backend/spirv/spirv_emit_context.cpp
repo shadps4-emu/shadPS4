@@ -76,6 +76,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
     }
+    String(fmt::format("{:#x}", info.pgm_hash));
 
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
