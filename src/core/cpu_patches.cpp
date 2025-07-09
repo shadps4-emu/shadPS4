@@ -163,7 +163,9 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operan
             mask = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         // Get lower qword from xmm register
         c.vmovq(scratch1, xmm_dst);
@@ -287,7 +289,9 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
             mask_value = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask_value = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         c.vmovq(scratch1, xmm_src);
         c.vmovq(scratch2, xmm_dst);
