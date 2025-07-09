@@ -123,7 +123,8 @@ int PS4_SYSV_ABI sceAudioInIsSharedDevice() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInOpen() {
+int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
+                                u32 index, u32 len, u32 freq, u32 param) {
     LOG_ERROR(Lib_AudioIn, "(DUMMY) called");
     return 0x80260005; // ports are full return
 }

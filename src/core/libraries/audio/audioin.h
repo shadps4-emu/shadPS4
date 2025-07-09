@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -10,6 +11,10 @@ class SymbolsResolver;
 }
 
 namespace Libraries::AudioIn {
+
+enum class OrbisAudioInParamFormat : u32 { S16Mono = 0, S16Stereo = 2 };
+
+enum class OrbisAudioInType : u32 { VoiceChat = 0, General = 1, VoiceRecognition = 5 };
 
 int PS4_SYSV_ABI sceAudioInChangeAppModuleState();
 int PS4_SYSV_ABI sceAudioInClose();
@@ -34,7 +39,8 @@ int PS4_SYSV_ABI sceAudioInInit();
 int PS4_SYSV_ABI sceAudioInInput();
 int PS4_SYSV_ABI sceAudioInInputs();
 int PS4_SYSV_ABI sceAudioInIsSharedDevice();
-int PS4_SYSV_ABI sceAudioInOpen();
+int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
+                                u32 index, u32 len, u32 freq, u32 param);
 int PS4_SYSV_ABI sceAudioInOpenEx();
 int PS4_SYSV_ABI sceAudioInSetAllMute();
 int PS4_SYSV_ABI sceAudioInSetCompressorPreGain();
