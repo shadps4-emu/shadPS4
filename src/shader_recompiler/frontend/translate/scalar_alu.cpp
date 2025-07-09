@@ -586,6 +586,15 @@ void Translator::S_MOV(const GcnInst& inst) {
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
+    // Moving SGPR to SGPR is used for thread masks, like most operations, but it can also be used
+    // for moving sharps.
+    if (inst.dst[0].field == OperandField::ScalarGPR &&
+        inst.src[0].field == OperandField::ScalarGPR) {
+        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code),
+                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code)));
+        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code + 1),
+                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code + 1)));
+    }
     const IR::U1 src = [&] {
         switch (inst.src[0].field) {
         case OperandField::VccLo:

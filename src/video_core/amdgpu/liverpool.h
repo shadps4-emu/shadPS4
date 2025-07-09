@@ -88,7 +88,7 @@ struct Liverpool {
         }
     };
 
-    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x1000) {
+    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x2000) {
         constexpr u32 token_mov_vcchi = 0xBEEB03FF;
 
         if (code[0] == token_mov_vcchi) {
