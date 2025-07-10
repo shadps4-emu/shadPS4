@@ -135,9 +135,8 @@ void Liverpool::Process(std::stop_token stoken) {
 
         if (submit_done) {
             VideoCore::EndCapture();
-
             if (rasterizer) {
-                rasterizer->ProcessFaults();
+                rasterizer->EndCommandList();
                 rasterizer->Flush();
             }
             submit_done = false;
@@ -604,6 +603,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // TODO: handle proper synchronization, for now signal that update is done
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
+                } else if (event->event_index.Value() == EventIndex::ZpassDone) {
+                    LOG_WARNING(Render, "Unimplemented occlusion query");
                 }
                 break;
             }

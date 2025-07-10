@@ -397,7 +397,7 @@ constexpr std::array<InstFormat, 27> InstructionFormatSOPP = {{
     // 17 = S_SENDMSGHALT
     {InstClass::ScalarProgFlow, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 18 = S_TRAP
-    {InstClass::Undefined, InstCategory::Undefined, 0, 1, ScalarType::Any, ScalarType::Any},
+    {InstClass::Undefined, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 19 = S_ICACHE_INV
     {InstClass::ScalarCache, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 20 = S_INCPERFLEVEL
