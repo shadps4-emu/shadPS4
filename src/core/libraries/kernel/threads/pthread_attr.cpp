@@ -293,6 +293,8 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_attr_setstacksize);
     LIB_FUNCTION("RtLRV-pBTTY", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_getschedpolicy);
+    LIB_FUNCTION("JarMIy8kKEY", "libkernel", 1, "libkernel", 1, 1,
+                 posix_pthread_attr_setschedpolicy);
     LIB_FUNCTION("E+tyo3lp5Lw", "libScePosix", 1, "libkernel", 1, 1,
                  posix_pthread_attr_setdetachstate);
     LIB_FUNCTION("zHchY8ft5pk", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_attr_destroy);
