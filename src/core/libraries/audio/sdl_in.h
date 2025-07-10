@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <array>
@@ -7,7 +10,7 @@
 namespace Libraries::AudioIn {
 enum OrbisAudioInParam {
     ORBIS_AUDIO_IN_PARAM_FORMAT_S16_MONO = 0,
-    ORBIS_AUDIO_IN_PARAM_FORMAT_S16_STEREO=2
+    ORBIS_AUDIO_IN_PARAM_FORMAT_S16_STEREO = 2
 };
 }
 

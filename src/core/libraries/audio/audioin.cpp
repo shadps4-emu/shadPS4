@@ -3,9 +3,9 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioin.h"
+#include "core/libraries/audio/sdl_in.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/audio/sdl_in.h"
 
 namespace Libraries::AudioIn {
 
@@ -16,8 +16,7 @@ int PS4_SYSV_ABI sceAudioInChangeAppModuleState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInClose(s32 handle)
- {
+int PS4_SYSV_ABI sceAudioInClose(s32 handle) {
     audio->AudioInClose(handle);
     LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
     return ORBIS_OK;
