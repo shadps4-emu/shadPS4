@@ -34,16 +34,11 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto width =
-        render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
-    const auto height =
-        render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
-
     const vk::RenderingInfo rendering_info = {
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {width, height},
+                .extent = {render_state.width, render_state.height},
             },
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,

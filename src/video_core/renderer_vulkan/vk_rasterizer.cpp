@@ -113,6 +113,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
     // Prefetch color and depth buffers to let texture cache handle possible overlaps with bound
     // textures (e.g. mipgen)
     RenderState state;
+    state.width = instance.GetMaxFramebufferWidth();
+    state.height = instance.GetMaxFramebufferHeight();
 
     cb_descs.clear();
     db_desc.reset();
