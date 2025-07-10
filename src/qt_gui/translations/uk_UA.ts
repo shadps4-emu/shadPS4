@@ -527,7 +527,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation>розгорнуто</translation>
+      <translation>Не назначено</translation>
     </message>
     <message>
       <source>L1</source>
@@ -581,7 +581,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>Унікальний вхід не може бути призначений двічі. Дублікати на кнопках:
+      <translation>Неможливо призначити одну й ту саму кнопку більше одного разу. Повторне призначення виявлено для таких кнопок:
 
 %1</translation>
     </message>
