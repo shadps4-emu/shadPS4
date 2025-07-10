@@ -6,6 +6,8 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
@@ -412,6 +414,34 @@ int PS4_SYSV_ABI sceKernelDeleteTimerEvent(SceKernelEqueue eq, int id) {
                                                               : ORBIS_KERNEL_ERROR_ENOENT;
 }
 
+int PS4_SYSV_ABI sceKernelAddReadEvent(SceKernelEqueue eq, int fd, size_t size, void* udata) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+    LOG_ERROR(Kernel_Event, "(DUMMY) eq = {}, fd = {}, size = {}, udata = {:#x}", eq->GetName(), fd,
+              size, reinterpret_cast<u64>(udata));
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (!file) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    EqueueEvent event{};
+    event.event.ident = static_cast<u64>(fd);
+    event.event.filter = SceKernelEvent::Filter::Read;
+    event.event.flags = SceKernelEvent::Flags::Add;
+    event.event.fflags = 0;
+    event.event.data = size;
+    event.event.udata = udata;
+
+    if (!eq->AddEvent(event)) {
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -488,6 +518,7 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteEqueue);
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEqueue);
     LIB_FUNCTION("vz+pg2zdopI", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventUserData);
+    LIB_FUNCTION("VHCS3rCd0PM", "libkernel", 1, "libkernel", 1, 1, sceKernelAddReadEvent);
     LIB_FUNCTION("4R6-OvI2cEA", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEvent);
     LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEventEdge);
     LIB_FUNCTION("R74tt43xP6k", "libkernel", 1, "libkernel", 1, 1, sceKernelAddHRTimerEvent);
