@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     bool has_game_argument = false;
     std::string game_path;
     std::vector<std::string> game_args{};
-#if 0
+
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
         {"-h",
@@ -204,8 +204,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-#endif
-    const char* const eboot_path = "D:/ps4/sdk-samples/memrec.elf";
+
     // Run the emulator with the resolved eboot path
     Core::Emulator emulator;
     emulator.Run(eboot_path, game_args);
