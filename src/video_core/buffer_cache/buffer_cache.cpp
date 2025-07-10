@@ -48,6 +48,8 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
     memory_tracker = std::make_unique<MemoryTracker>(tracker);
 
+    std::memset(gds_buffer.mapped_data.data(), 0, DataShareBufferSize);
+
     // Ensure the first slot is used for the null buffer
     const auto null_id =
         slot_buffers.insert(instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, 16);
