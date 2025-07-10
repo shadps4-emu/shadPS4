@@ -317,6 +317,7 @@ private:
                         const PsColorBuffer& color_buffer);
     void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
     void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
+    void ExportPosition(IR::Attribute attribute, u32 comp, const IR::F32& value);
     void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
     void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
 

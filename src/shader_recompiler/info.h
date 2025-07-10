@@ -215,6 +215,7 @@ struct Info {
     bool has_image_query{};
     bool has_perspective_interp{};
     bool has_linear_interp{};
+    bool has_layer_output{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
     bool uses_lane_id{};

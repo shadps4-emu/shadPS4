@@ -4,6 +4,7 @@
 #include <mutex>
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/logging/log.h"
 #include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -34,9 +35,9 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto width =
+    const u32 width =
         render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
-    const auto height =
+    const u32 height =
         render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
 
     const vk::RenderingInfo rendering_info = {
@@ -45,7 +46,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
                 .offset = {0, 0},
                 .extent = {width, height},
             },
-        .layerCount = 1,
+        .layerCount = render_state.num_layers,
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.num_color_attachments > 0
                                  ? render_state.color_attachments.data()
