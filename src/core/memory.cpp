@@ -214,7 +214,10 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
 
     if (dmem_area == dmem_map.end()) {
         // There are no suitable mappings in this range
-        LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        auto exceed = mapping_end - search_end;
+        LOG_ERROR(Kernel_Vmm,
+                  "Unable to find free direct memory area: size = {:#x}, exceed = {:#x}", size,
+                  exceed);
         return -1;
     }
 
