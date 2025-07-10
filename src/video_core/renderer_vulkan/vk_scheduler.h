@@ -24,6 +24,7 @@ struct RenderState {
     vk::RenderingAttachmentInfo depth_attachment{};
     vk::RenderingAttachmentInfo stencil_attachment{};
     u32 num_color_attachments{};
+    u32 num_layers{1};
     bool has_depth{};
     bool has_stencil{};
     u32 width{};
