@@ -46,6 +46,7 @@ static bool isShowSplash = false;
 static std::string isSideTrophy = "right";
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
+static bool isConnectedToNetwork = false;
 
 // Input
 static int cursorState = HideCursorState::Idle;
@@ -345,6 +346,10 @@ bool getCheckCompatibilityOnStartup() {
     return checkCompatibilityOnStartup;
 }
 
+bool getIsConnectedToNetwork() {
+    return isConnectedToNetwork;
+}
+
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -627,6 +632,9 @@ void load(const std::filesystem::path& path) {
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
+
+        isConnectedToNetwork =
+            toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
 
         entry_count += general.size();
@@ -820,6 +828,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["General"]["isConnectedToNetwork"] = isConnectedToNetwork;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["useSpecialPad"] = useSpecialPad;
@@ -915,6 +924,7 @@ void setDefaultValues() {
     isSideTrophy = "right";
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
+    isConnectedToNetwork = false;
 
     // Input
     cursorState = HideCursorState::Idle;
