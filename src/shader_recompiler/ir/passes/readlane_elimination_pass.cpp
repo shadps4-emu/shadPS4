@@ -95,17 +95,7 @@ void ReadLaneEliminationPass(IR::Program& program) {
             if (inst.GetOpcode() != IR::Opcode::ReadLane) {
                 continue;
             }
-
-            // Check for the following pattern and replace it with ReadFirstLane
-            // s_ff1_i32_b64   sgpr, exec
-            // v_readlane_b32  sdst, vgpr, sgpr
-            if (const auto lane = inst.Arg(1); !lane.IsImmediate()) {
-                if (lane.InstRecursive()->GetOpcode() == IR::Opcode::FindILsb64) {
-                    const auto value = inst.Arg(0);
-                    inst.ReplaceOpcode(IR::Opcode::ReadFirstLane);
-                    inst.ClearArgs();
-                    inst.SetArg(0, value);
-                }
+            if (!inst.Arg(1).IsImmediate()) {
                 continue;
             }
 

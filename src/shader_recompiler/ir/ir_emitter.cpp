@@ -660,6 +660,14 @@ U32 IREmitter::WriteLane(const U32& value, const U32& write_value, const U32& la
     return Inst<U32>(Opcode::WriteLane, value, write_value, lane);
 }
 
+Value IREmitter::Ballot(const U1& bit) {
+    return Inst(Opcode::Ballot, bit);
+}
+
+U32 IREmitter::BallotFindLsb(const Value& mask) {
+    return Inst<U32>(Opcode::BallotFindLsb, mask);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
