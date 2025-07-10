@@ -25,7 +25,7 @@ namespace Shader {
 
 static constexpr size_t NumUserDataRegs = 16;
 static constexpr size_t NumImages = 64;
-static constexpr size_t NumBuffers = 32;
+static constexpr size_t NumBuffers = 40;
 static constexpr size_t NumSamplers = 16;
 static constexpr size_t NumFMasks = 8;
 

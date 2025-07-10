@@ -291,78 +291,137 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
     Inst(Opcode::SetPatch, patch, value);
 }
 
-Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
+Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset, bool is_gds) {
     switch (bit_size) {
     case 16:
-        return Inst<U16>(Opcode::LoadSharedU16, offset);
+        return Inst<U16>(Opcode::LoadSharedU16, Flags{is_gds}, offset);
     case 32:
-        return Inst<U32>(Opcode::LoadSharedU32, offset);
+        return Inst<U32>(Opcode::LoadSharedU32, Flags{is_gds}, offset);
     case 64:
-        return Inst<U64>(Opcode::LoadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, Flags{is_gds}, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
+void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds) {
     switch (bit_size) {
     case 16:
-        Inst(Opcode::WriteSharedU16, offset, value);
+        Inst(Opcode::WriteSharedU16, Flags{is_gds}, offset, value);
         break;
     case 32:
-        Inst(Opcode::WriteSharedU32, offset, value);
+        Inst(Opcode::WriteSharedU32, Flags{is_gds}, offset, value);
         break;
     case 64:
-        Inst(Opcode::WriteSharedU64, offset, value);
+        Inst(Opcode::WriteSharedU64, Flags{is_gds}, offset, value);
         break;
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data) {
+U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds) {
     switch (data.Type()) {
     case Type::U32:
-        return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+        return Inst<U32>(Opcode::SharedAtomicIAdd32, Flags{is_gds}, address, data);
     case Type::U64:
-        return Inst<U64>(Opcode::SharedAtomicIAdd64, address, data);
+        return Inst<U64>(Opcode::SharedAtomicIAdd64, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
 }
 
-U32 IREmitter::SharedAtomicIMin(const U32& address, const U32& data, bool is_signed) {
-    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMin32, address, data)
-                     : Inst<U32>(Opcode::SharedAtomicUMin32, address, data);
+U32U64 IREmitter::SharedAtomicIMin(const U32& address, const U32U64& data, bool is_signed,
+                                   bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(is_signed ? Opcode::SharedAtomicSMin32 : Opcode::SharedAtomicUMin32,
+                         Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(is_signed ? Opcode::SharedAtomicSMin64 : Opcode::SharedAtomicUMin64,
+                         Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_signed) {
-    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, address, data)
-                     : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
+U32U64 IREmitter::SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
+                                   bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(is_signed ? Opcode::SharedAtomicSMax32 : Opcode::SharedAtomicUMax32,
+                         Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(is_signed ? Opcode::SharedAtomicSMax64 : Opcode::SharedAtomicUMax64,
+                         Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicAnd(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicAnd32, address, data);
+U32U64 IREmitter::SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicOr(const U32& address, const U32& data) {
+U32U64 IREmitter::SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
     return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
 }
 
-U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
+U32U64 IREmitter::SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicXor32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicXor64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicInc(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicInc32, address);
+U32U64 IREmitter::SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicISub32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicISub64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicDec(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicDec32, address);
+template <>
+U32 IREmitter::SharedAtomicInc(const U32& address, bool is_gds) {
+    return Inst<U32>(Opcode::SharedAtomicInc32, Flags{is_gds}, address);
 }
 
-U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicISub32, address, data);
+template <>
+U64 IREmitter::SharedAtomicInc(const U32& address, bool is_gds) {
+    return Inst<U64>(Opcode::SharedAtomicInc64, Flags{is_gds}, address);
+}
+
+template <>
+U32 IREmitter::SharedAtomicDec(const U32& address, bool is_gds) {
+    return Inst<U32>(Opcode::SharedAtomicDec32, Flags{is_gds}, address);
+}
+
+template <>
+U64 IREmitter::SharedAtomicDec(const U32& address, bool is_gds) {
+    return Inst<U64>(Opcode::SharedAtomicDec64, Flags{is_gds}, address);
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
