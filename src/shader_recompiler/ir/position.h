@@ -46,7 +46,7 @@ inline void ExportPosition(IREmitter& ir, const auto& stage, Attribute attribute
         ir.SetAttribute(IR::Attribute::RenderTargetId, value);
         break;
     default:
-        UNREACHABLE_MSG("Unhandled position attribute {}", u32(output));
+        UNREACHABLE_MSG("Unhandled output {} on attribute {}", u32(output), u32(attribute));
     }
 }
 
