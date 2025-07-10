@@ -17,7 +17,7 @@ enum class OrbisAudioInParamFormat : u32 { S16Mono = 0, S16Stereo = 2 };
 enum class OrbisAudioInType : u32 { VoiceChat = 0, General = 1, VoiceRecognition = 5 };
 
 int PS4_SYSV_ABI sceAudioInChangeAppModuleState();
-int PS4_SYSV_ABI sceAudioInClose();
+int PS4_SYSV_ABI sceAudioInClose(s32 handle);
 int PS4_SYSV_ABI sceAudioInCountPorts();
 int PS4_SYSV_ABI sceAudioInDeviceHqOpen();
 int PS4_SYSV_ABI sceAudioInDeviceIdHqOpen();
@@ -36,7 +36,7 @@ int PS4_SYSV_ABI sceAudioInGetSilentState();
 int PS4_SYSV_ABI sceAudioInHqOpen();
 int PS4_SYSV_ABI sceAudioInHqOpenEx();
 int PS4_SYSV_ABI sceAudioInInit();
-int PS4_SYSV_ABI sceAudioInInput();
+int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest);
 int PS4_SYSV_ABI sceAudioInInputs();
 int PS4_SYSV_ABI sceAudioInIsSharedDevice();
 int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,

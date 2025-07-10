@@ -5,15 +5,20 @@
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/audio/sdl_in.h"
 
 namespace Libraries::AudioIn {
+
+static std::unique_ptr<SDLAudioIn> audio = std::make_unique<SDLAudioIn>();
 
 int PS4_SYSV_ABI sceAudioInChangeAppModuleState() {
     LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInClose() {
+int PS4_SYSV_ABI sceAudioInClose(s32 handle)
+ {
+    audio->AudioInClose(handle);
     LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -108,9 +113,8 @@ int PS4_SYSV_ABI sceAudioInInit() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInInput() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest) {
+    return audio->AudioInInput(handle, dest);
 }
 
 int PS4_SYSV_ABI sceAudioInInputs() {
@@ -125,8 +129,13 @@ int PS4_SYSV_ABI sceAudioInIsSharedDevice() {
 
 int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
                                 u32 index, u32 len, u32 freq, u32 param) {
-    LOG_ERROR(Lib_AudioIn, "(DUMMY) called");
-    return 0x80260005; // ports are full return
+    int result = audio->AudioInOpen(type, len, freq, param);
+    if (result == -1) {
+        LOG_ERROR(Lib_AudioOut, "Audio ports are full");
+        return 0x80260005;
+    }
+    return result;
+    LOG_ERROR(Lib_AudioIn, "called");
 }
 
 int PS4_SYSV_ABI sceAudioInOpenEx() {
