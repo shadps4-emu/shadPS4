@@ -70,8 +70,8 @@ int PS4_SYSV_ABI sceNetBweUnregisterCallbackIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetInfoV6() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetInfoV6(int code, void* param) {
+    LOG_ERROR(Lib_NetCtl, "(STUBBED) called, code = {}", code);
     return ORBIS_OK;
 }
 
@@ -218,7 +218,6 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     case ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG:
         info->http_proxy_config = 0; // off
         LOG_DEBUG(Lib_NetCtl, "http proxy config: {}", info->http_proxy_config);
-        break;
     case ORBIS_NET_CTL_INFO_PRIMARY_DNS:
         strcpy(info->primary_dns, "1.1.1.1");
         LOG_DEBUG(Lib_NetCtl, "http primary dns: {}", info->primary_dns);

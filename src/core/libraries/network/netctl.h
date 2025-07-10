@@ -79,7 +79,7 @@ int PS4_SYSV_ABI sceNetBweSetInternetConnectionTestResultIpcInt();
 int PS4_SYSV_ABI sceNetBweStartInternetConnectionTestBandwidthTestIpcInt();
 int PS4_SYSV_ABI sceNetBweStartInternetConnectionTestIpcInt();
 int PS4_SYSV_ABI sceNetBweUnregisterCallbackIpcInt();
-int PS4_SYSV_ABI sceNetCtlGetInfoV6();
+int PS4_SYSV_ABI sceNetCtlGetInfoV6(int code, void* param);
 int PS4_SYSV_ABI sceNetCtlGetResultV6();
 int PS4_SYSV_ABI sceNetCtlGetStateV6();
 int PS4_SYSV_ABI sceNetCtlRegisterCallbackV6();

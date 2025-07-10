@@ -286,7 +286,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lUk6wrGXyMw", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
 
     LIB_FUNCTION("TU-d9PfIHPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
+    LIB_FUNCTION("fZOeZIOEmLw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_send);
     LIB_FUNCTION("oBr313PppNE", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
+    LIB_FUNCTION("Ez8xjo9UF4E", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recv);
     LIB_FUNCTION("lUk6wrGXyMw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
     LIB_FUNCTION("TXFFFiNldU8", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sys_getpeername);
