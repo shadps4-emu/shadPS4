@@ -113,6 +113,7 @@ std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
+bool getIsConnectedToNetwork();
 std::string getUserName();
 std::string getChooseHomeTab();
 bool GetUseUnifiedInputConfig();
