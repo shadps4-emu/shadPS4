@@ -8,6 +8,7 @@
 #include <QPlainTextEdit>
 #include <QProgressDialog>
 #include <QStatusBar>
+#include <signal.h>
 
 #include "about_dialog.h"
 #include "cheats_patches.h"
@@ -398,7 +399,9 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
     connect(ui->pauseButton, &QPushButton::clicked, this, &MainWindow::PauseGame);
+    connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::RestartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -862,17 +865,39 @@ void MainWindow::StartGame() {
             gamePath = m_elf_viewer->m_elf_list[itemID];
         }
     }
-    if (gamePath != "") {
-        AddRecentFiles(gamePath);
-        const auto path = Common::FS::PathFromQString(gamePath);
-        if (!std::filesystem::exists(path)) {
-            QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
-            return;
-        }
-        StartEmulator(path);
 
-        UpdateToolbarButtons();
+    if (!gamePath.isEmpty()) {
+        StartGameWithPath(gamePath);
     }
+}
+
+void MainWindow::StartGameWithPath(const QString& gamePath) {
+    if (gamePath.isEmpty()) {
+        QMessageBox::warning(this, tr("Run Game"), tr("No game path provided."));
+        return;
+    }
+
+    AddRecentFiles(gamePath);
+
+    const auto path = Common::FS::PathFromQString(gamePath);
+    if (!std::filesystem::exists(path)) {
+        QMessageBox::critical(nullptr, tr("Run Game"), tr("Eboot.bin file not found"));
+        return;
+    }
+
+    // Start emulator detached
+    QString exePath = QCoreApplication::applicationFilePath();
+    bool started =
+        QProcess::startDetached(exePath, QStringList() << gamePath, QString(), &detachedGamePid);
+    if (!started) {
+        QMessageBox::critical(this, tr("Run Game"), tr("Failed to start emulator."));
+        return;
+    }
+
+    lastGamePath = gamePath;
+    isGameRunning = true;
+
+    UpdateToolbarButtons();
 }
 
 bool isTable;
@@ -1209,20 +1234,80 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void MainWindow::StartEmulator(std::filesystem::path path) {
-    if (isGameRunning) {
-        QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Game is already running!")));
-        return;
-    }
+    // Normalize path slashes for display only:
+    QString normalizedPath = QString::fromStdString(path.string()).replace("\\", "/");
+    lastGamePath = normalizedPath;
     isGameRunning = true;
+
+    emulator = std::make_unique<Core::Emulator>();
+
 #ifdef __APPLE__
-    // SDL on macOS requires main thread.
     Core::Emulator emulator;
-    emulator.Run(path);
+    emulator.Run(path, {});
 #else
-    std::thread emulator_thread([=] {
-        Core::Emulator emulator;
-        emulator.Run(path);
+    std::thread emulator_thread([this, path]() {
+        emulator->Run(path, {});
+        isGameRunning = false;
     });
     emulator_thread.detach();
 #endif
 }
+
+#ifdef ENABLE_QT_GUI
+
+void MainWindow::StopGame() {
+    if (!isGameRunning) {
+        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        return;
+    }
+
+#ifdef Q_OS_WIN
+    QProcess::execute("taskkill", {"/PID", QString::number(detachedGamePid), "/F", "/T"});
+#else
+    ::kill(detachedGamePid, SIGKILL);
+#endif
+
+    detachedGamePid = -1;
+    isGameRunning = false;
+
+    QMessageBox::information(this, tr("Stop Game"), tr("Game has been stopped successfully."));
+    UpdateToolbarButtons();
+}
+
+void MainWindow::RestartGame() {
+    if (!isGameRunning) {
+        QMessageBox::warning(this, tr("Restart Game"), tr("No game is running to restart."));
+        return;
+    }
+
+    if (lastGamePath.isEmpty()) {
+        QMessageBox::warning(this, tr("Restart Game"), tr("No recent game found."));
+        return;
+    }
+
+#ifdef Q_OS_WIN
+    if (detachedGamePid > 0) {
+        QProcess::execute("taskkill", {"/PID", QString::number(detachedGamePid), "/F", "/T"});
+    }
+#else
+    if (detachedGamePid > 0) {
+        ::kill(detachedGamePid, SIGKILL);
+    }
+#endif
+
+    detachedGamePid = -1;
+    isGameRunning = false;
+
+    const QString exePath = QCoreApplication::applicationFilePath();
+    qint64 newPid = -1;
+    bool started =
+        QProcess::startDetached(exePath, QStringList() << lastGamePath, QString(), &newPid);
+    if (started) {
+        detachedGamePid = newPid;
+        isGameRunning = true;
+    }
+
+    UpdateToolbarButtons();
+}
+
+#endif

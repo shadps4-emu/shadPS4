@@ -37,9 +37,15 @@ public:
     bool Init();
     void InstallDirectory();
     void StartGame();
+    void StartGameWithPath(const QString&);
     void PauseGame();
     bool showLabels;
-
+    void StopGame();
+    void RestartGame();
+    std::unique_ptr<Core::Emulator> emulator;
+    bool pendingRestart = false;
+    qint64 detachedGamePid = -1;
+    bool isDetachedLaunch = false;
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
     void SaveWindowState();
@@ -66,6 +72,10 @@ private:
     void CheckUpdateMain(bool checkSave);
 #endif
     void CreateConnects();
+#ifdef ENABLE_QT_GUI
+    QString getLastEbootPath();
+    QString lastGamePath;
+#endif
     void SetLastUsedTheme();
     void SetLastIconSizeBullet();
     void SetUiIcons(bool isWhite);
