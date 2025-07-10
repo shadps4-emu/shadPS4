@@ -680,8 +680,9 @@ void Translator::S_FF1_I32_B32(const GcnInst& inst) {
 }
 
 void Translator::S_FF1_I32_B64(const GcnInst& inst) {
-    const IR::U64 src0{GetSrc64(inst.src[0])};
-    const IR::U32 result{ir.FindILsb(src0)};
+    ASSERT(inst.src[0].field == OperandField::ScalarGPR);
+    const IR::U32 result{
+        ir.BallotFindLsb(ir.Ballot(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code))))};
     SetDst(inst.dst[0], result);
 }
 

@@ -34,4 +34,12 @@ Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane) {
     return ctx.u32_zero_value;
 }
 
+Id EmitBallot(EmitContext& ctx, Id bit) {
+    return ctx.OpGroupNonUniformBallot(ctx.U32[4], SubgroupScope(ctx), bit);
+}
+
+Id EmitBallotFindLsb(EmitContext& ctx, Id mask) {
+    return ctx.OpGroupNonUniformBallotFindLSB(ctx.U32[1], SubgroupScope(ctx), mask);
+}
+
 } // namespace Shader::Backend::SPIRV
