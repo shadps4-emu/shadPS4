@@ -324,9 +324,19 @@ public:
         return properties.limits.maxViewportDimensions[0];
     }
 
-    ///  Returns the maximum viewport height.
+    /// Returns the maximum viewport height.
     u32 GetMaxViewportHeight() const {
         return properties.limits.maxViewportDimensions[1];
+    }
+
+    /// Returns the maximum render area width.
+    u32 GetMaxFramebufferWidth() const {
+        return properties.limits.maxFramebufferWidth;
+    }
+
+    /// Returns the maximum render area height.
+    u32 GetMaxFramebufferHeight() const {
+        return properties.limits.maxFramebufferHeight;
     }
 
     /// Returns the sample count flags supported by framebuffers.
