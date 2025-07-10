@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/runtime_info.h"
 
@@ -126,8 +127,10 @@ void Translator::ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U3
 
 void Translator::ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value) {
     if (IsMrt(attribute)) {
-        ExportMrtUncompressed(attribute, comp, value);
-        return;
+        return ExportMrtUncompressed(attribute, comp, value);
+    }
+    if (IsPosition(attribute)) {
+        return IR::ExportPosition(ir, runtime_info.vs_info, attribute, comp, value);
     }
     ir.SetAttribute(attribute, value, comp);
 }
