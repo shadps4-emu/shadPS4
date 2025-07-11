@@ -418,8 +418,8 @@ int PS4_SYSV_ABI sceKernelAddReadEvent(SceKernelEqueue eq, int fd, size_t size, 
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
-    LOG_ERROR(Kernel_Event, "(DUMMY) eq = {}, fd = {}, size = {}, udata = {:#x}", eq->GetName(), fd, size,
-              reinterpret_cast<u64>(udata));
+    LOG_ERROR(Kernel_Event, "(DUMMY) eq = {}, fd = {}, size = {}, udata = {:#x}", eq->GetName(), fd,
+              size, reinterpret_cast<u64>(udata));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
