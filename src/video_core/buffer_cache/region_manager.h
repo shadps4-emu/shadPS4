@@ -5,7 +5,6 @@
 
 #include "common/config.h"
 #include "common/div_ceil.h"
-#include "common/logging/log.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
@@ -90,7 +89,7 @@ public:
      * @param dirty_addr    Base address to mark or unmark as modified
      * @param size          Size in bytes to mark or unmark as modified
      */
-    template <Type type, bool enable, bool defer_protect>
+    template <Type type, bool enable>
     void ChangeRegionState(u64 dirty_addr, u64 size) noexcept(type == Type::GPU) {
         RENDERER_TRACE;
         const size_t offset = dirty_addr - cpu_addr;
@@ -107,9 +106,7 @@ public:
         } else {
             bits.UnsetRange(start_page, end_page);
         }
-        if constexpr (defer_protect) {
-            deferred_protection |= type;
-        } else if constexpr (type == Type::CPU) {
+        if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
         } else if (Config::readbacks()) {
             UpdateProtection<enable, true>();
@@ -124,7 +121,7 @@ public:
      * @param size            Size in bytes of the CPU range to loop over
      * @param func            Function to call for each turned off region
      */
-    template <Type type, bool clear, bool defer_protect>
+    template <Type type, bool clear>
     void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
         RENDERER_TRACE;
         const size_t offset = query_cpu_range - cpu_addr;
@@ -140,9 +137,7 @@ public:
 
         if constexpr (clear) {
             bits.UnsetRange(start_page, end_page);
-            if constexpr (defer_protect) {
-                deferred_protection |= type;
-            } else if constexpr (type == Type::CPU) {
+            if constexpr (type == Type::CPU) {
                 UpdateProtection<true, false>();
             } else if (Config::readbacks()) {
                 UpdateProtection<false, true>();

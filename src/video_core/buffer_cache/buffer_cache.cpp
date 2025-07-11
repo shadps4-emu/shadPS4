@@ -1034,53 +1034,58 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 
 void BufferCache::SynchronizeBuffersForDma() {
     RENDERER_TRACE;
-    boost::container::small_vector<Buffer*, 64> buffers;
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     const auto& mapped_ranges = rasterizer.GetMappedRanges();
-    bool barrier_recorded = false;
-    memory_tracker->Lock();
+    BufferId last_buffer_id = NULL_BUFFER_ID;
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
-        ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
-            memory_tracker->ForEachUploadRange<true, false>(
-                buffer.CpuAddr(), buffer.SizeBytes(), false,
-                [&](u64 device_addr_out, u64 range_size) {
-                    if (!barrier_recorded) {
-                        barrier_recorded = true;
-                        const vk::BufferMemoryBarrier2 barrier = {
-                            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-                            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead |
-                                             vk::AccessFlagBits2::eMemoryWrite |
-                                             vk::AccessFlagBits2::eTransferRead |
-                                             vk::AccessFlagBits2::eTransferWrite,
-                            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-                            .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-                            .buffer = buffer.Handle(),
-                            .offset = 0,
-                            .size = buffer.SizeBytes(),
-                        };
-                        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-                            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-                            .bufferMemoryBarrierCount = 1,
-                            .pBufferMemoryBarriers = &barrier,
-                        });
-                    }
-                    const u64 offset = staging_buffer.Copy(device_addr_out, range_size);
-                    copies.push_back(vk::BufferCopy{
-                        .srcOffset = offset,
-                        .dstOffset = device_addr_out - buffer.CpuAddr(),
-                        .size = range_size,
-                    });
-                });
-            cmdbuf.copyBuffer(staging_buffer.Handle(), buffer.Handle(), copies);
-            copies.clear();
-            barrier_recorded = false;
+    const auto upload_pending = [&]() {
+        if (last_buffer_id == NULL_BUFFER_ID) {
+            return;
+        }
+        Buffer& buffer = slot_buffers[last_buffer_id];
+        const vk::BufferMemoryBarrier2 barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+                             vk::AccessFlagBits2::eTransferRead |
+                             vk::AccessFlagBits2::eTransferWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+            .buffer = buffer.Handle(),
+            .offset = 0,
+            .size = buffer.SizeBytes(),
+        };
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &barrier,
         });
+        cmdbuf.copyBuffer(staging_buffer.Handle(), buffer.Handle(), copies);
+        copies.clear();
+    };
+    mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
+        memory_tracker->ForEachUploadRange(device_addr, size, false, [&](u64 device_addr_out, u64 range_size) {
+            ForEachBufferInRange(device_addr_out, range_size, [&](BufferId buffer_id, Buffer& buffer) {
+                if (last_buffer_id != buffer_id) {
+                    upload_pending();
+                    last_buffer_id = buffer_id;
+                }
+                const VAddr copy_start = std::max(buffer.CpuAddr(), device_addr_out);
+                const VAddr copy_end = std::min(buffer.CpuAddr() + buffer.SizeBytes(), device_addr_out + range_size);
+                const u32 copy_size = static_cast<u32>(copy_end - copy_start);
+                if (copy_size == 0) {
+                    return;
+                }
+                const u64 offset = staging_buffer.Copy(copy_start, copy_size);
+                copies.push_back(vk::BufferCopy{
+                    .srcOffset = offset,
+                    .dstOffset = copy_start - buffer.CpuAddr(),
+                    .size = copy_size,
+                });
+            });
+        }, upload_pending);
     });
-    memory_tracker->PerformDeferredProtections<Type::CPU, false, false>();
     MemoryBarrier();
-    memory_tracker->Unlock();
 }
 
 void BufferCache::MemoryBarrier() {
