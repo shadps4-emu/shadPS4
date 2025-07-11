@@ -130,15 +130,6 @@ void MainWindow::CreateActions() {
     m_theme_act_group->addAction(ui->setThemeOled);
 }
 
-void MainWindow::PauseGame() {
-    SDL_Event event;
-    SDL_memset(&event, 0, sizeof(event));
-    event.type = SDL_EVENT_TOGGLE_PAUSE;
-    is_paused = !is_paused;
-    UpdateToolbarButtons();
-    SDL_PushEvent(&event);
-}
-
 void MainWindow::toggleLabelsUnderIcons() {
     bool showLabels = ui->toggleLabelsAct->isChecked();
     m_gui_settings->SetValue(gui::mw_showLabelsUnderIcons, showLabels);
@@ -146,13 +137,6 @@ void MainWindow::toggleLabelsUnderIcons() {
     if (isGameRunning) {
         UpdateToolbarButtons();
     }
-}
-
-void MainWindow::toggleFullscreen() {
-    SDL_Event event;
-    SDL_memset(&event, 0, sizeof(event));
-    event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
-    SDL_PushEvent(&event);
 }
 
 QWidget* MainWindow::createButtonWithLabel(QPushButton* button, const QString& labelText,
@@ -194,13 +178,11 @@ void MainWindow::AddUiWidgets() {
 
     ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(createButtonWithLabel(ui->playButton, tr("Play"), showLabels));
-    ui->toolBar->addWidget(createButtonWithLabel(ui->pauseButton, tr("Pause"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->stopButton, tr("Stop"), showLabels));
     ui->toolBar->addWidget(createButtonWithLabel(ui->restartButton, tr("Restart"), showLabels));
     ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(createButtonWithLabel(ui->settingsButton, tr("Settings"), showLabels));
-    ui->toolBar->addWidget(
-        createButtonWithLabel(ui->fullscreenButton, tr("Full Screen"), showLabels));
+
     ui->toolBar->addWidget(createSpacer(this));
     ui->toolBar->addWidget(
         createButtonWithLabel(ui->controllerButton, tr("Controllers"), showLabels));
@@ -212,12 +194,7 @@ void MainWindow::AddUiWidgets() {
     line->setMinimumWidth(2);
     ui->toolBar->addWidget(line);
     ui->toolBar->addWidget(createSpacer(this));
-    if (showLabels) {
-        QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
-        if (pauseButtonLabel) {
-            pauseButtonLabel->setVisible(false);
-        }
-    }
+
     ui->toolBar->addWidget(
         createButtonWithLabel(ui->refreshButton, tr("Refresh List"), showLabels));
     ui->toolBar->addWidget(createSpacer(this));
@@ -243,41 +220,24 @@ void MainWindow::AddUiWidgets() {
     if (!showLabels) {
         toolbarLayout->addWidget(searchSliderContainer);
     }
-
-    ui->playButton->setVisible(true);
-    ui->pauseButton->setVisible(false);
 }
 
 void MainWindow::UpdateToolbarButtons() {
-    // add toolbar widgets when game is running
     bool showLabels = ui->toggleLabelsAct->isChecked();
 
-    ui->playButton->setVisible(false);
-    ui->pauseButton->setVisible(true);
-
-    if (showLabels) {
-        QLabel* playButtonLabel = ui->playButton->parentWidget()->findChild<QLabel*>();
-        if (playButtonLabel)
-            playButtonLabel->setVisible(false);
-    }
-
-    if (is_paused) {
-        ui->pauseButton->setIcon(ui->playButton->icon());
-        ui->pauseButton->setToolTip(tr("Resume"));
-    } else {
-        if (isIconBlack) {
-            ui->pauseButton->setIcon(QIcon(":images/pause_icon.png"));
-        } else {
-            ui->pauseButton->setIcon(RecolorIcon(QIcon(":images/pause_icon.png"), isWhite));
+    if (isGameRunning) {
+        ui->playButton->setVisible(false);
+        if (showLabels) {
+            QLabel* playButtonLabel = ui->playButton->parentWidget()->findChild<QLabel*>();
+            if (playButtonLabel)
+                playButtonLabel->setVisible(false);
         }
-        ui->pauseButton->setToolTip(tr("Pause"));
-    }
-
-    if (showLabels) {
-        QLabel* pauseButtonLabel = ui->pauseButton->parentWidget()->findChild<QLabel*>();
-        if (pauseButtonLabel) {
-            pauseButtonLabel->setText(is_paused ? tr("Resume") : tr("Pause"));
-            pauseButtonLabel->setVisible(true);
+    } else {
+        ui->playButton->setVisible(true);
+        if (showLabels) {
+            QLabel* playButtonLabel = ui->playButton->parentWidget()->findChild<QLabel*>();
+            if (playButtonLabel)
+                playButtonLabel->setVisible(true);
         }
     }
 }
@@ -375,7 +335,6 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
     connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
-    connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
@@ -400,7 +359,6 @@ void MainWindow::CreateConnects() {
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
     connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
-    connect(ui->pauseButton, &QPushButton::clicked, this, &MainWindow::PauseGame);
     connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::RestartGame);
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
@@ -1115,12 +1073,10 @@ void MainWindow::SetUiIcons(bool isWhite) {
     ui->menuGame_List_Icons->setIcon(RecolorIcon(ui->menuGame_List_Icons->icon(), isWhite));
     ui->menuUtils->setIcon(RecolorIcon(ui->menuUtils->icon(), isWhite));
     ui->playButton->setIcon(RecolorIcon(ui->playButton->icon(), isWhite));
-    ui->pauseButton->setIcon(RecolorIcon(ui->pauseButton->icon(), isWhite));
     ui->stopButton->setIcon(RecolorIcon(ui->stopButton->icon(), isWhite));
     ui->refreshButton->setIcon(RecolorIcon(ui->refreshButton->icon(), isWhite));
     ui->restartButton->setIcon(RecolorIcon(ui->restartButton->icon(), isWhite));
     ui->settingsButton->setIcon(RecolorIcon(ui->settingsButton->icon(), isWhite));
-    ui->fullscreenButton->setIcon(RecolorIcon(ui->fullscreenButton->icon(), isWhite));
     ui->controllerButton->setIcon(RecolorIcon(ui->controllerButton->icon(), isWhite));
     ui->keyboardButton->setIcon(RecolorIcon(ui->keyboardButton->icon(), isWhite));
     ui->refreshGameListAct->setIcon(RecolorIcon(ui->refreshGameListAct->icon(), isWhite));
