@@ -272,12 +272,14 @@ Id EmitConvertU32U8(EmitContext& ctx, Id value) {
 }
 
 Id EmitConvertS32S8(EmitContext& ctx, Id value) {
+    ASSERT(ctx.profile.support_int8); // TODO
     const Id as_s8 = ctx.OpBitcast(ctx.S8, value);
     const Id as_s32 = ctx.OpSConvert(ctx.S32[1], as_s8);
     return ctx.OpBitcast(ctx.U32[1], as_s32);
 }
 
 Id EmitConvertS32S16(EmitContext& ctx, Id value) {
+    ASSERT(ctx.profile.support_int16); // TODO
     const Id as_s16 = ctx.OpBitcast(ctx.S16, value);
     const Id as_s32 = ctx.OpSConvert(ctx.S32[1], as_s16);
     return ctx.OpBitcast(ctx.U32[1], as_s32);
