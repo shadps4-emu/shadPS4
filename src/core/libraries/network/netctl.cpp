@@ -13,6 +13,7 @@
 #endif
 
 #include <common/singleton.h>
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -271,7 +272,9 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetState(int* state) {
-    *state = ORBIS_NET_CTL_STATE_DISCONNECTED;
+    LOG_DEBUG(Lib_NetCtl, "connected = {}", Config::getIsConnectedToNetwork());
+    const auto current_state = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_STATE_IPOBTAINED : ORBIS_NET_CTL_STATE_DISCONNECTED;
+    *state = current_state;
     return ORBIS_OK;
 }
 
