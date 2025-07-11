@@ -17,7 +17,6 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     case IR::Opcode::WriteSharedU32:
     case IR::Opcode::WriteSharedU64:
     case IR::Opcode::SharedAtomicIAdd32:
-    case IR::Opcode::SharedAtomicIAdd64:
     case IR::Opcode::SharedAtomicISub32:
     case IR::Opcode::SharedAtomicSMin32:
     case IR::Opcode::SharedAtomicUMin32:
@@ -28,6 +27,17 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicAnd32:
     case IR::Opcode::SharedAtomicOr32:
     case IR::Opcode::SharedAtomicXor32:
+    case IR::Opcode::SharedAtomicIAdd64:
+    case IR::Opcode::SharedAtomicISub64:
+    case IR::Opcode::SharedAtomicSMin64:
+    case IR::Opcode::SharedAtomicUMin64:
+    case IR::Opcode::SharedAtomicSMax64:
+    case IR::Opcode::SharedAtomicUMax64:
+    case IR::Opcode::SharedAtomicInc64:
+    case IR::Opcode::SharedAtomicDec64:
+    case IR::Opcode::SharedAtomicAnd64:
+    case IR::Opcode::SharedAtomicOr64:
+    case IR::Opcode::SharedAtomicXor64:
         return true;
     default:
         return false;
@@ -64,6 +74,16 @@ IR::Type CalculateSharedMemoryTypes(IR::Program& program) {
             case IR::Opcode::LoadSharedU64:
             case IR::Opcode::WriteSharedU64:
             case IR::Opcode::SharedAtomicIAdd64:
+            case IR::Opcode::SharedAtomicISub64:
+            case IR::Opcode::SharedAtomicSMin64:
+            case IR::Opcode::SharedAtomicUMin64:
+            case IR::Opcode::SharedAtomicSMax64:
+            case IR::Opcode::SharedAtomicUMax64:
+            case IR::Opcode::SharedAtomicInc64:
+            case IR::Opcode::SharedAtomicDec64:
+            case IR::Opcode::SharedAtomicAnd64:
+            case IR::Opcode::SharedAtomicOr64:
+            case IR::Opcode::SharedAtomicXor64:
                 used_types |= IR::Type::U64;
                 break;
             default:
@@ -119,19 +139,26 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                     ir.BufferAtomicIAdd(handle, address, inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicISub32:
+            case IR::Opcode::SharedAtomicISub64:
                 inst.ReplaceUsesWithAndRemove(
                     ir.BufferAtomicISub(handle, address, inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicSMin32:
-            case IR::Opcode::SharedAtomicUMin32: {
-                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
+            case IR::Opcode::SharedAtomicUMin32:
+            case IR::Opcode::SharedAtomicSMin64:
+            case IR::Opcode::SharedAtomicUMin64: {
+                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32 ||
+                                       inst.GetOpcode() == IR::Opcode::SharedAtomicSMin64;
                 inst.ReplaceUsesWithAndRemove(
                     ir.BufferAtomicIMin(handle, address, inst.Arg(1), is_signed, {}));
                 continue;
             }
             case IR::Opcode::SharedAtomicSMax32:
-            case IR::Opcode::SharedAtomicUMax32: {
-                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
+            case IR::Opcode::SharedAtomicUMax32:
+            case IR::Opcode::SharedAtomicSMax64:
+            case IR::Opcode::SharedAtomicUMax64: {
+                const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32 ||
+                                       inst.GetOpcode() == IR::Opcode::SharedAtomicSMax64;
                 inst.ReplaceUsesWithAndRemove(
                     ir.BufferAtomicIMax(handle, address, inst.Arg(1), is_signed, {}));
                 continue;
@@ -143,12 +170,15 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                 inst.ReplaceUsesWithAndRemove(ir.BufferAtomicDec(handle, address, {}));
                 continue;
             case IR::Opcode::SharedAtomicAnd32:
+            case IR::Opcode::SharedAtomicAnd64:
                 inst.ReplaceUsesWithAndRemove(ir.BufferAtomicAnd(handle, address, inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicOr32:
+            case IR::Opcode::SharedAtomicOr64:
                 inst.ReplaceUsesWithAndRemove(ir.BufferAtomicOr(handle, address, inst.Arg(1), {}));
                 continue;
             case IR::Opcode::SharedAtomicXor32:
+            case IR::Opcode::SharedAtomicXor64:
                 inst.ReplaceUsesWithAndRemove(ir.BufferAtomicXor(handle, address, inst.Arg(1), {}));
                 continue;
             case IR::Opcode::LoadSharedU16:
@@ -173,7 +203,7 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
                 inst.Invalidate();
                 break;
             default:
-                break;
+                UNREACHABLE();
             }
         }
     }

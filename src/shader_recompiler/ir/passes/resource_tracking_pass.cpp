@@ -84,8 +84,42 @@ bool IsBufferInstruction(const IR::Inst& inst) {
 }
 
 bool IsDataRingInstruction(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::DataAppend ||
-           inst.GetOpcode() == IR::Opcode::DataConsume;
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::DataAppend:
+    case IR::Opcode::DataConsume:
+        return true;
+    case IR::Opcode::LoadSharedU16:
+    case IR::Opcode::LoadSharedU32:
+    case IR::Opcode::LoadSharedU64:
+    case IR::Opcode::WriteSharedU16:
+    case IR::Opcode::WriteSharedU32:
+    case IR::Opcode::WriteSharedU64:
+    case IR::Opcode::SharedAtomicIAdd32:
+    case IR::Opcode::SharedAtomicIAdd64:
+    case IR::Opcode::SharedAtomicUMin32:
+    case IR::Opcode::SharedAtomicUMin64:
+    case IR::Opcode::SharedAtomicSMin32:
+    case IR::Opcode::SharedAtomicSMin64:
+    case IR::Opcode::SharedAtomicUMax32:
+    case IR::Opcode::SharedAtomicUMax64:
+    case IR::Opcode::SharedAtomicSMax32:
+    case IR::Opcode::SharedAtomicSMax64:
+    case IR::Opcode::SharedAtomicAnd32:
+    case IR::Opcode::SharedAtomicAnd64:
+    case IR::Opcode::SharedAtomicOr32:
+    case IR::Opcode::SharedAtomicOr64:
+    case IR::Opcode::SharedAtomicXor32:
+    case IR::Opcode::SharedAtomicXor64:
+    case IR::Opcode::SharedAtomicISub32:
+    case IR::Opcode::SharedAtomicISub64:
+    case IR::Opcode::SharedAtomicInc32:
+    case IR::Opcode::SharedAtomicInc64:
+    case IR::Opcode::SharedAtomicDec32:
+    case IR::Opcode::SharedAtomicDec64:
+        return inst.Flags<bool>(); // is_gds
+    default:
+        return false;
+    }
 }
 
 IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
@@ -507,7 +541,8 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     }
 }
 
-void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
+                                Descriptors& descriptors) {
     const u32 binding = descriptors.Add(BufferResource{
         .used_types = IR::Type::U32,
         .inline_cbuf = AmdGpu::Buffer::Null(),
@@ -515,37 +550,111 @@ void PatchDataRingAccess(IR::Block& block, IR::Inst& inst, Info& info, Descripto
         .is_written = true,
     });
 
-    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-        if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-            return inst;
-        }
-        return std::nullopt;
-    };
-
-    // Attempt to deduce the GDS address of counter at compile time.
-    u32 gds_addr = 0;
-    const IR::Value& gds_offset = inst.Arg(0);
-    if (gds_offset.IsImmediate()) {
-        // Nothing to do, offset is known.
-        gds_addr = gds_offset.U32() & 0xFFFF;
-    } else {
-        const auto result = IR::BreadthFirstSearch(&inst, pred);
-        ASSERT_MSG(result, "Unable to track M0 source");
-
-        // M0 must be set by some user data register.
-        const IR::Inst* prod = gds_offset.InstRecursive();
-        const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-        u32 m0_val = info.user_data[ud_reg] >> 16;
-        if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-            m0_val += prod->Arg(1).U32();
-        }
-        gds_addr = m0_val & 0xFFFF;
-    }
-
-    // Patch instruction.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(gds_addr >> 2));
-    inst.SetArg(1, ir.Imm32(binding));
+
+    // For data append/consume operations attempt to deduce the GDS address.
+    if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
+        const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
+            if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+                return inst;
+            }
+            return std::nullopt;
+        };
+
+        u32 gds_addr = 0;
+        const IR::Value& gds_offset = inst.Arg(0);
+        if (gds_offset.IsImmediate()) {
+            // Nothing to do, offset is known.
+            gds_addr = gds_offset.U32() & 0xFFFF;
+        } else {
+            const auto result = IR::BreadthFirstSearch(&inst, pred);
+            ASSERT_MSG(result, "Unable to track M0 source");
+
+            // M0 must be set by some user data register.
+            const IR::Inst* prod = gds_offset.InstRecursive();
+            const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
+            u32 m0_val = info.user_data[ud_reg] >> 16;
+            if (prod->GetOpcode() == IR::Opcode::IAdd32) {
+                m0_val += prod->Arg(1).U32();
+            }
+            gds_addr = m0_val & 0xFFFF;
+        }
+
+        // Patch instruction.
+        inst.SetArg(0, ir.Imm32(gds_addr >> 2));
+        inst.SetArg(1, ir.Imm32(binding));
+    } else {
+        // Convert shared memory opcode to storage buffer atomic to GDS buffer.
+        const IR::U32 offset = IR::U32{inst.Arg(0)};
+        const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
+        const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
+        const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
+        const IR::U32 handle = ir.Imm32(binding);
+        switch (inst.GetOpcode()) {
+        case IR::Opcode::SharedAtomicIAdd32:
+            inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
+            break;
+        case IR::Opcode::SharedAtomicIAdd64:
+            inst.ReplaceUsesWith(
+                ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
+            break;
+        case IR::Opcode::SharedAtomicISub32:
+            inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
+            break;
+        case IR::Opcode::SharedAtomicSMin32:
+        case IR::Opcode::SharedAtomicUMin32: {
+            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
+            inst.ReplaceUsesWith(
+                ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
+            break;
+        }
+        case IR::Opcode::SharedAtomicSMax32:
+        case IR::Opcode::SharedAtomicUMax32: {
+            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
+            inst.ReplaceUsesWith(
+                ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
+            break;
+        }
+        case IR::Opcode::SharedAtomicInc32:
+            inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
+            break;
+        case IR::Opcode::SharedAtomicDec32:
+            inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
+            break;
+        case IR::Opcode::SharedAtomicAnd32:
+            inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
+            break;
+        case IR::Opcode::SharedAtomicOr32:
+            inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
+            break;
+        case IR::Opcode::SharedAtomicXor32:
+            inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
+            break;
+        case IR::Opcode::LoadSharedU16:
+            inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
+            break;
+        case IR::Opcode::LoadSharedU32:
+            inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
+            break;
+        case IR::Opcode::LoadSharedU64:
+            inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
+            break;
+        case IR::Opcode::WriteSharedU16:
+            ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
+            inst.Invalidate();
+            break;
+        case IR::Opcode::WriteSharedU32:
+            ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
+            inst.Invalidate();
+            break;
+        case IR::Opcode::WriteSharedU64:
+            ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
+            inst.Invalidate();
+            break;
+        default:
+            UNREACHABLE();
+        }
+    }
 }
 
 IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const Info& info,
@@ -916,8 +1025,6 @@ void ResourceTrackingPass(IR::Program& program) {
                 PatchBufferSharp(*block, inst, info, descriptors);
             } else if (IsImageInstruction(inst)) {
                 PatchImageSharp(*block, inst, info, descriptors);
-            } else if (IsDataRingInstruction(inst)) {
-                PatchDataRingAccess(*block, inst, info, descriptors);
             }
         }
     }
@@ -929,6 +1036,8 @@ void ResourceTrackingPass(IR::Program& program) {
                 PatchBufferArgs(*block, inst, info);
             } else if (IsImageInstruction(inst)) {
                 PatchImageArgs(*block, inst, info);
+            } else if (IsDataRingInstruction(inst)) {
+                PatchGlobalDataShareAccess(*block, inst, info, descriptors);
             }
         }
     }

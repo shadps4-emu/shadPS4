@@ -72,7 +72,7 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void ProcessFaults();
+    void EndCommandList();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;

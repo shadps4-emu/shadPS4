@@ -565,7 +565,8 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
         }
         // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
         if ((inst.src[0].field == OperandField::ExecHi ||
-             inst.src[0].field == OperandField::VccHi) &&
+             inst.src[0].field == OperandField::VccHi ||
+             inst.src[0].field == OperandField::ScalarGPR) &&
             (inst.src[1].field == OperandField::ConstZero ||
              inst.src[1].field == OperandField::VectorGPR)) {
             return SetDst(inst.dst[0], GetSrc(inst.src[1]));
@@ -579,7 +580,8 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
         }
         // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
         // used combined with above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo) {
+        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo ||
+            inst.src[0].field == OperandField::ScalarGPR) {
             return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
         UNREACHABLE();

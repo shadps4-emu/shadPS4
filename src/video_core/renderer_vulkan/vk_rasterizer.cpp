@@ -113,6 +113,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
     // Prefetch color and depth buffers to let texture cache handle possible overlaps with bound
     // textures (e.g. mipgen)
     RenderState state;
+    state.width = instance.GetMaxFramebufferWidth();
+    state.height = instance.GetMaxFramebufferHeight();
 
     cb_descs.clear();
     db_desc.reset();
@@ -272,6 +274,8 @@ void Rasterizer::EliminateFastClear() {
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
+    scheduler.PopPendingOperations();
+
     if (!FilterDraw()) {
         return;
     }
@@ -316,6 +320,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 stride,
                               u32 max_count, VAddr count_address) {
     RENDERER_TRACE;
+
+    scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
         return;
@@ -380,6 +386,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
+    scheduler.PopPendingOperations();
+
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
@@ -406,6 +414,8 @@ void Rasterizer::DispatchDirect() {
 
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
+
+    scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
@@ -439,11 +449,12 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::ProcessFaults() {
+void Rasterizer::EndCommandList() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
     }
+    texture_cache.ProcessDownloadImages();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -645,8 +656,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             } else {
-                auto& null_image_view =
-                    texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc.view_info);
+                auto& null_image_view = texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc);
                 image_infos.emplace_back(VK_NULL_HANDLE, *null_image_view.image_view,
                                          vk::ImageLayout::eGeneral);
             }
@@ -660,7 +670,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             bound_images.emplace_back(image_id);
 
             auto& image = texture_cache.GetImage(image_id);
-            auto& image_view = texture_cache.FindTexture(image_id, desc.view_info);
+            auto& image_view = texture_cache.FindTexture(image_id, desc);
 
             if (image.binding.force_general || image.binding.is_target) {
                 image.Transit(vk::ImageLayout::eGeneral,

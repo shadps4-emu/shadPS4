@@ -168,7 +168,7 @@ public:
                           MemoryUsage usage, u64 size_bytes_);
 
     /// Reserves a region of memory from the stream buffer.
-    std::pair<u8*, u64> Map(u64 size, u64 alignment = 0);
+    std::pair<u8*, u64> Map(u64 size, u64 alignment = 0, bool allow_wait = true);
 
     /// Ensures that reserved bytes of memory are available to the GPU.
     void Commit();
@@ -181,10 +181,6 @@ public:
         return offset;
     }
 
-    u64 GetFreeSize() const {
-        return size_bytes - offset - mapped_size;
-    }
-
 private:
     struct Watch {
         u64 tick{};
@@ -195,7 +191,7 @@ private:
     void ReserveWatches(std::vector<Watch>& watches, std::size_t grow_size);
 
     /// Waits pending watches until requested upper bound.
-    void WaitPendingOperations(u64 requested_upper_bound);
+    bool WaitPendingOperations(u64 requested_upper_bound, bool allow_wait);
 
 private:
     u64 offset{};
