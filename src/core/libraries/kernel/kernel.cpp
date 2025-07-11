@@ -214,6 +214,7 @@ s32 PS4_SYSV_ABI posix_getpagesize() {
 
 s32 PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
                                    Libraries::Net::OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_DEBUG(Lib_Net, "s = {}", s);
     auto* netcall = Common::Singleton<Libraries::Net::NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -223,7 +224,7 @@ s32 PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
     }
     s32 returncode = sock->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
-        LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
+        LOG_DEBUG(Lib_Net, "return code : {:#x}", (u32)returncode);
         return 0;
     }
     *Libraries::Kernel::__Error() = 0x20;
