@@ -1055,6 +1055,17 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              OrbisKernelTimeval* timeout) {
+    LOG_ERROR(Kernel_Fs,
+              "(STUBBED) nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
+              "= {:#x}",
+              nfds, reinterpret_cast<u64>(readfds), reinterpret_cast<u64>(writefds),
+              reinterpret_cast<u64>(exceptfds), reinterpret_cast<u64>(timeout));
+
+    return ORBIS_OK;
+}
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -1112,6 +1123,8 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
     LIB_FUNCTION("mBd4AfLP+u8", "libkernel", 1, "libkernel", 1, 1, sceKernelPwritev);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
+    LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", 1, 1, posix_select);
 }
 
 } // namespace Libraries::Kernel
