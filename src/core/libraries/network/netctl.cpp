@@ -70,8 +70,8 @@ int PS4_SYSV_ABI sceNetBweUnregisterCallbackIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetInfoV6() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetInfoV6(int code, void* param) {
+    LOG_ERROR(Lib_NetCtl, "(STUBBED) called, code = {}", code);
     return ORBIS_OK;
 }
 
