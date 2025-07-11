@@ -81,6 +81,20 @@ enum OrbisNetSocketOption : u32 {
     ORBIS_NET_SO_PRIORITY = 0x1203
 };
 
+enum OrbisNetEpollFlag : u32 {
+    ORBIS_NET_EPOLL_CTL_ADD = 1,
+    ORBIS_NET_EPOLL_CTL_MOD = 2,
+    ORBIS_NET_EPOLL_CTL_DEL = 3,
+};
+
+enum OrbisNetEpollEvents : u32 {
+    ORBIS_NET_EPOLLIN = 0x1,
+    ORBIS_NET_EPOLLOUT = 0x2,
+    ORBIS_NET_EPOLLERR = 0x8,
+    ORBIS_NET_EPOLLHUP = 0x10,
+    ORBIS_NET_EPOLLDESCID = 0x10000,
+};
+
 using OrbisNetId = s32;
 
 struct OrbisNetSockaddr {
@@ -111,6 +125,20 @@ struct OrbisNetMsghdr {
     void* msg_control;
     u32 msg_controllen;
     int msg_flags;
+};
+
+union OrbisNetEpollData {
+    void* ptr;
+    u32 data_u32;
+    int fd;
+    u64 data_u64;
+};
+
+struct OrbisNetEpollEvent {
+    u32 events;
+    u32 pad;
+    u64 ident;
+    OrbisNetEpollData data;
 };
 
 int PS4_SYSV_ABI in6addr_any();
