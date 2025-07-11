@@ -142,6 +142,12 @@ static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
+PosixSocket::PosixSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {
+    sock = socket(ConvertFamilies(domain), type, protocol);
+    LOG_DEBUG(Lib_Net, "socket = {}", sock);
+    socket_type = type;
+}
+
 int PosixSocket::Close() {
     std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
