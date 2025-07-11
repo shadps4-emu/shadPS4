@@ -13,6 +13,8 @@
 namespace Libraries::Net {
 
 int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
+    LOG_WARNING(Lib_Net, "s = {}", s);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -29,6 +31,9 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
     return -1;
 }
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
+    LOG_DEBUG(Lib_Net, "s = {}, addr = {:#x}, addrlen = {}", s, reinterpret_cast<u64>(addr),
+              addrlen);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -45,6 +50,8 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
     return -1;
 }
 int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -55,7 +62,8 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     auto new_sock = sock->Accept(addr, paddrlen);
     if (!new_sock) {
         *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
-        LOG_ERROR(Lib_Net, "error creating new socket for accepting");
+        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {}",
+                  Common::GetLastErrorMsg());
         return -1;
     }
     auto id = ++netcall->next_sock_id;
@@ -67,6 +75,8 @@ int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32
     return -1;
 }
 int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -83,6 +93,8 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
     return -1;
 }
 int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -99,6 +111,8 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
     return -1;
 }
 int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
+    LOG_DEBUG(Lib_Net, "s = {}, backlog = {}", s, backlog);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -114,8 +128,11 @@ int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
+
 int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                 u32 optlen) {
+    LOG_WARNING(Lib_Net, "netId = {}", s);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -124,6 +141,7 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
         return -1;
     }
     int returncode = sock->SetSocketOptions(level, optname, optval, optlen);
+    LOG_INFO(Lib_Net, "returncode = {}", returncode);
     if (returncode >= 0) {
         return returncode;
     }
@@ -176,6 +194,8 @@ int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     return -1;
 }
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -193,6 +213,8 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
 }
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen) {
+    LOG_WARNING(Lib_Net, "s = {}, len = {}, flags = {:#x}, addrlen = {}", s, len, flags, addrlen);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -214,6 +236,9 @@ int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags)
 }
 int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen) {
+    // LOG_INFO(Lib_Net, "s = {}, buf = {:#x}, len = {}, flags = {:#x}", s,
+    // reinterpret_cast<u64>(buf), len, flags);
+
     auto* netcall = Common::Singleton<NetInternal>::Instance();
     auto sock = netcall->FindSocket(s);
     if (!sock) {
@@ -226,7 +251,7 @@ int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    // LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
