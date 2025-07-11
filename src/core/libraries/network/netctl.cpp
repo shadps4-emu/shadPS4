@@ -219,6 +219,27 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         }
         break;
     }
+    case ORBIS_NET_CTL_INFO_PRIMARY_DNS:
+        strcpy(info->primary_dns, "1.1.1.1");
+        break;
+    case ORBIS_NET_CTL_INFO_SECONDARY_DNS:
+        strcpy(info->secondary_dns, "1.1.1.1");
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG:
+        info->http_proxy_config = 0;
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_SERVER:
+        strcpy(info->http_proxy_server, "0.0.0.0");
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_PORT:
+        info->http_proxy_port = 0;
+        break;
+    case ORBIS_NET_CTL_INFO_IP_CONFIG:
+        info->ip_config = 1; // static
+        break;
+    case ORBIS_NET_CTL_INFO_DHCP_HOSTNAME:
+        // info-> = ;
+        break;
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }
