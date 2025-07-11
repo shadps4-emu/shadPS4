@@ -1979,6 +1979,24 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
+U8U16U32U64 IR::IREmitter::SConvert(size_t result_bitsize, const U8U16U32U64& value) {
+    switch (result_bitsize) {
+    case 32:
+        switch (value.Type()) {
+        case Type::U8:
+            return Inst<U32>(Opcode::ConvertS32S8, value);
+        case Type::U16:
+            return Inst<U32>(Opcode::ConvertS32S16, value);
+        default:
+            break;
+        }
+    default:
+        break;
+    }
+    throw NotImplementedException("Signed Conversion from {} to {} bits", value.Type(),
+                                  result_bitsize);
+}
+
 F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
     switch (result_bitsize) {
     case 16:
