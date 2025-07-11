@@ -633,8 +633,17 @@ int PS4_SYSV_ABI sceSslFreeSslCertName() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSslGetCaCerts() {
+struct OrbisSslCaCerts {
+    void* certs;
+    u64 num;
+    void* pool;
+};
+
+int PS4_SYSV_ABI sceSslGetCaCerts(int sslCtxId, OrbisSslCaCerts* certs) {
     LOG_ERROR(Lib_Ssl, "(STUBBED) called");
+    certs->certs = nullptr;
+    certs->num = 0;
+    certs->pool = nullptr;
     return ORBIS_OK;
 }
 
