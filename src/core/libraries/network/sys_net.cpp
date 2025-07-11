@@ -4,6 +4,7 @@
 #include <common/assert.h>
 #include <common/logging/log.h>
 #include <core/libraries/kernel/kernel.h>
+#include "common/error.h"
 #include "common/singleton.h"
 #include "net_error.h"
 #include "sockets.h"
@@ -145,9 +146,16 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
     case ORBIS_NET_SOCK_DGRAM:
-    case ORBIS_NET_SOCK_RAW:
-        sock = std::make_shared<PosixSocket>(family, type, protocol);
+    case ORBIS_NET_SOCK_RAW: {
+        const auto typed_socket = std::make_shared<PosixSocket>(family, type, protocol);
+        if (!typed_socket->IsValid()) {
+            *Libraries::Kernel::__Error() = ORBIS_NET_EPROTONOSUPPORT;
+            return -1;
+        }
+
+        sock = std::move(typed_socket);
         break;
+    }
     case ORBIS_NET_SOCK_DGRAM_P2P:
     case ORBIS_NET_SOCK_STREAM_P2P:
         sock = std::make_shared<P2PSocket>(family, type, protocol);
