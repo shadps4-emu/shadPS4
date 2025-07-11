@@ -96,7 +96,9 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackV6() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallback() {
-    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+
+    netctl.CheckCallback();
     return ORBIS_OK;
 }
 
@@ -304,7 +306,7 @@ int PS4_SYSV_ABI sceNetCtlGetWifiType() {
 }
 
 int PS4_SYSV_ABI sceNetCtlInit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
     return ORBIS_OK;
 }
 
@@ -317,12 +319,17 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, 
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
+
     s32 result = netctl.RegisterCallback(func, arg);
+
     if (result < 0) {
+        LOG_DEBUG(Lib_NetCtl, "failed with {:#x}", result);
         return result;
     } else {
+        LOG_DEBUG(Lib_NetCtl, "*cid = {}", result);
         *cid = result;
     }
+
     return ORBIS_OK;
 }
 
@@ -392,7 +399,9 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit() {
-    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+
+    netctl.CheckNpToolkitCallback();
     return ORBIS_OK;
 }
 
@@ -406,10 +415,14 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpT
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
+
     s32 result = netctl.RegisterNpToolkitCallback(func, arg);
+
     if (result < 0) {
+        LOG_WARNING(Lib_NetCtl, "failed with {:#x}", result);
         return result;
     } else {
+        LOG_DEBUG(Lib_NetCtl, "*cid = {}", result);
         *cid = result;
     }
     return ORBIS_OK;
