@@ -2545,14 +2545,18 @@ struct NpStateCallbackForNpToolkit {
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
 int PS4_SYSV_ABI sceNpCheckCallbackForLib() {
-    LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
+    LOG_DEBUG(Lib_NpManager, "called");
+
+    const auto state = Config::getPSNSignedIn() ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
+
+    NpStateCbForNp.func(1, state, NpStateCbForNp.userdata);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
                                                       void* userdata) {
     static int id = 0;
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    LOG_WARNING(Lib_NpManager, "(DUMMY) called");
     NpStateCbForNp.func = callback;
     NpStateCbForNp.userdata = userdata;
     return id;
