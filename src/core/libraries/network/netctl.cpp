@@ -161,6 +161,8 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
+    LOG_DEBUG(Lib_NetCtl, "code = {}", code);
+
     switch (code) {
     case ORBIS_NET_CTL_INFO_DEVICE:
         info->device = ORBIS_NET_CTL_DEVICE_WIRED;
@@ -174,7 +176,8 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         info->mtu = 1500; // default value
         break;
     case ORBIS_NET_CTL_INFO_LINK:
-        info->link = ORBIS_NET_CTL_LINK_DISCONNECTED;
+        info->link = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_LINK_CONNECTED
+                                                       : ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
     case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
         strcpy(info->ip_address,
