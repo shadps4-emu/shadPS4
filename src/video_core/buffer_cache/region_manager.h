@@ -5,7 +5,6 @@
 
 #include "common/config.h"
 #include "common/div_ceil.h"
-#include "common/logging/log.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
@@ -67,6 +66,20 @@ public:
             return cpu;
         } else if constexpr (type == Type::GPU) {
             return gpu;
+        }
+    }
+
+    template <Type type, bool enable>
+    void PerformDeferredProtections() {
+        bool was_deferred = True(deferred_protection & type);
+        if (!was_deferred) {
+            return;
+        }
+        deferred_protection &= ~type;
+        if constexpr (type == Type::CPU) {
+            UpdateProtection<!enable, false>();
+        } else if constexpr (type == Type::GPU) {
+            UpdateProtection<enable, true>();
         }
     }
 
@@ -186,6 +199,7 @@ private:
 
     PageManager* tracker;
     VAddr cpu_addr = 0;
+    Type deferred_protection = Type::None;
     RegionBits cpu;
     RegionBits gpu;
     RegionBits writeable;
