@@ -32,7 +32,7 @@ namespace {
         if (callback) {
             callback(transfer);
         } else {
-            LOG_WARNING(Lib_Usbd, "No registered callback for USB transfer {:p}");
+            LOG_WARNING(Lib_Usbd, "No registered callback for USB transfer");
         }
     }
 }
