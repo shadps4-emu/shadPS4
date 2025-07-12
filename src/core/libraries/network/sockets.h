@@ -51,6 +51,7 @@ struct Socket {
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
     virtual bool IsValid() const = 0;
     virtual net_socket Native() const = 0;
     std::mutex m_mutex;
@@ -81,6 +82,7 @@ struct PosixSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     bool IsValid() const override {
         return sock != -1;
     }
@@ -102,6 +104,7 @@ struct P2PSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     bool IsValid() const override {
         return true;
     }
