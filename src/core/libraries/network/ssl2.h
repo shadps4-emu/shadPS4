@@ -10,5 +10,5 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Ssl2 {
-void RegisterlibSceSsl2(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Ssl2

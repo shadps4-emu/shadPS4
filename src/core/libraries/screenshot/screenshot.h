@@ -26,5 +26,5 @@ int PS4_SYSV_ABI sceScreenShotSetOverlayImageWithOrigin();
 int PS4_SYSV_ABI sceScreenShotSetParam();
 int PS4_SYSV_ABI sceScreenShotSetDrcParam();
 
-void RegisterlibSceScreenShot(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::ScreenShot

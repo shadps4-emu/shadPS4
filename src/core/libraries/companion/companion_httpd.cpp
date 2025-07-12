@@ -102,7 +102,7 @@ s32 PS4_SYSV_ABI sceCompanionHttpdUnregisterRequestCallback() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceCompanionHttpd(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8pWltDG7h6A", "libSceCompanionHttpd", 1, "libSceCompanionHttpd", 1, 1,
                  sceCompanionHttpdAddHeader);
     LIB_FUNCTION("B-QBMeFdNgY", "libSceCompanionHttpd", 1, "libSceCompanionHttpd", 1, 1,

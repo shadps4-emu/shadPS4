@@ -220,5 +220,5 @@ int PS4_SYSV_ABI VLONG_freeVlongQueue();
 int PS4_SYSV_ABI Func_22E76E60BC0587D7();
 int PS4_SYSV_ABI Func_28F8791A771D39C7();
 
-void RegisterlibSceSsl(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Ssl

@@ -139,7 +139,7 @@ Status PS4_SYSV_ABI sceSaveDataDialogUpdateStatus() {
     return g_status;
 }
 
-void RegisterlibSceSaveDataDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fH46Lag88XY", "libSceSaveDataDialog", 1, "libSceSaveDataDialog", 1, 1,
                  sceSaveDataDialogClose);
     LIB_FUNCTION("yEiJ-qqr6Cg", "libSceSaveDataDialog", 1, "libSceSaveDataDialog", 1, 1,

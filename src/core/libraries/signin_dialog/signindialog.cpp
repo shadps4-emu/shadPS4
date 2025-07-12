@@ -44,7 +44,7 @@ s32 PS4_SYSV_ABI sceSigninDialogTerminate() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceSigninDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mlYGfmqE3fQ", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,
                  sceSigninDialogInitialize);
     LIB_FUNCTION("JlpJVoRWv7U", "libSceSigninDialog", 1, "libSceSigninDialog", 1, 1,

@@ -73,7 +73,7 @@ s32 PS4_SYSV_ABI sceNpAuthWaitAsync() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNpAuth(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("KxGkOrQJTqY", "libSceNpAuthCompat", 1, "libSceNpAuth", 1, 1,
                  sceNpAuthGetAuthorizationCode);
     LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuthCompat", 1, "libSceNpAuth", 1, 1, sceNpAuthGetIdToken);

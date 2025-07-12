@@ -29,5 +29,5 @@ s32 PS4_SYSV_ABI sceCompanionUtilInitialize();
 s32 PS4_SYSV_ABI sceCompanionUtilOptParamInitialize();
 s32 PS4_SYSV_ABI sceCompanionUtilTerminate();
 
-void RegisterlibSceCompanionUtil(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::CompanionUtil

@@ -1942,7 +1942,7 @@ int PS4_SYSV_ABI sceNetEmulationSet() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNet(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZRAJo-A-ukc", "libSceNet", 1, "libSceNet", 1, 1, in6addr_any);
     LIB_FUNCTION("XCuA-GqjA-k", "libSceNet", 1, "libSceNet", 1, 1, in6addr_loopback);
     LIB_FUNCTION("VZgoeBxPXUQ", "libSceNet", 1, "libSceNet", 1, 1, sce_net_dummy);

@@ -289,7 +289,7 @@ int PS4_SYSV_ABI sceHttp2WaitAsync() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceHttp2(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AS45QoYHjc4", "libSceHttp2", 1, "libSceHttp2", 1, 1, _Z5dummyv);
     LIB_FUNCTION("IZ-qjhRqvjk", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AbortRequest);
     LIB_FUNCTION("flPxnowtvWY", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AddCookie);

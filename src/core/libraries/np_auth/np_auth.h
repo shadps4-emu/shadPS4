@@ -25,5 +25,5 @@ s32 PS4_SYSV_ABI sceNpAuthPollAsync();
 s32 PS4_SYSV_ABI sceNpAuthSetTimeout();
 s32 PS4_SYSV_ABI sceNpAuthWaitAsync();
 
-void RegisterlibSceNpAuth(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpAuth

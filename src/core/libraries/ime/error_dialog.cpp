@@ -190,7 +190,7 @@ Status PS4_SYSV_ABI sceErrorDialogUpdateStatus() {
     return g_status;
 }
 
-void RegisterlibSceErrorDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ekXHb1kDBl0", "libSceErrorDialog", 1, "libSceErrorDialog", 1, 1,
                  sceErrorDialogClose);
     LIB_FUNCTION("t2FvHRXzgqk", "libSceErrorDialog", 1, "libSceErrorDialog", 1, 1,

@@ -52,5 +52,5 @@ s32 PS4_SYSV_ABI sceVoiceVADAdjustment();
 s32 PS4_SYSV_ABI sceVoiceVADSetVersion();
 s32 PS4_SYSV_ABI sceVoiceWriteToIPort();
 
-void RegisterlibSceVoice(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Voice

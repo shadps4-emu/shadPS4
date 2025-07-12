@@ -104,5 +104,5 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
                                               OrbisVideodecResourceInfo* pRsrcInfoOut);
 int PS4_SYSV_ABI sceVideodecReset(OrbisVideodecCtrl* pCtrlIn);
 
-void RegisterlibSceVideodec(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Videodec

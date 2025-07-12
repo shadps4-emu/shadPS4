@@ -1723,7 +1723,7 @@ int PS4_SYSV_ABI Func_02E4C4D201716422() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceSaveData(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("dQ2GohUHXzk", "libSceSaveData", 1, "libSceSaveData", 1, 1, sceSaveDataAbort);
     LIB_FUNCTION("z1JA8-iJt3k", "libSceSaveData", 1, "libSceSaveData", 1, 1, sceSaveDataBackup);
     LIB_FUNCTION("kLJQ3XioYiU", "libSceSaveData", 1, "libSceSaveData", 1, 1,

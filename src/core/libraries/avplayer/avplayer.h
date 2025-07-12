@@ -290,6 +290,6 @@ enum class SceAvPlayerAvSyncMode {
 
 using SceAvPlayerLogCallback = int PS4_SYSV_ABI (*)(void* p, const char* format, va_list args);
 
-void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::AvPlayer

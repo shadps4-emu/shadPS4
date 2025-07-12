@@ -478,7 +478,7 @@ int PS4_SYSV_ABI Func_D56B43060720B1E0() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceUsbd(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0ktE1PhzGFU", "libSceUsbd", 1, "libSceUsbd", 1, 1, sceUsbdAllocTransfer);
     LIB_FUNCTION("BKMEGvfCPyU", "libSceUsbd", 1, "libSceUsbd", 1, 1, sceUsbdAttachKernelDriver);
     LIB_FUNCTION("fotb7DzeHYw", "libSceUsbd", 1, "libSceUsbd", 1, 1, sceUsbdBulkTransfer);

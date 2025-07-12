@@ -278,7 +278,7 @@ s32 PS4_SYSV_ABI sceAvPlayerVprintf(const char* format, va_list args) {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("KMcEa+rHsIo", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerAddSource);
     LIB_FUNCTION("x8uvuFOPZhU", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
                  sceAvPlayerAddSourceEx);

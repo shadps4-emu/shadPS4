@@ -2563,7 +2563,7 @@ int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNpManager(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("70N4VzVCpQg", "libSceNpManagerForSys", 1, "libSceNpManager", 1, 1,
                  Func_EF4378573542A508);
     LIB_FUNCTION("pHLjntY0psg", "libSceNpManager", 1, "libSceNpManager", 1, 1,

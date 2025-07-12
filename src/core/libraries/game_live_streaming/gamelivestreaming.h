@@ -77,5 +77,5 @@ int PS4_SYSV_ABI sceGameLiveStreamingStopSocialFeedbackMessageFiltering();
 int PS4_SYSV_ABI sceGameLiveStreamingTerminate();
 int PS4_SYSV_ABI sceGameLiveStreamingUnregisterCallback();
 
-void RegisterlibSceGameLiveStreaming(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::GameLiveStreaming

@@ -336,5 +336,5 @@ int PS4_SYSV_ABI Func_0E707A589F751C68();
 int PS4_SYSV_ABI sceNetEmulationGet();
 int PS4_SYSV_ABI sceNetEmulationSet();
 
-void RegisterlibSceNet(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Net

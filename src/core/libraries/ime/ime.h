@@ -68,6 +68,6 @@ int PS4_SYSV_ABI sceImeVshUpdate();
 int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
-void RegisterlibSceIme(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Ime

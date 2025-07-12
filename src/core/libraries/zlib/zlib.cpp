@@ -172,7 +172,7 @@ s32 PS4_SYSV_ABI sceZlibFinalize() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceZlib(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInitialize);
     LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibFinalize);
     LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInflate);

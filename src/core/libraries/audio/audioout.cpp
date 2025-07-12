@@ -596,7 +596,7 @@ int PS4_SYSV_ABI sceAudioOutSetSystemDebugState() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAudioOut(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("cx2dYFbzIAg", "libSceAudioOutDeviceService", 1, "libSceAudioOut", 1, 1,
                  sceAudioOutDeviceIdOpen);
     LIB_FUNCTION("tKumjQSzhys", "libSceAudioDeviceControl", 1, "libSceAudioOut", 1, 1,

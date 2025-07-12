@@ -542,5 +542,5 @@ int PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpT
                                                       void* userdata);
 int PS4_SYSV_ABI sceNpUnregisterStateCallbackForToolkit();
 
-void RegisterlibSceNpManager(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpManager

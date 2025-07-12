@@ -246,7 +246,7 @@ int PS4_SYSV_ABI sceGameLiveStreamingUnregisterCallback() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceGameLiveStreaming(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("caqgDl+V9qA", "libSceGameLiveStreaming_debug", 1, "libSceGameLiveStreaming", 1, 1,
                  sceGameLiveStreamingStartDebugBroadcast);
     LIB_FUNCTION("0i8Lrllxwow", "libSceGameLiveStreaming_debug", 1, "libSceGameLiveStreaming", 1, 1,

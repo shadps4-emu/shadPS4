@@ -369,7 +369,7 @@ int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAppContent(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AS45QoYHjc4", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1, _Z5dummyv);
     LIB_FUNCTION("ZiATpP9gEkA", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
                  sceAppContentAddcontDelete);

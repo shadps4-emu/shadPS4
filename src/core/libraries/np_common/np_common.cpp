@@ -6129,7 +6129,7 @@ int PS4_SYSV_ABI Func_FFF4A3E279FB44A7() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("i8UmXTSq7N4", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1, sceNpCmpNpId);
     LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
                  sceNpCmpNpIdInOrder);

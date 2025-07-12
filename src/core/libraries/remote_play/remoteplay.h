@@ -58,5 +58,5 @@ int PS4_SYSV_ABI sceRemoteplaySetRpMode();
 int PS4_SYSV_ABI sceRemoteplayTerminate();
 int PS4_SYSV_ABI Func_1D5EE365ED5FADB3();
 
-void RegisterlibSceRemoteplay(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Remoteplay

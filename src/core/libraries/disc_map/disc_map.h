@@ -18,5 +18,5 @@ int PS4_SYSV_ABI Func_8A828CAEE7EDD5E9(char* path, s64 offset, s64 nbytes, int* 
                                        int* ret2);
 int PS4_SYSV_ABI Func_E7EBCE96E92F91F8();
 
-void RegisterlibSceDiscMap(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::DiscMap

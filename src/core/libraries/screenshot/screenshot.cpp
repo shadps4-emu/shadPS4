@@ -78,7 +78,7 @@ int PS4_SYSV_ABI sceScreenShotSetDrcParam() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceScreenShot(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AS45QoYHjc4", "libSceScreenShot", 1, "libSceScreenShot", 0, 9, _Z5dummyv);
     LIB_FUNCTION("JuMLLmmvRgk", "libSceScreenShot", 1, "libSceScreenShot", 0, 9,
                  sceScreenShotCapture);

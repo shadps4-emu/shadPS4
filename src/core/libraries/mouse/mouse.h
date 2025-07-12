@@ -25,5 +25,5 @@ int PS4_SYSV_ABI sceMouseSetHandType();
 int PS4_SYSV_ABI sceMouseSetPointerSpeed();
 int PS4_SYSV_ABI sceMouseSetProcessPrivilege();
 
-void RegisterlibSceMouse(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Mouse

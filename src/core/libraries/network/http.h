@@ -141,5 +141,5 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize)
 int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in);
 int PS4_SYSV_ABI sceHttpWaitRequest();
 
-void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http

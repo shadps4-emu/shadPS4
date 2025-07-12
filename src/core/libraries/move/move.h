@@ -17,5 +17,5 @@ int PS4_SYSV_ABI sceMoveReadStateRecent();
 int PS4_SYSV_ABI sceMoveTerm();
 int PS4_SYSV_ABI sceMoveInit();
 
-void RegisterlibSceMove(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Move

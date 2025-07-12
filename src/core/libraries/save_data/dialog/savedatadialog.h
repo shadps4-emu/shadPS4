@@ -29,5 +29,5 @@ sceSaveDataDialogProgressBarSetValue(OrbisSaveDataDialogProgressBarTarget target
 CommonDialog::Error PS4_SYSV_ABI sceSaveDataDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceSaveDataDialogUpdateStatus();
 
-void RegisterlibSceSaveDataDialog(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SaveData::Dialog

@@ -1023,7 +1023,7 @@ int PS4_SYSV_ABI Func_FA7A2DD770447552() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNpTrophy(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("aTnHs7W-9Uk", "libSceNpTrophy", 1, "libSceNpTrophy", 1, 1,
                  sceNpTrophyAbortHandle);
     LIB_FUNCTION("cqGkYAN-gRw", "libSceNpTrophy", 1, "libSceNpTrophy", 1, 1,

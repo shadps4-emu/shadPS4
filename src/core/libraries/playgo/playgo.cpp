@@ -385,7 +385,7 @@ s32 PS4_SYSV_ABI scePlayGoTerminate() {
     return ORBIS_OK;
 }
 
-void RegisterlibScePlayGo(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("uEqMfMITvEI", "libSceDbgPlayGo", 1, "libScePlayGo", 1, 0,
                  sceDbgPlayGoRequestNextChunk);
     LIB_FUNCTION("vU+FqrH+pEY", "libSceDbgPlayGo", 1, "libScePlayGo", 1, 0, sceDbgPlayGoSnapshot);

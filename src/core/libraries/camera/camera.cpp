@@ -410,7 +410,7 @@ s32 PS4_SYSV_ABI sceCameraStopByHandle() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceCamera(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("QhjrPkRPUZQ", "libSceCamera", 1, "libSceCamera", 1, 1, sceCameraAccGetData);
     LIB_FUNCTION("UFonL7xopFM", "libSceCamera", 1, "libSceCamera", 1, 1, sceCameraAudioClose);
     LIB_FUNCTION("fkZE7Hup2ro", "libSceCamera", 1, "libSceCamera", 1, 1, sceCameraAudioGetData);

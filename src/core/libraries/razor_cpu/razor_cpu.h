@@ -13,5 +13,5 @@ class SymbolsResolver;
 }
 
 namespace Libraries::RazorCpu {
-void RegisterlibSceRazorCpu(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::RazorCpu
