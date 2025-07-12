@@ -337,7 +337,7 @@ void PS4_SYSV_ABI sched_yield() {
 }
 
 int PS4_SYSV_ABI posix_getpid() {
-#ifdef WIN32
+#ifdef _WIN32
     return GetCurrentProcessId();
 #else
     return getpid();

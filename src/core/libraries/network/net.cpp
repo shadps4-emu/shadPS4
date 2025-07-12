@@ -2103,7 +2103,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Cidi9Y65mP8", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetSockInfo6);
     LIB_FUNCTION("hoOAofhhRvE", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetsockname);
     LIB_FUNCTION("xphrZusl78E", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetsockopt);
-    LIB_FUNCTION("6O8EwYOgH9Y", "libScePosix", 1, "libkernel", 1, 1, sys_getsockopt);
     LIB_FUNCTION("GA5ZDaLtUBE", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetStatisticsInfo);
     LIB_FUNCTION("9mIcUExH34w", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetStatisticsInfoInternal);
     LIB_FUNCTION("p2vxsE2U3RQ", "libSceNet", 1, "libSceNet", 1, 1, sceNetGetSystemTime);
