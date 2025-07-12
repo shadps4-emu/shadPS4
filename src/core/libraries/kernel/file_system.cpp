@@ -23,6 +23,7 @@
 #include "core/memory.h"
 #include "kernel.h"
 
+#include <sys/select.h>
 #include <sys/stat.h>
 
 namespace D = Core::Devices;
@@ -1093,7 +1094,93 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
               nfds, reinterpret_cast<u64>(readfds), reinterpret_cast<u64>(writefds),
               reinterpret_cast<u64>(exceptfds), reinterpret_cast<u64>(timeout));
 
-    return ORBIS_OK;
+    LOG_INFO(Kernel_Fs, "nfds = {}", nfds);
+
+    fd_set read_host, write_host, except_host;
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+    std::map<int, int> host_to_guest;
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int max_fd = 0;
+
+    for (auto i = 0; i < nfds; ++i) {
+        auto read = readfds && FD_ISSET(i, readfds);
+        auto write = writefds && FD_ISSET(i, writefds);
+        auto except = exceptfds && FD_ISSET(i, exceptfds);
+        if (read || write || except) {
+            LOG_INFO(Kernel_Fs, "guest fd {} expected", i);
+            auto* file = h->GetFile(i);
+            if (file == nullptr ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+                LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+                *__Error() = POSIX_EBADF;
+                return -1;
+            }
+
+            int fd = [&] {
+                switch (file->type) {
+                case Core::FileSys::FileType::Regular:
+                    return static_cast<int>(file->f.GetFileMapping());
+                case Core::FileSys::FileType::Socket:
+                    return file->socket->Native();
+                default:
+                    UNREACHABLE();
+                }
+            }();
+            host_to_guest.emplace(fd, i);
+
+            max_fd = std::max(max_fd, fd);
+
+            if (read) {
+                FD_SET(fd, &read_host);
+                continue;
+            }
+            if (write) {
+                FD_SET(fd, &write_host);
+                continue;
+            }
+            if (except) {
+                FD_SET(fd, &except_host);
+                continue;
+            }
+        }
+    }
+
+    LOG_INFO(Kernel_Fs, "calling select");
+    int ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
+    LOG_INFO(Kernel_Fs, "select = {}", ret);
+
+    if (ret > 0) {
+        if (readfds) {
+            FD_ZERO(readfds);
+        }
+        if (writefds) {
+            FD_ZERO(writefds);
+        }
+        if (exceptfds) {
+            FD_ZERO(exceptfds);
+        }
+
+        for (auto i = 0; i < max_fd + 1; ++i) {
+            if (FD_ISSET(i, &read_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for reading", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], readfds);
+            }
+            if (FD_ISSET(i, &write_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for writing", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], writefds);
+            }
+            if (FD_ISSET(i, &except_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for except", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], exceptfds);
+            }
+        }
+    }
+
+    return ret;
 }
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
