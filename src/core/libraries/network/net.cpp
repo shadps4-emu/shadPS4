@@ -1339,9 +1339,9 @@ int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
     return res;
 }
 
-int PS4_SYSV_ABI sceNetInetPtonEx() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetInetPtonEx(int af, const char* src, void* dst, int flags) {
+    LOG_WARNING(Lib_Net, "ignored flags, redirecting to sceNetInetPton");
+    return sceNetInetPton(af, src, dst);
 }
 
 int PS4_SYSV_ABI sceNetInetPtonWithScopeId() {
