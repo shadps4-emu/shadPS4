@@ -1686,9 +1686,25 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa6() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId resolverid, const char* hostname,
+                                         OrbisNetResolverInfo* info, int timeout, int retry, int flags) {
+    LOG_WARNING(Lib_Net, "redirected to sceNetResolverStartNtoa");
+
+    OrbisNetInAddr addr{};
+    auto result = sceNetResolverStartNtoa(resolverid, hostname, &addr, timeout, retry, flags);
+
+    if (result == ORBIS_OK) {
+        info->addrs[0] = {
+            .u = {
+                .addr = addr
+            },
+            .af = ORBIS_NET_AF_INET
+        };
+        info->records = 1;
+        info->recordsv4 = 1;
+    }
+
+    return result;
 }
 
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx() {
