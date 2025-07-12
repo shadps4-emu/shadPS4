@@ -581,7 +581,9 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones</translation>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones:
+
+%1</translation>
     </message>
     <message>
       <source>Press a button</source>
@@ -1218,7 +1220,9 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones:</translation>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones:
+
+%1</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
