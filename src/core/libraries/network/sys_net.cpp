@@ -77,10 +77,27 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     new_file->socket = new_sock;
     return handle;
 }
-int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+
+int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    auto sock = file->socket;
+    int returncode = sock->GetPeerName(addr, paddrlen);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    *Libraries::Kernel::__Error() = returncode;
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
+
 int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     LOG_WARNING(Lib_Net, "(DUMMY) called");
 

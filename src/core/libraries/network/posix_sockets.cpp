@@ -273,6 +273,23 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     return res;
 }
 
+int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
+    std::scoped_lock lock{m_mutex};
+    LOG_DEBUG(Lib_Net, "called");
+
+    sockaddr addr;
+    convertOrbisNetSockaddrToPosix(name, &addr);
+    if (name != nullptr) {
+        *namelen = sizeof(sockaddr_in);
+    }
+    int res = ::getpeername(sock, &addr, (socklen_t*)namelen);
+    if (res >= 0) {
+        convertPosixSockaddrToOrbis(&addr, name);
+        *namelen = sizeof(OrbisNetSockaddrIn);
+    }
+    return res;
+}
+
 #define CASE_SETSOCKOPT(opt)                                                                       \
     case ORBIS_NET_##opt:                                                                          \
         return ConvertReturnErrorCode(setsockopt(sock, level, opt, (const char*)optval, optlen))
