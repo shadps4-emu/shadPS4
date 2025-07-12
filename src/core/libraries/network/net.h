@@ -152,6 +152,24 @@ struct OrbisNetEpollEvent {
     OrbisNetEpollData data;
 };
 
+union OrbisNetAddrUnion {
+    OrbisNetInAddr addr;
+    u8 addr6[16];
+};
+
+struct OrbisNetResolverAddr {
+    OrbisNetAddrUnion u;
+    u32 af;
+    u32 pad[3];
+};
+
+struct OrbisNetResolverInfo {
+    OrbisNetResolverAddr addrs[10];
+    u32 records;
+    u32 recordsv4;
+    u32 pad[14];
+};
+
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
 int PS4_SYSV_ABI sce_net_dummy();
@@ -331,7 +349,8 @@ int PS4_SYSV_ABI sceNetResolverStartAton6();
 int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* hostname,
                                          OrbisNetInAddr* addr, int timeout, int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoa6();
-int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords();
+int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId resolverid, const char* hostname,
+                                         OrbisNetResolverInfo* info, int timeout, int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
 int PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, int flags);
 int PS4_SYSV_ABI sceNetSendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
