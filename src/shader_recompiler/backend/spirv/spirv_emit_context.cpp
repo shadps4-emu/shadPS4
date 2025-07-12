@@ -117,7 +117,9 @@ void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
     U8 = Name(TypeUInt(8), "u8_id");
+    S8 = Name(TypeSInt(8), "i8_id");
     U16 = Name(TypeUInt(16), "u16_id");
+    S16 = Name(TypeSInt(16), "i16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
         U16 = Name(TypeUInt(16), "u16_id");

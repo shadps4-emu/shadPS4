@@ -271,4 +271,16 @@ Id EmitConvertU32U8(EmitContext& ctx, Id value) {
     return ctx.OpUConvert(ctx.U32[1], value);
 }
 
+Id EmitConvertS32S8(EmitContext& ctx, Id value) {
+    const Id as_s8 = ctx.OpBitcast(ctx.S8, value);
+    const Id as_s32 = ctx.OpSConvert(ctx.S32[1], as_s8);
+    return ctx.OpBitcast(ctx.U32[1], as_s32);
+}
+
+Id EmitConvertS32S16(EmitContext& ctx, Id value) {
+    const Id as_s16 = ctx.OpBitcast(ctx.S16, value);
+    const Id as_s32 = ctx.OpSConvert(ctx.S32[1], as_s16);
+    return ctx.OpBitcast(ctx.U32[1], as_s32);
+}
+
 } // namespace Shader::Backend::SPIRV
