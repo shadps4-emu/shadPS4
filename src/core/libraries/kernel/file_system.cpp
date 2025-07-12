@@ -23,7 +23,11 @@
 #include "core/memory.h"
 #include "kernel.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/select.h>
+#endif
 #include <sys/stat.h>
 
 namespace D = Core::Devices;
