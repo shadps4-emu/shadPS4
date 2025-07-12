@@ -652,13 +652,6 @@ void load(const std::filesystem::path& path) {
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
-<<<<<<< HEAD
-=======
-
-        isConnectedToNetwork =
-            toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
-        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
->>>>>>> 5d62de46 (Config entry isConnectedToNetwork)
 
         isConnectedToNetwork =
             toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
