@@ -13,6 +13,11 @@ namespace Libraries::Ssl {
 
 struct OrbisSslCaCerts;
 
+struct OrbisSslCaList {
+    void* certs;
+    int certsNum;
+};
+
 int PS4_SYSV_ABI CA_MGMT_allocCertDistinguishedName();
 int PS4_SYSV_ABI CA_MGMT_certDistinguishedNameCompare();
 int PS4_SYSV_ABI CA_MGMT_convertKeyBlobToPKCS8Key();

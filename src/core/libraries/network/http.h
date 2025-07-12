@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/network/ssl.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -23,6 +24,8 @@ struct OrbisHttpUriElement {
     u16 port;
     u8 reserved[10];
 };
+
+using OrbisHttpsCaList = Libraries::Ssl::OrbisSslCaList;
 
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
@@ -120,7 +123,7 @@ int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize();
 int PS4_SYSV_ABI sceHttpSetSendTimeOut();
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList();
-int PS4_SYSV_ABI sceHttpsGetCaList();
+int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
 int PS4_SYSV_ABI sceHttpsGetSslError();
 int PS4_SYSV_ABI sceHttpsLoadCert();
 int PS4_SYSV_ABI sceHttpsSetMinSslVersion();
