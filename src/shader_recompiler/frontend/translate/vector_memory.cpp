@@ -258,18 +258,16 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     } else {
         IR::Value value;
         switch (scalar_width) {
-        case 8:
-            value = ir.LoadBufferU8(handle, address, buffer_info);
-            if (is_signed) {
-                value = ir.SConvert(32, IR::U8{value});
-            }
+        case 8: {
+            IR::U8 byte_val = ir.LoadBufferU8(handle, address, buffer_info);
+            value = is_signed ? ir.SConvert(32, byte_val) : ir.UConvert(32, byte_val);
             break;
-        case 16:
-            value = ir.LoadBufferU16(handle, address, buffer_info);
-            if (is_signed) {
-                value = ir.SConvert(32, IR::U16{value});
-            }
+        }
+        case 16: {
+            IR::U16 short_val = ir.LoadBufferU16(handle, address, buffer_info);
+            value = is_signed ? ir.SConvert(32, short_val) : ir.UConvert(32, short_val);
             break;
+        }
         case 32:
             value = ir.LoadBufferU32(num_dwords, handle, address, buffer_info);
             break;
