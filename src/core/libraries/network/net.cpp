@@ -16,6 +16,7 @@
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
@@ -761,7 +762,13 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         }
 
 #ifdef __linux__
-        const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
+        // const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
+        auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+        auto* file = h->GetFile(id);
+        if (!file || file->type != Core::FileSys::FileType::Socket) {
+            return -ORBIS_NET_EBADF;
+        }
+        const auto socket = file->socket;
         epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                     .data = {.fd = id}};
         ASSERT(epoll_ctl(epolls[epollid].epoll_fd, EPOLL_CTL_ADD, socket->Native(),
