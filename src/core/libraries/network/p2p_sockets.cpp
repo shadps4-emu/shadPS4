@@ -57,4 +57,9 @@ int P2PSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     return 0;
 }
 
+int P2PSocket::GetPeerName(OrbisNetSockaddr* addr, u32* namelen) {
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    return 0;
+}
+
 } // namespace Libraries::Net
