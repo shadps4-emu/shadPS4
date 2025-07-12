@@ -454,32 +454,8 @@
       <translation>使用個別遊戲組態</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Back</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>功能鍵（動作按鈕）</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>三角 / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>正方 / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>圖形 / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>交叉 / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>取消</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation type="unfinished">Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation type="unfinished">Triangle</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation type="unfinished">Square</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation type="unfinished">Circle</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation type="unfinished">Cross</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>最後更新</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation type="unfinished">Favorite</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO 檢視器： </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation type="unfinished">Add to Favorites</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1057,10 +1097,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>觸控板點擊</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>滑鼠操控操縱桿</translation>
     </message>
@@ -1153,10 +1189,6 @@
       <translation>無法儲存</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>任何唯一的鍵位都不能重複連結</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>按下按鍵</translation>
     </message>
@@ -1183,6 +1215,26 @@
     <message>
       <source>Cancel</source>
       <translation>取消</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1595,6 @@
       <translation>控制器</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>返回按鈕行為</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>圖形</translation>
     </message>
@@ -1783,10 +1831,6 @@
       <translation>空閒滑鼠指標隱藏逾時：\n閒置滑鼠指標隱藏自身之前的持續顯示時間（秒）。</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>返回按鈕行為：\n設定控制器&apos;的返回按鈕以模擬點擊 PS4 控制器觸控板上的指定位置。</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>顯示相容性資料：\n在表格顯視模式中顯示遊戲相容性資訊。啟用「啟動&quot;時更新相容性」以取得&quot;最新資訊。</translation>
     </message>
@@ -1809,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>始終</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>觸控板左側</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>觸控板右側</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>觸控板中間</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>無</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

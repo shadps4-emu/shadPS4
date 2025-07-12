@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader::Optimization {
@@ -94,6 +95,10 @@ void ReadLaneEliminationPass(IR::Program& program) {
             if (inst.GetOpcode() != IR::Opcode::ReadLane) {
                 continue;
             }
+            if (!inst.Arg(1).IsImmediate()) {
+                continue;
+            }
+
             const u32 lane = inst.Arg(1).U32();
             IR::Inst* prod = inst.Arg(0).InstRecursive();
 

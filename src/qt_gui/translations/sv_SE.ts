@@ -158,7 +158,7 @@
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>Inga fusk hittades för detta spel i denna version av det valda förrådet. Prova ett annat förråd eller en annan version av spelet</translation>
+      <translation>Inga fusk hittades för detta spel i denna version av det valda förrådet. Prova ett annat förråd eller en annan version av spelet.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
@@ -166,7 +166,7 @@
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Du har hämtat ner fusken för denna version av spelet från valt förråd. Du kan försöka att hämta från andra förråd, om de är tillgängliga så kan det vara möjligt att använda det genom att välja det genom att välja filen från listan</translation>
+      <translation>Du har hämtat ner fusken för denna version av spelet från valt förråd. Du kan försöka att hämta från andra förråd, om de är tillgängliga så kan det vara möjligt att använda det genom att välja det genom att välja filen från listan.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
@@ -182,7 +182,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patchhämtningen är färdig! Alla patchar tillgängliga för alla spel har hämtats och de behövs inte hämtas individuellt för varje spel som med fusk. Om patchen inte dyker upp kan det bero på att den inte finns för det specifika serienumret och versionen av spelet</translation>
+      <translation>Patchhämtningen är färdig! Alla patchar tillgängliga för alla spel har hämtats och de behövs inte hämtas individuellt för varje spel som med fusk. Om patchen inte dyker upp kan det bero på att den inte finns för det specifika serienumret och versionen av spelet.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -261,7 +261,7 @@
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har uppnått denna gräns. Försök igen senare</translation>
+      <translation>Den automatiska uppdateraren tillåter upp till 60 uppdateringskontroller per timme.\nDu har uppnått denna gräns. Försök igen senare.</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
@@ -454,32 +454,8 @@
       <translation>Använd konfigurationer per spel</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Bakåt</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Handlingsknappar</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangel / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Fyrkant / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Cirkel / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Kryss / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>omappad</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Pekplatta vänster</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Pekplatta i mitten</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Pekplatta höger</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangel</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Fyrkant</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Cirkel</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kors</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbletta inmatningar är mappade till följande knappar:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Tryck på en knapp</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Rör analog spak</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Senast uppdaterad</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favorit</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO-visare för </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Ta bort från favoriter</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Lägg till i favoriter</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1057,10 +1097,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Klick på styrplatta</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus till styrspak</translation>
     </message>
@@ -1153,10 +1189,6 @@
       <translation>Kunde inte spara</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Kan inte binda någon unik inmatning fler än en gång</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Tryck på en tangent</translation>
     </message>
@@ -1183,6 +1215,26 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbla inmatningar har mappats till följande knappar:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Pekplatta vänster</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Pekplatta mitten</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Pekplatta höger</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1595,6 @@
       <translation>Handkontroller</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Beteende för bakåtknapp</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafik</translation>
     </message>
@@ -1728,47 +1776,47 @@
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Konsollspråk:\nStäller in språket som PS4-spelet använder.\nDet rekommenderas att ställa in detta till ett språk som spelet har stöd för, vilket kan skilja sig mellan regioner</translation>
+      <translation>Konsollspråk:\nStäller in språket som PS4-spelet använder.\nDet rekommenderas att ställa in detta till ett språk som spelet har stöd för, vilket kan skilja sig mellan regioner.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt</translation>
+      <translation>Emulatorspråk:\nStäller in språket för emulatorns användargränssnitt.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>Visa startskärm:\nVisar spelets startskärm (en speciell bild) när spelet startas</translation>
+      <translation>Visa startskärm:\nVisar spelets startskärm (en speciell bild) när spelet startas.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>Aktivera Discord Rich Presence:\nVisar emulatorikonen och relevant information på din Discord-profil</translation>
+      <translation>Aktivera Discord Rich Presence:\nVisar emulatorikonen och relevant information på din Discord-profil.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Användarnamn:\nStäller in PS4ans användarkonto, som kan visas av vissa spel</translation>
+      <translation>Användarnamn:\nStäller in PS4ans användarkonto, som kan visas av vissa spel.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
-      <translation>Trofényckel:\nNyckel som används för att avkryptera troféer. Måste hämtas från din konsoll (jailbroken).\nMåste innehålla endast hex-tecken</translation>
+      <translation>Trofényckel:\nNyckel som används för att avkryptera troféer. Måste hämtas från din konsoll (jailbroken).\nMåste innehålla endast hex-tecken.</translation>
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Loggtyp:\nStäller in huruvida synkronisering av utdata för loggfönstret för prestanda. Kan ha inverkan på emulationen</translation>
+      <translation>Loggtyp:\nStäller in huruvida synkronisering av utdata för loggfönstret för prestanda. Kan ha inverkan på emulationen.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Loggfilter:\nFiltrera loggen till att endast skriva ut specifik information.\nExempel: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNivåer: Trace, Debug, Info, Warning, Error, Critical - i den ordningen, en specifik nivå som tystar alla nivåer före den i listan och loggar allting efter den</translation>
+      <translation>Loggfilter:\nFiltrera loggen till att endast skriva ut specifik information.\nExempel: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nNivåer: Trace, Debug, Info, Warning, Error, Critical - i den ordningen, en specifik nivå som tystar alla nivåer före den i listan och loggar allting efter den.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Uppdatering:\nRelease: Officiella versioner som släpps varje månad som kan vara mycket utdaterade, men är mer pålitliga och testade.\nNightly: Utvecklingsversioner som har de senaste funktionerna och fixarna, men kan innehålla fel och är mindre stabila</translation>
+      <translation>Uppdatering:\nRelease: Officiella versioner som släpps varje månad som kan vara mycket utdaterade, men är mer pålitliga och testade.\nNightly: Utvecklingsversioner som har de senaste funktionerna och fixarna, men kan innehålla fel och är mindre stabila.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation>Bakgrundsbild:\nKontrollerar opaciteten för spelets bakgrundsbild</translation>
+      <translation>Bakgrundsbild:\nKontrollerar opaciteten för spelets bakgrundsbild.</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Spela upp titelmusik:\nOm ett spel har stöd för det kan speciell musik spelas upp från spelet i gränssnittet</translation>
+      <translation>Spela upp titelmusik:\nOm ett spel har stöd för det kan speciell musik spelas upp från spelet i gränssnittet.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
@@ -1776,27 +1824,23 @@
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Dölj pekare:\nVälj när muspekaren ska försvinna:\nAldrig: Du kommer alltid se muspekaren.\nOverksam: Ställ in en tid för när den ska försvinna efter den inte använts.\nAlltid: du kommer aldrig se muspekaren</translation>
+      <translation>Dölj pekare:\nVälj när muspekaren ska försvinna:\nAldrig: Du kommer alltid se muspekaren.\nOverksam: Ställ in en tid för när den ska försvinna efter den inte använts.\nAlltid: du kommer aldrig se muspekaren.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Dölj pekare vid overksam:\nLängden (sekunder) efter vilken som muspekaren som har varit overksam döljer sig själv</translation>
-    </message>
-    <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Beteende för bakåtknapp:\nStäller in handkontrollerns bakåtknapp för att emulera ett tryck på angivna positionen på PS4ns touchpad</translation>
+      <translation>Dölj pekare vid overksam:\nLängden (sekunder) efter vilken som muspekaren som har varit overksam döljer sig själv.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
-      <translation>Visa kompatibilitetsdata:\nVisar information om spelkompatibilitet i tabellvyn. Aktivera &quot;Uppdatera kompatibilitet vid uppstart&quot; för att få uppdaterad information</translation>
+      <translation>Visa kompatibilitetsdata:\nVisar information om spelkompatibilitet i tabellvyn. Aktivera &quot;Uppdatera kompatibilitet vid uppstart&quot; för att få uppdaterad information.</translation>
     </message>
     <message>
       <source>Update Compatibility On Startup:\nAutomatically update the compatibility database when shadPS4 starts.</source>
-      <translation>Uppdatera kompatibilitet vid uppstart:\nUppdatera automatiskt kompatibilitetsdatabasen när shadPS4 startar</translation>
+      <translation>Uppdatera kompatibilitet vid uppstart:\nUppdatera automatiskt kompatibilitetsdatabasen när shadPS4 startar.</translation>
     </message>
     <message>
       <source>Update Compatibility Database:\nImmediately update the compatibility database.</source>
-      <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt</translation>
+      <translation>Uppdatera kompatibilitetsdatabasen:\nUppdaterar kompatibilitetsdatabasen direkt.</translation>
     </message>
     <message>
       <source>Never</source>
@@ -1811,40 +1855,24 @@
       <translation>Alltid</translation>
     </message>
     <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad vänster</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad höger</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Touchpad mitten</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ingen</translation>
-    </message>
-    <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikenhet:\nFör system med flera GPUer kan du välja den GPU som emulatorn ska använda från rullgardinsmenyn,\neller välja &quot;Auto Select&quot; för att automatiskt bestämma det</translation>
+      <translation>Grafikenhet:\nFör system med flera GPUer kan du välja den GPU som emulatorn ska använda från rullgardinsmenyn,\neller välja &quot;Auto Select&quot; för att automatiskt bestämma det.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Bredd/Höjd:\nStäller in storleken för emulatorfönstret vid uppstart, som kan storleksändras under spelning.\nDetta är inte det samma som spelupplösningen</translation>
+      <translation>Bredd/Höjd:\nStäller in storleken för emulatorfönstret vid uppstart, som kan storleksändras under spelning.\nDetta är inte det samma som spelupplösningen.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider:\nBildfrekvensen som emulatorn uppdaterar vid multipliceras med detta tal. Ändra detta kan ha inverkan på saker, såsom ökad spelhastighet eller göra sönder kritisk spelfunktionalitet, som inte förväntar sig denna ändring</translation>
+      <translation>Vblank Divider:\nBildfrekvensen som emulatorn uppdaterar vid multipliceras med detta tal. Ändra detta kan ha inverkan på saker, såsom ökad spelhastighet eller göra sönder kritisk spelfunktionalitet, som inte förväntar sig denna ändring!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Aktivera Shaders Dumping:\nFör teknisk felsökning, sparar spelets shaders till en mapp när de renderas</translation>
+      <translation>Aktivera Shaders Dumping:\nFör teknisk felsökning, sparar spelets shaders till en mapp när de renderas.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Aktivera Null GPU:\nFör teknisk felsökning, inaktiverar spelrenderingen som om det inte fanns något grafikkort</translation>
+      <translation>Aktivera Null GPU:\nFör teknisk felsökning, inaktiverar spelrenderingen som om det inte fanns något grafikkort.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1852,31 +1880,31 @@
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>Spelmappar:\nListan över mappar att leta i efter installerade spel</translation>
+      <translation>Spelmappar:\nListan över mappar att leta i efter installerade spel.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Aktivera separat uppdateringsmapp:\nAktiverar installation av speluppdateringar till en separat mapp för enkel hantering.\nDetta kan manuellt skapas genom att lägga till den uppackade uppdateringen till spelmappen med namnet &quot;CUSA00000-UPDATE&quot; där CUSA ID matchar spelets id</translation>
+      <translation>Lägg till:\Lägg till en mapp till listan.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>Ta bort:\nTa bort en mapp från listan</translation>
+      <translation>Ta bort:\nTa bort en mapp från listan.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Aktivera felsökningsdumpning:\nSparar import och export av symboler och fil-header-information för aktuellt körande PS4-program till en katalog</translation>
+      <translation>Aktivera felsökningsdumpning:\nSparar import och export av symboler och fil-header-information för aktuellt körande PS4-program till en katalog.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivera Vulkan Validation Layers:\nAktiverar ett system som validerar tillståndet för Vulkan renderer och loggar information om dess interna tillstånd.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen</translation>
+      <translation>Aktivera Vulkan Validation Layers:\nAktiverar ett system som validerar tillståndet för Vulkan renderer och loggar information om dess interna tillstånd.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivera Vulkan Synchronization Validation:\nAktiverar ett system som validerar timing för Vulkan rendering tasks.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen</translation>
+      <translation>Aktivera Vulkan Synchronization Validation:\nAktiverar ett system som validerar timing för Vulkan rendering tasks.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>Aktivera RenderDoc-felsökning:\nOm aktiverad kommer emulatorn att tillhandahålla kompatibilitet med Renderdoc för att tillåta fångst och analys för aktuell renderad bildruta</translation>
+      <translation>Aktivera RenderDoc-felsökning:\nOm aktiverad kommer emulatorn att tillhandahålla kompatibilitet med Renderdoc för att tillåta fångst och analys för aktuell renderad bildruta.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
@@ -1884,27 +1912,27 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Krashdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-tillståndet vid tid för kraschen.\nAnvändbart för felsökning av &apos;Device lost&apos;-fel. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för Värd OCH Gäst.\nFungerar inte på Intel GPUer.\nDu behöver aktivera Vulkan Validation Layers och Vulkan SDK för att detta ska fungera</translation>
+      <translation>Krashdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-tillståndet vid tid för kraschen.\nAnvändbart för felsökning av &apos;Device lost&apos;-fel. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för Värd OCH Gäst.\nFungerar inte på Intel GPUer.\nDu behöver aktivera Vulkan Validation Layers och Vulkan SDK för att detta ska fungera.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
-      <translation>Kopiera GPU-buffertar:\nGör att man kan komma runt race conditions som involverar GPU submits.\nKan eller kan inte hjälpa med PM4 type 0-kraschar</translation>
+      <translation>Kopiera GPU-buffertar:\nGör att man kan komma runt race conditions som involverar GPU submits.\nKan eller kan inte hjälpa med PM4 type 0-kraschar.</translation>
     </message>
     <message>
       <source>Host Debug Markers:\nInserts emulator-side information like markers for specific AMDGPU commands around Vulkan commands, as well as giving resources debug names.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Felsökningsmarkörer för värd:\nInfogar informationsliknande markörer i emulatorn för specifika AMDGPU-kommandon runt Vulkan-kommandon, så väl som ger resurser felsökningsnamn.\nOm du har detta aktiverat bör du aktivera Kraschdiagnostik.\nAnvändbart för  program som RenderDoc</translation>
+      <translation>Felsökningsmarkörer för värd:\nInfogar informationsliknande markörer i emulatorn för specifika AMDGPU-kommandon runt Vulkan-kommandon, så väl som ger resurser felsökningsnamn.\nOm du har detta aktiverat bör du aktivera Kraschdiagnostik.\nAnvändbart för  program som RenderDoc.</translation>
     </message>
     <message>
       <source>Guest Debug Markers:\nInserts any debug markers the game itself has added to the command buffer.\nIf you have this enabled, you should enable Crash Diagnostics.\nUseful for programs like RenderDoc.</source>
-      <translation>Felsökningsmarkörer för gäst:\nInfogar felsökningsmarkörer som själva spelet har lagt till i kommandobufferten.\nOm du har aktiverat detta bör du aktivera Kraschdiagnostik.\nAnvändbart för program som RenderDoc</translation>
+      <translation>Felsökningsmarkörer för gäst:\nInfogar felsökningsmarkörer som själva spelet har lagt till i kommandobufferten.\nOm du har aktiverat detta bör du aktivera Kraschdiagnostik.\nAnvändbart för program som RenderDoc.</translation>
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation>Sökväg för sparat data:\nSökvägen där spelets sparade data kommer att sparas</translation>
+      <translation>Sökväg för sparat data:\nSökvägen där spelets sparade data kommer att sparas.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
-      <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data</translation>
+      <translation>Bläddra:\nBläddra efter en mapp att ställa in som sökväg för sparat data.</translation>
     </message>
     <message>
       <source>Release</source>

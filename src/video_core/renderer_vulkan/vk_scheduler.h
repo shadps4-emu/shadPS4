@@ -26,8 +26,8 @@ struct RenderState {
     u32 num_color_attachments{};
     bool has_depth{};
     bool has_stencil{};
-    u32 width = std::numeric_limits<u32>::max();
-    u32 height = std::numeric_limits<u32>::max();
+    u32 width{};
+    u32 height{};
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
@@ -317,6 +317,9 @@ public:
     /// Waits for the given tick to trigger on the GPU.
     void Wait(u64 tick);
 
+    /// Attempts to execute operations whose tick the GPU has caught up with.
+    void PopPendingOperations();
+
     /// Starts a new rendering scope with provided state.
     void BeginRendering(const RenderState& new_state);
 
@@ -328,6 +331,7 @@ public:
         return render_state;
     }
 
+    /// Returns the current pipeline dynamic state tracking.
     DynamicState& GetDynamicState() {
         return dynamic_state;
     }
@@ -343,7 +347,11 @@ public:
     }
 
     /// Returns true when a tick has been triggered by the GPU.
-    [[nodiscard]] bool IsFree(u64 tick) const noexcept {
+    [[nodiscard]] bool IsFree(u64 tick) noexcept {
+        if (master_semaphore.IsFree(tick)) {
+            return true;
+        }
+        master_semaphore.Refresh();
         return master_semaphore.IsFree(tick);
     }
 

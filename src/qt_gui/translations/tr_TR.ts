@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Dosya mevcut</translation>
+      <translation>Dosya Mevcut</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
@@ -454,32 +454,8 @@
       <translation>Oyuna özel yapılandırma kullan</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Geri</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Seçenekler / Başlat</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Eylem Düğmeleri</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Üçgen / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Kare / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Daire / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Çarpı / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>İptal</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>atanmamış</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation type="unfinished">L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation type="unfinished">R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation type="unfinished">L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Seçenekler</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation type="unfinished">R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Üçgen</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Kare</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Yuvarlak</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Çarpı</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Aynı tuş birden fazla kez atanamaz. Aşağıdaki tuşlara birden fazla giriş atanmış:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Bir Düğmeye Bas</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation type="unfinished">Move analog stick</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Son güncelleme</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Sık Kullanılan</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO Görüntüleyici: </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation type="unfinished">Remove from Favorites</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Favorilere Ekle</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1057,10 +1097,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Dokunmatik Yüzey Tıklaması</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mouse'dan Kontrolcü</translation>
     </message>
@@ -1153,10 +1189,6 @@
       <translation>Kaydedilemedi</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Herhangi bir benzersiz girdi birden fazla kez bağlanamaz</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Bir tuşa basın</translation>
     </message>
@@ -1183,6 +1215,26 @@
     <message>
       <source>Cancel</source>
       <translation>İptal</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Aynı tuş birden fazla kez atanamaz. Aşağıdaki tuşlara birden fazla giriş atanmış:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation type="unfinished">Touchpad Left</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation type="unfinished">Touchpad Center</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation type="unfinished">Touchpad Right</translation>
     </message>
   </context>
   <context>
@@ -1221,7 +1273,7 @@
     </message>
     <message>
       <source>Exit shadPS4</source>
-      <translation>shadPS4&apos;ten Çık</translation>
+      <translation>shadPS4 Çıkış</translation>
     </message>
     <message>
       <source>Exit the application.</source>
@@ -1381,7 +1433,7 @@
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>Oyun Başlatma</translation>
+      <translation>Oyun Başlat</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
@@ -1541,10 +1593,6 @@
     <message>
       <source>Controller</source>
       <translation>Kontrolcü</translation>
-    </message>
-    <message>
-      <source>Back Button Behavior</source>
-      <translation>Geri Dönme Butonu Davranışı</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1783,10 +1831,6 @@
       <translation>İmleç İçin Hareketsizlik Zaman Aşımı:\nBoşta kalan imlecin kendini kaç saniye sonra gizleyeceğidir.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Geri düğmesi davranışı:\nKontrol cihazındaki geri düğmesini, PS4&apos;ün dokunmatik panelindeki belirlenen noktaya dokunmak için ayarlar.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Uyumluluk Verilerini Göster:\nOyun uyumluluk bilgilerini tablo görünümünde görüntüler. Güncel bilgileri almak için &quot;Başlangıçta Uyumluluk Veritabanını Güncelle&quot;yi etkinleştirin.</translation>
     </message>
@@ -1809,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Her zaman</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Dokunmatik Yüzey Sol</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Dokunmatik Yüzey Sağ</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Dokunmatik Yüzey Orta</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Yok</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
@@ -2048,7 +2076,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Desteklenmeyen Vulkan Sürümü</translation>
     </message>
   </context>
   <context>

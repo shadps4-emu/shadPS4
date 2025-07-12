@@ -18,6 +18,9 @@ public:
     void unlock() {
         pthread_mutex_unlock(&mutex);
     }
+    [[nodiscard]] bool try_lock() {
+        return pthread_mutex_trylock(&mutex) == 0;
+    }
 
 private:
     pthread_mutex_t mutex = PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;

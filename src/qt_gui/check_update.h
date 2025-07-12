@@ -8,12 +8,14 @@
 #include <QDialog>
 #include <QNetworkAccessManager>
 #include <QPushButton>
+#include "gui_settings.h"
 
 class CheckUpdate : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CheckUpdate(const bool showMessage, QWidget* parent = nullptr);
+    explicit CheckUpdate(std::shared_ptr<gui_settings> gui_settings, const bool showMessage,
+                         QWidget* parent = nullptr);
     ~CheckUpdate();
 
 private slots:
@@ -35,6 +37,7 @@ private:
     QString updateDownloadUrl;
 
     QNetworkAccessManager* networkManager;
+    std::shared_ptr<gui_settings> m_gui_settings;
 };
 
 #endif // CHECKUPDATE_H

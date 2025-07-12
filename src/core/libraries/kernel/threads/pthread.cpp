@@ -576,8 +576,19 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
     if (thread == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
     }
+
+    auto* thread_state = ThrState::Instance();
+    if (thread == g_curthread) {
+        g_curthread->lock.lock();
+    } else if (auto ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
+        return ret;
+    }
+
     auto* attr_ptr = &thread->attr;
-    return posix_pthread_attr_getaffinity_np(&attr_ptr, cpusetsize, cpusetp);
+    auto ret = posix_pthread_attr_getaffinity_np(&attr_ptr, cpusetsize, cpusetp);
+
+    thread->lock.unlock();
+    return ret;
 }
 
 int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize,
@@ -585,11 +596,23 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
     if (thread == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
     }
-    auto* attr_ptr = &thread->attr;
-    if (const auto ret = posix_pthread_attr_setaffinity_np(&attr_ptr, cpusetsize, cpusetp)) {
+
+    auto* thread_state = ThrState::Instance();
+    if (thread == g_curthread) {
+        g_curthread->lock.lock();
+    } else if (auto ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
         return ret;
     }
-    return thread->SetAffinity(thread->attr.cpuset);
+
+    auto* attr_ptr = &thread->attr;
+    auto ret = posix_pthread_attr_setaffinity_np(&attr_ptr, cpusetsize, cpusetp);
+
+    if (ret == ORBIS_OK) {
+        ret = thread->SetAffinity(thread->attr.cpuset);
+    }
+
+    thread->lock.unlock();
+    return ret;
 }
 
 int PS4_SYSV_ABI scePthreadGetaffinity(PthreadT thread, u64* mask) {

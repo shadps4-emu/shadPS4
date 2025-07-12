@@ -32,12 +32,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->setupUi(this);
     installEventFilter(this);
     setAttribute(Qt::WA_DeleteOnClose);
+    m_gui_settings = std::make_shared<gui_settings>();
+    ui->toggleLabelsAct->setChecked(
+        m_gui_settings->GetValue(gui::mw_showLabelsUnderIcons).toBool());
 }
 
 MainWindow::~MainWindow() {
     SaveWindowState();
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
 }
 
 bool MainWindow::Init() {
@@ -56,15 +57,7 @@ bool MainWindow::Init() {
     setMinimumSize(720, 405);
     std::string window_title = "";
     std::string remote_url(Common::g_scm_remote_url);
-    std::string remote_host;
-    try {
-        if (*remote_url.rbegin() == '/') {
-            remote_url.pop_back();
-        }
-        remote_host = remote_url.substr(19, remote_url.rfind('/') - 19);
-    } catch (...) {
-        remote_host = "unknown";
-    }
+    std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
             window_title = fmt::format("shadPS4 v{}", Common::g_version);
@@ -147,7 +140,7 @@ void MainWindow::PauseGame() {
 
 void MainWindow::toggleLabelsUnderIcons() {
     bool showLabels = ui->toggleLabelsAct->isChecked();
-    Config::setShowLabelsUnderIcons();
+    m_gui_settings->SetValue(gui::mw_showLabelsUnderIcons, showLabels);
     UpdateToolbarLabels();
     if (isGameRunning) {
         UpdateToolbarButtons();
@@ -298,21 +291,21 @@ void MainWindow::CreateDockWindows() {
     setCentralWidget(phCentralWidget);
 
     m_dock_widget.reset(new QDockWidget(tr("Game List"), this));
-    m_game_list_frame.reset(new GameListFrame(m_game_info, m_compat_info, this));
+    m_game_list_frame.reset(new GameListFrame(m_gui_settings, m_game_info, m_compat_info, this));
     m_game_list_frame->setObjectName("gamelist");
-    m_game_grid_frame.reset(new GameGridFrame(m_game_info, m_compat_info, this));
+    m_game_grid_frame.reset(new GameGridFrame(m_gui_settings, m_game_info, m_compat_info, this));
     m_game_grid_frame->setObjectName("gamegridlist");
-    m_elf_viewer.reset(new ElfViewer(this));
+    m_elf_viewer.reset(new ElfViewer(m_gui_settings, this));
     m_elf_viewer->setObjectName("elflist");
 
-    int table_mode = Config::getTableMode();
+    int table_mode = m_gui_settings->GetValue(gui::gl_mode).toInt();
     int slider_pos = 0;
     if (table_mode == 0) { // List
         m_game_grid_frame->hide();
         m_elf_viewer->hide();
         m_game_list_frame->show();
         m_dock_widget->setWidget(m_game_list_frame.data());
-        slider_pos = Config::getSliderPosition();
+        slider_pos = m_gui_settings->GetValue(gui::gl_slider_pos).toInt();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = true;
     } else if (table_mode == 1) { // Grid
@@ -320,7 +313,7 @@ void MainWindow::CreateDockWindows() {
         m_elf_viewer->hide();
         m_game_grid_frame->show();
         m_dock_widget->setWidget(m_game_grid_frame.data());
-        slider_pos = Config::getSliderPositionGrid();
+        slider_pos = m_gui_settings->GetValue(gui::gg_slider_pos).toInt();
         ui->sizeSlider->setSliderPosition(slider_pos); // set slider pos at start;
         isTableList = false;
     } else {
@@ -364,11 +357,11 @@ void MainWindow::LoadGameLists() {
 #ifdef ENABLE_UPDATER
 void MainWindow::CheckUpdateMain(bool checkSave) {
     if (checkSave) {
-        if (!Config::autoUpdate()) {
+        if (!m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool()) {
             return;
         }
     }
-    auto checkUpdate = new CheckUpdate(false);
+    auto checkUpdate = new CheckUpdate(m_gui_settings, false);
     checkUpdate->exec();
 }
 #endif
@@ -380,22 +373,21 @@ void MainWindow::CreateConnects() {
     connect(ui->refreshGameListAct, &QAction::triggered, this, &MainWindow::RefreshGameTable);
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::RefreshGameTable);
     connect(ui->showGameListAct, &QAction::triggered, this, &MainWindow::ShowGameList);
-    connect(this, &MainWindow::ExtractionFinished, this, &MainWindow::RefreshGameTable);
     connect(ui->toggleLabelsAct, &QAction::toggled, this, &MainWindow::toggleLabelsUnderIcons);
     connect(ui->fullscreenButton, &QPushButton::clicked, this, &MainWindow::toggleFullscreen);
 
     connect(ui->sizeSlider, &QSlider::valueChanged, this, [this](int value) {
         if (isTableList) {
             m_game_list_frame->icon_size =
-                36 + value; // 36 is the minimum icon size to use due to text disappearing.
-            m_game_list_frame->ResizeIcons(36 + value);
-            Config::setIconSize(36 + value);
-            Config::setSliderPosition(value);
+                48 + value; // 48 is the minimum icon size to use due to text disappearing.
+            m_game_list_frame->ResizeIcons(48 + value);
+            m_gui_settings->SetValue(gui::gl_icon_size, 48 + value);
+            m_gui_settings->SetValue(gui::gl_slider_pos, value);
         } else {
             m_game_grid_frame->icon_size = 69 + value;
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
-            Config::setIconSizeGrid(69 + value);
-            Config::setSliderPositionGrid(value);
+            m_gui_settings->SetValue(gui::gg_icon_size, 69 + value);
+            m_gui_settings->SetValue(gui::gg_slider_pos, value);
         }
     });
 
@@ -413,7 +405,7 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -427,7 +419,8 @@ void MainWindow::CreateConnects() {
 
         connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
                 [this](int opacity) {
-                    Config::setBackgroundImageOpacity(opacity);
+                    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
+                                             std::clamp(opacity, 0, 100));
                     if (m_game_list_frame) {
                         QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
                         if (current) {
@@ -446,7 +439,7 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_compat_info, this);
+        auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, this);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -460,7 +453,8 @@ void MainWindow::CreateConnects() {
 
         connect(settingsDialog, &SettingsDialog::BackgroundOpacityChanged, this,
                 [this](int opacity) {
-                    Config::setBackgroundImageOpacity(opacity);
+                    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
+                                             std::clamp(opacity, 0, 100));
                     if (m_game_list_frame) {
                         QTableWidgetItem* current = m_game_list_frame->GetCurrentItem();
                         if (current) {
@@ -479,24 +473,25 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->controllerButton, &QPushButton::clicked, this, [this]() {
-        auto configWindow = new ControlSettings(m_game_info, this);
-        configWindow->exec();
+        ControlSettings* remapWindow =
+            new ControlSettings(m_game_info, isGameRunning, runningGameSerial, this);
+        remapWindow->exec();
     });
 
     connect(ui->keyboardButton, &QPushButton::clicked, this, [this]() {
-        auto kbmWindow = new KBMSettings(m_game_info, this);
+        auto kbmWindow = new KBMSettings(m_game_info, isGameRunning, runningGameSerial, this);
         kbmWindow->exec();
     });
 
 #ifdef ENABLE_UPDATER
     connect(ui->updaterAct, &QAction::triggered, this, [this]() {
-        auto checkUpdate = new CheckUpdate(true);
+        auto checkUpdate = new CheckUpdate(m_gui_settings, true);
         checkUpdate->exec();
     });
 #endif
 
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
-        auto aboutDialog = new AboutDialog(this);
+        auto aboutDialog = new AboutDialog(m_gui_settings, this);
         aboutDialog->exec();
     });
 
@@ -505,13 +500,13 @@ void MainWindow::CreateConnects() {
             m_game_list_frame->icon_size =
                 36; // 36 is the minimum icon size to use due to text disappearing.
             ui->sizeSlider->setValue(0); // icone_size - 36
-            Config::setIconSize(36);
-            Config::setSliderPosition(0);
+            m_gui_settings->SetValue(gui::gl_icon_size, 36);
+            m_gui_settings->SetValue(gui::gl_slider_pos, 0);
         } else {
             m_game_grid_frame->icon_size = 69;
             ui->sizeSlider->setValue(0); // icone_size - 36
-            Config::setIconSizeGrid(69);
-            Config::setSliderPositionGrid(0);
+            m_gui_settings->SetValue(gui::gg_icon_size, 69);
+            m_gui_settings->SetValue(gui::gg_slider_pos, 9);
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
@@ -520,13 +515,13 @@ void MainWindow::CreateConnects() {
         if (isTableList) {
             m_game_list_frame->icon_size = 64;
             ui->sizeSlider->setValue(28);
-            Config::setIconSize(64);
-            Config::setSliderPosition(28);
+            m_gui_settings->SetValue(gui::gl_icon_size, 64);
+            m_gui_settings->SetValue(gui::gl_slider_pos, 28);
         } else {
             m_game_grid_frame->icon_size = 97;
             ui->sizeSlider->setValue(28);
-            Config::setIconSizeGrid(97);
-            Config::setSliderPositionGrid(28);
+            m_gui_settings->SetValue(gui::gg_icon_size, 97);
+            m_gui_settings->SetValue(gui::gg_slider_pos, 28);
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
@@ -535,13 +530,13 @@ void MainWindow::CreateConnects() {
         if (isTableList) {
             m_game_list_frame->icon_size = 128;
             ui->sizeSlider->setValue(92);
-            Config::setIconSize(128);
-            Config::setSliderPosition(92);
+            m_gui_settings->SetValue(gui::gl_icon_size, 128);
+            m_gui_settings->SetValue(gui::gl_slider_pos, 92);
         } else {
             m_game_grid_frame->icon_size = 161;
             ui->sizeSlider->setValue(92);
-            Config::setIconSizeGrid(161);
-            Config::setSliderPositionGrid(92);
+            m_gui_settings->SetValue(gui::gg_icon_size, 161);
+            m_gui_settings->SetValue(gui::gg_slider_pos, 92);
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
@@ -550,13 +545,13 @@ void MainWindow::CreateConnects() {
         if (isTableList) {
             m_game_list_frame->icon_size = 256;
             ui->sizeSlider->setValue(220);
-            Config::setIconSize(256);
-            Config::setSliderPosition(220);
+            m_gui_settings->SetValue(gui::gl_icon_size, 256);
+            m_gui_settings->SetValue(gui::gl_slider_pos, 220);
         } else {
             m_game_grid_frame->icon_size = 256;
             ui->sizeSlider->setValue(220);
-            Config::setIconSizeGrid(256);
-            Config::setSliderPositionGrid(220);
+            m_gui_settings->SetValue(gui::gg_icon_size, 256);
+            m_gui_settings->SetValue(gui::gg_slider_pos, 220);
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
     });
@@ -567,13 +562,11 @@ void MainWindow::CreateConnects() {
         m_game_grid_frame->hide();
         m_elf_viewer->hide();
         m_game_list_frame->show();
-        if (m_game_list_frame->item(0, 0) == nullptr) {
-            m_game_list_frame->clearContents();
-            m_game_list_frame->PopulateGameList();
-        }
+        m_game_list_frame->clearContents();
+        m_game_list_frame->PopulateGameList();
         isTableList = true;
-        Config::setTableMode(0);
-        int slider_pos = Config::getSliderPosition();
+        m_gui_settings->SetValue(gui::gl_mode, 0);
+        int slider_pos = m_gui_settings->GetValue(gui::gl_slider_pos).toInt();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos);
         ui->mw_searchbar->setText("");
@@ -591,8 +584,8 @@ void MainWindow::CreateConnects() {
             m_game_grid_frame->PopulateGameGrid(m_game_info->m_games, false);
         }
         isTableList = false;
-        Config::setTableMode(1);
-        int slider_pos_grid = Config::getSliderPositionGrid();
+        m_gui_settings->SetValue(gui::gl_mode, 1);
+        int slider_pos_grid = m_gui_settings->GetValue(gui::gg_slider_pos).toInt();
         ui->sizeSlider->setEnabled(true);
         ui->sizeSlider->setSliderPosition(slider_pos_grid);
         ui->mw_searchbar->setText("");
@@ -607,7 +600,7 @@ void MainWindow::CreateConnects() {
         m_elf_viewer->show();
         isTableList = false;
         ui->sizeSlider->setDisabled(true);
-        Config::setTableMode(2);
+        m_gui_settings->SetValue(gui::gl_mode, 2);
         SetLastIconSizeBullet();
     });
 
@@ -775,14 +768,14 @@ void MainWindow::CreateConnects() {
 
         QString gameName = QString::fromStdString(firstGame.name);
         TrophyViewer* trophyViewer =
-            new TrophyViewer(trophyPath, gameTrpPath, gameName, allTrophyGames);
+            new TrophyViewer(m_gui_settings, trophyPath, gameTrpPath, gameName, allTrophyGames);
         trophyViewer->show();
     });
 
     // Themes
     connect(ui->setThemeDark, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Dark, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Dark));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Dark));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -790,7 +783,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeLight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Light, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Light));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Light));
         if (!isIconBlack) {
             SetUiIcons(true);
             isIconBlack = true;
@@ -798,7 +791,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeGreen, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Green, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Green));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Green));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -806,7 +799,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeBlue, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Blue, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Blue));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Blue));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -814,7 +807,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeViolet, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Violet, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Violet));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Violet));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -822,7 +815,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeGruvbox, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Gruvbox, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Gruvbox));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Gruvbox));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -830,7 +823,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeTokyoNight, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::TokyoNight, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::TokyoNight));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::TokyoNight));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -838,7 +831,7 @@ void MainWindow::CreateConnects() {
     });
     connect(ui->setThemeOled, &QAction::triggered, &m_window_themes, [this]() {
         m_window_themes.SetWindowTheme(Theme::Oled, ui->mw_searchbar);
-        Config::setMainWindowTheme(static_cast<int>(Theme::Oled));
+        m_gui_settings->SetValue(gui::gen_theme, static_cast<int>(Theme::Oled));
         if (isIconBlack) {
             SetUiIcons(false);
             isIconBlack = false;
@@ -849,17 +842,19 @@ void MainWindow::CreateConnects() {
 void MainWindow::StartGame() {
     BackgroundMusicPlayer::getInstance().stopMusic();
     QString gamePath = "";
-    int table_mode = Config::getTableMode();
+    int table_mode = m_gui_settings->GetValue(gui::gl_mode).toInt();
     if (table_mode == 0) {
         if (m_game_list_frame->currentItem()) {
             int itemID = m_game_list_frame->currentItem()->row();
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
+            runningGameSerial = m_game_info->m_games[itemID].serial;
         }
     } else if (table_mode == 1) {
         if (m_game_grid_frame->cellClicked) {
             int itemID = (m_game_grid_frame->crtRow * m_game_grid_frame->columnCnt) +
                          m_game_grid_frame->crtColumn;
             Common::FS::PathToQString(gamePath, m_game_info->m_games[itemID].path / "eboot.bin");
+            runningGameSerial = m_game_info->m_games[itemID].serial;
         }
     } else {
         if (m_elf_viewer->currentItem()) {
@@ -934,25 +929,25 @@ void MainWindow::RefreshGameTable() {
 }
 
 void MainWindow::ConfigureGuiFromSettings() {
-    setGeometry(Config::getMainWindowGeometryX(), Config::getMainWindowGeometryY(),
-                Config::getMainWindowGeometryW(), Config::getMainWindowGeometryH());
-
+    if (!restoreGeometry(m_gui_settings->GetValue(gui::mw_geometry).toByteArray())) {
+        // By default, set the window to 70% of the screen
+        resize(QGuiApplication::primaryScreen()->availableSize() * 0.7);
+    }
     ui->showGameListAct->setChecked(true);
-    if (Config::getTableMode() == 0) {
+    int table_mode = m_gui_settings->GetValue(gui::gl_mode).toInt();
+    if (table_mode == 0) {
         ui->setlistModeListAct->setChecked(true);
-    } else if (Config::getTableMode() == 1) {
+    } else if (table_mode == 1) {
         ui->setlistModeGridAct->setChecked(true);
-    } else if (Config::getTableMode() == 2) {
+    } else if (table_mode == 2) {
         ui->setlistElfAct->setChecked(true);
     }
-    BackgroundMusicPlayer::getInstance().setVolume(Config::getBGMvolume());
+    BackgroundMusicPlayer::getInstance().setVolume(
+        m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt());
 }
 
-void MainWindow::SaveWindowState() const {
-    Config::setMainWindowWidth(this->width());
-    Config::setMainWindowHeight(this->height());
-    Config::setMainWindowGeometry(this->geometry().x(), this->geometry().y(),
-                                  this->geometry().width(), this->geometry().height());
+void MainWindow::SaveWindowState() {
+    m_gui_settings->SetValue(gui::mw_geometry, saveGeometry(), false);
 }
 
 void MainWindow::BootGame() {
@@ -985,7 +980,7 @@ void MainWindow::InstallDirectory() {
 }
 
 void MainWindow::SetLastUsedTheme() {
-    Theme lastTheme = static_cast<Theme>(Config::getMainWindowTheme());
+    Theme lastTheme = static_cast<Theme>(m_gui_settings->GetValue(gui::gen_theme).toInt());
     m_window_themes.SetWindowTheme(lastTheme, ui->mw_searchbar);
 
     switch (lastTheme) {
@@ -1033,8 +1028,8 @@ void MainWindow::SetLastUsedTheme() {
 
 void MainWindow::SetLastIconSizeBullet() {
     // set QAction bullet point if applicable
-    int lastSize = Config::getIconSize();
-    int lastSizeGrid = Config::getIconSizeGrid();
+    int lastSize = m_gui_settings->GetValue(gui::gl_icon_size).toInt();
+    int lastSizeGrid = m_gui_settings->GetValue(gui::gg_icon_size).toInt();
     if (isTableList) {
         switch (lastSize) {
         case 36:
@@ -1126,33 +1121,32 @@ void MainWindow::HandleResize(QResizeEvent* event) {
 }
 
 void MainWindow::AddRecentFiles(QString filePath) {
-    std::vector<std::string> vec = Config::getRecentFiles();
-    if (!vec.empty()) {
-        if (filePath.toStdString() == vec.at(0)) {
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_recentFiles));
+    if (!list.empty()) {
+        if (filePath == list.at(0)) {
             return;
         }
-        auto it = std::find(vec.begin(), vec.end(), filePath.toStdString());
-        if (it != vec.end()) {
-            vec.erase(it);
+        auto it = std::find(list.begin(), list.end(), filePath);
+        if (it != list.end()) {
+            list.erase(it);
         }
     }
-    vec.insert(vec.begin(), filePath.toStdString());
-    if (vec.size() > 6) {
-        vec.pop_back();
+    list.insert(list.begin(), filePath);
+    if (list.size() > 6) {
+        list.pop_back();
     }
-    Config::setRecentFiles(vec);
-    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::saveMainWindow(config_dir / "config.toml");
+    m_gui_settings->SetValue(gui::gen_recentFiles, gui_settings::List2Var(list));
     CreateRecentGameActions(); // Refresh the QActions.
 }
 
 void MainWindow::CreateRecentGameActions() {
     m_recent_files_group = new QActionGroup(this);
     ui->menuRecent->clear();
-    std::vector<std::string> vec = Config::getRecentFiles();
-    for (int i = 0; i < vec.size(); i++) {
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_recentFiles));
+
+    for (int i = 0; i < list.size(); i++) {
         QAction* recentFileAct = new QAction(this);
-        recentFileAct->setText(QString::fromStdString(vec.at(i)));
+        recentFileAct->setText(list.at(i));
         ui->menuRecent->addAction(recentFileAct);
         m_recent_files_group->addAction(recentFileAct);
     }
@@ -1169,7 +1163,7 @@ void MainWindow::CreateRecentGameActions() {
 }
 
 void MainWindow::LoadTranslation() {
-    auto language = QString::fromStdString(Config::getEmulatorLanguage());
+    auto language = m_gui_settings->GetValue(gui::gen_guiLanguage).toString();
 
     const QString base_dir = QStringLiteral(":/translations");
     QString base_path = QStringLiteral("%1/%2.qm").arg(base_dir).arg(language);
@@ -1194,8 +1188,8 @@ void MainWindow::LoadTranslation() {
     }
 }
 
-void MainWindow::OnLanguageChanged(const std::string& locale) {
-    Config::setEmulatorLanguage(locale);
+void MainWindow::OnLanguageChanged(const QString& locale) {
+    m_gui_settings->SetValue(gui::gen_guiLanguage, locale);
 
     LoadTranslation();
 }
@@ -1204,7 +1198,7 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return) {
-            auto tblMode = Config::getTableMode();
+            auto tblMode = m_gui_settings->GetValue(gui::gl_mode).toInt();
             if (tblMode != 2 && (tblMode != 1 || m_game_grid_frame->IsValidCellSelected())) {
                 StartGame();
                 return true;

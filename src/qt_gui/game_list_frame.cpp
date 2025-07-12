@@ -9,11 +9,14 @@
 #include "game_list_frame.h"
 #include "game_list_utils.h"
 
-GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
+GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
+                             std::shared_ptr<GameInfoClass> game_info_get,
                              std::shared_ptr<CompatibilityInfoClass> compat_info_get,
                              QWidget* parent)
-    : QTableWidget(parent), m_game_info(game_info_get), m_compat_info(compat_info_get) {
-    icon_size = Config::getIconSize();
+    : QTableWidget(parent), m_gui_settings(std::move(gui_settings)), m_game_info(game_info_get),
+      m_compat_info(compat_info_get) {
+    icon_size = m_gui_settings->GetValue(gui::gl_icon_size).toInt();
+    last_favorite = "";
     this->setShowGrid(false);
     this->setEditTriggers(QAbstractItemView::NoEditTriggers);
     this->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -28,9 +31,8 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     this->horizontalHeader()->setHighlightSections(false);
     this->horizontalHeader()->setSortIndicatorShown(true);
-    this->horizontalHeader()->setStretchLastSection(true);
     this->setContextMenuPolicy(Qt::CustomContextMenu);
-    this->setColumnCount(10);
+    this->setColumnCount(11);
     this->setColumnWidth(1, 300); // Name
     this->setColumnWidth(2, 140); // Compatibility
     this->setColumnWidth(3, 120); // Serial
@@ -39,14 +41,18 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
     this->setColumnWidth(6, 90);  // Size
     this->setColumnWidth(7, 90);  // Version
     this->setColumnWidth(8, 120); // Play Time
+    this->setColumnWidth(10, 90); // Favorite
     QStringList headers;
     headers << tr("Icon") << tr("Name") << tr("Compatibility") << tr("Serial") << tr("Region")
-            << tr("Firmware") << tr("Size") << tr("Version") << tr("Play Time") << tr("Path");
+            << tr("Firmware") << tr("Size") << tr("Version") << tr("Play Time") << tr("Path")
+            << tr("Favorite");
     this->setHorizontalHeaderLabels(headers);
     this->horizontalHeader()->setSortIndicatorShown(true);
     this->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     this->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
     this->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Fixed);
+    this->horizontalHeader()->setSectionResizeMode(9, QHeaderView::Stretch);
+    this->horizontalHeader()->setSectionResizeMode(10, QHeaderView::Fixed);
     PopulateGameList();
 
     connect(this, &QTableWidget::currentCellChanged, this, &GameListFrame::onCurrentCellChanged);
@@ -63,17 +69,24 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
                 SortNameDescending(columnIndex);
                 this->horizontalHeader()->setSortIndicator(columnIndex, Qt::DescendingOrder);
                 ListSortedAsc = false;
+                sortColumn = columnIndex;
             } else {
                 SortNameAscending(columnIndex);
                 this->horizontalHeader()->setSortIndicator(columnIndex, Qt::AscendingOrder);
                 ListSortedAsc = true;
+                sortColumn = columnIndex;
             }
             this->clearContents();
             PopulateGameList(false);
         });
 
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
-        m_gui_context_menus.RequestGameMenu(pos, m_game_info->m_games, m_compat_info, this, true);
+        int changedFavorite = m_gui_context_menus.RequestGameMenu(
+            pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, true);
+        if (changedFavorite) {
+            last_favorite = m_game_info->m_games[this->currentRow()].serial;
+            PopulateGameList(false);
+        }
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
@@ -81,6 +94,19 @@ GameListFrame::GameListFrame(std::shared_ptr<GameInfoClass> game_info_get,
             auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
             QDesktopServices::openUrl(
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
+        } else if (column == 10) {
+            last_favorite = m_game_info->m_games[row].serial;
+            QString serialStr = QString::fromStdString(last_favorite);
+            QList<QString> list =
+                gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+            bool isFavorite = list.contains(serialStr);
+            if (isFavorite) {
+                list.removeOne(serialStr);
+            } else {
+                list.append(serialStr);
+            }
+            m_gui_settings->SetValue(gui::favorites_list, gui_settings::List2Var(list));
+            PopulateGameList(false);
         }
     });
 }
@@ -97,7 +123,7 @@ void GameListFrame::onCurrentCellChanged(int currentRow, int currentColumn, int 
 }
 
 void GameListFrame::PlayBackgroundMusic(QTableWidgetItem* item) {
-    if (!item || !Config::getPlayBGM()) {
+    if (!item || !m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool()) {
         BackgroundMusicPlayer::getInstance().stopMusic();
         return;
     }
@@ -115,10 +141,7 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
     this->setRowCount(m_game_info->m_games.size());
     ResizeIcons(icon_size);
 
-    if (isInitialPopulation) {
-        SortNameAscending(1); // Column 1 = Name
-        ResizeIcons(icon_size);
-    }
+    ApplyLastSorting(isInitialPopulation);
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
@@ -127,6 +150,11 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].fw));
         SetTableItem(i, 6, QString::fromStdString(m_game_info->m_games[i].size));
         SetTableItem(i, 7, QString::fromStdString(m_game_info->m_games[i].version));
+        SetFavoriteIcon(i, 10);
+
+        if (m_game_info->m_games[i].serial == last_favorite && !isInitialPopulation) {
+            this->setCurrentCell(i, 10);
+        }
 
         m_game_info->m_games[i].compatibility =
             m_compat_info->GetCompatibilityInfo(m_game_info->m_games[i].serial);
@@ -172,7 +200,7 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     }
 
     // If background images are hidden, clear the background image
-    if (!Config::getShowBackgroundImage()) {
+    if (!m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         backgroundImage = QImage();
         m_last_opacity = -1;         // Reset opacity tracking when disabled
         m_current_game_path.clear(); // Reset current game path
@@ -181,7 +209,7 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
     }
 
     const auto& game = m_game_info->m_games[item->row()];
-    const int opacity = Config::getBackgroundImageOpacity();
+    const int opacity = m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
 
     // Recompute if opacity changed or we switched to a different game
     if (opacity != m_last_opacity || game.pic_path != m_current_game_path) {
@@ -200,7 +228,8 @@ void GameListFrame::SetListBackgroundImage(QTableWidgetItem* item) {
 
 void GameListFrame::RefreshListBackgroundImage() {
     QPalette palette;
-    if (!backgroundImage.isNull() && Config::getShowBackgroundImage()) {
+    if (!backgroundImage.isNull() &&
+        m_gui_settings->GetValue(gui::gl_showBackgroundImage).toBool()) {
         QSize widgetSize = size();
         QPixmap scaledPixmap =
             QPixmap::fromImage(backgroundImage)
@@ -223,18 +252,48 @@ void GameListFrame::resizeEvent(QResizeEvent* event) {
     RefreshListBackgroundImage();
 }
 
+bool GameListFrame::CompareWithFavorite(GameInfo a, GameInfo b, int columnIndex, bool ascending) {
+    std::string serial_a = a.serial;
+    std::string serial_b = b.serial;
+    QString serialStr_a = QString::fromStdString(a.serial);
+    QString serialStr_b = QString::fromStdString(b.serial);
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite_a = list.contains(serialStr_a);
+    bool isFavorite_b = list.contains(serialStr_b);
+    if (isFavorite_a != isFavorite_b) {
+        return isFavorite_a;
+    } else if (ascending) {
+        return CompareStringsAscending(a, b, columnIndex);
+    } else {
+        return CompareStringsDescending(a, b, columnIndex);
+    }
+}
+
 void GameListFrame::SortNameAscending(int columnIndex) {
     std::sort(m_game_info->m_games.begin(), m_game_info->m_games.end(),
-              [columnIndex](const GameInfo& a, const GameInfo& b) {
-                  return CompareStringsAscending(a, b, columnIndex);
+              [this, columnIndex](const GameInfo& a, const GameInfo& b) {
+                  return this->CompareWithFavorite(a, b, columnIndex, true);
               });
 }
 
 void GameListFrame::SortNameDescending(int columnIndex) {
     std::sort(m_game_info->m_games.begin(), m_game_info->m_games.end(),
-              [columnIndex](const GameInfo& a, const GameInfo& b) {
-                  return CompareStringsDescending(a, b, columnIndex);
+              [this, columnIndex](const GameInfo& a, const GameInfo& b) {
+                  return this->CompareWithFavorite(a, b, columnIndex, false);
               });
+}
+
+void GameListFrame::ApplyLastSorting(bool isInitialPopulation) {
+    if (isInitialPopulation) {
+        SortNameAscending(1); // Column 1 = Name
+        ResizeIcons(icon_size);
+    } else if (ListSortedAsc) {
+        SortNameAscending(sortColumn);
+        ResizeIcons(icon_size);
+    } else {
+        SortNameDescending(sortColumn);
+        ResizeIcons(icon_size);
+    }
 }
 
 void GameListFrame::ResizeIcons(int iconSize) {
@@ -385,6 +444,35 @@ void GameListFrame::SetRegionFlag(int row, int column, QString itemStr) {
     widget->setLayout(layout);
     this->setItem(row, column, item);
     this->setCellWidget(row, column, widget);
+}
+
+void GameListFrame::SetFavoriteIcon(int row, int column) {
+
+    QString serialStr = QString::fromStdString(m_game_info->m_games[row].serial);
+    QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
+    bool isFavorite = list.contains(serialStr);
+
+    QTableWidgetItem* item = new QTableWidgetItem();
+    QImage scaledPixmap = QImage(":images/favorite_icon.png");
+
+    scaledPixmap = scaledPixmap.scaledToHeight(this->columnWidth(column) / 2.5);
+    scaledPixmap = scaledPixmap.scaledToWidth(this->columnWidth(column) / 2.5);
+    QWidget* widget = new QWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(widget);
+    QLabel* label = new QLabel(widget);
+    label->setPixmap(QPixmap::fromImage(scaledPixmap));
+    label->setObjectName("favoriteIcon");
+    label->setVisible(isFavorite);
+
+    layout->setAlignment(Qt::AlignCenter);
+    layout->addWidget(label);
+    widget->setLayout(layout);
+    this->setItem(row, column, item);
+    this->setCellWidget(row, column, widget);
+
+    if (column > 0) {
+        this->horizontalHeader()->setSectionResizeMode(column - 1, QHeaderView::Stretch);
+    }
 }
 
 QString GameListFrame::GetPlayTime(const std::string& serial) {

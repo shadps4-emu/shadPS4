@@ -454,32 +454,8 @@
       <translation>Usa configurazioni per gioco</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Indietro</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Opzioni / Avvio</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Pulsanti Frontali</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangolo / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Quadrato / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Cerchio / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Croce / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Annulla</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>non mappato</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opzioni</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Touchpad Sinistra</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Touchpad Centrale</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Touchpad Destra</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangolo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Quadrato</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Cerchio</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Croce</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Non è possibile associare più di una volta qualsiasi input univoco. Sono presenti input duplicati mappati ai seguenti pulsanti:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Premi un pulsante</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Muovi levetta analogica</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Ultimo aggiornamento</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Preferiti</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>Visualizzatore SFO per </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Rimuovi dai Preferiti</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Aggiungi ai preferiti</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1057,10 +1097,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Click Touchpad</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mouse a Joystick</translation>
     </message>
@@ -1153,10 +1189,6 @@
       <translation>Impossibile Salvare</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>Non è possibile associare qualsiasi input univoco più di una volta</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Premi un tasto</translation>
     </message>
@@ -1183,6 +1215,26 @@
     <message>
       <source>Cancel</source>
       <translation>Annulla</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Non è possibile associare più di una volta qualsiasi input univoco. Sono presenti input duplicati mappati ai seguenti pulsanti:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Touchpad Sinistra</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Touchpad Centrale</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Touchpad Destra</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1595,6 @@
       <translation>Controller</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportamento del pulsante Indietro</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Grafica</translation>
     </message>
@@ -1783,10 +1831,6 @@
       <translation>Imposta un tempo affinché il mouse scompaia dopo essere stato inattivo.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportamento del pulsante Indietro:\nImposta il pulsante Indietro del controller per emulare il tocco sulla posizione specificata sul touchpad PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Mostra Dati Compatibilità:\nMostra informazioni sulla compatibilità del gioco nella visualizzazione lista. Abilita &quot;Aggiorna Compatiblità all&apos;Avvio&quot; per ottenere informazioni aggiornate.</translation>
     </message>
@@ -1809,22 +1853,6 @@
     <message>
       <source>Always</source>
       <translation>Sempre</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad Sinistra</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad Destra</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centro del Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Nessuno</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>

@@ -20,6 +20,10 @@
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
 
+#ifdef ENABLE_QT_GUI
+#include "qt_gui/sdl_event_wrapper.h"
+#endif
+
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
 #endif
@@ -340,6 +344,13 @@ void WindowSDL::WaitEvent() {
         return;
     }
 
+#ifdef ENABLE_QT_GUI
+    if (SdlEventWrapper::Wrapper::wrapperActive) {
+        if (SdlEventWrapper::Wrapper::GetInstance()->ProcessEvent(&event))
+            return;
+    }
+#endif
+
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
     }
@@ -474,11 +485,16 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
             Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
             return;
         }
-        // Toggle mouse capture and movement input
+        // Toggle mouse capture and joystick input emulation
         else if (input_id == SDLK_F7) {
-            Input::ToggleMouseEnabled();
             SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           !SDL_GetWindowRelativeMouseMode(this->GetSDLWindow()));
+                                           Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+            return;
+        }
+        // Toggle mouse capture and gyro input emulation
+        else if (input_id == SDLK_F6) {
+            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                           Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
             return;
         }
         // Toggle fullscreen

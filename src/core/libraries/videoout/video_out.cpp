@@ -282,7 +282,12 @@ s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus*
 
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status) {
     LOG_INFO(Lib_VideoOut, "called");
-    *status = driver->GetPort(handle)->resolution;
+    auto* port = driver->GetPort(handle);
+    if (!port || !port->is_open) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    *status = port->resolution;
     return ORBIS_OK;
 }
 
@@ -440,7 +445,8 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    driver = std::make_unique<VideoOutDriver>(Config::getScreenWidth(), Config::getScreenHeight());
+    driver = std::make_unique<VideoOutDriver>(Config::getInternalScreenWidth(),
+                                              Config::getInternalScreenHeight());
 
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", 0, 0,
                  sceVideoOutGetFlipStatus);

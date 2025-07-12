@@ -67,6 +67,9 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
 
     if (last_attr != IR::Attribute::Position0) {
         data.num_attrs = static_cast<u32>(last_attr) - static_cast<u32>(IR::Attribute::Param0) + 1;
+        const auto it = data.attr_map.begin();
+        const u32 comp_stride = std::next(it)->first - it->first;
+        data.output_vertices = comp_stride / 64;
     }
 
     return data;

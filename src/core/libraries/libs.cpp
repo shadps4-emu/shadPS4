@@ -10,6 +10,7 @@
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/companion/companion_httpd.h"
+#include "core/libraries/companion/companion_util.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
@@ -59,6 +60,7 @@
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/libraries/voice/voice.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
@@ -126,6 +128,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SigninDialog::RegisterlibSceSigninDialog(sym);
     Libraries::Camera::RegisterlibSceCamera(sym);
     Libraries::CompanionHttpd::RegisterlibSceCompanionHttpd(sym);
+    Libraries::CompanionUtil::RegisterlibSceCompanionUtil(sym);
+    Libraries::Voice::RegisterlibSceVoice(sym);
 }
 
 } // namespace Libraries

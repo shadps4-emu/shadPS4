@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Los cheats/patches son experimentales.\nÚselos con precaución.\n\nDescargue los cheats individualmente seleccionando el repositorio y haciendo clic en el botón de descarga.\nEn la pestaña Patches, puede descargar todos los patches a la vez, elegir cuáles desea usar y guardar la selección.\n\nComo no desarrollamos los Cheats/Patches,\npor favor informe los problemas al autor del cheat.\n\n¿Creaste un nuevo cheat? Visita:\n</translation>
+      <translation>Los trucos/parches son experimentales.\nÚselos con precaución.\n\nPuede descargar cada truco seleccionando el repositorio y haciendo clic en el botón de descarga.\nEn la pestaña Parches podrá descargar todos los parches a la vez, elegir cuáles desea usar y guardar la selección.\n\nComo no desarrollamos los trucos/parches,\ndebe informar de cualquier problema a sus autores correspondientes.\n\n¿Creaste un truco nuevo? Visita:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -454,32 +454,8 @@
       <translation>Usar configuraciones por juego</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1/LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2/LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Back</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1/RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2/RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options/Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Botones de acción</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triángulo/Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Cuadrado/X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Círculo/B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Cruz / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,72 @@
     <message>
       <source>Cancel</source>
       <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sin vincular</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opciones</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Izquierda del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Centro del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Derecha del Touchpad</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triángulo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Cuadrado</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Círculo</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Equis</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Presiona un botón</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Mueve el stick analógico</translation>
     </message>
   </context>
   <context>
@@ -747,6 +773,10 @@
     <message>
       <source>Last updated</source>
       <translation>Última actualización</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favorito</translation>
     </message>
   </context>
   <context>
@@ -950,6 +980,14 @@
       <source>SFO Viewer for </source>
       <translation>Visualizador de SFO para </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Eliminar de Favoritos</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Añadir a favoritos</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1057,10 +1095,6 @@
       <translation>L3</translation>
     </message>
     <message>
-      <source>Touchpad Click</source>
-      <translation>Clic de pantalla táctil</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Ratón a Joystick</translation>
     </message>
@@ -1153,10 +1187,6 @@
       <translation>No se Pudo Guardar</translation>
     </message>
     <message>
-      <source>Cannot bind any unique input more than once</source>
-      <translation>No se puede vincular ninguna entrada única más de una vez</translation>
-    </message>
-    <message>
       <source>Press a key</source>
       <translation>Pulsa una tecla</translation>
     </message>
@@ -1183,6 +1213,24 @@
     <message>
       <source>Cancel</source>
       <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones:</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Izquierda del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Centro del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Derecha del Touchpad</translation>
     </message>
   </context>
   <context>
@@ -1543,10 +1591,6 @@
       <translation>Controlador</translation>
     </message>
     <message>
-      <source>Back Button Behavior</source>
-      <translation>Comportamiento del Botón de Retroceso</translation>
-    </message>
-    <message>
       <source>Graphics</source>
       <translation>Gráficos</translation>
     </message>
@@ -1783,10 +1827,6 @@
       <translation>Establezca un tiempo para que el ratón desaparezca después de estar inactivo.</translation>
     </message>
     <message>
-      <source>Back Button Behavior:\nSets the controller&apos;s back button to emulate tapping the specified position on the PS4 touchpad.</source>
-      <translation>Comportamiento del Botón Atrás:\nEstablece el botón atrás del controlador para emular el toque en la posición especificada en el touchpad del PS4.</translation>
-    </message>
-    <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
       <translation>Mostrar Datos de Compatibilidad:\nMuestra información de compatibilidad de juegos en vista de tabla. Habilite &quot;Actualizar Compatibilidad al Iniciar&quot; para obtener información actualizada.</translation>
     </message>
@@ -1809,22 +1849,6 @@
     <message>
       <source>Always</source>
       <translation>Siempre</translation>
-    </message>
-    <message>
-      <source>Touchpad Left</source>
-      <translation>Touchpad Izquierda</translation>
-    </message>
-    <message>
-      <source>Touchpad Right</source>
-      <translation>Touchpad Derecha</translation>
-    </message>
-    <message>
-      <source>Touchpad Center</source>
-      <translation>Centro del Touchpad</translation>
-    </message>
-    <message>
-      <source>None</source>
-      <translation>Ninguno</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
@@ -2048,7 +2072,7 @@
     </message>
     <message>
       <source> * Unsupported Vulkan Version</source>
-      <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+      <translation> * Versión de Vulkan no soportada</translation>
     </message>
   </context>
   <context>

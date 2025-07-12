@@ -36,7 +36,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 **shadPS4** is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
 
-If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/Quickstart/Quickstart.md).\
+If you encounter problems or have doubts, do not hesitate to look at the [**Quickstart**](https://github.com/shadps4-emu/shadPS4/wiki/I.-Quick-start-%5BUsers%5D).\
 To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-emu/shadps4-game-compatibility).\
 To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Discord server**](https://discord.gg/bFJxfftGW6).\
 To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).\
@@ -124,8 +124,8 @@ Keyboard and mouse inputs can be customized in the settings menu by clicking the
 
 # Firmware files
 
-shadPS4 can load some PlayStation 4 firmware files, these must be dumped from your legally owned PlayStation 4 console.\
-The following firmware modules are supported and must be placed in shadPS4's `user/sys_modules` folder.
+shadPS4 can load some PlayStation 4 firmware files, these must be dumped from your legally owned PlayStation 4 console.
+The following firmware modules are supported and must be placed in shadPS4's `sys_modules` folder.
 
 <div align="center">
 
@@ -138,8 +138,7 @@ The following firmware modules are supported and must be placed in shadPS4's `us
 </div>
 
 > [!Caution]
-> The above modules are required to run the games properly and must be extracted from your PlayStation 4.\
-> **We do not provide any information or support on how to do this**.
+> The above modules are required to run the games properly and must be extracted from your PlayStation 4.
 
 
 
@@ -148,7 +147,7 @@ The following firmware modules are supported and must be placed in shadPS4's `us
 - [**georgemoralis**](https://github.com/georgemoralis)
 - [**psucien**](https://github.com/psucien)
 - [**viniciuslrangel**](https://github.com/viniciuslrangel)
-- [**roamic**](https://github.com/vladmikhalin)
+- [**roamic**](https://github.com/roamic)
 - [**squidbus**](https://github.com/squidbus)
 - [**frodo**](https://github.com/baggins183)
 - [**Stephen Miller**](https://github.com/StevenMiller123)
@@ -158,7 +157,7 @@ Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
 # Contributing
 
-If you want to contribute, please look the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
+If you want to contribute, please read the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
 Open a PR and we'll check it :)
 
 # Translations

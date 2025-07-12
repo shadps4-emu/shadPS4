@@ -20,6 +20,10 @@ class SymbolsResolver;
 
 namespace Libraries::Net {
 
+enum OrbisNetFamily : u32 {
+    ORBIS_NET_AF_INET = 2,
+    ORBIS_NET_AF_INET6 = 28,
+};
 enum OrbisNetSocketType : u32 {
     ORBIS_NET_SOCK_STREAM = 1,
     ORBIS_NET_SOCK_DGRAM = 2,

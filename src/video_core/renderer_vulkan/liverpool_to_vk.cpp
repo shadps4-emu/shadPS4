@@ -214,6 +214,19 @@ vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor) {
     }
 }
 
+bool IsDualSourceBlendFactor(Liverpool::BlendControl::BlendFactor factor) {
+    using BlendFactor = Liverpool::BlendControl::BlendFactor;
+    switch (factor) {
+    case BlendFactor::Src1Color:
+    case BlendFactor::Src1Alpha:
+    case BlendFactor::InvSrc1Color:
+    case BlendFactor::InvSrc1Alpha:
+        return true;
+    default:
+        return false;
+    }
+}
+
 vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
     using BlendFunc = Liverpool::BlendControl::BlendFunc;
     switch (func) {

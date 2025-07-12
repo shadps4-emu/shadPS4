@@ -20,6 +20,7 @@
 #include "game_info.h"
 #include "game_list_frame.h"
 #include "game_list_utils.h"
+#include "gui_settings.h"
 #include "main_window_themes.h"
 #include "main_window_ui.h"
 
@@ -29,7 +30,6 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 signals:
     void WindowResized(QResizeEvent* event);
-    void ExtractionFinished();
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
@@ -42,12 +42,12 @@ public:
 
 private Q_SLOTS:
     void ConfigureGuiFromSettings();
-    void SaveWindowState() const;
+    void SaveWindowState();
     void SearchGameTable(const QString& text);
     void ShowGameList();
     void RefreshGameTable();
     void HandleResize(QResizeEvent* event);
-    void OnLanguageChanged(const std::string& locale);
+    void OnLanguageChanged(const QString& locale);
     void toggleLabelsUnderIcons();
 
 private:
@@ -75,11 +75,13 @@ private:
     void PlayBackgroundMusic();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     void StartEmulator(std::filesystem::path);
+
     bool isIconBlack = false;
     bool isTableList = true;
     bool isGameRunning = false;
     bool isWhite = false;
     bool is_paused = false;
+    std::string runningGameSerial = "";
 
     QActionGroup* m_icon_size_act_group = nullptr;
     QActionGroup* m_list_mode_act_group = nullptr;
@@ -103,6 +105,7 @@ private:
         std::make_shared<CompatibilityInfoClass>();
 
     QTranslator* translator;
+    std::shared_ptr<gui_settings> m_gui_settings;
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event) override;

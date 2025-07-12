@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <bit>
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
@@ -292,71 +291,137 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
     Inst(Opcode::SetPatch, patch, value);
 }
 
-Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset) {
+Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset, bool is_gds) {
     switch (bit_size) {
+    case 16:
+        return Inst<U16>(Opcode::LoadSharedU16, Flags{is_gds}, offset);
     case 32:
-        return Inst<U32>(Opcode::LoadSharedU32, offset);
+        return Inst<U32>(Opcode::LoadSharedU32, Flags{is_gds}, offset);
     case 64:
-        return Inst(Opcode::LoadSharedU64, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, Flags{is_gds}, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset) {
+void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds) {
     switch (bit_size) {
+    case 16:
+        Inst(Opcode::WriteSharedU16, Flags{is_gds}, offset, value);
+        break;
     case 32:
-        Inst(Opcode::WriteSharedU32, offset, value);
+        Inst(Opcode::WriteSharedU32, Flags{is_gds}, offset, value);
         break;
     case 64:
-        Inst(Opcode::WriteSharedU64, offset, value);
+        Inst(Opcode::WriteSharedU64, Flags{is_gds}, offset, value);
         break;
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-U32F32 IREmitter::SharedAtomicIAdd(const U32& address, const U32F32& data) {
+U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds) {
     switch (data.Type()) {
     case Type::U32:
-        return Inst<U32>(Opcode::SharedAtomicIAdd32, address, data);
+        return Inst<U32>(Opcode::SharedAtomicIAdd32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicIAdd64, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
 }
 
-U32 IREmitter::SharedAtomicIMin(const U32& address, const U32& data, bool is_signed) {
-    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMin32, address, data)
-                     : Inst<U32>(Opcode::SharedAtomicUMin32, address, data);
+U32U64 IREmitter::SharedAtomicIMin(const U32& address, const U32U64& data, bool is_signed,
+                                   bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(is_signed ? Opcode::SharedAtomicSMin32 : Opcode::SharedAtomicUMin32,
+                         Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(is_signed ? Opcode::SharedAtomicSMin64 : Opcode::SharedAtomicUMin64,
+                         Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicIMax(const U32& address, const U32& data, bool is_signed) {
-    return is_signed ? Inst<U32>(Opcode::SharedAtomicSMax32, address, data)
-                     : Inst<U32>(Opcode::SharedAtomicUMax32, address, data);
+U32U64 IREmitter::SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
+                                   bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(is_signed ? Opcode::SharedAtomicSMax32 : Opcode::SharedAtomicUMax32,
+                         Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(is_signed ? Opcode::SharedAtomicSMax64 : Opcode::SharedAtomicUMax64,
+                         Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicAnd(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicAnd32, address, data);
+U32U64 IREmitter::SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicOr(const U32& address, const U32& data) {
+U32U64 IREmitter::SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
     return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
 }
 
-U32 IREmitter::SharedAtomicXor(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicXor32, address, data);
+U32U64 IREmitter::SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicXor32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicXor64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicIIncrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIIncrement32, address);
+U32U64 IREmitter::SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicISub32, Flags{is_gds}, address, data);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicISub64, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
 }
 
-U32 IREmitter::SharedAtomicIDecrement(const U32& address) {
-    return Inst<U32>(Opcode::SharedAtomicIDecrement32, address);
+template <>
+U32 IREmitter::SharedAtomicInc(const U32& address, bool is_gds) {
+    return Inst<U32>(Opcode::SharedAtomicInc32, Flags{is_gds}, address);
 }
 
-U32 IREmitter::SharedAtomicISub(const U32& address, const U32& data) {
-    return Inst<U32>(Opcode::SharedAtomicISub32, address, data);
+template <>
+U64 IREmitter::SharedAtomicInc(const U32& address, bool is_gds) {
+    return Inst<U64>(Opcode::SharedAtomicInc64, Flags{is_gds}, address);
+}
+
+template <>
+U32 IREmitter::SharedAtomicDec(const U32& address, bool is_gds) {
+    return Inst<U32>(Opcode::SharedAtomicDec32, Flags{is_gds}, address);
+}
+
+template <>
+U64 IREmitter::SharedAtomicDec(const U32& address, bool is_gds) {
+    return Inst<U64>(Opcode::SharedAtomicDec64, Flags{is_gds}, address);
 }
 
 U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
@@ -367,12 +432,12 @@ U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
     return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
 }
 
-U32 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info) {
-    return Inst<U32>(Opcode::LoadBufferU8, Flags{info}, handle, address);
+U8 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U8>(Opcode::LoadBufferU8, Flags{info}, handle, address);
 }
 
-U32 IREmitter::LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info) {
-    return Inst<U32>(Opcode::LoadBufferU16, Flags{info}, handle, address);
+U16 IREmitter::LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U16>(Opcode::LoadBufferU16, Flags{info}, handle, address);
 }
 
 Value IREmitter::LoadBufferU32(int num_dwords, const Value& handle, const Value& address,
@@ -389,6 +454,10 @@ Value IREmitter::LoadBufferU32(int num_dwords, const Value& handle, const Value&
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
+}
+
+U64 IREmitter::LoadBufferU64(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst<U64>(Opcode::LoadBufferU64, Flags{info}, handle, address);
 }
 
 Value IREmitter::LoadBufferF32(int num_dwords, const Value& handle, const Value& address,
@@ -411,12 +480,12 @@ Value IREmitter::LoadBufferFormat(const Value& handle, const Value& address, Buf
     return Inst(Opcode::LoadBufferFormatF32, Flags{info}, handle, address);
 }
 
-void IREmitter::StoreBufferU8(const Value& handle, const Value& address, const U32& data,
+void IREmitter::StoreBufferU8(const Value& handle, const Value& address, const U8& data,
                               BufferInstInfo info) {
     Inst(Opcode::StoreBufferU8, Flags{info}, handle, address, data);
 }
 
-void IREmitter::StoreBufferU16(const Value& handle, const Value& address, const U32& data,
+void IREmitter::StoreBufferU16(const Value& handle, const Value& address, const U16& data,
                                BufferInstInfo info) {
     Inst(Opcode::StoreBufferU16, Flags{info}, handle, address, data);
 }
@@ -439,6 +508,11 @@ void IREmitter::StoreBufferU32(int num_dwords, const Value& handle, const Value&
     default:
         UNREACHABLE_MSG("Invalid number of dwords {}", num_dwords);
     }
+}
+
+void IREmitter::StoreBufferU64(const Value& handle, const Value& address, const U64& data,
+                               BufferInstInfo info) {
+    Inst(Opcode::StoreBufferU64, Flags{info}, handle, address, data);
 }
 
 void IREmitter::StoreBufferF32(int num_dwords, const Value& handle, const Value& address,
@@ -468,29 +542,65 @@ void IREmitter::StoreBufferFormat(const Value& handle, const Value& address, con
 
 Value IREmitter::BufferAtomicIAdd(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst(Opcode::BufferAtomicIAdd32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return Inst(Opcode::BufferAtomicIAdd64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+Value IREmitter::BufferAtomicISub(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicISub32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicIMin(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
-                     : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return is_signed ? Inst(Opcode::BufferAtomicSMin32, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMin32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return is_signed ? Inst(Opcode::BufferAtomicSMin64, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMin64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+Value IREmitter::BufferAtomicFMin(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMin32, Flags{info}, handle, address, value);
 }
 
 Value IREmitter::BufferAtomicIMax(const Value& handle, const Value& address, const Value& value,
                                   bool is_signed, BufferInstInfo info) {
-    return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
-                     : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    switch (value.Type()) {
+    case Type::U32:
+        return is_signed ? Inst(Opcode::BufferAtomicSMax32, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMax32, Flags{info}, handle, address, value);
+    case Type::U64:
+        return is_signed ? Inst(Opcode::BufferAtomicSMax64, Flags{info}, handle, address, value)
+                         : Inst(Opcode::BufferAtomicUMax64, Flags{info}, handle, address, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
-Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicFMax(const Value& handle, const Value& address, const Value& value,
+                                  BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFMax32, Flags{info}, handle, address, value);
 }
 
-Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, const Value& value,
-                                 BufferInstInfo info) {
-    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address, value);
+Value IREmitter::BufferAtomicInc(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicInc32, Flags{info}, handle, address);
+}
+
+Value IREmitter::BufferAtomicDec(const Value& handle, const Value& address, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicDec32, Flags{info}, handle, address);
 }
 
 Value IREmitter::BufferAtomicAnd(const Value& handle, const Value& address, const Value& value,
@@ -511,6 +621,11 @@ Value IREmitter::BufferAtomicXor(const Value& handle, const Value& address, cons
 Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, const Value& value,
                                   BufferInstInfo info) {
     return Inst(Opcode::BufferAtomicSwap32, Flags{info}, handle, address, value);
+}
+
+Value IREmitter::BufferAtomicCmpSwap(const Value& handle, const Value& address, const Value& vdata,
+                                     const Value& cmp_value, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
 U32 IREmitter::DataAppend(const U32& counter) {
@@ -543,6 +658,14 @@ U32 IREmitter::ReadLane(const U32& value, const U32& lane) {
 
 U32 IREmitter::WriteLane(const U32& value, const U32& write_value, const U32& lane) {
     return Inst<U32>(Opcode::WriteLane, value, write_value, lane);
+}
+
+Value IREmitter::Ballot(const U1& bit) {
+    return Inst(Opcode::Ballot, bit);
+}
+
+U32 IREmitter::BallotFindLsb(const Value& mask) {
+    return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
@@ -1368,13 +1491,13 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
     }
 }
 
-Value IREmitter::IAddCary(const U32& a, const U32& b) {
+Value IREmitter::IAddCarry(const U32& a, const U32& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
     }
     switch (a.Type()) {
     case Type::U32:
-        return Inst<U32>(Opcode::IAddCary32, a, b);
+        return Inst(Opcode::IAddCarry32, a, b);
     default:
         ThrowInvalidType(a.Type());
     }
@@ -1546,8 +1669,15 @@ U32 IREmitter::FindSMsb(const U32& value) {
     return Inst<U32>(Opcode::FindSMsb32, value);
 }
 
-U32 IREmitter::FindUMsb(const U32& value) {
-    return Inst<U32>(Opcode::FindUMsb32, value);
+U32 IREmitter::FindUMsb(const U32U64& value) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::FindUMsb32, value);
+    case Type::U64:
+        return Inst<U32>(Opcode::FindUMsb64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
 }
 
 U32 IREmitter::FindILsb(const U32U64& value) {
@@ -1657,12 +1787,32 @@ U1 IREmitter::IEqual(const U32U64& lhs, const U32U64& rhs) {
     }
 }
 
-U1 IREmitter::ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SLessThanEqual : Opcode::ULessThanEqual, lhs, rhs);
+U1 IREmitter::ILessThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SLessThanEqual32 : Opcode::ULessThanEqual32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SLessThanEqual64 : Opcode::ULessThanEqual64, lhs, rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
-U1 IREmitter::IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SGreaterThan : Opcode::UGreaterThan, lhs, rhs);
+U1 IREmitter::IGreaterThan(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThan32 : Opcode::UGreaterThan32, lhs, rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThan64 : Opcode::UGreaterThan64, lhs, rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
 U1 IREmitter::INotEqual(const U32U64& lhs, const U32U64& rhs) {
@@ -1679,8 +1829,20 @@ U1 IREmitter::INotEqual(const U32U64& lhs, const U32U64& rhs) {
     }
 }
 
-U1 IREmitter::IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed) {
-    return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual : Opcode::UGreaterThanEqual, lhs, rhs);
+U1 IREmitter::IGreaterThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed) {
+    if (lhs.Type() != rhs.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
+    }
+    switch (lhs.Type()) {
+    case Type::U32:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual32 : Opcode::UGreaterThanEqual32, lhs,
+                        rhs);
+    case Type::U64:
+        return Inst<U1>(is_signed ? Opcode::SGreaterThanEqual64 : Opcode::UGreaterThanEqual64, lhs,
+                        rhs);
+    default:
+        ThrowInvalidType(lhs.Type());
+    }
 }
 
 U1 IREmitter::LogicalOr(const U1& a, const U1& b) {
@@ -1786,8 +1948,15 @@ F32F64 IREmitter::ConvertIToF(size_t dest_bitsize, size_t src_bitsize, bool is_s
                      : ConvertUToF(dest_bitsize, src_bitsize, value);
 }
 
-U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
+U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value) {
     switch (result_bitsize) {
+    case 8:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U8>(Opcode::ConvertU8U32, value);
+        default:
+            break;
+        }
     case 16:
         switch (value.Type()) {
         case Type::U32:
@@ -1797,6 +1966,8 @@ U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U16U32U64& value) {
         }
     case 32:
         switch (value.Type()) {
+        case Type::U8:
+            return Inst<U32>(Opcode::ConvertU32U8, value);
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
         default:
@@ -1918,9 +2089,9 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
 
 Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
                                 const Value& address3, const Value& address4,
-                                TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3,
-                address4);
+                                const Value& inline_sampler, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
+                inline_sampler);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,

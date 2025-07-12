@@ -8,6 +8,7 @@
 #include <coroutine>
 #include <exception>
 #include <mutex>
+#include <semaphore>
 #include <span>
 #include <thread>
 #include <vector>
@@ -87,7 +88,7 @@ struct Liverpool {
         }
     };
 
-    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x1000) {
+    static const BinaryInfo& SearchBinaryInfo(const u32* code, size_t search_limit = 0x2000) {
         constexpr u32 token_mov_vcchi = 0xBEEB03FF;
 
         if (code[0] == token_mov_vcchi) {
@@ -608,6 +609,16 @@ struct Liverpool {
         }
     };
 
+    struct BorderColorBufferBase {
+        u32 base_addr_lo;
+        BitField<0, 8, u32> base_addr_hi;
+
+        template <typename T = VAddr>
+        T Address() const {
+            return std::bit_cast<T>(u64(base_addr_hi) << 40 | u64(base_addr_lo) << 8);
+        }
+    };
+
     struct IndexBufferBase {
         BitField<0, 8, u32> base_addr_hi;
         u32 base_addr_lo;
@@ -904,7 +915,7 @@ struct Liverpool {
         }
 
         size_t GetColorSliceSize() const {
-            const auto num_bytes_per_element = NumBits(info.format) / 8u;
+            const auto num_bytes_per_element = NumBitsPerBlock(info.format) / 8u;
             const auto slice_size =
                 num_bytes_per_element * (slice.tile_max + 1) * 64u * NumSamples();
             return slice_size;
@@ -1169,8 +1180,16 @@ struct Liverpool {
     };
 
     union GsMode {
+        enum class Mode : u32 {
+            Off = 0,
+            ScenarioA = 1,
+            ScenarioB = 2,
+            ScenarioG = 3,
+            ScenarioC = 4,
+        };
+
         u32 raw;
-        BitField<0, 3, u32> mode;
+        BitField<0, 3, Mode> mode;
         BitField<3, 2, u32> cut_mode;
         BitField<22, 2, u32> onchip;
     };
@@ -1299,7 +1318,9 @@ struct Liverpool {
             Scissor screen_scissor;
             INSERT_PADDING_WORDS(0xA010 - 0xA00C - 2);
             DepthBuffer depth_buffer;
-            INSERT_PADDING_WORDS(0xA080 - 0xA018);
+            INSERT_PADDING_WORDS(8);
+            BorderColorBufferBase ta_bc_base;
+            INSERT_PADDING_WORDS(0xA080 - 0xA020 - 2);
             WindowOffset window_offset;
             ViewportScissor window_scissor;
             INSERT_PADDING_WORDS(0xA08E - 0xA081 - 2);
@@ -1492,14 +1513,32 @@ public:
         rasterizer = rasterizer_;
     }
 
-    void SendCommand(Common::UniqueFunction<void>&& func) {
-        std::scoped_lock lk{submit_mutex};
-        command_queue.emplace(std::move(func));
-        ++num_commands;
-        submit_cv.notify_one();
+    template <bool wait_done = false>
+    void SendCommand(auto&& func) {
+        if (std::this_thread::get_id() == gpu_id) {
+            return func();
+        }
+        if constexpr (wait_done) {
+            std::binary_semaphore sem{0};
+            {
+                std::scoped_lock lk{submit_mutex};
+                command_queue.emplace([&sem, &func] {
+                    func();
+                    sem.release();
+                });
+                ++num_commands;
+                submit_cv.notify_one();
+            }
+            sem.acquire();
+        } else {
+            std::scoped_lock lk{submit_mutex};
+            command_queue.emplace(std::move(func));
+            ++num_commands;
+            submit_cv.notify_one();
+        }
     }
 
-    void reserveCopyBufferSpace() {
+    void ReserveCopyBufferSpace() {
         GpuQueue& gfx_queue = mapped_queues[GfxQueueId];
         std::scoped_lock<std::mutex> lk(gfx_queue.m_access);
 
@@ -1561,8 +1600,9 @@ private:
     Task ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb);
     Task ProcessCeUpdate(std::span<const u32> ccb);
     template <bool is_indirect = false>
-    Task ProcessCompute(const u32* acb, u32 acb_dwords, u32 vqid);
+    Task ProcessCompute(std::span<const u32> acb, u32 vqid);
 
+    void ProcessCommands();
     void Process(std::stop_token stoken);
 
     struct GpuQueue {
@@ -1606,6 +1646,7 @@ private:
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
+    std::thread::id gpu_id;
     int curr_qid{-1};
 };
 
@@ -1626,6 +1667,7 @@ static_assert(GFX6_3D_REG_INDEX(depth_htile_data_base) == 0xA005);
 static_assert(GFX6_3D_REG_INDEX(screen_scissor) == 0xA00C);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.z_info) == 0xA010);
 static_assert(GFX6_3D_REG_INDEX(depth_buffer.depth_slice) == 0xA017);
+static_assert(GFX6_3D_REG_INDEX(ta_bc_base) == 0xA020);
 static_assert(GFX6_3D_REG_INDEX(window_offset) == 0xA080);
 static_assert(GFX6_3D_REG_INDEX(window_scissor) == 0xA081);
 static_assert(GFX6_3D_REG_INDEX(color_target_mask) == 0xA08E);
