@@ -350,7 +350,8 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
                                          OrbisNetInAddr* addr, int timeout, int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoa6();
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId resolverid, const char* hostname,
-                                         OrbisNetResolverInfo* info, int timeout, int retry, int flags);
+                                                        OrbisNetResolverInfo* info, int timeout,
+                                                        int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
 int PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, int flags);
 int PS4_SYSV_ABI sceNetSendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
