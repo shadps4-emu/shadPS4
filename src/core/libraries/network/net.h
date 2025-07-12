@@ -141,9 +141,9 @@ struct OrbisNetMsghdr {
 
 union OrbisNetEpollData {
     void* ptr;
-    u32 u32;
+    u32 data_u32;
     int fd;
-    u64 u64;
+    u64 data_u64;
 };
 
 struct OrbisNetEpollEvent {
