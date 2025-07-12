@@ -90,7 +90,7 @@ struct File {
     std::vector<DirEntry> dirents;
     u32 dirents_index;
     std::mutex m_mutex;
-    std::shared_ptr<Devices::BaseDevice> device; // only valid for type == Device
+    std::shared_ptr<Devices::BaseDevice> device;    // only valid for type == Device
     std::shared_ptr<Libraries::Net::Socket> socket; // only valid for type == Socket
 };
 

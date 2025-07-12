@@ -4,9 +4,9 @@
 #include <common/assert.h>
 #include <common/logging/log.h>
 #include <core/libraries/kernel/kernel.h>
-#include "core/file_sys/fs.h"
 #include "common/error.h"
 #include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "net_error.h"
 #include "sockets.h"
 #include "sys_net.h"
