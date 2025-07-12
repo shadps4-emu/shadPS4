@@ -22,7 +22,7 @@ using namespace ImGui;
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
 /* convert palette colour from Orbis struct to ImGui format */
-static ImU32 ConvertColor(const Libraries::ImeDialog::OrbisImeColor& c) {
+static ImU32 ConvertColor(const OrbisImeColor& c) {
     return IM_COL32(c.r, c.g, c.b, c.a);
 }
 
