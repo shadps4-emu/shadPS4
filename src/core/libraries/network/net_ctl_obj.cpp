@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/config.h"
+#include "common/logging/log.h"
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/net_ctl_obj.h"
 #include "core/tls.h"
@@ -44,18 +46,22 @@ s32 NetCtlInternal::RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit fu
 
 void NetCtlInternal::CheckCallback() {
     std::scoped_lock lock{m_mutex};
+    const auto event = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED
+                                                         : ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED;
     for (const auto [func, arg] : callbacks) {
         if (func != nullptr) {
-            Core::ExecuteGuest(func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED, arg);
+            Core::ExecuteGuest(func, event, arg);
         }
     }
 }
 
 void NetCtlInternal::CheckNpToolkitCallback() {
     std::scoped_lock lock{m_mutex};
+    const auto event = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED
+                                                         : ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED;
     for (const auto [func, arg] : nptool_callbacks) {
         if (func != nullptr) {
-            Core::ExecuteGuest(func, ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED, arg);
+            Core::ExecuteGuest(func, event, arg);
         }
     }
 }

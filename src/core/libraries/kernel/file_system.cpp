@@ -23,6 +23,9 @@
 #include "core/memory.h"
 #include "kernel.h"
 
+#include <sys/select.h>
+#include <sys/stat.h>
+
 namespace D = Core::Devices;
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
@@ -255,6 +258,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
+    } else if (file->type == Core::FileSys::FileType::Regular) {
+        file->socket->Close();
     }
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
@@ -287,6 +292,13 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->write(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = ::write(file->socket->Native(), buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -468,6 +480,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = ::read(file->socket->Native(), buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -663,6 +682,20 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_blksize = 512;
         sb->st_blocks = 0;
         // TODO incomplete
+        break;
+    }
+    case Core::FileSys::FileType::Socket: {
+        struct stat st{};
+        s32 result = ::fstat(file->socket->Native(), &st);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        sb->st_mode = 0000777u | 0140000u;
+        sb->st_size = st.st_size;
+        sb->st_blocks = st.st_blocks;
+        sb->st_blksize = st.st_blksize;
+        // sb->st_flags = st.st_flags;
         break;
     }
     default:
@@ -1053,6 +1086,103 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              OrbisKernelTimeval* timeout) {
+    LOG_ERROR(Kernel_Fs,
+              "(STUBBED) nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
+              "= {:#x}",
+              nfds, reinterpret_cast<u64>(readfds), reinterpret_cast<u64>(writefds),
+              reinterpret_cast<u64>(exceptfds), reinterpret_cast<u64>(timeout));
+
+    LOG_INFO(Kernel_Fs, "nfds = {}", nfds);
+
+    fd_set read_host, write_host, except_host;
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+    std::map<int, int> host_to_guest;
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    int max_fd = 0;
+
+    for (auto i = 0; i < nfds; ++i) {
+        auto read = readfds && FD_ISSET(i, readfds);
+        auto write = writefds && FD_ISSET(i, writefds);
+        auto except = exceptfds && FD_ISSET(i, exceptfds);
+        if (read || write || except) {
+            LOG_INFO(Kernel_Fs, "guest fd {} expected", i);
+            auto* file = h->GetFile(i);
+            if (file == nullptr ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+                LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+                *__Error() = POSIX_EBADF;
+                return -1;
+            }
+
+            int fd = [&] {
+                switch (file->type) {
+                case Core::FileSys::FileType::Regular:
+                    return static_cast<int>(file->f.GetFileMapping());
+                case Core::FileSys::FileType::Socket:
+                    return file->socket->Native();
+                default:
+                    UNREACHABLE();
+                }
+            }();
+            host_to_guest.emplace(fd, i);
+
+            max_fd = std::max(max_fd, fd);
+
+            if (read) {
+                FD_SET(fd, &read_host);
+                continue;
+            }
+            if (write) {
+                FD_SET(fd, &write_host);
+                continue;
+            }
+            if (except) {
+                FD_SET(fd, &except_host);
+                continue;
+            }
+        }
+    }
+
+    LOG_INFO(Kernel_Fs, "calling select");
+    int ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
+    LOG_INFO(Kernel_Fs, "select = {}", ret);
+
+    if (ret > 0) {
+        if (readfds) {
+            FD_ZERO(readfds);
+        }
+        if (writefds) {
+            FD_ZERO(writefds);
+        }
+        if (exceptfds) {
+            FD_ZERO(exceptfds);
+        }
+
+        for (auto i = 0; i < max_fd + 1; ++i) {
+            if (FD_ISSET(i, &read_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for reading", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], readfds);
+            }
+            if (FD_ISSET(i, &write_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for writing", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], writefds);
+            }
+            if (FD_ISSET(i, &except_host)) {
+                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for except", i, host_to_guest[i]);
+                FD_SET(host_to_guest[i], exceptfds);
+            }
+        }
+    }
+
+    return ret;
+}
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -1108,6 +1238,8 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
     LIB_FUNCTION("mBd4AfLP+u8", "libkernel", 1, "libkernel", 1, 1, sceKernelPwritev);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
+    LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", 1, 1, posix_select);
 }
 
 } // namespace Libraries::Kernel
