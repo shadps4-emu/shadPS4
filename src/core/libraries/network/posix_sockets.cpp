@@ -128,8 +128,12 @@ static int ConvertLevels(int level) {
         return IPPROTO_IP;
     case ORBIS_NET_IPPROTO_TCP:
         return IPPROTO_TCP;
+    case ORBIS_NET_IPPROTO_UDP:
+        return IPPROTO_UDP;
+    case ORBIS_NET_IPPROTO_IPV6:
+        return IPPROTO_IPV6;
     default:
-        UNREACHABLE_MSG("{}", level);
+        UNREACHABLE_MSG("unhandled socket level {}", level);
     }
 }
 
