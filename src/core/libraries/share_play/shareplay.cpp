@@ -131,7 +131,7 @@ int PS4_SYSV_ABI Func_F3DD6199DA15ED44() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceSharePlay(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ggnCfalLU-8", "libSceSharePlay", 1, "libSceSharePlay", 0, 0,
                  sceSharePlayCrashDaemon);
     LIB_FUNCTION("OOrLKB0bSDs", "libSceSharePlay", 1, "libSceSharePlay", 0, 0,

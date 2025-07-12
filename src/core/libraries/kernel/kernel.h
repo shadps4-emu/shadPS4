@@ -35,6 +35,6 @@ struct OrbisWrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
 
 s32* PS4_SYSV_ABI __Error();
 
-void RegisterKernel(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

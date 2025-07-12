@@ -243,7 +243,7 @@ s32 PS4_SYSV_ABI sceKernelSetGPO() {
     return ORBIS_OK;
 }
 
-void RegisterKernel(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
     Libraries::Kernel::RegisterFileSystem(sym);

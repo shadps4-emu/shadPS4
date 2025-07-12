@@ -137,5 +137,5 @@ s32 PS4_SYSV_ABI sceVideodec2Reset(OrbisVideodec2Decoder decoder);
 s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outputInfo,
                                             void* p1stPictureInfo, void* p2ndPictureInfo);
 
-void RegisterlibSceVdec2(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Vdec2
