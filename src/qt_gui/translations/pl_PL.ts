@@ -581,7 +581,9 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>Nie można zbindować unikalnych akcji więcej niż raz. Zduplikowane akcje są przepisane do następujących przycisków:</translation>
+      <translation>Nie można zbindować unikalnych akcji więcej niż raz. Zduplikowane akcje są przepisane do następujących przycisków:
+
+%1</translation>
     </message>
     <message>
       <source>Press a button</source>
@@ -1218,7 +1220,9 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation>Nie można zbindować unikalnych akcji więcej niż raz. Zduplikowane akcje są przepisane do następujących przycisków:</translation>
+      <translation>Nie można zbindować unikalnych akcji więcej niż raz. Zduplikowane akcje są przepisane do następujących przycisków:
+
+%1</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
