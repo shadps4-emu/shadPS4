@@ -121,7 +121,7 @@ struct OrbisNetSockaddrIn {
 using OrbisNetInAddr_t = u32;
 
 struct OrbisNetInAddr {
-    OrbisNetInAddr_t s_addr;
+    OrbisNetInAddr_t inaddr_addr;
 };
 
 struct OrbisNetIovec {

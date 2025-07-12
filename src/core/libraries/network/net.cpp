@@ -1681,7 +1681,7 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
         ASSERT(info && info->ai_addr);
         in_addr resolved_addr = ((sockaddr_in*)info->ai_addr)->sin_addr;
         LOG_DEBUG(Lib_Net, "resolved address for {}: {}", hostname, inet_ntoa(resolved_addr));
-        addr->s_addr = resolved_addr.s_addr;
+        addr->inaddr_addr = resolved_addr.s_addr;
     }
 
     freeaddrinfo(info);
