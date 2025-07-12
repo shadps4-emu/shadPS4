@@ -257,6 +257,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
+    } else if (file->type == Core::FileSys::FileType::Regular) {
+        file->socket->Close();
     }
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
@@ -289,6 +291,13 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->write(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = ::write(file->socket->Native(), buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -470,6 +479,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = ::read(file->socket->Native(), buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
