@@ -23,6 +23,8 @@
 #include "core/memory.h"
 #include "kernel.h"
 
+#include <sys/stat.h>
+
 namespace D = Core::Devices;
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
@@ -679,6 +681,20 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_blksize = 512;
         sb->st_blocks = 0;
         // TODO incomplete
+        break;
+    }
+    case Core::FileSys::FileType::Socket: {
+        struct stat st{};
+        s32 result = ::fstat(file->socket->Native(), &st);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        sb->st_mode = 0000777u | 0140000u;
+        sb->st_size = st.st_size;
+        sb->st_blocks = st.st_blocks;
+        sb->st_blksize = st.st_blksize;
+        // sb->st_flags = st.st_flags;
         break;
     }
     default:
