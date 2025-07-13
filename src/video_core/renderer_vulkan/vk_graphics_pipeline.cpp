@@ -286,8 +286,9 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
-        .logicOpEnable = false,
-        .logicOp = vk::LogicOp::eCopy,
+        .logicOpEnable =
+            instance.IsLogicOpSupported() && key.logic_op != Liverpool::ColorControl::LogicOp::Copy,
+        .logicOp = LiverpoolToVK::LogicOp(key.logic_op),
         .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},

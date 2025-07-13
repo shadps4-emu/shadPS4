@@ -356,6 +356,11 @@ public:
         return driver_id != vk::DriverId::eMoltenvk;
     }
 
+    /// Returns true if logic ops are supported by the device.
+    bool IsLogicOpSupported() const {
+        return features.logicOp;
+    }
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 

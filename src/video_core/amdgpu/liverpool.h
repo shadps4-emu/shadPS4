@@ -791,11 +791,29 @@ struct Liverpool {
             Err = 4u,
             FmaskDecompress = 5u,
         };
+        enum class LogicOp : u32 {
+            Clear = 0x00,
+            Nor = 0x11,
+            AndInverted = 0x22,
+            CopyInverted = 0x33,
+            AndReverse = 0x44,
+            Invert = 0x55,
+            Xor = 0x66,
+            Nand = 0x77,
+            And = 0x88,
+            Equiv = 0x99,
+            Noop = 0xAA,
+            OrInverted = 0xBB,
+            Copy = 0xCC,
+            OrReverse = 0xDD,
+            Or = 0xEE,
+            Set = 0xFF,
+        };
 
         BitField<0, 1, u32> disable_dual_quad;
         BitField<3, 1, u32> degamma_enable;
         BitField<4, 3, OperationMode> mode;
-        BitField<16, 8, u32> rop3;
+        BitField<16, 8, LogicOp> rop3;
     };
 
     struct ColorBuffer {
