@@ -33,22 +33,24 @@ using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
 
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
+    std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
+    u32 patch_control_points;
     u32 num_color_attachments;
     std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
     std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
-    vk::Format depth_format;
-    vk::Format stencil_format;
-
-    u32 num_samples;
-    u32 mrt_mask;
-    AmdGpu::PrimitiveType prim_type;
-    Liverpool::PolygonMode polygon_mode;
-    Liverpool::ClipSpace clip_space;
-    Liverpool::ColorBufferMask cb_shader_mask;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
-    std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
-    u32 patch_control_points;
+    Liverpool::ColorBufferMask cb_shader_mask;
+    u32 num_samples;
+    u32 mrt_mask;
+    vk::Format depth_format;
+    vk::Format stencil_format;
+    struct {
+        AmdGpu::PrimitiveType prim_type : 5;
+        Liverpool::PolygonMode polygon_mode : 2;
+        Liverpool::ClipSpace clip_space : 1;
+        Liverpool::ProvokingVtxLast provoking_vtx_last : 1;
+    };
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;

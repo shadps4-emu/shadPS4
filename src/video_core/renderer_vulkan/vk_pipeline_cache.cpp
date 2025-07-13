@@ -303,6 +303,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.clip_space = regs.clipper_control.clip_space;
+    key.provoking_vtx_last = regs.polygon_control.provoking_vtx_last;
     key.num_samples = regs.NumSamples();
 
     const bool skip_cb_binding =

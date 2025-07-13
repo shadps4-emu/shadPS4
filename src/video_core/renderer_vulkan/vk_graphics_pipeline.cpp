@@ -109,7 +109,13 @@ GraphicsPipeline::GraphicsPipeline(
         .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
     };
 
+    const vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT provoking_vertex_state = {
+        .provokingVertexMode = key.provoking_vtx_last == Liverpool::ProvokingVtxLast::First
+                                   ? vk::ProvokingVertexModeEXT::eFirstVertex
+                                   : vk::ProvokingVertexModeEXT::eLastVertex};
+
     const vk::PipelineRasterizationStateCreateInfo raster_state = {
+        .pNext = instance.IsProvokingVertexSupported() ? &provoking_vertex_state : nullptr,
         .depthClampEnable = false,
         .rasterizerDiscardEnable = false,
         .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),

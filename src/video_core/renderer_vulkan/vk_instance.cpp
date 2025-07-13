@@ -274,6 +274,7 @@ bool Instance::CreateDevice() {
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     fragment_shader_barycentric = add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
+    provoking_vertex = add_extension(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME);
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
@@ -437,6 +438,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
             .legacyVertexAttributes = true,
         },
+        vk::PhysicalDeviceProvokingVertexFeaturesEXT{
+            .provokingVertexLast = true,
+        },
         vk::PhysicalDeviceVertexAttributeDivisorFeatures{
             .vertexAttributeInstanceRateDivisor = true,
         },
@@ -501,6 +505,9 @@ bool Instance::CreateDevice() {
     }
     if (!legacy_vertex_attributes) {
         device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
+    }
+    if (!provoking_vertex) {
+        device_chain.unlink<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();

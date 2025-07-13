@@ -150,6 +150,11 @@ public:
         return legacy_vertex_attributes;
     }
 
+    /// Returns true when VK_EXT_provoking_vertex is supported.
+    bool IsProvokingVertexSupported() const {
+        return provoking_vertex;
+    }
+
     /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
     bool IsImageLoadStoreLodSupported() const {
         return image_load_store_lod;
@@ -405,6 +410,7 @@ private:
     bool robustness2{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
+    bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
