@@ -86,7 +86,7 @@ GraphicsPipeline::GraphicsPipeline(
     };
 
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
-        .pNext = &divisor_state,
+        .pNext = divisors.empty() ? nullptr : &divisor_state,
         .vertexBindingDescriptionCount = static_cast<u32>(vertex_bindings.size()),
         .pVertexBindingDescriptions = vertex_bindings.data(),
         .vertexAttributeDescriptionCount = static_cast<u32>(vertex_attributes.size()),
@@ -323,6 +323,7 @@ void GraphicsPipeline::GetVertexInputs(
     }
     const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
     for (const auto& attrib : fetch_shader->attributes) {
+        const auto step_rate = attrib.GetStepRate();
         const auto& buffer = attrib.GetSharp(vs_info);
         attributes.push_back(Attribute{
             .location = attrib.semantic,
@@ -333,17 +334,15 @@ void GraphicsPipeline::GetVertexInputs(
         bindings.push_back(Binding{
             .binding = attrib.semantic,
             .stride = buffer.GetStride(),
-            .inputRate = attrib.GetStepRate() == InstanceIdType::None
-                             ? vk::VertexInputRate::eVertex
-                             : vk::VertexInputRate::eInstance,
+            .inputRate = step_rate == InstanceIdType::None ? vk::VertexInputRate::eVertex
+                                                           : vk::VertexInputRate::eInstance,
         });
-        const u32 divisor =
-            attrib.GetStepRate() == InstanceIdType::OverStepRate0
-                ? step_rate_0
-                : (attrib.GetStepRate() == InstanceIdType::OverStepRate1 ? step_rate_1 : 1);
+        const u32 divisor = step_rate == InstanceIdType::OverStepRate0
+                                ? step_rate_0
+                                : (step_rate == InstanceIdType::OverStepRate1 ? step_rate_1 : 1);
         if constexpr (std::is_same_v<Binding, vk::VertexInputBindingDescription2EXT>) {
             bindings.back().divisor = divisor;
-        } else {
+        } else if (step_rate != InstanceIdType::None) {
             divisors.push_back(vk::VertexInputBindingDivisorDescriptionEXT{
                 .binding = attrib.semantic,
                 .divisor = divisor,
