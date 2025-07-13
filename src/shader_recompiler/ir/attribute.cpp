@@ -130,10 +130,6 @@ std::string NameOf(Attribute attribute) {
         return "LocalInvocationIndex";
     case Attribute::FragCoord:
         return "FragCoord";
-    case Attribute::InstanceId0:
-        return "InstanceId0";
-    case Attribute::InstanceId1:
-        return "InstanceId1";
     case Attribute::InvocationId:
         return "InvocationId";
     case Attribute::PatchVertices:

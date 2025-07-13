@@ -98,7 +98,8 @@ struct VertexRuntimeInfo {
                clip_disable == other.clip_disable && tess_type == other.tess_type &&
                tess_topology == other.tess_topology &&
                tess_partitioning == other.tess_partitioning &&
-               hs_output_cp_stride == other.hs_output_cp_stride;
+               hs_output_cp_stride == other.hs_output_cp_stride &&
+               step_rate_0 == other.step_rate_0 && step_rate_1 == other.step_rate_1;
     }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {

@@ -92,11 +92,21 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
         // v1: instance ID, step rate 0
         if (runtime_info.num_input_vgprs > 0) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId0));
+            if (runtime_info.vs_info.step_rate_0 != 0) {
+                ir.SetVectorReg(dst_vreg++, ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                                    ir.Imm32(runtime_info.vs_info.step_rate_0)));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
         }
         // v2: instance ID, step rate 1
         if (runtime_info.num_input_vgprs > 1) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId1));
+            if (runtime_info.vs_info.step_rate_1 != 0) {
+                ir.SetVectorReg(dst_vreg++, ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                                    ir.Imm32(runtime_info.vs_info.step_rate_1)));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
         }
         // v3: instance ID, plain
         if (runtime_info.num_input_vgprs > 2) {
@@ -183,10 +193,8 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         switch (runtime_info.gs_info.out_primitive[0]) {
         case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
             ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
-            [[fallthrough]];
         case AmdGpu::GsOutputPrimitiveType::LineStrip:
             ir.SetVectorReg(IR::VectorReg::V1, ir.Imm32(1u)); // vertex 1
-            [[fallthrough]];
         default:
             ir.SetVectorReg(IR::VectorReg::V0, ir.Imm32(0u)); // vertex 0
             break;
