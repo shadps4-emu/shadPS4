@@ -378,7 +378,7 @@ void EmitContext::DefineInputs() {
             const auto sharp = attrib.GetSharp(info);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
             Id id{DefineInput(type, attrib.semantic)};
-            if (attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::Plain) {
+            if (attrib.GetStepRate() != Gcn::VertexAttribute::InstanceIdType::None) {
                 Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
             } else {
                 Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
