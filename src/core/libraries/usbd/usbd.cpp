@@ -10,32 +10,33 @@
 #include <fmt/format.h>
 #include <libusb.h>
 
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
 
 namespace {
-    std::unordered_map<Libraries::Usbd::SceUsbdTransfer*, Libraries::Usbd::SceUsbdTransferCallback> g_transfer_callbacks;
-    std::mutex g_callback_mutex;
+std::unordered_map<Libraries::Usbd::SceUsbdTransfer*, Libraries::Usbd::SceUsbdTransferCallback>
+    g_transfer_callbacks;
+std::mutex g_callback_mutex;
 
-    void transfer_abi_callback(libusb_transfer* transfer) {
-        using SysVCallback = void (PS4_SYSV_ABI *)(Libraries::Usbd::SceUsbdTransfer*);
-        SysVCallback callback = nullptr;
+void transfer_abi_callback(libusb_transfer* transfer) {
+    using SysVCallback = void(PS4_SYSV_ABI*)(Libraries::Usbd::SceUsbdTransfer*);
+    SysVCallback callback = nullptr;
 
-        {
-            std::lock_guard<std::mutex> lock(g_callback_mutex);
-            auto it = g_transfer_callbacks.find(transfer);
-            if (it != g_transfer_callbacks.end()) {
-                callback = (SysVCallback)it->second;
-            }
-        }
-
-        if (callback) {
-            callback(transfer);
-        } else {
-            LOG_WARNING(Lib_Usbd, "No registered callback for USB transfer");
+    {
+        std::lock_guard<std::mutex> lock(g_callback_mutex);
+        auto it = g_transfer_callbacks.find(transfer);
+        if (it != g_transfer_callbacks.end()) {
+            callback = (SysVCallback)it->second;
         }
     }
+
+    if (callback) {
+        callback(transfer);
+    } else {
+        LOG_WARNING(Lib_Usbd, "No registered callback for USB transfer");
+    }
 }
+} // namespace
 
 namespace Libraries::Usbd {
 
@@ -342,8 +343,8 @@ void PS4_SYSV_ABI sceUsbdFillInterruptTransfer(SceUsbdTransfer* transfer,
         g_transfer_callbacks[transfer] = callback;
     }
 
-    libusb_fill_interrupt_transfer(transfer, dev_handle, endpoint, buffer, length, transfer_abi_callback,
-                                   user_data, timeout);
+    libusb_fill_interrupt_transfer(transfer, dev_handle, endpoint, buffer, length,
+                                   transfer_abi_callback, user_data, timeout);
 }
 
 void PS4_SYSV_ABI sceUsbdFillIsoTransfer(SceUsbdTransfer* transfer, SceUsbdDeviceHandle* dev_handle,
