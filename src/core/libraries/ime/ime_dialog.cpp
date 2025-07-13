@@ -198,14 +198,14 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
 
     if (param->posx < 0.0f ||
         param->posx >=
-            MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
+            MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx={}", param->posx);
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
         param->posy >=
-            MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
+            MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy={}", param->posy);
         return Error::INVALID_POSY;
     }
@@ -244,7 +244,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
             return Error::INVALID_EXTENDED;
         }
 
-        if (static_cast<u32>(extended->disable_device) & ~kValidOrbisImeDisableDeviceMask) {
+        if (static_cast<u32>(extended->disable_device) & 0x7) {
             LOG_ERROR(Lib_ImeDialog,
                       "sceImeDialogInit: disable_device has invalid bits set (0x{:X})",
                       static_cast<u32>(extended->disable_device));
