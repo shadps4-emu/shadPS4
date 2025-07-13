@@ -39,7 +39,7 @@ struct GraphicsPipelineKey {
     vk::Format depth_format;
     vk::Format stencil_format;
 
-    u32 num_samples;
+    u32 num_samples{};
     u32 mrt_mask;
     AmdGpu::PrimitiveType prim_type;
     Liverpool::PolygonMode polygon_mode;
