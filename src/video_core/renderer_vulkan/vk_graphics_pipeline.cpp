@@ -109,18 +109,28 @@ GraphicsPipeline::GraphicsPipeline(
         .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
     };
 
-    const vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT provoking_vertex_state = {
-        .provokingVertexMode = key.provoking_vtx_last == Liverpool::ProvokingVtxLast::First
-                                   ? vk::ProvokingVertexModeEXT::eFirstVertex
-                                   : vk::ProvokingVertexModeEXT::eLastVertex};
+    vk::StructureChain raster_chain = {
+        vk::PipelineRasterizationStateCreateInfo{
+            .depthClampEnable = key.depth_clamp_enable,
+            .rasterizerDiscardEnable = false,
+            .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
+            .lineWidth = 1.0f,
+        },
+        vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT{
+            .provokingVertexMode = key.provoking_vtx_last == Liverpool::ProvokingVtxLast::First
+                                       ? vk::ProvokingVertexModeEXT::eFirstVertex
+                                       : vk::ProvokingVertexModeEXT::eLastVertex,
+        },
+        vk::PipelineRasterizationDepthClipStateCreateInfoEXT{
+            .depthClipEnable = key.depth_clip_enable,
+        }};
 
-    const vk::PipelineRasterizationStateCreateInfo raster_state = {
-        .pNext = instance.IsProvokingVertexSupported() ? &provoking_vertex_state : nullptr,
-        .depthClampEnable = false,
-        .rasterizerDiscardEnable = false,
-        .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .lineWidth = 1.0f,
-    };
+    if (!instance.IsProvokingVertexSupported()) {
+        raster_chain.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
+    }
+    if (!instance.IsDepthClipEnableSupported()) {
+        raster_chain.unlink<vk::PipelineRasterizationDepthClipStateCreateInfoEXT>();
+    }
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
         .rasterizationSamples =
@@ -128,15 +138,32 @@ GraphicsPipeline::GraphicsPipeline(
         .sampleShadingEnable = false,
     };
 
-    const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
-        .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+    const vk::DepthClampRangeEXT depth_clamp_range = {
+        .minDepthClamp = key.min_depth_clamp,
+        .maxDepthClamp = key.max_depth_clamp,
     };
 
-    const vk::PipelineViewportStateCreateInfo viewport_info = {
-        .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
+    vk::StructureChain viewport_chain = {
+        vk::PipelineViewportStateCreateInfo{},
+        vk::PipelineViewportDepthClipControlCreateInfoEXT{
+            .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+        },
+        vk::PipelineViewportDepthClampControlCreateInfoEXT{
+            .depthClampMode = key.depth_clamp_user_defined_range
+                                  ? vk::DepthClampModeEXT::eUserDefinedRange
+                                  : vk::DepthClampModeEXT::eViewportRange,
+            .pDepthClampRange = &depth_clamp_range,
+        },
     };
 
-    boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
+    if (!instance.IsDepthClampControlSupported()) {
+        viewport_chain.unlink<vk::PipelineViewportDepthClampControlCreateInfoEXT>();
+    }
+    if (!instance.IsDepthClipControlSupported()) {
+        viewport_chain.unlink<vk::PipelineViewportDepthClipControlCreateInfoEXT>();
+    }
+
+    boost::container::static_vector<vk::DynamicState, 32> dynamic_states = {
         vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
         vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthTestEnable,
         vk::DynamicState::eDepthWriteEnable,   vk::DynamicState::eDepthCompareOp,
@@ -227,11 +254,19 @@ GraphicsPipeline::GraphicsPipeline(
         });
     }
 
+    const auto depth_format =
+        instance.GetSupportedFormat(LiverpoolToVK::DepthFormat(key.z_format, key.stencil_format),
+                                    vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
-        .depthAttachmentFormat = key.depth_format,
-        .stencilAttachmentFormat = key.stencil_format,
+        .depthAttachmentFormat = key.z_format != Liverpool::DepthBuffer::ZFormat::Invalid
+                                     ? depth_format
+                                     : vk::Format::eUndefined,
+        .stencilAttachmentFormat =
+            key.stencil_format != Liverpool::DepthBuffer::StencilFormat::Invalid
+                ? depth_format
+                : vk::Format::eUndefined,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
@@ -301,8 +336,8 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
         .pTessellationState = &tessellation_state,
-        .pViewportState = &viewport_info,
-        .pRasterizationState = &raster_state,
+        .pViewportState = &viewport_chain.get(),
+        .pRasterizationState = &raster_chain.get(),
         .pMultisampleState = &multisampling,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,

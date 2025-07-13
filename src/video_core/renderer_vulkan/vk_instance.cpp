@@ -270,6 +270,8 @@ bool Instance::CreateDevice() {
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
+    depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
+    depth_clamp_control = add_extension(VK_EXT_DEPTH_CLAMP_CONTROL_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
     fragment_shader_barycentric = add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
@@ -363,6 +365,7 @@ bool Instance::CreateDevice() {
                 .dualSrcBlend = features.dualSrcBlend,
                 .logicOp = features.logicOp,
                 .multiDrawIndirect = features.multiDrawIndirect,
+                .depthClamp = features.depthClamp,
                 .depthBiasClamp = features.depthBiasClamp,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
@@ -418,6 +421,12 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
+        },
+        vk::PhysicalDeviceDepthClipEnableFeaturesEXT{
+            .depthClipEnable = true,
+        },
+        vk::PhysicalDeviceDepthClampControlFeaturesEXT{
+            .depthClampControl = true,
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
             .robustBufferAccess2 = robustness2_features.robustBufferAccess2,
@@ -490,6 +499,12 @@ bool Instance::CreateDevice() {
     }
     if (!depth_clip_control) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
+    }
+    if (!depth_clip_enable) {
+        device_chain.unlink<vk::PhysicalDeviceDepthClipEnableFeaturesEXT>();
+    }
+    if (!depth_clamp_control) {
+        device_chain.unlink<vk::PhysicalDeviceDepthClampControlFeaturesEXT>();
     }
     if (!robustness2) {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();

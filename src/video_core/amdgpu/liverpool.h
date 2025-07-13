@@ -516,6 +516,11 @@ struct Liverpool {
         BitField<24, 1, u32> dx_linear_attr_clip_enable;
         BitField<26, 1, u32> zclip_near_disable;
         BitField<27, 1, u32> zclip_far_disable;
+
+        bool ZclipEnable() const {
+            ASSERT(zclip_near_disable == zclip_far_disable);
+            return !zclip_near_disable;
+        }
     };
 
     enum class PolygonMode : u32 {

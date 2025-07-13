@@ -1086,12 +1086,6 @@ void Rasterizer::UpdateViewportScissorState() const {
             viewport.maxDepth = zoffset + zscale;
         }
 
-        if (!regs.depth_render_override.disable_viewport_clamp) {
-            // Apply depth clamp.
-            viewport.minDepth = std::max(viewport.minDepth, vp_d.zmin);
-            viewport.maxDepth = std::min(viewport.maxDepth, vp_d.zmax);
-        }
-
         if (!instance.IsDepthRangeUnrestrictedSupported()) {
             // Unrestricted depth range not supported by device. Restrict to valid range.
             viewport.minDepth = std::max(viewport.minDepth, 0.f);
