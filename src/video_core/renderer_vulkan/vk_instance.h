@@ -178,6 +178,16 @@ public:
         return shader_atomic_float2 && shader_atomic_float2_features.shaderImageFloat32AtomicMinMax;
     }
 
+    /// Returns true if 64-bit integer atomic operations can be used on buffers
+    bool IsBufferInt64AtomicsSupported() const {
+        return vk12_features.shaderBufferInt64Atomics;
+    }
+
+    /// Returns true if 64-bit integer atomic operations can be used on shared memory
+    bool IsSharedInt64AtomicsSupported() const {
+        return vk12_features.shaderSharedInt64Atomics;
+    }
+
     /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
     bool IsWorkgroupMemoryExplicitLayoutSupported() const {
         return workgroup_memory_explicit_layout &&
@@ -314,9 +324,19 @@ public:
         return properties.limits.maxViewportDimensions[0];
     }
 
-    ///  Returns the maximum viewport height.
+    /// Returns the maximum viewport height.
     u32 GetMaxViewportHeight() const {
         return properties.limits.maxViewportDimensions[1];
+    }
+
+    /// Returns the maximum render area width.
+    u32 GetMaxFramebufferWidth() const {
+        return properties.limits.maxFramebufferWidth;
+    }
+
+    /// Returns the maximum render area height.
+    u32 GetMaxFramebufferHeight() const {
+        return properties.limits.maxFramebufferHeight;
     }
 
     /// Returns the sample count flags supported by framebuffers.
@@ -358,6 +378,7 @@ private:
     vk::PhysicalDeviceVulkan12Properties vk12_props;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
+    vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;

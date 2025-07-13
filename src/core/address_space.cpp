@@ -302,14 +302,15 @@ struct AddressSpace::Impl {
             new_flags = PAGE_READWRITE;
         } else if (read && !write) {
             new_flags = PAGE_READONLY;
-        } else if (execute && !read && not write) {
+        } else if (execute && !read && !write) {
             new_flags = PAGE_EXECUTE;
         } else if (!read && !write && !execute) {
             new_flags = PAGE_NOACCESS;
         } else {
             LOG_CRITICAL(Common_Memory,
-                         "Unsupported protection flag combination for address {:#x}, size {}",
-                         virtual_addr, size);
+                         "Unsupported protection flag combination for address {:#x}, size {}, "
+                         "read={}, write={}, execute={}",
+                         virtual_addr, size, read, write, execute);
             return;
         }
 
@@ -357,9 +358,17 @@ enum PosixPageProtection {
 [[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
     if (True(prot & Core::MemoryProt::CpuReadWrite) ||
         True(prot & Core::MemoryProt::GpuReadWrite)) {
-        return PAGE_READWRITE;
+        if (True(prot & Core::MemoryProt::CpuExec)) {
+            return PAGE_EXECUTE_READWRITE;
+        } else {
+            return PAGE_READWRITE;
+        }
     } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        return PAGE_READONLY;
+        if (True(prot & Core::MemoryProt::CpuExec)) {
+            return PAGE_EXECUTE_READ;
+        } else {
+            return PAGE_READONLY;
+        }
     } else {
         return PAGE_NOACCESS;
     }

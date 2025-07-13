@@ -5,6 +5,7 @@
 
 #include <shared_mutex>
 #include "common/recursive_lock.h"
+#include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -56,8 +57,10 @@ public:
                                  bool from_guest = false);
 
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+    void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size);
+    bool ReadMemory(VAddr addr, u64 size);
     bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
@@ -65,7 +68,7 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void ProcessFaults();
+    void EndCommandList();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -120,7 +123,7 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
-    std::shared_mutex mapped_ranges_mutex;
+    Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 
     boost::container::static_vector<

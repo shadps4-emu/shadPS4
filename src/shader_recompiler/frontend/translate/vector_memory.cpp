@@ -74,12 +74,20 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::BUFFER_ATOMIC_SMIN:
         return BUFFER_ATOMIC(AtomicOp::Smin, inst);
+    case Opcode::BUFFER_ATOMIC_SMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smin, inst);
     case Opcode::BUFFER_ATOMIC_UMIN:
         return BUFFER_ATOMIC(AtomicOp::Umin, inst);
+    case Opcode::BUFFER_ATOMIC_UMIN_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umin, inst);
     case Opcode::BUFFER_ATOMIC_SMAX:
         return BUFFER_ATOMIC(AtomicOp::Smax, inst);
+    case Opcode::BUFFER_ATOMIC_SMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Smax, inst);
     case Opcode::BUFFER_ATOMIC_UMAX:
         return BUFFER_ATOMIC(AtomicOp::Umax, inst);
+    case Opcode::BUFFER_ATOMIC_UMAX_X2:
+        return BUFFER_ATOMIC<IR::U64>(AtomicOp::Umax, inst);
     case Opcode::BUFFER_ATOMIC_AND:
         return BUFFER_ATOMIC(AtomicOp::And, inst);
     case Opcode::BUFFER_ATOMIC_OR:
@@ -184,9 +192,10 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
+    const bool has_soffset = !soffset.IsImmediate() || soffset.U32() != 0;
     if (info.stage != Stage::Geometry) {
-        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
-                   "Non immediate offset not supported");
+        ASSERT_MSG(!has_soffset || !mubuf.offen,
+                   "Having both scalar and vector offsets is not supported");
     }
 
     const IR::Value address = [&] -> IR::Value {
@@ -196,15 +205,21 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
         if (mubuf.idxen && mubuf.offen) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
         }
+        if (mubuf.idxen && has_soffset) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
+        }
         if (mubuf.idxen || mubuf.offen) {
             return ir.GetVectorReg(vaddr);
+        }
+        if (has_soffset) {
+            return soffset;
         }
         return {};
     }();
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
-    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.offset_enable.Assign(mubuf.offen || has_soffset);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -304,6 +319,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     }
 }
 
+template <typename T>
 void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const auto& mubuf = inst.control.mubuf;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -328,7 +344,17 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
 
-    IR::Value vdata_val = ir.GetVectorReg<Shader::IR::U32>(vdata);
+    IR::Value vdata_val = [&] {
+        if constexpr (std::is_same_v<T, IR::U32>) {
+            return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::U64>) {
+            return ir.PackUint2x32(
+                ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
+                                      ir.GetVectorReg<Shader::IR::U32>(vdata + 1)));
+        } else {
+            static_assert(false, "buffer_atomic: type not supported");
+        }
+    }();
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(srsrc), ir.GetScalarReg(srsrc + 1),
                               ir.GetScalarReg(srsrc + 2), ir.GetScalarReg(srsrc + 3));

@@ -171,19 +171,40 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
         LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
-    if (outputInfo->pictureCount == 0 || gPictureInfos.empty()) {
+    if (outputInfo->pictureCount == 0) {
         LOG_ERROR(Lib_Vdec2, "No picture info available");
         return ORBIS_OK;
     }
 
-    if (p1stPictureInfoOut) {
-        OrbisVideodec2AvcPictureInfo* picInfo =
-            static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
-        if ((picInfo->thisSize | 16) != sizeof(OrbisVideodec2AvcPictureInfo)) {
-            LOG_ERROR(Lib_Vdec2, "Invalid struct size");
-            return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+    // If the game uses the older Videodec2 structs, we need to accomodate that.
+    if (outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+        if (gLegacyPictureInfos.empty()) {
+            LOG_ERROR(Lib_Vdec2, "No picture info available");
+            return ORBIS_OK;
         }
-        *picInfo = gPictureInfos.back();
+        if (p1stPictureInfoOut) {
+            OrbisVideodec2LegacyAvcPictureInfo* picInfo =
+                static_cast<OrbisVideodec2LegacyAvcPictureInfo*>(p1stPictureInfoOut);
+            if (picInfo->thisSize != sizeof(OrbisVideodec2LegacyAvcPictureInfo)) {
+                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
+                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+            }
+            *picInfo = gLegacyPictureInfos.back();
+        }
+    } else {
+        if (gPictureInfos.empty()) {
+            LOG_ERROR(Lib_Vdec2, "No picture info available");
+            return ORBIS_OK;
+        }
+        if (p1stPictureInfoOut) {
+            OrbisVideodec2AvcPictureInfo* picInfo =
+                static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
+            if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
+                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
+                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+            }
+            *picInfo = gPictureInfos.back();
+        }
     }
 
     if (outputInfo->pictureCount > 1) {

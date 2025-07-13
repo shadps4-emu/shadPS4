@@ -454,32 +454,8 @@
       <translation>Usar configuraciones por juego</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1/LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2/LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Back</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1/RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2/RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options/Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Botones de acción</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triángulo/Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Cuadrado/X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Círculo/B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Cruz / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,72 @@
     <message>
       <source>Cancel</source>
       <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sin vincular</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opciones</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Izquierda del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Centro del Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Derecha del Touchpad</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triángulo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Cuadrado</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Círculo</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Equis</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Presiona un botón</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Mueve el stick analógico</translation>
     </message>
   </context>
   <context>
@@ -747,6 +773,10 @@
     <message>
       <source>Last updated</source>
       <translation>Última actualización</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favorito</translation>
     </message>
   </context>
   <context>
@@ -949,6 +979,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>Visualizador de SFO para </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Eliminar de Favoritos</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Añadir a favoritos</translation>
     </message>
   </context>
   <context>
@@ -1180,21 +1218,19 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
-
-%1</translation>
+      <translation>No se puede asignar un control único más de una vez. Controles duplicados asignados a los siguientes botones:</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Izquierda del Touchpad</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Centro del Touchpad</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Derecha del Touchpad</translation>
     </message>
   </context>
   <context>

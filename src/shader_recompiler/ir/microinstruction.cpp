@@ -70,10 +70,14 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::BufferAtomicIAdd64:
     case Opcode::BufferAtomicISub32:
     case Opcode::BufferAtomicSMin32:
+    case Opcode::BufferAtomicSMin64:
     case Opcode::BufferAtomicUMin32:
+    case Opcode::BufferAtomicUMin64:
     case Opcode::BufferAtomicFMin32:
     case Opcode::BufferAtomicSMax32:
+    case Opcode::BufferAtomicSMax64:
     case Opcode::BufferAtomicUMax32:
+    case Opcode::BufferAtomicUMax64:
     case Opcode::BufferAtomicFMax32:
     case Opcode::BufferAtomicInc32:
     case Opcode::BufferAtomicDec32:
@@ -88,7 +92,6 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::WriteSharedU32:
     case Opcode::WriteSharedU64:
     case Opcode::SharedAtomicIAdd32:
-    case Opcode::SharedAtomicIAdd64:
     case Opcode::SharedAtomicISub32:
     case Opcode::SharedAtomicSMin32:
     case Opcode::SharedAtomicUMin32:
@@ -99,6 +102,17 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::SharedAtomicAnd32:
     case Opcode::SharedAtomicOr32:
     case Opcode::SharedAtomicXor32:
+    case Opcode::SharedAtomicIAdd64:
+    case Opcode::SharedAtomicISub64:
+    case Opcode::SharedAtomicSMin64:
+    case Opcode::SharedAtomicUMin64:
+    case Opcode::SharedAtomicSMax64:
+    case Opcode::SharedAtomicUMax64:
+    case Opcode::SharedAtomicInc64:
+    case Opcode::SharedAtomicDec64:
+    case Opcode::SharedAtomicAnd64:
+    case Opcode::SharedAtomicOr64:
+    case Opcode::SharedAtomicXor64:
     case Opcode::ImageWrite:
     case Opcode::ImageAtomicIAdd32:
     case Opcode::ImageAtomicSMin32:

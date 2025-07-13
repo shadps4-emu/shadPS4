@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "shader_recompiler/ir/program.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
@@ -53,9 +54,21 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicXor32:
         info.shared_types |= IR::Type::U32;
         break;
+    case IR::Opcode::SharedAtomicIAdd64:
+    case IR::Opcode::SharedAtomicISub64:
+    case IR::Opcode::SharedAtomicSMin64:
+    case IR::Opcode::SharedAtomicUMin64:
+    case IR::Opcode::SharedAtomicSMax64:
+    case IR::Opcode::SharedAtomicUMax64:
+    case IR::Opcode::SharedAtomicInc64:
+    case IR::Opcode::SharedAtomicDec64:
+    case IR::Opcode::SharedAtomicAnd64:
+    case IR::Opcode::SharedAtomicOr64:
+    case IR::Opcode::SharedAtomicXor64:
+        info.uses_shared_int64_atomics = true;
+        [[fallthrough]];
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU64:
-    case IR::Opcode::SharedAtomicIAdd64:
         info.shared_types |= IR::Type::U64;
         break;
     case IR::Opcode::ConvertF16F32:
@@ -98,11 +111,18 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicFMin32:
         info.uses_buffer_atomic_float_min_max = true;
         break;
+    case IR::Opcode::BufferAtomicIAdd64:
+    case IR::Opcode::BufferAtomicSMax64:
+    case IR::Opcode::BufferAtomicSMin64:
+    case IR::Opcode::BufferAtomicUMax64:
+    case IR::Opcode::BufferAtomicUMin64:
+        info.uses_buffer_int64_atomics = true;
+        break;
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
     case IR::Opcode::ReadConst:
-        if (info.readconst_types == Info::ReadConstType::None) {
+        if (!info.uses_dma) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 // We can't guarantee that flatbuf will not grow past UBO
@@ -116,7 +136,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         } else {
             info.readconst_types |= Info::ReadConstType::Dynamic;
         }
-        info.dma_types |= IR::Type::U32;
+        info.uses_dma = true;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
@@ -129,22 +149,42 @@ void Visit(Info& info, const IR::Inst& inst) {
     }
 }
 
-void CollectShaderInfoPass(IR::Program& program) {
+void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
+    auto& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(program.info, inst);
+            Visit(info, inst);
         }
     }
 
-    if (program.info.dma_types != IR::Type::Void) {
-        program.info.buffers.push_back({
+    // In case Flatbuf has not already been bound by IR and is needed
+    // to query buffer sizes, bind it now.
+    if (!profile.supports_robust_buffer_access && !info.uses_dma) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            // We can't guarantee that flatbuf will not grow past UBO
+            // limit if there are a lot of ReadConsts. (We could specialize)
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
+            .buffer_type = BufferType::Flatbuf,
+        });
+        // In the future we may want to read buffer sizes from GPU memory if available.
+        // info.readconst_types |= Info::ReadConstType::Immediate;
+    }
+
+    if (!Config::directMemoryAccess()) {
+        info.uses_dma = false;
+        info.readconst_types = Info::ReadConstType::None;
+    }
+
+    if (info.uses_dma) {
+        info.buffers.push_back({
             .used_types = IR::Type::U64,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
-        program.info.buffers.push_back({
-            .used_types = IR::Type::U8,
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
             .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,

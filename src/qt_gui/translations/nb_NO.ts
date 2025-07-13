@@ -454,32 +454,8 @@
       <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Tilbake</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Handlingsknapper</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triangel / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Firkant / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Sirkel / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Kryss / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -535,7 +495,7 @@
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation>Overstyr farge på lyslinja</translation>
+      <translation>Overstyr farge på lyslisten</translation>
     </message>
     <message>
       <source>Override Color</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>Ikke tildelt</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Venstre berøringsplate</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Midt berøringsplate</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Høyre berøringsplate</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triangel</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Firkant</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Sirkel</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kryss</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Trykk på en knapp</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Flytt på analog stikke</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Sist oppdatert</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favoritter</translation>
     </message>
   </context>
   <context>
@@ -950,6 +982,14 @@
       <source>SFO Viewer for </source>
       <translation>SFO-viser for </translation>
     </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Fjern fra favoritter</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Legg til i favoritter</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1078,7 +1118,7 @@
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
-      <translation>Merk: Trykk på hjelpeknappen for mer informasjon</translation>
+      <translation>Merk: Trykk på «Hjelp»-knappen for mer informasjon</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -1186,15 +1226,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation>Berøringsplate venstre</translation>
+      <translation>Venstre berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation>Berøringsplate midten</translation>
+      <translation>Midt berøringsplate</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation>Berøringsplate høyre</translation>
+      <translation>Høyre berøringsplate</translation>
     </message>
   </context>
   <context>

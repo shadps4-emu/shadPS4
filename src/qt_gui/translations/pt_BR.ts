@@ -454,32 +454,8 @@
       <translation>Usar configurações por jogo</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Voltar</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Botões de Ação</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Triângulo / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Quadrado / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Círculo / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Cruz / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>não mapeado</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Opções</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Touchpad Esquerdo</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Centro do Touchpad</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Touchpad Direito</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Triângulo</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Quadrado</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Círculo</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Cruz</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Não é possível atribuir a mesma entrada mais de uma vez. Entradas duplicadas foram atribuídas aos seguintes botões:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Pressione um botão</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Mover analógico</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Última atualização</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Favorito</translation>
     </message>
   </context>
   <context>
@@ -949,6 +981,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>Visualizador de SFO para </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Remover dos Favoritos</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Adicionar aos Favoritos</translation>
     </message>
   </context>
   <context>

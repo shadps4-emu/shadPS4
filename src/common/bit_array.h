@@ -361,13 +361,6 @@ public:
         return *this;
     }
 
-    inline constexpr BitArray& operator~() {
-        for (size_t i = 0; i < WORD_COUNT; ++i) {
-            data[i] = ~data[i];
-        }
-        return *this;
-    }
-
     inline constexpr BitArray operator|(const BitArray& other) const {
         BitArray result = *this;
         result |= other;
@@ -388,7 +381,9 @@ public:
 
     inline constexpr BitArray operator~() const {
         BitArray result = *this;
-        result = ~result;
+        for (size_t i = 0; i < WORD_COUNT; ++i) {
+            result.data[i] = ~result.data[i];
+        }
         return result;
     }
 

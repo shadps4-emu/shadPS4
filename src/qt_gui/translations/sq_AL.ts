@@ -454,32 +454,8 @@
       <translation>Përdor konfigurime të veçanta për secilën lojë</translation>
     </message>
     <message>
-      <source>L1 / LB</source>
-      <translation>L1 / LB</translation>
-    </message>
-    <message>
-      <source>L2 / LT</source>
-      <translation>L2 / LT</translation>
-    </message>
-    <message>
-      <source>Back</source>
-      <translation>Mbrapa</translation>
-    </message>
-    <message>
-      <source>R1 / RB</source>
-      <translation>R1 / RB</translation>
-    </message>
-    <message>
-      <source>R2 / RT</source>
-      <translation>R2 / RT</translation>
-    </message>
-    <message>
       <source>L3</source>
       <translation>L3</translation>
-    </message>
-    <message>
-      <source>Options / Start</source>
-      <translation>Options / Start</translation>
     </message>
     <message>
       <source>R3</source>
@@ -488,22 +464,6 @@
     <message>
       <source>Face Buttons</source>
       <translation>Butonat kryesore</translation>
-    </message>
-    <message>
-      <source>Triangle / Y</source>
-      <translation>Trekëndësh / Y</translation>
-    </message>
-    <message>
-      <source>Square / X</source>
-      <translation>Katror / X</translation>
-    </message>
-    <message>
-      <source>Circle / B</source>
-      <translation>Rreth / B</translation>
-    </message>
-    <message>
-      <source>Cross / A</source>
-      <translation>Kryq / A</translation>
     </message>
     <message>
       <source>Right Stick Deadzone (def:2, max:127)</source>
@@ -564,6 +524,74 @@
     <message>
       <source>Cancel</source>
       <translation>Anulo</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>pacaktuar</translation>
+    </message>
+    <message>
+      <source>L1</source>
+      <translation>L1</translation>
+    </message>
+    <message>
+      <source>R1</source>
+      <translation>R1</translation>
+    </message>
+    <message>
+      <source>L2</source>
+      <translation>L2</translation>
+    </message>
+    <message>
+      <source>Options</source>
+      <translation>Options</translation>
+    </message>
+    <message>
+      <source>R2</source>
+      <translation>R2</translation>
+    </message>
+    <message>
+      <source>Touchpad Left</source>
+      <translation>Paneli me Prekje Majtas</translation>
+    </message>
+    <message>
+      <source>Touchpad Center</source>
+      <translation>Paneli me Prekje në Qendër</translation>
+    </message>
+    <message>
+      <source>Touchpad Right</source>
+      <translation>Paneli me Prekje Djathtas</translation>
+    </message>
+    <message>
+      <source>Triangle</source>
+      <translation>Trekëndësh</translation>
+    </message>
+    <message>
+      <source>Square</source>
+      <translation>Katror</translation>
+    </message>
+    <message>
+      <source>Circle</source>
+      <translation>Rreth</translation>
+    </message>
+    <message>
+      <source>Cross</source>
+      <translation>Kryq</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Nuk mund të caktohet e njëjta hyrje unike më shumë se një herë. Hyrjet e dyfishta janë caktuar në butonët e mëposhtëm:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Shtyp një buton</translation>
+    </message>
+    <message>
+      <source>Move analog stick</source>
+      <translation>Lëviz levën</translation>
     </message>
   </context>
   <context>
@@ -747,6 +775,10 @@
     <message>
       <source>Last updated</source>
       <translation>Përditësuar për herë të fundit</translation>
+    </message>
+    <message>
+      <source>Favorite</source>
+      <translation>Të Preferuarat</translation>
     </message>
   </context>
   <context>
@@ -949,6 +981,14 @@
     <message>
       <source>SFO Viewer for </source>
       <translation>Shikuesi SFO për </translation>
+    </message>
+    <message>
+      <source>Remove from Favorites</source>
+      <translation>Hiq nga të Preferuarat</translation>
+    </message>
+    <message>
+      <source>Add to Favorites</source>
+      <translation>Shto në të Preferuarat</translation>
     </message>
   </context>
   <context>
@@ -1186,15 +1226,15 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>Paneli me Prekje Majtas</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>Paneli me Prekje në Qendër</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>Paneli me Prekje Djathtas</translation>
     </message>
   </context>
   <context>
