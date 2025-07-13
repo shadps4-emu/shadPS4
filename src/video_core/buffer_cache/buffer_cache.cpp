@@ -1040,6 +1040,7 @@ void BufferCache::SynchronizeBuffersForDma() {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto upload_pending = [&]() {
+        RENDERER_TRACE;
         if (last_buffer_id == NULL_BUFFER_ID) {
             return;
         }
@@ -1091,7 +1092,6 @@ void BufferCache::SynchronizeBuffersForDma() {
                 const u64 page_end =
                     Common::DivCeil((copy_end - 1) & TRACKER_HIGHER_PAGE_MASK, TRACKER_BYTES_PER_PAGE);
                 ASSERT(page_start < page_end);
-                LOG_WARNING(Render_Vulkan, "Page start {:#x}, end {:#x}", page_start, page_end);
                 clear_mask.SetRange(page_start, page_end);
             });
         }, upload_pending);
