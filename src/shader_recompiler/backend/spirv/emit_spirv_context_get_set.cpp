@@ -52,7 +52,7 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+        if (ctx.stage == Stage::Local) {
             const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
             return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
                                      ctx.ConstU32(element));
@@ -94,13 +94,9 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
 
 std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-            return {ctx.F32[1], false};
-        } else {
-            const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto& info{ctx.output_params.at(index)};
-            return {info.component_type, info.is_integer};
-        }
+        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto& info{ctx.output_params.at(index)};
+        return {info.component_type, info.is_integer};
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};

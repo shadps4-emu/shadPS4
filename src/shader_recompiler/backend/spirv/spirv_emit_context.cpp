@@ -551,7 +551,7 @@ void EmitContext::DefineOutputs() {
             cull_distances =
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
-        if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
+        if (stage == Stage::Local) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
@@ -737,19 +737,19 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         Decorate(id, spv::Decoration::NonWritable);
     }
     switch (buffer_type) {
-    case Shader::BufferType::GdsBuffer:
+    case BufferType::GdsBuffer:
         Name(id, "gds_buffer");
         break;
-    case Shader::BufferType::Flatbuf:
+    case BufferType::Flatbuf:
         Name(id, "srt_flatbuf");
         break;
-    case Shader::BufferType::BdaPagetable:
+    case BufferType::BdaPagetable:
         Name(id, "bda_pagetable");
         break;
-    case Shader::BufferType::FaultBuffer:
+    case BufferType::FaultBuffer:
         Name(id, "fault_buffer");
         break;
-    case Shader::BufferType::SharedMemory:
+    case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
     default:

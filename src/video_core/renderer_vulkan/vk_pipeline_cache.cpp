@@ -94,15 +94,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
-        if (regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Hull))) {
-            info.ls_info.links_with_tcs = true;
-            Shader::TessellationDataConstantBuffer tess_constants;
-            const auto* pgm = regs.ProgramForStage(static_cast<u32>(Stage::Hull));
-            const auto params = Liverpool::GetParams(*pgm);
-            const auto& hull_info = program_cache.at(params.hash)->info;
-            hull_info.ReadTessConstantBuffer(tess_constants);
-            info.ls_info.ls_stride = tess_constants.ls_stride;
-        }
+        Shader::TessellationDataConstantBuffer tess_constants;
+        const auto* hull_info = infos[u32(Shader::LogicalStage::TessellationControl)];
+        hull_info->ReadTessConstantBuffer(tess_constants);
+        info.ls_info.ls_stride = tess_constants.ls_stride;
         break;
     }
     case Stage::Hull: {

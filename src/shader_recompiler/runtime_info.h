@@ -42,7 +42,6 @@ constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
 
 struct LocalRuntimeInfo {
     u32 ls_stride;
-    bool links_with_tcs;
 
     auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
 };

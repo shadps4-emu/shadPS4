@@ -90,27 +90,40 @@ void Translator::EmitPrologue(IR::Block* first_block) {
     case LogicalStage::Vertex:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
-        // v1: instance ID, step rate 0
-        if (runtime_info.num_input_vgprs > 0) {
-            if (runtime_info.vs_info.step_rate_0 != 0) {
-                ir.SetVectorReg(dst_vreg++, ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
-                                                    ir.Imm32(runtime_info.vs_info.step_rate_0)));
-            } else {
+        if (info.stage == Stage::Local) {
+            // v1: rel patch ID
+            if (runtime_info.num_input_vgprs > 0) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
-        }
-        // v2: instance ID, step rate 1
-        if (runtime_info.num_input_vgprs > 1) {
-            if (runtime_info.vs_info.step_rate_1 != 0) {
-                ir.SetVectorReg(dst_vreg++, ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
-                                                    ir.Imm32(runtime_info.vs_info.step_rate_1)));
-            } else {
-                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            // v2: instance ID
+            if (runtime_info.num_input_vgprs > 1) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
             }
-        }
-        // v3: instance ID, plain
-        if (runtime_info.num_input_vgprs > 2) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+        } else {
+            // v1: instance ID, step rate 0
+            if (runtime_info.num_input_vgprs > 0) {
+                if (runtime_info.vs_info.step_rate_0 != 0) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                            ir.Imm32(runtime_info.vs_info.step_rate_0)));
+                } else {
+                    ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+                }
+            }
+            // v2: instance ID, step rate 1
+            if (runtime_info.num_input_vgprs > 1) {
+                if (runtime_info.vs_info.step_rate_1 != 0) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                            ir.Imm32(runtime_info.vs_info.step_rate_1)));
+                } else {
+                    ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+                }
+            }
+            // v3: instance ID, plain
+            if (runtime_info.num_input_vgprs > 2) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+            }
         }
         break;
     case LogicalStage::Fragment:
