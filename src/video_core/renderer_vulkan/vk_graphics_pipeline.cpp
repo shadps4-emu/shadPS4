@@ -144,7 +144,7 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eStencilTestEnable,  vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
-        vk::DynamicState::eFrontFace,
+        vk::DynamicState::eFrontFace,          vk::DynamicState::eRasterizerDiscardEnable,
     };
 
     if (instance.IsPrimitiveRestartDisableSupported()) {

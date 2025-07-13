@@ -513,9 +513,9 @@ struct Liverpool {
         BitField<19, 1, ClipSpace> clip_space;
         BitField<21, 1, PrimKillCond> vtx_kill_or;
         BitField<22, 1, u32> dx_rasterization_kill;
-        BitField<23, 1, u32> dx_linear_attr_clip_enable;
+        BitField<24, 1, u32> dx_linear_attr_clip_enable;
         BitField<26, 1, u32> zclip_near_disable;
-        BitField<26, 1, u32> zclip_far_disable;
+        BitField<27, 1, u32> zclip_far_disable;
     };
 
     enum class PolygonMode : u32 {
@@ -738,12 +738,7 @@ struct Liverpool {
         u32 data_w;
     };
 
-    struct BlendConstants {
-        float red;
-        float green;
-        float blue;
-        float alpha;
-    };
+    using BlendConstants = std::array<float, 4>;
 
     union BlendControl {
         enum class BlendFactor : u32 {

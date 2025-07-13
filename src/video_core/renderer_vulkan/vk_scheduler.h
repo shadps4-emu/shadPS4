@@ -96,6 +96,7 @@ struct DynamicState {
         bool stencil_back_compare_mask : 1;
 
         bool primitive_restart_enable : 1;
+        bool rasterizer_discard_enable : 1;
         bool cull_mode : 1;
         bool front_face : 1;
 
@@ -130,10 +131,11 @@ struct DynamicState {
     u32 stencil_back_compare_mask{};
 
     bool primitive_restart_enable{};
+    bool rasterizer_discard_enable{};
     vk::CullModeFlags cull_mode{};
     vk::FrontFace front_face{};
 
-    float blend_constants[4]{};
+    std::array<float, 4> blend_constants{};
     ColorWriteMasks color_write_masks{};
 
     /// Commits the dynamic state to the provided command buffer.
@@ -283,10 +285,17 @@ struct DynamicState {
         }
     }
 
-    void SetBlendConstants(const float blend_constants_[4]) {
-        if (!std::equal(blend_constants, std::end(blend_constants), blend_constants_)) {
-            std::memcpy(blend_constants, blend_constants_, sizeof(blend_constants));
+    void SetBlendConstants(const std::array<float, 4> blend_constants_) {
+        if (blend_constants != blend_constants_) {
+            blend_constants = blend_constants_;
             dirty_state.blend_constants = true;
+        }
+    }
+
+    void SetRasterizerDiscardEnabled(const bool enabled) {
+        if (rasterizer_discard_enable != enabled) {
+            rasterizer_discard_enable = enabled;
+            dirty_state.rasterizer_discard_enable = true;
         }
     }
 
