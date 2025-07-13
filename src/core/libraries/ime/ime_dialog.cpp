@@ -197,15 +197,13 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     // TODO: do correct param->supportedLanguages validation
 
     if (param->posx < 0.0f ||
-        param->posx >=
-            MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
+        param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx={}", param->posx);
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
-        param->posy >=
-            MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
+        param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
         LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy={}", param->posy);
         return Error::INVALID_POSY;
     }
