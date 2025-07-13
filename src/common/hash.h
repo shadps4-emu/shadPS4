@@ -5,7 +5,10 @@
 
 #include "common/types.h"
 
-template <typename T, typename U>
-T HashCombine(const T& seed, const U& value) {
-    return seed ^ (static_cast<T>(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+[[nodiscard]] inline u64 HashCombine(const u64 seed, const u64 hash) {
+    return seed ^ (hash + 0x9e3779b9 + (seed << 12) + (seed >> 4));
+}
+
+[[nodiscard]] inline u32 HashCombine(const u32 seed, const u32 hash) {
+    return seed ^ (hash + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
