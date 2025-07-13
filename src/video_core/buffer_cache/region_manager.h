@@ -5,6 +5,7 @@
 
 #include "common/config.h"
 #include "common/div_ceil.h"
+#include "common/func_traits.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
@@ -69,20 +70,6 @@ public:
         }
     }
 
-    template <Type type, bool enable>
-    void PerformDeferredProtections() {
-        bool was_deferred = True(deferred_protection & type);
-        if (!was_deferred) {
-            return;
-        }
-        deferred_protection &= ~type;
-        if constexpr (type == Type::CPU) {
-            UpdateProtection<!enable, false>();
-        } else if constexpr (type == Type::GPU) {
-            UpdateProtection<enable, true>();
-        }
-    }
-
     /**
      * Change the state of a range of pages
      *
@@ -121,9 +108,11 @@ public:
      * @param size            Size in bytes of the CPU range to loop over
      * @param func            Function to call for each turned off region
      */
-    template <Type type, bool clear>
-    void ForEachModifiedRange(VAddr query_cpu_range, s64 size, auto&& func) {
+    template <Type type, bool clear, typename F>
+    void ForEachModifiedRange(VAddr query_cpu_range, s64 size, F&& func) {
         RENDERER_TRACE;
+        using FuncTraits = Common::FuncTraits<F>;
+        constexpr bool uses_clear_mask = FuncTraits::NUM_ARGS == 3;
         const size_t offset = query_cpu_range - cpu_addr;
         const size_t start_page = SanitizeAddress(offset) / TRACKER_BYTES_PER_PAGE;
         const size_t end_page =
@@ -135,17 +124,30 @@ public:
         RegionBits& bits = GetRegionBits<type>();
         RegionBits mask(bits, start_page, end_page);
 
+        if constexpr (uses_clear_mask) {
+            static_assert(clear, "Function must not use clear mask when not clearing");
+            RegionBits clear_mask;
+            for (const auto& [start, end] : mask) {
+                func(cpu_addr + start * TRACKER_BYTES_PER_PAGE,
+                     (end - start) * TRACKER_BYTES_PER_PAGE, clear_mask);
+            }
+            bits &= ~clear_mask;
+        } else {
+            for (const auto& [start, end] : mask) {
+                func(cpu_addr + start * TRACKER_BYTES_PER_PAGE,
+                     (end - start) * TRACKER_BYTES_PER_PAGE);
+            }
+            if constexpr (clear) {
+                bits &= ~mask;
+            }
+        }
+
         if constexpr (clear) {
-            bits.UnsetRange(start_page, end_page);
             if constexpr (type == Type::CPU) {
                 UpdateProtection<true, false>();
             } else if (Config::readbacks()) {
                 UpdateProtection<false, true>();
             }
-        }
-
-        for (const auto& [start, end] : mask) {
-            func(cpu_addr + start * TRACKER_BYTES_PER_PAGE, (end - start) * TRACKER_BYTES_PER_PAGE);
         }
     }
 

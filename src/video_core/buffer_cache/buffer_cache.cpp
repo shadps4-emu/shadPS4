@@ -1064,8 +1064,11 @@ void BufferCache::SynchronizeBuffersForDma() {
         copies.clear();
     };
     mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
-        memory_tracker->ForEachUploadRange(device_addr, size, false, [&](u64 device_addr_out, u64 range_size) {
+        RENDERER_TRACE;
+        memory_tracker->ForEachUploadRange(device_addr, size, false, [&](u64 device_addr_out, u64 range_size, RegionBits& clear_mask) {
+            RENDERER_TRACE;
             ForEachBufferInRange(device_addr_out, range_size, [&](BufferId buffer_id, Buffer& buffer) {
+                RENDERER_TRACE;
                 if (last_buffer_id != buffer_id) {
                     upload_pending();
                     last_buffer_id = buffer_id;
@@ -1082,6 +1085,14 @@ void BufferCache::SynchronizeBuffersForDma() {
                     .dstOffset = copy_start - buffer.CpuAddr(),
                     .size = copy_size,
                 });
+
+                // We need to use tracker page size here, we are marking the clear mask
+                const u64 page_start = (copy_start & TRACKER_HIGHER_PAGE_MASK) >> TRACKER_PAGE_BITS;
+                const u64 page_end =
+                    Common::DivCeil((copy_end - 1) & TRACKER_HIGHER_PAGE_MASK, TRACKER_BYTES_PER_PAGE);
+                ASSERT(page_start < page_end);
+                LOG_WARNING(Render_Vulkan, "Page start {:#x}, end {:#x}", page_start, page_end);
+                clear_mask.SetRange(page_start, page_end);
             });
         }, upload_pending);
     });
