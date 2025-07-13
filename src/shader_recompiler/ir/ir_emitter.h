@@ -81,8 +81,7 @@ public:
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
-    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0,
-                                   IR::Value index = IR::Value(u32(0u)));
+    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
