@@ -216,6 +216,15 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+if (NOT TARGET cereal::cereal)
+    set(SKIP_PERFORMANCE_COMPARISON ON "")
+    set(BUILD_SANDBOX OFF "")
+    set(BUILD_TESTS OFF "")
+    set(BUILD_DOC OFF "")
+    set(SKIP_PORTABILITY_TEST ON "")
+    add_subdirectory(cereal)
+endif ()
+
 # Apple-only dependencies
 if (APPLE)
     # date

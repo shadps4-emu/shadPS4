@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -11,11 +14,16 @@
 #include "common/hash.h"
 #include "common/path_util.h"
 #include "common/io_file.h"
-#include "common/binary_helper.h"
+#include "video_core/renderer_vulkan/shader_cache_serialization.h"
+#include <cereal/archives/binary.hpp>
 #include "common/logging/log.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/specialization.h"
+#include <fstream>
+#include <iostream>
+
+#include "shader_cache.h"
 
 using u64 = uint64_t;
 using u32 = uint32_t;
@@ -240,489 +248,15 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     return hash;
 }
 
-void SerializeInfo(std::ostream& info_serialized, Shader::Info info) {
-    writeBin(info_serialized, info.ud_mask.mask);
-
-    u32 bufferCount = static_cast<u32>(info.buffers.size());
-    writeBin(info_serialized, bufferCount); // Buffer Amount
-
-    for (const auto& buffer : info.buffers) {
-        writeBin(info_serialized, buffer.sharp_idx);
-        writeBin(info_serialized, static_cast<u32>(buffer.used_types));
-        writeBin(info_serialized, static_cast<u32>(buffer.buffer_type));
-        writeBin(info_serialized, buffer.instance_attrib);
-        writeBin(info_serialized, static_cast<u8>(buffer.is_written ? 1 : 0));
-        writeBin(info_serialized, static_cast<u8>(buffer.is_formatted ? 1 : 0));
-
-        writeBin(info_serialized, buffer.inline_cbuf.base_address);
-        writeBin(info_serialized, buffer.inline_cbuf._padding0);
-        writeBin(info_serialized, buffer.inline_cbuf.stride);
-        writeBin(info_serialized, buffer.inline_cbuf.cache_swizzle);
-        writeBin(info_serialized, buffer.inline_cbuf.swizzle_enable);
-        writeBin(info_serialized, buffer.inline_cbuf.num_records);
-        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_x);
-        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_y);
-        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_z);
-        writeBin(info_serialized, buffer.inline_cbuf.dst_sel_w);
-        writeBin(info_serialized, buffer.inline_cbuf.num_format);
-        writeBin(info_serialized, buffer.inline_cbuf.data_format);
-        writeBin(info_serialized, buffer.inline_cbuf.element_size);
-        writeBin(info_serialized, buffer.inline_cbuf.index_stride);
-        writeBin(info_serialized, buffer.inline_cbuf.add_tid_enable);
-        writeBin(info_serialized, buffer.inline_cbuf._padding1);
-        writeBin(info_serialized, buffer.inline_cbuf.type);
-
-    }
-
-    // Image-Resources
-    u32 imageCount = static_cast<u32>(info.images.size());
-    writeBin(info_serialized, imageCount); // Image Amount
-
-    for (const auto& image : info.images) {
-        writeBin(info_serialized, image.sharp_idx);
-        writeBin(info_serialized, static_cast<u8>(image.is_depth ? 1 : 0));
-        writeBin(info_serialized, static_cast<u8>(image.is_atomic ? 1 : 0));
-        writeBin(info_serialized, static_cast<u8>(image.is_array ? 1 : 0));
-        writeBin(info_serialized, static_cast<u8>(image.is_written ? 1 : 0));
-    }
-
-    // Sampler-Resources
-    u32 samplerCount = static_cast<u32>(info.samplers.size());
-    writeBin(info_serialized, samplerCount); // Sampler Amount
-
-    for (const auto& sampler : info.samplers) {
-        if (std::holds_alternative<u32>(sampler.sampler))
-        {
-            std::uint8_t tag = 0;
-            writeBin(info_serialized, tag);
-
-            u32 sharp_idx = std::get<u32>(sampler.sampler);
-            writeBin(info_serialized, sharp_idx);
-        }
-        else
-        {
-            std::uint8_t tag = 1;
-            writeBin(info_serialized, tag);
-
-            const AmdGpu::Sampler& hw_sampler =
-                std::get<AmdGpu::Sampler>(sampler.sampler);
-            writeBin(info_serialized, hw_sampler);
-        }
-
-        std::uint8_t packed =
-            static_cast<std::uint8_t>((sampler.disable_aniso & 0x1) << 4) |
-            static_cast<std::uint8_t>(sampler.associated_image & 0xF);
-
-        writeBin(info_serialized, packed);
-    }
-
-    // FMask-Resources
-    u32 fmaskCount = static_cast<u32>(info.fmasks.size());
-    writeBin(info_serialized, fmaskCount); // FMask Amount
-
-    for (const auto& fmask : info.fmasks) {
-        writeBin(info_serialized, fmask.sharp_idx);
-    }
-
-    // GS Copy Data
-    u32 mapCount = static_cast<u32>(info.gs_copy_data.attr_map.size());
-    writeBin(info_serialized, mapCount);
-
-    for (auto const& [loc, attr_pair] : info.gs_copy_data.attr_map) {
-        writeBin(info_serialized, loc);
-        writeBin(info_serialized, static_cast<u32>(attr_pair.first));
-        writeBin(info_serialized, attr_pair.second);
-    }
-    
-    // SRT Info
-    u32 srtCount = static_cast<u32>(info.srt_info.srt_reservations.size());
-    writeBin(info_serialized, srtCount);
-
-    for (const auto& res : info.srt_info.srt_reservations) {
-        writeBin(info_serialized, res.sgpr_base);
-        writeBin(info_serialized, res.dword_offset);
-        writeBin(info_serialized, res.num_dwords);
-    }
-
-    writeBin(info_serialized, info.srt_info.flattened_bufsize_dw);
-
-    // Flat UD
-
-    u32 flatCount = static_cast<u32>(info.flattened_ud_buf.size());
-    writeBin(info_serialized, flatCount);
-
-    for (const auto& flat : info.flattened_ud_buf) {
-        writeBin(info_serialized, flat);
-    }
-
-    // Tessellation Data
-    writeBin(info_serialized, info.tess_consts_ptr_base);
-    writeBin(info_serialized, info.tess_consts_dword_offset);
-
-    // Flags
-    writeBin(info_serialized, static_cast<u8>(info.has_storage_images ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.has_discard ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.has_image_gather ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.has_image_query ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_lane_id ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_group_quad ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_group_ballot ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_fp16 ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_fp64 ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_pack_10_11_11 ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.uses_unpack_10_11_11 ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.stores_tess_level_outer ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.stores_tess_level_inner ? 1 : 0));
-    writeBin(info_serialized, static_cast<u8>(info.translation_failed ? 1 : 0));
-
-    // MRT Mask
-    writeBin(info_serialized, info.mrt_mask);
-
-    // Fetch
-
-    writeBin(info_serialized, static_cast<u8>(info.has_fetch_shader ? 1 : 0));
-    writeBin(info_serialized, info.fetch_shader_sgpr_base);
-
-    // Stage
-    writeBin(info_serialized, info.stage);
-    writeBin(info_serialized, info.l_stage);
-    writeBin(info_serialized, info.pgm_hash);
-
-    // AttributeFlags for loads
-    u32 loads_size = static_cast<u32>(info.loads.flags.size());
-    writeBin(info_serialized, loads_size);
-    for (size_t i = 0; i < info.loads.flags.size(); ++i) {
-        writeBin(info_serialized, info.loads.flags[i]);
-    }
-
-    // AttributeFlags for stores
-    u32 stores_size = static_cast<u32>(info.stores.flags.size());
-    writeBin(info_serialized, stores_size);
-    for (size_t i = 0; i < info.stores.flags.size(); ++i) {
-        writeBin(info_serialized, info.stores.flags[i]);
-    }
-
-    // UserData
-    u32 userDataSize = static_cast<u32>(info.user_data.size());
-    writeBin(info_serialized, userDataSize);
-    for (size_t i = 0; i < info.user_data.size(); ++i) {
-        writeBin(info_serialized, info.user_data[i]);
-    }
-
-    // Pgm Base
-    writeBin(info_serialized, info.pgm_base);
-}
-
-void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
-    // UD Mask
-    readBin(info_serialized, info.ud_mask.mask);
-
-    // Buffer-Resources
-    u32 bufferCount;
-    readBin(info_serialized, bufferCount);
-
-    info.buffers.clear();
-    info.buffers.reserve(bufferCount);
-    for (u32 i = 0; i < bufferCount; ++i) {
-        Shader::BufferResource buffer;
-        readBin(info_serialized, buffer.sharp_idx);
-        u32 used_types;
-        readBin(info_serialized, used_types);
-        buffer.used_types = static_cast<Shader::IR::Type>(used_types);
-        u32 buffer_type;
-        readBin(info_serialized, buffer_type);
-        buffer.buffer_type = static_cast<Shader::BufferType>(buffer_type);
-        readBin(info_serialized, buffer.instance_attrib);
-        u8 is_written;
-        readBin(info_serialized, is_written);
-        buffer.is_written = (is_written == 1);
-        u8 is_formatted;
-        readBin(info_serialized, is_formatted);
-        buffer.is_formatted = (is_formatted == 1);
-        
-        u64 base_address;
-        readBin(info_serialized, base_address);
-        buffer.inline_cbuf.base_address = base_address;
-
-        u64 padding0;
-        readBin(info_serialized, padding0);
-        buffer.inline_cbuf._padding0 = padding0;
-
-        u64 stride;
-        readBin(info_serialized, stride);
-        buffer.inline_cbuf.stride = stride;
-
-        u64 cache_swizzle;
-        readBin(info_serialized, cache_swizzle);
-        buffer.inline_cbuf.cache_swizzle = cache_swizzle;
-
-        u64 swizzle_enable;
-        readBin(info_serialized, swizzle_enable);
-        buffer.inline_cbuf.swizzle_enable = swizzle_enable;
-
-        readBin(info_serialized, buffer.inline_cbuf.num_records);
-
-        u32 dst_sel_x;
-        readBin(info_serialized, dst_sel_x);
-        buffer.inline_cbuf.dst_sel_x = dst_sel_x;
-
-        u32 dst_sel_y;
-        readBin(info_serialized, dst_sel_y);
-        buffer.inline_cbuf.dst_sel_y = dst_sel_y;
-
-        u32 dst_sel_z;
-        readBin(info_serialized, dst_sel_z);
-        buffer.inline_cbuf.dst_sel_z = dst_sel_z;
-
-        u32 dst_sel_w;
-        readBin(info_serialized, dst_sel_w);
-        buffer.inline_cbuf.dst_sel_w = dst_sel_w;
-
-        u32 num_format;
-        readBin(info_serialized, num_format);
-        buffer.inline_cbuf.num_format = num_format;
-
-        u32 data_format;
-        readBin(info_serialized, data_format);
-        buffer.inline_cbuf.data_format = data_format;
-
-        u32 element_size;
-        readBin(info_serialized, element_size);
-        buffer.inline_cbuf.element_size = element_size;
-
-        u32 index_stride;
-        readBin(info_serialized, index_stride);
-        buffer.inline_cbuf.index_stride = index_stride;
-
-        u32 add_tid_enable;
-        readBin(info_serialized, add_tid_enable);
-        buffer.inline_cbuf.add_tid_enable = add_tid_enable;
-
-        u32 padding1;
-        readBin(info_serialized, padding1);
-        buffer.inline_cbuf._padding1 = padding1;
-
-        u32 type;
-        readBin(info_serialized, type);
-        buffer.inline_cbuf.type = type;
-
-        info.buffers.push_back(std::move(buffer));
-    }
-
-    // Image-Resources
-    u32 imageCount;
-    readBin(info_serialized, imageCount);
-
-    info.images.clear();
-    info.images.reserve(imageCount);
-    for (u32 i = 0; i < imageCount; ++i) {
-        Shader::ImageResource image;
-        readBin(info_serialized, image.sharp_idx);
-        u8 is_depth;
-        readBin(info_serialized, is_depth);
-        image.is_depth = (is_depth == 1);
-        u8 is_atomic;
-        readBin(info_serialized, is_atomic);
-        image.is_atomic = (is_atomic == 1);
-        u8 is_array;
-        readBin(info_serialized, is_array);
-        image.is_array = (is_array == 1);
-        u8 is_written;
-        readBin(info_serialized, is_written);
-        image.is_written = (is_written == 1);
-        info.images.push_back(std::move(image));
-    }
-
-    // Sampler-Resources
-    u32 samplerCount;
-    readBin(info_serialized, samplerCount);
-
-    info.samplers.clear();
-    info.samplers.reserve(samplerCount);
-    for (u32 i = 0; i < samplerCount; ++i)
-    {
-        std::uint8_t tag;
-        readBin(info_serialized, tag);
-
-        Shader::SamplerResource sampler{0, 0, false}; // Dummy-Init
-
-        if (tag == 0)
-        {
-            u32 sharp_idx;
-            readBin(info_serialized, sharp_idx);
-            sampler.sampler = sharp_idx;
-        }
-        else
-        {
-            AmdGpu::Sampler hw_sampler;
-            readBin(info_serialized, hw_sampler);
-            sampler.sampler = hw_sampler;
-        }
-
-        std::uint8_t packed;
-        readBin(info_serialized, packed);
-
-        sampler.associated_image = packed & 0xF;
-        sampler.disable_aniso    = (packed >> 4) & 0x1;
-
-        info.samplers.push_back(std::move(sampler));
-    }
-
-    // FMask-Resources
-    u32 fmaskCount;
-    readBin(info_serialized, fmaskCount);
-
-    info.fmasks.clear();
-    info.fmasks.reserve(fmaskCount);
-    for (u32 i = 0; i < fmaskCount; ++i) {
-        Shader::FMaskResource fmask;
-        readBin(info_serialized, fmask.sharp_idx);
-        info.fmasks.push_back(std::move(fmask));
-    }
-
-    // GS Copy Data
-    u32 mapCount;
-    readBin(info_serialized, mapCount);
-
-    info.gs_copy_data.attr_map.clear();
-    for (u32 i = 0; i < mapCount; ++i) {
-        u32 loc;
-        u32 attribute_value;
-        u32 idx;
-        readBin(info_serialized, loc);
-        readBin(info_serialized, attribute_value);
-        readBin(info_serialized, idx);
-        Shader::IR::Attribute attribute = static_cast<Shader::IR::Attribute>(attribute_value);
-        info.gs_copy_data.attr_map.emplace(loc, std::make_pair(attribute, idx));
-    }
-
-    // SRT Info
-    u32 srtCount;
-    readBin(info_serialized, srtCount);
-
-    info.srt_info.srt_reservations.clear();
-    info.srt_info.srt_reservations.resize(srtCount);
-    for (u32 i = 0; i < srtCount; ++i) {
-        auto& res = info.srt_info.srt_reservations[i];
-        readBin(info_serialized, res.sgpr_base);
-        readBin(info_serialized, res.dword_offset);
-        readBin(info_serialized, res.num_dwords);
-    }
-
-    readBin(info_serialized, info.srt_info.flattened_bufsize_dw);
-
-    // Flat UD
-
-    u32 flatCount;
-    readBin(info_serialized, flatCount);
-
-    info.flattened_ud_buf.clear();
-    u32 required_size = std::max(flatCount, info.srt_info.flattened_bufsize_dw);
-    info.flattened_ud_buf.resize(required_size);
-
-    for (u32 i = 0; i < flatCount; ++i) {
-        readBin(info_serialized, info.flattened_ud_buf[i]);
-    }
-
-    // Tessellation Data
-    readBin(info_serialized, info.tess_consts_ptr_base);
-    readBin(info_serialized, info.tess_consts_dword_offset);
-
-    // Flags
-    u8 flag_value;
-    readBin(info_serialized, flag_value);
-    info.has_storage_images = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.has_discard = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.has_image_gather = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.has_image_query = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_lane_id = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_group_quad = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_group_ballot = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_fp16 = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_fp64 = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_pack_10_11_11 = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.uses_unpack_10_11_11 = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.stores_tess_level_outer = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.stores_tess_level_inner = (flag_value == 1);
-    readBin(info_serialized, flag_value);
-    info.translation_failed = (flag_value == 1);
-
-    // MRT Mask
-    readBin(info_serialized, info.mrt_mask);
-
-    // Fetch Shader
-    u8 has_fetch_shader;
-    readBin(info_serialized, has_fetch_shader);
-    info.has_fetch_shader = (has_fetch_shader == 1);
-    readBin(info_serialized, info.fetch_shader_sgpr_base);
-
-    // Stage
-    readBin(info_serialized, info.stage);
-    readBin(info_serialized, info.l_stage);
-    readBin(info_serialized, info.pgm_hash);
-
-    // AttributeFlags for loads
-    u32 loads_size;
-    readBin(info_serialized, loads_size);
-    for (size_t i = 0; i < loads_size; ++i) {
-        readBin(info_serialized, info.loads.flags[i]);
-    }
-
-    // AttributeFlags for stores
-    u32 stores_size;
-    readBin(info_serialized, stores_size);
-    for (size_t i = 0; i < stores_size; ++i) {
-        readBin(info_serialized, info.stores.flags[i]);
-    }
-
-    // UserData
-    u32 userDataSize;
-    readBin(info_serialized, userDataSize);
-
-    static std::vector<u32> temp_user_data_storage;
-    temp_user_data_storage.clear();
-    temp_user_data_storage.resize(userDataSize);
-
-    for (u32 i = 0; i < userDataSize; ++i) {
-        readBin(info_serialized, temp_user_data_storage[i]);
-    }
-
-    info.user_data = std::span<const u32>(temp_user_data_storage);
-
-    // Pgm Base
-    readBin(info_serialized, info.pgm_base);
-
-
-    // Check if there are any remaining bytes in the stream
-    if (info_serialized.peek() != EOF) {
-        LOG_WARNING(Render_Vulkan, "There are remaining bytes in the cache file");
-    }
-}
-
 bool CheckShaderCache(std::string shader_id) {
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / (shader_id + ".spv");
     std::filesystem::path resources_file_path = shader_cache_dir / (shader_id + ".resources");
 
     if (!std::filesystem::exists(spirv_cache_file_path)) {
-        LOG_DEBUG(Render_Vulkan, "SPIR-V-Datei nicht gefunden: {}", spirv_cache_file_path.string());
         return false;
     }
 
     if (!std::filesystem::exists(resources_file_path)) {
-        LOG_DEBUG(Render_Vulkan, "Ressourcendatei nicht gefunden: {}",
-                  resources_file_path.string());
         return false;
     }
 
@@ -762,7 +296,7 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
     std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
                                            Common::FS::FileAccessMode::Read);
-    
+
     std::vector<char> resources_data;
     resources_data.resize(resources_dump_file.GetSize());
     resources_dump_file.Read(resources_data);
@@ -772,7 +306,7 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
 
     std::istringstream info_stream;
     info_stream.str(std::string(resources_data.begin(), resources_data.end()));
-    DeserializeInfo(info_stream, info);
+
 
 }
 
@@ -793,6 +327,12 @@ void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_s
     }
 
     resources_dump_file.Close();
+}
+
+void SerializeInfo(
+    std::ostream& info_serialized, Shader::Info info) {
+    cereal::BinaryOutputArchive ar(info_serialized);
+    ar << info.images;
 }
 
 } // namespace ShaderCache
