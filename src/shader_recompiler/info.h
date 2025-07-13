@@ -113,17 +113,13 @@ struct FMaskResource {
 using FMaskResourceList = boost::container::small_vector<FMaskResource, NumFMasks>;
 
 struct PushData {
-    static constexpr u32 Step0Index = 0;
-    static constexpr u32 Step1Index = 1;
-    static constexpr u32 XOffsetIndex = 2;
-    static constexpr u32 YOffsetIndex = 3;
-    static constexpr u32 XScaleIndex = 4;
-    static constexpr u32 YScaleIndex = 5;
-    static constexpr u32 UdRegsIndex = 6;
+    static constexpr u32 XOffsetIndex = 0;
+    static constexpr u32 YOffsetIndex = 1;
+    static constexpr u32 XScaleIndex = 2;
+    static constexpr u32 YScaleIndex = 3;
+    static constexpr u32 UdRegsIndex = 4;
     static constexpr u32 BufOffsetIndex = UdRegsIndex + NumUserDataRegs / 4;
 
-    u32 step0;
-    u32 step1;
     float xoffset;
     float yoffset;
     float xscale;

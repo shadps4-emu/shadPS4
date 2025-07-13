@@ -481,11 +481,11 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 }
 
 void Translator::EmitFetch(const GcnInst& inst) {
-    // Read the pointer to the fetch shader assembly.
     const auto code_sgpr_base = inst.src[0].code;
+
+    // The fetch shader must be inlined to access as regular buffers, so that
+    // bounds checks can be emitted to emulate robust buffer access.
     if (!profile.supports_robust_buffer_access) {
-        // The fetch shader must be inlined to access as regular buffers, so that
-        // bounds checks can be emitted to emulate robust buffer access.
         const auto* code = GetFetchShaderCode(info, code_sgpr_base);
         GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
         GcnDecodeContext decoder;
@@ -534,16 +534,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
         const auto swizzled = ApplySwizzle(ir, converted, buffer.DstSelect());
         for (u32 i = 0; i < 4; i++) {
             ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(swizzled, i)});
-        }
-
-        // In case of programmable step rates we need to fallback to instance data pulling in
-        // shader, so VBs should be bound as regular data buffers
-        if (attrib.UsesStepRates()) {
-            info.buffers.push_back({
-                .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
-                .used_types = IR::Type::F32,
-                .instance_attrib = attrib.semantic,
-            });
         }
     }
 }

@@ -277,6 +277,7 @@ bool Instance::CreateDevice() {
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
     amd_shader_trinary_minmax = add_extension(VK_AMD_SHADER_TRINARY_MINMAX_EXTENSION_NAME);
+    vertex_attribute_divisor = add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
     shader_atomic_float2 = add_extension(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME);
     if (shader_atomic_float2) {
         shader_atomic_float2_features =
@@ -436,6 +437,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
             .legacyVertexAttributes = true,
         },
+        vk::PhysicalDeviceVertexAttributeDivisorFeatures{
+            .vertexAttributeInstanceRateDivisor = true,
+        },
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
             .shaderBufferFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax,
@@ -497,6 +501,9 @@ bool Instance::CreateDevice() {
     }
     if (!legacy_vertex_attributes) {
         device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
+    }
+    if (!vertex_attribute_divisor) {
+        device_chain.unlink<vk::PhysicalDeviceVertexAttributeDivisorFeatures>();
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();

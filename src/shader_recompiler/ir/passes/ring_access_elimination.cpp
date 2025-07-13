@@ -116,7 +116,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 }
 
                 const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
+                const auto vertex_id = shl_inst->Arg(0).Resolve().U32() >> 2;
                 const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
                 const auto bucket = offset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0

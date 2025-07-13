@@ -120,6 +120,9 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
 }
 } // Anonymous namespace
 
+using PointerType = EmitContext::PointerType;
+using PointerSize = EmitContext::PointerSize;
+
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     const u32 index = ctx.binding.user_data + ctx.info.ud_mask.Index(reg);
     const u32 half = PushData::UdRegsIndex + (index >> 2);
@@ -130,41 +133,6 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     ctx.Name(ud_reg, fmt::format("ud_{}", u32(reg)));
     return ud_reg;
 }
-
-void EmitGetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetScalarRegister(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetScalarRegister(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetVectorRegister(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetVectorRegister(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetGotoVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetGotoVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-using PointerType = EmitContext::PointerType;
-using PointerSize = EmitContext::PointerSize;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
@@ -201,18 +169,12 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     return ReadConstBuffer<PointerType::U32>(ctx, handle, index);
 }
 
-Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
-    const auto index{rate_idx == 0 ? PushData::Step0Index : PushData::Step1Index};
-    return ctx.OpLoad(
-        ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                      ctx.push_data_block, ctx.ConstU32(index)));
-}
-
-static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsPosition(attr)) {
         ASSERT(attr == IR::Attribute::Position0);
         const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, index, ctx.ConstU32(0u))};
+        const auto pointer{
+            ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, ctx.ConstU32(index), ctx.ConstU32(0u))};
         const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
@@ -222,7 +184,7 @@ static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 
         const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
         const auto param = ctx.input_params.at(param_id).id;
         const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
+        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, ctx.ConstU32(index))};
         const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
@@ -230,7 +192,7 @@ static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 
     UNREACHABLE();
 }
 
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (ctx.info.l_stage == LogicalStage::Geometry) {
         return EmitGetAttributeForGeometry(ctx, attr, comp, index);
     } else if (ctx.info.l_stage == LogicalStage::TessellationControl ||
@@ -248,18 +210,6 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
     if (IR::IsParam(attr)) {
         const u32 param_index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(param_index)};
-        if (param.buffer_handle >= 0) {
-            const auto step_rate = EmitReadStepRate(ctx, param.id.value);
-            const auto offset = ctx.OpIAdd(
-                ctx.U32[1],
-                ctx.OpIMul(
-                    ctx.U32[1],
-                    ctx.OpUDiv(ctx.U32[1], ctx.OpLoad(ctx.U32[1], ctx.instance_id), step_rate),
-                    ctx.ConstU32(param.num_components)),
-                ctx.ConstU32(comp));
-            return ReadConstBuffer<PointerType::F32>(ctx, param.buffer_handle, offset);
-        }
-
         Id result;
         if (param.is_loaded) {
             // Attribute is either default or manually interpolated. The id points to an already
@@ -305,10 +255,6 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpLoad(ctx.U32[1], ctx.vertex_index);
     case IR::Attribute::InstanceId:
         return ctx.OpLoad(ctx.U32[1], ctx.instance_id);
-    case IR::Attribute::InstanceId0:
-        return EmitReadStepRate(ctx, 0);
-    case IR::Attribute::InstanceId1:
-        return EmitReadStepRate(ctx, 1);
     case IR::Attribute::WorkgroupIndex:
         return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
@@ -638,6 +584,38 @@ void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     UNREACHABLE_MSG("SPIR-V instruction");
+}
+
+void EmitGetThreadBitScalarReg(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetThreadBitScalarReg(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetScalarRegister(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetScalarRegister(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetVectorRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetVectorRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetGotoVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetGotoVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

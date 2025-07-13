@@ -150,6 +150,11 @@ public:
         return legacy_vertex_attributes;
     }
 
+    /// Returns true when VK_EXT_vertex_attribute_divisor is supported.
+    bool IsVertexAttributeDivisorSupported() const {
+        return vertex_attribute_divisor;
+    }
+
     /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
     bool IsImageLoadStoreLodSupported() const {
         return image_load_store_lod;
@@ -398,6 +403,7 @@ private:
     u32 queue_family_index{0};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
+    bool vertex_attribute_divisor{};
     bool depth_clip_control{};
     bool depth_range_unrestricted{};
     bool dynamic_state_3{};

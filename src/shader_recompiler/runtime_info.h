@@ -85,6 +85,8 @@ struct VertexRuntimeInfo {
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
+    u32 step_rate_0;
+    u32 step_rate_1;
     // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
