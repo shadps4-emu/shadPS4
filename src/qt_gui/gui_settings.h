@@ -37,6 +37,7 @@ const gui_value gl_showBackgroundImage = gui_value(game_list, "showBackgroundIma
 const gui_value gl_backgroundImageOpacity = gui_value(game_list, "backgroundImageOpacity", 50);
 const gui_value gl_playBackgroundMusic = gui_value(game_list, "playBackgroundMusic", true);
 const gui_value gl_backgroundMusicVolume = gui_value(game_list, "backgroundMusicVolume", 50);
+const gui_value gl_VolumeSlider = gui_value(game_list, "volumeSlider", 100);
 
 // game grid settings
 const gui_value gg_icon_size = gui_value(game_grid, "icon_size", 69);
