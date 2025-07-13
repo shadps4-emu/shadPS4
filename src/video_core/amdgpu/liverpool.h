@@ -304,6 +304,14 @@ struct Liverpool {
         }
     };
 
+    struct LineControl {
+        u32 width_fixed_point;
+
+        float Width() const {
+            return static_cast<float>(width_fixed_point) / 8.0;
+        }
+    };
+
     struct ModeControl {
         s32 msaa_enable : 1;
         s32 vport_scissor_enable : 1;
@@ -1387,7 +1395,9 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 7);
+            LineControl line_control;
+            INSERT_PADDING_WORDS(5);
             HsTessFactorClamp hs_clamp;
             INSERT_PADDING_WORDS(0xA290 - 0xA287 - 2);
             GsMode vgt_gs_mode;

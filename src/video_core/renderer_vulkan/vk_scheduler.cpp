@@ -330,6 +330,10 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
             cmdbuf.setColorWriteMaskEXT(0, color_write_masks);
         }
     }
+    if (dirty_state.line_width) {
+        dirty_state.line_width = false;
+        cmdbuf.setLineWidth(line_width);
+    }
 }
 
 } // namespace Vulkan

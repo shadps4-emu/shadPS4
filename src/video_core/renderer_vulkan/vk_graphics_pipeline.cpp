@@ -123,7 +123,8 @@ GraphicsPipeline::GraphicsPipeline(
         },
         vk::PipelineRasterizationDepthClipStateCreateInfoEXT{
             .depthClipEnable = key.depth_clip_enable,
-        }};
+        },
+    };
 
     if (!instance.IsProvokingVertexSupported()) {
         raster_chain.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
@@ -172,6 +173,7 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
         vk::DynamicState::eFrontFace,          vk::DynamicState::eRasterizerDiscardEnable,
+        vk::DynamicState::eLineWidth,
     };
 
     if (instance.IsPrimitiveRestartDisableSupported()) {

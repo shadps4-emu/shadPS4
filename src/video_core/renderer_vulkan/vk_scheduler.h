@@ -102,6 +102,7 @@ struct DynamicState {
 
         bool blend_constants : 1;
         bool color_write_masks : 1;
+        bool line_width : 1;
     } dirty_state{};
 
     Viewports viewports{};
@@ -137,6 +138,7 @@ struct DynamicState {
 
     std::array<float, 4> blend_constants{};
     ColorWriteMasks color_write_masks{};
+    float line_width{};
 
     /// Commits the dynamic state to the provided command buffer.
     void Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf);
@@ -303,6 +305,13 @@ struct DynamicState {
         if (!std::ranges::equal(color_write_masks, color_write_masks_)) {
             color_write_masks = color_write_masks_;
             dirty_state.color_write_masks = true;
+        }
+    }
+
+    void SetLineWidth(const float width) {
+        if (line_width != width) {
+            line_width = width;
+            dirty_state.line_width = true;
         }
     }
 };

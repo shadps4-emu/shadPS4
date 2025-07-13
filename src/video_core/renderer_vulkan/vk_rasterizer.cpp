@@ -1014,6 +1014,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState();
+    UpdateRasterizationState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
@@ -1228,6 +1229,12 @@ void Rasterizer::UpdatePrimitiveState() const {
     dynamic_state.SetRasterizerDiscardEnabled(regs.clipper_control.dx_rasterization_kill);
     dynamic_state.SetCullMode(cull_mode);
     dynamic_state.SetFrontFace(front_face);
+}
+
+void Rasterizer::UpdateRasterizationState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetLineWidth(regs.line_control.Width());
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
