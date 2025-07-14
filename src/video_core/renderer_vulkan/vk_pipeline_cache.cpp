@@ -94,15 +94,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
-        if (regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Hull))) {
-            info.ls_info.links_with_tcs = true;
-            Shader::TessellationDataConstantBuffer tess_constants;
-            const auto* pgm = regs.ProgramForStage(static_cast<u32>(Stage::Hull));
-            const auto params = Liverpool::GetParams(*pgm);
-            const auto& hull_info = program_cache.at(params.hash)->info;
-            hull_info.ReadTessConstantBuffer(tess_constants);
-            info.ls_info.ls_stride = tess_constants.ls_stride;
-        }
+        Shader::TessellationDataConstantBuffer tess_constants;
+        const auto* hull_info = infos[u32(Shader::LogicalStage::TessellationControl)];
+        hull_info->ReadTessConstantBuffer(tess_constants);
+        info.ls_info.ls_stride = tess_constants.ls_stride;
         break;
     }
     case Stage::Hull: {
@@ -122,6 +117,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     case Stage::Vertex: {
         BuildCommon(regs.vs_program);
         GatherVertexOutputs(info.vs_info, regs.vs_output_control);
+        info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
+        info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
@@ -460,10 +457,6 @@ bool PipelineCache::RefreshGraphicsKey() {
         // Stride will still be handled outside the pipeline using dynamic state.
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
-            if (attrib.UsesStepRates()) {
-                // Skip attribute binding as the data will be pulled by shader.
-                continue;
-            }
             const auto& buffer = attrib.GetSharp(*vs_info);
             ASSERT(vertex_binding < MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
