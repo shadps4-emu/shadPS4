@@ -2,26 +2,25 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <iostream>
-#include <vector>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #ifdef _WIN32
 #include <Windows.h>
 #else
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-#include "common/hash.h"
-#include "common/path_util.h"
-#include "common/io_file.h"
-#include "video_core/renderer_vulkan/shader_cache_serialization.h"
-#include <cereal/archives/binary.hpp>
-#include "common/logging/log.h"
-#include "shader_recompiler/ir/type.h"
-#include "shader_recompiler/info.h"
-#include "shader_recompiler/specialization.h"
 #include <fstream>
-#include <iostream>
+#include <cereal/archives/binary.hpp>
+#include "common/hash.h"
+#include "common/io_file.h"
+#include "common/logging/log.h"
+#include "common/path_util.h"
+#include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/type.h"
+#include "shader_recompiler/specialization.h"
+#include "video_core/renderer_vulkan/shader_cache_serialization.h"
 
 #include "shader_cache.h"
 
@@ -287,8 +286,7 @@ bool CheckShaderCache(std::string shader_id) {
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
     std::string spirv_cache_filename = shader_id + ".spv";
     std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
-    Common::FS::IOFile spirv_cache_file(spirv_cache_file_path,
-                                        Common::FS::FileAccessMode::Read);
+    Common::FS::IOFile spirv_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
     spv.resize(spirv_cache_file.GetSize() / sizeof(u32));
     spirv_cache_file.Read(spv);
     spirv_cache_file.Close();
@@ -306,8 +304,6 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
 
     std::istringstream info_stream;
     info_stream.str(std::string(resources_data.begin(), resources_data.end()));
-
-
 }
 
 void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized) {
@@ -329,10 +325,14 @@ void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_s
     resources_dump_file.Close();
 }
 
-void SerializeInfo(
-    std::ostream& info_serialized, Shader::Info info) {
+void SerializeInfo(std::ostream& info_serialized, Shader::Info &info) {
     cereal::BinaryOutputArchive ar(info_serialized);
+    ar << info.ud_mask;
+    ar << info.gs_copy_data;
+    ar << info.uses_patches;
+    ar << info.buffers;
     ar << info.images;
+
 }
 
 } // namespace ShaderCache

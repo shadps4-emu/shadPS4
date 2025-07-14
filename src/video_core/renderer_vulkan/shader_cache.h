@@ -13,7 +13,7 @@ namespace ShaderCache {
 
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec);
 void SerializeInfo(
-    std::ostream& info_serialized, Shader::Info info);
+    std::ostream& info_serialized, Shader::Info& info);
 void DeserializeInfo(std::istream& info_serialized, Shader::Info& info);
 
 bool CheckShaderCache(std::string shader_id);
