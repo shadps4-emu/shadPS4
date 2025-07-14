@@ -31,8 +31,8 @@ typedef int net_socket;
 #include <sstream>
 #endif
 #if __linux__
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #endif
 
@@ -310,6 +310,10 @@ bool NetUtilInternal::RetrieveNetmask() {
 
     freeifaddrs(ifap);
 #endif
+<<<<<<< HEAD
+=======
+
+>>>>>>> ff93c563 (clang-format)
     if (success) {
         netmask = netmaskStr;
     }
