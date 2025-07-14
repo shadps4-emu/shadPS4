@@ -11,6 +11,7 @@ typedef int socklen_t;
 #else
 #include <cerrno>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -21,7 +22,6 @@ typedef int socklen_t;
 typedef int net_socket;
 #endif
 #if defined(__APPLE__)
-#include <ifaddrs.h>
 #include <net/if_dl.h>
 #endif
 
@@ -100,6 +100,8 @@ bool NetUtilInternal::RetrieveEthernetAddr() {
         }
     }
 
+    close(sock);
+
     if (success) {
         memcpy(ether_address.data(), ifr.ifr_hwaddr.sa_data, 6);
         return true;
@@ -107,4 +109,66 @@ bool NetUtilInternal::RetrieveEthernetAddr() {
 #endif
     return false;
 }
+
+const std::string& NetUtilInternal::GetNetmask() const {
+    return netmask;
+}
+
+bool NetUtilInternal::RetrieveNetmask() {
+    std::scoped_lock lock{m_mutex};
+    char netmaskStr[INET_ADDRSTRLEN];
+    auto success = false;
+
+#ifdef _WIN32
+    std::vector<u8> adapter_addresses(sizeof(IP_ADAPTER_ADDRESSES));
+    ULONG size_infos = sizeof(IP_ADAPTER_ADDRESSES);
+
+    if (GetAdaptersAddresses(AF_INET, 0, NULL,
+                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
+                             &size_infos) == ERROR_BUFFER_OVERFLOW)
+        adapter_addresses.resize(size_infos);
+
+    if (GetAdaptersAddresses(AF_INET, 0, NULL,
+                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
+                             &size_infos) == NO_ERROR &&
+        size_infos) {
+        PIP_ADAPTER_ADDRESSES adapter;
+        for (adapter = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()); adapter;
+             adapter = adapter->Next) {
+            PIP_ADAPTER_UNICAST_ADDRESS unicast = adapter->FirstUnicastAddress;
+            if (unicast) {
+                ULONG prefix_length = unicast->OnLinkPrefixLength;
+                ULONG mask = prefix_length == 0 ? 0 : 0xFFFFFFFF << (32 - prefix_length);
+                in_addr addr{};
+                addr.S_un.S_addr = htonl(mask);
+                inet_ntop(AF_INET, &addr, netmaskStr, INET_ADDRSTRLEN);
+                success = true;
+            }
+        }
+    }
+
+#else
+    ifaddrs* ifap;
+
+    if (getifaddrs(&ifap) == 0) {
+        ifaddrs* p;
+        for (p = ifap; p; p = p->ifa_next) {
+            if (p->ifa_addr && p->ifa_addr->sa_family == AF_INET) {
+                auto sa = reinterpret_cast<sockaddr_in*>(p->ifa_netmask);
+                inet_ntop(AF_INET, &sa->sin_addr, netmaskStr, INET_ADDRSTRLEN);
+                success = true;
+            }
+        }
+    }
+
+    freeifaddrs(ifap);
+#endif
+    
+    if (success) {
+        netmask = netmaskStr;
+    }
+    return success;
+}
+
+
 } // namespace NetUtil

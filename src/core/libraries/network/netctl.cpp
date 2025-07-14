@@ -197,7 +197,17 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         }
         break;
     }
-
+    case ORBIS_NET_CTL_INFO_NETMASK: {
+        auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+        auto success = netinfo->RetrieveNetmask();
+        if (success) {
+            strncpy(info->netmask, netinfo->GetNetmask().data(), sizeof(info->netmask));
+            LOG_DEBUG(Lib_NetCtl, "netmask: {}", info->netmask);
+        } else {
+            LOG_WARNING(Lib_NetCtl, "netmask: failed to retrieve");
+        }
+        break;
+    }
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }

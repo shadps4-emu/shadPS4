@@ -15,10 +15,13 @@ public:
 
 private:
     std::array<u8, 6> ether_address{};
+    std::string netmask{};
     std::mutex m_mutex;
 
 public:
     const std::array<u8, 6>& GetEthernetAddr() const;
+    const std::string& GetNetmask() const;
     bool RetrieveEthernetAddr();
+    bool RetrieveNetmask();
 };
 } // namespace NetUtil
