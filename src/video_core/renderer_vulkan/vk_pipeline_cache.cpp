@@ -535,11 +535,6 @@ void PipelineCache::RefreshDepthClampRange() {
     if (!depth_clamp_can_use_viewport_range && !depth_clamp_is_same_on_all_viewports) {
         LOG_ERROR(Render_Vulkan,
                   "Viewport depth clamping configuration cannot be accurately emulated");
-    } else if (!depth_clamp_can_use_viewport_range && !instance.IsDepthClampControlSupported()) {
-        LOG_WARNING(
-            Render_Vulkan,
-            "Viewport uses custom clamp range zmin={}, zmax={} which cannot be accurately emulated",
-            zmin, zmax);
     }
 
     key.depth_clamp_user_defined_range = !depth_clamp_can_use_viewport_range;
