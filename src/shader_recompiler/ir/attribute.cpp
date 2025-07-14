@@ -100,22 +100,36 @@ std::string NameOf(Attribute attribute) {
         return "Param30";
     case Attribute::Param31:
         return "Param31";
+    case Attribute::ClipDistance:
+        return "ClipDistanace";
+    case Attribute::CullDistance:
+        return "CullDistance";
+    case Attribute::RenderTargetId:
+        return "RenderTargetId";
+    case Attribute::ViewportId:
+        return "ViewportId";
     case Attribute::VertexId:
         return "VertexId";
-    case Attribute::InstanceId:
-        return "InstanceId";
     case Attribute::PrimitiveId:
         return "PrimitiveId";
-    case Attribute::FragCoord:
-        return "FragCoord";
+    case Attribute::InstanceId:
+        return "InstanceId";
     case Attribute::IsFrontFace:
         return "IsFrontFace";
+    case Attribute::SampleIndex:
+        return "SampleIndex";
+    case Attribute::GlobalInvocationId:
+        return "GlobalInvocationId";
     case Attribute::WorkgroupId:
         return "WorkgroupId";
+    case Attribute::WorkgroupIndex:
+        return "WorkgroupIndex";
     case Attribute::LocalInvocationId:
         return "LocalInvocationId";
     case Attribute::LocalInvocationIndex:
         return "LocalInvocationIndex";
+    case Attribute::FragCoord:
+        return "FragCoord";
     case Attribute::InvocationId:
         return "InvocationId";
     case Attribute::PatchVertices:

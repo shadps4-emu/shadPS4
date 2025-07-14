@@ -20,18 +20,7 @@ struct PersistentSrtInfo {
     };
 
     PFN_SrtWalker walker_func{};
-    boost::container::small_vector<SrtSharpReservation, 2> srt_reservations;
     u32 flattened_bufsize_dw = 16; // NumUserDataRegs
-
-    // Special case for fetch shaders because we don't generate IR to read from step rate buffers,
-    // so we won't see usage with GetUserData/ReadConst.
-    // Reserve space in the flattened buffer for a sharp ahead of time
-    u32 ReserveSharp(u32 sgpr_base, u32 dword_offset, u32 num_dwords) {
-        u32 rv = flattened_bufsize_dw;
-        srt_reservations.emplace_back(sgpr_base, dword_offset, num_dwords);
-        flattened_bufsize_dw += num_dwords;
-        return rv;
-    }
 };
 
 } // namespace Shader

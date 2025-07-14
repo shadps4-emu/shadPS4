@@ -68,7 +68,7 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void ProcessFaults();
+    void EndCommandList();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -94,6 +94,7 @@ private:
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
     void UpdatePrimitiveState() const;
+    void UpdateRasterizationState() const;
 
     bool FilterDraw();
 

@@ -188,14 +188,15 @@ void CFG::SplitDivergenceScopes() {
             const bool is_close = is_close_scope(inst);
             if ((is_close || index == blk->end_index) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
-                if (index - curr_begin == 1) {
+                if (index - curr_begin == 1 && is_close) {
                     curr_begin = -1;
                     continue;
                 }
                 // If all instructions in the scope ignore exec masking, we shouldn't insert a
                 // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
-                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
+                if (!std::ranges::all_of(start, inst_list.begin() + index + !is_close,
+                                         IgnoresExecMask)) {
                     // Determine the first instruction affected by the exec mask.
                     do {
                         ++curr_begin;
