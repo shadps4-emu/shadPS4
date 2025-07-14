@@ -332,6 +332,7 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info &info) {
     ar << info.uses_patches;
     ar << info.buffers;
     ar << info.images;
+    ar << info.samplers;
 
 }
 

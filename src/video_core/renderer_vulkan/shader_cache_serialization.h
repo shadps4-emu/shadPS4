@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cereal/types/map.hpp>
+#include <cereal/types/variant.hpp>
 #include <cereal/types/utility.hpp>
 #include "shader_recompiler/info.h"
 
@@ -72,6 +73,20 @@ void serialize(Archive& ar, Shader::ImageResource& image)
         image.is_array,
         image.is_written,
         image.is_r128);
+}
+
+// AmdGpu::Sampler
+template<class Archive>
+void serialize(Archive& ar, AmdGpu::Sampler& sampler) {
+    ar(cereal::binary_data(reinterpret_cast<u8*>(&sampler), sizeof(sampler)));
+}
+
+// Shader::SamplerResource
+template<class Archive>
+void serialize(Archive& ar, Shader::SamplerResource& sampler) {
+    ar(sampler.sampler);
+    ar(static_cast<u32>(sampler.associated_image),
+       static_cast<u32>(sampler.disable_aniso));
 }
 
 }
