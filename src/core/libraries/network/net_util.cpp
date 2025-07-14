@@ -305,7 +305,6 @@ bool NetUtilInternal::RetrieveNetmask() {
 
     freeifaddrs(ifap);
 #endif
-
     if (success) {
         netmask = netmaskStr;
     }
