@@ -304,7 +304,7 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = ::write(file->socket->Native(), buf, nbytes);
+        s64 result = file->socket->write(buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
