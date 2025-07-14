@@ -11,6 +11,7 @@
 
 #include "common/config.h"
 #include "common/scm_rev.h"
+#include "core/libraries/audio/audioout.h"
 #include "qt_gui/compatibility_info.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
@@ -173,8 +174,11 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
 
     // GENERAL TAB
     {
-        connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this,
-                [this](int value) { VolumeSliderChange(value); });
+        connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, [this](int value) {
+            VolumeSliderChange(value);
+            Config::setVolumeSlider(value);
+            Libraries::AudioOut::AdjustVol();
+        });
 
 #ifdef ENABLE_UPDATER
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
