@@ -24,6 +24,11 @@ typedef int net_socket;
 #if defined(__APPLE__)
 #include <net/if_dl.h>
 #endif
+#if __linux__
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#endif
 
 #include <map>
 #include <memory>
@@ -105,6 +110,45 @@ bool NetUtilInternal::RetrieveEthernetAddr() {
     if (success) {
         memcpy(ether_address.data(), ifr.ifr_hwaddr.sa_data, 6);
         return true;
+    }
+#endif
+    return false;
+}
+
+const std::string& NetUtilInternal::GetDefaultGateway() const {
+    return default_gateway;
+}
+
+bool NetUtilInternal::RetrieveDefaultGateway() {
+    std::scoped_lock lock{m_mutex};
+
+#ifdef _WIN32
+
+#elif defined(__APPLE__)
+
+#else
+    std::ifstream route{"/proc/net/route"};
+    std::string line;
+
+    std::getline(route, line);
+    while(std::getline(route, line)) {
+        std::istringstream iss{line};
+        std::string iface, destination, gateway;
+        int flags;
+
+        iss >> iface >> destination >> gateway >> std::hex >> flags;
+
+        if (destination == "00000000") {
+            u64 default_gateway{};
+            std::stringstream ss;
+            ss << std::hex << gateway;
+            ss >> default_gateway;
+
+            in_addr addr;
+            addr.s_addr = default_gateway;
+            this->default_gateway = inet_ntoa(addr);
+            return true;
+        }
     }
 #endif
     return false;
