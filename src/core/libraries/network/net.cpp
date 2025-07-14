@@ -1557,7 +1557,8 @@ int PS4_SYSV_ABI sceNetResolverConnectDestroy() {
 
 int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int poolid, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called, name = {}, poolid = {}, flags = {}", name, poolid, flags);
-    return ORBIS_OK;
+    static int id = 1;
+    return id++;
 }
 
 int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid) {
