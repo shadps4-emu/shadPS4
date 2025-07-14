@@ -10,16 +10,27 @@
 #include <vector>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <wepoll/wepoll.h>
+#endif
+
 #ifdef __linux__
 #include <sys/epoll.h>
+#define epoll_close close
 #endif
 
 namespace Libraries::Net {
 
+#ifdef _WIN32
+using epoll_handle = HANDLE;
+#elif defined(__linux__)
+using epoll_handle = int;
+#endif
+
 struct Epoll {
     std::vector<std::pair<u32 /*netId*/, OrbisNetEpollEvent>> events{};
     const char* name;
-    int epoll_fd;
+    epoll_handle epoll_fd;
 
     explicit Epoll(const char* name_) : name(name_), epoll_fd(epoll_create1(0)) {
         ASSERT(epoll_fd != -1);
@@ -31,7 +42,7 @@ struct Epoll {
 
     void Destroy() noexcept {
         events.clear();
-        close(epoll_fd);
+        epoll_close(epoll_fd);
         epoll_fd = -1;
         name = nullptr;
         destroyed = true;
