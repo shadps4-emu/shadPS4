@@ -46,7 +46,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     switch (runtime_info.stage) {
     case Shader::Stage::Local:
         hash = HashCombine(hash, runtime_info.ls_info.ls_stride);
-        hash = HashCombine(hash, runtime_info.ls_info.links_with_tcs);
         break;
     case Shader::Stage::Export:
         hash = HashCombine(hash, runtime_info.es_info.vertex_data_size);
@@ -137,7 +136,6 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     }
 
     for (const auto& vs_attrib : spec.vs_attribs) {
-        hash = HashCombine(hash, vs_attrib.num_components);
         hash = HashCombine(hash, static_cast<u32>(vs_attrib.num_class));
         hash = HashCombine(hash, vs_attrib.dst_select.r);
         hash = HashCombine(hash, vs_attrib.dst_select.g);
