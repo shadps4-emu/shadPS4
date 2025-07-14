@@ -10,7 +10,7 @@
 #include <vector>
 
 #ifdef _WIN32
-#include <wepoll/wepoll.h>
+#include <wepoll.h>
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
