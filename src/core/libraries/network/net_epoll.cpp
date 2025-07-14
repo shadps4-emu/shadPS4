@@ -58,7 +58,6 @@ int EpollTable::CreateHandle(const char* name) {
 
 void EpollTable::DeleteHandle(int d) {
     UNREACHABLE();
-
 }
 
 Epoll* EpollTable::GetEpoll(int d) {

@@ -686,8 +686,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
     }
 
     auto find_id = [&](OrbisNetId id) {
-        return std::ranges::find_if(epoll->events,
-                                    [&](const auto& el) { return el.first == id; });
+        return std::ranges::find_if(epoll->events, [&](const auto& el) { return el.first == id; });
     };
 
     switch (op) {
@@ -709,8 +708,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         const auto socket = file->socket;
         epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                     .data = {.fd = id}};
-        ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, socket->Native(),
-                         &native_event) == 0);
+        ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, socket->Native(), &native_event) == 0);
         LOG_DEBUG(Lib_Net, "epoll_ctl succeeded");
 #endif
         epoll->events.emplace_back(id, *event);
@@ -802,9 +800,8 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             const auto& current_event = native_events[i];
             LOG_INFO(Lib_Net, "native_event[{}] = ( .events = {}, .data = {:#x} )", i,
                      current_event.events, current_event.data.u64);
-            const auto it = std::ranges::find_if(epoll->events, [&](auto& el) {
-                return el.first == current_event.data.fd;
-            });
+            const auto it = std::ranges::find_if(
+                epoll->events, [&](auto& el) { return el.first == current_event.data.fd; });
             ASSERT(it != epoll->events.end());
             events[i] = {
                 .events = ConvertEpollEventsOut(current_event.events),

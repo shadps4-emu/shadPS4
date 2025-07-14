@@ -25,8 +25,8 @@ typedef int net_socket;
 #include <net/if_dl.h>
 #endif
 #if __linux__
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #endif
 
@@ -131,7 +131,7 @@ bool NetUtilInternal::RetrieveDefaultGateway() {
     std::string line;
 
     std::getline(route, line);
-    while(std::getline(route, line)) {
+    while (std::getline(route, line)) {
         std::istringstream iss{line};
         std::string iface, destination, gateway;
         int flags;
@@ -167,12 +167,13 @@ bool NetUtilInternal::RetrieveNetmask() {
     std::vector<u8> adapter_addresses(sizeof(IP_ADAPTER_ADDRESSES));
     ULONG size_infos = sizeof(IP_ADAPTER_ADDRESSES);
 
-    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()), &size_infos) ==
-        ERROR_BUFFER_OVERFLOW)
+    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()),
+                        &size_infos) == ERROR_BUFFER_OVERFLOW)
         adapter_infos.resize(size_infos);
 
-    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()), &size_infos) ==
-        NO_ERROR && size_infos) {
+    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()),
+                        &size_infos) == NO_ERROR &&
+        size_infos) {
         PIP_ADAPTER_ADDRESSES adapter;
         for (adapter = adapter_addresses; adapter; adapter = adapter->Next) {
             PIP_ADAPTER_UNICAST_ADDRESS unicast = adapter->FirstUnicastAddress;
@@ -203,12 +204,11 @@ bool NetUtilInternal::RetrieveNetmask() {
 
     freeifaddrs(ifap);
 #endif
-    
+
     if (success) {
         netmask = netmaskStr;
     }
     return success;
 }
-
 
 } // namespace NetUtil

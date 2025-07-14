@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 #include "core/libraries/network/net.h"
+
 #include <mutex>
 #include <vector>
 #include <unistd.h>
@@ -39,7 +40,6 @@ struct Epoll {
 private:
     bool destroyed{};
 };
-
 
 u32 ConvertEpollEventsIn(u32 orbis_events);
 u32 ConvertEpollEventsOut(u32 epoll_events);
