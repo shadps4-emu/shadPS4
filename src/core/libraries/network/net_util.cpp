@@ -167,11 +167,11 @@ bool NetUtilInternal::RetrieveNetmask() {
     std::vector<u8> adapter_addresses(sizeof(IP_ADAPTER_ADDRESSES));
     ULONG size_infos = sizeof(IP_ADAPTER_ADDRESSES);
 
-    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()),
+    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
                         &size_infos) == ERROR_BUFFER_OVERFLOW)
-        adapter_infos.resize(size_infos);
+        adapter_addresses.resize(size_infos);
 
-    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_infos.data()),
+    if (GetAdaptersInfo(reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
                         &size_infos) == NO_ERROR &&
         size_infos) {
         PIP_ADAPTER_ADDRESSES adapter;

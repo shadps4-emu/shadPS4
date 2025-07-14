@@ -8,7 +8,6 @@
 
 #include <mutex>
 #include <vector>
-#include <unistd.h>
 
 #ifdef _WIN32
 #include <wepoll/wepoll.h>
@@ -16,6 +15,7 @@
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <sys/epoll.h>
+#include <unistd.h>
 #endif
 
 namespace Libraries::Net {
