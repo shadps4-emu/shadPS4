@@ -491,7 +491,9 @@ bool PipelineCache::RefreshGraphicsKey() {
 void PipelineCache::RefreshDepthClampRange() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
-    if (key.z_format == Liverpool::DepthBuffer::ZFormat::Invalid) {
+
+    key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
+    if (key.z_format == Liverpool::DepthBuffer::ZFormat::Invalid || !key.depth_clamp_enable) {
         return;
     }
 
@@ -540,13 +542,10 @@ void PipelineCache::RefreshDepthClampRange() {
             zmin, zmax);
     }
 
-    key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
-    if (key.depth_clamp_enable) {
-        key.depth_clamp_user_defined_range = !depth_clamp_can_use_viewport_range;
-        if (key.depth_clamp_user_defined_range) {
-            key.min_depth_clamp = zmin;
-            key.max_depth_clamp = zmax;
-        }
+    key.depth_clamp_user_defined_range = !depth_clamp_can_use_viewport_range;
+    if (key.depth_clamp_user_defined_range) {
+        key.min_depth_clamp = zmin;
+        key.max_depth_clamp = zmax;
     }
 }
 
