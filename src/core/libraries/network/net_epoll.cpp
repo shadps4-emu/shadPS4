@@ -60,8 +60,13 @@ void EpollTable::DeleteHandle(int d) {
     UNREACHABLE();
 }
 
-Epoll* EpollTable::GetEpoll(int d) {
-    UNREACHABLE();
+Epoll* EpollTable::GetEpoll(int epollid) {
+    std::scoped_lock lock{m_mutex};
+    if (epollid >= epolls.size() || epolls[epollid].Destroyed()) {
+        return nullptr;
+    }
+
+    return &epolls[epollid];
 }
 
 } // namespace Libraries::Net
