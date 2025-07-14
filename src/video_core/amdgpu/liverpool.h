@@ -526,7 +526,9 @@ struct Liverpool {
         BitField<27, 1, u32> zclip_far_disable;
 
         bool ZclipEnable() const {
-            ASSERT(zclip_near_disable == zclip_far_disable);
+            if (zclip_near_disable != zclip_far_disable) {
+                return false;
+            }
             return !zclip_near_disable;
         }
     };
