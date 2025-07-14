@@ -491,6 +491,9 @@ bool PipelineCache::RefreshGraphicsKey() {
 void PipelineCache::RefreshDepthClampRange() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
+    if (key.z_format == Liverpool::DepthBuffer::ZFormat::Invalid) {
+        return;
+    }
 
     bool depth_clamp_can_use_viewport_range = true;
     bool depth_clamp_is_same_on_all_viewports = true;
