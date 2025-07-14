@@ -492,7 +492,7 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = ::read(file->socket->Native(), buf, nbytes);
+        s64 result = file->socket->read(buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
