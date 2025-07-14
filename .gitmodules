@@ -106,3 +106,6 @@
 [submodule "externals/ext-libusb"]
 	path = externals/ext-libusb
 	url = https://github.com/shadps4-emu/ext-libusb.git
+[submodule "externals/epoll-shim"]
+	path = externals/epoll-shim
+	url = https://github.com/jiixyj/epoll-shim.git
