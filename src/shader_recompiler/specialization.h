@@ -13,7 +13,7 @@
 namespace Shader {
 
 struct VsAttribSpecialization {
-    s32 num_components{};
+    u32 divisor{};
     AmdGpu::NumberClass num_class{};
     AmdGpu::CompMapping dst_select{};
 
@@ -74,13 +74,13 @@ struct SamplerSpecialization {
  * after the first compilation of a module.
  */
 struct StageSpecialization {
-    static constexpr size_t MaxStageResources = 64;
+    static constexpr size_t MaxStageResources = 128;
 
     const Shader::Info* info;
     RuntimeInfo runtime_info;
+    std::bitset<MaxStageResources> bitset{};
     std::optional<Gcn::FetchShaderData> fetch_shader_data{};
     boost::container::small_vector<VsAttribSpecialization, 32> vs_attribs;
-    std::bitset<MaxStageResources> bitset{};
     boost::container::small_vector<BufferSpecialization, 16> buffers;
     boost::container::small_vector<ImageSpecialization, 16> images;
     boost::container::small_vector<FMaskSpecialization, 8> fmasks;
@@ -94,10 +94,16 @@ struct StageSpecialization {
         if (info_.stage == Stage::Vertex && fetch_shader_data) {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
-                         [&profile_](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
-                             spec.num_components = desc.UsesStepRates()
-                                                       ? AmdGpu::NumComponents(sharp.GetDataFmt())
-                                                       : 0;
+                         [&profile_, this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                             using InstanceIdType = Shader::Gcn::VertexAttribute::InstanceIdType;
+                             if (const auto step_rate = desc.GetStepRate();
+                                 step_rate != InstanceIdType::None) {
+                                 spec.divisor = step_rate == InstanceIdType::OverStepRate0
+                                                    ? runtime_info.vs_info.step_rate_0
+                                                    : (step_rate == InstanceIdType::OverStepRate1
+                                                           ? runtime_info.vs_info.step_rate_1
+                                                           : 1);
+                             }
                              spec.num_class = profile_.support_legacy_vertex_attributes
                                                   ? AmdGpu::NumberClass{}
                                                   : AmdGpu::GetNumberClass(sharp.GetNumberFmt());

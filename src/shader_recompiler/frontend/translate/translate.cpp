@@ -90,17 +90,40 @@ void Translator::EmitPrologue(IR::Block* first_block) {
     case LogicalStage::Vertex:
         // v0: vertex ID, always present
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
-        // v1: instance ID, step rate 0
-        if (runtime_info.num_input_vgprs > 0) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId0));
-        }
-        // v2: instance ID, step rate 1
-        if (runtime_info.num_input_vgprs > 1) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId1));
-        }
-        // v3: instance ID, plain
-        if (runtime_info.num_input_vgprs > 2) {
-            ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+        if (info.stage == Stage::Local) {
+            // v1: rel patch ID
+            if (runtime_info.num_input_vgprs > 0) {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+            // v2: instance ID
+            if (runtime_info.num_input_vgprs > 1) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+            }
+        } else {
+            // v1: instance ID, step rate 0
+            if (runtime_info.num_input_vgprs > 0) {
+                if (runtime_info.vs_info.step_rate_0 != 0) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                            ir.Imm32(runtime_info.vs_info.step_rate_0)));
+                } else {
+                    ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+                }
+            }
+            // v2: instance ID, step rate 1
+            if (runtime_info.num_input_vgprs > 1) {
+                if (runtime_info.vs_info.step_rate_1 != 0) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
+                                            ir.Imm32(runtime_info.vs_info.step_rate_1)));
+                } else {
+                    ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+                }
+            }
+            // v3: instance ID, plain
+            if (runtime_info.num_input_vgprs > 2) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+            }
         }
         break;
     case LogicalStage::Fragment:
@@ -183,10 +206,8 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         switch (runtime_info.gs_info.out_primitive[0]) {
         case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
             ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
-            [[fallthrough]];
         case AmdGpu::GsOutputPrimitiveType::LineStrip:
             ir.SetVectorReg(IR::VectorReg::V1, ir.Imm32(1u)); // vertex 1
-            [[fallthrough]];
         default:
             ir.SetVectorReg(IR::VectorReg::V0, ir.Imm32(0u)); // vertex 0
             break;
@@ -481,11 +502,11 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 }
 
 void Translator::EmitFetch(const GcnInst& inst) {
-    // Read the pointer to the fetch shader assembly.
     const auto code_sgpr_base = inst.src[0].code;
+
+    // The fetch shader must be inlined to access as regular buffers, so that
+    // bounds checks can be emitted to emulate robust buffer access.
     if (!profile.supports_robust_buffer_access) {
-        // The fetch shader must be inlined to access as regular buffers, so that
-        // bounds checks can be emitted to emulate robust buffer access.
         const auto* code = GetFetchShaderCode(info, code_sgpr_base);
         GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
         GcnDecodeContext decoder;
@@ -534,16 +555,6 @@ void Translator::EmitFetch(const GcnInst& inst) {
         const auto swizzled = ApplySwizzle(ir, converted, buffer.DstSelect());
         for (u32 i = 0; i < 4; i++) {
             ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(swizzled, i)});
-        }
-
-        // In case of programmable step rates we need to fallback to instance data pulling in
-        // shader, so VBs should be bound as regular data buffers
-        if (attrib.UsesStepRates()) {
-            info.buffers.push_back({
-                .sharp_idx = info.srt_info.ReserveSharp(attrib.sgpr_base, attrib.dword_offset, 4),
-                .used_types = IR::Type::F32,
-                .instance_attrib = attrib.semantic,
-            });
         }
     }
 }

@@ -33,12 +33,9 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 bool is_composite = opcode == IR::Opcode::WriteSharedU64;
                 u32 num_components = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
 
-                u32 offset = 0;
-                const auto* addr = inst.Arg(0).InstRecursive();
-                if (addr->GetOpcode() == IR::Opcode::IAdd32) {
-                    ASSERT(addr->Arg(1).IsImmediate());
-                    offset = addr->Arg(1).U32();
-                }
+                ASSERT(inst.Arg(0).IsImmediate());
+
+                u32 offset = inst.Arg(0).U32();
                 IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
                                               : inst.Arg(1).Resolve();
                 for (s32 i = 0; i < num_components; i++) {
@@ -116,7 +113,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 }
 
                 const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
+                const auto vertex_id = shl_inst->Arg(0).Resolve().U32() >> 2;
                 const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
                 const auto bucket = offset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0

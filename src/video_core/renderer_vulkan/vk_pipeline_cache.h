@@ -76,6 +76,8 @@ private:
     bool RefreshGraphicsKey();
     bool RefreshComputeKey();
 
+    void RefreshDepthClampRange();
+
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
                     std::string_view ext);
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,

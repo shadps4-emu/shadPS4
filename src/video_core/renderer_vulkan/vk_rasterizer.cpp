@@ -20,12 +20,9 @@
 namespace Vulkan {
 
 static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
-    Shader::PushData push_data{};
-    push_data.step0 = regs.vgt_instance_step_rate_0;
-    push_data.step1 = regs.vgt_instance_step_rate_1;
-
     // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
     // is encountered and implemented in the recompiler.
+    Shader::PushData push_data{};
     push_data.xoffset = regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
     push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
     push_data.yoffset = regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
@@ -1017,9 +1014,10 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState();
+    UpdateRasterizationState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
-    dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
+    dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
     dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
 
     // Commit new dynamic state to the command buffer.
@@ -1087,12 +1085,6 @@ void Rasterizer::UpdateViewportScissorState() const {
         } else {
             viewport.minDepth = zoffset;
             viewport.maxDepth = zoffset + zscale;
-        }
-
-        if (!regs.depth_render_override.disable_viewport_clamp) {
-            // Apply depth clamp.
-            viewport.minDepth = std::max(viewport.minDepth, vp_d.zmin);
-            viewport.maxDepth = std::min(viewport.maxDepth, vp_d.zmax);
         }
 
         if (!instance.IsDepthRangeUnrestrictedSupported()) {
@@ -1234,8 +1226,15 @@ void Rasterizer::UpdatePrimitiveState() const {
     const auto front_face = LiverpoolToVK::FrontFace(regs.polygon_control.front_face);
 
     dynamic_state.SetPrimitiveRestartEnabled(prim_restart);
+    dynamic_state.SetRasterizerDiscardEnabled(regs.clipper_control.dx_rasterization_kill);
     dynamic_state.SetCullMode(cull_mode);
     dynamic_state.SetFrontFace(front_face);
+}
+
+void Rasterizer::UpdateRasterizationState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetLineWidth(regs.line_control.Width());
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
