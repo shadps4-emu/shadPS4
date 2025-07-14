@@ -28,7 +28,6 @@
 #else
 #include <sys/select.h>
 #endif
-#include <sys/stat.h>
 
 namespace D = Core::Devices;
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
@@ -689,18 +688,12 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         break;
     }
     case Core::FileSys::FileType::Socket: {
-        struct stat st{};
-        s32 result = ::fstat(file->socket->Native(), &st);
+        s32 result = file->socket->fstat(sb);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
-        sb->st_mode = 0000777u | 0140000u;
-        sb->st_size = st.st_size;
-        sb->st_blocks = st.st_blocks;
-        sb->st_blksize = st.st_blksize;
-        // sb->st_flags = st.st_flags;
-        break;
+        return result;
     }
     default:
         UNREACHABLE();
@@ -1104,10 +1097,10 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     FD_ZERO(&read_host);
     FD_ZERO(&write_host);
     FD_ZERO(&except_host);
-    std::map<int, int> host_to_guest;
+    std::map<u64, int> host_to_guest;
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    int max_fd = 0;
+    u64 max_fd = 0;
 
     for (auto i = 0; i < nfds; ++i) {
         auto read = readfds && FD_ISSET(i, readfds);
@@ -1124,12 +1117,12 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 return -1;
             }
 
-            int fd = [&] {
+            u64 fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<int>(file->f.GetFileMapping());
+                    return static_cast<u64>(file->f.GetFileMapping());
                 case Core::FileSys::FileType::Socket:
-                    return file->socket->Native();
+                    return static_cast<u64>(file->socket->Native());
                 default:
                     UNREACHABLE();
                 }
