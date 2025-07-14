@@ -52,6 +52,7 @@ struct Socket {
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
     virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
+    virtual int read(void* buf, size_t len) = 0;
     virtual int write(const void* buf, size_t len) = 0;
     virtual bool IsValid() const = 0;
     virtual net_socket Native() const = 0;
@@ -83,6 +84,7 @@ struct PosixSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int read(void* buf, size_t len) override;
     int write(const void* buf, size_t len) override;
     bool IsValid() const override {
         return sock != -1;
@@ -106,6 +108,7 @@ struct P2PSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int read(void* buf, size_t len) override;
     int write(const void* buf, size_t len) override;
     bool IsValid() const override {
         return true;

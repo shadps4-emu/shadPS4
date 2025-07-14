@@ -458,6 +458,14 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     return 0;
 }
 
+int PosixSocket::read(void* buf, size_t len) {
+#ifdef _WIN32
+    return recv(sock, buf, len, 0);
+#else
+    return ::read(sock, buf, len);
+#endif
+}
+
 int PosixSocket::write(const void* buf, size_t len) {
 #ifdef _WIN32
     return send(sock, buf, len, 0);
