@@ -14,16 +14,15 @@
 #include <wepoll/wepoll.h>
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/epoll.h>
-#define epoll_close close
 #endif
 
 namespace Libraries::Net {
 
 #ifdef _WIN32
 using epoll_handle = HANDLE;
-#elif defined(__linux__)
+#else
 using epoll_handle = int;
 #endif
 
@@ -42,7 +41,11 @@ struct Epoll {
 
     void Destroy() noexcept {
         events.clear();
+        #ifdef _WIN32
         epoll_close(epoll_fd);
+        #else
+        close(epoll_fd);
+        #endif
         epoll_fd = -1;
         name = nullptr;
         destroyed = true;
