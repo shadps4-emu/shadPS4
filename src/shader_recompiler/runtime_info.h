@@ -42,7 +42,6 @@ constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
 
 struct LocalRuntimeInfo {
     u32 ls_stride;
-    bool links_with_tcs;
 
     auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
 };
@@ -85,6 +84,8 @@ struct VertexRuntimeInfo {
     std::array<VsOutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
+    u32 step_rate_0;
+    u32 step_rate_1;
     // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
@@ -96,7 +97,8 @@ struct VertexRuntimeInfo {
                clip_disable == other.clip_disable && tess_type == other.tess_type &&
                tess_topology == other.tess_topology &&
                tess_partitioning == other.tess_partitioning &&
-               hs_output_cp_stride == other.hs_output_cp_stride;
+               hs_output_cp_stride == other.hs_output_cp_stride &&
+               step_rate_0 == other.step_rate_0 && step_rate_1 == other.step_rate_1;
     }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {

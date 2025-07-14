@@ -34,16 +34,11 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
-    const auto width =
-        render_state.width != std::numeric_limits<u32>::max() ? render_state.width : 1;
-    const auto height =
-        render_state.height != std::numeric_limits<u32>::max() ? render_state.height : 1;
-
     const vk::RenderingInfo rendering_info = {
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {width, height},
+                .extent = {render_state.width, render_state.height},
             },
         .layerCount = 1,
         .colorAttachmentCount = render_state.num_color_attachments,
@@ -313,6 +308,10 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
             cmdbuf.setPrimitiveRestartEnable(primitive_restart_enable);
         }
     }
+    if (dirty_state.rasterizer_discard_enable) {
+        dirty_state.rasterizer_discard_enable = false;
+        cmdbuf.setRasterizerDiscardEnable(rasterizer_discard_enable);
+    }
     if (dirty_state.cull_mode) {
         dirty_state.cull_mode = false;
         cmdbuf.setCullMode(cull_mode);
@@ -323,13 +322,17 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     }
     if (dirty_state.blend_constants) {
         dirty_state.blend_constants = false;
-        cmdbuf.setBlendConstants(blend_constants);
+        cmdbuf.setBlendConstants(blend_constants.data());
     }
     if (dirty_state.color_write_masks) {
         dirty_state.color_write_masks = false;
         if (instance.IsDynamicColorWriteMaskSupported()) {
             cmdbuf.setColorWriteMaskEXT(0, color_write_masks);
         }
+    }
+    if (dirty_state.line_width) {
+        dirty_state.line_width = false;
+        cmdbuf.setLineWidth(line_width);
     }
 }
 

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <ranges>
 #include <vector>
 #include "common/types.h"
 #include "shader_recompiler/info.h"
@@ -29,11 +28,6 @@ struct VertexAttribute {
         return static_cast<InstanceIdType>(instance_data);
     }
 
-    [[nodiscard]] bool UsesStepRates() const {
-        const auto step_rate = GetStepRate();
-        return step_rate == OverStepRate0 || step_rate == OverStepRate1;
-    }
-
     [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Shader::Info& info) const noexcept {
         return info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
     }
@@ -51,12 +45,6 @@ struct FetchShaderData {
     std::vector<VertexAttribute> attributes;
     s8 vertex_offset_sgpr = -1;   ///< SGPR of vertex offset from VADDR
     s8 instance_offset_sgpr = -1; ///< SGPR of instance offset from VADDR
-
-    [[nodiscard]] bool UsesStepRates() const {
-        return std::ranges::find_if(attributes, [](const VertexAttribute& attribute) {
-                   return attribute.UsesStepRates();
-               }) != attributes.end();
-    }
 
     bool operator==(const FetchShaderData& other) const {
         return attributes == other.attributes && vertex_offset_sgpr == other.vertex_offset_sgpr &&

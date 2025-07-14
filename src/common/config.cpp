@@ -60,8 +60,10 @@ static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 
 // GPU
-static u32 screenWidth = 1280;
-static u32 screenHeight = 720;
+static u32 windowWidth = 1280;
+static u32 windowHeight = 720;
+static u32 internalScreenWidth = 1280;
+static u32 internalScreenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
@@ -104,7 +106,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 52;
+static constexpr u64 total_entries = 54;
 
 bool allowHDR() {
     return isHDRAllowed;
@@ -195,12 +197,20 @@ double getTrophyNotificationDuration() {
     return trophyNotificationDuration;
 }
 
-u32 getScreenWidth() {
-    return screenWidth;
+u32 getWindowWidth() {
+    return windowWidth;
 }
 
-u32 getScreenHeight() {
-    return screenHeight;
+u32 getWindowHeight() {
+    return windowHeight;
+}
+
+u32 getInternalScreenWidth() {
+    return internalScreenHeight;
+}
+
+u32 getInternalScreenHeight() {
+    return internalScreenHeight;
 }
 
 s32 getGpuId() {
@@ -339,12 +349,20 @@ void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
 
-void setScreenWidth(u32 width) {
-    screenWidth = width;
+void setWindowWidth(u32 width) {
+    windowWidth = width;
 }
 
-void setScreenHeight(u32 height) {
-    screenHeight = height;
+void setWindowHeight(u32 height) {
+    windowHeight = height;
+}
+
+void setInternalScreenWidth(u32 width) {
+    internalScreenWidth = width;
+}
+
+void setInternalScreenHeight(u32 height) {
+    internalScreenHeight = height;
 }
 
 void setDebugDump(bool enable) {
@@ -426,6 +444,7 @@ void setCursorState(s16 newCursorState) {
 void setCursorHideTimeout(int newcursorHideTimeout) {
     cursorHideTimeout = newcursorHideTimeout;
 }
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration = newTrophyNotificationDuration;
 }
@@ -631,8 +650,11 @@ void load(const std::filesystem::path& path) {
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
-        screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
-        screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
+        windowWidth = toml::find_or<int>(gpu, "screenWidth", windowWidth);
+        windowHeight = toml::find_or<int>(gpu, "screenHeight", windowHeight);
+        internalScreenWidth = toml::find_or<int>(gpu, "internalScreenWidth", internalScreenWidth);
+        internalScreenHeight =
+            toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
@@ -804,8 +826,10 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
-    data["GPU"]["screenWidth"] = screenWidth;
-    data["GPU"]["screenHeight"] = screenHeight;
+    data["GPU"]["screenWidth"] = windowWidth;
+    data["GPU"]["screenHeight"] = windowHeight;
+    data["GPU"]["internalScreenWidth"] = internalScreenWidth;
+    data["GPU"]["internalScreenHeight"] = internalScreenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["readbacks"] = readbacksEnabled;
@@ -905,8 +929,10 @@ void setDefaultValues() {
     controllerCustomColorRGB[2] = 255;
 
     // GPU
-    screenWidth = 1280;
-    screenHeight = 720;
+    windowWidth = 1280;
+    windowHeight = 720;
+    internalScreenWidth = 1280;
+    internalScreenHeight = 720;
     isNullGpu = false;
     shouldCopyGPUBuffers = false;
     readbacksEnabled = false;

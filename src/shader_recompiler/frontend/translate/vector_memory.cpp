@@ -192,9 +192,10 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
+    const bool has_soffset = !soffset.IsImmediate() || soffset.U32() != 0;
     if (info.stage != Stage::Geometry) {
-        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
-                   "Non immediate offset not supported");
+        ASSERT_MSG(!has_soffset || !mubuf.offen,
+                   "Having both scalar and vector offsets is not supported");
     }
 
     const IR::Value address = [&] -> IR::Value {
@@ -204,15 +205,21 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
         if (mubuf.idxen && mubuf.offen) {
             return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
         }
+        if (mubuf.idxen && has_soffset) {
+            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
+        }
         if (mubuf.idxen || mubuf.offen) {
             return ir.GetVectorReg(vaddr);
+        }
+        if (has_soffset) {
+            return soffset;
         }
         return {};
     }();
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
-    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.offset_enable.Assign(mubuf.offen || has_soffset);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);

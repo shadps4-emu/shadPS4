@@ -94,6 +94,7 @@ private:
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
     void UpdatePrimitiveState() const;
+    void UpdateRasterizationState() const;
 
     bool FilterDraw();
 

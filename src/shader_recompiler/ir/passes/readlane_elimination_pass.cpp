@@ -95,6 +95,10 @@ void ReadLaneEliminationPass(IR::Program& program) {
             if (inst.GetOpcode() != IR::Opcode::ReadLane) {
                 continue;
             }
+            if (!inst.Arg(1).IsImmediate()) {
+                continue;
+            }
+
             const u32 lane = inst.Arg(1).U32();
             IR::Inst* prod = inst.Arg(0).InstRecursive();
 
