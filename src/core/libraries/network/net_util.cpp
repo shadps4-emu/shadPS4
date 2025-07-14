@@ -30,6 +30,11 @@ typedef int net_socket;
 #include <iostream>
 #include <sstream>
 #endif
+#if __linux__
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#endif
 
 #include <map>
 #include <memory>
