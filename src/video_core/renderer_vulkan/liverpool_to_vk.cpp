@@ -245,6 +245,46 @@ vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
     }
 }
 
+vk::LogicOp LogicOp(Liverpool::ColorControl::LogicOp logic_op) {
+    using LogicOp = Liverpool::ColorControl::LogicOp;
+    switch (logic_op) {
+    case LogicOp::Clear:
+        return vk::LogicOp::eClear;
+    case LogicOp::Nor:
+        return vk::LogicOp::eNor;
+    case LogicOp::AndInverted:
+        return vk::LogicOp::eAndInverted;
+    case LogicOp::CopyInverted:
+        return vk::LogicOp::eCopyInverted;
+    case LogicOp::AndReverse:
+        return vk::LogicOp::eAndReverse;
+    case LogicOp::Invert:
+        return vk::LogicOp::eInvert;
+    case LogicOp::Xor:
+        return vk::LogicOp::eXor;
+    case LogicOp::Nand:
+        return vk::LogicOp::eNand;
+    case LogicOp::And:
+        return vk::LogicOp::eAnd;
+    case LogicOp::Equiv:
+        return vk::LogicOp::eEquivalent;
+    case LogicOp::Noop:
+        return vk::LogicOp::eNoOp;
+    case LogicOp::OrInverted:
+        return vk::LogicOp::eOrInverted;
+    case LogicOp::Copy:
+        return vk::LogicOp::eCopy;
+    case LogicOp::OrReverse:
+        return vk::LogicOp::eOrReverse;
+    case LogicOp::Or:
+        return vk::LogicOp::eOr;
+    case LogicOp::Set:
+        return vk::LogicOp::eSet;
+    default:
+        UNREACHABLE_MSG("Unknown logic op {}", u32(logic_op));
+    }
+}
+
 // https://github.com/chaotic-cx/mesa-mirror/blob/0954afff5/src/amd/vulkan/radv_sampler.c#L21
 vk::SamplerAddressMode ClampMode(AmdGpu::ClampMode mode) {
     switch (mode) {

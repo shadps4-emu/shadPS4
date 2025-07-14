@@ -72,12 +72,21 @@ GraphicsPipeline::GraphicsPipeline(
 
     VertexInputs<vk::VertexInputAttributeDescription> vertex_attributes;
     VertexInputs<vk::VertexInputBindingDescription> vertex_bindings;
+    VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT> divisors;
     VertexInputs<AmdGpu::Buffer> guest_buffers;
     if (!instance.IsVertexInputDynamicState()) {
-        GetVertexInputs(vertex_attributes, vertex_bindings, guest_buffers);
+        const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
+        GetVertexInputs(vertex_attributes, vertex_bindings, divisors, guest_buffers,
+                        vs_info.step_rate_0, vs_info.step_rate_1);
     }
 
+    const vk::PipelineVertexInputDivisorStateCreateInfo divisor_state = {
+        .vertexBindingDivisorCount = static_cast<u32>(divisors.size()),
+        .pVertexBindingDivisors = divisors.data(),
+    };
+
     const vk::PipelineVertexInputStateCreateInfo vertex_input_info = {
+        .pNext = divisors.empty() ? nullptr : &divisor_state,
         .vertexBindingDescriptionCount = static_cast<u32>(vertex_bindings.size()),
         .pVertexBindingDescriptions = vertex_bindings.data(),
         .vertexAttributeDescriptionCount = static_cast<u32>(vertex_attributes.size()),
@@ -100,12 +109,30 @@ GraphicsPipeline::GraphicsPipeline(
         .patchControlPoints = is_rect_list ? 3U : (is_quad_list ? 4U : key.patch_control_points),
     };
 
-    const vk::PipelineRasterizationStateCreateInfo raster_state = {
-        .depthClampEnable = false,
-        .rasterizerDiscardEnable = false,
-        .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
-        .lineWidth = 1.0f,
+    vk::StructureChain raster_chain = {
+        vk::PipelineRasterizationStateCreateInfo{
+            .depthClampEnable = key.depth_clamp_enable ||
+                                (!key.depth_clip_enable && !instance.IsDepthClipEnableSupported()),
+            .rasterizerDiscardEnable = false,
+            .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
+            .lineWidth = 1.0f,
+        },
+        vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT{
+            .provokingVertexMode = key.provoking_vtx_last == Liverpool::ProvokingVtxLast::First
+                                       ? vk::ProvokingVertexModeEXT::eFirstVertex
+                                       : vk::ProvokingVertexModeEXT::eLastVertex,
+        },
+        vk::PipelineRasterizationDepthClipStateCreateInfoEXT{
+            .depthClipEnable = key.depth_clip_enable,
+        },
     };
+
+    if (!instance.IsProvokingVertexSupported()) {
+        raster_chain.unlink<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>();
+    }
+    if (!instance.IsDepthClipEnableSupported()) {
+        raster_chain.unlink<vk::PipelineRasterizationDepthClipStateCreateInfoEXT>();
+    }
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
         .rasterizationSamples =
@@ -113,15 +140,32 @@ GraphicsPipeline::GraphicsPipeline(
         .sampleShadingEnable = false,
     };
 
-    const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
-        .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+    const vk::DepthClampRangeEXT depth_clamp_range = {
+        .minDepthClamp = key.min_depth_clamp,
+        .maxDepthClamp = key.max_depth_clamp,
     };
 
-    const vk::PipelineViewportStateCreateInfo viewport_info = {
-        .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
+    vk::StructureChain viewport_chain = {
+        vk::PipelineViewportStateCreateInfo{},
+        vk::PipelineViewportDepthClipControlCreateInfoEXT{
+            .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+        },
+        vk::PipelineViewportDepthClampControlCreateInfoEXT{
+            .depthClampMode = key.depth_clamp_user_defined_range
+                                  ? vk::DepthClampModeEXT::eUserDefinedRange
+                                  : vk::DepthClampModeEXT::eViewportRange,
+            .pDepthClampRange = &depth_clamp_range,
+        },
     };
 
-    boost::container::static_vector<vk::DynamicState, 20> dynamic_states = {
+    if (!instance.IsDepthClampControlSupported()) {
+        viewport_chain.unlink<vk::PipelineViewportDepthClampControlCreateInfoEXT>();
+    }
+    if (!instance.IsDepthClipControlSupported()) {
+        viewport_chain.unlink<vk::PipelineViewportDepthClipControlCreateInfoEXT>();
+    }
+
+    boost::container::static_vector<vk::DynamicState, 32> dynamic_states = {
         vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
         vk::DynamicState::eBlendConstants,     vk::DynamicState::eDepthTestEnable,
         vk::DynamicState::eDepthWriteEnable,   vk::DynamicState::eDepthCompareOp,
@@ -129,7 +173,8 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eStencilTestEnable,  vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
-        vk::DynamicState::eFrontFace,
+        vk::DynamicState::eFrontFace,          vk::DynamicState::eRasterizerDiscardEnable,
+        vk::DynamicState::eLineWidth,
     };
 
     if (instance.IsPrimitiveRestartDisableSupported()) {
@@ -212,11 +257,19 @@ GraphicsPipeline::GraphicsPipeline(
         });
     }
 
+    const auto depth_format =
+        instance.GetSupportedFormat(LiverpoolToVK::DepthFormat(key.z_format, key.stencil_format),
+                                    vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = key.color_formats.data(),
-        .depthAttachmentFormat = key.depth_format,
-        .stencilAttachmentFormat = key.stencil_format,
+        .depthAttachmentFormat = key.z_format != Liverpool::DepthBuffer::ZFormat::Invalid
+                                     ? depth_format
+                                     : vk::Format::eUndefined,
+        .stencilAttachmentFormat =
+            key.stencil_format != Liverpool::DepthBuffer::StencilFormat::Invalid
+                ? depth_format
+                : vk::Format::eUndefined,
     };
 
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
@@ -271,8 +324,9 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
-        .logicOpEnable = false,
-        .logicOp = vk::LogicOp::eCopy,
+        .logicOpEnable =
+            instance.IsLogicOpSupported() && key.logic_op != Liverpool::ColorControl::LogicOp::Copy,
+        .logicOp = LiverpoolToVK::LogicOp(key.logic_op),
         .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
@@ -285,8 +339,8 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
         .pTessellationState = &tessellation_state,
-        .pViewportState = &viewport_info,
-        .pRasterizationState = &raster_state,
+        .pViewportState = &viewport_chain.get(),
+        .pRasterizationState = &raster_chain.get(),
         .pMultisampleState = &multisampling,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
@@ -304,19 +358,17 @@ GraphicsPipeline::GraphicsPipeline(
 GraphicsPipeline::~GraphicsPipeline() = default;
 
 template <typename Attribute, typename Binding>
-void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
-                                       VertexInputs<Binding>& bindings,
-                                       VertexInputs<AmdGpu::Buffer>& guest_buffers) const {
+void GraphicsPipeline::GetVertexInputs(
+    VertexInputs<Attribute>& attributes, VertexInputs<Binding>& bindings,
+    VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT>& divisors,
+    VertexInputs<AmdGpu::Buffer>& guest_buffers, u32 step_rate_0, u32 step_rate_1) const {
+    using InstanceIdType = Shader::Gcn::VertexAttribute::InstanceIdType;
     if (!fetch_shader || fetch_shader->attributes.empty()) {
         return;
     }
     const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
     for (const auto& attrib : fetch_shader->attributes) {
-        if (attrib.UsesStepRates()) {
-            // Skip attribute binding as the data will be pulled by shader.
-            continue;
-        }
-
+        const auto step_rate = attrib.GetStepRate();
         const auto& buffer = attrib.GetSharp(vs_info);
         attributes.push_back(Attribute{
             .location = attrib.semantic,
@@ -327,12 +379,19 @@ void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
         bindings.push_back(Binding{
             .binding = attrib.semantic,
             .stride = buffer.GetStride(),
-            .inputRate = attrib.GetStepRate() == Shader::Gcn::VertexAttribute::InstanceIdType::None
-                             ? vk::VertexInputRate::eVertex
-                             : vk::VertexInputRate::eInstance,
+            .inputRate = step_rate == InstanceIdType::None ? vk::VertexInputRate::eVertex
+                                                           : vk::VertexInputRate::eInstance,
         });
+        const u32 divisor = step_rate == InstanceIdType::OverStepRate0
+                                ? step_rate_0
+                                : (step_rate == InstanceIdType::OverStepRate1 ? step_rate_1 : 1);
         if constexpr (std::is_same_v<Binding, vk::VertexInputBindingDescription2EXT>) {
-            bindings.back().divisor = 1;
+            bindings.back().divisor = divisor;
+        } else if (step_rate != InstanceIdType::None) {
+            divisors.push_back(vk::VertexInputBindingDivisorDescriptionEXT{
+                .binding = attrib.semantic,
+                .divisor = divisor,
+            });
         }
         guest_buffers.emplace_back(buffer);
     }
@@ -342,11 +401,13 @@ void GraphicsPipeline::GetVertexInputs(VertexInputs<Attribute>& attributes,
 template void GraphicsPipeline::GetVertexInputs(
     VertexInputs<vk::VertexInputAttributeDescription>& attributes,
     VertexInputs<vk::VertexInputBindingDescription>& bindings,
-    VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
+    VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT>& divisors,
+    VertexInputs<AmdGpu::Buffer>& guest_buffers, u32 step_rate_0, u32 step_rate_1) const;
 template void GraphicsPipeline::GetVertexInputs(
     VertexInputs<vk::VertexInputAttributeDescription2EXT>& attributes,
     VertexInputs<vk::VertexInputBindingDescription2EXT>& bindings,
-    VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
+    VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT>& divisors,
+    VertexInputs<AmdGpu::Buffer>& guest_buffers, u32 step_rate_0, u32 step_rate_1) const;
 
 void GraphicsPipeline::BuildDescSetLayout() {
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;

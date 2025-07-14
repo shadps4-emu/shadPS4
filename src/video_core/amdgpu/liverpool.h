@@ -304,6 +304,14 @@ struct Liverpool {
         }
     };
 
+    struct LineControl {
+        u32 width_fixed_point;
+
+        float Width() const {
+            return static_cast<float>(width_fixed_point) / 8.0;
+        }
+    };
+
     struct ModeControl {
         s32 msaa_enable : 1;
         s32 vport_scissor_enable : 1;
@@ -513,9 +521,16 @@ struct Liverpool {
         BitField<19, 1, ClipSpace> clip_space;
         BitField<21, 1, PrimKillCond> vtx_kill_or;
         BitField<22, 1, u32> dx_rasterization_kill;
-        BitField<23, 1, u32> dx_linear_attr_clip_enable;
+        BitField<24, 1, u32> dx_linear_attr_clip_enable;
         BitField<26, 1, u32> zclip_near_disable;
-        BitField<26, 1, u32> zclip_far_disable;
+        BitField<27, 1, u32> zclip_far_disable;
+
+        bool ZclipEnable() const {
+            if (zclip_near_disable != zclip_far_disable) {
+                return false;
+            }
+            return !zclip_near_disable;
+        }
     };
 
     enum class PolygonMode : u32 {
@@ -738,12 +753,7 @@ struct Liverpool {
         u32 data_w;
     };
 
-    struct BlendConstants {
-        float red;
-        float green;
-        float blue;
-        float alpha;
-    };
+    using BlendConstants = std::array<float, 4>;
 
     union BlendControl {
         enum class BlendFactor : u32 {
@@ -796,11 +806,29 @@ struct Liverpool {
             Err = 4u,
             FmaskDecompress = 5u,
         };
+        enum class LogicOp : u32 {
+            Clear = 0x00,
+            Nor = 0x11,
+            AndInverted = 0x22,
+            CopyInverted = 0x33,
+            AndReverse = 0x44,
+            Invert = 0x55,
+            Xor = 0x66,
+            Nand = 0x77,
+            And = 0x88,
+            Equiv = 0x99,
+            Noop = 0xAA,
+            OrInverted = 0xBB,
+            Copy = 0xCC,
+            OrReverse = 0xDD,
+            Or = 0xEE,
+            Set = 0xFF,
+        };
 
         BitField<0, 1, u32> disable_dual_quad;
         BitField<3, 1, u32> degamma_enable;
         BitField<4, 3, OperationMode> mode;
-        BitField<16, 8, u32> rop3;
+        BitField<16, 8, LogicOp> rop3;
     };
 
     struct ColorBuffer {
@@ -1369,7 +1397,9 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 1);
+            INSERT_PADDING_WORDS(0xA287 - 0xA207 - 6);
+            LineControl line_control;
+            INSERT_PADDING_WORDS(4);
             HsTessFactorClamp hs_clamp;
             INSERT_PADDING_WORDS(0xA290 - 0xA287 - 2);
             GsMode vgt_gs_mode;
@@ -1695,6 +1725,7 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(line_control) == 0xA282);
 static_assert(GFX6_3D_REG_INDEX(hs_clamp) == 0xA287);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_mode) == 0xA290);
 static_assert(GFX6_3D_REG_INDEX(mode_control) == 0xA292);

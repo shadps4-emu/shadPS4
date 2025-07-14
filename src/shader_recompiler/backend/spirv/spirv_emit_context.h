@@ -361,7 +361,6 @@ public:
         u32 num_components;
         bool is_integer{};
         bool is_loaded{};
-        s32 buffer_handle{-1};
     };
     Id input_attr_array;
     Id output_attr_array;

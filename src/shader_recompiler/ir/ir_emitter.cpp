@@ -255,8 +255,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, IR::Value index) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), index);
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -658,6 +658,14 @@ U32 IREmitter::ReadLane(const U32& value, const U32& lane) {
 
 U32 IREmitter::WriteLane(const U32& value, const U32& write_value, const U32& lane) {
     return Inst<U32>(Opcode::WriteLane, value, write_value, lane);
+}
+
+Value IREmitter::Ballot(const U1& bit) {
+    return Inst(Opcode::Ballot, bit);
+}
+
+U32 IREmitter::BallotFindLsb(const Value& mask) {
+    return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {

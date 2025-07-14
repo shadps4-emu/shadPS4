@@ -377,35 +377,13 @@ void EmitContext::DefineInputs() {
             ASSERT(attrib.semantic < IR::NumParams);
             const auto sharp = attrib.GetSharp(info);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
-            if (attrib.UsesStepRates()) {
-                const u32 rate_idx =
-                    attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::OverStepRate0 ? 0
-                                                                                                : 1;
-                const u32 num_components = AmdGpu::NumComponents(sharp.GetDataFmt());
-                const auto buffer =
-                    std::ranges::find_if(info.buffers, [&attrib](const auto& buffer) {
-                        return buffer.instance_attrib == attrib.semantic;
-                    });
-                // Note that we pass index rather than Id
-                input_params[attrib.semantic] = SpirvAttribute{
-                    .id = {rate_idx},
-                    .pointer_type = input_u32,
-                    .component_type = U32[1],
-                    .num_components = std::min<u16>(attrib.num_elements, num_components),
-                    .is_integer = true,
-                    .is_loaded = false,
-                    .buffer_handle = int(buffer - info.buffers.begin()),
-                };
+            Id id{DefineInput(type, attrib.semantic)};
+            if (attrib.GetStepRate() != Gcn::VertexAttribute::InstanceIdType::None) {
+                Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
             } else {
-                Id id{DefineInput(type, attrib.semantic)};
-                if (attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::Plain) {
-                    Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
-                } else {
-                    Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
-                }
-                input_params[attrib.semantic] =
-                    GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
+                Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
             }
+            input_params[attrib.semantic] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
         }
         break;
     }
@@ -573,7 +551,7 @@ void EmitContext::DefineOutputs() {
             cull_distances =
                 DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
         }
-        if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
+        if (stage == Stage::Local) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
@@ -700,12 +678,10 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], F32[1], F32[1], F32[1], F32[1], U32[4],
-                                         U32[4], U32[4], U32[4], U32[4], U32[4], U32[2]),
+    const Id struct_type{Name(TypeStruct(F32[1], F32[1], F32[1], F32[1], U32[4], U32[4], U32[4],
+                                         U32[4], U32[4], U32[4], U32[2]),
                               "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
-    MemberName(struct_type, PushData::Step0Index, "sr0");
-    MemberName(struct_type, PushData::Step1Index, "sr1");
     MemberName(struct_type, PushData::XOffsetIndex, "xoffset");
     MemberName(struct_type, PushData::YOffsetIndex, "yoffset");
     MemberName(struct_type, PushData::XScaleIndex, "xscale");
@@ -717,19 +693,17 @@ void EmitContext::DefinePushDataBlock() {
     MemberName(struct_type, PushData::BufOffsetIndex + 0, "buf_offsets0");
     MemberName(struct_type, PushData::BufOffsetIndex + 1, "buf_offsets1");
     MemberName(struct_type, PushData::BufOffsetIndex + 2, "buf_offsets2");
-    MemberDecorate(struct_type, PushData::Step0Index, spv::Decoration::Offset, 0U);
-    MemberDecorate(struct_type, PushData::Step1Index, spv::Decoration::Offset, 4U);
-    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 8U);
-    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 12U);
-    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 16U);
-    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 20U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 24U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 40U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 56U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 72U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 88U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 104U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 2, spv::Decoration::Offset, 120U);
+    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 0U);
+    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 4U);
+    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 12U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 16U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 32U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 48U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 64U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 80U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 96U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 2, spv::Decoration::Offset, 112U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
@@ -763,19 +737,19 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         Decorate(id, spv::Decoration::NonWritable);
     }
     switch (buffer_type) {
-    case Shader::BufferType::GdsBuffer:
+    case BufferType::GdsBuffer:
         Name(id, "gds_buffer");
         break;
-    case Shader::BufferType::Flatbuf:
+    case BufferType::Flatbuf:
         Name(id, "srt_flatbuf");
         break;
-    case Shader::BufferType::BdaPagetable:
+    case BufferType::BdaPagetable:
         Name(id, "bda_pagetable");
         break;
-    case Shader::BufferType::FaultBuffer:
+    case BufferType::FaultBuffer:
         Name(id, "fault_buffer");
         break;
-    case Shader::BufferType::SharedMemory:
+    case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
     default:
