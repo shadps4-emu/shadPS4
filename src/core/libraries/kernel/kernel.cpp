@@ -6,6 +6,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
@@ -248,7 +249,7 @@ s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
         return ORBIS_OK; // but why?
     }
     ASSERT(ret->struct_size == 40);
-    u32 fake_fw = 0x09990000; // chosen arbitrarily, it doesn't matter much
+    u32 fake_fw = Common::ElfInfo::Instance().RawFirmwareVer();
     ret->hex_representation = fake_fw;
     std::snprintf(ret->text_representation, 28, "%2x.%03x.%03x", fake_fw >> 0x18,
                   fake_fw >> 0xc & 0xfff, fake_fw & 0xfff); // why %2x?
