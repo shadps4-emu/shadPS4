@@ -241,6 +241,7 @@ find_package(pugixml 1.14 CONFIG)
 find_package(libusb 1.0.27 MODULE)
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
+    find_package(epoll-shim 3.14 CONFIG)
 endif()
 list(POP_BACK CMAKE_MODULE_PATH)
 
@@ -1170,7 +1171,7 @@ if (APPLE)
     endif()
 
     # Replacement for std::chrono::time_zone
-    target_link_libraries(shadps4 PRIVATE date::date-tz)
+    target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
 endif()
 
 if (ENABLE_QT_GUI)
