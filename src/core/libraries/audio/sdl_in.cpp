@@ -71,6 +71,17 @@ int SDLAudioIn::AudioInInput(int handle, void* out_buffer) {
 
     const int bytesToRead = port.samples_num * port.sample_size * port.channels_num;
 
+    if (out_buffer == nullptr) {
+        int attempts = 0;
+        while (SDL_GetAudioStreamAvailable(port.stream) > 0) {
+            SDL_Delay(1);
+            if (++attempts > 1000) {
+                return ORBIS_AUDIO_IN_ERROR_TIMEOUT;
+            }
+        }
+        return 0; // done
+    }
+
     int attempts = 0;
     while (SDL_GetAudioStreamAvailable(port.stream) < bytesToRead) {
         SDL_Delay(1);
@@ -79,11 +90,14 @@ int SDLAudioIn::AudioInInput(int handle, void* out_buffer) {
         }
     }
 
-    if (SDL_GetAudioStreamData(port.stream, out_buffer, bytesToRead) != 0) {
+    int result = SDL_GetAudioStreamData(port.stream, out_buffer, bytesToRead);
+    if (result < 0) {
+        // SDL_GetAudioStreamData failed
+        SDL_Log("AudioInInput error: %s", SDL_GetError());
         return ORBIS_AUDIO_IN_ERROR_STREAM_FAIL;
     }
 
-    return bytesToRead;
+    return result;
 }
 
 void SDLAudioIn::AudioInClose(int handle) {
