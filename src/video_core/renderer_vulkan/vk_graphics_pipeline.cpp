@@ -158,12 +158,6 @@ GraphicsPipeline::GraphicsPipeline(
     };
 
     if (!instance.IsDepthClampControlSupported()) {
-        if (key.depth_clamp_user_defined_range) {
-            LOG_WARNING(Render_Vulkan,
-                        "Viewport uses custom clamp range zmin={}, zmax={} which cannot be "
-                        "accurately emulated",
-                        key.min_depth_clamp, key.max_depth_clamp);
-        }
         viewport_chain.unlink<vk::PipelineViewportDepthClampControlCreateInfoEXT>();
     }
     if (!instance.IsDepthClipControlSupported()) {
