@@ -525,7 +525,7 @@ void PipelineCache::RefreshDepthClampRange() {
             zmax = vp_d.zmax;
         }
         depth_clamp_is_same_on_all_viewports &= (zmin == vp_d.zmin && zmax == vp_d.zmax);
-        depth_clamp_can_use_viewport_range &= (min_depth == vp_d.zmin && max_depth == vp_d.zmax);
+        depth_clamp_can_use_viewport_range &= (min_depth >= vp_d.zmin && max_depth <= vp_d.zmax);
     }
 
     if (zmin == std::numeric_limits<float>::max()) {
