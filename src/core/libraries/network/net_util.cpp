@@ -167,15 +167,18 @@ bool NetUtilInternal::RetrieveNetmask() {
     std::vector<u8> adapter_addresses(sizeof(IP_ADAPTER_ADDRESSES));
     ULONG size_infos = sizeof(IP_ADAPTER_ADDRESSES);
 
-    if (GetAdaptersAddresses(AF_INET, 0, NULL, reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
-                        &size_infos) == ERROR_BUFFER_OVERFLOW)
+    if (GetAdaptersAddresses(AF_INET, 0, NULL,
+                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
+                             &size_infos) == ERROR_BUFFER_OVERFLOW)
         adapter_addresses.resize(size_infos);
 
-    if (GetAdaptersAddresses(AF_INET, 0, NULL, reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
-                        &size_infos) == NO_ERROR &&
+    if (GetAdaptersAddresses(AF_INET, 0, NULL,
+                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
+                             &size_infos) == NO_ERROR &&
         size_infos) {
         PIP_ADAPTER_ADDRESSES adapter;
-        for (adapter = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()); adapter; adapter = adapter->Next) {
+        for (adapter = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()); adapter;
+             adapter = adapter->Next) {
             PIP_ADAPTER_UNICAST_ADDRESS unicast = adapter->FirstUnicastAddress;
             if (unicast) {
                 ULONG prefix_length = unicast->OnLinkPrefixLength;

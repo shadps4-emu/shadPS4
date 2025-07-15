@@ -495,5 +495,4 @@ int PosixSocket::write(const void* buf, size_t len) {
 #endif
 }
 
-
 } // namespace Libraries::Net
