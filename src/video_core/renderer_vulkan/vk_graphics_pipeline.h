@@ -48,9 +48,6 @@ struct GraphicsPipelineKey {
         Liverpool::DepthBuffer::ZFormat z_format : 2;
         Liverpool::DepthBuffer::StencilFormat stencil_format : 1;
         u32 depth_clamp_enable : 1;
-        u32 depth_clamp_user_defined_range : 1;
-        float min_depth_clamp;
-        float max_depth_clamp;
     };
     struct {
         AmdGpu::PrimitiveType prim_type : 5;

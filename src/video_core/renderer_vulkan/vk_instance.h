@@ -114,11 +114,6 @@ public:
         return depth_clip_enable;
     }
 
-    /// Returns true when VK_EXT_depth_clamp_control is supported
-    bool IsDepthClampControlSupported() const {
-        return depth_clamp_control;
-    }
-
     /// Returns true when VK_EXT_depth_range_unrestricted is supported
     bool IsDepthRangeUnrestrictedSupported() const {
         return depth_range_unrestricted;
@@ -420,7 +415,6 @@ private:
     bool fragment_shader_barycentric{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
-    bool depth_clamp_control{};
     bool depth_range_unrestricted{};
     bool dynamic_state_3{};
     bool vertex_input_dynamic_state{};
