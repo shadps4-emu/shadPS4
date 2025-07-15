@@ -3,21 +3,21 @@
 
 #pragma once
 
-#include <cereal/archives/binary.hpp>
 #include <boost/container/small_vector.hpp>
+#include <cereal/archives/binary.hpp>
 #include <common/types.h>
 
 namespace cereal {
 
 // boost::small_vector
-template<class Archive, class T, std::size_t N, class Alloc>
+template <class Archive, class T, std::size_t N, class Alloc>
 void save(Archive& ar, boost::container::small_vector<T, N, Alloc> const& smallVector) {
     ar(make_size_tag(static_cast<u32>(smallVector.size())));
     for (auto const& element : smallVector)
         ar(element);
 }
 
-template<class Archive, class T, std::size_t N, class Alloc>
+template <class Archive, class T, std::size_t N, class Alloc>
 void load(Archive& ar, boost::container::small_vector<T, N, Alloc>& smallVector) {
     u32 elementCount;
     ar(make_size_tag(elementCount));
@@ -26,4 +26,4 @@ void load(Archive& ar, boost::container::small_vector<T, N, Alloc>& smallVector)
         ar(element);
 }
 
-}
+} // namespace cereal

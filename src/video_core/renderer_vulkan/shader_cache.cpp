@@ -29,7 +29,6 @@ using u32 = uint32_t;
 
 namespace ShaderCache {
 
-
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     u64 hash = 0;
 
@@ -244,9 +243,11 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
 }
 
 bool CheckShaderCache(std::string shader_id) {
-    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".spv");
-    std::filesystem::path resources_file_path = SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".resources");
-;
+    std::filesystem::path spirv_cache_file_path =
+        SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".spv");
+    std::filesystem::path resources_file_path =
+        SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".resources");
+    ;
 
     if (!std::filesystem::exists(spirv_cache_file_path)) {
         return false;
@@ -324,7 +325,7 @@ void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_s
     resources_dump_file.Close();
 }
 
-void SerializeInfo(std::ostream& info_serialized, Shader::Info &info) {
+void SerializeInfo(std::ostream& info_serialized, Shader::Info& info) {
     cereal::BinaryOutputArchive ar(info_serialized);
     ar << info.ud_mask;
     ar << info.gs_copy_data;
@@ -333,7 +334,23 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info &info) {
     ar << info.images;
     ar << info.samplers;
     ar << info.fmasks;
+    // srt info
+    ar << info.flattened_ud_buf;
+    ar << info.fs_interpolation;
+}
 
+void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
+    cereal::BinaryInputArchive ar(info_serialized);
+    ar >> info.ud_mask;
+    ar >> info.gs_copy_data;
+    ar >> info.uses_patches;
+    ar >> info.buffers;
+    ar >> info.images;
+    ar >> info.samplers;
+    ar >> info.fmasks;
+    // srt info
+    ar >> info.flattened_ud_buf;
+    ar >> info.fs_interpolation;
 }
 
 } // namespace ShaderCache
