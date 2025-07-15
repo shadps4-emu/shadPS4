@@ -73,22 +73,19 @@ enum class Attribute : u64 {
     LocalInvocationId = 76,
     LocalInvocationIndex = 77,
     FragCoord = 78,
-    InvocationId = 81, // TCS id in output patch and instanced geometry shader id
-    PatchVertices = 82,
-    TessellationEvaluationPointU = 83,
-    TessellationEvaluationPointV = 84,
-    PackedHullInvocationInfo = 85, // contains patch id within the VGT and invocation ID
+    BaryCoordNoPersp = 79,
+    BaryCoordNoPerspCentroid = 80,
+    BaryCoordNoPerspSample = 81,
+    BaryCoordSmooth = 82,
+    BaryCoordSmoothCentroid = 83,
+    BaryCoordSmoothSample = 84,
+    BaryCoordPullModel = 85,
+    InvocationId = 86, // TCS id in output patch and instanced geometry shader id
+    PatchVertices = 87,
+    TessellationEvaluationPointU = 88,
+    TessellationEvaluationPointV = 89,
+    PackedHullInvocationInfo = 90, // contains patch id within the VGT and invocation ID
     Max,
-};
-
-enum class Interpolation {
-    Invalid = 0,
-    PerspectiveSample = 1,
-    PerspectiveCenter = 2,
-    PerspectiveCentroid = 3,
-    LinearSample = 4,
-    LinearCenter = 5,
-    LinearCentroid = 6,
 };
 
 constexpr size_t NumAttributes = static_cast<size_t>(Attribute::Max);
@@ -112,13 +109,8 @@ constexpr bool IsMrt(Attribute attribute) noexcept {
     return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
 }
 
-constexpr bool IsLinear(Interpolation interp) noexcept {
-    return interp >= Interpolation::LinearSample && interp <= Interpolation::LinearCentroid;
-}
-
-constexpr bool IsPerspective(Interpolation interp) noexcept {
-    return interp >= Interpolation::PerspectiveSample &&
-           interp <= Interpolation::PerspectiveCentroid;
+constexpr bool IsBarycentricCoord(Attribute attribute) noexcept {
+    return attribute >= Attribute::BaryCoordSmooth && attribute <= Attribute::BaryCoordSmoothSample;
 }
 
 [[nodiscard]] std::string NameOf(Attribute attribute);

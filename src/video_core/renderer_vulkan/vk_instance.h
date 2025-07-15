@@ -145,6 +145,11 @@ public:
         return fragment_shader_barycentric;
     }
 
+    /// Returns true when VK_AMD_shader_explicit_vertex_parameter is supported.
+    bool IsAmdShaderExplicitVertexParameterSupported() const {
+        return amd_shader_explicit_vertex_parameter;
+    }
+
     /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
     bool IsListRestartSupported() const {
         return list_restart;
@@ -413,6 +418,7 @@ private:
     u32 queue_family_index{0};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
+    bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
     bool depth_range_unrestricted{};
