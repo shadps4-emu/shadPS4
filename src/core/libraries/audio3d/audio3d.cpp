@@ -530,6 +530,9 @@ s32 PS4_SYSV_ABI sceAudio3dTerminate() {
     if (!state) {
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
+
+    AudioOut::sceAudioOutOutput(state->audio_out_handle, nullptr);
+    AudioOut::sceAudioOutClose(state->audio_out_handle);
     state.release();
     return ORBIS_OK;
 }
