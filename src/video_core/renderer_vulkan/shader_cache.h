@@ -11,6 +11,8 @@
 
 namespace ShaderCache {
 
+#define SHADER_CACHE_DIR (Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache" / "portable")
+
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec);
 void SerializeInfo(
     std::ostream& info_serialized, Shader::Info& info);

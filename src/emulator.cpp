@@ -41,6 +41,7 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+#include "video_core/renderer_vulkan/shader_cache.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -256,10 +257,9 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
-    const auto shader_cache_dir = Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache";
-    if (!std::filesystem::exists(shader_cache_dir)) {
-        std::filesystem::create_directories(shader_cache_dir);
-        LOG_INFO(Loader, "Created shader cache directory: {}", shader_cache_dir.string());
+    if (!std::filesystem::exists(SHADER_CACHE_DIR)) {
+        std::filesystem::create_directories(SHADER_CACHE_DIR);
+        LOG_INFO(Loader, "Created shader cache directory: {}", SHADER_CACHE_DIR.string());
     }
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

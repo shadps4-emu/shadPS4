@@ -516,13 +516,13 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     std::vector<u32> spv;
     std::string shader_id = std::to_string(::ShaderCache::CalculateSpecializationHash(spec));
     if (::ShaderCache::CheckShaderCache(shader_id)) {
-        LOG_INFO(Render_Vulkan, "Loaded shader {} {:#x} {} from cache", info.stage, info.pgm_hash,
-                 perm_idx != 0 ? "(permutation)" : "");
+        LOG_INFO(Render_Vulkan, "Loaded shader {} {:#x} {}from cache", info.stage, info.pgm_hash,
+                 perm_idx != 0 ? "(permutation) " : "");
         ::ShaderCache::GetShader(shader_id, info, spv);
         info.RefreshFlatBuf();
     } else {
-        LOG_INFO(Render_Vulkan, "Shader {} {:#x} {} not in cache", info.stage,
-                 info.pgm_hash, perm_idx != 0 ? "(permutation)" : "");
+        LOG_INFO(Render_Vulkan, "Shader {} {:#x} {}not in cache", info.stage,
+                 info.pgm_hash, perm_idx != 0 ? "(permutation) " : "");
         const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
         spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
         std::ostringstream info_serialized;
@@ -533,8 +533,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
 
-        LOG_INFO(Render_Vulkan, "Compiled shader {} {:#x} {} and saved it to cache", info.stage, info.pgm_hash,
-                 perm_idx != 0 ? "(permutation)" : "");
+        LOG_INFO(Render_Vulkan, "Compiled shader {} {:#x} {}and saved it to cache", info.stage, info.pgm_hash,
+                 perm_idx != 0 ? "(permutation) " : "");
     }
 
     vk::ShaderModule module;

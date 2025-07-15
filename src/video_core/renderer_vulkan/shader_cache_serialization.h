@@ -5,26 +5,11 @@
 #include <cereal/types/map.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/utility.hpp>
+
+#include "common/serialization.h"
 #include "shader_recompiler/info.h"
 
 namespace cereal {
-
-// boost::small_vector
-template<class Archive, class T, std::size_t N, class Alloc>
-void save(Archive& ar, boost::container::small_vector<T, N, Alloc> const& smallVector) {
-    ar(static_cast<std::uint32_t>(smallVector.size()));
-    for (auto const& element : smallVector)
-        ar(element);
-}
-
-template<class Archive, class T, std::size_t N, class Alloc>
-void load(Archive& ar, boost::container::small_vector<T, N, Alloc>& smallVector) {
-    std::uint32_t elementCount;
-    ar(elementCount);
-    smallVector.resize(elementCount);
-    for (auto& element : smallVector)
-        ar(element);
-}
 
 // Shader::Info::UserDataMask
 template<class Archive>
@@ -87,6 +72,12 @@ void serialize(Archive& ar, Shader::SamplerResource& sampler) {
     ar(sampler.sampler);
     ar(static_cast<u32>(sampler.associated_image),
        static_cast<u32>(sampler.disable_aniso));
+}
+
+// Shader::FMaskResource
+template<class Archive>
+void serialize(Archive& ar, Shader::FMaskResource& fmask) {
+    cereal::binary_data(reinterpret_cast<uint8_t*>(&fmask), sizeof(fmask));
 }
 
 }

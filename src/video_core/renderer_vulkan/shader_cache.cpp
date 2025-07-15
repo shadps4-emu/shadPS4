@@ -29,8 +29,6 @@ using u32 = uint32_t;
 
 namespace ShaderCache {
 
-const auto shader_cache_dir = Common::FS::GetUserPath(Common::FS::PathType::ShaderDir) / "cache";
-std::unordered_map<std::string, std::vector<u32>> g_ud_storage;
 
 u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
     u64 hash = 0;
@@ -246,8 +244,9 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
 }
 
 bool CheckShaderCache(std::string shader_id) {
-    std::filesystem::path spirv_cache_file_path = shader_cache_dir / (shader_id + ".spv");
-    std::filesystem::path resources_file_path = shader_cache_dir / (shader_id + ".resources");
+    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".spv");
+    std::filesystem::path resources_file_path = SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".resources");
+;
 
     if (!std::filesystem::exists(spirv_cache_file_path)) {
         return false;
@@ -282,14 +281,17 @@ bool CheckShaderCache(std::string shader_id) {
 }
 
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
-    std::string spirv_cache_filename = shader_id + ".spv";
-    std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
+    // read spirv
+    std::filesystem::path spirv_cache_filename = shader_id + ".spv";
+    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / spirv_cache_filename;
     Common::FS::IOFile spirv_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
     spv.resize(spirv_cache_file.GetSize() / sizeof(u32));
     spirv_cache_file.Read(spv);
     spirv_cache_file.Close();
 
-    std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
+    // read resources
+    std::filesystem::path resource_dump_filename = shader_id + ".resources";
+    std::filesystem::path resources_dump_file_path = SHADER_CACHE_DIR / resource_dump_filename;
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
                                            Common::FS::FileAccessMode::Read);
 
@@ -305,13 +307,14 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
 }
 
 void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized) {
-    std::string spirv_cache_filename = shader_id + ".spv";
-    std::filesystem::path spirv_cache_file_path = shader_cache_dir / spirv_cache_filename;
+    std::filesystem::path spirv_cache_filename = shader_id + ".spv";
+    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / spirv_cache_filename;
     Common::FS::IOFile shader_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Write);
     shader_cache_file.WriteSpan(std::span<const u32>(spv));
     shader_cache_file.Close();
 
-    std::filesystem::path resources_dump_file_path = shader_cache_dir / (shader_id + ".resources");
+    std::filesystem::path resource_dump_filename = shader_id + ".resources";
+    std::filesystem::path resources_dump_file_path = SHADER_CACHE_DIR / resource_dump_filename;
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
                                            Common::FS::FileAccessMode::Write);
 
@@ -331,6 +334,7 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info &info) {
     ar << info.buffers;
     ar << info.images;
     ar << info.samplers;
+    ar << info.fmasks;
 
 }
 

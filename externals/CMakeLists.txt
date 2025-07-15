@@ -216,7 +216,8 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
-if (NOT TARGET cereal::cereal)
+# cereal
+if (NOT TARGET cereal::cereal AND NOT APPLE)
     set(SKIP_PERFORMANCE_COMPARISON ON "")
     set(BUILD_SANDBOX OFF "")
     set(BUILD_TESTS OFF "")

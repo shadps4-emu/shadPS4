@@ -690,6 +690,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/rdtsc.h
            src/common/recursive_lock.cpp
            src/common/recursive_lock.h
+           src/common/serialization.h
            src/common/sha1.h
            src/common/shared_first_mutex.h
            src/common/signal_context.h
