@@ -437,7 +437,7 @@ void SettingsDialog::LoadValuesFromConfig() {
                                 toml::find_or<int>(data, "Settings", "consoleLanguage", 6))) %
         languageIndexes.size());
     ui->emulatorLanguageComboBox->setCurrentIndex(
-        languages[toml::find_or<std::string>(data, "GUI", "emulatorLanguage", "en_US")]);
+        languages[m_gui_settings->GetValue(gui::gen_guiLanguage).toString().toStdString()]);
     ui->hideCursorComboBox->setCurrentIndex(toml::find_or<int>(data, "Input", "cursorState", 1));
     OnCursorStateChanged(toml::find_or<int>(data, "Input", "cursorState", 1));
     ui->idleTimeoutSpinBox->setValue(toml::find_or<int>(data, "Input", "cursorHideTimeout", 5));
