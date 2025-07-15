@@ -110,7 +110,8 @@ constexpr bool IsMrt(Attribute attribute) noexcept {
 }
 
 constexpr bool IsBarycentricCoord(Attribute attribute) noexcept {
-    return attribute >= Attribute::BaryCoordSmooth && attribute <= Attribute::BaryCoordSmoothSample;
+    return attribute >= Attribute::BaryCoordNoPersp &&
+           attribute <= Attribute::BaryCoordSmoothSample;
 }
 
 [[nodiscard]] std::string NameOf(Attribute attribute);
