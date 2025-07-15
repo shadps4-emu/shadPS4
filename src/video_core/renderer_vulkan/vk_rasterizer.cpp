@@ -1014,9 +1014,10 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState();
+    UpdateRasterizationState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
-    dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
+    dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
     dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
 
     // Commit new dynamic state to the command buffer.
@@ -1084,12 +1085,6 @@ void Rasterizer::UpdateViewportScissorState() const {
         } else {
             viewport.minDepth = zoffset;
             viewport.maxDepth = zoffset + zscale;
-        }
-
-        if (!regs.depth_render_override.disable_viewport_clamp) {
-            // Apply depth clamp.
-            viewport.minDepth = std::max(viewport.minDepth, vp_d.zmin);
-            viewport.maxDepth = std::min(viewport.maxDepth, vp_d.zmax);
         }
 
         if (!instance.IsDepthRangeUnrestrictedSupported()) {
@@ -1231,8 +1226,15 @@ void Rasterizer::UpdatePrimitiveState() const {
     const auto front_face = LiverpoolToVK::FrontFace(regs.polygon_control.front_face);
 
     dynamic_state.SetPrimitiveRestartEnabled(prim_restart);
+    dynamic_state.SetRasterizerDiscardEnabled(regs.clipper_control.dx_rasterization_kill);
     dynamic_state.SetCullMode(cull_mode);
     dynamic_state.SetFrontFace(front_face);
+}
+
+void Rasterizer::UpdateRasterizationState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetLineWidth(regs.line_control.Width());
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
