@@ -72,4 +72,8 @@ int P2PSocket::write(const void* buf, size_t len) {
     return 0;
 }
 
+int P2PSocket::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    return 0;
+}
 } // namespace Libraries::Net
