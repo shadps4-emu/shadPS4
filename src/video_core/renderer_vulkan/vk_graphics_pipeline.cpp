@@ -137,33 +137,17 @@ GraphicsPipeline::GraphicsPipeline(
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
         .rasterizationSamples =
             LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
-        .sampleShadingEnable = false,
+        .sampleShadingEnable =
+            fs_info.addr_flags.persp_sample_ena || fs_info.addr_flags.linear_sample_ena,
     };
 
-    const vk::DepthClampRangeEXT depth_clamp_range = {
-        .minDepthClamp = key.min_depth_clamp,
-        .maxDepthClamp = key.max_depth_clamp,
+    const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
+        .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
     };
 
-    vk::StructureChain viewport_chain = {
-        vk::PipelineViewportStateCreateInfo{},
-        vk::PipelineViewportDepthClipControlCreateInfoEXT{
-            .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
-        },
-        vk::PipelineViewportDepthClampControlCreateInfoEXT{
-            .depthClampMode = key.depth_clamp_user_defined_range
-                                  ? vk::DepthClampModeEXT::eUserDefinedRange
-                                  : vk::DepthClampModeEXT::eViewportRange,
-            .pDepthClampRange = &depth_clamp_range,
-        },
+    const vk::PipelineViewportStateCreateInfo viewport_info = {
+        .pNext = instance.IsDepthClipControlSupported() ? &clip_control : nullptr,
     };
-
-    if (!instance.IsDepthClampControlSupported()) {
-        viewport_chain.unlink<vk::PipelineViewportDepthClampControlCreateInfoEXT>();
-    }
-    if (!instance.IsDepthClipControlSupported()) {
-        viewport_chain.unlink<vk::PipelineViewportDepthClipControlCreateInfoEXT>();
-    }
 
     boost::container::static_vector<vk::DynamicState, 32> dynamic_states = {
         vk::DynamicState::eViewportWithCount,  vk::DynamicState::eScissorWithCount,
@@ -339,7 +323,7 @@ GraphicsPipeline::GraphicsPipeline(
         .pVertexInputState = !instance.IsVertexInputDynamicState() ? &vertex_input_info : nullptr,
         .pInputAssemblyState = &input_assembly,
         .pTessellationState = &tessellation_state,
-        .pViewportState = &viewport_chain.get(),
+        .pViewportState = &viewport_info,
         .pRasterizationState = &raster_chain.get(),
         .pMultisampleState = &multisampling,
         .pColorBlendState = &color_blending,
