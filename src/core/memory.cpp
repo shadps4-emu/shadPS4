@@ -555,7 +555,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     vma.phys_base = 0;
     vma.disallow_merge = false;
     vma.name = "";
-    const auto post_merge_it = MergeAdjacent(vma_map, new_it);
+    MergeAdjacent(vma_map, new_it);
+
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // If this mapping has GPU access, unmap from GPU.
         if (IsValidGpuMapping(virtual_addr, size)) {
