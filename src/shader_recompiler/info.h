@@ -222,6 +222,7 @@ struct Info {
     VAddr pgm_base;
     bool has_storage_images{};
     bool has_discard{};
+    bool has_bitwise_xor{};
     bool has_image_gather{};
     bool has_image_query{};
     bool uses_buffer_atomic_float_min_max{};
