@@ -371,6 +371,7 @@ public:
     Id output_attr_array;
     std::array<SpirvAttribute, IR::NumParams> input_params{};
     std::array<SpirvAttribute, IR::NumParams> output_params{};
+    std::array<SpirvAttribute, IR::NumRenderTargets> frag_outputs{};
 
     Id uf11_to_f32{};
     Id f32_to_uf11{};

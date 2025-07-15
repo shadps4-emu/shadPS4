@@ -60,7 +60,7 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
     const u32 attr_index = inst.control.vintrp.attr;
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
-    auto& interp = info.fs_interp_qualifiers[attr_index];
+    auto& interp = info.fs_interpolation[attr_index];
     ASSERT(!attr.IsDefault() && !attr.is_flat);
     if (!profile.needs_manual_interpolation) {
         interp = GetInterpolation(vgpr_to_interp[inst.src[0].code]);
@@ -80,10 +80,11 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const u32 attr_index = inst.control.vintrp.attr;
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
-    auto& interp = info.fs_interp_qualifiers[attr_index];
+    auto& interp = info.fs_interpolation[attr_index];
     ASSERT(attr.is_flat);
     if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        profile.supports_fragment_shader_barycentric) {
+        (profile.supports_fragment_shader_barycentric &&
+         !profile.has_incomplete_fragment_shader_barycentric)) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
         SetDst(inst.dst[0],

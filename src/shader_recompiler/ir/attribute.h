@@ -109,12 +109,7 @@ constexpr bool IsMrt(Attribute attribute) noexcept {
     return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
 }
 
-constexpr bool IsLinear(Attribute attribute) noexcept {
-    return attribute >= Attribute::BaryCoordNoPersp &&
-           attribute <= Attribute::BaryCoordNoPerspSample;
-}
-
-constexpr bool IsPerspective(Attribute attribute) noexcept {
+constexpr bool IsBarycentricCoord(Attribute attribute) noexcept {
     return attribute >= Attribute::BaryCoordSmooth && attribute <= Attribute::BaryCoordSmoothSample;
 }
 

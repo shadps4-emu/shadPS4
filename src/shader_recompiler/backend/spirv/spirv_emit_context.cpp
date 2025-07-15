@@ -305,7 +305,7 @@ void EmitContext::DefineAmdPerVertexAttribs() {
     }
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
-        if (input.IsDefault() || info.fs_interp_qualifiers[i].primary != Qualifier::PerVertex) {
+        if (input.IsDefault() || info.fs_interpolation[i].primary != Qualifier::PerVertex) {
             continue;
         }
         auto& param = input_params[i];
@@ -316,6 +316,7 @@ void EmitContext::DefineAmdPerVertexAttribs() {
             OpInterpolateAtVertexAMD(F32[param.num_components], pointer, ConstU32(1U));
         param.id_array[2] =
             OpInterpolateAtVertexAMD(F32[param.num_components], pointer, ConstU32(2U));
+        param.is_loaded = true;
     }
 }
 
@@ -378,28 +379,34 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
-            } else {
+            } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_smooth =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            } else {
+                bary_coord_smooth = ConstF32(0.f, 0.f);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
-                bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD,
-                                                   spv::StorageClass::Input);
-            } else {
+                bary_coord_smooth_sample = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_smooth_sample =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
                 // Decorate(bary_coord_smooth_sample, spv::Decoration::Sample);
+            } else {
+                bary_coord_smooth_sample = ConstF32(0.f, 0.f);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_nopersp = DefineVariable(F32[2], spv::BuiltIn::BaryCoordNoPerspAMD,
                                                     spv::StorageClass::Input);
-            } else {
+            } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
                                                     spv::StorageClass::Input);
+            } else {
+                bary_coord_nopersp = ConstF32(0.f, 0.f);
             }
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
@@ -409,36 +416,30 @@ void EmitContext::DefineInputs() {
             }
             const IR::Attribute param = IR::Attribute::Param0 + i;
             const u32 num_components = info.loads.NumComponents(param);
-            const auto [primary, auxiliary] = info.fs_interp_qualifiers[i];
-            const bool is_array = primary == Qualifier::PerVertex;
-            const Id type{F32[num_components]};
-            Id attr_id{};
-            // Declare primary qualifier (pervertex, smooth, noperspective, flat)
-            if (is_array) {
-                if (profile.supports_fragment_shader_barycentric) {
-                    attr_id = DefineInput(TypeArray(type, ConstU32(3U)), input.param_index);
-                    Decorate(attr_id, spv::Decoration::PerVertexKHR);
-                } else {
-                    attr_id = DefineInput(type, input.param_index);
-                    Decorate(attr_id, spv::Decoration::ExplicitInterpAMD);
+            const auto [primary, auxiliary] = info.fs_interpolation[i];
+            const Id type = F32[num_components];
+            const Id attr_id = [&] {
+                if (primary == Qualifier::PerVertex &&
+                    profile.supports_fragment_shader_barycentric) {
+                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), input.param_index),
+                                fmt::format("fs_in_attr{}_p", i));
                 }
-                Name(attr_id, fmt::format("fs_in_attr{}_p", i));
-            } else {
-                attr_id = DefineInput(type, input.param_index);
-                Name(attr_id, fmt::format("fs_in_attr{}", i));
-                if (primary != Qualifier::Smooth) {
-                    Decorate(attr_id, primary == Qualifier::Flat ? spv::Decoration::Flat
-                                                                 : spv::Decoration::NoPerspective);
-                }
+                return Name(DefineInput(type, input.param_index), fmt::format("fs_in_attr{}", i));
+            }();
+            if (primary == Qualifier::PerVertex) {
+                Decorate(attr_id, profile.supports_amd_shader_explicit_vertex_parameter
+                                      ? spv::Decoration::ExplicitInterpAMD
+                                      : spv::Decoration::PerVertexKHR);
+            } else if (primary != Qualifier::Smooth) {
+                Decorate(attr_id, primary == Qualifier::Flat ? spv::Decoration::Flat
+                                                             : spv::Decoration::NoPerspective);
             }
-            // Declare auxiliary qualifier if present (centroid, sample)
             if (auxiliary != Qualifier::None) {
                 Decorate(attr_id, auxiliary == Qualifier::Centroid ? spv::Decoration::Centroid
                                                                    : spv::Decoration::Sample);
             }
-            input_params[i] = GetAttributeInfo(
-                AmdGpu::NumberFormat::Float, attr_id, num_components, false,
-                is_array && profile.supports_amd_shader_explicit_vertex_parameter, is_array);
+            input_params[i] = GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components,
+                                               false, false, primary == Qualifier::PerVertex);
         }
         break;
     case LogicalStage::Compute:
@@ -650,7 +651,7 @@ void EmitContext::DefineOutputs() {
                 id = DefineOutput(type, i);
             }
             Name(id, fmt::format("frag_color{}", i));
-            output_params[i] = GetAttributeInfo(num_format, id, num_components, true);
+            frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
         ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,

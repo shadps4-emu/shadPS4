@@ -294,11 +294,11 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
         ctx.AddCapability(spv::Capability::Geometry);
     }
     if (info.stage == Stage::Fragment) {
-        if (profile.supports_fragment_shader_barycentric) {
+        if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
+        } else if (profile.supports_fragment_shader_barycentric) {
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
-        } else if (profile.supports_amd_shader_explicit_vertex_parameter) {
-            ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
             info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {

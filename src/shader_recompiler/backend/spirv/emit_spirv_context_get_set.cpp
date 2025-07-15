@@ -68,7 +68,7 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
-        const auto& info{ctx.output_params.at(index)};
+        const auto& info{ctx.frag_outputs.at(index)};
         if (info.num_components == 1) {
             return info.id;
         } else {
@@ -100,7 +100,7 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
-        const auto& info{ctx.output_params.at(index)};
+        const auto& info{ctx.frag_outputs.at(index)};
         return {info.component_type, info.is_integer};
     }
     switch (attr) {
@@ -163,7 +163,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsParam(attr)) {
         const u32 param_index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(param_index)};
-        const Id result = [&] {
+        const Id value = [&] {
             if (param.is_array) {
                 ASSERT(param.num_components > 1);
                 if (param.is_loaded) {
@@ -185,7 +185,10 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
                 }
             }
         }();
-        return param.is_integer ? ctx.OpBitcast(ctx.F32[1], result) : result;
+        return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
+    }
+    if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
+        ++comp;
     }
     switch (attr) {
     case IR::Attribute::Position0:
@@ -203,21 +206,12 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     case IR::Attribute::BaryCoordSmooth:
-        if (ctx.profile.supports_fragment_shader_barycentric) {
-            ++comp;
-        }
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
                                                         ctx.ConstU32(comp)));
     case IR::Attribute::BaryCoordSmoothSample:
-        if (ctx.profile.supports_fragment_shader_barycentric) {
-            ++comp;
-        }
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample,
                                                         ctx.ConstU32(comp)));
     case IR::Attribute::BaryCoordNoPersp:
-        if (ctx.profile.supports_fragment_shader_barycentric) {
-            ++comp;
-        }
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
                                                         ctx.ConstU32(comp)));
     default:

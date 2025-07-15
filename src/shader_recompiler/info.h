@@ -209,7 +209,7 @@ struct Info {
         Qualifier primary;
         Qualifier auxiliary;
     };
-    std::array<Interpolation, IR::NumParams> fs_interp_qualifiers{};
+    std::array<Interpolation, IR::NumParams> fs_interpolation{};
 
     IR::ScalarReg tess_consts_ptr_base = IR::ScalarReg::Max;
     s32 tess_consts_dword_offset = -1;
