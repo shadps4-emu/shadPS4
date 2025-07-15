@@ -281,7 +281,6 @@ bool CheckShaderCache(std::string shader_id) {
 }
 
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
-    // read spirv
     std::filesystem::path spirv_cache_filename = shader_id + ".spv";
     std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / spirv_cache_filename;
     Common::FS::IOFile spirv_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
@@ -289,7 +288,6 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
     spirv_cache_file.Read(spv);
     spirv_cache_file.Close();
 
-    // read resources
     std::filesystem::path resource_dump_filename = shader_id + ".resources";
     std::filesystem::path resources_dump_file_path = SHADER_CACHE_DIR / resource_dump_filename;
     Common::FS::IOFile resources_dump_file(resources_dump_file_path,
