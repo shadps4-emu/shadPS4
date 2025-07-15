@@ -24,6 +24,7 @@
 #include "kernel.h"
 
 #ifdef _WIN32
+#include <io.h>
 #include <winsock2.h>
 #else
 #include <sys/select.h>
@@ -1087,22 +1088,161 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
-    LOG_ERROR(Kernel_Fs,
-              "(STUBBED) nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
+    LOG_INFO(Kernel_Fs,
+              "nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
               "= {:#x}",
               nfds, reinterpret_cast<u64>(readfds), reinterpret_cast<u64>(writefds),
               reinterpret_cast<u64>(exceptfds), reinterpret_cast<u64>(timeout));
-
-    LOG_INFO(Kernel_Fs, "nfds = {}", nfds);
 
     fd_set read_host, write_host, except_host;
     FD_ZERO(&read_host);
     FD_ZERO(&write_host);
     FD_ZERO(&except_host);
-    std::map<u64, int> host_to_guest;
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    u64 max_fd = 0;
+
+#ifdef _WIN32
+
+    // Separate sockets for select()
+    for (auto i = 0; i < nfds; ++i) {
+        auto read = readfds && FD_ISSET(i, readfds);
+        auto write = writefds && FD_ISSET(i, writefds);
+        auto except = exceptfds && FD_ISSET(i, exceptfds);
+        if (read || write || except) {
+            LOG_INFO(Kernel_Fs, "guest fd {} expected", i);
+            auto* file = h->GetFile(i);
+            if (file == nullptr ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+                LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+                *__Error() = POSIX_EBADF;
+                return -1;
+            }
+
+            if (file->type != Core::FileSys::FileType::Socket) {
+                LOG_WARNING(Kernel_Fs, "fd {} is not a socket, ignoring", i);
+                continue;
+            }
+
+            auto fd = [&] {
+                switch (file->type) {
+                case Core::FileSys::FileType::Socket:
+                    return file->socket->Native();
+                default:
+                    UNREACHABLE();
+                }
+            }();
+
+            if (read) {
+                FD_SET(fd, &read_host);
+                continue;
+            }
+            if (write) {
+                FD_SET(fd, &write_host);
+                continue;
+            }
+            if (except) {
+                FD_SET(fd, &except_host);
+                continue;
+            }
+        }
+    }
+
+    int result = select(0, &read_host, &write_host, &except_host, reinterpret_cast<timeval*>(timeout));
+    int total_ready = result;
+
+    for (int fd = 0; fd < nfds; ++fd) {
+        auto* file = h->GetFile(fd);
+
+        if (file->type == Core::FileSys::FileType::Socket) {
+            auto sock = file->socket->Native();
+            if (readfds && !(FD_ISSET(sock, &read_host))) {
+                FD_CLR(fd, &readfds);
+            }
+            if (writefds && !(FD_ISSET(sock, &write_host))) {
+                FD_CLR(fd, &writefds);
+            }
+            if (exceptfds && !(FD_ISSET(sock, &except_host))) {
+                FD_CLR(fd, &exceptfds);
+            }
+            continue;
+        }
+
+        HANDLE h = (HANDLE)_get_osfhandle(fd);
+        DWORD type = GetFileType(h);
+        if (type == FILE_TYPE_UNKNOWN)
+            continue;
+
+        // READ check
+        if (readfds && FD_ISSET(fd, readfds)) {
+            if (type == FILE_TYPE_PIPE) {
+                DWORD avail = 0;
+                if (PeekNamedPipe(h, NULL, 0, NULL, &avail, NULL) && avail > 0) {
+                    total_ready++;
+                } else {
+                    FD_CLR(fd, readfds);
+                }
+            } else if (type == FILE_TYPE_DISK) {
+                char tmp;
+                long pos = _lseek(fd, 0, SEEK_CUR);
+                if (_read(fd, &tmp, 1) > 0) {
+                    _lseek(fd, pos, SEEK_SET);
+                    total_ready++;
+                } else {
+                    FD_CLR(fd, readfds);
+                }
+            }
+        }
+
+        // WRITE check
+        if (writefds && FD_ISSET(fd, writefds)) {
+            DWORD written = 0;
+            char dummy = 0;
+            BOOL writable = FALSE;
+            if (type == FILE_TYPE_PIPE) {
+                // Try writing 0 bytes to check if it's broken
+                writable = WriteFile(h, &dummy, 0, &written, NULL);
+            } else if (type == FILE_TYPE_DISK) {
+                writable = true; // Disk files are always "writable"
+            }
+            if (writable) {
+                total_ready++;
+            } else {
+                FD_CLR(fd, writefds);
+            }
+        }
+
+        // EXCEPTION check
+        if (exceptfds && FD_ISSET(fd, exceptfds)) {
+            DWORD err = 0, size = sizeof(err);
+            BOOL error_detected = false;
+
+            if (type == FILE_TYPE_PIPE) {
+                // Check broken pipe by trying non-blocking zero write
+                DWORD written;
+                char tmp = 0;
+                if (!WriteFile(h, &tmp, 0, &written, NULL)) {
+                    DWORD e = GetLastError();
+                    if (e == ERROR_NO_DATA || e == ERROR_BROKEN_PIPE) {
+                        error_detected = true;
+                    }
+                }
+            }
+
+            if (error_detected) {
+                total_ready++;
+            } else {
+                FD_CLR(fd, exceptfds);
+            }
+        }
+    }
+
+    return total_ready;
+
+#else
+
+    std::map<int, int> host_to_guest;
+    int max_fd = 0;
 
     for (auto i = 0; i < nfds; ++i) {
         auto read = readfds && FD_ISSET(i, readfds);
@@ -1119,12 +1259,12 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 return -1;
             }
 
-            u64 fd = [&] {
+            int fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<u64>(file->f.GetFileMapping());
+                    return static_cast<int>(file->f.GetFileMapping());
                 case Core::FileSys::FileType::Socket:
-                    return static_cast<u64>(file->socket->Native());
+                    return file->socket->Native();
                 default:
                     UNREACHABLE();
                 }
@@ -1180,6 +1320,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     }
 
     return ret;
+#endif
 }
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
