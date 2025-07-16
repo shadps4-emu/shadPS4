@@ -65,7 +65,7 @@ public:
             return Error::OK;
         }
 
-        std::unique_lock lock{g_ime_state.queue_mutex};
+        std::unique_lock<std::mutex> lock{g_ime_state.queue_mutex};
 
         while (!g_ime_state.event_queue.empty()) {
             OrbisImeEvent event = g_ime_state.event_queue.front();

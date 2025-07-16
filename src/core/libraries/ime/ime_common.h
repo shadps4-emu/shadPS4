@@ -12,6 +12,7 @@
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
+/* 
 template <typename E>
 constexpr std::underlying_type_t<E> generate_full_mask() {
     static_assert(std::is_enum_v<E>, "E must be an enum type.");
@@ -27,6 +28,26 @@ constexpr std::underlying_type_t<E> generate_full_mask() {
 
     return mask;
 }
+*/
+
+template <typename E>
+const std::underlying_type_t<E> generate_full_mask() {
+    static_assert(std::is_enum_v<E>, "E must be an enum type.");
+    static_assert(magic_enum::customize::enum_range<E>::is_flags,
+                  "E must be marked as is_flags = true.");
+
+    using U = std::underlying_type_t<E>;
+    const auto values = magic_enum::enum_values<E>();
+    U mask = 0;
+
+    // Use index-based loop for better constexpr compatibility
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        mask |= static_cast<U>(values[i]);
+    }
+
+    return mask;
+}
+
 
 enum class Error : u32 {
     OK = 0x0,
@@ -96,7 +117,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeOption> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
+const u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
 
 enum class OrbisImeExtOption : u32 {
     DEFAULT = 0x00000000,
@@ -126,7 +147,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeExtOption> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidImeDialogExtOptionMask = generate_full_mask<OrbisImeExtOption>();
+const u32 kValidImeDialogExtOptionMask = generate_full_mask<OrbisImeExtOption>();
 
 enum class OrbisImeLanguage : u64 {
     DANISH = 0x0000000000000001,
@@ -166,7 +187,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeLanguage> {
     static constexpr bool is_flags = true;
 };
-constexpr u64 kValidOrbisImeLanguageMask = generate_full_mask<OrbisImeLanguage>();
+const u64 kValidOrbisImeLanguageMask = generate_full_mask<OrbisImeLanguage>();
 
 enum class OrbisImeDisableDevice : u32 {
     DEFAULT = 0x00000000,
@@ -179,7 +200,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeDisableDevice> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidOrbisImeDisableDeviceMask = generate_full_mask<OrbisImeDisableDevice>();
+const u32 kValidOrbisImeDisableDeviceMask = generate_full_mask<OrbisImeDisableDevice>();
 
 enum class OrbisImeInputMethodState : u32 {
     PREEDIT = 0x01000000,
@@ -193,7 +214,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeInputMethodState> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidOrbisImeInputMethodStateMask = generate_full_mask<OrbisImeInputMethodState>();
+const u32 kValidOrbisImeInputMethodStateMask = generate_full_mask<OrbisImeInputMethodState>();
 
 enum class OrbisImeInitExtKeyboardMode : u32 {
     ISABLE_ARABIC_INDIC_NUMERALS = 0x00000001,
@@ -207,7 +228,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeInitExtKeyboardMode> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidOrbisImeInitExtKeyboardModeMask =
+const u32 kValidOrbisImeInitExtKeyboardModeMask =
     generate_full_mask<OrbisImeInitExtKeyboardMode>();
 
 enum class OrbisImeKeycodeState : u32 {
@@ -239,7 +260,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeKeycodeState> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidOrbisImeKeycodeStateMask = generate_full_mask<OrbisImeKeycodeState>();
+const u32 kValidOrbisImeKeycodeStateMask = generate_full_mask<OrbisImeKeycodeState>();
 
 enum class OrbisImeKeyboardOption : u32 {
     Default = 0,
@@ -255,7 +276,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeKeyboardOption> {
     static constexpr bool is_flags = true;
 };
-constexpr u32 kValidOrbisImeKeyboardOptionMask = generate_full_mask<OrbisImeKeyboardOption>();
+const u32 kValidOrbisImeKeyboardOptionMask = generate_full_mask<OrbisImeKeyboardOption>();
 
 enum class OrbisImeKeyboardMode : u32 {
     Auto = 0,
