@@ -109,6 +109,11 @@ public:
         return depth_clip_control;
     }
 
+    /// Returns true when VK_EXT_depth_clip_enable is supported
+    bool IsDepthClipEnableSupported() const {
+        return depth_clip_enable;
+    }
+
     /// Returns true when VK_EXT_depth_range_unrestricted is supported
     bool IsDepthRangeUnrestrictedSupported() const {
         return depth_range_unrestricted;
@@ -140,6 +145,11 @@ public:
         return fragment_shader_barycentric;
     }
 
+    /// Returns true when VK_AMD_shader_explicit_vertex_parameter is supported.
+    bool IsAmdShaderExplicitVertexParameterSupported() const {
+        return amd_shader_explicit_vertex_parameter;
+    }
+
     /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
     bool IsListRestartSupported() const {
         return list_restart;
@@ -148,6 +158,11 @@ public:
     /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
     bool IsLegacyVertexAttributesSupported() const {
         return legacy_vertex_attributes;
+    }
+
+    /// Returns true when VK_EXT_provoking_vertex is supported.
+    bool IsProvokingVertexSupported() const {
+        return provoking_vertex;
     }
 
     /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
@@ -351,6 +366,11 @@ public:
         return driver_id != vk::DriverId::eMoltenvk;
     }
 
+    /// Returns true if logic ops are supported by the device.
+    bool IsLogicOpSupported() const {
+        return features.logicOp;
+    }
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
@@ -398,13 +418,16 @@ private:
     u32 queue_family_index{0};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
+    bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
+    bool depth_clip_enable{};
     bool depth_range_unrestricted{};
     bool dynamic_state_3{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
+    bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};

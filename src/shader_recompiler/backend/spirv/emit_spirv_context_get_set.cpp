@@ -45,14 +45,14 @@ Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
         return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
     }
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Vertex output {}", u32(output));
     }
 }
 
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
+        if (ctx.stage == Stage::Local) {
             const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
             return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
                                      ctx.ConstU32(element));
@@ -88,19 +88,15 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     case IR::Attribute::Depth:
         return ctx.frag_depth;
     default:
-        throw NotImplementedException("Write attribute {}", attr);
+        UNREACHABLE_MSG("Write attribute {}", attr);
     }
 }
 
 std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
-        if (ctx.stage == Stage::Local && ctx.runtime_info.ls_info.links_with_tcs) {
-            return {ctx.F32[1], false};
-        } else {
-            const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
-            const auto& info{ctx.output_params.at(index)};
-            return {info.component_type, info.is_integer};
-        }
+        const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
+        const auto& info{ctx.output_params.at(index)};
+        return {info.component_type, info.is_integer};
     }
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
@@ -115,10 +111,13 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     case IR::Attribute::Depth:
         return {ctx.F32[1], false};
     default:
-        throw NotImplementedException("Write attribute {}", attr);
+        UNREACHABLE_MSG("Write attribute {}", attr);
     }
 }
 } // Anonymous namespace
+
+using PointerType = EmitContext::PointerType;
+using PointerSize = EmitContext::PointerSize;
 
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     const u32 index = ctx.binding.user_data + ctx.info.ud_mask.Index(reg);
@@ -130,41 +129,6 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     ctx.Name(ud_reg, fmt::format("ud_{}", u32(reg)));
     return ud_reg;
 }
-
-void EmitGetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetScalarRegister(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetScalarRegister(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetVectorRegister(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetVectorRegister(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetGotoVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetGotoVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-using PointerType = EmitContext::PointerType;
-using PointerSize = EmitContext::PointerSize;
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
@@ -180,120 +144,76 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     }
 }
 
-template <PointerType type>
-Id ReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
+Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     const auto& buffer = ctx.buffers[handle];
     if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
         index = ctx.OpIAdd(ctx.U32[1], index, offset);
     }
-    const auto [id, pointer_type] = buffer.Alias(type);
-    const auto value_type = type == PointerType::U32 ? ctx.U32[1] : ctx.F32[1];
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
-    const Id result{ctx.OpLoad(value_type, ptr)};
+    const Id result{ctx.OpLoad(ctx.U32[1], ptr)};
     if (const Id size = buffer.Size(PointerSize::B32); Sirit::ValidId(size)) {
         const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, size);
-        return ctx.OpSelect(value_type, in_bounds, result, ctx.u32_zero_value);
+        return ctx.OpSelect(ctx.U32[1], in_bounds, result, ctx.u32_zero_value);
     }
     return result;
 }
 
-Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
-    return ReadConstBuffer<PointerType::U32>(ctx, handle, index);
-}
-
-Id EmitReadStepRate(EmitContext& ctx, int rate_idx) {
-    const auto index{rate_idx == 0 ? PushData::Step0Index : PushData::Step1Index};
-    return ctx.OpLoad(
-        ctx.U32[1], ctx.OpAccessChain(ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[1]),
-                                      ctx.push_data_block, ctx.ConstU32(index)));
-}
-
-static Id EmitGetAttributeForGeometry(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
-    if (IR::IsPosition(attr)) {
-        ASSERT(attr == IR::Attribute::Position0);
-        const auto position_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{ctx.OpAccessChain(position_arr_ptr, ctx.gl_in, index, ctx.ConstU32(0u))};
-        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-        return ctx.OpLoad(ctx.F32[1],
-                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
-    }
-
-    if (IR::IsParam(attr)) {
-        const u32 param_id{u32(attr) - u32(IR::Attribute::Param0)};
-        const auto param = ctx.input_params.at(param_id).id;
-        const auto param_arr_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[4]);
-        const auto pointer{ctx.OpAccessChain(param_arr_ptr, param, index)};
-        const auto position_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-        return ctx.OpLoad(ctx.F32[1],
-                          ctx.OpAccessChain(position_comp_ptr, pointer, ctx.ConstU32(comp)));
-    }
-    UNREACHABLE();
-}
-
-Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, Id index) {
-    if (ctx.info.l_stage == LogicalStage::Geometry) {
-        return EmitGetAttributeForGeometry(ctx, attr, comp, index);
-    } else if (ctx.info.l_stage == LogicalStage::TessellationControl ||
-               ctx.info.l_stage == LogicalStage::TessellationEval) {
-        if (IR::IsTessCoord(attr)) {
-            const u32 component = attr == IR::Attribute::TessellationEvaluationPointU ? 0 : 1;
-            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
-            const auto pointer{
-                ctx.OpAccessChain(component_ptr, ctx.tess_coord, ctx.ConstU32(component))};
-            return ctx.OpLoad(ctx.F32[1], pointer);
-        }
-        UNREACHABLE();
-    }
-
+Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsParam(attr)) {
         const u32 param_index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& param{ctx.input_params.at(param_index)};
-        if (param.buffer_handle >= 0) {
-            const auto step_rate = EmitReadStepRate(ctx, param.id.value);
-            const auto offset = ctx.OpIAdd(
-                ctx.U32[1],
-                ctx.OpIMul(
-                    ctx.U32[1],
-                    ctx.OpUDiv(ctx.U32[1], ctx.OpLoad(ctx.U32[1], ctx.instance_id), step_rate),
-                    ctx.ConstU32(param.num_components)),
-                ctx.ConstU32(comp));
-            return ReadConstBuffer<PointerType::F32>(ctx, param.buffer_handle, offset);
-        }
-
-        Id result;
-        if (param.is_loaded) {
-            // Attribute is either default or manually interpolated. The id points to an already
-            // loaded vector.
-            result = ctx.OpCompositeExtract(param.component_type, param.id, comp);
-        } else if (param.num_components > 1) {
-            // Attribute is a vector and we need to access a specific component.
-            const Id pointer{ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp))};
-            result = ctx.OpLoad(param.component_type, pointer);
-        } else {
-            // Attribute is a single float or interger, simply load it.
-            result = ctx.OpLoad(param.component_type, param.id);
-        }
-        if (param.is_integer) {
-            result = ctx.OpBitcast(ctx.F32[1], result);
-        }
-        return result;
+        const Id value = [&] {
+            if (param.is_array) {
+                ASSERT(param.num_components > 1);
+                if (param.is_loaded) {
+                    return ctx.OpCompositeExtract(param.component_type, param.id_array[index],
+                                                  comp);
+                } else {
+                    return ctx.OpLoad(param.component_type,
+                                      ctx.OpAccessChain(param.pointer_type, param.id,
+                                                        ctx.ConstU32(index), ctx.ConstU32(comp)));
+                }
+            } else {
+                ASSERT(!param.is_loaded);
+                if (param.num_components > 1) {
+                    return ctx.OpLoad(
+                        param.component_type,
+                        ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(comp)));
+                } else {
+                    return ctx.OpLoad(param.component_type, param.id);
+                }
+            }
+        }();
+        return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
     }
-
+    if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
+        ++comp;
+    }
     switch (attr) {
-    case IR::Attribute::FragCoord: {
-        const Id coord = ctx.OpLoad(
-            ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(comp)));
-        if (comp == 3) {
-            return ctx.OpFDiv(ctx.F32[1], ctx.ConstF32(1.f), coord);
-        }
-        return coord;
-    }
+    case IR::Attribute::Position0:
+        ASSERT(ctx.l_stage == LogicalStage::Geometry);
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.gl_in, ctx.ConstU32(index),
+                                            ctx.ConstU32(0U), ctx.ConstU32(comp)));
+    case IR::Attribute::FragCoord:
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(comp)));
     case IR::Attribute::TessellationEvaluationPointU:
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.u32_zero_value));
     case IR::Attribute::TessellationEvaluationPointV:
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
+    case IR::Attribute::BaryCoordSmooth:
+        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
+                                                        ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordSmoothSample:
+        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample,
+                                                        ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordNoPersp:
+        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
+                                                        ctx.ConstU32(comp)));
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }
@@ -305,10 +225,6 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpLoad(ctx.U32[1], ctx.vertex_index);
     case IR::Attribute::InstanceId:
         return ctx.OpLoad(ctx.U32[1], ctx.instance_id);
-    case IR::Attribute::InstanceId0:
-        return EmitReadStepRate(ctx, 0);
-    case IR::Attribute::InstanceId1:
-        return EmitReadStepRate(ctx, 1);
     case IR::Attribute::WorkgroupIndex:
         return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
@@ -638,6 +554,38 @@ void EmitStoreBufferF32x4(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 
 void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value) {
     UNREACHABLE_MSG("SPIR-V instruction");
+}
+
+void EmitGetThreadBitScalarReg(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetThreadBitScalarReg(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetScalarRegister(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetScalarRegister(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetVectorRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetVectorRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetGotoVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetGotoVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

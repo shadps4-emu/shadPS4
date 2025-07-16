@@ -94,15 +94,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     switch (stage) {
     case Stage::Local: {
         BuildCommon(regs.ls_program);
-        if (regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Hull))) {
-            info.ls_info.links_with_tcs = true;
-            Shader::TessellationDataConstantBuffer tess_constants;
-            const auto* pgm = regs.ProgramForStage(static_cast<u32>(Stage::Hull));
-            const auto params = Liverpool::GetParams(*pgm);
-            const auto& hull_info = program_cache.at(params.hash)->info;
-            hull_info.ReadTessConstantBuffer(tess_constants);
-            info.ls_info.ls_stride = tess_constants.ls_stride;
-        }
+        Shader::TessellationDataConstantBuffer tess_constants;
+        const auto* hull_info = infos[u32(Shader::LogicalStage::TessellationControl)];
+        hull_info->ReadTessConstantBuffer(tess_constants);
+        info.ls_info.ls_stride = tess_constants.ls_stride;
         break;
     }
     case Stage::Hull: {
@@ -122,6 +117,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     case Stage::Vertex: {
         BuildCommon(regs.vs_program);
         GatherVertexOutputs(info.vs_info, regs.vs_output_control);
+        info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
+        info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
@@ -223,6 +220,12 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_shared_int64_atomics = instance_.IsSharedInt64AtomicsSupported(),
         .supports_workgroup_explicit_memory_layout =
             instance_.IsWorkgroupMemoryExplicitLayoutSupported(),
+        .supports_amd_shader_explicit_vertex_parameter =
+            instance_.IsAmdShaderExplicitVertexParameterSupported(),
+        .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
+        .has_incomplete_fragment_shader_barycentric =
+            instance_.IsFragmentShaderBarycentricSupported() &&
+            instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
@@ -288,24 +291,18 @@ bool PipelineCache::RefreshGraphicsKey() {
     auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
-    const auto depth_format = instance.GetSupportedFormat(
-        LiverpoolToVK::DepthFormat(regs.depth_buffer.z_info.format,
-                                   regs.depth_buffer.stencil_info.format),
-        vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
-    if (regs.depth_buffer.DepthValid()) {
-        key.depth_format = depth_format;
-    } else {
-        key.depth_format = vk::Format::eUndefined;
-    }
-    if (regs.depth_buffer.StencilValid()) {
-        key.stencil_format = depth_format;
-    } else {
-        key.stencil_format = vk::Format::eUndefined;
-    }
-
+    key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
+                                                  : Liverpool::DepthBuffer::ZFormat::Invalid;
+    key.stencil_format = regs.depth_buffer.StencilValid()
+                             ? regs.depth_buffer.stencil_info.format.Value()
+                             : Liverpool::DepthBuffer::StencilFormat::Invalid;
+    key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
+    key.depth_clip_enable = regs.clipper_control.ZclipEnable();
+    key.clip_space = regs.clipper_control.clip_space;
+    key.provoking_vtx_last = regs.polygon_control.provoking_vtx_last;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
-    key.clip_space = regs.clipper_control.clip_space;
+    key.logic_op = regs.color_control.rop3;
     key.num_samples = regs.NumSamples();
 
     const bool skip_cb_binding =
@@ -460,10 +457,6 @@ bool PipelineCache::RefreshGraphicsKey() {
         // Stride will still be handled outside the pipeline using dynamic state.
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
-            if (attrib.UsesStepRates()) {
-                // Skip attribute binding as the data will be pulled by shader.
-                continue;
-            }
             const auto& buffer = attrib.GetSharp(*vs_info);
             ASSERT(vertex_binding < MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
@@ -498,7 +491,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     }
 
     return true;
-} // namespace Vulkan
+}
 
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};

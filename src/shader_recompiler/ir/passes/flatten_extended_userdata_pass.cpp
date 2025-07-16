@@ -191,7 +191,7 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
 static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     Xbyak::CodeGenerator& c = g_srt_codegen;
 
-    if (info.srt_info.srt_reservations.empty() && pass_info.srt_roots.empty()) {
+    if (pass_info.srt_roots.empty()) {
         return;
     }
 
@@ -205,29 +205,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     }
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
-
     pass_info.dst_off_dw = NumUserDataRegs;
-
-    // Special case for V# step rate buffers in fetch shader
-    for (const auto [sgpr_base, dword_offset, num_dwords] : info.srt_info.srt_reservations) {
-        // get pointer to V#
-        if (sgpr_base != IR::NumScalarRegs) {
-            PushPtr(c, sgpr_base);
-        }
-        u32 src_off = dword_offset << 2;
-
-        for (auto j = 0; j < num_dwords; j++) {
-            c.mov(r11d, ptr[rdi + src_off]);
-            c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r11d);
-
-            src_off += 4;
-            ++pass_info.dst_off_dw;
-        }
-        if (sgpr_base != IR::NumScalarRegs) {
-            PopPtr(c);
-        }
-    }
-
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {

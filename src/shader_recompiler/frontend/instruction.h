@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <limits>
-#include "common/bit_field.h"
 #include "shader_recompiler/frontend/opcodes.h"
 
 namespace Shader::Gcn {
