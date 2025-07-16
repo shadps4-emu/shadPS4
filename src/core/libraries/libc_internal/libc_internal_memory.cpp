@@ -67,6 +67,14 @@ int PS4_SYSV_ABI internal_posix_memalign(void** ptr, size_t alignment, size_t si
 #endif
 }
 
+void* PS4_SYSV_ABI internal_calloc(size_t num, size_t size) {
+    return std::calloc(num, size);
+}
+
+void* PS4_SYSV_ABI internal_realloc(void* ptr, size_t new_size) {
+    return std::realloc(ptr, new_size);
+}
+
 void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("NFLs+dRJGNg", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
