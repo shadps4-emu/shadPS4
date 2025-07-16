@@ -49,7 +49,16 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-Linker::Linker() : memory{Memory::Instance()} {}
+Linker::Linker()
+    : memory{Memory::Instance()}, heap_api{new HeapAPI{.heap_malloc = &std::malloc,
+                                                       .heap_free = &std::free,
+                                                       .heap_calloc = &std::calloc,
+                                                       .heap_realloc = &std::realloc,
+                                                       .heap_memalign = nullptr,
+                                                       .heap_posix_memalign = nullptr,
+                                                       .heap_reallocalign = nullptr,
+                                                       .heap_malloc_stats = nullptr,
+                                                       .heap_malloc_usable_size = nullptr}} {}
 
 Linker::~Linker() = default;
 
