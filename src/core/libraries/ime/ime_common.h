@@ -12,7 +12,7 @@
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
-/* 
+/*
 template <typename E>
 constexpr std::underlying_type_t<E> generate_full_mask() {
     static_assert(std::is_enum_v<E>, "E must be an enum type.");
@@ -47,7 +47,6 @@ const std::underlying_type_t<E> generate_full_mask() {
 
     return mask;
 }
-
 
 enum class Error : u32 {
     OK = 0x0,
@@ -228,8 +227,7 @@ template <>
 struct magic_enum::customize::enum_range<OrbisImeInitExtKeyboardMode> {
     static constexpr bool is_flags = true;
 };
-const u32 kValidOrbisImeInitExtKeyboardModeMask =
-    generate_full_mask<OrbisImeInitExtKeyboardMode>();
+const u32 kValidOrbisImeInitExtKeyboardModeMask = generate_full_mask<OrbisImeInitExtKeyboardMode>();
 
 enum class OrbisImeKeycodeState : u32 {
     KEYCODE_VALID = 0x00000001,
