@@ -130,6 +130,20 @@ std::string NameOf(Attribute attribute) {
         return "LocalInvocationIndex";
     case Attribute::FragCoord:
         return "FragCoord";
+    case Attribute::BaryCoordNoPersp:
+        return "BaryCoordNoPersp";
+    case Attribute::BaryCoordNoPerspCentroid:
+        return "BaryCoordNoPerspCentroid";
+    case Attribute::BaryCoordNoPerspSample:
+        return "BaryCoordNoPerspSample";
+    case Attribute::BaryCoordSmooth:
+        return "BaryCoordSmooth";
+    case Attribute::BaryCoordSmoothCentroid:
+        return "BaryCoordSmoothCentroid";
+    case Attribute::BaryCoordSmoothSample:
+        return "BaryCoordSmoothSample";
+    case Attribute::BaryCoordPullModel:
+        return "BaryCoordPullModel";
     case Attribute::InvocationId:
         return "InvocationId";
     case Attribute::PatchVertices:

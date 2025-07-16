@@ -25,5 +25,5 @@ s32 PS4_SYSV_ABI sceSigninDialogGetResult();
 s32 PS4_SYSV_ABI sceSigninDialogClose();
 s32 PS4_SYSV_ABI sceSigninDialogTerminate();
 
-void RegisterlibSceSigninDialog(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SigninDialog

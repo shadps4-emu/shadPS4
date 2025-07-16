@@ -1241,5 +1241,5 @@ int PS4_SYSV_ABI Func_FE55EE32098D0D58();
 int PS4_SYSV_ABI Func_FE79841022E1DA1C();
 int PS4_SYSV_ABI Func_FFF4A3E279FB44A7();
 
-void RegisterlibSceNpCommon(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpCommon

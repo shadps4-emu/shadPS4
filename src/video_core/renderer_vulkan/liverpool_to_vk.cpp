@@ -807,8 +807,8 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
     const auto comp_swizzle = color_buffer.Swizzle();
-    const auto format = color_buffer.GetDataFmt();
-    const auto number_type = color_buffer.GetNumberFmt();
+    const auto format = color_buffer.info.format.Value();
+    const auto number_type = color_buffer.GetFixedNumberFormat();
 
     const auto& c0 = color_buffer.clear_word0;
     const auto& c1 = color_buffer.clear_word1;
