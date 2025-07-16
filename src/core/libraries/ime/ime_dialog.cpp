@@ -280,7 +280,7 @@ Error PS4_SYSV_ABI sceImeDialogTerm() {
     return Error::OK;
 }
 
-void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("oBmw4xrmfKs", "libSceImeDialog", 1, "libSceImeDialog", 1, 1, sceImeDialogAbort);
     LIB_FUNCTION("bX4H+sxPI-o", "libSceImeDialog", 1, "libSceImeDialog", 1, 1,
                  sceImeDialogForceClose);

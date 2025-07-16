@@ -95,6 +95,9 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::DiscardCond:
         info.has_discard = true;
         break;
+    case IR::Opcode::BitwiseXor32:
+        info.has_bitwise_xor = true;
+        break;
     case IR::Opcode::ImageGather:
     case IR::Opcode::ImageGatherDref:
         info.has_image_gather = true;

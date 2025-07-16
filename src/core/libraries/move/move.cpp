@@ -38,7 +38,7 @@ int PS4_SYSV_ABI sceMoveInit() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceMove(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("HzC60MfjJxU", "libSceMove", 1, "libSceMove", 1, 1, sceMoveOpen);
     LIB_FUNCTION("GWXTyxs4QbE", "libSceMove", 1, "libSceMove", 1, 1, sceMoveGetDeviceInfo);
     LIB_FUNCTION("ttU+JOhShl4", "libSceMove", 1, "libSceMove", 1, 1, sceMoveReadStateLatest);

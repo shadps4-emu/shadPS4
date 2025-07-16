@@ -68,5 +68,5 @@ int PS4_SYSV_ABI sceHttp2SslEnableOption();
 int PS4_SYSV_ABI sceHttp2Term();
 int PS4_SYSV_ABI sceHttp2WaitAsync();
 
-void RegisterlibSceHttp2(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http2

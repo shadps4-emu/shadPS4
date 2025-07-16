@@ -170,5 +170,5 @@ int PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal();
 int PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal();
 int PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg();
 
-void RegisterlibSceSysmodule(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SysModule
