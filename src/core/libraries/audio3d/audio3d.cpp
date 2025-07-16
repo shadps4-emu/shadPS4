@@ -526,7 +526,14 @@ s32 PS4_SYSV_ABI sceAudio3dStrError() {
 }
 
 s32 PS4_SYSV_ABI sceAudio3dTerminate() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+    LOG_INFO(Lib_Audio3d, "called");
+    if (!state) {
+        return ORBIS_AUDIO3D_ERROR_NOT_READY;
+    }
+
+    AudioOut::sceAudioOutOutput(state->audio_out_handle, nullptr);
+    AudioOut::sceAudioOutClose(state->audio_out_handle);
+    state.release();
     return ORBIS_OK;
 }
 

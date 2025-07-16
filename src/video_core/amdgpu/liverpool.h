@@ -1009,7 +1009,6 @@ struct Liverpool {
             return RemapSwizzle(info.format, mrt_swizzle);
         }
 
-    private:
         [[nodiscard]] NumberFormat GetFixedNumberFormat() const {
             // There is a small difference between T# and CB number types, account for it.
             return info.number_type == NumberFormat::SnormNz ? NumberFormat::Srgb

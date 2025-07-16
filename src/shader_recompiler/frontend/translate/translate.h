@@ -265,6 +265,7 @@ public:
 
     // Vector interpolation
     // VINTRP
+    void V_INTERP_P1_F32(const GcnInst& inst);
     void V_INTERP_P2_F32(const GcnInst& inst);
     void V_INTERP_MOV_F32(const GcnInst& inst);
 
@@ -323,7 +324,6 @@ private:
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
-    IR::VectorReg GatherInterpQualifiers();
 
 private:
     IR::IREmitter ir;
@@ -332,8 +332,7 @@ private:
     const Profile& profile;
     u32 next_vgpr_num;
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
-    std::array<IR::Interpolation, MaxInterpVgpr> vgpr_to_interp{};
-    IR::VectorReg dst_frag_vreg{};
+    std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     bool opcode_missing = false;
 };
 
