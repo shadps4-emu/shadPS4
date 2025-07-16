@@ -21,55 +21,52 @@
 
 namespace Shader::Gcn {
 
-Translator::Translator(Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
-    : info{info_}, runtime_info{runtime_info_}, profile{profile_},
-      next_vgpr_num{runtime_info.num_allocated_vgprs} {
-    if (info.l_stage == LogicalStage::Fragment) {
-        dst_frag_vreg = GatherInterpQualifiers();
+static IR::VectorReg IterateBarycentrics(const RuntimeInfo& runtime_info, auto&& set_attribute) {
+    if (runtime_info.stage != Stage::Fragment) {
+        return IR::VectorReg::V0;
     }
-}
-
-IR::VectorReg Translator::GatherInterpQualifiers() {
     u32 dst_vreg{};
     if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveSample; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveSample; // J
-        info.has_perspective_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothSample, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothSample, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.persp_center_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCenter; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCenter; // J
-        info.has_perspective_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmooth, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmooth, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.persp_centroid_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCentroid; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::PerspectiveCentroid; // J
-        info.has_perspective_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothCentroid, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothCentroid, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
-        ++dst_vreg; // I/W
-        ++dst_vreg; // J/W
-        ++dst_vreg; // 1/W
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 0); // I/W
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 1); // J/W
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 2); // 1/W
     }
     if (runtime_info.fs_info.addr_flags.linear_sample_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearSample; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearSample; // J
-        info.has_linear_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspSample, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspSample, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.linear_center_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCenter; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCenter; // J
-        info.has_linear_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPersp, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPersp, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.linear_centroid_ena) {
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCentroid; // I
-        vgpr_to_interp[dst_vreg++] = IR::Interpolation::LinearCentroid; // J
-        info.has_linear_interp = true;
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspCentroid, 0); // I
+        set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspCentroid, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.line_stipple_tex_ena) {
         ++dst_vreg;
     }
     return IR::VectorReg(dst_vreg);
+}
+
+Translator::Translator(Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
+    : info{info_}, runtime_info{runtime_info_}, profile{profile_},
+      next_vgpr_num{runtime_info.num_allocated_vgprs} {
+    IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32) {
+        vgpr_to_interp[vreg] = attrib;
+    });
 }
 
 void Translator::EmitPrologue(IR::Block* first_block) {
@@ -127,7 +124,10 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         break;
     case LogicalStage::Fragment:
-        dst_vreg = dst_frag_vreg;
+        dst_vreg =
+            IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32 comp) {
+                ir.SetVectorReg(IR::VectorReg(vreg), ir.GetAttribute(attrib, comp));
+            });
         if (runtime_info.fs_info.addr_flags.pos_x_float_ena) {
             if (runtime_info.fs_info.en_flags.pos_x_float_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 0));
@@ -151,7 +151,8 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         if (runtime_info.fs_info.addr_flags.pos_w_float_ena) {
             if (runtime_info.fs_info.en_flags.pos_w_float_ena) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 3));
+                ir.SetVectorReg(dst_vreg++,
+                                ir.FPRecip(ir.GetAttribute(IR::Attribute::FragCoord, 3)));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
             }
