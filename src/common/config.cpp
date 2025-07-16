@@ -54,6 +54,7 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
+static std::string micDevice = "Default Device";
 
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
@@ -191,6 +192,10 @@ s16 getCursorState() {
 
 int getCursorHideTimeout() {
     return cursorHideTimeout;
+}
+
+std::string getMicDevice() {
+    return micDevice;
 }
 
 double getTrophyNotificationDuration() {
@@ -445,6 +450,10 @@ void setCursorHideTimeout(int newcursorHideTimeout) {
     cursorHideTimeout = newcursorHideTimeout;
 }
 
+void setMicDevice(std::string device) {
+    micDevice = device;
+}
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration = newTrophyNotificationDuration;
 }
@@ -643,6 +652,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
+        micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
 
         entry_count += input.size();
     }
@@ -826,6 +836,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
+    data["Input"]["micDevice"] = micDevice;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
@@ -927,6 +938,7 @@ void setDefaultValues() {
     controllerCustomColorRGB[0] = 0;
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
+    micDevice = "Default Device";
 
     // GPU
     windowWidth = 1280;

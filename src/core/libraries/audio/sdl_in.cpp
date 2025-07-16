@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <common/config.h>
 #include "sdl_in.h"
 
 int SDLAudioIn::AudioInit() {
@@ -43,8 +44,23 @@ int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint3
             fmt.channels = port.channels_num;
             fmt.freq = port.freq;
 
-            port.stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &fmt,
-                                                    nullptr, nullptr);
+            std::string micDevStr = Config::getMicDevice();
+            uint32_t devId;
+
+            if (micDevStr == "None") {
+                return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
+            } else if (micDevStr == "Default Device") {
+                devId = SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
+            } else {
+                try {
+                    devId = static_cast<uint32_t>(std::stoul(micDevStr));
+                } catch (const std::exception& e) {
+                    return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
+                }
+            }
+
+            port.stream = SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
+
             if (!port.stream) {
                 port.isOpen = false;
                 return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
