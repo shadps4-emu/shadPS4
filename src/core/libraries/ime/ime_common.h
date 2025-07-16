@@ -12,24 +12,6 @@
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
-/*
-template <typename E>
-constexpr std::underlying_type_t<E> generate_full_mask() {
-    static_assert(std::is_enum_v<E>, "E must be an enum type.");
-    static_assert(magic_enum::customize::enum_range<E>::is_flags,
-                  "E must be marked as is_flags = true.");
-
-    using U = std::underlying_type_t<E>;
-    U mask = 0;
-
-    for (E value : magic_enum::enum_values<E>()) {
-        mask |= static_cast<U>(value);
-    }
-
-    return mask;
-}
-*/
-
 template <typename E>
 const std::underlying_type_t<E> generate_full_mask() {
     static_assert(std::is_enum_v<E>, "E must be an enum type.");
