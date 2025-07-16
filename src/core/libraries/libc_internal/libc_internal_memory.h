@@ -29,5 +29,9 @@ void PS4_SYSV_ABI internal_operator_delete(void* ptr);
 
 int PS4_SYSV_ABI internal_posix_memalign(void** ptr, size_t alignment, size_t size);
 
+void* PS4_SYSV_ABI internal_calloc(size_t num, size_t size);
+
+void* PS4_SYSV_ABI internal_realloc(void* ptr, size_t new_size);
+
 void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal
