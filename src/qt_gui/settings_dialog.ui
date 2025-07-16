@@ -95,7 +95,7 @@
              <item>
               <widget class="QScrollArea" name="scrollArea">
                <property name="toolTip">
-                <string>Test 1</string>
+                <string/>
                </property>
                <property name="widgetResizable">
                 <bool>true</bool>
@@ -514,8 +514,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>626</width>
+         <height>370</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -963,8 +963,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>553</width>
+         <height>244</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1258,8 +1258,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>485</width>
+         <height>348</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1500,8 +1500,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>435</width>
+         <height>226</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1754,8 +1754,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>421</width>
+         <height>319</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1896,8 +1896,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>500</width>
+         <height>430</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
