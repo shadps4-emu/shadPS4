@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include <magic_enum/magic_enum.hpp>
 #include "common/enum.h"
 #include "common/types.h"
@@ -10,8 +11,6 @@
 
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
-
-using OrbisUserServiceUserId = s32;
 
 template <typename E>
 constexpr std::underlying_type_t<E> generate_full_mask() {
@@ -425,13 +424,13 @@ struct OrbisImeKeycode {
     char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
-    OrbisUserServiceUserId user_id;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     u32 resource_id;
     Libraries::Rtc::OrbisRtcTick timestamp;
 };
 
 struct OrbisImeKeyboardResourceIdArray {
-    OrbisUserServiceUserId user_id;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     u32 resource_id[5];
 };
 
@@ -496,7 +495,7 @@ struct OrbisImeKeyboardParam {
 };
 
 struct OrbisImeParam {
-    OrbisUserServiceUserId user_id;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     OrbisImeType type;
     OrbisImeLanguage supported_languages;
     OrbisImeEnterLabel enter_label;
@@ -523,7 +522,7 @@ struct OrbisImeCaret {
 };
 
 struct OrbisImeDialogParam {
-    OrbisUserServiceUserId user_id;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     OrbisImeType type;
     OrbisImeLanguage supported_languages;
     OrbisImeEnterLabel enter_label;

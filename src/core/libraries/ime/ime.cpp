@@ -283,7 +283,7 @@ Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u3
     return Error::OK;
 }
 
-Error PS4_SYSV_ABI sceImeKeyboardClose(OrbisUserServiceUserId userId) {
+Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_INFO(Lib_Ime, "called");
 
     if (!g_keyboard_handler) {
@@ -304,7 +304,7 @@ int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
     return ORBIS_OK;
 }
 
-Error PS4_SYSV_ABI sceImeKeyboardOpen(OrbisUserServiceUserId userId,
+Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
                                       const OrbisImeKeyboardParam* param) {
     LOG_INFO(Lib_Ime, "called");
 
