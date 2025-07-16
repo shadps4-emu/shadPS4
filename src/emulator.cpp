@@ -99,11 +99,10 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
-        ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
         const auto title_id = param_sfo->GetString("TITLE_ID");
-        if (!content_id->empty()) {
+        if (content_id.has_value() && !content_id->empty()) {
             id = std::string(*content_id, 7, 9);
-        } else if (content_id.has_value()) {
+        } else if (title_id.has_value()) {
             id = *title_id;
         }
         title = param_sfo->GetString("TITLE").value_or("Unknown title");
