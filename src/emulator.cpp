@@ -100,8 +100,12 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         ASSERT_MSG(content_id.has_value(), "Failed to get CONTENT_ID");
-
-        id = std::string(*content_id, 7, 9);
+        const auto title_id = param_sfo->GetString("TITLE_ID");
+        if (!content_id->empty()) {
+            id = std::string(*content_id, 7, 9);
+        } else if (content_id.has_value()) {
+            id = *title_id;
+        }
         title = param_sfo->GetString("TITLE").value_or("Unknown title");
         fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
         app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
