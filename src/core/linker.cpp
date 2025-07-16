@@ -51,15 +51,16 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 #endif
 
 Linker::Linker()
-    : memory{Memory::Instance()}, heap_api{new HeapAPI{.heap_malloc = &Libraries::LibcInternal::internal_malloc,
-                                                       .heap_free = &Libraries::LibcInternal::internal_free,
-                                                       .heap_calloc = &Libraries::LibcInternal::internal_calloc,
-                                                       .heap_realloc = &Libraries::LibcInternal::internal_realloc,
-                                                       .heap_memalign = nullptr,
-                                                       .heap_posix_memalign = Libraries::LibcInternal::internal_posix_memalign,
-                                                       .heap_reallocalign = nullptr,
-                                                       .heap_malloc_stats = nullptr,
-                                                       .heap_malloc_usable_size = nullptr}} {}
+    : memory{Memory::Instance()},
+      heap_api{new HeapAPI{.heap_malloc = &Libraries::LibcInternal::internal_malloc,
+                           .heap_free = &Libraries::LibcInternal::internal_free,
+                           .heap_calloc = &Libraries::LibcInternal::internal_calloc,
+                           .heap_realloc = &Libraries::LibcInternal::internal_realloc,
+                           .heap_memalign = nullptr,
+                           .heap_posix_memalign = Libraries::LibcInternal::internal_posix_memalign,
+                           .heap_reallocalign = nullptr,
+                           .heap_malloc_stats = nullptr,
+                           .heap_malloc_usable_size = nullptr}} {}
 
 Linker::~Linker() = default;
 
