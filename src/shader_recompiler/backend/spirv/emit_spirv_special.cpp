@@ -9,7 +9,7 @@ namespace Shader::Backend::SPIRV {
 
 void EmitPrologue(EmitContext& ctx) {
     if (ctx.stage == Stage::Fragment) {
-        ctx.DefineInterpolatedAttribs();
+        ctx.DefineAmdPerVertexAttribs();
     }
     if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
         ctx.DefineWorkgroupIndex();

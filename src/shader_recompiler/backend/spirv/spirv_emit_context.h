@@ -45,7 +45,7 @@ public:
     Id Def(const IR::Value& value);
 
     void DefineBufferProperties();
-    void DefineInterpolatedAttribs();
+    void DefineAmdPerVertexAttribs();
     void DefineWorkgroupIndex();
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
@@ -279,8 +279,9 @@ public:
     Id shared_memory_u32_type{};
     Id shared_memory_u64_type{};
 
-    Id bary_coord_persp_id{};
-    Id bary_coord_linear_id{};
+    Id bary_coord_smooth{};
+    Id bary_coord_smooth_sample{};
+    Id bary_coord_nopersp{};
 
     struct TextureDefinition {
         const VectorIds* data_types;
@@ -355,12 +356,16 @@ public:
     Id sampler_pointer_type{};
 
     struct SpirvAttribute {
-        Id id;
+        union {
+            Id id;
+            std::array<Id, 3> id_array;
+        };
         Id pointer_type;
         Id component_type;
         u32 num_components;
         bool is_integer{};
         bool is_loaded{};
+        bool is_array{};
     };
     Id input_attr_array;
     Id output_attr_array;
@@ -390,7 +395,7 @@ private:
     void DefineFunctions();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
-                                    bool output);
+                                    bool output, bool loaded = false, bool array = false);
 
     BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
                            Id data_type);

@@ -537,6 +537,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
     const bool has_backing = type == VMAType::Direct || type == VMAType::File;
     const auto prot = vma_base.prot;
+    const bool readonly_file = prot == MemoryProt::CpuRead && type == VMAType::File;
 
     if (type == VMAType::Free) {
         return adjusted_size;
@@ -554,9 +555,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     vma.phys_base = 0;
     vma.disallow_merge = false;
     vma.name = "";
-    const auto post_merge_it = MergeAdjacent(vma_map, new_it);
-    auto& post_merge_vma = post_merge_it->second;
-    bool readonly_file = post_merge_vma.prot == MemoryProt::CpuRead && type == VMAType::File;
+    MergeAdjacent(vma_map, new_it);
+
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // If this mapping has GPU access, unmap from GPU.
         if (IsValidGpuMapping(virtual_addr, size)) {
