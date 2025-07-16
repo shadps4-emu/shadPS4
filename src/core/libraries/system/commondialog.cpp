@@ -156,7 +156,7 @@ int PS4_SYSV_ABI Func_F2AEE270605622B0() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceCommonDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2RdicdHhtGA", "libSceCommonDialog", 1, "libSceCommonDialog", 1, 1,
                  _ZN3sce16CommonDialogUtil12getSelfAppIdEv);
     LIB_FUNCTION("I+tdxsCap08", "libSceCommonDialog", 1, "libSceCommonDialog", 1, 1,

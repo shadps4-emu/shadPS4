@@ -939,7 +939,7 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceHmd(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd", 1, 1,
                  sceHmdReprojectionStartMultilayer);
     LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,

@@ -263,7 +263,7 @@ int PS4_SYSV_ABI sceNpScoreWaitAsync() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNpScore(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1i7kmKbX6hk", "libSceNpScore", 1, "libSceNpScore", 1, 1, sceNpScoreAbortRequest);
     LIB_FUNCTION("2b3TI0mDYiI", "libSceNpScore", 1, "libSceNpScore", 1, 1, sceNpScoreCensorComment);
     LIB_FUNCTION("4eOvDyN-aZc", "libSceNpScore", 1, "libSceNpScore", 1, 1,

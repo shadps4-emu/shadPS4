@@ -547,7 +547,7 @@ int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNetCtl(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("XtClSOC1xcU", "libSceNetBwe", 1, "libSceNetCtl", 1, 1,
                  sceNetBweCheckCallbackIpcInt);
     LIB_FUNCTION("YALqoY4aeY0", "libSceNetBwe", 1, "libSceNetCtl", 1, 1, sceNetBweClearEventIpcInt);
