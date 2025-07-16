@@ -33,7 +33,8 @@ int PS4_SYSV_ABI sceAudioInGetGain();
 int PS4_SYSV_ABI sceAudioInGetHandleStatusInfo();
 int PS4_SYSV_ABI sceAudioInGetRerouteCount();
 int PS4_SYSV_ABI sceAudioInGetSilentState();
-int PS4_SYSV_ABI sceAudioInHqOpen();
+int PS4_SYSV_ABI sceAudioInHqOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
+                                  u32 index, u32 len, u32 freq, u32 param);
 int PS4_SYSV_ABI sceAudioInHqOpenEx();
 int PS4_SYSV_ABI sceAudioInInit();
 int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest);
