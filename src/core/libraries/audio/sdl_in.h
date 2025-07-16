@@ -33,7 +33,7 @@ private:
         uint32_t freq = 0;
         int channels_num = 0;
         int sample_size = 0;
-        uint32_t format;
+        uint32_t format = 0;
         SDL_AudioStream* stream = nullptr;
     };
 
