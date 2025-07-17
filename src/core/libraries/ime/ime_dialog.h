@@ -47,5 +47,5 @@ int PS4_SYSV_ABI sceImeDialogInitInternal3();
 int PS4_SYSV_ABI sceImeDialogSetPanelPosition();
 Error PS4_SYSV_ABI sceImeDialogTerm();
 
-void RegisterlibSceImeDialog(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::ImeDialog

@@ -545,7 +545,7 @@ s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_o
     return sceFiberSwitchImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_run);
 }
 
-void RegisterlibSceFiber(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberInitialize);
     LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber", 1, 1,
                  sceFiberInitializeImpl); // _sceFiberInitializeWithInternalOptionImpl

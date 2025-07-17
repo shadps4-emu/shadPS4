@@ -166,7 +166,7 @@ s32 PS4_SYSV_ABI sceVoiceWriteToIPort() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceVoice(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("oV9GAdJ23Gw", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceConnectIPortToOPort);
     LIB_FUNCTION("nXpje5yNpaE", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceCreatePort);
     LIB_FUNCTION("b7kJI+nx2hg", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceDeletePort);
