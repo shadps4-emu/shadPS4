@@ -212,7 +212,12 @@ set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_
 set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
-message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
+message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
+
+if(NOT GIT_REMOTE_URL MATCHES "shadps4-emu/shadPS4" OR NOT GIT_BRANCH STREQUAL "main")
+    message("not main, disabling auto update")
+    set(ENABLE_UPDATER OFF)
+endif()
 
 if(WIN32 AND ENABLE_QT_GUI AND NOT CMAKE_PREFIX_PATH)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DetectQtInstallation.cmake")
