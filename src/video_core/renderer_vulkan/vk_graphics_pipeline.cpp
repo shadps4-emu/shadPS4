@@ -244,9 +244,24 @@ GraphicsPipeline::GraphicsPipeline(
     const auto depth_format =
         instance.GetSupportedFormat(LiverpoolToVK::DepthFormat(key.z_format, key.stencil_format),
                                     vk::FormatFeatureFlagBits2::eDepthStencilAttachment);
+    std::array<vk::Format, Shader::IR::NumRenderTargets> color_formats;
+    for (s32 i = 0; i < key.num_color_attachments; ++i) {
+        const auto& col_buf = key.color_buffers[i];
+        const auto format = LiverpoolToVK::SurfaceFormat(col_buf.data_format, col_buf.num_format);
+        const auto color_format =
+            instance.GetSupportedFormat(format, vk::FormatFeatureFlagBits2::eColorAttachment);
+        if (!instance.IsFormatSupported(color_format,
+                                        vk::FormatFeatureFlagBits2::eColorAttachment)) {
+            LOG_WARNING(Render_Vulkan,
+                        "color buffer format {} does not support COLOR_ATTACHMENT_BIT",
+                        vk::to_string(color_format));
+        }
+        color_formats[i] = color_format;
+    }
+
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = key.num_color_attachments,
-        .pColorAttachmentFormats = key.color_formats.data(),
+        .pColorAttachmentFormats = color_formats.data(),
         .depthAttachmentFormat = key.z_format != Liverpool::DepthBuffer::ZFormat::Invalid
                                      ? depth_format
                                      : vk::Format::eUndefined,
