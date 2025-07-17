@@ -24,9 +24,6 @@ layout(constant_id = 0) const uint CACHING_PAGEBITS = 0;
 void main() {
     uint id = gl_GlobalInvocationID.x;
     uint word = fault_buffer[id];
-    if (word == 0u) {
-        return;
-    }
     // 1 page per bit
     uint base_bit = id * 32u;
     while (word != 0u) {
@@ -39,4 +36,5 @@ void main() {
             download_buffer[store_index] = uint64_t(page) << CACHING_PAGEBITS;
         }
     }
+    fault_buffer[id] = 0u;
 }

@@ -657,10 +657,6 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
     }
     WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
                     bda_addrs.size() * sizeof(vk::DeviceAddress));
-    const size_t size_bytes = new_buffer.SizeBytes();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    scheduler.EndRendering();
-    cmdbuf.fillBuffer(new_buffer.buffer, 0, size_bytes, 0);
     for (const BufferId overlap_id : overlap.ids) {
         JoinOverlap(new_buffer_id, overlap_id, !overlap.has_stream_leap);
     }
@@ -670,8 +666,10 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
 
 void BufferCache::ProcessFaultBuffer() {
     // Run fault processing shader
-    const auto [mapped, offset] = download_buffer.Map(MaxPageFaults * sizeof(u64));
-    vk::BufferMemoryBarrier2 fault_buffer_barrier{
+    static constexpr size_t StagingSize = MaxPageFaults * sizeof(u64);
+    const auto [mapped, offset] = download_buffer.Map(StagingSize);
+    std::memset(mapped, 0, StagingSize);
+    const vk::BufferMemoryBarrier2 fault_buffer_pre_barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
@@ -680,27 +678,17 @@ void BufferCache::ProcessFaultBuffer() {
         .offset = 0,
         .size = FAULT_BUFFER_SIZE,
     };
-    vk::BufferMemoryBarrier2 download_barrier{
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-        .dstAccessMask = vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
-        .buffer = download_buffer.Handle(),
-        .offset = offset,
-        .size = MaxPageFaults * sizeof(u64),
-    };
-    std::array<vk::BufferMemoryBarrier2, 2> barriers{fault_buffer_barrier, download_barrier};
-    vk::DescriptorBufferInfo fault_buffer_info{
+    const vk::DescriptorBufferInfo fault_buffer_info{
         .buffer = fault_buffer.Handle(),
         .offset = 0,
         .range = FAULT_BUFFER_SIZE,
     };
-    vk::DescriptorBufferInfo download_info{
+    const vk::DescriptorBufferInfo download_info{
         .buffer = download_buffer.Handle(),
         .offset = offset,
-        .range = MaxPageFaults * sizeof(u64),
+        .range = StagingSize,
     };
-    boost::container::small_vector<vk::WriteDescriptorSet, 2> writes{
+    const std::array<vk::WriteDescriptorSet, 2> writes{{
         {
             .dstSet = VK_NULL_HANDLE,
             .dstBinding = 0,
@@ -717,15 +705,14 @@ void BufferCache::ProcessFaultBuffer() {
             .descriptorType = vk::DescriptorType::eStorageBuffer,
             .pBufferInfo = &download_info,
         },
-    };
+    }};
     download_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.fillBuffer(download_buffer.Handle(), offset, MaxPageFaults * sizeof(u64), 0);
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 2,
-        .pBufferMemoryBarriers = barriers.data(),
+        .bufferMemoryBarrierCount = 1U,
+        .pBufferMemoryBarriers = &fault_buffer_pre_barrier,
     });
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, *fault_process_pipeline);
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0,
@@ -735,34 +722,19 @@ void BufferCache::ProcessFaultBuffer() {
     cmdbuf.dispatch(num_workgroups, 1, 1);
 
     // Reset fault buffer
-    const vk::BufferMemoryBarrier2 reset_pre_barrier = {
+    const vk::BufferMemoryBarrier2 fault_buffer_post_barrier{
         .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-        .srcAccessMask = vk::AccessFlagBits2::eShaderRead,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .buffer = fault_buffer.Handle(),
-        .offset = 0,
-        .size = FAULT_BUFFER_SIZE,
-    };
-    const vk::BufferMemoryBarrier2 reset_post_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .srcAccessMask = vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eShaderRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .buffer = fault_buffer.Handle(),
         .offset = 0,
         .size = FAULT_BUFFER_SIZE,
     };
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &reset_pre_barrier,
-    });
-    cmdbuf.fillBuffer(fault_buffer.buffer, 0, FAULT_BUFFER_SIZE, 0);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &reset_post_barrier,
+        .bufferMemoryBarrierCount = 1U,
+        .pBufferMemoryBarriers = &fault_buffer_post_barrier,
     });
 
     // Defer creating buffers
