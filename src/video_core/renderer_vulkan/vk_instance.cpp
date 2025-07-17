@@ -70,7 +70,6 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
         vk::Format::eB8G8R8A8Unorm,
         vk::Format::eB8G8R8A8Srgb,
         vk::Format::eD24UnormS8Uint,
-        vk::Format::eR5G6B5UnormPack16,
     };
     for (const auto& format : misc_formats) {
         if (!format_properties.contains(format)) {
@@ -674,11 +673,6 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
         case vk::Format::eR8Srgb:
             if (IsFormatSupported(vk::Format::eR8Unorm, flags)) {
                 return vk::Format::eR8Unorm;
-            }
-            break;
-        case vk::Format::eB5G6R5UnormPack16:
-            if (IsFormatSupported(vk::Format::eR5G6B5UnormPack16, flags)) {
-                return vk::Format::eR5G6B5UnormPack16;
             }
             break;
         default:

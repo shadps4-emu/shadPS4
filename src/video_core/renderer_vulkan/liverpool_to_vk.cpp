@@ -671,7 +671,7 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eR32G32B32A32Sfloat),
         // 5_6_5
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format5_6_5, AmdGpu::NumberFormat::Unorm,
-                                vk::Format::eB5G6R5UnormPack16),
+                                vk::Format::eR5G6B5UnormPack16),
         // 1_5_5_5
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format1_5_5_5, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eA1R5G5B5UnormPack16),

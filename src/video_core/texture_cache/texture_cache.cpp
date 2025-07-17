@@ -626,7 +626,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         image_copy.push_back({
             .bufferOffset = mip.offset,
             .bufferRowLength = mip_pitch,
-            .bufferImageHeight = mip_height,
+            .bufferImageHeight = mip_height ? std::max(mip_height, 8U) : mip_height,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
