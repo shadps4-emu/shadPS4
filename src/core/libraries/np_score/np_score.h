@@ -63,5 +63,5 @@ int PS4_SYSV_ABI sceNpScoreSetThreadParam();
 int PS4_SYSV_ABI sceNpScoreSetTimeout();
 int PS4_SYSV_ABI sceNpScoreWaitAsync();
 
-void RegisterlibSceNpScore(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpScore

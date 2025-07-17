@@ -131,7 +131,7 @@ int PS4_SYSV_ABI sceVideodecReset(OrbisVideodecCtrl* pCtrlIn) {
     return ORBIS_OK;
 }
 
-void RegisterlibSceVideodec(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("qkgRiwHyheU", "libSceVideodec", 1, "libSceVideodec", 1, 1,
                  sceVideodecCreateDecoder);
     LIB_FUNCTION("q0W5GJMovMs", "libSceVideodec", 1, "libSceVideodec", 1, 1, sceVideodecDecode);

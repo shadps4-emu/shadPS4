@@ -41,6 +41,6 @@ struct SwVersionStruct {
     u32 hex_representation;
 };
 
-void RegisterKernel(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
