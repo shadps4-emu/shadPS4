@@ -147,7 +147,7 @@ Accurately identifying games will help other developers that own that game recog
 - If your issue is small or you aren't sure whether you have properly identified something, [join the Discord server](https://discord.gg/MyZRaBngxA) and use the #development channel
   to concisely explain the issue, as well as any findings you currently have.
 
-- It is recommended that you check the [game compatibility issue tracker](https://github.com/shadps4-emu/shadps4-game-compatibility/issues) and post very short summaries of progress changes there,
+- It is recommended that you check the [game compatibility issue tracker](https://github.com/shadps4-compatibility/shadps4-game-compatibility/issues) and post very short summaries of progress changes there,
   (such as the game now booting into the menu or getting in-game) for organizational and status update purposes.
   
 - ⚠ **Do not post theoretical, unproven game-specific issues in the emulator issue tracker that you cannot verify and locate in the emulator source code as being a bug.**\

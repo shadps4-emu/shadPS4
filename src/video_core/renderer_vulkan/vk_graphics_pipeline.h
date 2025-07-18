@@ -33,22 +33,28 @@ using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
 
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
-    u32 num_color_attachments;
-    std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
-    std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
-    vk::Format depth_format;
-    vk::Format stencil_format;
-
-    u32 num_samples;
-    u32 mrt_mask;
-    AmdGpu::PrimitiveType prim_type;
-    Liverpool::PolygonMode polygon_mode;
-    Liverpool::ClipSpace clip_space;
-    Liverpool::ColorBufferMask cb_shader_mask;
-    std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
-    std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
     std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
     u32 patch_control_points;
+    u32 num_color_attachments;
+    std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
+    std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
+    std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
+    Liverpool::ColorBufferMask cb_shader_mask;
+    Liverpool::ColorControl::LogicOp logic_op;
+    u32 num_samples;
+    u32 mrt_mask;
+    struct {
+        Liverpool::DepthBuffer::ZFormat z_format : 2;
+        Liverpool::DepthBuffer::StencilFormat stencil_format : 1;
+        u32 depth_clamp_enable : 1;
+    };
+    struct {
+        AmdGpu::PrimitiveType prim_type : 5;
+        Liverpool::PolygonMode polygon_mode : 2;
+        Liverpool::ClipSpace clip_space : 1;
+        Liverpool::ProvokingVtxLast provoking_vtx_last : 1;
+        u32 depth_clip_enable : 1;
+    };
 
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;
@@ -81,7 +87,9 @@ public:
     /// Gets the attributes and bindings for vertex inputs.
     template <typename Attribute, typename Binding>
     void GetVertexInputs(VertexInputs<Attribute>& attributes, VertexInputs<Binding>& bindings,
-                         VertexInputs<AmdGpu::Buffer>& guest_buffers) const;
+                         VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT>& divisors,
+                         VertexInputs<AmdGpu::Buffer>& guest_buffers, u32 step_rate_0,
+                         u32 step_rate_1) const;
 
 private:
     void BuildDescSetLayout();

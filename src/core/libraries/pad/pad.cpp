@@ -761,7 +761,7 @@ int PS4_SYSV_ABI Func_EF103E845B6F0420() {
     return ORBIS_OK;
 }
 
-void RegisterlibScePad(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6ncge5+l5Qs", "libScePad", 1, "libScePad", 1, 1, scePadClose);
     LIB_FUNCTION("kazv1NzSB8c", "libScePad", 1, "libScePad", 1, 1, scePadConnectPort);
     LIB_FUNCTION("AcslpN1jHR8", "libScePad", 1, "libScePad", 1, 1,

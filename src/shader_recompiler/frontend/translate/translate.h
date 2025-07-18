@@ -265,6 +265,7 @@ public:
 
     // Vector interpolation
     // VINTRP
+    void V_INTERP_P1_F32(const GcnInst& inst);
     void V_INTERP_P2_F32(const GcnInst& inst);
     void V_INTERP_MOV_F32(const GcnInst& inst);
 
@@ -280,9 +281,10 @@ public:
 
     // Buffer Memory
     // MUBUF / MTBUF
-    void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst);
-    void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
-                      const GcnInst& inst);
+    void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst,
+                     u32 scalar_width = 32, bool is_signed = false);
+    void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst,
+                      u32 scalar_width = 32);
     template <typename T = IR::U32>
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
@@ -323,7 +325,6 @@ private:
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
-    IR::VectorReg GatherInterpQualifiers();
 
 private:
     IR::IREmitter ir;
@@ -332,8 +333,7 @@ private:
     const Profile& profile;
     u32 next_vgpr_num;
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
-    std::array<IR::Interpolation, MaxInterpVgpr> vgpr_to_interp{};
-    IR::VectorReg dst_frag_vreg{};
+    std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     bool opcode_missing = false;
 };
 

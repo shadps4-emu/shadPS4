@@ -293,9 +293,17 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (stage == LogicalStage::Geometry) {
         ctx.AddCapability(spv::Capability::Geometry);
     }
-    if (info.stage == Stage::Fragment && profile.needs_manual_interpolation) {
-        ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
-        ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+    if (info.stage == Stage::Fragment) {
+        if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
+        } else if (profile.supports_fragment_shader_barycentric) {
+            ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
+            ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
+            ctx.AddCapability(spv::Capability::SampleRateShading);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);

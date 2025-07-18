@@ -20,12 +20,9 @@
 namespace Vulkan {
 
 static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
-    Shader::PushData push_data{};
-    push_data.step0 = regs.vgt_instance_step_rate_0;
-    push_data.step1 = regs.vgt_instance_step_rate_1;
-
     // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
     // is encountered and implemented in the recompiler.
+    Shader::PushData push_data{};
     push_data.xoffset = regs.viewport_control.xoffset_enable ? regs.viewports[0].xoffset : 0.f;
     push_data.xscale = regs.viewport_control.xscale_enable ? regs.viewports[0].xscale : 1.f;
     push_data.yoffset = regs.viewport_control.yoffset_enable ? regs.viewports[0].yoffset : 0.f;
@@ -505,9 +502,13 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
         return false;
     }
 
+    // Most of the time when a metadata is updated with a shader it gets cleared. It means
+    // we can skip the whole dispatch and update the tracked state instead. Also, it is not
+    // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
+    // will need its full emulation anyways.
     const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
 
-    // Assume if a shader reads and writes metas at the same time, it is a copy shader.
+    // Assume if a shader reads metadata, it is a copy shader.
     for (const auto& desc : info.buffers) {
         const VAddr address = desc.GetSharp(info).base_address;
         if (!desc.IsSpecial() && !desc.is_written && texture_cache.IsMeta(address)) {
@@ -515,10 +516,15 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
         }
     }
 
-    // Most of the time when a metadata is updated with a shader it gets cleared. It means
-    // we can skip the whole dispatch and update the tracked state instead. Also, it is not
-    // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
-    // will need its full emulation anyways.
+    // Metadata surfaces are tiled and thus need address calculation to be written properly.
+    // If a shader wants to encode HTILE, for example, from a depth image it will have to compute
+    // proper tile address from dispatch invocation id. This address calculation contains an xor
+    // operation so use it as a heuristic for metadata writes that are probably not clears.
+    if (info.has_bitwise_xor) {
+        return false;
+    }
+
+    // Assume if a shader writes metadata without address calculation, it is a clear shader.
     for (const auto& desc : info.buffers) {
         const VAddr address = desc.GetSharp(info).base_address;
         if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
@@ -1014,9 +1020,10 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState();
+    UpdateRasterizationState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
-    dynamic_state.SetBlendConstants(&liverpool->regs.blend_constants.red);
+    dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
     dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
 
     // Commit new dynamic state to the command buffer.
@@ -1084,12 +1091,6 @@ void Rasterizer::UpdateViewportScissorState() const {
         } else {
             viewport.minDepth = zoffset;
             viewport.maxDepth = zoffset + zscale;
-        }
-
-        if (!regs.depth_render_override.disable_viewport_clamp) {
-            // Apply depth clamp.
-            viewport.minDepth = std::max(viewport.minDepth, vp_d.zmin);
-            viewport.maxDepth = std::min(viewport.maxDepth, vp_d.zmax);
         }
 
         if (!instance.IsDepthRangeUnrestrictedSupported()) {
@@ -1231,8 +1232,15 @@ void Rasterizer::UpdatePrimitiveState() const {
     const auto front_face = LiverpoolToVK::FrontFace(regs.polygon_control.front_face);
 
     dynamic_state.SetPrimitiveRestartEnabled(prim_restart);
+    dynamic_state.SetRasterizerDiscardEnabled(regs.clipper_control.dx_rasterization_kill);
     dynamic_state.SetCullMode(cull_mode);
     dynamic_state.SetFrontFace(front_face);
+}
+
+void Rasterizer::UpdateRasterizationState() const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetLineWidth(regs.line_control.Width());
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {

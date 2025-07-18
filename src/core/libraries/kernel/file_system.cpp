@@ -118,14 +118,16 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        if (read_only) {
-            // Can't create files in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
+        if (!exists) {
+            if (read_only) {
+                // Can't create files in a read only directory
+                h->DeleteHandle(handle);
+                *__Error() = POSIX_EROFS;
+                return -1;
+            }
+            // Create a file if it doesn't exist
+            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
         }
-        // Create a file if it doesn't exist
-        Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
         h->DeleteHandle(handle);

@@ -161,10 +161,12 @@ public:
     /// Registers an image view for provided image
     ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
+    /// Returns true if the specified address is a metadata surface.
     bool IsMeta(VAddr address) const {
         return surface_metas.contains(address);
     }
 
+    /// Returns true if a slice of the specified metadata surface has been cleared.
     bool IsMetaCleared(VAddr address, u32 slice) const {
         const auto& it = surface_metas.find(address);
         if (it != surface_metas.end()) {
@@ -173,6 +175,7 @@ public:
         return false;
     }
 
+    /// Clears all slices of the specified metadata surface.
     bool ClearMeta(VAddr address) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
@@ -182,6 +185,7 @@ public:
         return false;
     }
 
+    /// Updates the state of a slice of the specified metadata surface.
     bool TouchMeta(VAddr address, u32 slice, bool is_clear) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {

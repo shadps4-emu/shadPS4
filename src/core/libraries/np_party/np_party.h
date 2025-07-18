@@ -40,5 +40,5 @@ s32 PS4_SYSV_ABI sceNpPartyUnregisterPrivateHandler();
 s32 PS4_SYSV_ABI module_start();
 s32 PS4_SYSV_ABI module_stop();
 
-void RegisterlibSceNpParty(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpParty

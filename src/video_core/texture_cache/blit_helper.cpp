@@ -126,13 +126,13 @@ void BlitHelper::BlitColorToMsDepth(Image& source, Image& dest) {
         .minDepth = 0.f,
         .maxDepth = 1.f,
     };
-    cmdbuf.setViewport(0, viewport);
+    cmdbuf.setViewportWithCount(viewport);
 
     const vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {state.width, state.height},
     };
-    cmdbuf.setScissor(0, scissor);
+    cmdbuf.setScissorWithCount(scissor);
 
     cmdbuf.draw(3, 1, 0, 0);
 
