@@ -330,7 +330,6 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
                                       const OrbisImeKeyboardParam* param) {
     LOG_INFO(Lib_Ime, "called");
 
-
     if (!param) {
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
         return Error::INVALID_ADDRESS;
