@@ -174,8 +174,14 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::DumpConstRam: {
             const auto* dump_const = reinterpret_cast<const PM4DumpConstRam*>(header);
-            memcpy(dump_const->Address<void*>(),
-                   cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
+            if (rasterizer) {
+                rasterizer->InlineData(dump_const->Address<VAddr>(),
+                                       cblock.constants_heap.data() + dump_const->Offset(),
+                                       dump_const->Size(), false);
+            } else {
+                memcpy(dump_const->Address<void*>(),
+                       cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
+            }
             break;
         }
         case PM4ItOpcode::IncrementCeCounter: {
