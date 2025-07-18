@@ -7,6 +7,7 @@
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
 #include "common/serialization.h"
 #include "shader_recompiler/info.h"
 

@@ -56,6 +56,8 @@ bool directMemoryAccess();
 void setDirectMemoryAccess(bool enable);
 bool dumpShaders();
 void setDumpShaders(bool enable);
+bool getShaderCachePreloadEnabled();
+void setShaderCachePreloadEnabled();
 u32 vblankDiv();
 void setVblankDiv(u32 value);
 bool getisTrophyPopupDisabled();

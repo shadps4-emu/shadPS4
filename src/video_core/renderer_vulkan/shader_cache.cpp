@@ -17,6 +17,7 @@
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/config.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/specialization.h"
@@ -243,86 +244,77 @@ u64 CalculateSpecializationHash(const Shader::StageSpecialization& spec) {
 }
 
 bool CheckShaderCache(std::string shader_id) {
-    std::filesystem::path spirv_cache_file_path =
-        SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".spv");
-    std::filesystem::path resources_file_path =
-        SHADER_CACHE_DIR / static_cast<std::filesystem::path>(shader_id + ".resources");
-    ;
-
-    if (!std::filesystem::exists(spirv_cache_file_path)) {
-        return false;
+    if (Config::getShaderCachePreloadEnabled()) {
+        return shader_cache.contains(shader_id);
     }
 
-    if (!std::filesystem::exists(resources_file_path)) {
-        return false;
+    return shader_registry.contains(shader_id);
+}
+
+void InitializeShaderCache() {
+    if (!std::filesystem::exists(SHADER_CACHE_REGISTRY_PATH) || std::filesystem::file_size(SHADER_CACHE_REGISTRY_PATH) == 0) {
+        return;
     }
-
-    Common::FS::IOFile spirv_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
-    Common::FS::IOFile resources_file(resources_file_path, Common::FS::FileAccessMode::Read);
-
-    const bool spirv_valid = spirv_file.IsOpen() && spirv_file.GetSize() > 0;
-    const bool resources_valid = resources_file.IsOpen() && resources_file.GetSize() > 0;
-
-    spirv_file.Close();
-    resources_file.Close();
-
-    if (!spirv_valid || !resources_valid) {
-        LOG_WARNING(Render_Vulkan, "Invalid cache file for shader with ID: {}", shader_id);
-        if (std::filesystem::exists(spirv_cache_file_path)) {
-            std::filesystem::remove(spirv_cache_file_path);
+    std::ifstream registry_file(SHADER_CACHE_REGISTRY_PATH, std::ios::binary);
+    cereal::BinaryInputArchive registry_ar(registry_file);
+    while (registry_file.tellg() < std::filesystem::file_size(SHADER_CACHE_REGISTRY_PATH)) {
+        std::string shader_key;
+        u64 offset;
+        registry_ar(shader_key, offset);
+        shader_registry[shader_key] = offset;
+    }
+    if (Config::getShaderCachePreloadEnabled()) {
+        std::ifstream blob_file(SHADER_CACHE_BLOB_PATH, std::ios::binary);
+        for (auto const& [shader_key, offset] : shader_registry) {
+            blob_file.seekg(offset, std::ios::beg);
+            {
+                cereal::BinaryInputArchive blob_ar(blob_file);
+                std::string resources;
+                std::vector<u32> spv;
+                blob_ar(spv, resources);
+                shader_cache[shader_key] = std::make_pair(spv, resources);
+            }
         }
-        if (std::filesystem::exists(resources_file_path)) {
-            std::filesystem::remove(resources_file_path);
-        }
-        return false;
     }
-
-    LOG_INFO(Render_Vulkan, "Found shader with ID {} in the cache", shader_id);
-    return true;
 }
 
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
-    std::filesystem::path spirv_cache_filename = shader_id + ".spv";
-    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / spirv_cache_filename;
-    Common::FS::IOFile spirv_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Read);
-    spv.resize(spirv_cache_file.GetSize() / sizeof(u32));
-    spirv_cache_file.Read(spv);
-    spirv_cache_file.Close();
+    std::string resources;
+    if (Config::getShaderCachePreloadEnabled()) {
+        auto& [spv_cached, resources] = shader_cache[shader_id];
+        spv = spv_cached;
+    }
+    else {
+        std::ifstream blob_file(SHADER_CACHE_BLOB_PATH, std::ios::binary);
+        blob_file.seekg(shader_registry[shader_id], std::ios::beg);
+        cereal::BinaryInputArchive ar(blob_file);
 
-    std::filesystem::path resource_dump_filename = shader_id + ".resources";
-    std::filesystem::path resources_dump_file_path = SHADER_CACHE_DIR / resource_dump_filename;
-    Common::FS::IOFile resources_dump_file(resources_dump_file_path,
-                                           Common::FS::FileAccessMode::Read);
-
-    std::vector<char> resources_data;
-    resources_data.resize(resources_dump_file.GetSize());
-    resources_dump_file.Read(resources_data);
-    resources_dump_file.Close();
-
-    std::istringstream combined_stream(std::string(resources_data.begin(), resources_data.end()));
-
-    std::istringstream info_stream;
-    info_stream.str(std::string(resources_data.begin(), resources_data.end()));
-}
-
-void AddShader(std::string shader_id, std::vector<u32> spv, std::ostream& info_serialized) {
-    std::filesystem::path spirv_cache_filename = shader_id + ".spv";
-    std::filesystem::path spirv_cache_file_path = SHADER_CACHE_DIR / spirv_cache_filename;
-    Common::FS::IOFile shader_cache_file(spirv_cache_file_path, Common::FS::FileAccessMode::Write);
-    shader_cache_file.WriteSpan(std::span<const u32>(spv));
-    shader_cache_file.Close();
-
-    std::filesystem::path resource_dump_filename = shader_id + ".resources";
-    std::filesystem::path resources_dump_file_path = SHADER_CACHE_DIR / resource_dump_filename;
-    Common::FS::IOFile resources_dump_file(resources_dump_file_path,
-                                           Common::FS::FileAccessMode::Write);
-
-    if (std::ostringstream* info_oss = dynamic_cast<std::ostringstream*>(&info_serialized)) {
-        std::string info_data = info_oss->str();
-        resources_dump_file.WriteSpan(std::span<const char>(info_data.data(), info_data.size()));
+        ar(spv, resources);
     }
 
-    resources_dump_file.Close();
+    std::istringstream info_serialized(resources);
+    DeserializeInfo(info_serialized, info);
+}
+
+void AddShader(std::string shader_id, std::vector<u32> spv, std::ostringstream& info_serialized) {
+    std::ofstream registry_file(SHADER_CACHE_REGISTRY_PATH, std::ios::binary | std::ios::app);
+    registry_file.seekp(0, std::ios::end);
+    cereal::BinaryOutputArchive reg_ar(registry_file);
+
+    std::ofstream blob_file(SHADER_CACHE_BLOB_PATH, std::ios::binary | std::ios::app);
+    blob_file.seekp(0, std::ios::end);
+    cereal::BinaryOutputArchive blob_ar(blob_file);
+
+    u64 offset = static_cast<u64>(blob_file.tellp());
+    reg_ar(shader_id, offset);
+
+    std::string info_blob = info_serialized.str();
+    blob_ar(spv, info_blob);
+
+    shader_registry[shader_id] = offset;
+    if (Config::getShaderCachePreloadEnabled()) {
+        shader_cache[shader_id] = std::make_pair(spv, info_blob);
+    }
 }
 
 void SerializeInfo(std::ostream& info_serialized, Shader::Info& info) {
@@ -334,8 +326,6 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info& info) {
     ar << info.images;
     ar << info.samplers;
     ar << info.fmasks;
-    // srt info
-    ar << info.flattened_ud_buf;
     ar << info.fs_interpolation;
 }
 
@@ -348,8 +338,6 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     ar >> info.images;
     ar >> info.samplers;
     ar >> info.fmasks;
-    // srt info
-    ar >> info.flattened_ud_buf;
     ar >> info.fs_interpolation;
 }
 
