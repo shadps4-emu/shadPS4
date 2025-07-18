@@ -11,6 +11,7 @@
 
 #include "common/config.h"
 #include "common/scm_rev.h"
+#include "core/libraries/audio/audioout.h"
 #include "qt_gui/compatibility_info.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
@@ -68,6 +69,7 @@ QMap<QString, QString> chooseHomeTabMap;
 
 int backgroundImageOpacitySlider_backup;
 int bgm_volume_backup;
+int volume_slider_backup;
 
 static std::vector<QString> m_physical_devices;
 
@@ -149,9 +151,11 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
                     ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
                     emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+                    ui->horizontalVolumeSlider->setValue(volume_slider_backup);
+                    Config::setVolumeSlider(volume_slider_backup);
                     ui->BGMVolumeSlider->setValue(bgm_volume_backup);
                     BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
-                    ResetInstallFolders();
+                    SyncRealTimeWidgetstoConfig();
                 }
                 if (Common::Log::IsActive()) {
                     Common::Log::Filter filter;
@@ -170,6 +174,12 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
 
     // GENERAL TAB
     {
+        connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, [this](int value) {
+            VolumeSliderChange(value);
+            Config::setVolumeSlider(value);
+            Libraries::AudioOut::AdjustVol();
+        });
+
 #ifdef ENABLE_UPDATER
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
         connect(ui->updateCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
@@ -398,6 +408,8 @@ void SettingsDialog::closeEvent(QCloseEvent* event) {
     if (!is_saving) {
         ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
         emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+        ui->horizontalVolumeSlider->setValue(volume_slider_backup);
+        Config::setVolumeSlider(volume_slider_backup);
         ui->BGMVolumeSlider->setValue(bgm_volume_backup);
         BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
     }
@@ -463,6 +475,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->radioButton_Bottom->setChecked(side == "bottom");
 
     ui->BGMVolumeSlider->setValue(m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt());
+    ui->horizontalVolumeSlider->setValue(m_gui_settings->GetValue(gui::gl_VolumeSlider).toInt());
+    ui->volumeText->setText(QString::number(ui->horizontalVolumeSlider->sliderPosition()) + "%");
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     QString translatedText_FullscreenMode =
@@ -532,7 +546,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
-    ResetInstallFolders();
+    SyncRealTimeWidgetstoConfig();
     ui->backgroundImageOpacitySlider->setValue(
         m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt());
     ui->showBackgroundImageCheckBox->setChecked(
@@ -541,6 +555,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     backgroundImageOpacitySlider_backup =
         m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
     bgm_volume_backup = m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt();
+    volume_slider_backup = m_gui_settings->GetValue(gui::gl_VolumeSlider).toInt();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -597,6 +612,10 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
             ui->idleTimeoutGroupBox->hide();
         }
     }
+}
+
+void SettingsDialog::VolumeSliderChange(int value) {
+    ui->volumeText->setText(QString::number(ui->horizontalVolumeSlider->sliderPosition()) + "%");
 }
 
 int SettingsDialog::exec() {
@@ -719,7 +738,6 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
         if (qobject_cast<QWidget*>(obj)) {
             bool hovered = (event->type() == QEvent::Enter);
             QString elementName = obj->objectName();
-
             if (hovered) {
                 updateNoteTextEdit(elementName);
             } else {
@@ -759,6 +777,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorState(ui->hideCursorComboBox->currentIndex());
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
+    m_gui_settings->SetValue(gui::gl_VolumeSlider, ui->horizontalVolumeSlider->value());
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, ui->BGMVolumeSlider->value());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
@@ -815,9 +834,10 @@ void SettingsDialog::UpdateSettings() {
 #endif
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
+    Config::setVolumeSlider(ui->horizontalVolumeSlider->value());
 }
 
-void SettingsDialog::ResetInstallFolders() {
+void SettingsDialog::SyncRealTimeWidgetstoConfig() {
     ui->gameFoldersListWidget->clear();
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -865,6 +885,7 @@ void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
+    m_gui_settings->SetValue(gui::gl_VolumeSlider, 100);
     m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
     m_gui_settings->SetValue(gui::gen_showChangeLog, false);
     if (Common::g_is_release) {

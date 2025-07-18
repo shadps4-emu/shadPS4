@@ -19,6 +19,8 @@ enum HideCursorState : int { Never, Idle, Always };
 void load(const std::filesystem::path& path);
 void save(const std::filesystem::path& path);
 
+int getVolumeSlider();
+void setVolumeSlider(int volumeValue);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
 bool getIsFullscreen();

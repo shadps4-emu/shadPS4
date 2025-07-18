@@ -126,7 +126,7 @@ execute_process(
 
 # If there's no upstream set or the command failed, check remote.pushDefault
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
-  message("check default push")
+  message(STATUS "check default push")
   execute_process(
     COMMAND git config --get remote.pushDefault
     OUTPUT_VARIABLE GIT_REMOTE_NAME
@@ -134,30 +134,30 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  message("got remote: ${GIT_REMOTE_NAME}")
+  message(STATUS "got remote: ${GIT_REMOTE_NAME}")
 endif()
 
 # If running in GitHub Actions and the above fails
 if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
-  message("check github")
+  message(STATUS "check github")
   set(GIT_REMOTE_NAME "origin")
 
   # Retrieve environment variables
   if (DEFINED ENV{GITHUB_HEAD_REF} AND NOT "$ENV{GITHUB_HEAD_REF}" STREQUAL "")
-    message("github head ref: $ENV{GITHUB_HEAD_REF}")
+    message(STATUS "github head ref: $ENV{GITHUB_HEAD_REF}")
     set(GITHUB_HEAD_REF "$ENV{GITHUB_HEAD_REF}")
   else()
     set(GITHUB_HEAD_REF "")
   endif()
 
   if (DEFINED ENV{GITHUB_REF} AND NOT "$ENV{GITHUB_REF}" STREQUAL "")
-    message("github ref: $ENV{GITHUB_REF}")
+    message(STATUS "github ref: $ENV{GITHUB_REF}")
     string(REGEX REPLACE "^refs/[^/]*/" "" GITHUB_BRANCH "$ENV{GITHUB_REF}")
     string(REGEX MATCH "refs/pull/([0-9]+)/merge" MATCHED_REF "$ENV{GITHUB_REF}")
     if (MATCHED_REF)
       set(PR_NUMBER "${CMAKE_MATCH_1}")
       set(GITHUB_BRANCH "")
-      message("PR number: ${PR_NUMBER}")
+      message(STATUS "PR number: ${PR_NUMBER}")
     else()
       set(PR_NUMBER "")
     endif()
@@ -179,7 +179,7 @@ if (GIT_REMOTE_RESULT OR GIT_REMOTE_NAME STREQUAL "")
   elseif ("${PR_NUMBER}" STREQUAL "" AND NOT "${GITHUB_REF}" STREQUAL "")
     set(GIT_BRANCH "${GITHUB_REF}")
   elseif("${GIT_BRANCH}" STREQUAL "")
-    message("couldn't find branch")
+    message(STATUS "couldn't find branch")
     set(GIT_BRANCH "detached-head")
   endif()
 else()
@@ -188,13 +188,13 @@ else()
   if (INDEX GREATER -1)
     string(SUBSTRING "${GIT_REMOTE_NAME}" 0 "${INDEX}" GIT_REMOTE_NAME)
   elseif("${GIT_REMOTE_NAME}" STREQUAL "")
-    message("reset to origin")
+    message(STATUS "reset to origin")
     set(GIT_REMOTE_NAME "origin")
   endif()
 endif()
 
 # Get remote link
-message("getting remote link")
+message(STATUS "getting remote link")
 execute_process(
   COMMAND git config --get remote.${GIT_REMOTE_NAME}.url
   OUTPUT_VARIABLE GIT_REMOTE_URL
@@ -212,7 +212,12 @@ set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_
 set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
-message("end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}")
+message("-- end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
+
+if(NOT GIT_REMOTE_URL MATCHES "shadps4-emu/shadPS4" OR NOT GIT_BRANCH STREQUAL "main")
+    message(STATUS "not main, disabling auto update")
+    set(ENABLE_UPDATER OFF)
+endif()
 
 if(WIN32 AND ENABLE_QT_GUI AND NOT CMAKE_PREFIX_PATH)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DetectQtInstallation.cmake")

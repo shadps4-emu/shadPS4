@@ -230,7 +230,7 @@ int PS4_SYSV_ABI sceImeGetPanelPositionAndForm() {
 }
 
 Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height) {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_INFO(Lib_Ime, "sceImeGetPanelSize called");
 
     if (!param) {
         LOG_ERROR(Lib_Ime, "param is NULL");
@@ -311,7 +311,6 @@ int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
 Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
                                       const OrbisImeKeyboardParam* param) {
     LOG_INFO(Lib_Ime, "called");
-
     LOG_INFO(Lib_Ime, "kValidImeDialogExtOptionMask={:032b}", kValidImeDialogExtOptionMask);
 
     if (!param) {
@@ -453,7 +452,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
     }
 
     if (static_cast<u32>(param->option) & ~kValidImeOptionMask) {
-        LOG_ERROR(Lib_Ime, "option has invalid bits set (0x{:X}), mask=(0x{:X})",
+        LOG_ERROR(Lib_Ime, "option has invalid bits set (0x{:X}), mask=({:032b})",
                   static_cast<u32>(param->option), kValidImeOptionMask);
         return Error::INVALID_OPTION;
     }
@@ -533,7 +532,7 @@ int PS4_SYSV_ABI sceImeOpenInternal() {
 }
 
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_INFO(Lib_Ime, "sceImeParamInit called");
 
     if (!param) {
         return;

@@ -94,6 +94,21 @@ public:
         return features.shaderFloat64;
     }
 
+    /// Returns true if 64-bit ints are supported in shaders
+    bool IsShaderInt64Supported() const {
+        return features.shaderInt64;
+    }
+
+    /// Returns true if 16-bit ints are supported in shaders
+    bool IsShaderInt16Supported() const {
+        return features.shaderInt16;
+    }
+
+    /// Returns true if 8-bit ints are supported in shaders
+    bool IsShaderInt8Supported() const {
+        return vk12_features.shaderInt8;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;

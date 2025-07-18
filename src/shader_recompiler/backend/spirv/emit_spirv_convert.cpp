@@ -7,60 +7,32 @@
 namespace Shader::Backend::SPIRV {
 namespace {
 Id ExtractU16(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpUConvert(ctx.U16, value);
-    } else {
-        return ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.u32_zero_value, ctx.ConstU32(16u));
-    }
+    return ctx.OpUConvert(ctx.U16, value);
 }
 
 Id ExtractS16(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpSConvert(ctx.S16, value);
-    } else {
-        return ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.u32_zero_value, ctx.ConstU32(16u));
-    }
+    return ctx.OpSConvert(ctx.S16, value);
 }
 
 Id ExtractU8(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int8) {
-        return ctx.OpUConvert(ctx.U8, value);
-    } else {
-        return ctx.OpBitFieldUExtract(ctx.U32[1], value, ctx.u32_zero_value, ctx.ConstU32(8u));
-    }
+    return ctx.OpUConvert(ctx.U8, value);
 }
 
 Id ExtractS8(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int8) {
-        return ctx.OpSConvert(ctx.S8, value);
-    } else {
-        return ctx.OpBitFieldSExtract(ctx.U32[1], value, ctx.u32_zero_value, ctx.ConstU32(8u));
-    }
+    return ctx.OpSConvert(ctx.S8, value);
 }
 } // Anonymous namespace
 
 Id EmitConvertS16F16(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
-    } else {
-        return ExtractS16(ctx, ctx.OpConvertFToS(ctx.U32[1], value));
-    }
+    return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
 }
 
 Id EmitConvertS16F32(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
-    } else {
-        return ExtractS16(ctx, ctx.OpConvertFToS(ctx.U32[1], value));
-    }
+    return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
 }
 
 Id EmitConvertS16F64(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
-    } else {
-        return ExtractS16(ctx, ctx.OpConvertFToS(ctx.U32[1], value));
-    }
+    return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
 }
 
 Id EmitConvertS32F16(EmitContext& ctx, Id value) {
@@ -88,27 +60,15 @@ Id EmitConvertS64F64(EmitContext& ctx, Id value) {
 }
 
 Id EmitConvertU16F16(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
-    } else {
-        return ExtractU16(ctx, ctx.OpConvertFToU(ctx.U32[1], value));
-    }
+    return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
 }
 
 Id EmitConvertU16F32(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
-    } else {
-        return ExtractU16(ctx, ctx.OpConvertFToU(ctx.U32[1], value));
-    }
+    return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
 }
 
 Id EmitConvertU16F64(EmitContext& ctx, Id value) {
-    if (ctx.profile.support_int16) {
-        return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
-    } else {
-        return ExtractU16(ctx, ctx.OpConvertFToU(ctx.U32[1], value));
-    }
+    return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
 }
 
 Id EmitConvertU32F16(EmitContext& ctx, Id value) {
@@ -269,6 +229,14 @@ Id EmitConvertU8U32(EmitContext& ctx, Id value) {
 
 Id EmitConvertU32U8(EmitContext& ctx, Id value) {
     return ctx.OpUConvert(ctx.U32[1], value);
+}
+
+Id EmitConvertS32S8(EmitContext& ctx, Id value) {
+    return ctx.OpSConvert(ctx.U32[1], value);
+}
+
+Id EmitConvertS32S16(EmitContext& ctx, Id value) {
+    return ctx.OpSConvert(ctx.U32[1], value);
 }
 
 } // namespace Shader::Backend::SPIRV

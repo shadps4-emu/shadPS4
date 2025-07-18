@@ -203,6 +203,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
     profile = Shader::Profile{
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
+        .support_int8 = instance.IsShaderInt8Supported(),
+        .support_int16 = instance.IsShaderInt16Supported(),
+        .support_int64 = instance.IsShaderInt64Supported(),
         .support_float64 = instance.IsShaderFloat64Supported(),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
@@ -312,7 +315,6 @@ bool PipelineCache::RefreshGraphicsKey() {
     // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
     // order. We need to do some arrays compaction at this stage
     key.num_color_attachments = 0;
-    key.color_formats.fill(vk::Format::eUndefined);
     key.color_buffers.fill({});
     key.blend_controls.fill({});
     key.write_masks.fill({});
@@ -348,16 +350,8 @@ bool PipelineCache::RefreshGraphicsKey() {
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
                                         col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
 
-        const auto format =
-            LiverpoolToVK::SurfaceFormat(col_buf.GetDataFmt(), col_buf.GetNumberFmt());
-        key.color_formats[remapped_cb] = format;
-        if (!instance.IsFormatSupported(format, vk::FormatFeatureFlagBits2::eColorAttachment)) {
-            LOG_WARNING(Render_Vulkan,
-                        "color buffer format {} does not support COLOR_ATTACHMENT_BIT",
-                        vk::to_string(format));
-        }
-
         key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
+            .data_format = col_buf.GetDataFmt(),
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
             .export_format = regs.color_export_format.GetFormat(cb),
@@ -476,9 +470,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
-            key.color_formats[remapped_cb] = vk::Format::eUndefined;
-            key.color_buffers[remapped_cb] = {};
-            ++remapped_cb;
+            key.color_buffers[remapped_cb++] = {};
             continue;
         }
 

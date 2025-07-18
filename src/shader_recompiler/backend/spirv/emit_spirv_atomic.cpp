@@ -268,6 +268,7 @@ Id EmitBufferAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     const auto sign_bit_set =
         ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
 
+    // FIXME this needs control flow because it currently executes both atomics
     const auto result = ctx.OpSelect(
         ctx.F32[1], sign_bit_set,
         EmitBitCastF32U32(ctx, EmitBufferAtomicUMax32(ctx, inst, handle, address, u32_value)),
@@ -302,6 +303,7 @@ Id EmitBufferAtomicFMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     const auto sign_bit_set =
         ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
 
+    // FIXME this needs control flow because it currently executes both atomics
     const auto result = ctx.OpSelect(
         ctx.F32[1], sign_bit_set,
         EmitBitCastF32U32(ctx, EmitBufferAtomicUMin32(ctx, inst, handle, address, u32_value)),
