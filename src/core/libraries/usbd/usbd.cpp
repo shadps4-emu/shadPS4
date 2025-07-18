@@ -10,6 +10,34 @@
 #include <fmt/format.h>
 #include <libusb.h>
 
+#include <mutex>
+#include <unordered_map>
+
+namespace {
+std::unordered_map<Libraries::Usbd::SceUsbdTransfer*, Libraries::Usbd::SceUsbdTransferCallback>
+    g_transfer_callbacks;
+std::mutex g_callback_mutex;
+
+void transfer_abi_callback(libusb_transfer* transfer) {
+    using SysVCallback = void(PS4_SYSV_ABI*)(Libraries::Usbd::SceUsbdTransfer*);
+    SysVCallback callback = nullptr;
+
+    {
+        std::lock_guard<std::mutex> lock(g_callback_mutex);
+        auto it = g_transfer_callbacks.find(transfer);
+        if (it != g_transfer_callbacks.end()) {
+            callback = (SysVCallback)it->second;
+        }
+    }
+
+    if (callback) {
+        callback(transfer);
+    } else {
+        LOG_WARNING(Lib_Usbd, "No registered callback for USB transfer");
+    }
+}
+} // namespace
+
 namespace Libraries::Usbd {
 
 s32 libusb_to_orbis_error(int retVal) {
@@ -276,6 +304,11 @@ s32 PS4_SYSV_ABI sceUsbdCancelTransfer(SceUsbdTransfer* transfer) {
 void PS4_SYSV_ABI sceUsbdFreeTransfer(SceUsbdTransfer* transfer) {
     LOG_DEBUG(Lib_Usbd, "called");
 
+    {
+        std::lock_guard<std::mutex> lock(g_callback_mutex);
+        g_transfer_callbacks.erase(transfer);
+    }
+
     libusb_free_transfer(transfer);
 }
 
@@ -305,8 +338,13 @@ void PS4_SYSV_ABI sceUsbdFillInterruptTransfer(SceUsbdTransfer* transfer,
                                                u32 timeout) {
     LOG_DEBUG(Lib_Usbd, "called");
 
-    libusb_fill_interrupt_transfer(transfer, dev_handle, endpoint, buffer, length, callback,
-                                   user_data, timeout);
+    {
+        std::lock_guard<std::mutex> lock(g_callback_mutex);
+        g_transfer_callbacks[transfer] = callback;
+    }
+
+    libusb_fill_interrupt_transfer(transfer, dev_handle, endpoint, buffer, length,
+                                   transfer_abi_callback, user_data, timeout);
 }
 
 void PS4_SYSV_ABI sceUsbdFillIsoTransfer(SceUsbdTransfer* transfer, SceUsbdDeviceHandle* dev_handle,
