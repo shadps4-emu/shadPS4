@@ -526,11 +526,18 @@ s32 PS4_SYSV_ABI sceAudio3dStrError() {
 }
 
 s32 PS4_SYSV_ABI sceAudio3dTerminate() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+    LOG_INFO(Lib_Audio3d, "called");
+    if (!state) {
+        return ORBIS_AUDIO3D_ERROR_NOT_READY;
+    }
+
+    AudioOut::sceAudioOutOutput(state->audio_out_handle, nullptr);
+    AudioOut::sceAudioOutClose(state->audio_out_handle);
+    state.release();
     return ORBIS_OK;
 }
 
-void RegisterlibSceAudio3d(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pZlOm1aF3aA", "libSceAudio3d", 1, "libSceAudio3d", 1, 1, sceAudio3dAudioOutClose);
     LIB_FUNCTION("ucEsi62soTo", "libSceAudio3d", 1, "libSceAudio3d", 1, 1, sceAudio3dAudioOutOpen);
     LIB_FUNCTION("7NYEzJ9SJbM", "libSceAudio3d", 1, "libSceAudio3d", 1, 1,

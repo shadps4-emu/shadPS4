@@ -58,7 +58,7 @@ Status PS4_SYSV_ABI scePlayGoDialogUpdateStatus() {
     return Status::FINISHED;
 }
 
-void RegisterlibScePlayGoDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fbigNQiZpm0", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
                  scePlayGoDialogClose);
     LIB_FUNCTION("wx9TDplJKB4", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,

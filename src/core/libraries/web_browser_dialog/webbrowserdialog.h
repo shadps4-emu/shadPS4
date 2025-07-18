@@ -26,5 +26,5 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogTerminate();
 s32 PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus();
 s32 PS4_SYSV_ABI Func_F2BE042771625F8C();
 
-void RegisterlibSceWebBrowserDialog(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::WebBrowserDialog

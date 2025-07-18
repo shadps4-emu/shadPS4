@@ -455,11 +455,12 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     // Read image sharp.
     const auto tsharp = TrackSharp(tsharp_handle, info);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite;
+    const bool is_atomic = IsImageAtomicInstruction(inst);
+    const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const ImageResource image_res = {
         .sharp_idx = tsharp,
         .is_depth = bool(inst_info.is_depth),
-        .is_atomic = IsImageAtomicInstruction(inst),
+        .is_atomic = is_atomic,
         .is_array = bool(inst_info.is_array),
         .is_written = is_written,
         .is_r128 = bool(inst_info.is_r128),

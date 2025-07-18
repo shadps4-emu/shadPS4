@@ -149,7 +149,7 @@ Status PS4_SYSV_ABI sceMsgDialogUpdateStatus() {
     return g_status;
 }
 
-void RegisterlibSceMsgDialog(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("HTrcDKlFKuM", "libSceMsgDialog", 1, "libSceMsgDialog", 1, 1, sceMsgDialogClose);
     LIB_FUNCTION("Lr8ovHH9l6A", "libSceMsgDialog", 1, "libSceMsgDialog", 1, 1,
                  sceMsgDialogGetResult);
