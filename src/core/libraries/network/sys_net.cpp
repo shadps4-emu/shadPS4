@@ -33,8 +33,7 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
     return -1;
 }
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
-    LOG_DEBUG(Lib_Net, "s = {}, addr = {:#x}, addrlen = {}", s, reinterpret_cast<u64>(addr),
-              addrlen);
+    LOG_DEBUG(Lib_Net, "s = {}, addr = {:#x}, addrlen = {}", s, fmt::ptr(addr), addrlen);
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(s);

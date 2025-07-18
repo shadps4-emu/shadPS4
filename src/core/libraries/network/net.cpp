@@ -699,7 +699,6 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         }
 
 #ifdef __linux__
-        // const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
         auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
         auto* file = h->GetFile(id);
         if (!file || file->type != Core::FileSys::FileType::Socket) {
@@ -739,7 +738,12 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         }
 
 #ifdef __linux__
-        const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
+        auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+        auto* file = h->GetFile(id);
+        if (!file || file->type != Core::FileSys::FileType::Socket) {
+            return -ORBIS_NET_EBADF;
+        }
+        const auto socket = file->socket;
         ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, socket->Native(), nullptr) == 0);
 #endif
         epoll->events.erase(it);
@@ -1220,7 +1224,7 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
-    LOG_DEBUG(Lib_Net, "called, af = {}");
+    LOG_DEBUG(Lib_Net, "called, af = {}", af);
 
     const char* returnvalue = nullptr;
     switch (af) {
@@ -1267,7 +1271,7 @@ int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
     int res = inet_pton(ConvertFamilies(af), src, dst);
 #endif
     if (res < 0) {
-        UNREACHABLE_MSG("af = {}, src = {}, dst = {:#x}", af, src, reinterpret_cast<u64>(dst));
+        UNREACHABLE_MSG("af = {}, src = {}, dst = {:#x}", af, src, fmt::ptr(dst));
     }
     return res;
 }
@@ -1586,7 +1590,10 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
 
     if ((flags & ORBIS_NET_RESOLVER_ASYNC) != 0) {
         // moves processing to EpollWait
-        UNREACHABLE_MSG("unimplemented");
+        LOG_ERROR(Lib_Net, "async resolution is not implemented");
+        *sceNetErrnoLoc() = ORBIS_NET_RESOLVER_EINTERNAL;
+        auto ret = -ORBIS_NET_RESOLVER_EINTERNAL | ORBIS_NET_ERROR_BASE;
+        return ret;
     }
 
     const addrinfo hints = {
