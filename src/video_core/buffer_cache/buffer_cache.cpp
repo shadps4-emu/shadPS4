@@ -1069,35 +1069,41 @@ void BufferCache::SynchronizeBuffersForDma() {
     };
     mapped_ranges.ForEach([&](VAddr device_addr, u64 size) {
         RENDERER_TRACE;
-        memory_tracker->ForEachUploadRange(device_addr, size, false, [&](u64 device_addr_out, u64 range_size, RegionBits& clear_mask) {
-            RENDERER_TRACE;
-            ForEachBufferInRange(device_addr_out, range_size, [&](BufferId buffer_id, Buffer& buffer) {
+        memory_tracker->ForEachUploadRange(
+            device_addr, size, false,
+            [&](u64 device_addr_out, u64 range_size, RegionBits& clear_mask) {
                 RENDERER_TRACE;
-                if (last_buffer_id != buffer_id) {
-                    upload_pending();
-                    last_buffer_id = buffer_id;
-                }
-                const VAddr copy_start = std::max(buffer.CpuAddr(), device_addr_out);
-                const VAddr copy_end = std::min(buffer.CpuAddr() + buffer.SizeBytes(), device_addr_out + range_size);
-                const u32 copy_size = static_cast<u32>(copy_end - copy_start);
-                if (copy_size == 0) {
-                    return;
-                }
-                const u64 offset = staging_buffer.Copy(copy_start, copy_size);
-                copies.push_back(vk::BufferCopy{
-                    .srcOffset = offset,
-                    .dstOffset = copy_start - buffer.CpuAddr(),
-                    .size = copy_size,
-                });
+                ForEachBufferInRange(
+                    device_addr_out, range_size, [&](BufferId buffer_id, Buffer& buffer) {
+                        RENDERER_TRACE;
+                        if (last_buffer_id != buffer_id) {
+                            upload_pending();
+                            last_buffer_id = buffer_id;
+                        }
+                        const VAddr copy_start = std::max(buffer.CpuAddr(), device_addr_out);
+                        const VAddr copy_end = std::min(buffer.CpuAddr() + buffer.SizeBytes(),
+                                                        device_addr_out + range_size);
+                        const u32 copy_size = static_cast<u32>(copy_end - copy_start);
+                        if (copy_size == 0) {
+                            return;
+                        }
+                        const u64 offset = staging_buffer.Copy(copy_start, copy_size);
+                        copies.push_back(vk::BufferCopy{
+                            .srcOffset = offset,
+                            .dstOffset = copy_start - buffer.CpuAddr(),
+                            .size = copy_size,
+                        });
 
-                // We need to use tracker page size here, we are marking the clear mask
-                const u64 page_start = (copy_start & TRACKER_HIGHER_PAGE_MASK) >> TRACKER_PAGE_BITS;
-                const u64 page_end =
-                    Common::DivCeil((copy_end - 1) & TRACKER_HIGHER_PAGE_MASK, TRACKER_BYTES_PER_PAGE);
-                ASSERT(page_start < page_end);
-                clear_mask.SetRange(page_start, page_end);
-            });
-        }, upload_pending);
+                        // We need to use tracker page size here, we are marking the clear mask
+                        const u64 page_start =
+                            (copy_start & TRACKER_HIGHER_PAGE_MASK) >> TRACKER_PAGE_BITS;
+                        const u64 page_end = Common::DivCeil(
+                            (copy_end - 1) & TRACKER_HIGHER_PAGE_MASK, TRACKER_BYTES_PER_PAGE);
+                        ASSERT(page_start < page_end);
+                        clear_mask.SetRange(page_start, page_end);
+                    });
+            },
+            upload_pending);
     });
     MemoryBarrier();
 }

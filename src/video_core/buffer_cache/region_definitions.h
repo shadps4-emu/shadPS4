@@ -23,7 +23,6 @@ enum class Type {
     GPU,
 };
 
-
 using RegionBits = Common::BitArray<NUM_PAGES_PER_REGION>;
 
 } // namespace VideoCore

@@ -38,7 +38,6 @@ template <class Func>
 struct FuncTraits<Func, std::void_t<decltype(&std::remove_reference_t<Func>::operator())>>
     : FuncTraits<decltype(&std::remove_reference_t<Func>::operator())> {};
 
-
 // For lambdas: for compat (may be removed)
 template <typename Func>
 struct LambdaTraits : LambdaTraits<decltype(&std::remove_reference_t<Func>::operator())> {};
