@@ -1089,10 +1089,9 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
     LOG_INFO(Kernel_Fs,
-              "nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
-              "= {:#x}",
-              nfds, reinterpret_cast<u64>(readfds), reinterpret_cast<u64>(writefds),
-              reinterpret_cast<u64>(exceptfds), reinterpret_cast<u64>(timeout));
+             "nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
+             "= {:#x}",
+             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     fd_set read_host, write_host, except_host;
     FD_ZERO(&read_host);
@@ -1148,7 +1147,8 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         }
     }
 
-    int result = select(0, &read_host, &write_host, &except_host, reinterpret_cast<timeval*>(timeout));
+    int result =
+        select(0, &read_host, &write_host, &except_host, reinterpret_cast<timeval*>(timeout));
     int total_ready = result;
 
     for (int fd = 0; fd < nfds; ++fd) {
