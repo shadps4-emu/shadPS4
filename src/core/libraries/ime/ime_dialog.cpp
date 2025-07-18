@@ -149,20 +149,47 @@ OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
 }
 
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
-    LOG_INFO(Lib_ImeDialog, ">> sceImeDialogInit: entering, param={}, extended={}",
+    LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: entering, param={}, extended={}",
              static_cast<void*>(param), static_cast<void*>(extended));
-    if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: busy (status=%u)", (u32)g_ime_dlg_status);
-        return Error::BUSY;
-    }
 
     if (param == nullptr) {
         LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: param is null");
         return Error::INVALID_ADDRESS;
+    } else {
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.user_id = {}",
+                 static_cast<u32>(param->user_id));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.type = {}", static_cast<u32>(param->type));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.supported_languages = 0x{:X}",
+                 static_cast<u64>(param->supported_languages));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.enter_label = {}",
+                 static_cast<u32>(param->enter_label));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.input_method = {}",
+                 static_cast<u32>(param->input_method));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.filter = {}", (void*)param->filter);
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.option = 0x{:X}",
+                 static_cast<u32>(param->option));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.max_text_length = {}",
+                 param->max_text_length);
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.input_text_buffer = {}",
+                 (void*)param->input_text_buffer);
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.posx = {}", param->posx);
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.posy = {}", param->posy);
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.horizontal_alignment = {}",
+                 static_cast<u32>(param->horizontal_alignment));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.vertical_alignment = {}",
+                 static_cast<u32>(param->vertical_alignment));
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.placeholder = {}",
+                 param->placeholder ? "<non-null>" : "NULL");
+        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.title = {}",
+                 param->title ? "<non-null>" : "NULL");
+    }
+    if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: busy (status={})", (u32)g_ime_dlg_status);
+        return Error::BUSY;
     }
 
     if (!magic_enum::enum_contains(param->type)) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid param->type=%u", (u32)param->type);
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid param->type={}", (u32)param->type);
         return Error::INVALID_ADDRESS;
     }
 
@@ -170,14 +197,16 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     // TODO: do correct param->supportedLanguages validation
 
     if (param->posx < 0.0f ||
-        param->posx >= MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx=%f", param->posx);
+        param->posx >=
+            MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx={}", param->posx);
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
-        param->posy >= MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_2K_COORDINATES)]) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy=%f", param->posy);
+        param->posy >=
+            MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy={}", param->posy);
         return Error::INVALID_POSY;
     }
 
@@ -192,7 +221,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     }
 
     if (!IsValidOption(param->option, param->type)) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid option=0x%X for type=%u",
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid option=0x{:X}for type={}",
                   static_cast<u32>(param->option), (u32)param->type);
         return Error::INVALID_PARAM;
     }
@@ -204,25 +233,27 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
 
     if (extended) {
         if (!magic_enum::enum_contains(extended->priority)) {
-            LOG_INFO(Lib_ImeDialog, "Invalid extended->priority");
+            LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: Invalid extended->priority");
             return Error::INVALID_EXTENDED;
         }
 
         // TODO: do correct extended->option validation
 
         if ((extended->ext_keyboard_mode & 0xe3fffffc) != 0) {
-            LOG_INFO(Lib_ImeDialog, "Invalid extended->extKeyboardMode");
+            LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: Invalid extended->extKeyboardMode");
             return Error::INVALID_EXTENDED;
         }
 
-        if (extended->disable_device > 7) {
-            LOG_INFO(Lib_ImeDialog, "Invalid extended->disableDevice");
+        if (static_cast<u32>(extended->disable_device) & ~kValidOrbisImeDisableDeviceMask) {
+            LOG_ERROR(Lib_ImeDialog,
+                      "sceImeDialogInit: disable_device has invalid bits set (0x{:X})",
+                      static_cast<u32>(extended->disable_device));
             return Error::INVALID_EXTENDED;
         }
     }
 
     if (param->max_text_length == 0 || param->max_text_length > ORBIS_IME_MAX_TEXT_LENGTH) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid max_text_length=%u",
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid max_text_length={}",
                   param->max_text_length);
         return Error::INVALID_MAX_TEXT_LENGTH;
     }
@@ -238,7 +269,7 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     g_ime_dlg_status = OrbisImeDialogStatus::Running;
     g_ime_dlg_ui = ImeDialogUi(&g_ime_dlg_state, &g_ime_dlg_status, &g_ime_dlg_result);
 
-    LOG_INFO(Lib_ImeDialog, "<< sceImeDialogInit: successful, status now=Running");
+    LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: successful, status now=Running");
     return Error::OK;
 }
 
