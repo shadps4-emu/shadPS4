@@ -523,7 +523,22 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         }
         port.impl->SetVolume(port.volume);
     }
+    AdjustVol();
     return ORBIS_OK;
+}
+
+void AdjustVol() {
+    if (audio == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i < ports_out.size(); i++) {
+        std::unique_lock lock{ports_out[i].mutex};
+        if (!ports_out[i].IsOpen()) {
+            continue;
+        }
+        ports_out[i].impl->SetVolume(ports_out[i].volume);
+    }
 }
 
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown() {
