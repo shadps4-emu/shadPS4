@@ -72,7 +72,8 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void EndCommandList();
+    void ProcessFaultBuffer();
+    void ProcessDownloadImages();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;

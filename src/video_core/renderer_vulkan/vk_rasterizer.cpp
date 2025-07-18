@@ -449,11 +449,14 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::EndCommandList() {
+void Rasterizer::ProcessFaultBuffer() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
     }
+}
+
+void Rasterizer::ProcessDownloadImages() {
     texture_cache.ProcessDownloadImages();
 }
 
@@ -482,7 +485,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         uses_dma |= stage->uses_dma;
     }
 
-    if (uses_dma) {
+    if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
