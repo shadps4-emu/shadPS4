@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include <shared_mutex>
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/range_set.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -43,6 +43,10 @@ public:
         return texture_cache;
     }
 
+    [[nodiscard]] const VideoCore::RangeSet& GetMappedRanges() const noexcept {
+        return mapped_ranges;
+    }
+
     void Draw(bool is_indexed, u32 index_offset = 0);
     void DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 size, u32 max_count,
                       VAddr count_address);
@@ -68,7 +72,8 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void EndCommandList();
+    void ProcessFaultBuffer();
+    void ProcessDownloadImages();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -76,11 +81,8 @@ public:
 
     template <typename Func>
     void ForEachMappedRangeInRange(VAddr addr, u64 size, Func&& func) {
-        const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
-        Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-        for (const auto& mapped_range : (mapped_ranges & range)) {
-            func(mapped_range);
-        }
+        Common::RecursiveSharedLock lk(mapped_ranges_mutex);
+        mapped_ranges.ForEachInRange(addr, size, std::forward<Func>(func));
     }
 
 private:
@@ -123,7 +125,7 @@ private:
     VideoCore::TextureCache texture_cache;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
-    boost::icl::interval_set<VAddr> mapped_ranges;
+    VideoCore::RangeSet mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 

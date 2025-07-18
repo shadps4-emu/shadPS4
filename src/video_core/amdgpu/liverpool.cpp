@@ -124,6 +124,10 @@ void Liverpool::Process(std::stop_token stoken) {
             if (task.done()) {
                 task.destroy();
 
+                if (rasterizer) {
+                    rasterizer->ProcessFaultBuffer();
+                }
+
                 std::scoped_lock lock{queue.m_access};
                 queue.submits.pop();
 
@@ -136,7 +140,7 @@ void Liverpool::Process(std::stop_token stoken) {
         if (submit_done) {
             VideoCore::EndCapture();
             if (rasterizer) {
-                rasterizer->EndCommandList();
+                rasterizer->ProcessDownloadImages();
                 rasterizer->Flush();
             }
             submit_done = false;
@@ -174,8 +178,14 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::DumpConstRam: {
             const auto* dump_const = reinterpret_cast<const PM4DumpConstRam*>(header);
-            memcpy(dump_const->Address<void*>(),
-                   cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
+            if (rasterizer) {
+                rasterizer->InlineData(dump_const->Address<VAddr>(),
+                                       cblock.constants_heap.data() + dump_const->Offset(),
+                                       dump_const->Size(), false);
+            } else {
+                memcpy(dump_const->Address<void*>(),
+                       cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
+            }
             break;
         }
         case PM4ItOpcode::IncrementCeCounter: {
