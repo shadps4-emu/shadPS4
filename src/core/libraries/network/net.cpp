@@ -710,7 +710,6 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         }
 
 #ifdef __linux__
-        // const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
         auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
         auto* file = h->GetFile(id);
         if (!file || file->type != Core::FileSys::FileType::Socket) {
@@ -750,7 +749,12 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         }
 
 #ifdef __linux__
-        const auto socket = Common::Singleton<NetInternal>::Instance()->socks[id];
+        auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+        auto* file = h->GetFile(id);
+        if (!file || file->type != Core::FileSys::FileType::Socket) {
+            return -ORBIS_NET_EBADF;
+        }
+        const auto socket = file->socket;
         ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, socket->Native(), nullptr) == 0);
 #endif
         epoll->events.erase(it);
@@ -1231,7 +1235,7 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
-    LOG_DEBUG(Lib_Net, "called, af = {}");
+    LOG_DEBUG(Lib_Net, "called, af = {}", af);
 
     const char* returnvalue = nullptr;
     switch (af) {
