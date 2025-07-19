@@ -31,6 +31,7 @@ struct ImageInfo {
     }
 
     bool IsBlockCoded() const;
+    bool IsPacked() const;
     bool IsDepthStencil() const;
     bool HasStencil() const;
 

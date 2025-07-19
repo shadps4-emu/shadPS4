@@ -21,7 +21,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     if (info.IsDepthStencil()) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        if (!info.IsBlockCoded()) {
+        if (!info.IsBlockCoded() && !info.IsPacked()) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
         // In cases where an image is created as a render/depth target and cleared with compute,
