@@ -358,6 +358,7 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info& info) {
     ar << info.fetch_shader_sgpr_base; // !
     ar << info.readconst_types;
     ar << info.uses_dma;
+    ar << info.srt_info.flattened_bufsize_dw;
 }
 
 void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
@@ -400,6 +401,7 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     ar >> info.fetch_shader_sgpr_base; // !
     ar >> info.readconst_types;
     ar >> info.uses_dma;
+    ar >> info.srt_info.flattened_bufsize_dw;
 }
 
 } // namespace ShaderCache
