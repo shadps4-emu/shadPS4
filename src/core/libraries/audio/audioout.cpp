@@ -170,7 +170,7 @@ int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum() {
 }
 
 int PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
-    LOG_DEBUG(Lib_AudioOut, "called");
+    LOG_DEBUG(Lib_AudioOut, "called, handle: {}, output time: {}", handle, fmt::ptr(output_time));
     if (!output_time) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
