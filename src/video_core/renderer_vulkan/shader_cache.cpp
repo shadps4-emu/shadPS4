@@ -328,6 +328,36 @@ void SerializeInfo(std::ostream& info_serialized, Shader::Info& info) {
     ar << info.samplers;
     ar << info.fmasks;
     ar << info.fs_interpolation;
+    ar << info.tess_consts_ptr_base;
+    ar << info.tess_consts_dword_offset;
+    ar << info.stage;
+    ar << info.l_stage;
+    ar << info.pgm_hash;
+    ar << info.pgm_base; // !
+    ar << info.has_storage_images;
+    ar << info.has_discard;
+    ar << info.has_image_gather;
+    ar << info.has_image_query;
+    ar << info.uses_buffer_atomic_float_min_max;
+    ar << info.uses_image_atomic_float_min_max;
+    ar << info.uses_lane_id;
+    ar << info.uses_group_quad;
+    ar << info.uses_group_ballot;
+    ar << info.shared_types;
+    ar << info.uses_fp16;
+    ar << info.uses_fp64;
+    ar << info.uses_pack_10_11_11;
+    ar << info.uses_unpack_10_11_11;
+    ar << info.uses_buffer_int64_atomics;
+    ar << info.uses_shared_int64_atomics;
+    ar << info.stores_tess_level_outer;
+    ar << info.stores_tess_level_inner;
+    ar << info.translation_failed;
+    ar << info.mrt_mask;
+    ar << info.has_fetch_shader;
+    ar << info.fetch_shader_sgpr_base; // !
+    ar << info.readconst_types;
+    ar << info.uses_dma;
 }
 
 void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
@@ -340,6 +370,36 @@ void DeserializeInfo(std::istream& info_serialized, Shader::Info& info) {
     ar >> info.samplers;
     ar >> info.fmasks;
     ar >> info.fs_interpolation;
+    ar >> info.tess_consts_ptr_base;
+    ar >> info.tess_consts_dword_offset;
+    ar >> info.stage;
+    ar >> info.l_stage;
+    ar >> info.pgm_hash;
+    ar >> info.pgm_base; // !
+    ar >> info.has_storage_images;
+    ar >> info.has_discard;
+    ar >> info.has_image_gather;
+    ar >> info.has_image_query;
+    ar >> info.uses_buffer_atomic_float_min_max;
+    ar >> info.uses_image_atomic_float_min_max;
+    ar >> info.uses_lane_id;
+    ar >> info.uses_group_quad;
+    ar >> info.uses_group_ballot;
+    ar >> info.shared_types;
+    ar >> info.uses_fp16;
+    ar >> info.uses_fp64;
+    ar >> info.uses_pack_10_11_11;
+    ar >> info.uses_unpack_10_11_11;
+    ar >> info.uses_buffer_int64_atomics;
+    ar >> info.uses_shared_int64_atomics;
+    ar >> info.stores_tess_level_outer;
+    ar >> info.stores_tess_level_inner;
+    ar >> info.translation_failed;
+    ar >> info.mrt_mask;
+    ar >> info.has_fetch_shader;
+    ar >> info.fetch_shader_sgpr_base; // !
+    ar >> info.readconst_types;
+    ar >> info.uses_dma;
 }
 
 } // namespace ShaderCache
