@@ -171,7 +171,16 @@ int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum() {
 
 int PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
     LOG_DEBUG(Lib_AudioOut, "called");
+    if (!output_time) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
+    }
+    if (handle >= ports_out.size()) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
     auto& port = ports_out.at(handle - 1);
+    if (!port.IsOpen()) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+    }
     *output_time = port.last_output_time;
     return ORBIS_OK;
 }
