@@ -1271,7 +1271,7 @@ int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
     int res = inet_pton(ConvertFamilies(af), src, dst);
 #endif
     if (res < 0) {
-        UNREACHABLE_MSG("af = {}, src = {}, dst = {:#x}", af, src, fmt::ptr(dst));
+        UNREACHABLE_MSG("af = {}, src = {}, dst = {}", af, src, fmt::ptr(dst));
     }
     return res;
 }

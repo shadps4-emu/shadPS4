@@ -1086,9 +1086,7 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
-    LOG_INFO(Kernel_Fs,
-             "nfds = {}, readfds = {:#x}, writefds = {:#x}, exceptfds = {:#x}, timeout "
-             "= {:#x}",
+    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     fd_set read_host, write_host, except_host;
@@ -1247,7 +1245,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         auto write = writefds && FD_ISSET(i, writefds);
         auto except = exceptfds && FD_ISSET(i, exceptfds);
         if (read || write || except) {
-            LOG_INFO(Kernel_Fs, "guest fd {} expected", i);
+            LOG_DEBUG(Kernel_Fs, "guest fd {} expected", i);
             auto* file = h->GetFile(i);
             if (file == nullptr ||
                 ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
@@ -1286,9 +1284,8 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         }
     }
 
-    LOG_INFO(Kernel_Fs, "calling select");
     int ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
-    LOG_INFO(Kernel_Fs, "select = {}", ret);
+    LOG_DEBUG(Kernel_Fs, "select = {}", ret);
 
     if (ret > 0) {
         if (readfds) {
@@ -1303,15 +1300,15 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
 
         for (auto i = 0; i < max_fd + 1; ++i) {
             if (FD_ISSET(i, &read_host)) {
-                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for reading", i, host_to_guest[i]);
+                LOG_DEBUG(Kernel_Fs, "host fd {} (guest {}) ready for reading", i, host_to_guest[i]);
                 FD_SET(host_to_guest[i], readfds);
             }
             if (FD_ISSET(i, &write_host)) {
-                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for writing", i, host_to_guest[i]);
+                LOG_DEBUG(Kernel_Fs, "host fd {} (guest {}) ready for writing", i, host_to_guest[i]);
                 FD_SET(host_to_guest[i], writefds);
             }
             if (FD_ISSET(i, &except_host)) {
-                LOG_INFO(Kernel_Fs, "host fd {} (guest {}) ready for except", i, host_to_guest[i]);
+                LOG_DEBUG(Kernel_Fs, "host fd {} (guest {}) ready for except", i, host_to_guest[i]);
                 FD_SET(host_to_guest[i], exceptfds);
             }
         }
