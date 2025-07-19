@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <SDL3/SDL_audio.h>
 #include <cmrc/cmrc.hpp>
-#include <common/path_util.h>
 #include <imgui.h>
 
 #ifdef ENABLE_QT_GUI
@@ -15,6 +15,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/path_util.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
 #include "trophy_ui.h"
@@ -73,6 +74,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     }
 
     std::vector<u8> imgdata;
+    auto resource = cmrc::res::get_filesystem();
     if (!customPath.empty()) {
         std::ifstream file(customPath, std::ios::binary);
         if (file) {
@@ -82,7 +84,6 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
             LOG_ERROR(Lib_NpTrophy, "Could not open custom file for trophy in {}", customPath);
         }
     } else {
-        auto resource = cmrc::res::get_filesystem();
         auto file = resource.open(pathString);
         imgdata = std::vector<u8>(file.begin(), file.end());
     }
@@ -91,17 +92,56 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     AddLayer(this);
 
+    bool customsoundplayed = false;
 #ifdef ENABLE_QT_GUI
     QString musicPathWav = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.wav");
     QString musicPathMp3 = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.mp3");
     if (fs::exists(musicPathWav.toStdString())) {
         BackgroundMusicPlayer::getInstance().setVolume(100);
         BackgroundMusicPlayer::getInstance().playMusic(musicPathWav, false);
+        customsoundplayed = true;
     } else if (fs::exists(musicPathMp3.toStdString())) {
         BackgroundMusicPlayer::getInstance().setVolume(100);
         BackgroundMusicPlayer::getInstance().playMusic(musicPathMp3, false);
+        customsoundplayed = true;
     }
 #endif
+
+    if (!customsoundplayed) {
+        auto soundFile = resource.open("src/images/trophy.wav");
+        std::vector<u8> soundData = std::vector<u8>(soundFile.begin(), soundFile.end());
+
+        SDL_AudioSpec spec;
+        Uint8* audioBuf;
+        Uint32 audioLen;
+
+        if (!SDL_LoadWAV_IO(SDL_IOFromMem(soundData.data(), soundData.size()), true, &spec,
+                            &audioBuf, &audioLen)) {
+            LOG_ERROR(Lib_NpTrophy, "Cannot load trophy sound: {}", SDL_GetError());
+            SDL_free(audioBuf);
+            return;
+        }
+
+        SDL_AudioStream* stream =
+            SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
+        if (!stream) {
+            LOG_ERROR(Lib_NpTrophy, "Cannot create audio stream for trophy sound: {}",
+                      SDL_GetError());
+            SDL_free(audioBuf);
+            return;
+        }
+
+        if (!SDL_PutAudioStreamData(stream, audioBuf, audioLen)) {
+            LOG_ERROR(Lib_NpTrophy, "Cannot add trophy sound data to stream: {}", SDL_GetError());
+            SDL_free(audioBuf);
+            return;
+        }
+
+        // Set audio gain 20% higher since audio file itself is soft
+        SDL_SetAudioStreamGain(stream, Config::getVolumeSlider() / 100.0f * 1.2f);
+        SDL_ResumeAudioStreamDevice(stream);
+        SDL_free(audioBuf);
+    }
 }
 
 TrophyUI::~TrophyUI() {

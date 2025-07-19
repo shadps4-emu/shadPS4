@@ -260,7 +260,6 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
-include_directories(Resources)
 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
@@ -1242,6 +1241,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png
         src/images/platinum.png
