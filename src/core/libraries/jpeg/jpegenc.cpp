@@ -197,7 +197,7 @@ s32 PS4_SYSV_ABI sceJpegEncQueryMemorySize(const OrbisJpegEncCreateParam* param)
     return ORBIS_JPEG_ENC_MINIMUM_MEMORY_SIZE;
 }
 
-void RegisterlibSceJpegEnc(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("K+rocojkr-I", "libSceJpegEnc", 1, "libSceJpegEnc", 1, 1, sceJpegEncCreate);
     LIB_FUNCTION("j1LyMdaM+C0", "libSceJpegEnc", 1, "libSceJpegEnc", 1, 1, sceJpegEncDelete);
     LIB_FUNCTION("QbrU0cUghEM", "libSceJpegEnc", 1, "libSceJpegEnc", 1, 1, sceJpegEncEncode);

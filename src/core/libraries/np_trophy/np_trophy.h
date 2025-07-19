@@ -225,5 +225,5 @@ int PS4_SYSV_ABI Func_9F80071876FFA5F6();
 int PS4_SYSV_ABI Func_F8EF6F5350A91990();
 int PS4_SYSV_ABI Func_FA7A2DD770447552();
 
-void RegisterlibSceNpTrophy(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpTrophy

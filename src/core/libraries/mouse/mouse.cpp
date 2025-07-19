@@ -79,7 +79,7 @@ int PS4_SYSV_ABI sceMouseSetProcessPrivilege() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceMouse(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("cAnT0Rw-IwU", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseClose);
     LIB_FUNCTION("Ymyy1HSSJLQ", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseConnectPort);
     LIB_FUNCTION("BRXOoXQtb+k", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseDebugGetDeviceId);

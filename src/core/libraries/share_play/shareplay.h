@@ -50,5 +50,5 @@ int PS4_SYSV_ABI Func_C1C236728D88E177();
 int PS4_SYSV_ABI Func_E9E80C474781F115();
 int PS4_SYSV_ABI Func_F3DD6199DA15ED44();
 
-void RegisterlibSceSharePlay(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SharePlay

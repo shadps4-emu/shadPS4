@@ -523,7 +523,22 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         }
         port.impl->SetVolume(port.volume);
     }
+    AdjustVol();
     return ORBIS_OK;
+}
+
+void AdjustVol() {
+    if (audio == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i < ports_out.size(); i++) {
+        std::unique_lock lock{ports_out[i].mutex};
+        if (!ports_out[i].IsOpen()) {
+            continue;
+        }
+        ports_out[i].impl->SetVolume(ports_out[i].volume);
+    }
 }
 
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown() {
@@ -596,7 +611,7 @@ int PS4_SYSV_ABI sceAudioOutSetSystemDebugState() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAudioOut(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("cx2dYFbzIAg", "libSceAudioOutDeviceService", 1, "libSceAudioOut", 1, 1,
                  sceAudioOutDeviceIdOpen);
     LIB_FUNCTION("tKumjQSzhys", "libSceAudioDeviceControl", 1, "libSceAudioOut", 1, 1,

@@ -112,5 +112,5 @@ s32 PS4_SYSV_ABI Func_E324765D18EE4D12();
 s32 PS4_SYSV_ABI Func_E789F980D907B653();
 s32 PS4_SYSV_ABI Func_F9A32E8685627436();
 
-void RegisterlibSceNpWebApi(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NpWebApi

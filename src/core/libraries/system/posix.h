@@ -8,5 +8,5 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Posix {
-void Registerlibsceposix(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Posix

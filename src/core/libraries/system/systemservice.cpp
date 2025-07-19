@@ -2429,7 +2429,7 @@ void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
     g_event_queue.push(event);
 }
 
-void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("alZfRdr2RP8", "libSceAppMessaging", 1, "libSceSystemService", 1, 1,
                  sceAppMessagingClearEventFlag);
     LIB_FUNCTION("jKgAUl6cLy0", "libSceAppMessaging", 1, "libSceSystemService", 1, 1,

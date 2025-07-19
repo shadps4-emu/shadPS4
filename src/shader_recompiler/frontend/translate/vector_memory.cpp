@@ -28,6 +28,15 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_LOAD_FORMAT_XYZW:
         return BUFFER_LOAD(4, false, true, inst);
 
+    case Opcode::BUFFER_LOAD_UBYTE:
+        return BUFFER_LOAD(1, false, false, inst, 8, false);
+    case Opcode::BUFFER_LOAD_SBYTE:
+        return BUFFER_LOAD(1, false, false, inst, 8, true);
+    case Opcode::BUFFER_LOAD_USHORT:
+        return BUFFER_LOAD(1, false, false, inst, 16, false);
+    case Opcode::BUFFER_LOAD_SSHORT:
+        return BUFFER_LOAD(1, false, false, inst, 16, true);
+
     case Opcode::BUFFER_LOAD_DWORD:
         return BUFFER_LOAD(1, false, false, inst);
     case Opcode::BUFFER_LOAD_DWORDX2:
@@ -55,6 +64,11 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_STORE(3, true, false, inst);
     case Opcode::TBUFFER_STORE_FORMAT_XYZW:
         return BUFFER_STORE(4, true, false, inst);
+
+    case Opcode::BUFFER_STORE_BYTE:
+        return BUFFER_STORE(1, false, false, inst, 8);
+    case Opcode::BUFFER_STORE_SHORT:
+        return BUFFER_STORE(1, false, false, inst, 16);
 
     case Opcode::BUFFER_STORE_DWORD:
         return BUFFER_STORE(1, false, false, inst);
@@ -186,7 +200,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 }
 
 void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
-                             const GcnInst& inst) {
+                             const GcnInst& inst, u32 scalar_width, bool is_signed) {
     const auto& mubuf = inst.control.mubuf;
     const bool is_ring = mubuf.glc && mubuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -242,7 +256,26 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
             ir.SetVectorReg(dst_reg + i, IR::F32{ir.CompositeExtract(value, i)});
         }
     } else {
-        const IR::Value value = ir.LoadBufferU32(num_dwords, handle, address, buffer_info);
+        IR::Value value;
+        switch (scalar_width) {
+        case 8: {
+            IR::U8 byte_val = ir.LoadBufferU8(handle, address, buffer_info);
+            value = is_signed ? ir.SConvert(32, byte_val) : ir.UConvert(32, byte_val);
+            break;
+        }
+        case 16: {
+            IR::U16 short_val = ir.LoadBufferU16(handle, address, buffer_info);
+            value = is_signed ? ir.SConvert(32, short_val) : ir.UConvert(32, short_val);
+            break;
+        }
+        case 32:
+            value = ir.LoadBufferU32(num_dwords, handle, address, buffer_info);
+            break;
+
+        default:
+            UNREACHABLE();
+        }
+
         if (num_dwords == 1) {
             ir.SetVectorReg(dst_reg, IR::U32{value});
             return;
@@ -254,7 +287,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
 }
 
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
-                              const GcnInst& inst) {
+                              const GcnInst& inst, u32 scalar_width) {
     const auto& mubuf = inst.control.mubuf;
     const bool is_ring = mubuf.glc && mubuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
@@ -314,8 +347,23 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
         }
         ir.StoreBufferFormat(handle, address, ir.CompositeConstruct(comps), buffer_info);
     } else {
-        const auto value = num_dwords == 1 ? comps[0] : ir.CompositeConstruct(comps);
-        ir.StoreBufferU32(num_dwords, handle, address, value, buffer_info);
+        IR::Value value = num_dwords == 1 ? comps[0] : ir.CompositeConstruct(comps);
+        if (scalar_width != 32) {
+            value = ir.UConvert(scalar_width, IR::U32{value});
+        }
+        switch (scalar_width) {
+        case 8:
+            ir.StoreBufferU8(handle, address, IR::U8{value}, buffer_info);
+            break;
+        case 16:
+            ir.StoreBufferU16(handle, address, IR::U16{value}, buffer_info);
+            break;
+        case 32:
+            ir.StoreBufferU32(num_dwords, handle, address, value, buffer_info);
+            break;
+        default:
+            UNREACHABLE();
+        }
     }
 }
 

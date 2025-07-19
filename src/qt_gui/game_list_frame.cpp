@@ -91,7 +91,8 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
         if (column == 2 && m_game_info->m_games[row].compatibility.issue_number != "") {
-            auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+            auto url_issues =
+                "https://github.com/shadps4-compatibility/shadps4-game-compatibility/issues/";
             QDesktopServices::openUrl(
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         } else if (column == 10) {
