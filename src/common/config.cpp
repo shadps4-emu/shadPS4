@@ -72,6 +72,7 @@ static bool readbackLinearImagesEnabled = false;
 static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
 static bool shouldPatchShaders = false;
+static bool shaderCachePreloadEnabled = false;
 static u32 vblankDivider = 1;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
@@ -107,11 +108,12 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 54;
+static constexpr u64 total_entries = 55;
 
 int getVolumeSlider() {
     return volumeSlider;
 }
+
 bool allowHDR() {
     return isHDRAllowed;
 }
@@ -297,6 +299,10 @@ bool patchShaders() {
     return shouldPatchShaders;
 }
 
+bool getShaderCachePreloadEnabled() {
+    return shaderCachePreloadEnabled;
+}
+
 bool isRdocEnabled() {
     return rdocEnable;
 }
@@ -411,6 +417,10 @@ void setDirectMemoryAccess(bool enable) {
 
 void setDumpShaders(bool enable) {
     shouldDumpShaders = enable;
+}
+
+void setShaderCachePreloadEnabled(bool enable) {
+    shaderCachePreloadEnabled = enable;
 }
 
 void setVkValidation(bool enable) {
@@ -673,6 +683,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
+        shaderCachePreloadEnabled =
+            toml::find_or<bool>(gpu, "shaderCachePreload", shaderCachePreloadEnabled);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
@@ -847,6 +859,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
     data["GPU"]["patchShaders"] = shouldPatchShaders;
+    data["GPU"]["shaderCachePreload"] = shaderCachePreloadEnabled;
     data["GPU"]["vblankDivider"] = vblankDivider;
     data["GPU"]["Fullscreen"] = isFullscreen;
     data["GPU"]["FullscreenMode"] = fullscreenMode;
@@ -951,6 +964,7 @@ void setDefaultValues() {
     directMemoryAccessEnabled = false;
     shouldDumpShaders = false;
     shouldPatchShaders = false;
+    shaderCachePreloadEnabled = false;
     vblankDivider = 1;
     isFullscreen = false;
     fullscreenMode = "Windowed";
@@ -1053,6 +1067,7 @@ analog_deadzone = rightjoystick, 2, 127
 override_controller_color = false, 0, 0, 255
 )";
 }
+
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
