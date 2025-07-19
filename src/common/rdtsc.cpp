@@ -6,11 +6,12 @@
 #include "common/uint128.h"
 
 #ifdef _WIN64
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 namespace Common {
 
+#ifndef _WIN64
 static constexpr size_t SecondToNanoseconds = 1000000000ULL;
 
 template <u64 Nearest>
@@ -20,16 +21,7 @@ static u64 RoundToNearest(u64 value) {
 }
 
 static u64 GetTimeNs() {
-#ifdef _WIN64
-    // GetSystemTimePreciseAsFileTime returns the file time in 100ns units.
-    static constexpr u64 Multiplier = 100;
-    // Convert Windows epoch to Unix epoch.
-    static constexpr u64 WindowsEpochToUnixEpoch = 0x19DB1DED53E8000LL;
-    FILETIME filetime;
-    GetSystemTimePreciseAsFileTime(&filetime);
-    return Multiplier * ((static_cast<u64>(filetime.dwHighDateTime) << 32) +
-                         static_cast<u64>(filetime.dwLowDateTime) - WindowsEpochToUnixEpoch);
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
     return clock_gettime_nsec_np(CLOCK_REALTIME);
 #else
     timespec ts;
@@ -37,8 +29,14 @@ static u64 GetTimeNs() {
     return ts.tv_sec * SecondToNanoseconds + ts.tv_nsec;
 #endif
 }
+#endif
 
 u64 EstimateRDTSCFrequency() {
+#ifdef _WIN64
+    LARGE_INTEGER frequency;
+    QueryPerformanceFrequency(&frequency);
+    return frequency.QuadPart;
+#else
     // Discard the first result measuring the rdtsc.
     FencedRDTSC();
     std::this_thread::sleep_for(std::chrono::milliseconds{1});
@@ -55,6 +53,7 @@ u64 EstimateRDTSCFrequency() {
     const u64 tsc_diff = tsc_end - tsc_start;
     const u64 tsc_freq = MultiplyAndDivide64(tsc_diff, 1000000000ULL, end_time - start_time);
     return RoundToNearest<100'000>(tsc_freq);
+#endif
 }
 
 } // namespace Common
