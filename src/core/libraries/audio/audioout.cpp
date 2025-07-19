@@ -14,6 +14,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioOut {
@@ -168,8 +169,10 @@ int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+int PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
+    LOG_DEBUG(Lib_AudioOut, "called");
+    auto& port = ports_out.at(handle - 1);
+    *output_time = port.last_output_time;
     return ORBIS_OK;
 }
 
@@ -396,6 +399,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         if (ptr != nullptr && port.IsOpen()) {
             std::memcpy(port.output_buffer, ptr, port.BufferSize());
             port.output_ready = true;
+            port.last_output_time = Kernel::sceKernelGetProcessTime();
         }
     }
     port.output_cv.notify_one();
