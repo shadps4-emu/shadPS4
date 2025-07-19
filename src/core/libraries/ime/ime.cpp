@@ -329,23 +329,19 @@ int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
 Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
                                       const OrbisImeKeyboardParam* param) {
     LOG_INFO(Lib_Ime, "called");
-
     if (!param) {
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
         return Error::INVALID_ADDRESS;
     }
-
     if (!param->handler) {
         LOG_ERROR(Lib_Ime, "Invalid param->handler: NULL");
         return Error::INVALID_HANDLER;
     }
-
     // seems like arg is optional, need to check if it is used in the handler
     if (!param->arg && false) { // Todo: check if arg is used in the handler, temporarily disabled
         LOG_ERROR(Lib_Ime, "Invalid param->arg: NULL");
         return Error::INVALID_ARG;
     }
-
     if (static_cast<u32>(param->option) & ~kValidOrbisImeKeyboardOptionMask) {
         LOG_ERROR(Lib_Ime,
                   "Invalid param->option\n"
@@ -354,42 +350,35 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
                   static_cast<u32>(param->option), kValidOrbisImeKeyboardOptionMask);
         return Error::INVALID_OPTION;
     }
-
     if (userId < 0 || userId > 4) { // Todo: check valid user IDs
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
     }
-
     for (size_t i = 0; i < sizeof(param->reserved1); ++i) {
         if (param->reserved1[i] != 0) {
             LOG_ERROR(Lib_Ime, "Invalid reserved1: not zeroed");
             return Error::INVALID_RESERVED;
         }
     }
-
     for (size_t i = 0; i < sizeof(param->reserved2); ++i) {
         if (param->reserved2[i] != 0) {
             LOG_ERROR(Lib_Ime, "Invalid reserved2: not zeroed");
             return Error::INVALID_RESERVED;
         }
     }
-
     if (false) { // Todo: check if usb keyboard is connected, always true for now
         LOG_ERROR(Lib_Ime, "USB keyboard is not connected");
         return Error::CONNECTION_FAILED;
     }
-
     if (g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Keyboard handler is already open");
         return Error::BUSY;
     }
-
     g_keyboard_handler = std::make_unique<ImeHandler>(param);
     if (!g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create keyboard handler");
         return Error::INTERNAL; // or Error::NO_MEMORY;
     }
-
     LOG_INFO(Lib_Ime, "Keyboard handler created successfully for user ID: {}", userId);
     return Error::OK;
 }
