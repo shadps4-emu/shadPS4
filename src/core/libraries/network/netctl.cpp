@@ -13,6 +13,7 @@
 #endif
 
 #include <common/singleton.h>
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -69,8 +70,8 @@ int PS4_SYSV_ABI sceNetBweUnregisterCallbackIpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetInfoV6() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetInfoV6(int code, void* param) {
+    LOG_ERROR(Lib_NetCtl, "(STUBBED) called, code = {}", code);
     return ORBIS_OK;
 }
 
@@ -95,7 +96,9 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackV6() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallback() {
-    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+
+    netctl.CheckCallback();
     return ORBIS_OK;
 }
 
@@ -160,12 +163,14 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
+    LOG_DEBUG(Lib_NetCtl, "code = {}", code);
+    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+
     switch (code) {
     case ORBIS_NET_CTL_INFO_DEVICE:
         info->device = ORBIS_NET_CTL_DEVICE_WIRED;
         break;
     case ORBIS_NET_CTL_INFO_ETHER_ADDR: {
-        auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
         netinfo->RetrieveEthernetAddr();
         memcpy(info->ether_addr.data, netinfo->GetEthernetAddr().data(), 6);
     } break;
@@ -173,7 +178,8 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         info->mtu = 1500; // default value
         break;
     case ORBIS_NET_CTL_INFO_LINK:
-        info->link = ORBIS_NET_CTL_LINK_DISCONNECTED;
+        info->link = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_LINK_CONNECTED
+                                                       : ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
     case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
         strcpy(info->ip_address,
@@ -193,11 +199,50 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         }
         break;
     }
-
+    case ORBIS_NET_CTL_INFO_PRIMARY_DNS:
+        strcpy(info->primary_dns, "1.1.1.1");
+        break;
+    case ORBIS_NET_CTL_INFO_SECONDARY_DNS:
+        strcpy(info->secondary_dns, "1.1.1.1");
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG:
+        info->http_proxy_config = 0;
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_SERVER:
+        strcpy(info->http_proxy_server, "0.0.0.0");
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_PORT:
+        info->http_proxy_port = 0;
+        break;
+    case ORBIS_NET_CTL_INFO_IP_CONFIG:
+        info->ip_config = 1; // static
+        break;
+    case ORBIS_NET_CTL_INFO_DHCP_HOSTNAME:
+        // info-> = ;
+        break;
+    case ORBIS_NET_CTL_INFO_NETMASK: {
+        auto success = netinfo->RetrieveNetmask();
+        if (success) {
+            strncpy(info->netmask, netinfo->GetNetmask().data(), sizeof(info->netmask));
+            LOG_DEBUG(Lib_NetCtl, "netmask: {}", info->netmask);
+        } else {
+            LOG_WARNING(Lib_NetCtl, "netmask: failed to retrieve");
+        }
+        break;
+    }
+    case ORBIS_NET_CTL_INFO_DEFAULT_ROUTE: {
+        auto success = netinfo->RetrieveDefaultGateway();
+        if (success) {
+            strncpy(info->netmask, netinfo->GetDefaultGateway().data(), sizeof(info->netmask));
+            LOG_DEBUG(Lib_NetCtl, "default gateway: {}", info->netmask);
+        } else {
+            LOG_WARNING(Lib_NetCtl, "default gateway: failed to retrieve");
+        }
+        break;
+    }
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }
-    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
     return ORBIS_OK;
 }
 
@@ -271,7 +316,10 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetState(int* state) {
-    *state = ORBIS_NET_CTL_STATE_DISCONNECTED;
+    LOG_DEBUG(Lib_NetCtl, "connected = {}", Config::getIsConnectedToNetwork());
+    const auto current_state = Config::getIsConnectedToNetwork() ? ORBIS_NET_CTL_STATE_IPOBTAINED
+                                                                 : ORBIS_NET_CTL_STATE_DISCONNECTED;
+    *state = current_state;
     return ORBIS_OK;
 }
 
@@ -296,7 +344,7 @@ int PS4_SYSV_ABI sceNetCtlGetWifiType() {
 }
 
 int PS4_SYSV_ABI sceNetCtlInit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
     return ORBIS_OK;
 }
 
@@ -309,12 +357,17 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, 
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
+
     s32 result = netctl.RegisterCallback(func, arg);
+
     if (result < 0) {
+        LOG_DEBUG(Lib_NetCtl, "failed with {:#x}", result);
         return result;
     } else {
+        LOG_DEBUG(Lib_NetCtl, "*cid = {}", result);
         *cid = result;
     }
+
     return ORBIS_OK;
 }
 
@@ -384,7 +437,9 @@ int PS4_SYSV_ABI Func_D8DCB6973537A3DC() {
 }
 
 int PS4_SYSV_ABI sceNetCtlCheckCallbackForNpToolkit() {
-    LOG_DEBUG(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+
+    netctl.CheckNpToolkitCallback();
     return ORBIS_OK;
 }
 
@@ -398,10 +453,14 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpT
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
+
     s32 result = netctl.RegisterNpToolkitCallback(func, arg);
+
     if (result < 0) {
+        LOG_WARNING(Lib_NetCtl, "failed with {:#x}", result);
         return result;
     } else {
+        LOG_DEBUG(Lib_NetCtl, "*cid = {}", result);
         *cid = result;
     }
     return ORBIS_OK;

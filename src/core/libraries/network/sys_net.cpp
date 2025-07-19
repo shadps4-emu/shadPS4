@@ -4,7 +4,9 @@
 #include <common/assert.h>
 #include <common/logging/log.h>
 #include <core/libraries/kernel/kernel.h>
+#include "common/error.h"
 #include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "net_error.h"
 #include "sockets.h"
 #include "sys_net.h"
@@ -12,13 +14,16 @@
 namespace Libraries::Net {
 
 int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_WARNING(Lib_Net, "s = {}", s);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->Connect(addr, addrlen);
     if (returncode >= 0) {
         return returncode;
@@ -28,13 +33,16 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
     return -1;
 }
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_DEBUG(Lib_Net, "s = {}, addr = {}, addrlen = {}", s, fmt::ptr(addr), addrlen);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->Bind(addr, addrlen);
     if (returncode >= 0) {
         return returncode;
@@ -44,35 +52,62 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
     return -1;
 }
 int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
-        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
-        return -1;
-    }
-    auto new_sock = sock->Accept(addr, paddrlen);
-    if (!new_sock) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
-        LOG_ERROR(Lib_Net, "error creating new socket for accepting");
-        return -1;
-    }
-    auto id = ++netcall->next_sock_id;
-    netcall->socks.emplace(id, new_sock);
-    return id;
-}
-int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return -1;
-}
-int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
+    auto new_sock = sock->Accept(addr, paddrlen);
+    if (!new_sock) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {}",
+                  Common::GetLastErrorMsg());
+        return -1;
+    }
+    u32 handle = h->CreateHandle();
+    auto* new_file = h->GetFile(handle);
+    new_file->is_opened = true;
+    new_file->type = Core::FileSys::FileType::Socket;
+    new_file->socket = new_sock;
+    return handle;
+}
+
+int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    auto sock = file->socket;
+    int returncode = sock->GetPeerName(addr, paddrlen);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    *Libraries::Kernel::__Error() = returncode;
+    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    return -1;
+}
+
+int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    auto sock = file->socket;
     int returncode = sock->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
         return returncode;
@@ -82,13 +117,16 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
     return -1;
 }
 int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_WARNING(Lib_Net, "(DUMMY) called");
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->GetSocketOptions(level, optname, optval, optlen);
     if (returncode >= 0) {
         return returncode;
@@ -98,13 +136,16 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
     return -1;
 }
 int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_DEBUG(Lib_Net, "s = {}, backlog = {}", s, backlog);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->Listen(backlog);
     if (returncode >= 0) {
         return returncode;
@@ -113,16 +154,21 @@ int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
+
 int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                 u32 optlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_WARNING(Lib_Net, "netId = {}", s);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->SetSocketOptions(level, optname, optval, optlen);
+    LOG_INFO(Lib_Net, "returncode = {}", returncode);
     if (returncode >= 0) {
         return returncode;
     }
@@ -145,9 +191,16 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
     case ORBIS_NET_SOCK_DGRAM:
-    case ORBIS_NET_SOCK_RAW:
-        sock = std::make_shared<PosixSocket>(family, type, protocol);
+    case ORBIS_NET_SOCK_RAW: {
+        const auto typed_socket = std::make_shared<PosixSocket>(family, type, protocol);
+        if (!typed_socket->IsValid()) {
+            *Libraries::Kernel::__Error() = ORBIS_NET_EPROTONOSUPPORT;
+            return -1;
+        }
+
+        sock = std::move(typed_socket);
         break;
+    }
     case ORBIS_NET_SOCK_DGRAM_P2P:
     case ORBIS_NET_SOCK_STREAM_P2P:
         sock = std::make_shared<P2PSocket>(family, type, protocol);
@@ -155,10 +208,16 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     default:
         UNREACHABLE_MSG("Unknown type {}", type);
     }
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto id = ++netcall->next_sock_id;
-    netcall->socks.emplace(id, sock);
-    return id;
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    u32 handle = h->CreateHandle();
+    auto* file = h->GetFile(handle);
+    file->is_opened = true;
+    file->type = Core::FileSys::FileType::Socket;
+    file->socket = sock;
+    // auto* netcall = Common::Singleton<NetInternal>::Instance();
+    // auto id = ++netcall->next_sock_id;
+    // netcall->socks.emplace(id, sock);
+    return handle;
 }
 int PS4_SYSV_ABI sys_socket(int family, int type, int protocol) {
     return sys_socketex(nullptr, family, type, protocol);
@@ -168,14 +227,19 @@ int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     return -1;
 }
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_INFO(Lib_Net, "called, s = {}", s);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
+    file->is_opened = false;
     int returncode = sock->Close();
+    h->DeleteHandle(s);
     if (returncode >= 0) {
         return returncode;
     }
@@ -183,15 +247,23 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
+
+int PS4_SYSV_ABI sys_send(OrbisNetId s, const void* buf, u64 len, int flags) {
+    return sys_sendto(s, buf, len, flags, nullptr, 0);
+}
+
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_WARNING(Lib_Net, "s = {}, len = {}, flags = {:#x}, addrlen = {}", s, len, flags, addrlen);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->SendPacket(buf, len, flags, addr, addrlen);
     if (returncode >= 0) {
         return returncode;
@@ -204,21 +276,30 @@ int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags)
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
+
+int PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags) {
+    return sys_recvfrom(s, buf, len, flags, nullptr, 0);
+}
+
 int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen) {
-    auto* netcall = Common::Singleton<NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    // LOG_INFO(Lib_Net, "s = {}, buf = {:#x}, len = {}, flags = {:#x}", s,
+    // reinterpret_cast<u64>(buf), len, flags);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     int returncode = sock->ReceivePacket(buf, len, flags, addr, paddrlen);
     if (returncode >= 0) {
         return returncode;
     }
     *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    // LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
 int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {

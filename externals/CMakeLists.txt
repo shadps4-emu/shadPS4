@@ -140,6 +140,8 @@ endif()
 # sirit
 add_subdirectory(sirit)
 if (WIN32)
+    add_library(wepoll wepoll/wepoll.c)
+    target_include_directories(wepoll INTERFACE wepoll/)
     target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
 endif()
 
@@ -228,5 +230,9 @@ if (APPLE)
     # MoltenVK
     if (NOT TARGET MoltenVK)
         add_subdirectory(MoltenVK)
+    endif()
+
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
     endif()
 endif()

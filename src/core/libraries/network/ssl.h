@@ -11,6 +11,13 @@ class SymbolsResolver;
 
 namespace Libraries::Ssl {
 
+struct OrbisSslCaCerts;
+
+struct OrbisSslCaList {
+    void* certs;
+    int certsNum;
+};
+
 int PS4_SYSV_ABI CA_MGMT_allocCertDistinguishedName();
 int PS4_SYSV_ABI CA_MGMT_certDistinguishedNameCompare();
 int PS4_SYSV_ABI CA_MGMT_convertKeyBlobToPKCS8Key();
@@ -136,7 +143,7 @@ int PS4_SYSV_ABI sceSslEnableOptionInternal();
 int PS4_SYSV_ABI sceSslFreeCaCerts();
 int PS4_SYSV_ABI sceSslFreeCaList();
 int PS4_SYSV_ABI sceSslFreeSslCertName();
-int PS4_SYSV_ABI sceSslGetCaCerts();
+int PS4_SYSV_ABI sceSslGetCaCerts(int sslCtxId, OrbisSslCaCerts* certs);
 int PS4_SYSV_ABI sceSslGetCaList();
 int PS4_SYSV_ABI sceSslGetIssuerName();
 int PS4_SYSV_ABI sceSslGetMemoryPoolStats();

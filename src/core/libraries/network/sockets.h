@@ -26,6 +26,10 @@ typedef int net_socket;
 #include <mutex>
 #include "net.h"
 
+namespace Libraries::Kernel {
+struct OrbisKernelStat;
+}
+
 namespace Libraries::Net {
 
 struct Socket;
@@ -51,6 +55,12 @@ struct Socket {
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
+    virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
+    virtual int read(void* buf, size_t len) = 0;
+    virtual int write(const void* buf, size_t len) = 0;
+    virtual bool IsValid() const = 0;
+    virtual net_socket Native() const = 0;
     std::mutex m_mutex;
 };
 
@@ -65,10 +75,7 @@ struct PosixSocket : public Socket {
     int sockopt_ip_maxttl = 0;
     int sockopt_tcp_mss_to_advertise = 0;
     int socket_type;
-    explicit PosixSocket(int domain, int type, int protocol)
-        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
-        socket_type = type;
-    }
+    explicit PosixSocket(int domain, int type, int protocol);
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
@@ -81,6 +88,16 @@ struct PosixSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    int read(void* buf, size_t len) override;
+    int write(const void* buf, size_t len) override;
+    bool IsValid() const override {
+        return sock != -1;
+    }
+    net_socket Native() const override {
+        return sock;
+    }
 };
 
 struct P2PSocket : public Socket {
@@ -96,6 +113,16 @@ struct P2PSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int read(void* buf, size_t len) override;
+    int write(const void* buf, size_t len) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    bool IsValid() const override {
+        return true;
+    }
+    net_socket Native() const override {
+        return {};
+    }
 };
 
 class NetInternal {

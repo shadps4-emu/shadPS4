@@ -215,16 +215,18 @@ s32 PS4_SYSV_ABI posix_getpagesize() {
 
 s32 PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
                                    Libraries::Net::OrbisNetSockaddr* addr, u32* paddrlen) {
-    auto* netcall = Common::Singleton<Libraries::Net::NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_DEBUG(Lib_Net, "s = {}", s);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(s);
+    if (!file || file->type != Core::FileSys::FileType::Socket) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto sock = file->socket;
     s32 returncode = sock->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
-        LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
+        LOG_DEBUG(Lib_Net, "return code : {:#x}", (u32)returncode);
         return 0;
     }
     *Libraries::Kernel::__Error() = 0x20;
@@ -291,11 +293,13 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pxnCmagrtao", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_listen);
     LIB_FUNCTION("3e+4Iv7IJ8U", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_accept);
     LIB_FUNCTION("TU-d9PfIHPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
+    LIB_FUNCTION("fZOeZIOEmLw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_send);
     LIB_FUNCTION("oBr313PppNE", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
+    LIB_FUNCTION("Ez8xjo9UF4E", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recv);
     LIB_FUNCTION("lUk6wrGXyMw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
     LIB_FUNCTION("fFxGkxF2bVo", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sys_setsockopt);
-    // LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1, posix_getsockname);
+    LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1, posix_getsockname);
     LIB_FUNCTION("KuOmgKoqCdY", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
     LIB_FUNCTION("5jRCs2axtr4", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sceNetInetNtop); // TODO fix it to sys_ ...
