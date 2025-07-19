@@ -503,7 +503,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Không thể lưu</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -527,19 +527,19 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>chưa cài đặt nút điều khiển</translation>
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Options</source>
@@ -956,7 +956,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation/>
+      <translation type="unfinished">No log file found for this game!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -999,7 +999,7 @@
     </message>
     <message>
       <source>FAQ</source>
-      <translation type="unfinished">FAQ</translation>
+      <translation>Các câu hỏi thường gặp</translation>
     </message>
     <message>
       <source>Syntax</source>
