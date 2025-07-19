@@ -5,6 +5,7 @@
 
 #include <boost/container/small_vector.hpp>
 #include <cereal/archives/binary.hpp>
+
 #include <common/types.h>
 
 namespace cereal {

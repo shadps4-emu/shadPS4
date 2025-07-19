@@ -497,12 +497,13 @@ bool PipelineCache::RefreshComputeKey() {
 
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                               std::span<const u32> code, size_t perm_idx,
-                                              Shader::Backend::Bindings& binding, Shader::StageSpecialization spec) {
+                                              Shader::Backend::Bindings& binding,
+                                              Shader::StageSpecialization spec) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
 
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
-    
+
     std::string shader_name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
 
     std::vector<u32> spv;
@@ -513,8 +514,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         ::ShaderCache::GetShader(shader_id, info, spv);
         info.RefreshFlatBuf();
     } else {
-        LOG_INFO(Render_Vulkan, "Shader {} {:#x} {}not in cache", info.stage,
-                 info.pgm_hash, perm_idx != 0 ? "(permutation) " : "");
+        LOG_INFO(Render_Vulkan, "Shader {} {:#x} {}not in cache", info.stage, info.pgm_hash,
+                 perm_idx != 0 ? "(permutation) " : "");
         const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
         spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
         std::ostringstream info_serialized;
@@ -524,9 +525,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         LOG_INFO(Render_Vulkan, "Shader ID: {}", shader_id);
         DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
-
-        LOG_INFO(Render_Vulkan, "Compiled shader {} {:#x} {}and saved it to cache", info.stage, info.pgm_hash,
-                 perm_idx != 0 ? "(permutation) " : "");
+        LOG_INFO(Render_Vulkan, "Compiled shader {} {:#x} {}and saved it to cache", info.stage,
+                 info.pgm_hash, perm_idx != 0 ? "(permutation) " : "");
     }
 
     vk::ShaderModule module;
@@ -561,7 +561,8 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
         auto start = binding;
         Shader::StageSpecialization spec =
             Shader::StageSpecialization(program->info, runtime_info, profile, start);
-        const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding, spec);
+        const auto module =
+            CompileModule(program->info, runtime_info, params.code, 0, binding, spec);
         program->AddPermut(module, std::move(spec));
         return std::make_tuple(&program->info, module, spec.fetch_shader_data,
                                HashCombine(params.hash, 0));

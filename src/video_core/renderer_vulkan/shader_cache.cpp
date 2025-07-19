@@ -1,32 +1,23 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <iostream>
+#include <fstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <sys/mman.h>
-#include <unistd.h>
-#endif
-#include <fstream>
+
 #include <cereal/archives/binary.hpp>
+
+#include "common/config.h"
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
-#include "common/config.h"
+#include "shader_cache.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/specialization.h"
 #include "video_core/renderer_vulkan/shader_cache_serialization.h"
-
-#include "shader_cache.h"
-
-using u64 = uint64_t;
-using u32 = uint32_t;
 
 namespace ShaderCache {
 
@@ -252,7 +243,8 @@ bool CheckShaderCache(std::string shader_id) {
 }
 
 void InitializeShaderCache() {
-    if (!std::filesystem::exists(SHADER_CACHE_REGISTRY_PATH) || std::filesystem::file_size(SHADER_CACHE_REGISTRY_PATH) == 0) {
+    if (!std::filesystem::exists(SHADER_CACHE_REGISTRY_PATH) ||
+        std::filesystem::file_size(SHADER_CACHE_REGISTRY_PATH) == 0) {
         return;
     }
     std::ifstream registry_file(SHADER_CACHE_REGISTRY_PATH, std::ios::binary);
@@ -284,8 +276,7 @@ void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv)
         auto& entry = shader_cache[shader_id];
         spv = entry.first;
         resources = entry.second;
-    }
-    else {
+    } else {
         std::ifstream blob_file(SHADER_CACHE_BLOB_PATH, std::ios::binary);
         blob_file.seekg(shader_registry[shader_id], std::ios::beg);
         cereal::BinaryInputArchive ar(blob_file);

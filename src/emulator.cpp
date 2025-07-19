@@ -266,7 +266,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         LOG_INFO(Loader, "Created shader cache directory: {}", SHADER_CACHE_DIR.string());
     }
     ShaderCache::InitializeShaderCache();
-    LOG_INFO(Loader, "{} shaders in cache {}", ShaderCache::shader_registry.size(), Config::getShaderCachePreloadEnabled() != 0 ? "(preloaded) " : "");
+    LOG_INFO(Loader, "{} shaders in cache {}", ShaderCache::shader_registry.size(),
+             Config::getShaderCachePreloadEnabled() != 0 ? "(preloaded) " : "");
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

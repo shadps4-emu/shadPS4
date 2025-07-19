@@ -113,6 +113,7 @@ static constexpr u64 total_entries = 55;
 int getVolumeSlider() {
     return volumeSlider;
 }
+
 bool allowHDR() {
     return isHDRAllowed;
 }
@@ -682,7 +683,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(gpu, "directMemoryAccess", directMemoryAccessEnabled);
         shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", shouldDumpShaders);
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
-        shaderCachePreloadEnabled = toml::find_or<bool>(gpu, "shaderCachePreload", shaderCachePreloadEnabled);
+        shaderCachePreloadEnabled =
+            toml::find_or<bool>(gpu, "shaderCachePreload", shaderCachePreloadEnabled);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
@@ -1065,6 +1067,7 @@ analog_deadzone = rightjoystick, 2, 127
 override_controller_color = false, 0, 0, 255
 )";
 }
+
 std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again

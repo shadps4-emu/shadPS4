@@ -4,13 +4,12 @@
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/map.hpp>
+#include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
-#include "common/serialization.h"
-#include "shader_recompiler/info.h"
 
+#include "common/serialization.h"
 #include "shader_recompiler/info.h"
 
 namespace cereal {

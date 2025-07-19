@@ -82,7 +82,8 @@ private:
                                                    std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    std::span<const u32> code, size_t perm_idx,
-                                   Shader::Backend::Bindings& binding, Shader::StageSpecialization spec);
+                                   Shader::Backend::Bindings& binding,
+                                   Shader::StageSpecialization spec);
     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
 
 private:
