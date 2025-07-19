@@ -260,7 +260,6 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
-include_directories(Resources)
 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
