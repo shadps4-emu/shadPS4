@@ -281,8 +281,9 @@ void InitializeShaderCache() {
 void GetShader(std::string shader_id, Shader::Info& info, std::vector<u32>& spv) {
     std::string resources;
     if (Config::getShaderCachePreloadEnabled()) {
-        auto& [spv_cached, resources] = shader_cache[shader_id];
-        spv = spv_cached;
+        auto& entry = shader_cache[shader_id];
+        spv = entry.first;
+        resources = entry.second;
     }
     else {
         std::ifstream blob_file(SHADER_CACHE_BLOB_PATH, std::ios::binary);
