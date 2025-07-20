@@ -93,6 +93,8 @@ struct ImageResource {
 using ImageResourceList = boost::container::small_vector<ImageResource, NumImages>;
 
 struct SamplerResource {
+    SamplerResource() = default;
+
     std::variant<u32, AmdGpu::Sampler> sampler;
     u32 associated_image : 4;
     u32 disable_aniso : 1;

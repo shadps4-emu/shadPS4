@@ -106,3 +106,6 @@
 [submodule "externals/libusb"]
 	path = externals/libusb
 	url = https://github.com/libusb/libusb-cmake.git
+[submodule "externals/cereal"]
+	path = externals/cereal
+	url = https://github.com/USCiLab/cereal
