@@ -277,11 +277,11 @@ int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags)
     return -1;
 }
 
-int PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags) {
+ssize_t PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags) {
     return sys_recvfrom(s, buf, len, flags, nullptr, 0);
 }
 
-int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+ssize_t PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen) {
     // LOG_INFO(Lib_Net, "s = {}, buf = {:#x}, len = {}, flags = {:#x}", s,
     // reinterpret_cast<u64>(buf), len, flags);
@@ -302,7 +302,7 @@ int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
     // LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
-int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
+ssize_t PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }

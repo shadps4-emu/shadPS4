@@ -26,8 +26,8 @@ int PS4_SYSV_ABI sys_send(OrbisNetId s, const void* buf, u64 len, int flags);
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
-int PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags);
-int PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+ssize_t PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags);
+ssize_t PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen);
-int PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags);
+ssize_t PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags);
 } // namespace Libraries::Net
