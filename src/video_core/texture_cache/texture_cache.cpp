@@ -605,28 +605,27 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const auto& mip = image.info.mips_layout[m];
+        const auto [mip_size, mip_pitch, mip_height, mip_offset] = image.info.mips_layout[m];
 
         // Protect GPU modified resources from accidental CPU reuploads.
         if (is_gpu_modified && !is_gpu_dirty) {
             const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-            const u64 hash = XXH3_64bits(addr + mip.offset, mip.size);
+            const u64 hash = XXH3_64bits(addr + mip_offset, mip_size);
             if (image.mip_hashes[m] == hash) {
                 continue;
             }
             image.mip_hashes[m] = hash;
         }
 
-        auto mip_pitch = static_cast<u32>(mip.pitch);
-        auto mip_height = static_cast<u32>(mip.height);
-
-        auto image_extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
-        auto image_extent_height = mip_height ? std::min(mip_height, height) : height;
+        const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
+        const u32 height_aligned =
+            mip_height && image.info.IsTiled() ? std::max(mip_height, 8U) : mip_height;
 
         image_copy.push_back({
-            .bufferOffset = mip.offset,
+            .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
-            .bufferImageHeight = mip_height,
+            .bufferImageHeight = height_aligned,
             .imageSubresource{
                 .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
@@ -634,7 +633,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
                 .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {image_extent_width, image_extent_height, depth},
+            .imageExtent = {extent_width, extent_height, depth},
         });
     }
 

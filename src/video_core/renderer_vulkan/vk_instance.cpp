@@ -669,6 +669,12 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
             if (IsFormatSupported(vk::Format::eD32SfloatS8Uint, flags)) {
                 return vk::Format::eD32SfloatS8Uint;
             }
+            break;
+        case vk::Format::eR8Srgb:
+            if (IsFormatSupported(vk::Format::eR8Unorm, flags)) {
+                return vk::Format::eR8Unorm;
+            }
+            break;
         default:
             break;
         }
