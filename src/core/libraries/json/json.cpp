@@ -64,15 +64,15 @@ s32 PS4_SYSV_ABI Json::Value::referValue(
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullbool() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullbool() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullreal() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullreal() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
 s32 PS4_SYSV_ABI Json::Value::referObject() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
@@ -84,10 +84,10 @@ s32 PS4_SYSV_ABI Json::Value::referString() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullarray() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullarray() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
 s32 PS4_SYSV_ABI Json::Value::referBoolean() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
@@ -99,30 +99,30 @@ s32 PS4_SYSV_ABI Json::Value::referInteger() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullobject() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullobject() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullstring() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullstring() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
 s32 PS4_SYSV_ABI Json::Value::referUInteger() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Json::Value::s_nullinteger() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nullinteger() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
-s32 PS4_SYSV_ABI Json::Value::s_nulluinteger() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
+// s32 PS4_SYSV_ABI Json::Value::s_nulluinteger() {
+//     LOG_ERROR(Lib_Json, "(STUBBED) called");
+//     return ORBIS_OK;
+// }
 
 s32 PS4_SYSV_ABI Json::Value::serialize_internal(
     std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,

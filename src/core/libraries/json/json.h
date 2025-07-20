@@ -82,13 +82,13 @@ public:
     s32 referArray();
     s32 referReal();
 
-    s32 s_nullbool();
-    s32 s_nullreal();
-    s32 s_nullarray();
-    s32 s_nullobject();
-    s32 s_nullinteger();
-    s32 s_nulluinteger();
-    s32 s_nullstring();
+    s32 s_nullbool;
+    s32 s_nullreal;
+    s32 s_nullarray;
+    s32 s_nullobject;
+    s32 s_nullinteger;
+    s32 s_nulluinteger;
+    s32 s_nullstring;
 
     s32 serialize_internal(
         std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
