@@ -15,9 +15,9 @@ class SymbolsResolver;
 
 namespace Libraries::Json { // sce::Json
 
-s32 PS4_SYSV_ABI Json::s_initparam();
-s32 PS4_SYSV_ABI Json::Malloc(unsigned long);
-s32 PS4_SYSV_ABI Json::Free(void*);
+s32 PS4_SYSV_ABI s_initparam();
+s32 PS4_SYSV_ABI Malloc(unsigned long);
+s32 PS4_SYSV_ABI Free(void*);
 
 struct InitParameter {
     // todo
@@ -73,7 +73,6 @@ public:
 
     s32 referValue(unsigned long);
     s32 referValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>> const&);
-    s32 referValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>> const&);
 
     s32 referObject();
     s32 referString();
@@ -96,6 +95,10 @@ public:
         int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&, void*),
         void*, Json::Value*);
     s32 serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&);
+    s32 serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
+                  int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
+                          void*),
+                  void*);
 
     s32 setNullAccessCallBack(Json::Value const& (*)(Json::ValueType, Json::Value const*, void*),
                               void*);
@@ -118,11 +121,6 @@ public:
     s32 swap(Json::Value&);
     s32 clear();
 
-    s32 serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&);
-    s32 serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
-                  int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
-                          void*),
-                  void*);
     s32 setParent(Json::Value const*);
     s32 operator=(Json::Value const&);
 
