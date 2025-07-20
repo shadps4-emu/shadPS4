@@ -6,655 +6,655 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/json/json.h"
 
-namespace Libraries::Json {
+namespace Libraries::Json { // sce::Json
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11Initializer10initializeEPKNS0_13InitParameterE() {
+s32 PS4_SYSV_ABI Json::Initializer::initialize(Json::InitParameter const*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11Initializer9terminateEv() {
+s32 PS4_SYSV_ABI Json::Initializer::terminate()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11InitializerC1Ev() {
+s32 PS4_SYSV_ABI Json::Initializer::Initializer()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11InitializerC2Ev() {
+s32 PS4_SYSV_ABI Json::Initializer::Initializer()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11InitializerD1Ev() {
+s32 PS4_SYSV_ABI Json::Initializer::~Initializer()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11InitializerD2Ev() {
+s32 PS4_SYSV_ABI Json::Initializer::~Initializer()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json11s_initparamE() {
+s32 PS4_SYSV_ABI Json::s_initparam() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json4FreeEPv() {
+s32 PS4_SYSV_ABI Json::Free(void*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value10referArrayEv() {
+s32 PS4_SYSV_ABI Json::Value::referArray()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value10referValueEm() {
+s32 PS4_SYSV_ABI Json::Value::referValue(unsigned long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value10referValueERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::referValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value10s_nullboolE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullbool() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value10s_nullrealE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullreal() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value11referObjectEv() {
+s32 PS4_SYSV_ABI Json::Value::referObject()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value11referStringEv() {
+s32 PS4_SYSV_ABI Json::Value::referString()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value11s_nullarrayE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullarray() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value12referBooleanEv() {
+s32 PS4_SYSV_ABI Json::Value::referBoolean()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value12referIntegerEv() {
+s32 PS4_SYSV_ABI Json::Value::referInteger()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value12s_nullobjectE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullobject() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value12s_nullstringE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullstring() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value13referUIntegerEv() {
+s32 PS4_SYSV_ABI Json::Value::referUInteger()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value13s_nullintegerE() {
+s32 PS4_SYSV_ABI Json::Value::s_nullinteger() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value14s_nulluintegerE() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI
-_ZN3sce4Json5Value18serialize_internalERSbIcSt11char_traitsIcENS0_8StlAllocIcEEEPFiS7_PvES8_PS1_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setEb() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setEd() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setEl() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setEm() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setENS0_9ValueTypeE() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setERKS1_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::s_nulluinteger() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
-_ZN3sce4Json5Value3setERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE() {
+Json::Value::serialize_internal(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, void*), void*, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value3setERKSt4listIS1_NS0_8StlAllocIS1_EEE() {
+s32 PS4_SYSV_ABI Json::Value::setNullAccessCallBack(Json::Value const& (*)(Json::ValueType, Json::Value const*, void*), void*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value4swapERS1_() {
+s32 PS4_SYSV_ABI Json::Value::set(bool)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value5clearEv() {
+s32 PS4_SYSV_ABI Json::Value::set(double)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value9referRealEv() {
+s32 PS4_SYSV_ABI Json::Value::set(long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value9serializeERSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::set(unsigned long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI
-_ZN3sce4Json5Value9serializeERSbIcSt11char_traitsIcENS0_8StlAllocIcEEEPFiS7_PvES8_() {
+s32 PS4_SYSV_ABI Json::Value::set(Json::ValueType)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5Value9setParentEPKS1_() {
+s32 PS4_SYSV_ABI Json::Value::set(Json::Value const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueaSERKS1_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1Eb() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1Ed() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1El() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1Em() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1ENS0_9ValueTypeE() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1ERKS1_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1ERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::set(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
-_ZN3sce4Json5ValueC1ERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE() {
+Json::Value::set(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1ERKSt4listIS1_NS0_8StlAllocIS1_EEE() {
+s32 PS4_SYSV_ABI Json::Value::set(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC1Ev() {
+s32 PS4_SYSV_ABI Json::Value::swap(Json::Value&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2Eb() {
+s32 PS4_SYSV_ABI Json::Value::clear()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2Ed() {
+s32 PS4_SYSV_ABI Json::Value::referReal()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2El() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2Em() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2ENS0_9ValueTypeE() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2ERKS1_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2ERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
-_ZN3sce4Json5ValueC2ERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE() {
+Json::Value::serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, void*), void*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2ERKSt4listIS1_NS0_8StlAllocIS1_EEE() {
+s32 PS4_SYSV_ABI Json::Value::setParent(Json::Value const*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueC2Ev() {
+s32 PS4_SYSV_ABI Json::Value::operator=(Json::Value const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueD1Ev() {
+s32 PS4_SYSV_ABI Json::Value::Value(bool)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json5ValueD2Ev() {
+s32 PS4_SYSV_ABI Json::Value::Value(double)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6MallocEm() {
+s32 PS4_SYSV_ABI Json::Value::Value(long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser10parseArrayERNS0_5ValueERNS0_11InputStreamEPS2_() {
+s32 PS4_SYSV_ABI Json::Value::Value(unsigned long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser10parseValueERNS0_5ValueERNS0_11InputStreamEPS2_() {
+s32 PS4_SYSV_ABI Json::Value::Value(Json::ValueType)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser11parseNumberERNS0_5ValueERNS0_11InputStreamEPS2_() {
+s32 PS4_SYSV_ABI Json::Value::Value(Json::Value const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser11parseObjectERNS0_5ValueERNS0_11InputStreamEPS2_() {
-    LOG_ERROR(Lib_Json, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser11parseStringERNS0_5ValueERNS0_11InputStreamEPS2_() {
+s32 PS4_SYSV_ABI Json::Value::Value(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
-_ZN3sce4Json6Parser11parseStringERSbIcSt11char_traitsIcENS0_8StlAllocIcEEERNS0_11InputStreamE() {
+Json::Value::Value(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser12parseQuadHexERNS0_11InputStreamE() {
+s32 PS4_SYSV_ABI Json::Value::Value(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value()() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(bool)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(double)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(long)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(unsigned long)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(Json::ValueType)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(Json::Value const&)() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::Value(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
-_ZN3sce4Json6Parser14parseCodePointERSbIcSt11char_traitsIcENS0_8StlAllocIcEEERNS0_11InputStreamE() {
+Json::Value::Value(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser5parseERNS0_5ValueEPFiRcPvES5_() {
+s32 PS4_SYSV_ABI Json::Value::Value(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser5parseERNS0_5ValueEPKc() {
+s32 PS4_SYSV_ABI Json::Value::Value()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json6Parser5parseERNS0_5ValueEPKcm() {
+s32 PS4_SYSV_ABI Json::Value::~Value()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json9RootParamC1Ev() {
+s32 PS4_SYSV_ABI Json::Value::~Value()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json9RootParamC2Ev() {
+s32 PS4_SYSV_ABI Json::Malloc(unsigned long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json9RootParamD1Ev() {
+s32 PS4_SYSV_ABI Json::Parser::parseArray(Json::Value&, Json::InputStream&, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZN3sce4Json9RootParamD2Ev() {
+s32 PS4_SYSV_ABI Json::Parser::parseValue(Json::Value&, Json::InputStream&, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value10getBooleanEv() {
+s32 PS4_SYSV_ABI Json::Parser::parseNumber(Json::Value&, Json::InputStream&, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value10getIntegerEv() {
+s32 PS4_SYSV_ABI Json::Parser::parseObject(Json::Value&, Json::InputStream&, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value11getUIntegerEv() {
+s32 PS4_SYSV_ABI Json::Parser::parseString(Json::Value&, Json::InputStream&, Json::Value*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value5countEv() {
+s32 PS4_SYSV_ABI
+Json::Parser::parseString(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, Json::InputStream&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value7getRealEv() {
+s32 PS4_SYSV_ABI Json::Parser::parseQuadHex(Json::InputStream&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value7getRootEv() {
+s32 PS4_SYSV_ABI
+Json::Parser::parseCodePoint(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, Json::InputStream&)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value7getTypeEv() {
+s32 PS4_SYSV_ABI Json::Parser::parse(Json::Value&, int (*)(char&, void*), void*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value8getArrayEv() {
+s32 PS4_SYSV_ABI Json::Parser::parse(Json::Value&, char const*)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value8getValueEm() {
+s32 PS4_SYSV_ABI Json::Parser::parse(Json::Value&, char const*, unsigned long)() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value8getValueERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::RootParam::RootParam()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value8toStringERSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::RootParam::RootParam()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value9getObjectEv() {
+s32 PS4_SYSV_ABI Json::RootParam::~RootParam()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5Value9getStringEv() {
+s32 PS4_SYSV_ABI Json::RootParam::~RootParam()() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5ValuecvbEv() {
+s32 PS4_SYSV_ABI Json::Value::getBoolean() const() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5ValueixEm() {
+s32 PS4_SYSV_ABI Json::Value::getInteger() const() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5ValueixEPKc() {
+s32 PS4_SYSV_ABI Json::Value::getUInteger() const() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI _ZNK3sce4Json5ValueixERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE() {
+s32 PS4_SYSV_ABI Json::Value::count() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getReal() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getRoot() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getType() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getArray() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getValue(unsigned long) const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&) const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::toString(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&) const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getObject() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::getString() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::operator bool() const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::operator[](unsigned long) const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::operator[](char const*) const() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Json::Value::operator[](std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&) const() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Cxwy7wHq4J0", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11Initializer10initializeEPKNS0_13InitParameterE);
+                 Json::Initializer::initialize(Json::InitParameter const*));
     LIB_FUNCTION("PR5k1penBLM", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11Initializer9terminateEv);
+                 Json::Initializer::terminate());
     LIB_FUNCTION("cK6bYHf-Q5E", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11InitializerC1Ev);
+                 Json::Initializer::Initializer());
     LIB_FUNCTION("6qFqND4iwPA", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11InitializerC2Ev);
+                 Json::Initializer::Initializer());
     LIB_FUNCTION("RujUxbr3haM", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11InitializerD1Ev);
+                 Json::Initializer::~Initializer());
     LIB_FUNCTION("qQZGdYkEytk", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json11InitializerD2Ev);
-    LIB_FUNCTION("7Xc95EMbk9I", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json11s_initparamE);
-    LIB_FUNCTION("bnk+edDbqMk", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json4FreeEPv);
+                 Json::Initializer::~Initializer());
+    LIB_FUNCTION("7Xc95EMbk9I", "libSceJson", 1, "libSceJson", 1, 1, Json::s_initparam);
+    LIB_FUNCTION("bnk+edDbqMk", "libSceJson", 1, "libSceJson", 1, 1, Json::Free(void*));
     LIB_FUNCTION("nM5XqdeXFPw", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value10referArrayEv);
+                 Json::Value::referArray());
     LIB_FUNCTION("gLzCc67aTbw", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value10referValueEm);
+                 Json::Value::referValue(unsigned long));
     LIB_FUNCTION("Z3mrBp7y1Lc", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value10referValueERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::referValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&));
     LIB_FUNCTION("bUw2Go-rxtE", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value10s_nullboolE);
+                 Json::Value::s_nullbool);
     LIB_FUNCTION("GpEG1IcP86s", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value10s_nullrealE);
+                 Json::Value::s_nullreal);
     LIB_FUNCTION("-NxEk7XLkDY", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value11referObjectEv);
+                 Json::Value::referObject());
     LIB_FUNCTION("m5J28iw-QPs", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value11referStringEv);
+                 Json::Value::referString());
     LIB_FUNCTION("zwDiN3-CRTA", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value11s_nullarrayE);
+                 Json::Value::s_nullarray);
     LIB_FUNCTION("QxjfcfBhEdc", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value12referBooleanEv);
+                 Json::Value::referBoolean());
     LIB_FUNCTION("R0ac5QOdlpo", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value12referIntegerEv);
+                 Json::Value::referInteger());
     LIB_FUNCTION("3YODFwSqgtc", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value12s_nullobjectE);
+                 Json::Value::s_nullobject);
     LIB_FUNCTION("24kDIV0aDzs", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value12s_nullstringE);
+                 Json::Value::s_nullstring);
     LIB_FUNCTION("Nx5tez4siL4", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value13referUIntegerEv);
+                 Json::Value::referUInteger());
     LIB_FUNCTION("dJSD90mnj1w", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value13s_nullintegerE);
+                 Json::Value::s_nullinteger);
     LIB_FUNCTION("xxBnIBiUVzY", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value14s_nulluintegerE);
+                 Json::Value::s_nulluinteger);
     LIB_FUNCTION("bkVdWPESKhQ", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value18serialize_internalERSbIcSt11char_traitsIcENS0_8StlAllocIcEEEPFiS7_PvES8_PS1_);
+                 Json::Value::serialize_internal(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, void*), void*, Json::Value*));
     LIB_FUNCTION("Xbl-LYVFNEE", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value21setNullAccessCallBackEPFRKS1_NS0_9ValueTypeEPS2_PvES6_);
-    LIB_FUNCTION("5yHuiWXo2gg", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value3setEb);
-    LIB_FUNCTION("BSmWDIkV4w4", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value3setEd);
-    LIB_FUNCTION("QxVVYhP-mvg", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value3setEl);
-    LIB_FUNCTION("SIe1ZmW7e7s", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value3setEm);
+                 Json::Value::setNullAccessCallBack(Json::Value const& (*)(Json::ValueType, Json::Value const*, void*), void*));
+    LIB_FUNCTION("5yHuiWXo2gg", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::set(bool));
+    LIB_FUNCTION("BSmWDIkV4w4", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::set(double));
+    LIB_FUNCTION("QxVVYhP-mvg", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::set(long));
+    LIB_FUNCTION("SIe1ZmW7e7s", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::set(unsigned long));
     LIB_FUNCTION("IKQimvG9Wqs", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value3setENS0_9ValueTypeE);
-    LIB_FUNCTION("XL8+BUqjB1w", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value3setERKS1_);
+                 Json::Value::set(Json::ValueType));
+    LIB_FUNCTION("XL8+BUqjB1w", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::set(Json::Value const&));
     LIB_FUNCTION("pcLFw6F9XHo", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value3setERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::set(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&));
     LIB_FUNCTION("kLzq1bVqeWg", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value3setERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE);
+                 Json::Value::set(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&));
     LIB_FUNCTION("I8H3EdOu8cw", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value3setERKSt4listIS1_NS0_8StlAllocIS1_EEE);
-    LIB_FUNCTION("9PqrCLfKZZI", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value4swapERS1_);
-    LIB_FUNCTION("FIjXN2TkuTs", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5Value5clearEv);
+                 Json::Value::set(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&));
+    LIB_FUNCTION("9PqrCLfKZZI", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::swap(Json::Value&));
+    LIB_FUNCTION("FIjXN2TkuTs", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::clear());
     LIB_FUNCTION("t7UEJrhojhk", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value9referRealEv);
+                 Json::Value::referReal());
     LIB_FUNCTION("GAccTNWvZ8o", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value9serializeERSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&));
     LIB_FUNCTION("HlDiu7tCnh8", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value9serializeERSbIcSt11char_traitsIcENS0_8StlAllocIcEEEPFiS7_PvES8_);
+                 Json::Value::serialize(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, int (*)(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, void*), void*));
     LIB_FUNCTION("M-tWavI4cgg", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5Value9setParentEPKS1_);
-    LIB_FUNCTION("4zrm6VrgIAw", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueaSERKS1_);
-    LIB_FUNCTION("UeuWT+yNdCQ", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1Eb);
-    LIB_FUNCTION("sOmU4vnx3s0", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1Ed);
-    LIB_FUNCTION("0lLK8+kDqmE", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1El);
-    LIB_FUNCTION("x4AUdbhpRB0", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1Em);
+                 Json::Value::setParent(Json::Value const*));
+    LIB_FUNCTION("4zrm6VrgIAw", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::operator=(Json::Value const&));
+    LIB_FUNCTION("UeuWT+yNdCQ", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(bool));
+    LIB_FUNCTION("sOmU4vnx3s0", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(double));
+    LIB_FUNCTION("0lLK8+kDqmE", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(long));
+    LIB_FUNCTION("x4AUdbhpRB0", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(unsigned long));
     LIB_FUNCTION("CbrT3dwDILo", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC1ENS0_9ValueTypeE);
-    LIB_FUNCTION("fSb2oQTNrgA", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1ERKS1_);
+                 Json::Value::Value(Json::ValueType));
+    LIB_FUNCTION("fSb2oQTNrgA", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(Json::Value const&));
     LIB_FUNCTION("geskGcdamVE", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC1ERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::Value(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&));
     LIB_FUNCTION("xxZjYrZssiI", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC1ERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE);
+                 Json::Value::Value(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&));
     LIB_FUNCTION("JGF+59cTHl0", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC1ERKSt4listIS1_NS0_8StlAllocIS1_EEE);
-    LIB_FUNCTION("qBMjqyBn3OM", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC1Ev);
-    LIB_FUNCTION("OK4Ot0ue7J0", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2Eb);
-    LIB_FUNCTION("23nm4oXHlfI", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2Ed);
-    LIB_FUNCTION("EjxUpzR2Yx8", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2El);
-    LIB_FUNCTION("cqucBPSeVDA", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2Em);
+                 Json::Value::Value(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&));
+    LIB_FUNCTION("qBMjqyBn3OM", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value());
+    LIB_FUNCTION("OK4Ot0ue7J0", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(bool));
+    LIB_FUNCTION("23nm4oXHlfI", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(double));
+    LIB_FUNCTION("EjxUpzR2Yx8", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(long));
+    LIB_FUNCTION("cqucBPSeVDA", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(unsigned long));
     LIB_FUNCTION("PWm9MyJJVqU", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC2ENS0_9ValueTypeE);
-    LIB_FUNCTION("TZyuFeGuw9Y", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2ERKS1_);
+                 Json::Value::Value(Json::ValueType));
+    LIB_FUNCTION("TZyuFeGuw9Y", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value(Json::Value const&));
     LIB_FUNCTION("QaLXUjWq5uw", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC2ERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::Value(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&));
     LIB_FUNCTION("iATcGLFMLw4", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC2ERKSt3mapISbIcSt11char_traitsIcENS0_8StlAllocIcEEES1_St4lessIS7_ENS5_ISt4pairIS7_S1_EEEE);
+                 Json::Value::Value(std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value, std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > >, Json::StlAlloc<std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >, Json::Value> > > const&));
     LIB_FUNCTION("qwP9U9HsZ6k", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json5ValueC2ERKSt4listIS1_NS0_8StlAllocIS1_EEE);
-    LIB_FUNCTION("-wa17B7TGnw", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueC2Ev);
-    LIB_FUNCTION("WTtYf+cNnXI", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueD1Ev);
-    LIB_FUNCTION("0eUrW9JAxM0", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json5ValueD2Ev);
-    LIB_FUNCTION("Xzy0onDzSAc", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json6MallocEm);
+                 Json::Value::Value(std::list<Json::Value, Json::StlAlloc<Json::Value> > const&));
+    LIB_FUNCTION("-wa17B7TGnw", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::Value());
+    LIB_FUNCTION("WTtYf+cNnXI", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::~Value());
+    LIB_FUNCTION("0eUrW9JAxM0", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::~Value());
+    LIB_FUNCTION("Xzy0onDzSAc", "libSceJson", 1, "libSceJson", 1, 1, Json::Malloc(unsigned long));
     LIB_FUNCTION("cYDA0oEX5Y4", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser10parseArrayERNS0_5ValueERNS0_11InputStreamEPS2_);
+                 Json::Parser::parseArray(Json::Value&, Json::InputStream&, Json::Value*));
     LIB_FUNCTION("vR3+bfUo-Qo", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser10parseValueERNS0_5ValueERNS0_11InputStreamEPS2_);
+                 Json::Parser::parseValue(Json::Value&, Json::InputStream&, Json::Value*));
     LIB_FUNCTION("PpR7I7RCsY0", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser11parseNumberERNS0_5ValueERNS0_11InputStreamEPS2_);
+                 Json::Parser::parseNumber(Json::Value&, Json::InputStream&, Json::Value*));
     LIB_FUNCTION("HwBrtLl-5IY", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser11parseObjectERNS0_5ValueERNS0_11InputStreamEPS2_);
+                 Json::Parser::parseObject(Json::Value&, Json::InputStream&, Json::Value*));
     LIB_FUNCTION("bglw6PJL4nw", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser11parseStringERNS0_5ValueERNS0_11InputStreamEPS2_);
+                 Json::Parser::parseString(Json::Value&, Json::InputStream&, Json::Value*));
     LIB_FUNCTION("QXUHGgXn4JA", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser11parseStringERSbIcSt11char_traitsIcENS0_8StlAllocIcEEERNS0_11InputStreamE);
+                 Json::Parser::parseString(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, Json::InputStream&));
     LIB_FUNCTION("hjDFaEWCV20", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser12parseQuadHexERNS0_11InputStreamE);
+                 Json::Parser::parseQuadHex(Json::InputStream&));
     LIB_FUNCTION("6mTvUfQJa1I", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser14parseCodePointERSbIcSt11char_traitsIcENS0_8StlAllocIcEEERNS0_11InputStreamE);
+                 Json::Parser::parseCodePoint(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&, Json::InputStream&));
     LIB_FUNCTION("itqj2YmuAa8", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser5parseERNS0_5ValueEPFiRcPvES5_);
+                 Json::Parser::parse(Json::Value&, int (*)(char&, void*), void*));
     LIB_FUNCTION("LB3jxppxyKU", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser5parseERNS0_5ValueEPKc);
+                 Json::Parser::parse(Json::Value&, char const*));
     LIB_FUNCTION("S5JxQnoGF3E", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZN3sce4Json6Parser5parseERNS0_5ValueEPKcm);
-    LIB_FUNCTION("Xkq8nvo4tKg", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json9RootParamC1Ev);
-    LIB_FUNCTION("qDu+t28zExY", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json9RootParamC2Ev);
-    LIB_FUNCTION("vOTH9Iec7Yc", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json9RootParamD1Ev);
-    LIB_FUNCTION("gyz287utQ6c", "libSceJson", 1, "libSceJson", 1, 1, _ZN3sce4Json9RootParamD2Ev);
+                 Json::Parser::parse(Json::Value&, char const*, unsigned long));
+    LIB_FUNCTION("Xkq8nvo4tKg", "libSceJson", 1, "libSceJson", 1, 1, Json::RootParam::RootParam());
+    LIB_FUNCTION("qDu+t28zExY", "libSceJson", 1, "libSceJson", 1, 1, Json::RootParam::RootParam());
+    LIB_FUNCTION("vOTH9Iec7Yc", "libSceJson", 1, "libSceJson", 1, 1, Json::RootParam::~RootParam());
+    LIB_FUNCTION("gyz287utQ6c", "libSceJson", 1, "libSceJson", 1, 1, Json::RootParam::~RootParam());
     LIB_FUNCTION("zTwZdI8AZ5Y", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value10getBooleanEv);
+                 Json::Value::getBoolean() const);
     LIB_FUNCTION("DIxvoy7Ngvk", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value10getIntegerEv);
+                 Json::Value::getInteger() const);
     LIB_FUNCTION("sn4HNCtNRzY", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value11getUIntegerEv);
-    LIB_FUNCTION("RBw+4NukeGQ", "libSceJson", 1, "libSceJson", 1, 1, _ZNK3sce4Json5Value5countEv);
+                 Json::Value::getUInteger() const);
+    LIB_FUNCTION("RBw+4NukeGQ", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::count() const);
     LIB_FUNCTION("3qrge7L-AU4", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value7getRealEv);
+                 Json::Value::getReal() const);
     LIB_FUNCTION("47s0O9-6E-0", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value7getRootEv);
+                 Json::Value::getRoot() const);
     LIB_FUNCTION("SHtAad20YYM", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value7getTypeEv);
+                 Json::Value::getType() const);
     LIB_FUNCTION("ONT8As5R1ug", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value8getArrayEv);
+                 Json::Value::getArray() const);
     LIB_FUNCTION("0YqYAoO-+Uo", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value8getValueEm);
+                 Json::Value::getValue(unsigned long) const);
     LIB_FUNCTION("1sKGLPtkdow", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value8getValueERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::getValue(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&) const);
     LIB_FUNCTION("RQpBshscViM", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value8toStringERSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::toString(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> >&) const);
     LIB_FUNCTION("IlsmvBtMkak", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value9getObjectEv);
+                 Json::Value::getObject() const);
     LIB_FUNCTION("epJ6x2LV0kU", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5Value9getStringEv);
-    LIB_FUNCTION("a-aMMUXqrN0", "libSceJson", 1, "libSceJson", 1, 1, _ZNK3sce4Json5ValuecvbEv);
-    LIB_FUNCTION("XlWbvieLj2M", "libSceJson", 1, "libSceJson", 1, 1, _ZNK3sce4Json5ValueixEm);
-    LIB_FUNCTION("HwDt5lD9Bfo", "libSceJson", 1, "libSceJson", 1, 1, _ZNK3sce4Json5ValueixEPKc);
+                 Json::Value::getString() const);
+    LIB_FUNCTION("a-aMMUXqrN0", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::operator bool() const);
+    LIB_FUNCTION("XlWbvieLj2M", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::operator[](unsigned long) const);
+    LIB_FUNCTION("HwDt5lD9Bfo", "libSceJson", 1, "libSceJson", 1, 1, Json::Value::operator[](char const*) const);
     LIB_FUNCTION("F-bQmUqmTpI", "libSceJson", 1, "libSceJson", 1, 1,
-                 _ZNK3sce4Json5ValueixERKSbIcSt11char_traitsIcENS0_8StlAllocIcEEE);
+                 Json::Value::operator[](std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char> > const&) const);
 };
 
 } // namespace Libraries::Json
