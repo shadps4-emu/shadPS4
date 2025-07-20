@@ -91,7 +91,7 @@ s32 ErrnoToSceKernelError(s32 error) {
     return error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-s32 sceKernelError(int posix_error) {
+s32 PS4_SYSV_ABI sceKernelError(s32 posix_error) {
     if (posix_error == 0) {
         return 0;
     }
