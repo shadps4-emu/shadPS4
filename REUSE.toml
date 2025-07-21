@@ -73,6 +73,7 @@ path = [
     "src/images/shadps4.svg",
     "src/images/website.svg",
     "src/images/youtube.svg",
+    "src/images/trophy.wav",
     "src/shadps4.qrc",
     "src/shadps4.rc",
     "src/qt_gui/translations/update_translation.sh",
