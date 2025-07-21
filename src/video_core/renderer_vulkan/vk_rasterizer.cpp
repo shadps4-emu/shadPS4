@@ -1211,11 +1211,13 @@ void Rasterizer::UpdateDepthStencilState() const {
         } : front_ops;
         dynamic_state.SetStencilOps(front_ops, back_ops);
 
+        const bool stencil_clear = regs.depth_render_control.stencil_clear_enable;
         const auto front = regs.stencil_ref_front;
         const auto back =
             regs.depth_control.backface_enable ? regs.stencil_ref_back : regs.stencil_ref_front;
         dynamic_state.SetStencilReferences(front.stencil_test_val, back.stencil_test_val);
-        dynamic_state.SetStencilWriteMasks(front.stencil_write_mask, back.stencil_write_mask);
+        dynamic_state.SetStencilWriteMasks(!stencil_clear ? front.stencil_write_mask.Value() : 0U,
+                                           !stencil_clear ? back.stencil_write_mask.Value() : 0U);
         dynamic_state.SetStencilCompareMasks(front.stencil_mask, back.stencil_mask);
     }
 }

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
+#include <magic_enum/magic_enum.hpp>
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
@@ -10,8 +12,28 @@
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
+template <typename E>
+const std::underlying_type_t<E> generate_full_mask() {
+    static_assert(std::is_enum_v<E>, "E must be an enum type.");
+    static_assert(magic_enum::customize::enum_range<E>::is_flags,
+                  "E must be marked as is_flags = true.");
+
+    using U = std::underlying_type_t<E>;
+    const auto values = magic_enum::enum_values<E>();
+    U mask = 0;
+
+    // Use index-based loop for better constexpr compatibility
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        mask |= static_cast<U>(values[i]);
+    }
+
+    return mask;
+}
+
 enum class Error : u32 {
     OK = 0x0,
+
+    // ImeDialog library
     BUSY = 0x80bc0001,
     NOT_OPENED = 0x80bc0002,
     NO_MEMORY = 0x80bc0003,
@@ -46,6 +68,8 @@ enum class Error : u32 {
     INVALID_RESERVED = 0x80bc0032,
     INVALID_TIMING = 0x80bc0033,
     INTERNAL = 0x80bc00ff,
+
+    // Ime library
     DIALOG_INVALID_TITLE = 0x80bc0101,
     DIALOG_NOT_RUNNING = 0x80bc0105,
     DIALOG_NOT_FINISHED = 0x80bc0106,
@@ -67,9 +91,44 @@ enum class OrbisImeOption : u32 {
     DISABLE_POSITION_ADJUSTMENT = 2048,
     EXPANDED_PREEDIT_BUFFER = 4096,
     USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
-    USE_2K_COORDINATES = 16384,
+    USE_OVER_2K_COORDINATES = 16384,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption);
+template <>
+struct magic_enum::customize::enum_range<OrbisImeOption> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
+
+enum class OrbisImeExtOption : u32 {
+    DEFAULT = 0x00000000,
+    SET_PRIORITY = 0x00000002,
+    PRIORITY_FULL_WIDTH = 0x00000008,
+    PRIORITY_FIXED_PANEL = 0x00000010,
+    DISABLE_POINTER = 0x00000040,
+    ENABLE_ADDITIONAL_DICTIONARY = 0x00000080,
+    DISABLE_STARTUP_SE = 0x00000100,
+    DISABLE_LIST_FOR_EXT_KEYBOARD = 0x00000200,
+    HIDE_KEYPANEL_IF_EXT_KEYBOARD = 0x00000400,
+    INIT_EXT_KEYBOARD_MODE = 0x00000800,
+
+    ENABLE_ACCESSIBILITY = 0x00001000,                // ImeDialog unly
+    ADDITIONAL_DICTIONARY_PRIORITY_MODE = 0x00004000, // ImeDialog only
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeExtOption);
+
+constexpr u32 kValidImeExtOptionMask = static_cast<u32>(
+    OrbisImeExtOption::SET_PRIORITY | OrbisImeExtOption::PRIORITY_FULL_WIDTH |
+    OrbisImeExtOption::PRIORITY_FIXED_PANEL | OrbisImeExtOption::DISABLE_POINTER |
+    OrbisImeExtOption::ENABLE_ADDITIONAL_DICTIONARY | OrbisImeExtOption::DISABLE_STARTUP_SE |
+    OrbisImeExtOption::DISABLE_LIST_FOR_EXT_KEYBOARD |
+    OrbisImeExtOption::HIDE_KEYPANEL_IF_EXT_KEYBOARD | OrbisImeExtOption::INIT_EXT_KEYBOARD_MODE);
+
+template <>
+struct magic_enum::customize::enum_range<OrbisImeExtOption> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidImeDialogExtOptionMask = generate_full_mask<OrbisImeExtOption>();
 
 enum class OrbisImeLanguage : u64 {
     DANISH = 0x0000000000000001,
@@ -104,6 +163,112 @@ enum class OrbisImeLanguage : u64 {
     HUNGARIAN = 0x0000000100000000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeLanguage);
+
+template <>
+struct magic_enum::customize::enum_range<OrbisImeLanguage> {
+    static constexpr bool is_flags = true;
+};
+const u64 kValidOrbisImeLanguageMask = generate_full_mask<OrbisImeLanguage>();
+
+enum class OrbisImeDisableDevice : u32 {
+    DEFAULT = 0x00000000,
+    CONTROLLER = 0x00000001,
+    EXT_KEYBOARD = 0x00000002,
+    REMOTE_OSK = 0x00000004,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeDisableDevice);
+template <>
+struct magic_enum::customize::enum_range<OrbisImeDisableDevice> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidOrbisImeDisableDeviceMask = generate_full_mask<OrbisImeDisableDevice>();
+
+enum class OrbisImeInputMethodState : u32 {
+    PREEDIT = 0x01000000,
+    SELECTED = 0x02000000,
+    NATIVE = 0x04000000,
+    NATIVE2 = 0x08000000,
+    FULL_WIDTH = 0x10000000,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeInputMethodState);
+template <>
+struct magic_enum::customize::enum_range<OrbisImeInputMethodState> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidOrbisImeInputMethodStateMask = generate_full_mask<OrbisImeInputMethodState>();
+
+enum class OrbisImeInitExtKeyboardMode : u32 {
+    ISABLE_ARABIC_INDIC_NUMERALS = 0x00000001,
+    ENABLE_FORMAT_CHARACTERS = 0x00000002,
+    INPUT_METHOD_STATE_NATIVE = 0x04000000,
+    INPUT_METHOD_STATE_NATIVE2 = 0x08000000,
+    INPUT_METHOD_STATE_FULL_WIDTH = 0x10000000,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeInitExtKeyboardMode);
+template <>
+struct magic_enum::customize::enum_range<OrbisImeInitExtKeyboardMode> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidOrbisImeInitExtKeyboardModeMask = generate_full_mask<OrbisImeInitExtKeyboardMode>();
+
+enum class OrbisImeKeycodeState : u32 {
+    KEYCODE_VALID = 0x00000001,
+    CHARACTER_VALID = 0x00000002,
+    WITH_IME = 0x00000004,
+    FROM_OSK = 0x00000008,
+    FROM_OSK_SHORTCUT = 0x00000010,
+    FROM_IME_OPERATION = 0x00000020,
+    REPLACE_CHARACTER = 0x00000040,
+    CONTINUOUS_EVENT = 0x00000080,
+    MODIFIER_L_CTRL = 0x00000100,
+    MODIFIER_L_SHIFT = 0x00000200,
+    MODIFIER_L_ALT = 0x00000400,
+    MODIFIER_L_GUI = 0x00000800,
+    MODIFIER_R_CTRL = 0x00001000,
+    MODIFIER_R_SHIFT = 0x00002000,
+    MODIFIER_R_ALT = 0x00004000,
+    MODIFIER_R_GUI = 0x00008000,
+    LED_NUM_LOCK = 0x00010000,
+    LED_CAPS_LOCK = 0x00020000,
+    LED_SCROLL_LOCK = 0x00040000,
+    RESERVED1 = 0x00080000,
+    RESERVED2 = 0x00100000,
+    FROM_IME_INPUT = 0x00200000,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeycodeState);
+template <>
+struct magic_enum::customize::enum_range<OrbisImeKeycodeState> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidOrbisImeKeycodeStateMask = generate_full_mask<OrbisImeKeycodeState>();
+
+enum class OrbisImeKeyboardOption : u32 {
+    Default = 0,
+    Repeat = 1,
+    RepeatEachKey = 2,
+    AddOsk = 4,
+    EffectiveWithIme = 8,
+    DisableResume = 16,
+    DisableCapslockWithoutShift = 32,
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
+template <>
+struct magic_enum::customize::enum_range<OrbisImeKeyboardOption> {
+    static constexpr bool is_flags = true;
+};
+const u32 kValidOrbisImeKeyboardOptionMask = generate_full_mask<OrbisImeKeyboardOption>();
+
+enum class OrbisImeKeyboardMode : u32 {
+    Auto = 0,
+    Manual = 1,
+    Alphabet = 0,
+    Native = 2,
+    Part = 4,
+    Katakana = 8,
+    Hkana = 16,
+    ArabicIndicNumerals = 32,
+    DisableFormatCharacters = 64,
+};
 
 enum class OrbisImeType : u32 {
     Default = 0,
@@ -260,13 +425,13 @@ struct OrbisImeKeycode {
     char16_t character;
     u32 status;
     OrbisImeKeyboardType type;
-    s32 user_id; // Todo: switch to OrbisUserServiceUserId
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     u32 resource_id;
     Libraries::Rtc::OrbisRtcTick timestamp;
 };
 
 struct OrbisImeKeyboardResourceIdArray {
-    s32 user_id; // Todo: switch to OrbisUserServiceUserId
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     u32 resource_id[5];
 };
 
@@ -322,17 +487,6 @@ using OrbisImeTextFilter = PS4_SYSV_ABI int (*)(char16_t* outText, u32* outTextL
 
 using OrbisImeEventHandler = PS4_SYSV_ABI void (*)(void* arg, const OrbisImeEvent* e);
 
-enum class OrbisImeKeyboardOption : u32 {
-    Default = 0,
-    Repeat = 1,
-    RepeatEachKey = 2,
-    AddOsk = 4,
-    EffectiveWithIme = 8,
-    DisableResume = 16,
-    DisableCapslockWithoutShift = 32,
-};
-DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
-
 struct OrbisImeKeyboardParam {
     OrbisImeKeyboardOption option;
     s8 reserved1[4];
@@ -342,9 +496,9 @@ struct OrbisImeKeyboardParam {
 };
 
 struct OrbisImeParam {
-    s32 user_id; // Todo: switch to OrbisUserServiceUserId
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     OrbisImeType type;
-    u64 supported_languages; // OrbisImeLanguage flags
+    OrbisImeLanguage supported_languages;
     OrbisImeEnterLabel enter_label;
     OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
@@ -369,9 +523,9 @@ struct OrbisImeCaret {
 };
 
 struct OrbisImeDialogParam {
-    s32 user_id;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
     OrbisImeType type;
-    u64 supported_languages; // OrbisImeLanguage flags
+    OrbisImeLanguage supported_languages;
     OrbisImeEnterLabel enter_label;
     OrbisImeInputMethod input_method;
     OrbisImeTextFilter filter;
@@ -388,7 +542,7 @@ struct OrbisImeDialogParam {
 };
 
 struct OrbisImeParamExtended {
-    u32 option; // OrbisImeExtOption flags
+    OrbisImeExtOption option;
     OrbisImeColor color_base;
     OrbisImeColor color_line;
     OrbisImeColor color_text_field;
@@ -401,7 +555,7 @@ struct OrbisImeParamExtended {
     OrbisImePanelPriority priority;
     char* additional_dictionary_path;
     OrbisImeExtKeyboardFilter ext_keyboard_filter;
-    u32 disable_device;
+    OrbisImeDisableDevice disable_device;
     u32 ext_keyboard_mode;
     s8 reserved[60];
 };

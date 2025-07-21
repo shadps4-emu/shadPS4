@@ -14,7 +14,7 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     ASSERT_MSG(code[0] == token_mov_vcchi, "First instruction is not s_mov_b32 vcc_hi, #imm");
 
-    std::array<s32, 32> offsets{};
+    std::array<s32, 64> offsets{};
     offsets.fill(-1);
 
     std::array<s32, 256> sources{};
@@ -52,6 +52,8 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
             break;
         }
         case Gcn::Opcode::BUFFER_LOAD_DWORD: {
+            ASSERT_MSG(inst.src[1].code < offsets.size(),
+                       "offsets array for geometry shaders is too short");
             offsets[inst.src[1].code] = inst.control.mubuf.offset;
             if (inst.src[3].field != Gcn::OperandField::ConstZero) {
                 const u32 index = inst.src[3].code;
@@ -65,7 +67,7 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
         }
     }
 
-    if (last_attr != IR::Attribute::Position0) {
+    if (!IsPosition(last_attr)) {
         data.num_attrs = static_cast<u32>(last_attr) - static_cast<u32>(IR::Attribute::Param0) + 1;
         const auto it = data.attr_map.begin();
         const u32 comp_stride = std::next(it)->first - it->first;

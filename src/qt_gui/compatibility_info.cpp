@@ -22,8 +22,8 @@ void CompatibilityInfoClass::UpdateCompatibilityDatabase(QWidget* parent, bool f
     if (!forced && LoadCompatibilityFile())
         return;
 
-    QUrl url("https://github.com/shadps4-emu/shadps4-game-compatibility/releases/latest/download/"
-             "compatibility_data.json");
+    QUrl url("https://github.com/shadps4-compatibility/shadps4-game-compatibility/releases/latest/"
+             "download/compatibility_data.json");
     QNetworkRequest request(url);
     QNetworkReply* reply = m_network_manager->get(request);
 

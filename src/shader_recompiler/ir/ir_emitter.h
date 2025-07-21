@@ -325,6 +325,7 @@ public:
                                      const Value& value);
 
     [[nodiscard]] U8U16U32U64 UConvert(size_t result_bitsize, const U8U16U32U64& value);
+    [[nodiscard]] U8U16U32U64 SConvert(size_t result_bitsize, const U8U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
     [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
