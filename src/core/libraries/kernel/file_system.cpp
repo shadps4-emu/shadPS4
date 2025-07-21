@@ -1263,10 +1263,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                     return static_cast<int>(file->f.GetFileMapping());
                 case Core::FileSys::FileType::Socket:
                     return file->socket->Native();
+                case Core::FileSys::FileType::Device:
+                    LOG_ERROR(Kernel_Fs, "device fds are not supported");
+                    return -1;
                 default:
                     UNREACHABLE();
                 }
             }();
+            if (fd == -1) {
+                continue;
+            }
             host_to_guest.emplace(fd, i);
 
             max_fd = std::max(max_fd, fd);
