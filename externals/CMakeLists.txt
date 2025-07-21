@@ -197,7 +197,7 @@ endif()
 
 # libusb
 if (NOT TARGET libusb::usb)
-    add_subdirectory(libusb)
+    add_subdirectory(ext-libusb)
     add_library(libusb::usb ALIAS usb-1.0)
 endif()
 
