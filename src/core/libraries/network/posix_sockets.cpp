@@ -263,7 +263,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                return ORBIS_NET_ERROR_EPROCUNAVAIL;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
                 LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
@@ -309,7 +309,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
         case ORBIS_NET_IP_HDRINCL: {
             if (socket_type != ORBIS_NET_SOCK_RAW) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                return ORBIS_NET_ERROR_EPROCUNAVAIL;
             }
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, optname, (const char*)optval, optlen));
