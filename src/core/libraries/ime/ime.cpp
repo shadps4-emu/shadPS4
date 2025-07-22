@@ -300,7 +300,8 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
         return Error::NOT_OPENED;
     }
 
-    if ((userId < 0 || userId > 4) && false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    if ((userId < 0 || userId > 4) &&
+        false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
         // Maybe g_keyboard_handler should hold a user ID and I must compare it here?
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
@@ -350,7 +351,8 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
                   static_cast<u32>(param->option), kValidOrbisImeKeyboardOptionMask);
         return Error::INVALID_OPTION;
     }
-    if ((userId < 0 || userId > 4) && false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    if ((userId < 0 || userId > 4) &&
+        false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
     }
