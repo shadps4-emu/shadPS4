@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <common/config.h>
+#include <common/logging/log.h>
 #include "sdl_in.h"
 
 int SDLAudioIn::AudioInit() {
@@ -113,7 +114,7 @@ int SDLAudioIn::AudioInInput(int handle, void* out_buffer) {
     const int bytesRead = SDL_GetAudioStreamData(port.stream, out_buffer, bytesToRead);
     if (bytesRead < 0) {
         // SDL_GetAudioStreamData failed
-        SDL_Log("AudioInInput error: %s", SDL_GetError());
+        LOG_ERROR(Lib_AudioIn, "AudioInInput error: {}", SDL_GetError());
         return ORBIS_AUDIO_IN_ERROR_STREAM_FAIL;
     }
     const int framesRead = bytesRead / (port.sample_size * port.channels_num);
