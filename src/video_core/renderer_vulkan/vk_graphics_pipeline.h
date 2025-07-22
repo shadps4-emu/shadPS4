@@ -36,7 +36,6 @@ struct GraphicsPipelineKey {
     std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
     u32 patch_control_points;
     u32 num_color_attachments;
-    std::array<vk::Format, Liverpool::NumColorBuffers> color_formats;
     std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;

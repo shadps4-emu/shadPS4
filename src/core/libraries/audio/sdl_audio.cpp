@@ -4,6 +4,7 @@
 #include <thread>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
+#include <common/config.h>
 
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
@@ -41,6 +42,7 @@ public:
             stream = nullptr;
             return;
         }
+        SDL_SetAudioStreamGain(stream, Config::getVolumeSlider() / 100.0f);
     }
 
     ~SDLPortBackend() override {
@@ -77,7 +79,8 @@ public:
         }
         // SDL does not have per-channel volumes, for now just take the maximum of the channels.
         const auto vol = *std::ranges::max_element(ch_volumes);
-        if (!SDL_SetAudioStreamGain(stream, static_cast<float>(vol) / SCE_AUDIO_OUT_VOLUME_0DB)) {
+        if (!SDL_SetAudioStreamGain(stream, static_cast<float>(vol) / SCE_AUDIO_OUT_VOLUME_0DB *
+                                                Config::getVolumeSlider() / 100.0f)) {
             LOG_WARNING(Lib_AudioOut, "Failed to change SDL audio stream volume: {}",
                         SDL_GetError());
         }
