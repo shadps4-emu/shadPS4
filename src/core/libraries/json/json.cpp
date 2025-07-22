@@ -13,6 +13,11 @@ s32 PS4_SYSV_ABI Json::Initializer::initialize(Json::InitParameter const*) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI Json::Initializer::initialize() {
+    LOG_ERROR(Lib_Json, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI Json::Initializer::terminate() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
@@ -520,53 +525,15 @@ s32 PS4_SYSV_ABI Json::Value::operator[](
     return ORBIS_OK;
 }
 
-#define LIB_OVERLOADED_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, \
-                                function_type, function_expr)                                      \
-    {                                                                                              \
-        Core::Loader::SymbolResolver sr{};                                                         \
-        sr.name = nid;                                                                             \
-        sr.library = lib;                                                                          \
-        sr.library_version = libversion;                                                           \
-        sr.module = mod;                                                                           \
-        sr.module_version_major = moduleVersionMajor;                                              \
-        sr.module_version_minor = moduleVersionMinor;                                              \
-        sr.type = Core::Loader::SymbolType::Function;                                              \
-        using FnType = function_type;                                                              \
-        auto func = reinterpret_cast<u64>(HOST_CALL(static_cast<FnType>(function_expr)));          \
-        sym->AddSymbol(sr, func);                                                                  \
-    }
-
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
-    // auto asd =
-    //     (s32 (Json::Initializer::*)(Json::InitParameter const*))(Json::Initializer::initialize);
-    // LIB_FUNCTION("Cxwy7wHq4J0", "libSceJson", 1, "libSceJson", 1, 1, asd);
+    LIB_OVERLOADED_MEMBER_FUNCTION("Cxwy7wHq4J0", "libSceJson", 1, "libSceJson", 1, 1,
+                                   Json::Initializer, initialize,
+                                   s32 (Json::Initializer::*)(Json::InitParameter const*));
 
-    // LIB_OVERLOADED_FUNCTION("Cxwy7wHq4J0", "libSceJson", 1, "libSceJson", 1, 1,
-    //                         s32 (Json::Initializer::*)(Json::InitParameter const*),
-    //                         &Json::Initializer::initialize);
-    // LIB_OVERLOADED_FUNCTION("nid2", "libSceJson", 1, "libSceJson", 1, 1,
-    //                         s32 (Json::Initializer::*)(Json::InitParameter const*),
-    //                         &Json::Initializer::initialize);
+    LIB_MEMBER_FUNCTION("PR5k1penBLM", "libSceJson", 1, "libSceJson", 1, 1, Json::Initializer,
+                        terminate);
 
-    static constexpr s32 PS4_SYSV_ABI (Json::Initializer::*test)(Json::InitParameter const*) =
-        &Json::Initializer::initialize;
-    {
-        Core::Loader::SymbolResolver sr{};
-        sr.name = "Cxwy7wHq4J0";
-        sr.library = "libSceJson";
-        sr.library_version = 1;
-        sr.module = "libSceJson";
-        sr.module_version_major = 1;
-        sr.module_version_minor = 1;
-        sr.type = Core::Loader::SymbolType::Function;
-        auto func =
-            reinterpret_cast<u64>((Core::HostCallWrapperImpl<decltype(&(test)), &test>::wrap));
-        sym->AddSymbol(sr, func);
-    }
-
-    // LIB_FUNCTION("PR5k1penBLM", "libSceJson", 1, "libSceJson", 1, 1,
-    //              Json::Initializer::terminate());
     // LIB_FUNCTION("cK6bYHf-Q5E", "libSceJson", 1, "libSceJson", 1, 1,
     //              Json::Initializer::Initializer());
     // LIB_FUNCTION("6qFqND4iwPA", "libSceJson", 1, "libSceJson", 1, 1,

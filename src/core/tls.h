@@ -67,6 +67,23 @@ struct HostCallWrapperImpl<PS4_SYSV_ABI ReturnType (*)(Args...), func> {
     }
 };
 
+template <typename ClassType, typename ReturnType, typename... Args,
+          ReturnType (ClassType::*func)(Args...)>
+struct HostCallWrapperImpl<ReturnType (ClassType::*)(Args...), func> {
+    static ReturnType PS4_SYSV_ABI wrap(ClassType* self, Args... args) {
+        return (self->*func)(std::forward<Args>(args)...);
+    }
+};
+
 #define HOST_CALL(func) (Core::HostCallWrapperImpl<decltype(&(func)), func>::wrap)
+// this stands for member function when it works, and motherfucking bullshit when it doesn't
+#define HOST_CALL_MF(class, func)                                                                  \
+    (Core::HostCallWrapperImpl<decltype(&class ::func), &class ::func>::wrap)
+// this stands for overloaded member function when it works, and oh my fucking god what is this when
+// it doesn't
+#define HOST_CALL_OMF(func_signature, class, func)                                                 \
+    (Core::HostCallWrapperImpl<decltype((func_signature) & class ::func),                          \
+                               (func_signature) & class ::func>::wrap) // thank you clang that was
+                                                                       // exactly what I intended
 
 } // namespace Core

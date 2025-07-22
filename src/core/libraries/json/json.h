@@ -41,8 +41,8 @@ public:
     PS4_SYSV_ABI Initializer();
     PS4_SYSV_ABI ~Initializer();
     s32 PS4_SYSV_ABI initialize();
-    s32 PS4_SYSV_ABI terminate();
     s32 PS4_SYSV_ABI initialize(Json::InitParameter const*);
+    s32 PS4_SYSV_ABI terminate();
 };
 
 // s32 PS4_SYSV_ABI Json::Initializer::initialize(Json::InitParameter const*);

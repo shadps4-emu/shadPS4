@@ -21,6 +21,36 @@
         sym->AddSymbol(sr, func);                                                                  \
     }
 
+#define LIB_MEMBER_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor,     \
+                            class, function)                                                       \
+    {                                                                                              \
+        Core::Loader::SymbolResolver sr{};                                                         \
+        sr.name = nid;                                                                             \
+        sr.library = lib;                                                                          \
+        sr.library_version = libversion;                                                           \
+        sr.module = mod;                                                                           \
+        sr.module_version_major = moduleVersionMajor;                                              \
+        sr.module_version_minor = moduleVersionMinor;                                              \
+        sr.type = Core::Loader::SymbolType::Function;                                              \
+        auto func = reinterpret_cast<u64>(HOST_CALL_MF(class, function));                          \
+        sym->AddSymbol(sr, func);                                                                  \
+    }
+
+#define LIB_OVERLOADED_MEMBER_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor,              \
+                                       moduleVersionMinor, class, function, func_signature)        \
+    {                                                                                              \
+        Core::Loader::SymbolResolver sr{};                                                         \
+        sr.name = nid;                                                                             \
+        sr.library = lib;                                                                          \
+        sr.library_version = libversion;                                                           \
+        sr.module = mod;                                                                           \
+        sr.module_version_major = moduleVersionMajor;                                              \
+        sr.module_version_minor = moduleVersionMinor;                                              \
+        sr.type = Core::Loader::SymbolType::Function;                                              \
+        auto func = reinterpret_cast<u64>(HOST_CALL_OMF(func_signature, class, function));         \
+        sym->AddSymbol(sr, func);                                                                  \
+    }
+
 #define LIB_OBJ(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, obj)            \
     {                                                                                              \
         Core::Loader::SymbolResolver sr{};                                                         \
