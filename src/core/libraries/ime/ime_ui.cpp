@@ -44,7 +44,7 @@ ImeState& ImeState::operator=(ImeState&& other) noexcept {
 }
 
 void ImeState::SendEvent(OrbisImeEvent* event) {
-    std::unique_lock lock{queue_mutex};
+    std::unique_lock<std::mutex> lock{queue_mutex};
     event_queue.push(*event);
 }
 
@@ -108,7 +108,7 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
 }
 
 void ImeUi::Draw() {
-    std::unique_lock lock{draw_mutex};
+    std::unique_lock<std::mutex> lock{draw_mutex};
 
     if (!state) {
         return;
