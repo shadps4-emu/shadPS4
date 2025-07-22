@@ -1044,7 +1044,7 @@ void BufferCache::SynchronizeBuffersForDma() {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto upload_pending = [&]() {
         RENDERER_TRACE;
-        if (last_buffer_id == NULL_BUFFER_ID) {
+        if (last_buffer_id == NULL_BUFFER_ID || copies.empty()) {
             return;
         }
         Buffer& buffer = slot_buffers[last_buffer_id];
