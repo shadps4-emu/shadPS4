@@ -214,7 +214,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 
 message("-- end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
 
-if(NOT GIT_REMOTE_URL MATCHES "shadps4-emu/shadPS4" OR NOT GIT_BRANCH STREQUAL "main")
+string(TOLOWER "${GIT_REMOTE_URL}" GIT_REMOTE_URL_LOWER)
+if(NOT GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" OR NOT GIT_BRANCH STREQUAL "main")
     message(STATUS "not main, disabling auto update")
     set(ENABLE_UPDATER OFF)
 endif()
@@ -259,7 +260,6 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
-include_directories(Resources)
 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
@@ -1241,6 +1241,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png
         src/images/platinum.png
