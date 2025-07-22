@@ -28,20 +28,10 @@ PS4_SYSV_ABI Json::Initializer::Initializer() {
     return;
 }
 
-// PS4_SYSV_ABI Json::Initializer::Initializer() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
 PS4_SYSV_ABI Json::Initializer::~Initializer() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return;
 }
-
-// PS4_SYSV_ABI Json::Initializer::~Initializer() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
 
 s32 PS4_SYSV_ABI s_initparam() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
@@ -69,16 +59,6 @@ s32 PS4_SYSV_ABI Json::Value::referValue(
     return ORBIS_OK;
 }
 
-// s32 PS4_SYSV_ABI Json::Value::s_nullbool() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
-
-// s32 PS4_SYSV_ABI Json::Value::s_nullreal() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
-
 s32 PS4_SYSV_ABI Json::Value::referObject() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
@@ -88,11 +68,6 @@ s32 PS4_SYSV_ABI Json::Value::referString() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
-
-// s32 PS4_SYSV_ABI Json::Value::s_nullarray() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
 
 s32 PS4_SYSV_ABI Json::Value::referBoolean() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
@@ -104,30 +79,10 @@ s32 PS4_SYSV_ABI Json::Value::referInteger() {
     return ORBIS_OK;
 }
 
-// s32 PS4_SYSV_ABI Json::Value::s_nullobject() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
-
-// s32 PS4_SYSV_ABI Json::Value::s_nullstring() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
-
 s32 PS4_SYSV_ABI Json::Value::referUInteger() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return ORBIS_OK;
 }
-
-// s32 PS4_SYSV_ABI Json::Value::s_nullinteger() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
-
-// s32 PS4_SYSV_ABI Json::Value::s_nulluinteger() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return ORBIS_OK;
-// }
 
 s32 PS4_SYSV_ABI Json::Value::serialize_internal(
     std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>&,
@@ -288,72 +243,10 @@ PS4_SYSV_ABI Json::Value::Value() {
     return;
 }
 
-// PS4_SYSV_ABI Json::Value::Value(bool) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(double) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(long) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(unsigned long) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(Json::ValueType) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(Json::Value const&) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI
-// Json::Value::Value(std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>> const&)
-// {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(
-//     std::map<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>, Json::Value,
-//              std::less<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>>,
-//              Json::StlAlloc<
-//                  std::pair<std::basic_string<char, std::char_traits<char>, Json::StlAlloc<char>>,
-//                            Json::Value>>> const&) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value(std::list<Json::Value, Json::StlAlloc<Json::Value>> const&) {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
-// PS4_SYSV_ABI Json::Value::Value() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
 PS4_SYSV_ABI Json::Value::~Value() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return;
 }
-
-// PS4_SYSV_ABI Json::Value::~Value() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
 
 s32 PS4_SYSV_ABI Malloc(unsigned long) {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
@@ -422,20 +315,10 @@ PS4_SYSV_ABI Json::RootParam::RootParam() {
     return;
 }
 
-// PS4_SYSV_ABI Json::RootParam::RootParam() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
-
 PS4_SYSV_ABI Json::RootParam::~RootParam() {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
     return;
 }
-
-// PS4_SYSV_ABI Json::RootParam::~RootParam() {
-//     LOG_ERROR(Lib_Json, "(STUBBED) called");
-//     return;
-// }
 
 s32 PS4_SYSV_ABI Json::Value::getBoolean() const {
     LOG_ERROR(Lib_Json, "(STUBBED) called");
