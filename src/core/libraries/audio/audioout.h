@@ -96,6 +96,7 @@ struct PortOut {
     AudioFormatInfo format_info;
     u32 sample_rate;
     u32 buffer_frames;
+    u64 last_output_time;
     std::array<s32, 8> volume;
 
     [[nodiscard]] bool IsOpen() const {
@@ -127,7 +128,7 @@ int PS4_SYSV_ABI sceAudioOutGetFocusEnablePid();
 int PS4_SYSV_ABI sceAudioOutGetHandleStatusInfo();
 int PS4_SYSV_ABI sceAudioOutGetInfo();
 int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum();
-int PS4_SYSV_ABI sceAudioOutGetLastOutputTime();
+int PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time);
 int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state);
 int PS4_SYSV_ABI sceAudioOutGetSimulatedBusUsableStatusByBusType();
 int PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo();

@@ -323,7 +323,7 @@ enum class OrbisImeEventId : u32 {
     ChangeInputMethodState = 18,
 
     KeyboardOpen = 256,
-    KeyboardKeycodeDoen = 257,
+    KeyboardKeycodeDown = 257,
     KeyboardKeycodeUp = 258,
     KeyboardKeycodeRepeat = 259,
     KeyboardConnection = 260,
