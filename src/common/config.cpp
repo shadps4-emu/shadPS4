@@ -108,7 +108,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Expected number of items in the config file
-static constexpr u64 total_entries = 54;
+static constexpr u64 total_entries = 55;
 
 int getVolumeSlider() {
     return volumeSlider;
