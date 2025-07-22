@@ -133,7 +133,7 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
                                 u32 index, u32 len, u32 freq, u32 param) {
     int result = audio->AudioInOpen(type, len, freq, param);
     if (result < 0) {
-        LOG_ERROR(Lib_AudioOut, "Error returned  {:#x}", result);
+        LOG_ERROR(Lib_AudioIn, "Error returned  {:#x}", result);
     }
     return result;
 }
