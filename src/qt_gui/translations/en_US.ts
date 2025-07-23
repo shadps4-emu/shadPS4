@@ -1583,6 +1583,18 @@
         <translation>Hide Cursor Idle Timeout</translation>
     </message>
     <message>
+        <source>Microphone</source>
+        <translation>Microphone</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>None</translation>
+    </message>
+    <message>
+        <source>Default Device</source>
+        <translation>Default Device</translation>
+    </message>
+    <message>
         <source>s</source>
         <translation>s</translation>
     </message>

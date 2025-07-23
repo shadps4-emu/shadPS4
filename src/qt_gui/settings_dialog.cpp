@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QHoverEvent>
 #include <QMessageBox>
+#include <SDL3/SDL.h>
 #include <fmt/format.h>
 
 #include "common/config.h"
@@ -28,6 +29,7 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+
 QStringList languageNames = {"Arabic",
                              "Czech",
                              "Danish",
@@ -66,6 +68,7 @@ QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
 QMap<QString, QString> screenModeMap;
 QMap<QString, QString> chooseHomeTabMap;
+QMap<QString, QString> micMap;
 
 int backgroundImageOpacitySlider_backup;
 int bgm_volume_backup;
@@ -94,6 +97,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
                         {tr("Debug"), "Debug"}};
+    micMap = {{tr("None"), "None"}, {tr("Default Device"), "Default Device"}};
 
     if (m_physical_devices.empty()) {
         // Populate cache of physical devices.
@@ -124,6 +128,25 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     ui->hideCursorComboBox->addItem(tr("Never"));
     ui->hideCursorComboBox->addItem(tr("Idle"));
     ui->hideCursorComboBox->addItem(tr("Always"));
+
+    ui->micComboBox->addItem(micMap.key("None"), "None");
+    ui->micComboBox->addItem(micMap.key("Default Device"), "Default Device");
+    SDL_InitSubSystem(SDL_INIT_AUDIO);
+    int count = 0;
+    SDL_AudioDeviceID* devices = SDL_GetAudioRecordingDevices(&count);
+    if (devices) {
+        for (int i = 0; i < count; ++i) {
+            SDL_AudioDeviceID devId = devices[i];
+            const char* name = SDL_GetAudioDeviceName(devId);
+            if (name) {
+                QString qname = QString::fromUtf8(name);
+                ui->micComboBox->addItem(qname, QString::number(devId));
+            }
+        }
+        SDL_free(devices);
+    } else {
+        qDebug() << "Erro SDL_GetAudioRecordingDevices:" << SDL_GetError();
+    }
 
     InitializeEmulatorLanguages();
     LoadValuesFromConfig();
@@ -453,6 +476,14 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->hideCursorComboBox->setCurrentIndex(toml::find_or<int>(data, "Input", "cursorState", 1));
     OnCursorStateChanged(toml::find_or<int>(data, "Input", "cursorState", 1));
     ui->idleTimeoutSpinBox->setValue(toml::find_or<int>(data, "Input", "cursorHideTimeout", 5));
+
+    QString micValue = QString::fromStdString(Config::getMicDevice());
+    int micIndex = ui->micComboBox->findData(micValue);
+    if (micIndex != -1) {
+        ui->micComboBox->setCurrentIndex(micIndex);
+    } else {
+        ui->micComboBox->setCurrentIndex(0);
+    }
     // First options is auto selection -1, so gpuId on the GUI will always have to subtract 1
     // when setting and add 1 when getting to select the correct gpu in Qt
     ui->graphicsAdapterBox->setCurrentIndex(toml::find_or<int>(data, "Vulkan", "gpuId", -1) + 1);
@@ -771,6 +802,7 @@ void SettingsDialog::UpdateSettings() {
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
+    Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString());
     Config::setLogFilter(ui->logFilterLineEdit->text().toStdString());
     Config::setUserName(ui->userNameLineEdit->text().toStdString());
     Config::setTrophyKey(ui->trophyKeyLineEdit->text().toStdString());

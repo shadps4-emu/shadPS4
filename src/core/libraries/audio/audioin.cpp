@@ -3,18 +3,21 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioin.h"
+#include "core/libraries/audio/sdl_in.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioIn {
+
+static std::unique_ptr<SDLAudioIn> audio = std::make_unique<SDLAudioIn>();
 
 int PS4_SYSV_ABI sceAudioInChangeAppModuleState() {
     LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInClose() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
+int PS4_SYSV_ABI sceAudioInClose(s32 handle) {
+    audio->AudioInClose(handle);
     return ORBIS_OK;
 }
 
@@ -93,9 +96,13 @@ int PS4_SYSV_ABI sceAudioInGetSilentState() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInHqOpen() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAudioInHqOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
+                                  u32 index, u32 len, u32 freq, u32 param) {
+    int result = audio->AudioInOpen(type, len, freq, param);
+    if (result < 0) {
+        LOG_ERROR(Lib_AudioIn, "Error returned  {:#x}", result);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceAudioInHqOpenEx() {
@@ -108,9 +115,8 @@ int PS4_SYSV_ABI sceAudioInInit() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInInput() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest) {
+    return audio->AudioInInput(handle, dest);
 }
 
 int PS4_SYSV_ABI sceAudioInInputs() {
@@ -123,9 +129,13 @@ int PS4_SYSV_ABI sceAudioInIsSharedDevice() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioInOpen() {
-    LOG_ERROR(Lib_AudioIn, "(DUMMY) called");
-    return 0x80260005; // ports are full return
+int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
+                                u32 index, u32 len, u32 freq, u32 param) {
+    int result = audio->AudioInOpen(type, len, freq, param);
+    if (result < 0) {
+        LOG_ERROR(Lib_AudioIn, "Error returned  {:#x}", result);
+    }
+    return result;
 }
 
 int PS4_SYSV_ABI sceAudioInOpenEx() {
