@@ -56,6 +56,7 @@ struct Socket {
 
 struct PosixSocket : public Socket {
     net_socket sock;
+    int sockopt_so_connecttimeo = 0;
     int sockopt_so_reuseport = 0;
     int sockopt_so_onesbcast = 0;
     int sockopt_so_usecrypto = 0;

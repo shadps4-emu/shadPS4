@@ -324,12 +324,20 @@ PthreadT PS4_SYSV_ABI posix_pthread_self() {
     return g_curthread;
 }
 
+void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
+    Common::SetCurrentThreadName(name);
+}
+
 void PS4_SYSV_ABI posix_pthread_yield() {
     std::this_thread::yield();
 }
 
 void PS4_SYSV_ABI sched_yield() {
     std::this_thread::yield();
+}
+
+int PS4_SYSV_ABI posix_getpid() {
+    return g_curthread->tid;
 }
 
 int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
@@ -644,9 +652,11 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_create_name_np);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setcancelstate);
     LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setprio);
+    LIB_FUNCTION("9vyP6Z7bqzc", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_rename_np);
     LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getschedparam);
     LIB_FUNCTION("Xs9hdiD7sAA", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setschedparam);
     LIB_FUNCTION("6XG4B33N09g", "libScePosix", 1, "libkernel", 1, 1, sched_yield);
+    LIB_FUNCTION("HoLVWNanBBc", "libScePosix", 1, "libkernel", 1, 1, posix_getpid);
 
     // Posix-Kernel
     LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_once);
@@ -669,6 +679,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", 1, 1, posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", 1, 1, posix_pthread_self);
+    LIB_FUNCTION("oxMp8uPqa+U", "libkernel", 1, "libkernel", 1, 1, posix_pthread_set_name_np);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_equal);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", 1, 1, posix_pthread_yield);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getthreadid_np);
@@ -676,6 +687,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("W0Hpm2X0uPE", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_setprio));
     LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", 1, 1, _sceKernelSetThreadDtors);
     LIB_FUNCTION("6XG4B33N09g", "libkernel", 1, "libkernel", 1, 1, sched_yield);
+    LIB_FUNCTION("HoLVWNanBBc", "libkernel", 1, "libkernel", 1, 1, posix_getpid);
     LIB_FUNCTION("rcrVFJsQWRY", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadGetaffinity));
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadSetaffinity));
 }
