@@ -108,7 +108,7 @@ u32 m_language = 1; // english
 static std::string trophyKey = "";
 
 // Config version, used to determine if a user's config file is outdated.
-static constexpr u64 config_version = 1;
+static std::string config_version = Common::g_scm_rev;
 
 int getVolumeSlider() {
     return volumeSlider;
@@ -696,7 +696,7 @@ void load(const std::filesystem::path& path) {
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", rdocEnable);
     }
 
-    u32 current_version = 0;
+    std::string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
@@ -705,7 +705,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
-        current_version = toml::find_or<u32>(debug, "ConfigVersion", current_version);
+        current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
     if (data.contains("GUI")) {
