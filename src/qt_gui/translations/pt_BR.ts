@@ -1588,15 +1588,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Microfone</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Nenhum</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Dispositivo Padrão</translation>
     </message>
     <message>
       <source>s</source>
@@ -2092,7 +2092,7 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
   </context>
   <context>
