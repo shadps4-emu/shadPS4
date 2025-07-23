@@ -386,6 +386,16 @@ void EmitContext::DefineInputs() {
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
         }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_smooth_centroid = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordSmoothCentroidAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_smooth_centroid =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+                // Decorate(bary_coord_smooth_centroid, spv::Decoration::Centroid);
+            }
+        }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth_sample = DefineVariable(
