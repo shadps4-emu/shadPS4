@@ -36,8 +36,14 @@ class ImeDialogState final {
     Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
 
 public:
-    ImeDialogState(const OrbisImeDialogParam* param = nullptr,
-                   const OrbisImeParamExtended* extended = nullptr);
+    /*
+     * Use default constructor ImeDialogState() to initialize default values instead of
+     * ImeDialogState(const OrbisImeDialogParam* param = nullptr,const OrbisImeParamExtended*
+     * extended = nullptr) to avoid validation errors in log
+     */
+    ImeDialogState();
+    ImeDialogState(const OrbisImeDialogParam* param /*= nullptr*/,
+                   const OrbisImeParamExtended* extended /*= nullptr*/);
     ImeDialogState(const ImeDialogState& other) = delete;
     ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);

@@ -35,7 +35,9 @@ int PS4_SYSV_ABI sceImeGetPanelPositionAndForm();
 Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height);
 Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId);
 int PS4_SYSV_ABI sceImeKeyboardGetInfo();
-int PS4_SYSV_ABI sceImeKeyboardGetResourceId();
+Error PS4_SYSV_ABI
+sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userId,
+                            OrbisImeKeyboardResourceIdArray* resourceIdArray);
 Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
                                       const OrbisImeKeyboardParam* param);
 int PS4_SYSV_ABI sceImeKeyboardOpenInternal();
