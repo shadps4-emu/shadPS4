@@ -1026,7 +1026,7 @@
     </message>
     <message>
       <source>Up</source>
-      <translation/>
+      <translation type="unfinished">Up</translation>
     </message>
     <message>
       <source>unmapped</source>
