@@ -2086,6 +2086,10 @@
         <source> * Unsupported Vulkan Version</source>
         <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
+    <message>
+        <source>100%</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
