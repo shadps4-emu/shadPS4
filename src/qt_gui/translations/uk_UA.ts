@@ -1588,7 +1588,7 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Мікрофон</translation>
     </message>
     <message>
       <source>None</source>
@@ -1596,7 +1596,7 @@
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Стандартний Пристрій</translation>
     </message>
     <message>
       <source>s</source>
@@ -2092,7 +2092,7 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
   </context>
   <context>
