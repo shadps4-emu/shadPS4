@@ -257,13 +257,14 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_RCVTIMEO);
             CASE_SETSOCKOPT(SO_ERROR);
             CASE_SETSOCKOPT(SO_TYPE);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                return ORBIS_NET_ERROR_EPROCUNAVAIL;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
                 LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
@@ -309,7 +310,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
         case ORBIS_NET_IP_HDRINCL: {
             if (socket_type != ORBIS_NET_SOCK_RAW) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                return ORBIS_NET_ERROR_EPROCUNAVAIL;
             }
             return ConvertReturnErrorCode(
                 setsockopt(sock, level, optname, (const char*)optval, optlen));
@@ -361,6 +362,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT(SO_ERROR);
             CASE_GETSOCKOPT(SO_TYPE);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NBIO, sockopt_so_nbio);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, sockopt_so_connecttimeo);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, sockopt_so_reuseport);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, sockopt_so_onesbcast);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, sockopt_so_usecrypto);
