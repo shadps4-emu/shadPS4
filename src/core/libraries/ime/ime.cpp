@@ -404,9 +404,10 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
             return Error::INVALID_RESERVED;
         }
     }
-    
+
     // Todo: figure out what it is, always false for now
-    if (false) { LOG_ERROR(Lib_Ime, "USB keyboard some special kind of failure");
+    if (false) {
+        LOG_ERROR(Lib_Ime, "USB keyboard some special kind of failure");
         return Error::CONNECTION_FAILED;
     }
     if (g_keyboard_handler) {
