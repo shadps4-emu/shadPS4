@@ -122,7 +122,7 @@
     </message>
     <message>
       <source>Success</source>
-      <translation type="unfinished">Success</translation>
+      <translation>Uspešno</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
