@@ -319,8 +319,6 @@ void CFG::LinkBlocks() {
         // need to link with the next block.
         if (!end_inst.IsTerminateInstruction()) {
             auto* next_block = get_block(block.end);
-            ++next_block->num_predecessors;
-
             block.branch_true = next_block;
             block.end_class = EndClass::Branch;
             continue;
@@ -343,17 +341,11 @@ void CFG::LinkBlocks() {
 
         if (end_inst.IsUnconditionalBranch()) {
             auto* target_block = get_block(target_pc);
-            ++target_block->num_predecessors;
-
             block.branch_true = target_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.IsConditionalBranch()) {
             auto* target_block = get_block(target_pc);
-            ++target_block->num_predecessors;
-
             auto* end_block = get_block(block.end);
-            ++end_block->num_predecessors;
-
             block.branch_true = target_block;
             block.branch_false = end_block;
             block.end_class = EndClass::Branch;
