@@ -544,8 +544,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "GPU", "copyGPUBuffers", false));
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
-    ui->readbacksCheckBox->setChecked(
-        toml::find_or<bool>(data, "GPU", "readbacks", false));
+    ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
     ui->readbackLinearImagesCheckBox->setChecked(
         toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->enableCompatibilityCheckBox->setChecked(
