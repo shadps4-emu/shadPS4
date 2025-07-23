@@ -401,6 +401,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->hostMarkersCheckBox->installEventFilter(this);
         ui->collectShaderCheckBox->installEventFilter(this);
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
+        ui->readbacksCheckBox->installEventFilter(this);
+        ui->readbackLinearImagesCheckBox->installEventFilter(this);
     }
 }
 
@@ -511,6 +513,10 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "GPU", "copyGPUBuffers", false));
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
+    ui->readbacksCheckBox->setChecked(
+        toml::find_or<bool>(data, "GPU", "readbacks", false));
+    ui->readbackLinearImagesCheckBox->setChecked(
+        toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->enableCompatibilityCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "compatibilityEnabled", false));
     ui->checkCompatibilityOnStartupCheckBox->setChecked(
@@ -727,6 +733,10 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Copy GPU Buffers:\\nGets around race conditions involving GPU submits.\\nMay or may not help with PM4 type 0 crashes.");
     } else if (elementName == "collectShaderCheckBox") {
         text = tr("Collect Shaders:\\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).");
+    } else if (elementName == "readbacksCheckBox") {
+        text = tr("Enable GPU memory readbacks and writebacks.\\nThis is required for proper behavior in some games.\\nMight cause stability and/or performance issues.");
+    } else if (elementName == "readbackLinearImagesCheckBox") {
+        text = tr("Enables async downloading of GPU modified linear images.\\nMight fix issues in some games.");
     } else if (elementName == "separateLogFilesCheckbox") {
         text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");}
     // clang-format on
@@ -796,6 +806,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setVkHostMarkersEnabled(ui->hostMarkersCheckBox->isChecked());
     Config::setVkGuestMarkersEnabled(ui->guestMarkersCheckBox->isChecked());
     Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked());
+    Config::setReadbacks(ui->readbacksCheckBox->isChecked());
+    Config::setReadbackLinearImages(ui->readbackLinearImagesCheckBox->isChecked());
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked());
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked());
     m_gui_settings->SetValue(gui::gen_checkForUpdates, ui->updateCheckBox->isChecked());
