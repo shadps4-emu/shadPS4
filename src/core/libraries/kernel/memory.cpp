@@ -319,7 +319,8 @@ s32 PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
 }
 
 u32 PS4_SYSV_ABI sceKernelIsAddressSanitizerEnabled() {
-    return ORBIS_OK;
+    LOG_DEBUG(Kernel, "called");
+    return false;
 }
 
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, s32 numEntries,
