@@ -38,7 +38,6 @@ struct Block : Hook {
     u32 end;
     u32 begin_index;
     u32 end_index;
-    u32 num_predecessors{};
     IR::Condition cond{};
     GcnInst end_inst{};
     EndClass end_class{};
