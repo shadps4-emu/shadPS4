@@ -1587,6 +1587,18 @@
       <translation>Temps d'espera per ocultar el ratolí</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation type="unfinished">Microphone</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation type="unfinished">None</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation type="unfinished">Default Device</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -2077,6 +2089,10 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> Versió de Vulkan no suportada</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation type="unfinished">100%</translation>
     </message>
   </context>
   <context>
