@@ -7,98 +7,98 @@
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>O shadPS4u</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <translation>shadPS4 je eksperimentalni emulator otvorenog koda za PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>Ovaj program ne treba koristiti sa igricama koje nisu legalno nabavljene.</translation>
     </message>
   </context>
   <context>
     <name>CheatsPatches</name>
     <message>
       <source>Cheats / Patches for </source>
-      <translation type="unfinished">Cheats / Patches for </translation>
+      <translation>Šifre / Modifikacije za </translation>
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation>Šifre / Modifikacije su eksperimentalne.\nPažljivo koristiti.\nPreuzmite šifre individualno tako što izaberete izvor i kliknete dugme za preuzimanje.\nU sekciji za Modifikacije, mogu se instalirati sve modifikacije odjednom, izaberite koje želite da koristite, i sačuvajte Vaše izmene.\n\nPošto mi ne pravimo Šifre i Modifikacije,\nmolimo Vas da prijavite probleme autorima.\n\nU slučaju da ste napravili šifru, Posetite:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation type="unfinished">No Image Available</translation>
+      <translation>Nema Dostupne Slike</translation>
     </message>
     <message>
       <source>Serial: </source>
-      <translation type="unfinished">Serial: </translation>
+      <translation>Serijski broj:</translation>
     </message>
     <message>
       <source>Version: </source>
-      <translation type="unfinished">Version: </translation>
+      <translation>Verzija:</translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation type="unfinished">Size: </translation>
+      <translation>Veličina:</translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation type="unfinished">Select Cheat File:</translation>
+      <translation>Izaberi Fajl Za Šifre:</translation>
     </message>
     <message>
       <source>Repository:</source>
-      <translation type="unfinished">Repository:</translation>
+      <translation>Izvor:</translation>
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation type="unfinished">Download Cheats</translation>
+      <translation>Preuzmi Šifre</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation type="unfinished">Delete File</translation>
+      <translation>Obriši Fajl</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation type="unfinished">No files selected.</translation>
+      <translation>Nema izabranog fajla.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
+      <translation>Možete obrisati šifre koje ne želite nakog sto ste ih preuzeli.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
+      <translation>Da li želite da obrišete izabrani fajl?\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation type="unfinished">Select Patch File:</translation>
+      <translation>Izaberite Fajl Sa Modifikacijama:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation type="unfinished">Download Patches</translation>
+      <translation>Preuzmite Modifikacije:</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Sačuvaj</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>Šifre</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation type="unfinished">Patches</translation>
+      <translation>Modifikacije</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Greška</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation type="unfinished">No patch selected.</translation>
+      <translation>Nema izabrane modifikacije.</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
@@ -106,7 +106,7 @@
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation type="unfinished">No patch file found for the current serial.</translation>
+      <translation>Fajl sa modifikacijama nije pronadjen za trenutnu igru.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
@@ -126,7 +126,7 @@
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation type="unfinished">Options saved successfully.</translation>
+      <translation>Opcije su uspešno sačuvane.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
