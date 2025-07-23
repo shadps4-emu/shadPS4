@@ -92,8 +92,12 @@ void Translator::EmitPrologue(IR::Block* first_block) {
             if (runtime_info.num_input_vgprs > 0) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
-            // v2: instance ID
+            // v2: unknown
             if (runtime_info.num_input_vgprs > 1) {
+                ++dst_vreg;
+            }
+            // v3: instance ID, plain
+            if (runtime_info.num_input_vgprs > 2) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
             }
         } else {
