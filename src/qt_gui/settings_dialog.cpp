@@ -765,9 +765,9 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "collectShaderCheckBox") {
         text = tr("Collect Shaders:\\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).");
     } else if (elementName == "readbacksCheckBox") {
-        text = tr("Enable GPU memory readbacks and writebacks.\\nThis is required for proper behavior in some games.\\nMight cause stability and/or performance issues.");
+        text = tr("Enable Readbacks:\\nEnable GPU memory readbacks and writebacks.\\nThis is required for proper behavior in some games.\\nMight cause stability and/or performance issues.");
     } else if (elementName == "readbackLinearImagesCheckBox") {
-        text = tr("Enables async downloading of GPU modified linear images.\\nMight fix issues in some games.");
+        text = tr("Enable Readback Linear Images:\\nEnables async downloading of GPU modified linear images.\\nMight fix issues in some games.");
     } else if (elementName == "separateLogFilesCheckbox") {
         text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");}
     // clang-format on
