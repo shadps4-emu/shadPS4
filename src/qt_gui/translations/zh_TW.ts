@@ -1587,6 +1587,18 @@
       <translation>空閒滑鼠指標逾時隱藏</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation type="unfinished">Microphone</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation type="unfinished">None</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation type="unfinished">Default Device</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>秒</translation>
     </message>
@@ -2077,6 +2089,10 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation type="unfinished"> * Unsupported Vulkan Version</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation type="unfinished">100%</translation>
     </message>
   </context>
   <context>
