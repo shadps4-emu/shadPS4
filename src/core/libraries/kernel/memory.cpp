@@ -318,6 +318,11 @@ s32 PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
     return memory->IsStack(std::bit_cast<VAddr>(addr), start, end);
 }
 
+u32 PS4_SYSV_ABI sceKernelIsAddressSanitizerEnabled() {
+    LOG_DEBUG(Kernel, "called");
+    return false;
+}
+
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, s32 numEntries,
                                    s32* numEntriesOut) {
     return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
@@ -689,6 +694,8 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BC+OG5m9+bw", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemoryType);
     LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
     LIB_FUNCTION("yDBwVAolDgg", "libkernel", 1, "libkernel", 1, 1, sceKernelIsStack);
+    LIB_FUNCTION("jh+8XiK4LeE", "libkernel", 1, "libkernel", 1, 1,
+                 sceKernelIsAddressSanitizerEnabled);
     LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
     LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
     LIB_FUNCTION("BQQniolj9tQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory2);
