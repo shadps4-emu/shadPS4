@@ -186,7 +186,7 @@ int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled() {
 
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_FAIL;
 }
 
 int PS4_SYSV_ABI sceHttpGetAuthEnabled() {
