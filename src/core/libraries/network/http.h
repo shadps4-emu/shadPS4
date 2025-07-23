@@ -27,6 +27,15 @@ struct OrbisHttpUriElement {
 
 using OrbisHttpsCaList = Libraries::Ssl::OrbisSslCaList;
 
+using OrbisHttpEpollHandle = u32;
+
+struct OrbisHttpNBEvent {
+    u32 events;
+    u32 eventDetail;
+    s32 id;
+    void* userArg;
+};
+
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
 int PS4_SYSV_ABI sceHttpAbortWaitRequest();
