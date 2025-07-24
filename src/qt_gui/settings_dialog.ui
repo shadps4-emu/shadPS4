@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -369,7 +369,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>375</width>
+                  <width>402</width>
                   <height>68</height>
                  </rect>
                 </property>
@@ -539,7 +539,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -988,7 +988,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1283,7 +1283,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1525,7 +1525,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1790,7 +1790,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1932,7 +1932,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
@@ -2088,82 +2088,111 @@
          </layout>
         </item>
         <item>
-         <widget class="QGroupBox" name="advancedGroupBox">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string>Advanced</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-          </property>
-          <layout class="QVBoxLayout" name="advancedLayout">
-           <item>
-            <layout class="QGridLayout" name="gridLayout_3">
-             <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QGroupBox" name="advancedGroupBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="title">
+             <string>Advanced</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+            </property>
+            <layout class="QVBoxLayout" name="advancedLayout">
+             <item>
               <widget class="QCheckBox" name="collectShaderCheckBox">
                <property name="text">
                 <string>Collect Shaders</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="separateLogFilesCheckbox">
-               <property name="text">
-                <string>Separate Log Files</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
+             <item>
               <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
                <property name="text">
                 <string>Enable Crash Diagnostics</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
+             <item>
               <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
                <property name="text">
                 <string>Copy GPU Buffers</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
+             <item>
               <widget class="QCheckBox" name="hostMarkersCheckBox">
                <property name="text">
                 <string>Host Debug Markers</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
+             <item>
               <widget class="QCheckBox" name="guestMarkersCheckBox">
                <property name="text">
                 <string>Guest Debug Markers</string>
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
-              <widget class="QCheckBox" name="readbacksCheckBox">
+             <item>
+              <widget class="QCheckBox" name="separateLogFilesCheckbox">
                <property name="text">
-                <string>Enable Readbacks</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
-               <property name="text">
-                <string>Enable Readback Linear Images</string>
+                <string>Separate Log Files</string>
                </property>
               </widget>
              </item>
             </layout>
-           </item>
-          </layout>
-         </widget>
+           </widget>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QGroupBox" name="ExperimentalGroupBox">
+              <property name="title">
+               <string>Experimental Features</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+               <item>
+                <widget class="QCheckBox" name="readbacksCheckBox">
+                 <property name="text">
+                  <string>Enable Readbacks</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
+                 <property name="text">
+                  <string>Enable Readback Linear Images</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="ExperimentalLabel">
+              <property name="font">
+               <font>
+                <pointsize>11</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>WARNING: blah blah</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
