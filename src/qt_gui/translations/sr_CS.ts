@@ -130,59 +130,59 @@
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation type="unfinished">Invalid Source</translation>
+      <translation>Nevažeći Izvor</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation type="unfinished">The selected source is invalid.</translation>
+      <translation>Izabrani izvor je nevažeći.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation type="unfinished">File Exists</translation>
+      <translation>Fajl Već Postoji</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
+      <translation>Fajl već postoji. Da li želite da ga zamenite?</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation type="unfinished">Failed to save file:</translation>
+      <translation>Fajl nije uspešno sačuvan:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation type="unfinished">Failed to download file:</translation>
+      <translation>Fajl nije uspešno preuzet:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation type="unfinished">Cheats Not Found</translation>
+      <translation>Šifre Nisu Pronađene</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
+      <translation>Šifre za ovu igricu na ovoj verziji iz izabranog izvora nisu pronađene, pokušajte drugi izvor ili drugu verziju igrice.</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation type="unfinished">Cheats Downloaded Successfully</translation>
+      <translation>Šifre Su Uspešno Preuzete</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
+      <translation>Uspešno ste preuzeli šifre za ovu verziju igrice sa izabranog izvora. Možete da pokušate da preuzmete sa drugog izvora, ako je dostupno moći ćete da ga koristite tako što izaberete fajl iz liste.</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation type="unfinished">Failed to save:</translation>
+      <translation>Nije uspešno sačuvano:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation type="unfinished">Failed to download:</translation>
+      <translation>Nije uspešno preuzeto:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>Preuzimanje Se Završilo</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
+      <translation>Modifikacije Uspešno Preuzete! Sve Modifikacije su dostupne za sve igrice koje ih podržavaju, nema potrebe da se preuzimaju pojedinačno kao sa Šiframa. Ako se modifikacije ne pokazuje, možda ne postoji za tu verziju igrice ili specifično za taj serijski broj.</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -194,15 +194,15 @@
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation type="unfinished">The game is in version: %1</translation>
+      <translation>Verzija igrice je: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
+      <translation>Preuzete modifikacije rade samo na verziji: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation type="unfinished">You may need to update your game.</translation>
+      <translation>Možda morate da ažurirate Vašu igricu.</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -210,11 +210,11 @@
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation type="unfinished">Failed to open file:</translation>
+      <translation>Fajl nije uspešno otvoren:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation type="unfinished">XML ERROR:</translation>
+      <translation>GREŠKA VEZANA ZA XML</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
@@ -222,7 +222,7 @@
     </message>
     <message>
       <source>Author: </source>
-      <translation type="unfinished">Author: </translation>
+      <translation>Autor:</translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
@@ -234,30 +234,30 @@
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>Ime:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
+      <translation>Šifre se ne mogu aplicirati pre nego što je igrica upaljena</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>Zatvori</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation type="unfinished">Auto Updater</translation>
+      <translation>Automatsko Ažuriranje</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>Greška</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation type="unfinished">Network error:</translation>
+      <translation>Greška sa mrežom:</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
@@ -281,39 +281,39 @@
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation type="unfinished">Your version is already up to date!</translation>
+      <translation>Vaša verzija je već najnovija!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation type="unfinished">Update Available</translation>
+      <translation>Nova Verzija Dostupna</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation type="unfinished">Update Channel</translation>
+      <translation>Izvor Ažuriranja</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation type="unfinished">Current Version</translation>
+      <translation>Trenutna Verzija</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation type="unfinished">Latest Version</translation>
+      <translation>Najnovija Verzija</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation type="unfinished">Do you want to update?</translation>
+      <translation>Da li želite da ažurirate?</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation type="unfinished">Show Changelog</translation>
+      <translation>Prikaži Promene</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation type="unfinished">Check for Updates at Startup</translation>
+      <translation>Proveri da li postoje novije verzije programa kada se upali</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>Ažuriraj</translation>
     </message>
     <message>
       <source>No</source>
