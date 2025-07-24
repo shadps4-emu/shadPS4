@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>6</number>
+      <number>0</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -369,7 +369,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>402</width>
+                  <width>375</width>
                   <height>68</height>
                  </rect>
                 </property>
@@ -539,7 +539,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -988,7 +988,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1283,7 +1283,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1525,7 +1525,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1790,7 +1790,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1932,7 +1932,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>540</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
@@ -2183,10 +2183,13 @@
                </font>
               </property>
               <property name="text">
-               <string>WARNING: blah blah</string>
+               <string>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
