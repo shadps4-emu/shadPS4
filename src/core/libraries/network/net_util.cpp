@@ -23,6 +23,7 @@ typedef int net_socket;
 #endif
 #if defined(__APPLE__)
 #include <net/if_dl.h>
+#include <net/route.h>
 #endif
 #if __linux__
 #include <fstream>
@@ -125,6 +126,68 @@ bool NetUtilInternal::RetrieveDefaultGateway() {
 #ifdef _WIN32
 
 #elif defined(__APPLE__)
+    // adapted from
+    // https://github.com/seladb/PcapPlusPlus/blob/a49a79e0b67b402ad75ffa96c1795def36df75c8/Pcap%2B%2B/src/PcapLiveDevice.cpp#L1236
+    // route message struct for communication in APPLE device
+    struct BSDRoutingMessage {
+        struct rt_msghdr header;
+        char messageSpace[512];
+    };
+
+    struct BSDRoutingMessage routingMessage;
+    // It creates a raw socket that can be used for routing-related operations
+    int sockfd = socket(PF_ROUTE, SOCK_RAW, 0);
+    if (sockfd < 0) {
+        return false;
+    }
+    memset(reinterpret_cast<char*>(&routingMessage), 0, sizeof(routingMessage));
+    routingMessage.header.rtm_msglen = sizeof(struct rt_msghdr);
+    routingMessage.header.rtm_version = RTM_VERSION;
+    routingMessage.header.rtm_type = RTM_GET;
+    routingMessage.header.rtm_addrs = RTA_DST | RTA_NETMASK;
+    routingMessage.header.rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;
+    routingMessage.header.rtm_msglen += 2 * sizeof(sockaddr_in);
+
+    if (write(sockfd, reinterpret_cast<char*>(&routingMessage), routingMessage.header.rtm_msglen) <
+        0) {
+        return false;
+    }
+
+    // Read the response from the route socket
+    if (read(sockfd, reinterpret_cast<char*>(&routingMessage), sizeof(routingMessage)) < 0) {
+        return false;
+    }
+
+    struct in_addr* gateAddr = nullptr;
+    struct sockaddr* sa = nullptr;
+    char* spacePtr = (reinterpret_cast<char*>(&routingMessage.header + 1));
+    auto rtmAddrs = routingMessage.header.rtm_addrs;
+    int index = 1;
+    auto roundUpClosestMultiple = [](int multiple, int num) {
+        return ((num + multiple - 1) / multiple) * multiple;
+    };
+    while (rtmAddrs) {
+        if (rtmAddrs & 1) {
+            sa = reinterpret_cast<sockaddr*>(spacePtr);
+            if (index == RTA_GATEWAY) {
+                gateAddr = &((sockaddr_in*)sa)->sin_addr;
+                break;
+            }
+            spacePtr += sa->sa_len > 0 ? roundUpClosestMultiple(sizeof(uint32_t), sa->sa_len)
+                                       : sizeof(uint32_t);
+        }
+        index++;
+        rtmAddrs >>= 1;
+    }
+
+    if (gateAddr == nullptr) {
+        return false;
+    }
+
+    char str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, gateAddr, str, sizeof(str));
+    this->default_gateway = str;
+    return true;
 
 #else
     std::ifstream route{"/proc/net/route"};
