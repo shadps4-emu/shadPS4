@@ -1700,11 +1700,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Activar Readbacks</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Activa imatges lineals de Readback</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1936,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Actica Readbacks:\nActiva readbacks i writebacks a la memòria de la targeta gràfica.\nAixò és necessari pel funcionament correcte en alguns jocs.\nPot causar inestabilitat i/o errors de rendiment.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Activa imatges lineals de Readback:\nActiva la descàrrega asíncrona d'imatges lineals modificades de la targeta gràfica:\nPot corregir errors en alguns jocs.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
