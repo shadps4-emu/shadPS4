@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/assert.h>
+#include "core/libraries/kernel/file_system.h"
 #include "net.h"
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 #include "net_error.h"
 #include "sockets.h"
 
@@ -392,6 +396,39 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
+}
+
+int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
+#ifdef _WIN32
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    sb->st_mode = 0000777u | 0140000u;
+    return 0;
+#else
+    struct stat st{};
+    int result = ::fstat(sock, &st);
+    sb->st_mode = 0000777u | 0140000u;
+    sb->st_size = st.st_size;
+    sb->st_blocks = st.st_blocks;
+    sb->st_blksize = st.st_blksize;
+    // sb->st_flags = st.st_flags;
+    return result;
+#endif
+}
+
+int PosixSocket::read(void* buf, size_t len) {
+#ifdef _WIN32
+    return recv(sock, (char*)buf, len, 0);
+#else
+    return ::read(sock, buf, len);
+#endif
+}
+
+int PosixSocket::write(const void* buf, size_t len) {
+#ifdef _WIN32
+    return send(sock, (char*)buf, len, 0);
+#else
+    return ::write(sock, buf, len);
+#endif
 }
 
 } // namespace Libraries::Net

@@ -26,6 +26,10 @@ typedef int net_socket;
 #include <mutex>
 #include "net.h"
 
+namespace Libraries::Kernel {
+struct OrbisKernelStat;
+}
+
 namespace Libraries::Net {
 
 struct Socket;
@@ -51,6 +55,9 @@ struct Socket {
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
+    virtual int read(void* buf, size_t len) = 0;
+    virtual int write(const void* buf, size_t len) = 0;
     std::mutex m_mutex;
 };
 
@@ -82,6 +89,9 @@ struct PosixSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    int read(void* buf, size_t len) override;
+    int write(const void* buf, size_t len) override;
 };
 
 struct P2PSocket : public Socket {
@@ -97,6 +107,9 @@ struct P2PSocket : public Socket {
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    int read(void* buf, size_t len) override;
+    int write(const void* buf, size_t len) override;
 };
 
 class NetInternal {
