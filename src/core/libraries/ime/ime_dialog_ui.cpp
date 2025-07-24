@@ -267,13 +267,9 @@ void ImeDialogUi::Draw() {
         }
 
         if (state->is_multi_line) {
-            // LOG_INFO(Lib_ImeDialog, "   Drawing multi-line widget…");
             DrawMultiLineInputText();
-            // LOG_INFO(Lib_ImeDialog, "   Done DrawMultiLineInputText");
         } else {
-            // LOG_INFO(Lib_ImeDialog, "   Drawing input text widget…");
             DrawInputText();
-            // LOG_INFO(Lib_ImeDialog, "   Done DrawInputText");
         }
 
         SetCursorPosY(GetCursorPosY() + 10.0f);
