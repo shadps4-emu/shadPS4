@@ -415,6 +415,10 @@ void setReadbacks(bool enable) {
     readbacksEnabled = enable;
 }
 
+void setReadbackLinearImages(bool enable) {
+    readbackLinearImagesEnabled = enable;
+}
+
 void setDirectMemoryAccess(bool enable) {
     directMemoryAccessEnabled = enable;
 }
