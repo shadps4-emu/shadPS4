@@ -1303,7 +1303,7 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
 void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0xF))};
+    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
     const IR::U32 lo{ir.ShiftRightLogical(src1, src2)};
     const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), src2))};
     SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
