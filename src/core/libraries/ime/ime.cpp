@@ -336,16 +336,18 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
     if ((userId < 0 || userId > 4) && false) {
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         resourceIdArray->user_id = userId;
-        for (u32& id : resourceIdArray->resource_id)
+        for (u32& id : resourceIdArray->resource_id) {
             id = 0;
+        }
         return Error::INVALID_USER_ID;
     }
 
     if (!g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Keyboard handler not opened");
         resourceIdArray->user_id = userId;
-        for (u32& id : resourceIdArray->resource_id)
+        for (u32& id : resourceIdArray->resource_id) {
             id = 0;
+        }
         return Error::NOT_OPENED;
     }
 
