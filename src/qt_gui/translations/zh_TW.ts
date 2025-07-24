@@ -1699,6 +1699,14 @@
       <translation>Guest 偵錯標記</translation>
     </message>
     <message>
+      <source>Enable Readbacks</source>
+      <translation type="unfinished">Enable Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation type="unfinished">Enable Readback Linear Images</translation>
+    </message>
+    <message>
       <source>Update</source>
       <translation>更新</translation>
     </message>
@@ -1925,6 +1933,14 @@
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>當機診斷：\n會建立一個 .yaml 檔案，其中包含有關當機時 Vulkan 狀態的資訊。 \n對於偵錯「&apos;裝置遺失」的&apos;錯誤很有用。如果啟用了此功能，則應啟用主機和來賓偵錯標記。 \n不適用於 Intel GPU。 \n你需要啟用 Vulkan 驗證層和 Vulkan SDK 才能使此功能如常運作。</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
