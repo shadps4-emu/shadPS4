@@ -18,14 +18,18 @@ using namespace ImGui;
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
 namespace Libraries::ImeDialog {
+ImeDialogState::ImeDialogState()
+    : input_changed(false), user_id(-1), is_multi_line(false), is_numeric(false),
+      type(OrbisImeType::Default), enter_label(OrbisImeEnterLabel::Default), text_filter(nullptr),
+      keyboard_filter(nullptr), max_text_length(ORBIS_IME_DIALOG_MAX_TEXT_LENGTH),
+      text_buffer(nullptr), title(), placeholder(), current_text() {}
 
 ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
                                const OrbisImeParamExtended* extended) {
-    LOG_INFO(Lib_ImeDialog, ">> ImeDialogState::Ctor: param={}, text_buffer={}",
-             static_cast<const void*>(param),
+    LOG_INFO(Lib_ImeDialog, "param={}, text_buffer={}", static_cast<const void*>(param),
              static_cast<void*>(param ? param->input_text_buffer : nullptr));
     if (!param) {
-        LOG_ERROR(Lib_ImeDialog, "   param==nullptr, returning without init");
+        LOG_ERROR(Lib_ImeDialog, "param==nullptr, returning without init");
         return;
     }
 
@@ -223,8 +227,7 @@ void ImeDialogUi::Free() {
 }
 
 void ImeDialogUi::Draw() {
-    std::unique_lock lock{draw_mutex};
-    LOG_INFO(Lib_ImeDialog, ">> ImeDialogUi::Draw: first_render=%d", first_render);
+    std::unique_lock<std::mutex> lock{draw_mutex};
 
     if (!state) {
         return;
@@ -264,13 +267,9 @@ void ImeDialogUi::Draw() {
         }
 
         if (state->is_multi_line) {
-            LOG_INFO(Lib_ImeDialog, "   Drawing multi-line widget…");
             DrawMultiLineInputText();
-            LOG_INFO(Lib_ImeDialog, "   Done DrawMultiLineInputText");
         } else {
-            LOG_INFO(Lib_ImeDialog, "   Drawing input text widget…");
             DrawInputText();
-            LOG_INFO(Lib_ImeDialog, "   Done DrawInputText");
         }
 
         SetCursorPosY(GetCursorPosY() + 10.0f);
@@ -315,7 +314,6 @@ void ImeDialogUi::Draw() {
     End();
 
     first_render = false;
-    LOG_INFO(Lib_ImeDialog, "<< ImeDialogUi::Draw complete");
 }
 
 void ImeDialogUi::DrawInputText() {

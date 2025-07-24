@@ -155,11 +155,13 @@ Error PS4_SYSV_ABI sceImeClose() {
     LOG_INFO(Lib_Ime, "called");
 
     if (!g_ime_handler) {
+        LOG_ERROR(Lib_Ime, "No IME handler is open");
         return Error::NOT_OPENED;
     }
 
     g_ime_handler.release();
-    if (g_keyboard_handler) {
+    if (g_ime_handler) {
+        LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
         return Error::INTERNAL;
     }
     g_ime_ui = ImeUi();
@@ -252,7 +254,7 @@ Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u3
     }
 
     if (static_cast<u32>(param->option) & ~0x7BFF) { // Basic check for invalid options
-        LOG_ERROR(Lib_Ime, "Invalid option 0x{:X}", static_cast<u32>(param->option));
+        LOG_ERROR(Lib_Ime, "Invalid option: {:032b}", static_cast<u32>(param->option));
         return Error::INVALID_OPTION;
     }
 
@@ -299,17 +301,16 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
         LOG_ERROR(Lib_Ime, "No keyboard handler is open");
         return Error::NOT_OPENED;
     }
-
-    if ((userId < 0 || userId > 4) &&
-        false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    if ((userId < 0 || userId > 4) && false) {
         // Maybe g_keyboard_handler should hold a user ID and I must compare it here?
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
     }
 
     g_keyboard_handler.release();
-    if (g_ime_handler) {
-        LOG_ERROR(Lib_Ime, "failed to close keyboard handler, IME handler is still open");
+    if (g_keyboard_handler) {
+        LOG_ERROR(Lib_Ime, "failed to close keyboard handler, it is still open");
         return Error::INTERNAL;
     }
 
@@ -321,10 +322,45 @@ int PS4_SYSV_ABI sceImeKeyboardGetInfo() {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
+Error PS4_SYSV_ABI
+sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userId,
+                            OrbisImeKeyboardResourceIdArray* resourceIdArray) {
+    LOG_INFO(Lib_Ime, "(partial) called");
 
-int PS4_SYSV_ABI sceImeKeyboardGetResourceId() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!resourceIdArray) {
+        LOG_ERROR(Lib_Ime, "Invalid resourceIdArray: NULL");
+        return Error::INVALID_ADDRESS;
+    }
+
+    // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    if ((userId < 0 || userId > 4) && false) {
+        LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
+        resourceIdArray->user_id = userId;
+        for (u32& id : resourceIdArray->resource_id) {
+            id = 0;
+        }
+        return Error::INVALID_USER_ID;
+    }
+
+    if (!g_keyboard_handler) {
+        LOG_ERROR(Lib_Ime, "Keyboard handler not opened");
+        resourceIdArray->user_id = userId;
+        for (u32& id : resourceIdArray->resource_id) {
+            id = 0;
+        }
+        return Error::NOT_OPENED;
+    }
+
+    // Simulate "no USB keyboard connected", needed for some Unity engine games
+    resourceIdArray->user_id = userId;
+    for (u32& id : resourceIdArray->resource_id) {
+        id = 0;
+    }
+    LOG_INFO(Lib_Ime, "No USB keyboard connected (simulated)");
+    return Error::CONNECTION_FAILED;
+
+    // For future reference, if we had a real keyboard handler
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
@@ -339,7 +375,8 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         return Error::INVALID_HANDLER;
     }
     // seems like arg is optional, need to check if it is used in the handler
-    if (!param->arg && false) { // Todo: check if arg is used in the handler, temporarily disabled
+    // Todo: check if arg is used in the handler, temporarily disabled
+    if (!param->arg && false) {
         LOG_ERROR(Lib_Ime, "Invalid param->arg: NULL");
         return Error::INVALID_ARG;
     }
@@ -351,8 +388,9 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
                   static_cast<u32>(param->option), kValidOrbisImeKeyboardOptionMask);
         return Error::INVALID_OPTION;
     }
-    if ((userId < 0 || userId > 4) &&
-        false) { // TODO: Check for valid user IDs. Disabled until user manager is ready.
+
+    // TODO: Check for valid user IDs. Disabled until user manager is ready.
+    if ((userId < 0 || userId > 4) && false) {
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
     }
@@ -368,7 +406,9 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
             return Error::INVALID_RESERVED;
         }
     }
-    if (false) { // Todo: figure out what it is, always true for now
+
+    // Todo: figure out what it is, always false for now
+    if (false) {
         LOG_ERROR(Lib_Ime, "USB keyboard some special kind of failure");
         return Error::CONNECTION_FAILED;
     }

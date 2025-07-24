@@ -57,6 +57,7 @@ Error PS4_SYSV_ABI sceImeDialogAbort() {
 }
 
 Error PS4_SYSV_ABI sceImeDialogForceClose() {
+    LOG_INFO(Lib_ImeDialog, "called");
     if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
@@ -149,47 +150,40 @@ OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
 }
 
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
-    LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: entering, param={}, extended={}",
-             static_cast<void*>(param), static_cast<void*>(extended));
+    LOG_INFO(Lib_ImeDialog, "called, param={}, extended={}", static_cast<void*>(param),
+             static_cast<void*>(extended));
 
     if (param == nullptr) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: param is null");
+        LOG_ERROR(Lib_ImeDialog, "param is null");
         return Error::INVALID_ADDRESS;
     } else {
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.user_id = {}",
-                 static_cast<u32>(param->user_id));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.type = {}", static_cast<u32>(param->type));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.supported_languages = 0x{:X}",
+        LOG_INFO(Lib_ImeDialog, "param.user_id = {}", static_cast<u32>(param->user_id));
+        LOG_INFO(Lib_ImeDialog, "param.type: {}", static_cast<u32>(param->type));
+        LOG_INFO(Lib_ImeDialog, "param.supported_languages: {:064b}",
                  static_cast<u64>(param->supported_languages));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.enter_label = {}",
-                 static_cast<u32>(param->enter_label));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.input_method = {}",
-                 static_cast<u32>(param->input_method));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.filter = {}", (void*)param->filter);
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.option = 0x{:X}",
-                 static_cast<u32>(param->option));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.max_text_length = {}",
-                 param->max_text_length);
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.input_text_buffer = {}",
-                 (void*)param->input_text_buffer);
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.posx = {}", param->posx);
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.posy = {}", param->posy);
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.horizontal_alignment = {}",
+        LOG_INFO(Lib_ImeDialog, "param.enter_label: {}", static_cast<u32>(param->enter_label));
+        LOG_INFO(Lib_ImeDialog, "param.input_method: {}", static_cast<u32>(param->input_method));
+        LOG_INFO(Lib_ImeDialog, "param.filter: {}", (void*)param->filter);
+        LOG_INFO(Lib_ImeDialog, "param.option: {:032b}", static_cast<u32>(param->option));
+        LOG_INFO(Lib_ImeDialog, "param.max_text_length: {}", param->max_text_length);
+        LOG_INFO(Lib_ImeDialog, "param.input_text_buffer: {}", (void*)param->input_text_buffer);
+        LOG_INFO(Lib_ImeDialog, "param.posx: {}", param->posx);
+        LOG_INFO(Lib_ImeDialog, "param.posy: {}", param->posy);
+        LOG_INFO(Lib_ImeDialog, "param.horizontal_alignment: {}",
                  static_cast<u32>(param->horizontal_alignment));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.vertical_alignment = {}",
+        LOG_INFO(Lib_ImeDialog, "param.vertical_alignment: {}",
                  static_cast<u32>(param->vertical_alignment));
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.placeholder = {}",
+        LOG_INFO(Lib_ImeDialog, "param.placeholder: {}",
                  param->placeholder ? "<non-null>" : "NULL");
-        LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: param.title = {}",
-                 param->title ? "<non-null>" : "NULL");
+        LOG_INFO(Lib_ImeDialog, "param.title: {}", param->title ? "<non-null>" : "NULL");
     }
     if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: busy (status={})", (u32)g_ime_dlg_status);
+        LOG_ERROR(Lib_ImeDialog, "busy (status={})", (u32)g_ime_dlg_status);
         return Error::BUSY;
     }
 
     if (!magic_enum::enum_contains(param->type)) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid param->type={}", (u32)param->type);
+        LOG_ERROR(Lib_ImeDialog, "invalid param->type={}", (u32)param->type);
         return Error::INVALID_ADDRESS;
     }
 
@@ -199,48 +193,50 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
     if (param->posx < 0.0f ||
         param->posx >=
             MAX_X_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posx={}", param->posx);
+        LOG_ERROR(Lib_ImeDialog, "Invalid posx: {}", param->posx);
         return Error::INVALID_POSX;
     }
 
     if (param->posy < 0.0f ||
         param->posy >=
             MAX_Y_POSITIONS[False(param->option & OrbisImeOption::USE_OVER_2K_COORDINATES)]) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid posy={}", param->posy);
+        LOG_ERROR(Lib_ImeDialog, "invalid posy: {}", param->posy);
         return Error::INVALID_POSY;
     }
 
     if (!magic_enum::enum_contains(param->horizontal_alignment)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->horizontalAlignment");
+        LOG_INFO(Lib_ImeDialog, "Invalid param->horizontalAlignment: {}",
+                 (u32)param->horizontal_alignment);
         return Error::INVALID_HORIZONTALIGNMENT;
     }
 
     if (!magic_enum::enum_contains(param->vertical_alignment)) {
-        LOG_INFO(Lib_ImeDialog, "Invalid param->verticalAlignment");
+        LOG_INFO(Lib_ImeDialog, "Invalid param->verticalAlignment: {}",
+                 (u32)param->vertical_alignment);
         return Error::INVALID_VERTICALALIGNMENT;
     }
 
     if (!IsValidOption(param->option, param->type)) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: invalid option=0x{:X}for type={}",
+        LOG_ERROR(Lib_ImeDialog, "Invalid option: {:032b} for type={}",
                   static_cast<u32>(param->option), (u32)param->type);
         return Error::INVALID_PARAM;
     }
 
     if (param->input_text_buffer == nullptr) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: input_text_buffer is null");
+        LOG_ERROR(Lib_ImeDialog, "Invalid input_text_buffer: null");
         return Error::INVALID_INPUT_TEXT_BUFFER;
     }
 
     if (extended) {
         if (!magic_enum::enum_contains(extended->priority)) {
-            LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: Invalid extended->priority");
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->priority: {}", (u32)extended->priority);
             return Error::INVALID_EXTENDED;
         }
 
         // TODO: do correct extended->option validation
 
         if ((extended->ext_keyboard_mode & 0xe3fffffc) != 0) {
-            LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: Invalid extended->extKeyboardMode");
+            LOG_INFO(Lib_ImeDialog, "Invalid extended->extKeyboardMode");
             return Error::INVALID_EXTENDED;
         }
 
@@ -294,6 +290,7 @@ int PS4_SYSV_ABI sceImeDialogSetPanelPosition() {
 }
 
 Error PS4_SYSV_ABI sceImeDialogTerm() {
+    LOG_INFO(Lib_ImeDialog, "called");
     if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
