@@ -262,7 +262,6 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
 
     g_ime_dlg_result = {};
     g_ime_dlg_state = ImeDialogState(param, extended);
-    LOG_ERROR(Lib_ImeDialog, "test");
     g_ime_dlg_status = OrbisImeDialogStatus::Running;
     g_ime_dlg_ui = ImeDialogUi(&g_ime_dlg_state, &g_ime_dlg_status, &g_ime_dlg_result);
 
