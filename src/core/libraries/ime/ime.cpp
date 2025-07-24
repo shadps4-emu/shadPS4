@@ -23,7 +23,6 @@ public:
     }
     ImeHandler(const OrbisImeParam* param) {
         LOG_INFO(Lib_Ime, "Creating ImeHandler for IME");
-        LOG_INFO(Lib_Ime, "Creating ImeHandler for IME");
         Init(param, true);
     }
     ~ImeHandler() = default;
@@ -352,8 +351,9 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
 
     // Simulate "no USB keyboard connected", needed for some Unity engine games
     resourceIdArray->user_id = userId;
-    for (u32& id : resourceIdArray->resource_id)
+    for (u32& id : resourceIdArray->resource_id) {
         id = 0;
+    }
     LOG_INFO(Lib_Ime, "No USB keyboard connected (simulated)");
     return Error::CONNECTION_FAILED;
 
