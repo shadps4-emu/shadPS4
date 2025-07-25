@@ -17,7 +17,8 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/texture_cache/texture_cache.h"
-
+u32 num_flushes = 0;
+u64 fence_tick = 0;
 namespace VideoCore {
 
 static constexpr size_t DataShareBufferSize = 64_KB;
@@ -194,7 +195,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     if (total_size_bytes == 0) {
         return;
     }
-    LOG_WARNING(Render, "Flushing page");
+    ++num_flushes;
+    LOG_WARNING(Render, "Flushing page addr={:#x} fence_tick={}", device_addr, page_table[device_addr >> CACHING_PAGEBITS].fence_tick);
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
     for (auto& copy : copies) {
         // Modify copies to have the staging offset in mind
@@ -386,7 +388,6 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
             memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
             return;
         }
-        // Without a readback there's nothing we can do with this
         // Fallback to creating dst buffer on GPU to at least have this data there
     }
     auto& src_buffer = [&] -> const Buffer& {
@@ -1041,6 +1042,14 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size, bool is
         VAddr end = std::min(buffer.CpuAddr() + buffer.SizeBytes(), device_addr_end);
         u32 size = static_cast<u32>(end - start);
         SynchronizeBuffer(buffer, start, size, is_written, false);
+        if (is_written) {
+            //LOG_WARNING(Render, "Commit pending GPU range device_addr={:#x}, size={:#x}, fence_tick={}", start, end - start, fence_tick);
+            const u64 page_start = start >> CACHING_PAGEBITS;
+            const u64 page_end = Common::DivCeil(end, CACHING_PAGESIZE);
+            for (u64 page = page_start; page != page_end; ++page) {
+                page_table[page].fence_tick = fence_tick;
+            }
+        }
     });
 }
 

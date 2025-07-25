@@ -51,6 +51,7 @@ public:
 
     struct PageData {
         BufferId buffer_id{};
+        u64 fence_tick;
     };
 
     struct Traits {
@@ -100,6 +101,11 @@ public:
         return slot_buffers[id];
     }
 
+    /// Retrieves GPU modified ranges since last CPU fence that haven't been read protected yet.
+    [[nodiscard]] const RangeSet& GetPendingGpuModifiedRanges() const {
+        return gpu_modified_ranges_pending;
+    }
+
     /// Retrieves a utility buffer optimized for specified memory usage.
     StreamBuffer& GetUtilityBuffer(MemoryUsage usage) noexcept {
         if (usage == MemoryUsage::Stream) {
@@ -111,6 +117,7 @@ public:
         } else {
             return staging_buffer;
         }
+        UNREACHABLE();
     }
 
     /// Invalidates any buffer in the logical page range.
