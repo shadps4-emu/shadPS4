@@ -1451,8 +1451,7 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
     auto ret = ORBIS_OK;
     if (gai_result != 0) {
         // handle more errors
-        LOG_ERROR(Lib_Net, "address resolution for {} failed: {}", hostname,
-                  gai_strerror(gai_result));
+        LOG_ERROR(Lib_Net, "address resolution for {} failed: {}", hostname, gai_result);
         *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
         ret = -ORBIS_NET_ERETURN | ORBIS_NET_ERROR_BASE;
     } else {
