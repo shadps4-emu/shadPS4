@@ -196,7 +196,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         return;
     }
     ++num_flushes;
-    LOG_WARNING(Render, "Flushing page addr={:#x} fence_tick={}", device_addr, page_table[device_addr >> CACHING_PAGEBITS].fence_tick);
+    //LOG_WARNING(Render, "Flushing page addr={:#x} fence_tick={}", device_addr, page_table[device_addr >> CACHING_PAGEBITS].fence_tick);
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
     for (auto& copy : copies) {
         // Modify copies to have the staging offset in mind
