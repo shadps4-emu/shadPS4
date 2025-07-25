@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <unordered_map>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
@@ -350,19 +349,7 @@ void CFG::LinkBlocks() {
             block.branch_false = end_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
-            const auto& prev_inst = inst_list[block.end_index - 1];
-            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0) {
-                if (prev_inst.control.exp.target != 9) {
-                    block.end_class = EndClass::Kill;
-                } else if (const auto& exec_mask = inst_list[block.end_index - 2];
-                           exec_mask.src[0].field == OperandField::ConstZero) {
-                    block.end_class = EndClass::Kill;
-                } else {
-                    block.end_class = EndClass::Exit;
-                }
-            } else {
-                block.end_class = EndClass::Exit;
-            }
+            block.end_class = EndClass::Exit;
         } else {
             UNREACHABLE();
         }
@@ -401,12 +388,6 @@ std::string CFG::Dot() const {
             dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
             dot +=
                 fmt::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n", node_uid);
-            ++node_uid;
-            break;
-        case EndClass::Kill:
-            dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-            dot +=
-                fmt::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n", node_uid);
             ++node_uid;
             break;
         }
