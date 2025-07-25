@@ -284,7 +284,7 @@ u16 PS4_SYSV_ABI sceNetHtons(u16 host16);
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size);
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId();
 int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst);
-int PS4_SYSV_ABI sceNetInetPtonEx();
+int PS4_SYSV_ABI sceNetInetPtonEx(int af, const char* src, void* dst, int flags);
 int PS4_SYSV_ABI sceNetInetPtonWithScopeId();
 int PS4_SYSV_ABI sceNetInfoDumpStart();
 int PS4_SYSV_ABI sceNetInfoDumpStop();

@@ -1587,6 +1587,18 @@
       <translation>إخفاء المؤشر بعد فترة الخمول</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation type="unfinished">Microphone</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation type="unfinished">None</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation type="unfinished">Default Device</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>س</translation>
     </message>
@@ -1685,6 +1697,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>علامات التصحيح على الضيف</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation type="unfinished">Enable Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation type="unfinished">Enable Readback Linear Images</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1916,6 +1936,14 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
       <translation>تشخيص الأعطال:\nيقوم بإنشاء ملف بصيغة .yaml يحتوي على معلومات عن حالة Vulkan في وقت حدوث العطل.\nمفيد لتصحيح أخطاء &apos;فصل الجهاز&apos;. إذا قمت بتشغيل هذا من الأفضل أن تقوم بتشغيل "استضافة علامات تصحيح الأخطاء" و "ضيف علامات تصحيح الأخطاء".\nلا يعمل على وحدة معالجة رسوم إنتل.\nتحتاج لتشغيل التحقق من طبقات Vulkan و مجموعة تطوير البرامج الخاصة بـVulkan من أجل أن يعمل هذا.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>نسخ مخازن الذاكرة الخاصة بالـ GPU:\nيتجاوز مشكلة التزامن المتعلقة بتقديمات GPU.\n قد يساعد أو لا يساعد في حل أعطال PM4 من النوع 0.</translation>
     </message>
@@ -2078,6 +2106,18 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation>نسخ Vulkan غير مدعومة</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation type="unfinished">100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation type="unfinished">Experimental Features</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
     </message>
   </context>
   <context>

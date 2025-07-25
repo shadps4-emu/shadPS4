@@ -1587,6 +1587,18 @@
       <translation>Temps d'espera per ocultar el ratolí</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Micròfon</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Cap</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Dispositiu per defecte</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1685,6 +1697,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Marcadors de depuració</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>Activar Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Activa imatges lineals de Readback</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1935,14 @@
       <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nNo funciona en les targetes gràfiques de Intel.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Actica Readbacks:\nActiva readbacks i writebacks a la memòria de la targeta gràfica.\nAixò és necessari pel funcionament correcte en alguns jocs.\nPot causar inestabilitat i/o errors de rendiment.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Activa imatges lineals de Readback:\nActiva la descàrrega asíncrona d'imatges lineals modificades de la targeta gràfica:\nPot corregir errors en alguns jocs.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copia la memòria intermèdia de la GPU:\nEvita les condicions de carrera que impliquen més enviaments a la targeta gràfica.\nPot ajudar o no amb fer fallida del tipus 0 de PM4.</translation>
     </message>
@@ -2077,6 +2105,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> Versió de Vulkan no suportada</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation type="unfinished">Experimental Features</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
     </message>
   </context>
   <context>
