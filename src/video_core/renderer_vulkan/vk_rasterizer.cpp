@@ -456,6 +456,10 @@ void Rasterizer::OnSubmit() {
     buffer_cache.RunGarbageCollector();
 }
 
+void Rasterizer::CommitPendingGpuRanges() {
+    buffer_cache.CommitPendingGpuRanges();
+}
+
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline)) {
         return false;
