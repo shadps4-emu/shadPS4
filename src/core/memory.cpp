@@ -740,8 +740,8 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
         dmem_area++;
     }
 
-    if (dmem_area->second.is_free) {
-        LOG_ERROR(Core, "Unable to find allocated direct memory region to query!");
+    if (dmem_area->second.is_free || addr >= total_direct_size) {
+        LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
