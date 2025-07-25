@@ -610,11 +610,11 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
         info.has_derivatives.Assign(flags.test(MimgModifier::Derivative));
     }
 
-    // Load first dword of T# and S#. We will use them as the handle that will guide resource
-    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
-    // binding index.
-    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
-    const IR::Value inline_sampler =
+    // Load first dword of T# and the full S#. We will use them as the handle that will guide
+    // resource tracking pass where to read the sharps. This will later also get patched to the
+    // backend texture binding index.
+    const IR::Value image_handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value sampler_handle =
         ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
                               ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
 
@@ -652,8 +652,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     const IR::Value address4 = get_addr_reg(12);
 
     // Issue the placeholder IR instruction.
-    IR::Value texel =
-        ir.ImageSampleRaw(handle, address1, address2, address3, address4, inline_sampler, info);
+    IR::Value texel = ir.ImageSampleRaw(image_handle, sampler_handle, address1, address2, address3,
+                                        address4, info);
     if (info.is_depth && !gather) {
         // For non-gather depth sampling, only return a single value.
         texel = ir.CompositeExtract(texel, 0);

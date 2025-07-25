@@ -330,9 +330,9 @@ private:
             }
         }
         // Expensive operation:
-        if (!AreSiblings(goto_stmt, label_stmt)) {
-            UNREACHABLE_MSG("Goto is not a sibling with the label");
-        }
+        // if (!AreSiblings(goto_stmt, label_stmt)) {
+        //    UNREACHABLE_MSG("Goto is not a sibling with the label");
+        //}
         // goto_stmt and label_stmt are guaranteed to be siblings, eliminate
         if (std::next(goto_stmt) == label_stmt) {
             // Simply eliminate the goto if the label is next to it
@@ -629,6 +629,7 @@ private:
                 if (!stmt.block->is_dummy) {
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
+                    current_block->cfg_block = stmt.block;
                     translator.Translate(current_block, stmt.block->begin,
                                          inst_list.subspan(start, size));
                 }
@@ -769,7 +770,7 @@ private:
                 break;
             }
             default:
-                throw NotImplementedException("Statement type {}", u32(stmt.type));
+                UNREACHABLE_MSG("Statement type {}", u32(stmt.type));
             }
         }
         if (current_block) {
