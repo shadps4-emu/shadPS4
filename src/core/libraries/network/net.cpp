@@ -28,6 +28,17 @@ static thread_local int32_t net_errno = 0;
 
 static bool g_isNetInitialized = true; // TODO init it properly
 
+static int ConvertFamilies(int family) {
+    switch (family) {
+    case ORBIS_NET_AF_INET:
+        return AF_INET;
+    case ORBIS_NET_AF_INET6:
+        return AF_INET6;
+    default:
+        UNREACHABLE_MSG("unsupported socket family {}", family);
+    }
+}
+
 int PS4_SYSV_ABI in6addr_any() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
@@ -971,7 +982,7 @@ u64 strlcpy(char* dst, const char* src, u64 size) {
 
 #endif
 
-const char* freebsd_inet_ntop4(const char* src, char* dst, u64 size) {
+const char* freebsd_inet_ntop4(const unsigned char* src, char* dst, u64 size) {
     static const char fmt[] = "%u.%u.%u.%u";
     char tmp[sizeof "255.255.255.255"];
     int l;
@@ -984,7 +995,7 @@ const char* freebsd_inet_ntop4(const char* src, char* dst, u64 size) {
     return (dst);
 }
 
-const char* freebsd_inet_ntop6(const char* src, char* dst, u64 size) {
+const char* freebsd_inet_ntop6(const unsigned char* src, char* dst, u64 size) {
     /*
      * Note that int32_t and int16_t need only be "at least" large enough
      * to contain a value of the specified size.  On some systems, like
@@ -1082,10 +1093,10 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
     const char* returnvalue = nullptr;
     switch (af) {
     case ORBIS_NET_AF_INET:
-        returnvalue = freebsd_inet_ntop4((const char*)src, dst, size);
+        returnvalue = freebsd_inet_ntop4((const unsigned char*)src, dst, size);
         break;
     case ORBIS_NET_AF_INET6:
-        returnvalue = freebsd_inet_ntop6((const char*)src, dst, size);
+        returnvalue = freebsd_inet_ntop6((const unsigned char*)src, dst, size);
         break;
     default:
         *sceNetErrnoLoc() = ORBIS_NET_EAFNOSUPPORT;
@@ -1106,19 +1117,19 @@ int PS4_SYSV_ABI sceNetInetNtopWithScopeId() {
 
 int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst) {
 #ifdef WIN32
-    int res = InetPtonA(af, src, dst);
+    int res = InetPtonA(ConvertFamilies(af), src, dst);
 #else
-    int res = inet_pton(af, src, dst);
+    int res = inet_pton(ConvertFamilies(af), src, dst);
 #endif
     if (res < 0) {
-        UNREACHABLE();
+        UNREACHABLE_MSG("af = {}, src = {}, dst = {}", af, src, fmt::ptr(dst));
     }
     return res;
 }
 
-int PS4_SYSV_ABI sceNetInetPtonEx() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetInetPtonEx(int af, const char* src, void* dst, int flags) {
+    LOG_WARNING(Lib_Net, "ignored flags, redirecting to sceNetInetPton");
+    return sceNetInetPton(af, src, dst);
 }
 
 int PS4_SYSV_ABI sceNetInetPtonWithScopeId() {
