@@ -20,6 +20,7 @@
 #include "net_error.h"
 #include "net_util.h"
 #include "netctl.h"
+#include "sockets.h"
 #include "sys_net.h"
 
 namespace Libraries::Net {
@@ -1399,12 +1400,13 @@ int PS4_SYSV_ABI sceNetResolverConnectDestroy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int poolid, int flags) {
+    LOG_ERROR(Lib_Net, "(STUBBED) called, name = {}, poolid = {}, flags = {}", name, poolid, flags);
+    static int id = 1;
+    return id++;
 }
 
-int PS4_SYSV_ABI sceNetResolverDestroy() {
+int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1424,9 +1426,43 @@ int PS4_SYSV_ABI sceNetResolverStartAton6() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverStartNtoa() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* hostname,
+                                         OrbisNetInAddr* addr, int timeout, int retry, int flags) {
+    LOG_INFO(Lib_Net,
+             "called, resolverid = {}, hostname = {}, timeout = {}, retry = {}, flags = {}",
+             resolverid, hostname, timeout, retry, flags);
+
+    if ((flags & ORBIS_NET_RESOLVER_ASYNC) != 0) {
+        // moves processing to EpollWait
+        LOG_ERROR(Lib_Net, "async resolution is not implemented");
+        *sceNetErrnoLoc() = ORBIS_NET_RESOLVER_EINTERNAL;
+        auto ret = -ORBIS_NET_RESOLVER_EINTERNAL | ORBIS_NET_ERROR_BASE;
+        return ret;
+    }
+
+    const addrinfo hints = {
+        .ai_flags = AI_V4MAPPED | AI_ADDRCONFIG,
+        .ai_family = AF_INET,
+    };
+
+    addrinfo* info = nullptr;
+    auto gai_result = getaddrinfo(hostname, nullptr, &hints, &info);
+
+    auto ret = ORBIS_OK;
+    if (gai_result != 0) {
+        // handle more errors
+        LOG_ERROR(Lib_Net, "address resolution for {} failed: {}", hostname, gai_result);
+        *sceNetErrnoLoc() = ORBIS_NET_ERETURN;
+        ret = -ORBIS_NET_ERETURN | ORBIS_NET_ERROR_BASE;
+    } else {
+        ASSERT(info && info->ai_addr);
+        in_addr resolved_addr = ((sockaddr_in*)info->ai_addr)->sin_addr;
+        LOG_DEBUG(Lib_Net, "resolved address for {}: {}", hostname, inet_ntoa(resolved_addr));
+        addr->inaddr_addr = resolved_addr.s_addr;
+    }
+
+    freeaddrinfo(info);
+    return ret;
 }
 
 int PS4_SYSV_ABI sceNetResolverStartNtoa6() {
@@ -1434,9 +1470,21 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa6() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId resolverid, const char* hostname,
+                                                        OrbisNetResolverInfo* info, int timeout,
+                                                        int retry, int flags) {
+    LOG_WARNING(Lib_Net, "redirected to sceNetResolverStartNtoa");
+
+    OrbisNetInAddr addr{};
+    auto result = sceNetResolverStartNtoa(resolverid, hostname, &addr, timeout, retry, flags);
+
+    if (result == ORBIS_OK) {
+        info->addrs[0] = {.u = {.addr = addr}, .af = ORBIS_NET_AF_INET};
+        info->records = 1;
+        info->recordsv4 = 1;
+    }
+
+    return result;
 }
 
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx() {
