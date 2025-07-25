@@ -1587,6 +1587,18 @@
       <translation>Tempo de Inatividade para Ocultar Cursor</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Microfone</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Nenhum</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Dispositivo Padrão</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1685,6 +1697,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Marcadores de Depuração do Convidado</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>Ativar Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Ativar Readback Linear Images</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1935,14 @@
       <translation>Diagnóstico de Falhas:\nCria um arquivo .yaml com informações sobre o estado do Vulkan no momento da falha.\nÚtil para depuração de erros de &apos;Device lost&apos;. Se isto estiver ativado, você deve habilitar os Marcadores de Depuração de Host E DE Convidado.\nNão funciona em GPUs Intel.\nVocê precisa ter as Camadas de Validação Vulkan habilitadas e o Vulkan SDK para que isso funcione.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Ativar Readbacks:\nAtive a leitura e gravação da memória da GPU.\nIsso é necessário para o funcionamento adequado de alguns jogos.\nPode causar instabilidade e/ou impactar o desempenho.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Ativar Readback Linear Images:\nAtiva o download assíncrono de imagens lineares(Linear Images) modificadas pela GPU.\nPode corrigir problemas em alguns jogos.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copiar Buffers de GPU:\nContorna condições de corrida envolvendo envios de GPU.\nPode ou não ajudar com travamentos do PM4 tipo 0.</translation>
     </message>
@@ -2077,6 +2105,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * Versão do Vulkan não suportada</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation type="unfinished">Experimental Features</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
     </message>
   </context>
   <context>
