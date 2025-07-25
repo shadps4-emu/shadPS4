@@ -222,7 +222,7 @@
     </message>
     <message>
       <source>Author: </source>
-      <translation>Autor:</translation>
+      <translation>Autor: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>

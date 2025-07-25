@@ -2112,11 +2112,11 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Funzionalità Sperimentali</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ATTENZIONE: Queste funzionalità sono sperimentali e non dovrebbero essere abilitate a meno che non sia stato indicato o che un gioco lo richieda. Si prega di chiedere informazioni nel server Discord shadPS4 se si è in dubbio.</translation>
     </message>
   </context>
   <context>
