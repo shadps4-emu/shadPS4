@@ -124,7 +124,40 @@ bool NetUtilInternal::RetrieveDefaultGateway() {
     std::scoped_lock lock{m_mutex};
 
 #ifdef _WIN32
+    ULONG flags = GAA_FLAG_INCLUDE_GATEWAYS;
+    ULONG family = AF_INET; // Only IPv4
+    ULONG buffer_size = 15000;
 
+    std::vector<BYTE> buffer(buffer_size);
+    PIP_ADAPTER_ADDRESSES adapter_addresses =
+        reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
+
+    DWORD result = GetAdaptersAddresses(family, flags, nullptr, adapter_addresses, &buffer_size);
+    if (result != NO_ERROR) {
+        return false;
+    }
+
+    for (PIP_ADAPTER_ADDRESSES adapter = adapter_addresses; adapter != nullptr;
+         adapter = adapter->Next) {
+        if (adapter->OperStatus != IfOperStatusUp)
+            continue;
+
+        IP_ADAPTER_GATEWAY_ADDRESS_LH* gateway = adapter->FirstGatewayAddress;
+        while (gateway) {
+            sockaddr* sa = gateway->Address.lpSockaddr;
+            if (sa->sa_family == AF_INET) {
+                char str[INET_ADDRSTRLEN];
+                sockaddr_in* sa_in = reinterpret_cast<sockaddr_in*>(sa);
+                if (inet_ntop(AF_INET, &sa_in->sin_addr, str, sizeof(str))) {
+                    this->default_gateway = str;
+                    return true;
+                }
+            }
+            gateway = gateway->Next;
+        }
+    }
+
+    return false;
 #elif defined(__APPLE__)
     // adapted from
     // https://github.com/seladb/PcapPlusPlus/blob/a49a79e0b67b402ad75ffa96c1795def36df75c8/Pcap%2B%2B/src/PcapLiveDevice.cpp#L1236
