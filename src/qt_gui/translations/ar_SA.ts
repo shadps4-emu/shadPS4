@@ -2111,6 +2111,14 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
       <source>100%</source>
       <translation type="unfinished">100%</translation>
     </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation type="unfinished">Experimental Features</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
