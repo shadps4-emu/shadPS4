@@ -619,8 +619,10 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
         const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
         const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
-        const u32 height_aligned =
-            mip_height && image.info.IsTiled() ? std::max(mip_height, 8U) : mip_height;
+        const bool is_volume = image.info.tiling_mode == AmdGpu::TilingMode::Texture_Volume;
+        const u32 height_aligned = mip_height && image.info.IsTiled() && !is_volume
+                                       ? std::max(mip_height, 8U)
+                                       : mip_height;
 
         image_copy.push_back({
             .bufferOffset = mip_offset,
