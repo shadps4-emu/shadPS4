@@ -15,10 +15,16 @@ public:
 
 private:
     std::array<u8, 6> ether_address{};
+    std::string default_gateway{};
+    std::string netmask{};
     std::mutex m_mutex;
 
 public:
     const std::array<u8, 6>& GetEthernetAddr() const;
+    const std::string& GetDefaultGateway() const;
+    const std::string& GetNetmask() const;
     bool RetrieveEthernetAddr();
+    bool RetrieveDefaultGateway();
+    bool RetrieveNetmask();
 };
 } // namespace NetUtil
