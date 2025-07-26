@@ -354,6 +354,8 @@ SharpSources FindSharpSources(const IR::Inst* handle) {
         return sources;
     }
 
+    bool found_read_const_buffer = false;
+
     boost::container::small_vector<const IR::Inst*, 8> visited;
     std::queue<const IR::Inst*> queue;
     queue.push(handle);
@@ -365,6 +367,7 @@ SharpSources FindSharpSources(const IR::Inst* handle) {
             sources.push_back(inst);
             continue;
         }
+        found_read_const_buffer |= inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
         if (inst->GetOpcode() != IR::Opcode::Phi) {
             continue;
         }
@@ -380,37 +383,46 @@ SharpSources FindSharpSources(const IR::Inst* handle) {
             }
         }
     }
-    ASSERT(!sources.empty());
+    if (sources.empty()) {
+        if (found_read_const_buffer) {
+            UNREACHABLE_MSG("Bindless sharp access detected");
+        } else {
+            UNREACHABLE_MSG("Unable to find sharp sources");
+        }
+    }
     return sources;
 }
 
-bool IsCfgBlockReachableFrom(const Shader::Gcn::Block* dest_block,
-                             const Shader::Gcn::Block* start_block) {
-    if (dest_block == start_block) {
+bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
+                           const Shader::Gcn::Block* block, const Shader::Gcn::Block* dest_block) {
+    if (block == maybe_dominator) {
         return true;
     }
 
     boost::container::small_vector<const Shader::Gcn::Block*, 8> visited;
     std::queue<const Shader::Gcn::Block*> queue;
-    queue.push(start_block);
+    queue.push(block);
 
     while (!queue.empty()) {
         const Shader::Gcn::Block* block{queue.front()};
         queue.pop();
         if (block == dest_block) {
-            return true;
+            return false;
         }
-        if (block->branch_true && std::ranges::find(visited, block->branch_true) == visited.end()) {
-            visited.push_back(block->branch_true);
-            queue.push(block->branch_true);
+        if (block == maybe_dominator) {
+            continue;
         }
-        if (block->branch_false &&
-            std::ranges::find(visited, block->branch_false) == visited.end()) {
+        if (block->branch_false && !std::ranges::contains(visited, block->branch_false)) {
             visited.push_back(block->branch_false);
             queue.push(block->branch_false);
         }
+        if (block->branch_true && !std::ranges::contains(visited, block->branch_true)) {
+            visited.push_back(block->branch_true);
+            queue.push(block->branch_true);
+        }
     }
-    return false;
+
+    return true;
 }
 
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
@@ -427,32 +439,28 @@ SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, 
     size_t num_sources = sources.size();
     ASSERT(current_parent.cfg_block);
 
-    // Perform reachability analysis on remaining sources and eliminate ones that don't pass
+    // Perform dominance analysis on found sources and eliminate ones that don't pass
+    // If a sharp source is dominated by another, the former can be eliminated.
+    // This also implicitly performs reachability analysis.
     for (s32 i = 0; i < num_sources;) {
-        const IR::Block* parent = sources[i]->GetParent();
-        ASSERT(parent->cfg_block);
-        if (!IsCfgBlockReachableFrom(current_parent.cfg_block, parent->cfg_block)) {
-            std::swap(sources[i], sources[num_sources - 1]);
-            --num_sources;
-            sources.pop_back();
-        } else {
-            ++i;
+        const IR::Block* block = sources[i]->GetParent();
+        ASSERT(block->cfg_block);
+        bool was_removed = false;
+        for (s32 j = 0; j < num_sources;) {
+            const IR::Block* dominator = sources[j]->GetParent();
+            ASSERT(dominator->cfg_block);
+            if (i != j && IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
+                                                current_parent.cfg_block)) {
+                std::swap(sources[i], sources[num_sources - 1]);
+                --num_sources;
+                sources.pop_back();
+                was_removed = true;
+                break;
+            } else {
+                ++j;
+            }
         }
-    }
-
-    // If this was enough to prune source list, return candidate
-    if (sources.size() == 1) {
-        return SharpLocationFromSource(sources[0]);
-    }
-
-    // Perform resource type validation and eliminate ones that don't pass
-    for (s32 i = 0; i < num_sources;) {
-        const auto sharp = info.ReadUdSharp<DataType>(SharpLocationFromSource(sources[i]));
-        if (!sharp.Valid()) {
-            std::swap(sources[i], sources[num_sources - 1]);
-            --num_sources;
-            sources.pop_back();
-        } else {
+        if (!was_removed) {
             ++i;
         }
     }
@@ -506,9 +514,9 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
 
 void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
     // Read image sharp.
+    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
     const auto tsharp = TrackSharp<AmdGpu::Image>(image_handle, block, info);
-    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const ImageResource image_res = {
