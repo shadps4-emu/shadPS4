@@ -23,8 +23,9 @@ public:
         };
 
         // Determine port type
-        std::string port_name = port.type != OrbisAudioOutPort::PadSpk ?
-            Config::getPadSpkOutputDevice() : Config::getMainOutputDevice();
+        std::string port_name = port.type != OrbisAudioOutPort::PadSpk
+                                    ? Config::getPadSpkOutputDevice()
+                                    : Config::getMainOutputDevice();
         u32 devId;
 
         if (port_name == "None") {
