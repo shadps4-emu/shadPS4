@@ -316,8 +316,21 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
         return not_found;
     }
 
+    // The bitfield extract might be hidden by phi sometimes
+    auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
+    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
+        auto arg0 = prod0_arg0->Arg(0);
+        auto arg1 = prod0_arg0->Arg(1);
+        if (!arg0.IsImmediate() &&
+            arg0.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
+            prod0_arg0 = arg0.InstRecursive();
+        } else if (!arg1.IsImmediate() &&
+                   arg1.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
+            prod0_arg0 = arg1.InstRecursive();
+        }
+    }
+
     // The bits range is for lods (note that constants are changed after constant propagation pass)
-    const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
         !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
         !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
@@ -333,8 +346,7 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
     // We're working on the first dword of s#
     const auto* prod2 = inst->Arg(2).InstRecursive();
     if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst &&
-        prod2->GetOpcode() != IR::Opcode::Phi) {
+        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
         return not_found;
     }
 

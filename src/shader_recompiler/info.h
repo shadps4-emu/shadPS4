@@ -308,20 +308,24 @@ struct Info {
 DECLARE_ENUM_FLAG_OPERATORS(Info::ReadConstType);
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+    const auto buffer = inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+    if (!buffer.Valid()) {
+        LOG_DEBUG(Render, "Encountered invalid buffer sharp");
+        return AmdGpu::Buffer::Null();
+    }
+    return buffer;
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    AmdGpu::Image image{0};
+    AmdGpu::Image image{};
     if (!is_r128) {
         image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
     } else {
-        const auto buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
-        memcpy(&image, &buf, sizeof(buf));
+        const auto raw = info.ReadUdSharp<u128>(sharp_idx);
+        std::memcpy(&image, &raw, sizeof(raw));
     }
     if (!image.Valid()) {
-        // Fall back to null image if unbound.
-        LOG_DEBUG(Render_Vulkan, "Encountered unbound image!");
+        LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");
         image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
     } else if (is_depth) {
         const auto data_fmt = image.GetDataFmt();
