@@ -219,6 +219,18 @@ File* HandleTable::GetFile(int d) {
     return m_files.at(d);
 }
 
+File* HandleTable::GetSocket(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Socket) {
+        return nullptr;
+    }
+    return file;
+}
+
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
     for (auto* file : m_files) {
         if (file != nullptr && file->m_host_name == host_name) {

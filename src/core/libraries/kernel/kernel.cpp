@@ -222,14 +222,15 @@ s32 PS4_SYSV_ABI posix_getpagesize() {
 
 s32 PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
                                    Libraries::Net::OrbisNetSockaddr* addr, u32* paddrlen) {
-    auto* netcall = Common::Singleton<Libraries::Net::NetInternal>::Instance();
-    auto sock = netcall->FindSocket(s);
-    if (!sock) {
+    LOG_INFO(Lib_Kernel, "s = {}", s);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto file = h->GetSocket(s);
+    if (!file) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
-    s32 returncode = sock->GetSocketAddress(addr, paddrlen);
+    s32 returncode = file->socket->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
         LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
         return 0;

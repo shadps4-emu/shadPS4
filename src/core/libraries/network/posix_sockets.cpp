@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/assert.h>
+#include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
 #include "net.h"
 #ifndef _WIN32
@@ -146,6 +147,14 @@ static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
+bool PosixSocket::IsValid() const {
+#ifdef _WIN32
+    return sock != INVALID_SOCKET;
+#else
+    return sock != -1;
+#endif
+}
+
 int PosixSocket::Close() {
     std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
@@ -198,14 +207,17 @@ int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* 
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
-    net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
+    socklen_t len = sizeof(addr2);
+    net_socket new_socket = ::accept(sock, &addr2, &len);
 #ifdef _WIN32
     if (new_socket != INVALID_SOCKET) {
 #else
     if (new_socket >= 0) {
 #endif
-        convertPosixSockaddrToOrbis(&addr2, addr);
-        *addrlen = sizeof(OrbisNetSockaddrIn);
+        if (addr && addrlen) {
+            convertPosixSockaddrToOrbis(&addr2, addr);
+            *addrlen = sizeof(OrbisNetSockaddrIn);
+        }
         return std::make_shared<PosixSocket>(new_socket);
     }
     return nullptr;
@@ -215,7 +227,13 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
-    return ::connect(sock, &addr2, sizeof(sockaddr_in));
+    int result = 0;
+    do {
+        result = ::connect(sock, &addr2, sizeof(sockaddr_in));
+        LOG_DEBUG(Lib_Net, "raw connect result = {}, errno = {}", result,
+                  result == -1 ? Common::GetLastErrorMsg() : "none");
+    } while (result == -1 && (errno == EINTR || errno == EINPROGRESS));
+    return ConvertReturnErrorCode(result);
 }
 
 int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
@@ -412,22 +430,6 @@ int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_blksize = st.st_blksize;
     // sb->st_flags = st.st_flags;
     return result;
-#endif
-}
-
-int PosixSocket::read(void* buf, size_t len) {
-#ifdef _WIN32
-    return recv(sock, (char*)buf, len, 0);
-#else
-    return ::read(sock, buf, len);
-#endif
-}
-
-int PosixSocket::write(const void* buf, size_t len) {
-#ifdef _WIN32
-    return send(sock, (char*)buf, len, 0);
-#else
-    return ::write(sock, buf, len);
 #endif
 }
 

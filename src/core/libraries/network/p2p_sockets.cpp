@@ -57,16 +57,6 @@ int P2PSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     return 0;
 }
 
-int P2PSocket::read(void* buf, size_t len) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::write(const void* buf, size_t len) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
 int P2PSocket::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return 0;

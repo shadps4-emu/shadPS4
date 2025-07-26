@@ -43,6 +43,7 @@ struct OrbisNetLinger {
 struct Socket {
     explicit Socket(int domain, int type, int protocol) {}
     virtual ~Socket() = default;
+    virtual bool IsValid() const = 0;
     virtual int Close() = 0;
     virtual int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) = 0;
     virtual int GetSocketOptions(int level, int optname, void* optval, u32* optlen) = 0;
@@ -56,8 +57,6 @@ struct Socket {
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
     virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
-    virtual int read(void* buf, size_t len) = 0;
-    virtual int write(const void* buf, size_t len) = 0;
     std::mutex m_mutex;
 };
 
@@ -78,6 +77,7 @@ struct PosixSocket : public Socket {
         socket_type = type;
     }
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+    bool IsValid() const override;
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
@@ -90,12 +90,13 @@ struct PosixSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
-    int read(void* buf, size_t len) override;
-    int write(const void* buf, size_t len) override;
 };
 
 struct P2PSocket : public Socket {
     explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
+    bool IsValid() const override {
+        return true;
+    }
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
@@ -108,27 +109,6 @@ struct P2PSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
-    int read(void* buf, size_t len) override;
-    int write(const void* buf, size_t len) override;
 };
 
-class NetInternal {
-public:
-    explicit NetInternal() = default;
-    ~NetInternal() = default;
-    SocketPtr FindSocket(int sockid) {
-        std::scoped_lock lock{m_mutex};
-        const auto it = socks.find(sockid);
-        if (it != socks.end()) {
-            return it->second;
-        }
-        return 0;
-    }
-
-public:
-    std::mutex m_mutex;
-    typedef std::map<int, SocketPtr> NetSockets;
-    NetSockets socks;
-    int next_sock_id = 0;
-};
 } // namespace Libraries::Net
