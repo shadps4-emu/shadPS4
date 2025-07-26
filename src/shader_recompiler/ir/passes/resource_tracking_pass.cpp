@@ -347,7 +347,7 @@ bool IsSharpSource(const IR::Inst* inst) {
            inst->GetOpcode() == IR::Opcode::ReadConst;
 }
 
-SharpSources FindSharpSources(const IR::Inst* handle) {
+SharpSources FindSharpSources(const IR::Inst* handle, u32 pc) {
     SharpSources sources;
     if (IsSharpSource(handle)) {
         sources.push_back(handle);
@@ -385,9 +385,9 @@ SharpSources FindSharpSources(const IR::Inst* handle) {
     }
     if (sources.empty()) {
         if (found_read_const_buffer) {
-            UNREACHABLE_MSG("Bindless sharp access detected");
+            UNREACHABLE_MSG("Bindless sharp access detected pc={:#x}", pc);
         } else {
-            UNREACHABLE_MSG("Unable to find sharp sources");
+            UNREACHABLE_MSG("Unable to find sharp sources pc={:#x}", pc);
         }
     }
     return sources;
@@ -433,8 +433,8 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     }
 }
 
-SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, const Info& info) {
-    auto sources = FindSharpSources(inst);
+SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, u32 pc = 0) {
+    auto sources = FindSharpSources(inst, pc);
     size_t num_sources = sources.size();
     ASSERT(current_parent.cfg_block);
 
@@ -493,7 +493,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
     } else {
         // Normal buffer resource.
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
-        const auto sharp_idx = TrackSharp(buffer_handle, block, info);
+        const auto sharp_idx = TrackSharp(buffer_handle, block);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
@@ -514,7 +514,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
-    const auto tsharp = TrackSharp(image_handle, block, info);
+    const auto tsharp = TrackSharp(image_handle, block, inst_info.pc);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const ImageResource image_res = {
@@ -584,7 +584,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
             // Normal sampler resource.
             const auto& [sampler_handle, disable_aniso] =
                 TryDisableAnisoLod0(sampler->Arg(0).InstRecursive());
-            const auto ssharp = TrackSharp(sampler_handle, block, info);
+            const auto ssharp = TrackSharp(sampler_handle, block, inst_info.pc);
             sampler_binding = descriptors.Add(SamplerResource{
                 .sharp_idx = ssharp,
                 .is_inline_sampler = false,
