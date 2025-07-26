@@ -333,7 +333,8 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
     // We're working on the first dword of s#
     const auto* prod2 = inst->Arg(2).InstRecursive();
     if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst) {
+        prod2->GetOpcode() != IR::Opcode::ReadConst &&
+        prod2->GetOpcode() != IR::Opcode::Phi) {
         return not_found;
     }
 
