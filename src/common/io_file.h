@@ -213,7 +213,15 @@ public:
         IOFile out(path, FileAccessMode::Write);
         return out.Write(data);
     }
-
+#ifdef _WIN32
+    std::filesystem::path RemoveTrailingSeparator(const std::filesystem::path& input) {
+        std::wstring str = input.native();
+        while (!str.empty() && (str.back() == L'\\' || str.back() == L'/')) {
+            str.pop_back();
+        }
+        return std::filesystem::path(str);
+    }
+#endif
 private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
@@ -224,5 +232,7 @@ private:
 };
 
 u64 GetDirectorySize(const std::filesystem::path& path);
-
+#ifdef _WIN32
+FILE* OpenDirAsFilePtr(const wchar_t* path, const wchar_t* mode, bool isDirectory);
+#endif
 } // namespace Common::FS
