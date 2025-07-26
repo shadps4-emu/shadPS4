@@ -849,8 +849,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("Output")) {
         const toml::value& output = data.at("Output");
 
-        mainOutputDevice =
-            toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
+        mainOutputDevice = toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
             toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
     }
