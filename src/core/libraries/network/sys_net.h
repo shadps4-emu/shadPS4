@@ -5,6 +5,10 @@
 
 #include "common/types.h"
 #include "net.h"
+#ifdef _WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 namespace Libraries::Net {
 
