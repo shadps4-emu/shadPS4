@@ -72,7 +72,7 @@ int PS4_SYSV_ABI sceRtcInit();
 int PS4_SYSV_ABI sceRtcIsLeapYear(int yearInt);
 int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDateTime);
 int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateTime);
-void PS4_SYSV_ABI sceRtcSetConf(void* p1, void* p2, s32 p3, s32 p4);
+void PS4_SYSV_ABI sceRtcSetConf(void* p1, void* p2, s32 minuteswest, s32 dsttime);
 int PS4_SYSV_ABI sceRtcSetCurrentAdNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick(OrbisRtcTick* pTick);
