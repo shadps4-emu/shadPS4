@@ -136,9 +136,13 @@ static ConfigEntry<bool> useSpecialPad(false);
 static ConfigEntry<int> specialPadClass(1);
 static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
-static ConfigEntry<string> micDevice("Default Device");
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
+
+// Output
+static ConfigEntry<string> micDevice("Default Device");
+static std::string mainOutputDevice = "Default Device";
+static std::string padSpkOutputDevice = "Default Device";
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -835,10 +839,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
-        mainOutputDevice =
-            toml::find_or<std::string>(general, "mainOutputDevice", mainOutputDevice);
-        padSpkOutputDevice =
-            toml::find_or<std::string>(general, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("Input")) {
@@ -850,18 +850,17 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        micDevice.setFromToml(input, "micDevice", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
     }
 
-    /*
-    if (data.contains("Output")) {
-        const toml::value& output = data.at("Output");
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
 
-        mainOutputDevice = toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
+        micDevice.setFromToml(input, "micDevice", is_game_specific);
+        mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
-            toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
-    } */
+            toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
+    }
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
@@ -1027,14 +1026,15 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
     isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
-
+    
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
     isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
                                          is_game_specific);
-    micDevice.setTomlValue(data, "Input", "micDevice", is_game_specific);
     backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
                                            is_game_specific);
+
+    micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
 
     windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
     windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
@@ -1069,10 +1069,8 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
-    // All other entries
-    if (!is_game_specific) {
-        std::vector<string> install_dirs;
-        std::vector<bool> install_dirs_enabled;
+    std::vector<std::string> install_dirs;
+    std::vector<bool> install_dirs_enabled;
 
         // temporary structure for ordering
         struct DirEntry {
@@ -1104,31 +1102,29 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["compatibilityEnabled"] = compatibilityData;
         data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-        data["General"]["mainOutputDevice"] = mainOutputDevice;
-        data["General"]["padSpkOutputDevice"] = padSpkOutputDevice;
+        
+        // TODO: Fix to match 'setTomlValue' format and make game specific
+        data["Audio"]["mainOutputDevice"] = mainOutputDevice;
+        data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
+
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
         data["GUI"]["loadGameSizeEnabled"] = load_game_size;
         data["GUI"]["addonInstallDir"] =
             string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
         data["General"]["defaultControllerID"] = defaultControllerID.base_value;
-
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
         data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-
         data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
-
         data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
-
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
     }
 
@@ -1170,8 +1166,10 @@ void setDefaultValues(bool is_game_specific) {
     cursorState.set(HideCursorState::Idle, is_game_specific);
     cursorHideTimeout.set(5, is_game_specific);
     isMotionControlsEnabled.set(true, is_game_specific);
-    micDevice.set("Default Device", is_game_specific);
     backgroundControllerInput.set(false, is_game_specific);
+
+    // GS - Audio
+    micDevice.set("Default Device", is_game_specific);
 
     // GS - GPU
     windowWidth.set(1280, is_game_specific);
@@ -1219,10 +1217,13 @@ void setDefaultValues(bool is_game_specific) {
         useSpecialPad.base_value = false;
         specialPadClass.base_value = 1;
         useUnifiedInputConfig.base_value = true;
-        overrideControllerColor = false;
         controllerCustomColorRGB[0] = 0;
         controllerCustomColorRGB[1] = 0;
         controllerCustomColorRGB[2] = 255;
+
+        // TODO: Change to be game specific
+        mainOutputDevice = "Default Device";
+        padSpkOutputDevice = "Default Device";
 
         // GPU
         shouldPatchShaders.base_value = false;

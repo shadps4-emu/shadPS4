@@ -23,7 +23,7 @@ public:
         };
 
         // Determine port type
-        std::string port_name = port.type != OrbisAudioOutPort::PadSpk
+        std::string port_name = port.type == OrbisAudioOutPort::PadSpk
                                     ? Config::getPadSpkOutputDevice()
                                     : Config::getMainOutputDevice();
         u32 devId;
@@ -32,14 +32,16 @@ public:
             stream = nullptr;
             return;
         } else if (port_name == "Default Device") {
-            devId = SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
+            devId = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
         } else {
             try {
                 devId = static_cast<u32>(std::stoul(port_name));
+                if (port_name != SDL_GetAudioDeviceName(devId)) {
+                    throw std::runtime_error("Invalid device ID");
+                }
             } catch (const std::exception& e) {
-                LOG_ERROR(Lib_AudioOut, "Invalid audio output device: {}", port_name);
-                stream = nullptr;
-                return;
+                LOG_WARNING(Lib_AudioOut, "Invalid audio output device: {}", port_name);
+                devId = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
             }
         }
 
