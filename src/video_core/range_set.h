@@ -66,7 +66,7 @@ struct RangeSet {
         for (const auto& set : m_ranges_set) {
             const VAddr inter_addr_end = set.upper();
             const VAddr inter_addr = set.lower();
-            func(inter_addr, inter_addr_end);
+            func(inter_addr, inter_addr_end - inter_addr);
         }
     }
 
@@ -92,7 +92,7 @@ struct RangeSet {
             if (inter_addr < start_address) {
                 inter_addr = start_address;
             }
-            func(inter_addr, inter_addr_end);
+            func(inter_addr, inter_addr_end - inter_addr);
         }
     }
 
@@ -170,7 +170,7 @@ public:
         for (const auto& [interval, value] : m_ranges_map) {
             const VAddr inter_addr_end = interval.upper();
             const VAddr inter_addr = interval.lower();
-            func(inter_addr, inter_addr_end, value);
+            func(inter_addr, inter_addr_end - inter_addr, value);
         }
     }
 
@@ -196,7 +196,7 @@ public:
             if (inter_addr < start_address) {
                 inter_addr = start_address;
             }
-            func(inter_addr, inter_addr_end, it->second);
+            func(inter_addr, inter_addr_end - inter_addr, it->second);
         }
     }
 
@@ -274,7 +274,7 @@ public:
         for (const auto& [interval, value] : m_ranges_map) {
             const VAddr inter_addr_end = interval.upper();
             const VAddr inter_addr = interval.lower();
-            func(inter_addr, inter_addr_end, value);
+            func(inter_addr, inter_addr_end - inter_addr, value);
         }
     }
 
@@ -300,7 +300,7 @@ public:
             if (inter_addr < start_address) {
                 inter_addr = start_address;
             }
-            func(inter_addr, inter_addr_end, it->second);
+            func(inter_addr, inter_addr_end - inter_addr, it->second);
         }
     }
 

@@ -5,12 +5,11 @@
 
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include "common/div_ceil.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
-#include "video_core/buffer_cache/range_set.h"
 #include "video_core/multi_level_page_table.h"
+#include "video_core/range_set.h"
 
 namespace AmdGpu {
 struct Liverpool;
@@ -22,7 +21,8 @@ class MemoryManager;
 
 namespace Vulkan {
 class GraphicsPipeline;
-}
+class Rasterizer;
+} // namespace Vulkan
 
 namespace VideoCore {
 
@@ -71,8 +71,8 @@ public:
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                         AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
-                         PageManager& tracker);
+                         Vulkan::Rasterizer& rasterizer, AmdGpu::Liverpool* liverpool,
+                         TextureCache& texture_cache, PageManager& tracker);
     ~BufferCache();
 
     /// Returns a pointer to GDS device local buffer.
@@ -156,8 +156,8 @@ public:
     /// Synchronizes all buffers in the specified range.
     void SynchronizeBuffersInRange(VAddr device_addr, u64 size);
 
-    /// Synchronizes all buffers neede for DMA.
-    void SynchronizeDmaBuffers();
+    /// Synchronizes all buffers for DMA.
+    void SynchronizeBuffersForDma();
 
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
@@ -207,6 +207,7 @@ private:
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    Vulkan::Rasterizer& rasterizer;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     TextureCache& texture_cache;

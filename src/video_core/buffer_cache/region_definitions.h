@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/bit_array.h"
+#include "common/enum.h"
 #include "common/types.h"
 
 namespace VideoCore {
@@ -17,6 +18,7 @@ constexpr u64 TRACKER_HIGHER_PAGE_MASK = TRACKER_HIGHER_PAGE_SIZE - 1ULL;
 constexpr u64 NUM_PAGES_PER_REGION = TRACKER_HIGHER_PAGE_SIZE / TRACKER_BYTES_PER_PAGE;
 
 enum class Type {
+    None,
     CPU,
     GPU,
 };
