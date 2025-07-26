@@ -433,7 +433,6 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     }
 }
 
-template <typename DataType>
 SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, const Info& info) {
     auto sources = FindSharpSources(inst);
     size_t num_sources = sources.size();
@@ -441,7 +440,6 @@ SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, 
 
     // Perform dominance analysis on found sources and eliminate ones that don't pass
     // If a sharp source is dominated by another, the former can be eliminated.
-    // This also implicitly performs reachability analysis.
     for (s32 i = 0; i < num_sources;) {
         const IR::Block* block = sources[i]->GetParent();
         ASSERT(block->cfg_block);
@@ -494,8 +492,8 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         });
     } else {
         // Normal buffer resource.
-        IR::Inst* producer = handle->Arg(0).InstRecursive();
-        const auto sharp_idx = TrackSharp<AmdGpu::Buffer>(producer, block, info);
+        IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
+        const auto sharp_idx = TrackSharp(buffer_handle, block, info);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
@@ -516,7 +514,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
-    const auto tsharp = TrackSharp<AmdGpu::Image>(image_handle, block, info);
+    const auto tsharp = TrackSharp(image_handle, block, info);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const ImageResource image_res = {
@@ -584,9 +582,9 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
             });
         } else {
             // Normal sampler resource.
-            const auto& [ssharp_ud, disable_aniso] =
+            const auto& [sampler_handle, disable_aniso] =
                 TryDisableAnisoLod0(sampler->Arg(0).InstRecursive());
-            const auto ssharp = TrackSharp<AmdGpu::Sampler>(ssharp_ud, block, info);
+            const auto ssharp = TrackSharp(sampler_handle, block, info);
             sampler_binding = descriptors.Add(SamplerResource{
                 .sharp_idx = ssharp,
                 .is_inline_sampler = false,
