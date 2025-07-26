@@ -21,8 +21,29 @@ public:
             .channels = port.format_info.num_channels,
             .freq = static_cast<int>(port.sample_rate),
         };
-        stream =
-            SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &fmt, nullptr, nullptr);
+
+        // Determine port type
+        std::string port_name = port.type != OrbisAudioOutPort::PadSpk ?
+            Config::getPadSpkOutputDevice() : Config::getMainOutputDevice();
+        u32 devId;
+
+        if (port_name == "None") {
+            stream = nullptr;
+            return;
+        } else if (port_name == "Default Device") {
+            devId = SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
+        } else {
+            try {
+                devId = static_cast<u32>(std::stoul(port_name));
+            } catch (const std::exception& e) {
+                LOG_ERROR(Lib_AudioOut, "Invalid audio output device: {}", port_name);
+                stream = nullptr;
+                return;
+            }
+        }
+
+        // Open the audio stream
+        stream = SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
         if (stream == nullptr) {
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
             return;

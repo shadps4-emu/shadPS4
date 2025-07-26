@@ -302,6 +302,14 @@ string getMicDevice() {
     return micDevice.get();
 }
 
+std::string getMainOutputDevice() {
+    return mainOutputDevice;
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice;
+}
+
 double getTrophyNotificationDuration() {
     return trophyNotificationDuration.get();
 }
@@ -585,8 +593,16 @@ void setMicDevice(string device, bool is_game_specific) {
     micDevice.set(device, is_game_specific);
 }
 
-void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
-    trophyNotificationDuration.set(newTrophyNotificationDuration, is_game_specific);
+void setMainOutputDevice(std::string device) {
+    mainOutputDevice = device;
+}
+
+void setPadSpkOutputDevice(std::string device) {
+    padSpkOutputDevice = device;
+}
+
+void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
+    trophyNotificationDuration = newTrophyNotificationDuration;
 }
 
 void setLanguage(u32 language, bool is_game_specific) {
@@ -828,6 +844,15 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
         micDevice.setFromToml(input, "micDevice", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+    }
+
+    if (data.contains("Output")) {
+        const toml::value& output = data.at("Output");
+
+        mainOutputDevice =
+            toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("GPU")) {
