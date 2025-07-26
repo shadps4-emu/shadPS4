@@ -555,7 +555,17 @@ int PS4_SYSV_ABI scePadResetLightBarAllByPortType() {
 }
 
 int PS4_SYSV_ABI scePadResetOrientation(s32 handle) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_INFO(Lib_Pad, "scePadResetOrientation called handle = {}", handle);
+
+    if (handle != 1) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
+
+    auto* controller = Common::Singleton<GameController>::Instance();
+    Libraries::Pad::OrbisFQuaternion defaultOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    controller->SetLastOrientation(defaultOrientation);
+    controller->SetLastUpdate(std::chrono::steady_clock::now());
+
     return ORBIS_OK;
 }
 
