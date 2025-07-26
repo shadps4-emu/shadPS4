@@ -13,6 +13,9 @@ namespace Libraries::Pad {
 
 using Input::GameController;
 
+static bool g_initialized = false;
+static bool g_opened = false;
+
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     return ORBIS_OK;
@@ -157,7 +160,10 @@ int PS4_SYSV_ABI scePadGetFeatureReport() {
 }
 
 int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index) {
-    if (userId == -1) {
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
+    }
+    if (userId == -1 || !g_opened) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
     LOG_DEBUG(Lib_Pad, "(DUMMY) called");
@@ -206,6 +212,7 @@ int PS4_SYSV_ABI scePadGetVersionInfo() {
 
 int PS4_SYSV_ABI scePadInit() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    g_initialized = true;
     return ORBIS_OK;
 }
 
@@ -250,6 +257,9 @@ int PS4_SYSV_ABI scePadMbusTerm() {
 }
 
 int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
+    if (!g_initialized) {
+        return ORBIS_PAD_ERROR_NOT_INITIALIZED;
+    }
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
@@ -261,6 +271,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
     LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
+    g_opened = true;
     scePadResetLightBar(1);
     return 1; // dummy
 }
