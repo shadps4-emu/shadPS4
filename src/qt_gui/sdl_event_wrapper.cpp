@@ -41,11 +41,11 @@ bool Wrapper::ProcessEvent(SDL_Event* event) {
         return true;
     case SDL_EVENT_AUDIO_DEVICE_ADDED:
         if (event->adevice.recording == 0)
-            emit audioDeviceChanged();
+            emit audioDeviceChanged(true);
         return true;
     case SDL_EVENT_AUDIO_DEVICE_REMOVED:
         if (event->adevice.recording == 0)
-            emit audioDeviceChanged();
+            emit audioDeviceChanged(false);
         return true;
     // block all other SDL events while wrapper is active
     default:

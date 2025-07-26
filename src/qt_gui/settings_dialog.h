@@ -44,7 +44,7 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void setDefaultValues();
     void VolumeSliderChange(int value);
-    void onAudioDeviceChange();
+    void onAudioDeviceChange(bool isAdd);
     void pollSDLevents();
 
     std::unique_ptr<Ui::SettingsDialog> ui;
