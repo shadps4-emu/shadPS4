@@ -18,7 +18,7 @@ using FDTable = Common::Singleton<Core::FileSys::HandleTable>;
 int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -33,7 +33,7 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -73,7 +73,7 @@ int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32
 int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -88,7 +88,7 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
 int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -103,7 +103,7 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
 int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -119,7 +119,7 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
                                 u32 optlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -179,7 +179,7 @@ int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -195,7 +195,7 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
@@ -215,7 +215,7 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
                               u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
