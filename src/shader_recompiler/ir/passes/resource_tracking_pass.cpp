@@ -319,8 +319,8 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
     // The bits range is for lods (note that constants are changed after constant propagation pass)
     const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        !(prod0_arg0->Arg(1).IsIdentity() && prod0_arg0->Arg(1).U32() == 12) ||
-        !(prod0_arg0->Arg(2).IsIdentity() && prod0_arg0->Arg(2).U32() == 8)) {
+        !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
+        !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
         return not_found;
     }
 
