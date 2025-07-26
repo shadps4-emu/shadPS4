@@ -188,7 +188,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     }
 
     InitializeEmulatorLanguages();
-    onAudioDeviceChange();
+    onAudioDeviceChange(true);
     LoadValuesFromConfig();
 
     defaultTextEdit = tr("Point your mouse at an option to display its description.");
@@ -1268,16 +1268,23 @@ void SettingsDialog::pollSDLevents() {
             return;
         }
 
-        if (event.type == SDL_EVENT_AUDIO_DEVICE_ADDED ||
-            event.type == SDL_EVENT_AUDIO_DEVICE_REMOVED) {
-            onAudioDeviceChange();
+        if (event.type == SDL_EVENT_AUDIO_DEVICE_ADDED) {
+            onAudioDeviceChange(true);
+        }
+
+        if (event.type == SDL_EVENT_AUDIO_DEVICE_REMOVED) {
+            onAudioDeviceChange(false);
         }
     }
 }
 
-void SettingsDialog::onAudioDeviceChange() {
+void SettingsDialog::onAudioDeviceChange(bool isAdd) {
     ui->GenAudioComboBox->clear();
     ui->DsAudioComboBox->clear();
+
+    // prevent device list from refreshing too fast when game not running
+    if (!is_game_running && isAdd == false)
+        QThread::msleep(100);
 
     int deviceCount;
     QStringList deviceList;
