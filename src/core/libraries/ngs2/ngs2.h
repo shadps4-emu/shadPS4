@@ -269,6 +269,6 @@ struct OrbisNgs2VoiceState {
     u32 stateFlags;
 };
 
-void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Ngs2
