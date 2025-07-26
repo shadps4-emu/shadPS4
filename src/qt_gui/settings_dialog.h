@@ -4,12 +4,10 @@
 #pragma once
 
 #include <memory>
-#include <span>
 #include <QDialog>
 #include <QGroupBox>
 #include <QPushButton>
 
-#include "common/config.h"
 #include "common/path_util.h"
 #include "gui_settings.h"
 #include "qt_gui/compatibility_info.h"
@@ -23,7 +21,7 @@ class SettingsDialog : public QDialog {
 public:
     explicit SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                             std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                            QWidget* parent = nullptr);
+                            bool game_running, QWidget* parent = nullptr);
     ~SettingsDialog();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -46,6 +44,8 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void setDefaultValues();
     void VolumeSliderChange(int value);
+    void onAudioDeviceChange();
+    void pollSDLevents();
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 
@@ -56,5 +56,7 @@ private:
     int initialHeight;
 
     bool is_saving = false;
+    bool is_game_running = false;
     std::shared_ptr<gui_settings> m_gui_settings;
+    QFuture<void> Polling;
 };

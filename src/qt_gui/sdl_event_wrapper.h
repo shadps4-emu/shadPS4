@@ -20,6 +20,7 @@ public:
 
 signals:
     void SDLEvent(int Type, int Input, int Value);
+    void audioDeviceChanged();
 };
 
 } // namespace SdlEventWrapper
