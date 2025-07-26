@@ -1175,7 +1175,7 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     return ORBIS_OK;
 }
 
-void RegisterlibSceRtc(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lPEBYdVX0XQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCheckValid);
     LIB_FUNCTION("fNaZ4DbzHAE", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCompareTick);
     LIB_FUNCTION("8Yr143yEnRo", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcConvertLocalTimeToUtc);
