@@ -133,7 +133,7 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 |-------------------------|-------------------------|-------------------------|-------------------------|  
 | libSceCesCs.sprx        | libSceFont.sprx         | libSceFontFt.sprx       | libSceFreeTypeOt.sprx   |
 | libSceJson.sprx         | libSceJson2.sprx        | libSceLibcInternal.sprx | libSceNgs2.sprx         |  
-| libSceRtc.sprx          | libSceUlt.sprx          |                         |                         |
+| libSceUlt.sprx          |                         |                         |                         |
 
 </div>
 
