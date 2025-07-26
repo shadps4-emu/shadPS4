@@ -58,6 +58,10 @@ static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
 static std::string micDevice = "Default Device";
 
+// Output
+static std::string mainOutputDevice = "Default Device";
+static std::string padSpkOutputDevice = "Default Device";
+
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
@@ -205,6 +209,14 @@ int getCursorHideTimeout() {
 
 std::string getMicDevice() {
     return micDevice;
+}
+
+std::string getMainOutputDevice() {
+    return mainOutputDevice;
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice;
 }
 
 double getTrophyNotificationDuration() {
@@ -471,6 +483,14 @@ void setMicDevice(std::string device) {
     micDevice = device;
 }
 
+void setMainOutputDevice(std::string device) {
+    mainOutputDevice = device;
+}
+
+void setPadSpkOutputDevice(std::string device) {
+    padSpkOutputDevice = device;
+}
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration = newTrophyNotificationDuration;
 }
@@ -672,6 +692,15 @@ void load(const std::filesystem::path& path) {
         micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
     }
 
+    if (data.contains("Output")) {
+        const toml::value& output = data.at("Output");
+
+        mainOutputDevice =
+            toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
+    }
+
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
@@ -844,6 +873,8 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
     data["Input"]["micDevice"] = micDevice;
+    data["Output"]["mainOutputDevice"] = mainOutputDevice;
+    data["Output"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
@@ -949,6 +980,10 @@ void setDefaultValues() {
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
     micDevice = "Default Device";
+
+    // Output
+    mainOutputDevice = "Default Device";
+    padSpkOutputDevice = "Default Device";
 
     // GPU
     windowWidth = 1280;
