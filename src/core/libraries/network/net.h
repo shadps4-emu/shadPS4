@@ -38,6 +38,7 @@ enum OrbisNetProtocol : u32 {
     ORBIS_NET_IPPROTO_IGMP = 2,
     ORBIS_NET_IPPROTO_TCP = 6,
     ORBIS_NET_IPPROTO_UDP = 17,
+    ORBIS_NET_IPPROTO_IPV6 = 41,
     ORBIS_NET_SOL_SOCKET = 0xFFFF
 };
 
@@ -275,10 +276,12 @@ int PS4_SYSV_ABI sceNetDumpRead();
 int PS4_SYSV_ABI sceNetDuplicateIpStart();
 int PS4_SYSV_ABI sceNetDuplicateIpStop();
 int PS4_SYSV_ABI sceNetEpollAbort();
-int PS4_SYSV_ABI sceNetEpollControl();
-int PS4_SYSV_ABI sceNetEpollCreate();
-int PS4_SYSV_ABI sceNetEpollDestroy();
-int PS4_SYSV_ABI sceNetEpollWait();
+int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
+                                    OrbisNetEpollEvent* event);
+int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags);
+int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid);
+int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
+                                 int timeout);
 int* PS4_SYSV_ABI sceNetErrnoLoc();
 int PS4_SYSV_ABI sceNetEtherNtostr();
 int PS4_SYSV_ABI sceNetEtherStrton();
