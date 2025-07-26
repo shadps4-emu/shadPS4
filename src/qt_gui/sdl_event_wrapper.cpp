@@ -41,6 +41,12 @@ bool Wrapper::ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         emit SDLEvent(SDL_EVENT_GAMEPAD_AXIS_MOTION, event->gaxis.axis, event->gaxis.value);
         return true;
+    case SDL_EVENT_AUDIO_DEVICE_ADDED:
+        emit audioDeviceChanged();
+        return true;
+    case SDL_EVENT_AUDIO_DEVICE_REMOVED:
+        emit audioDeviceChanged();
+        return true;
     // block all other SDL events while wrapper is active
     default:
         return true;

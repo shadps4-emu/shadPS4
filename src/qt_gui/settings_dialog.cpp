@@ -27,6 +27,7 @@
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "log_presets_dialog.h"
+#include "sdl_event_wrapper.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -82,18 +83,26 @@ static std::vector<QString> m_physical_devices;
 
 SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                               QWidget* parent, bool is_game_specific, std::string gsc_serial)
+                               QWidget* parent, std::string gsc_serial, bool is_game_running,
+                               bool is_game_specific)
     : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)),
-      game_specific(is_game_specific), gs_serial(gsc_serial) {
+      gs_serial(gsc_serial), is_game_running(is_game_running), is_game_specific(is_game_specific) {
 
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
+
+    if (!is_game_running) {
+        Polling = QtConcurrent::run(&SettingsDialog::pollSDLevents, this);
+        SDL_InitSubSystem(SDL_INIT_EVENTS);
+        SDL_InitSubSystem(SDL_INIT_AUDIO);
+    }
+
     initialHeight = this->height();
 
     // Add a small clear "x" button inside the Log Filter input
     ui->logFilterLineEdit->setClearButtonEnabled(true);
 
-    if (game_specific) {
+    if (is_game_specific) {
         // Paths tab
         ui->tabWidgetSettings->setTabVisible(5, false);
         ui->chooseHomeTabComboBox->removeItem(5);
@@ -109,7 +118,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     }
 
     std::filesystem::path config_file =
-        game_specific
+        is_game_specific
             ? Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (gs_serial + ".toml")
             : Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml";
 
@@ -184,6 +193,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     }
 
     InitializeEmulatorLanguages();
+    onAudioDeviceChange();
     LoadValuesFromConfig();
 
     defaultTextEdit = tr("Point your mouse at an option to display its description.");
@@ -194,17 +204,17 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this,
             [this, config_file](QAbstractButton* button) {
                 if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
-                    is_saving = true;
-                    UpdateSettings(game_specific);
-                    Config::save(config_file, game_specific);
+                    is_game_saving = true;
+                    UpdateSettings(is_game_specific);
+                    Config::save(config_file, is_game_specific);
                     QWidget::close();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Apply)) {
-                    UpdateSettings(game_specific);
-                    Config::save(config_file, game_specific);
+                    UpdateSettings(is_game_specific);
+                    Config::save(config_file, is_game_specific);
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     setDefaultValues();
-                    Config::setDefaultValues(game_specific);
-                    Config::save(config_file, game_specific);
+                    Config::setDefaultValues(is_game_specific);
+                    Config::save(config_file, is_game_specific);
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
                     ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
@@ -232,7 +242,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     {
         connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, [this](int value) {
             VolumeSliderChange(value);
-            Config::setVolumeSlider(value, game_specific);
+            Config::setVolumeSlider(value, is_game_specific);
             Libraries::AudioOut::AdjustVol();
         });
 
@@ -526,15 +536,32 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->networkConnectedCheckBox->installEventFilter(this);
         ui->psnSignInCheckBox->installEventFilter(this);
     }
+
+    SdlEventWrapper::Wrapper* DeviceEventWrapper = SdlEventWrapper::Wrapper::GetInstance();
+    SdlEventWrapper::Wrapper::wrapperActive = true;
+    QObject::connect(DeviceEventWrapper, &SdlEventWrapper::Wrapper::audioDeviceChanged, this,
+                     &SettingsDialog::onAudioDeviceChange);
 }
 
 void SettingsDialog::closeEvent(QCloseEvent* event) {
-    if (!is_saving) {
+    if (!is_game_saving) {
         ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
         emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
         ui->BGMVolumeSlider->setValue(bgm_volume_backup);
         BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
         SyncRealTimeWidgetstoConfig();
+    }
+
+    SdlEventWrapper::Wrapper::wrapperActive = false;
+    if (!is_game_running) {
+        SDL_Event quitLoop{};
+        quitLoop.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&quitLoop);
+        Polling.waitForFinished();
+
+        SDL_QuitSubSystem(SDL_INIT_EVENTS);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_Quit();
     }
     QDialog::closeEvent(event);
 }
@@ -542,14 +569,14 @@ void SettingsDialog::closeEvent(QCloseEvent* event) {
 void SettingsDialog::LoadValuesFromConfig() {
     std::filesystem::path config_file;
     config_file =
-        game_specific
+        is_game_specific
             ? Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (gs_serial + ".toml")
             : Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml";
 
     std::error_code error;
     bool is_newly_created = false;
     if (!std::filesystem::exists(config_file, error)) {
-        Config::save(config_file, game_specific);
+        Config::save(config_file, is_game_specific);
         is_newly_created = true;
     }
 
@@ -567,7 +594,7 @@ void SettingsDialog::LoadValuesFromConfig() {
                                           15, 16, 17, 7, 26, 8, 11, 20, 3, 13, 27, 10, 19, 30, 28};
 
     // Entries with no game-specific settings
-    if (!game_specific) {
+    if (!is_game_specific) {
         const auto save_data_path = Config::GetSaveDataPath();
         QString save_data_path_string;
         Common::FS::PathToQString(save_data_path_string, save_data_path);
@@ -727,6 +754,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
+
+        ui->GenAudioComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "mainOutputDevice", "")));
+    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "padSpkOutputDevice", "")));
 
     std::string chooseHomeTab =
         toml::find_or<std::string>(data, "General", "chooseHomeTab", "General");
@@ -990,29 +1022,29 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), game_specific);
 
     Config::setIsFullscreen(
-        screenModeMap.value(ui->displayModeComboBox->currentText()) != "Windowed", game_specific);
+        screenModeMap.value(ui->displayModeComboBox->currentText()) != "Windowed", is_game_specific);
     Config::setFullscreenMode(
-        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString(), game_specific);
+        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString(), is_game_specific);
     Config::setPresentMode(
-        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString(), game_specific);
-    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked(), game_specific);
+        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString(), is_game_specific);
+    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked(), is_game_specific);
     Config::setBackgroundControllerInput(ui->backgroundControllerCheckBox->isChecked(),
-                                         game_specific);
-    Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked(), game_specific);
-    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value(), game_specific);
+                                         is_game_specific);
+    Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked(), is_game_specific);
+    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value(), is_game_specific);
 
     if (ui->radioButton_Top->isChecked()) {
-        Config::setSideTrophy("top", game_specific);
+        Config::setSideTrophy("top", is_game_specific);
     } else if (ui->radioButton_Left->isChecked()) {
-        Config::setSideTrophy("left", game_specific);
+        Config::setSideTrophy("left", is_game_specific);
     } else if (ui->radioButton_Right->isChecked()) {
-        Config::setSideTrophy("right", game_specific);
+        Config::setSideTrophy("right", is_game_specific);
     } else if (ui->radioButton_Bottom->isChecked()) {
-        Config::setSideTrophy("bottom", game_specific);
+        Config::setSideTrophy("bottom", is_game_specific);
     }
 
-    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked(), game_specific);
-    Config::setAllowHDR(ui->enableHDRCheckBox->isChecked(), game_specific);
+    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked(), is_game_specific);
+    Config::setAllowHDR(ui->enableHDRCheckBox->isChecked(), is_game_specific);
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString(),
                        game_specific);
     Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString(), game_specific);
@@ -1045,16 +1077,21 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked(), game_specific);
     Config::setChooseHomeTab(
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString(),
-        game_specific);
+        is_game_specific);
+    Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
+    Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
+    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
+                             std::clamp(ui->backgroundImageOpacitySlider->value(), 0, 100));
+    emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
+    m_gui_settings->SetValue(gui::gl_showBackgroundImage,
+                             ui->showBackgroundImageCheckBox->isChecked());
 
-    // Entries with no game-specific settings
-    if (!game_specific) {
-        std::vector<Config::GameInstallDir> dirs_with_states;
-        for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
-            QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
-            QString path_string = item->text();
-            auto path = Common::FS::PathFromQString(path_string);
-            bool enabled = (item->checkState() == Qt::Checked);
+    std::vector<Config::GameInstallDir> dirs_with_states;
+    for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
+        QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
+        QString path_string = item->text();
+        auto path = Common::FS::PathFromQString(path_string);
+        bool enabled = (item->checkState() == Qt::Checked);
 
             dirs_with_states.push_back({path, enabled});
         }
@@ -1096,7 +1133,7 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const toml::value data = toml::parse(userdir / "config.toml");
 
-    if (!game_specific) {
+    if (!is_game_specific) {
         ui->gameFoldersListWidget->clear();
         if (data.contains("GUI")) {
             const toml::value& gui = data.at("GUI");
@@ -1137,7 +1174,7 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
     }
 
     toml::value gs_data;
-    game_specific
+    is_game_specific
         ? gs_data = toml::parse(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
                                 (gs_serial + ".toml"))
         : gs_data = data;
@@ -1147,8 +1184,8 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
 
     // Since config::set can be called for volume slider (connected to the widget) outside the save
     // function, need to null it out if GS GUI is closed without saving
-    game_specific ? Config::resetGameSpecificValue("volumeSlider")
-                  : Config::setVolumeSlider(sliderValue);
+    is_game_specific ? Config::resetGameSpecificValue("volumeSlider")
+                     : Config::setVolumeSlider(sliderValue);
 
     if (presenter) {
         presenter->GetFsrSettingsRef().enable =
@@ -1175,4 +1212,88 @@ void SettingsDialog::setDefaultValues() {
         }
         m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
     }
+}
+
+void SettingsDialog::pollSDLevents() {
+    SDL_Event event;
+    while (SdlEventWrapper::Wrapper::wrapperActive) {
+
+        if (!SDL_WaitEvent(&event)) {
+            return;
+        }
+
+        if (event.type == SDL_EVENT_QUIT) {
+            return;
+        }
+
+        SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
+    }
+}
+
+void SettingsDialog::onAudioDeviceChange() {
+    ui->GenAudioComboBox->clear();
+    ui->DsAudioComboBox->clear();
+
+    int deviceCount;
+    QStringList deviceList;
+    SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
+
+    if (!devices)
+        QMessageBox::information(this, "test", QString::number(deviceCount));
+
+    for (int i = 0; i < deviceCount; i++) {
+        const char* name = SDL_GetAudioDeviceName(devices[i]);
+        std::string name_string = std::string(name);
+        deviceList.append(QString::fromStdString(name_string));
+    }
+
+    ui->GenAudioComboBox->addItem("Default Device");
+    ui->GenAudioComboBox->addItems(deviceList);
+    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(Config::getMainOutputDevice()));
+
+    ui->DsAudioComboBox->addItem("Default Device");
+    ui->DsAudioComboBox->addItems(deviceList);
+    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(Config::getPadSpkOutputDevice()));
+}
+
+void SettingsDialog::pollSDLevents() {
+    SDL_Event event;
+    while (SdlEventWrapper::Wrapper::wrapperActive) {
+
+        if (!SDL_WaitEvent(&event)) {
+            return;
+        }
+
+        if (event.type == SDL_EVENT_QUIT) {
+            return;
+        }
+
+        SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
+    }
+}
+
+void SettingsDialog::onAudioDeviceChange() {
+    ui->GenAudioComboBox->clear();
+    ui->DsAudioComboBox->clear();
+
+    int deviceCount;
+    QStringList deviceList;
+    SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
+
+    if (!devices)
+        QMessageBox::information(this, "test", QString::number(deviceCount));
+
+    for (int i = 0; i < deviceCount; i++) {
+        const char* name = SDL_GetAudioDeviceName(devices[i]);
+        std::string name_string = std::string(name);
+        deviceList.append(QString::fromStdString(name_string));
+    }
+
+    ui->GenAudioComboBox->addItem("Default Device");
+    ui->GenAudioComboBox->addItems(deviceList);
+    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(Config::getMainOutputDevice()));
+
+    ui->DsAudioComboBox->addItem("Default Device");
+    ui->DsAudioComboBox->addItems(deviceList);
+    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(Config::getPadSpkOutputDevice()));
 }

@@ -194,6 +194,10 @@ static string trophyKey = "";
 // Config version, used to determine if a user's config file is outdated.
 static string config_version = Common::g_scm_rev;
 
+// Output
+static std::string mainOutputDevice = "Default Device";
+static std::string padSpkOutputDevice = "Default Device";
+
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
@@ -831,6 +835,10 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
+        mainOutputDevice =
+            toml::find_or<std::string>(general, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(general, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("Input")) {
@@ -846,13 +854,14 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
     }
 
+    /*
     if (data.contains("Output")) {
         const toml::value& output = data.at("Output");
 
         mainOutputDevice = toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
             toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
-    }
+    } */
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
@@ -1095,6 +1104,8 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["compatibilityEnabled"] = compatibilityData;
         data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+        data["General"]["mainOutputDevice"] = mainOutputDevice;
+        data["General"]["padSpkOutputDevice"] = padSpkOutputDevice;
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
