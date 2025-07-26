@@ -11,6 +11,7 @@
 #include <fmt/format.h>
 
 #include "common/config.h"
+#include "common/logging/log.h"
 #include "common/scm_rev.h"
 #include "core/libraries/audio/audioout.h"
 #include "qt_gui/compatibility_info.h"
@@ -84,12 +85,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
       m_gui_settings(std::move(gui_settings)) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
-
-    if (!is_game_running) {
-        Polling = QtConcurrent::run(&SettingsDialog::pollSDLevents, this);
-        SDL_InitSubSystem(SDL_INIT_EVENTS);
-        SDL_InitSubSystem(SDL_INIT_AUDIO);
-    }
 
     initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -437,10 +432,15 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
     }
 
-    SdlEventWrapper::Wrapper* DeviceEventWrapper = SdlEventWrapper::Wrapper::GetInstance();
     SdlEventWrapper::Wrapper::wrapperActive = true;
-    QObject::connect(DeviceEventWrapper, &SdlEventWrapper::Wrapper::audioDeviceChanged, this,
-                     &SettingsDialog::onAudioDeviceChange);
+    if (!is_game_running) {
+        SDL_InitSubSystem(SDL_INIT_EVENTS);
+        Polling = QtConcurrent::run(&SettingsDialog::pollSDLevents, this);
+    } else {
+        SdlEventWrapper::Wrapper* DeviceEventWrapper = SdlEventWrapper::Wrapper::GetInstance();
+        QObject::connect(DeviceEventWrapper, &SdlEventWrapper::Wrapper::audioDeviceChanged, this,
+                         &SettingsDialog::onAudioDeviceChange);
+    }
 }
 
 void SettingsDialog::closeEvent(QCloseEvent* event) {
@@ -983,7 +983,10 @@ void SettingsDialog::pollSDLevents() {
             return;
         }
 
-        SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
+        if (event.type == SDL_EVENT_AUDIO_DEVICE_ADDED ||
+            event.type == SDL_EVENT_AUDIO_DEVICE_REMOVED) {
+            onAudioDeviceChange();
+        }
     }
 }
 
@@ -995,20 +998,24 @@ void SettingsDialog::onAudioDeviceChange() {
     QStringList deviceList;
     SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
 
-    if (!devices)
-        QMessageBox::information(this, "test", QString::number(deviceCount));
+    if (!devices) {
+        LOG_ERROR(Lib_AudioOut, "Unable to retrieve audio device list {}", SDL_GetError());
+        return;
+    }
 
-    for (int i = 0; i < deviceCount; i++) {
+    for (int i = 0; i < deviceCount; ++i) {
         const char* name = SDL_GetAudioDeviceName(devices[i]);
         std::string name_string = std::string(name);
         deviceList.append(QString::fromStdString(name_string));
     }
 
-    ui->GenAudioComboBox->addItem("Default Device");
+    ui->GenAudioComboBox->addItem(tr("Default Device"), "Default Device");
     ui->GenAudioComboBox->addItems(deviceList);
     ui->GenAudioComboBox->setCurrentText(QString::fromStdString(Config::getMainOutputDevice()));
 
-    ui->DsAudioComboBox->addItem("Default Device");
+    ui->DsAudioComboBox->addItem(tr("Default Device"), "Default Device");
     ui->DsAudioComboBox->addItems(deviceList);
     ui->DsAudioComboBox->setCurrentText(QString::fromStdString(Config::getPadSpkOutputDevice()));
+
+    SDL_free(devices);
 }
