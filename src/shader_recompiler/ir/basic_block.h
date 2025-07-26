@@ -14,6 +14,10 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
+namespace Shader::Gcn {
+struct Block;
+}
+
 namespace Shader::IR {
 
 class Block {
@@ -149,6 +153,10 @@ public:
     std::array<Value, NumScalarRegs> ssa_sreg_values;
     std::array<Value, NumScalarRegs> ssa_sbit_values;
     std::array<Value, NumVectorRegs> ssa_vreg_values;
+
+    /// Block of the CFG that corresponds to this IR block.
+    /// It can be null as IR has additional control flow blocks.
+    const Shader::Gcn::Block* cfg_block{};
 
 private:
     /// Memory pool for instruction list

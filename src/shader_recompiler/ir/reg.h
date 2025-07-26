@@ -45,6 +45,7 @@ union TextureInstInfo {
     BitField<10, 1, u32> is_unnormalized;
     BitField<11, 1, u32> is_gather;
     BitField<12, 1, u32> is_r128;
+    BitField<16, 16, u32> pc;
 };
 
 union BufferInstInfo {

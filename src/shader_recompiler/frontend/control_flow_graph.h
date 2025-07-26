@@ -23,7 +23,6 @@ using Hook =
 enum class EndClass {
     Branch, ///< Block ends with a (un)conditional branch.
     Exit,   ///< Block ends with an exit instruction.
-    Kill,   ///< Block ends with a discard instruction.
 };
 
 /// A block represents a linear range of instructions.

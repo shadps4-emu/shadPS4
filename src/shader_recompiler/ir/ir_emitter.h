@@ -359,9 +359,9 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
-                                       const Value& address2, const Value& address3,
-                                       const Value& address4, const Value& inline_sampler,
+    [[nodiscard]] Value ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                       const Value& address1, const Value& address2,
+                                       const Value& address3, const Value& address4,
                                        TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,

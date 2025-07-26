@@ -588,7 +588,7 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
 
 IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::ScalarReg tsharp_reg,
                           const IR::ScalarReg sampler_reg, const IR::VectorReg addr_reg,
-                          bool gather) {
+                          bool gather, u32 pc) {
     const auto& mimg = inst.control.mimg;
     const auto flags = MimgModifierFlags(mimg.mod);
 
@@ -602,6 +602,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.is_array.Assign(mimg.da);
     info.is_unnormalized.Assign(mimg.unrm);
     info.is_r128.Assign(mimg.r128);
+    info.pc.Assign(pc);
 
     if (gather) {
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
@@ -610,11 +611,11 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
         info.has_derivatives.Assign(flags.test(MimgModifier::Derivative));
     }
 
-    // Load first dword of T# and S#. We will use them as the handle that will guide resource
-    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
-    // binding index.
-    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
-    const IR::Value inline_sampler =
+    // Load first dword of T# and the full S#. We will use them as the handle that will guide
+    // resource tracking pass where to read the sharps. This will later also get patched to the
+    // backend texture binding index.
+    const IR::Value image_handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value sampler_handle =
         ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
                               ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
 
@@ -652,8 +653,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     const IR::Value address4 = get_addr_reg(12);
 
     // Issue the placeholder IR instruction.
-    IR::Value texel =
-        ir.ImageSampleRaw(handle, address1, address2, address3, address4, inline_sampler, info);
+    IR::Value texel = ir.ImageSampleRaw(image_handle, sampler_handle, address1, address2, address3,
+                                        address4, info);
     if (info.is_depth && !gather) {
         // For non-gather depth sampling, only return a single value.
         texel = ir.CompositeExtract(texel, 0);
@@ -669,7 +670,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
     const auto flags = MimgModifierFlags(mimg.mod);
 
-    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false);
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false, pc);
     for (u32 i = 0; i < 4; i++) {
         if (((mimg.dmask >> i) & 1) == 0) {
             continue;
@@ -698,7 +699,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     // should be always 1st (R) component for depth
     ASSERT(!flags.test(MimgModifier::Pcf) || mimg.dmask & 1);
 
-    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, true);
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, true, pc);
     for (u32 i = 0; i < 4; i++) {
         const IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
         ir.SetVectorReg(dest_reg++, value);
