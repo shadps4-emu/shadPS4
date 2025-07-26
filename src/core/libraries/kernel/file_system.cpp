@@ -20,6 +20,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
 

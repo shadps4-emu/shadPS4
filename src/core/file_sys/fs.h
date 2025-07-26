@@ -11,7 +11,10 @@
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
 #include "core/devices/base_device.h"
-#include "core/libraries/network/sockets.h"
+
+namespace Libraries::Net {
+struct Socket;
+}
 
 namespace Core::FileSys {
 

@@ -211,8 +211,8 @@ int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags)
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
-ssize_t PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags,
-                                  OrbisNetSockaddr* addr, u32* paddrlen) {
+s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
+                              u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
         *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
@@ -227,7 +227,7 @@ ssize_t PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags,
     LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
     return -1;
 }
-ssize_t PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
+s64 PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
