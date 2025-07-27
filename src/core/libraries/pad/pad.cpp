@@ -272,7 +272,8 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
     }
     LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
     g_opened = true;
-    scePadResetLightBar(1);
+    scePadResetLightBar(userId);
+    scePadResetOrientation(userId);
     return 1; // dummy
 }
 
