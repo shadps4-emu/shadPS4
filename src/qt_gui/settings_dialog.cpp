@@ -430,6 +430,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
+        ui->separateLogFilesCheckbox->installEventFilter(this);
     }
 
     SdlEventWrapper::Wrapper::wrapperActive = true;
