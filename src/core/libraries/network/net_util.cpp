@@ -279,7 +279,7 @@ bool NetUtilInternal::RetrieveNetmask() {
     if (result != NO_ERROR)
         return false;
 
-       for (auto adapter = adapter_addresses; adapter != nullptr; adapter = adapter->Next) {
+    for (auto adapter = adapter_addresses; adapter != nullptr; adapter = adapter->Next) {
         // Skip loopback and down interfaces
         if (adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK || adapter->OperStatus != IfOperStatusUp)
             continue;
