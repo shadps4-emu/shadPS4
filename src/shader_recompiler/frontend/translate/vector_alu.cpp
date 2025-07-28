@@ -390,6 +390,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
         return V_LSHL_B64(inst);
+    case Opcode::V_ALIGNBIT_B32:
+        return V_ALIGNBIT_B32(inst);
+    case Opcode::V_ALIGNBYTE_B32:
+        return V_ALIGNBYTE_B32(inst);
     case Opcode::V_MUL_F64:
         return V_MUL_F64(inst);
     case Opcode::V_MAX_F64:
@@ -1294,6 +1298,25 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     SetDst64(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
+}
+
+void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
+    const IR::U32 lo{ir.ShiftRightLogical(src1, src2)};
+    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), src2))};
+    SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
+}
+
+void Translator::V_ALIGNBYTE_B32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x3))};
+    const IR::U32 shift{ir.ShiftLeftLogical(src2, ir.Imm32(3))};
+    const IR::U32 lo{ir.ShiftRightLogical(src1, shift)};
+    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), shift))};
+    SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
 }
 
 void Translator::V_MUL_F64(const GcnInst& inst) {
