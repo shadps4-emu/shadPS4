@@ -138,57 +138,72 @@ void OnGameLoaded() {
                  it != patchXML.children().end(); ++it) {
 
                 if (std::string(it->name()) == "Metadata") {
-                    if (std::string(it->attribute("isEnabled").value()) == "true" &&
-                        std::string(it->attribute("AppVer").value()) == app_version) {
-                        auto patchList = it->first_child();
-
+                    if (std::string(it->attribute("isEnabled").value()) == "true") {
                         std::string currentPatchName = it->attribute("Name").value();
+                        std::string metadataAppVer = it->attribute("AppVer").value();
+                        bool versionMatches = metadataAppVer == app_version;
 
+                        auto patchList = it->first_child();
                         for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
                              patchLineIt != patchList.children().end(); ++patchLineIt) {
 
                             std::string type = patchLineIt->attribute("Type").value();
-                            std::string address = patchLineIt->attribute("Address").value();
-                            std::string patchValue = patchLineIt->attribute("Value").value();
-                            std::string maskOffsetStr = patchLineIt->attribute("Offset").value();
-                            std::string targetStr = "";
-                            std::string sizeStr = "";
-                            if (type == "mask_jump32") {
-                                targetStr = patchLineIt->attribute("Target").value();
-                                sizeStr = patchLineIt->attribute("Size").value();
-                            } else {
-                                patchValue = convertValueToHex(type, patchValue);
+                            if (!versionMatches && type != "mask" && type != "mask_jump32")
+                                continue;
+
+                            std::string currentPatchName = it->attribute("Name").value();
+
+                            for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
+                                 patchLineIt != patchList.children().end(); ++patchLineIt) {
+
+                                std::string type = patchLineIt->attribute("Type").value();
+                                std::string address = patchLineIt->attribute("Address").value();
+                                std::string patchValue = patchLineIt->attribute("Value").value();
+                                std::string maskOffsetStr =
+                                    patchLineIt->attribute("Offset").value();
+                                std::string targetStr = "";
+                                std::string sizeStr = "";
+                                if (type == "mask_jump32") {
+                                    targetStr = patchLineIt->attribute("Target").value();
+                                    sizeStr = patchLineIt->attribute("Size").value();
+                                } else {
+                                    patchValue = convertValueToHex(type, patchValue);
+                                }
+
+                                bool littleEndian = false;
+
+                                if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
+                                    littleEndian = true;
+                                }
+
+                                MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+                                int maskOffsetValue = 0;
+
+                                if (type == "mask")
+                                    patchMask = MemoryPatcher::PatchMask::Mask;
+
+                                if (type == "mask_jump32")
+                                    patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
+                                if ((type == "mask" || type == "mask_jump32") &&
+                                    !maskOffsetStr.empty()) {
+                                    maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
+                                }
+
+                                MemoryPatcher::PatchMemory(currentPatchName, address, patchValue,
+                                                           targetStr, sizeStr, false, littleEndian,
+                                                           patchMask, maskOffsetValue);
                             }
-
-                            bool littleEndian = false;
-
-                            if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
-                                littleEndian = true;
-                            }
-
-                            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
-                            int maskOffsetValue = 0;
-
-                            if (type == "mask")
-                                patchMask = MemoryPatcher::PatchMask::Mask;
-
-                            if (type == "mask_jump32")
-                                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
-
-                            if ((type == "mask" || type == "mask_jump32") &&
-                                !maskOffsetStr.empty()) {
-                                maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
-                            }
-
-                            MemoryPatcher::PatchMemory(currentPatchName, address, patchValue,
-                                                       targetStr, sizeStr, false, littleEndian,
-                                                       patchMask, maskOffsetValue);
                         }
                     }
                 }
             }
-        } else
+
+            ApplyPendingPatches();
+            return;
+        } else {
             LOG_ERROR(Loader, "couldnt patch parse xml : {}", result.description());
+        }
 
         ApplyPendingPatches();
         return;
@@ -249,13 +264,13 @@ void OnGameLoaded() {
         QString newXmlData;
 
         QXmlStreamReader xmlReader(xmlData);
-        bool insideMetadata = false;
 
         bool isEnabled = false;
         std::string currentPatchName;
 
         auto* param_sfo = Common::Singleton<PSF>::Instance();
         auto app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+        bool versionMatches = true;
 
         while (!xmlReader.atEnd()) {
             xmlReader.readNext();
@@ -263,8 +278,6 @@ void OnGameLoaded() {
             if (xmlReader.isStartElement()) {
                 QJsonArray patchLines;
                 if (xmlReader.name() == QStringLiteral("Metadata")) {
-                    insideMetadata = true;
-
                     QString name = xmlReader.attributes().value("Name").toString();
                     currentPatchName = name.toStdString();
 
@@ -276,8 +289,8 @@ void OnGameLoaded() {
                             isEnabled = (attr.value().toString() == "true");
                         }
                     }
-                    if (appVer.toStdString() != app_version)
-                        isEnabled = false;
+                    versionMatches = (appVer.toStdString() == app_version);
+
                 } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                     QJsonArray linesArray;
                     while (!xmlReader.atEnd() &&
@@ -305,12 +318,17 @@ void OnGameLoaded() {
                         foreach (const QJsonValue& value, patchLines) {
                             QJsonObject lineObject = value.toObject();
                             QString type = lineObject["Type"].toString();
+
+                            if ((type != "mask" && type != "mask_jump32") && !versionMatches)
+                                continue;
+
                             QString address = lineObject["Address"].toString();
                             QString patchValue = lineObject["Value"].toString();
                             QString maskOffsetStr = lineObject["Offset"].toString();
 
                             QString targetStr;
                             QString sizeStr;
+
                             if (type == "mask_jump32") {
                                 targetStr = lineObject["Target"].toString();
                                 sizeStr = lineObject["Size"].toString();
@@ -333,8 +351,8 @@ void OnGameLoaded() {
                             if (type == "mask_jump32")
                                 patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
 
-                            if (type == "mask" ||
-                                type == "mask_jump32" && !maskOffsetStr.toStdString().empty()) {
+                            if ((type == "mask" || type == "mask_jump32") &&
+                                !maskOffsetStr.toStdString().empty()) {
                                 maskOffsetValue = std::stoi(maskOffsetStr.toStdString(), 0, 10);
                             }
 
