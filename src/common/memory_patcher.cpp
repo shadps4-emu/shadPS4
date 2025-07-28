@@ -276,7 +276,7 @@ void OnGameLoaded() {
                             isEnabled = (attr.value().toString() == "true");
                         }
                     }
-                    if (appVer != app_version)
+                    if (appVer.toStdString() != app_version)
                         isEnabled = false;
                 } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                     QJsonArray linesArray;
