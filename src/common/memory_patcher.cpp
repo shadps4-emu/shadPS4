@@ -17,8 +17,10 @@
 #include <QString>
 #include <QXmlStreamReader>
 #endif
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/file_format/psf.h"
 #include "memory_patcher.h"
 
 namespace MemoryPatcher {
@@ -127,13 +129,17 @@ void OnGameLoaded() {
         pugi::xml_document doc;
         pugi::xml_parse_result result = doc.load_file(filePath.c_str());
 
+        auto* param_sfo = Common::Singleton<PSF>::Instance();
+        auto app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+
         if (result) {
             auto patchXML = doc.child("Patch");
             for (pugi::xml_node_iterator it = patchXML.children().begin();
                  it != patchXML.children().end(); ++it) {
 
                 if (std::string(it->name()) == "Metadata") {
-                    if (std::string(it->attribute("isEnabled").value()) == "true") {
+                    if (std::string(it->attribute("isEnabled").value()) == "true" &&
+                        std::string(it->attribute("AppVer").value()) == app_version) {
                         auto patchList = it->first_child();
 
                         std::string currentPatchName = it->attribute("Name").value();
@@ -247,6 +253,10 @@ void OnGameLoaded() {
 
         bool isEnabled = false;
         std::string currentPatchName;
+
+        auto* param_sfo = Common::Singleton<PSF>::Instance();
+        auto app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+
         while (!xmlReader.atEnd()) {
             xmlReader.readNext();
 
@@ -258,15 +268,16 @@ void OnGameLoaded() {
                     QString name = xmlReader.attributes().value("Name").toString();
                     currentPatchName = name.toStdString();
 
+                    QString appVer = xmlReader.attributes().value("AppVer").toString();
+
                     // Check and update the isEnabled attribute
                     for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
                         if (attr.name() == QStringLiteral("isEnabled")) {
-                            if (attr.value().toString() == "true") {
-                                isEnabled = true;
-                            } else
-                                isEnabled = false;
+                            isEnabled = (attr.value().toString() == "true");
                         }
                     }
+                    if (appVer != app_version)
+                        isEnabled = false;
                 } else if (xmlReader.name() == QStringLiteral("PatchList")) {
                     QJsonArray linesArray;
                     while (!xmlReader.atEnd() &&
@@ -340,7 +351,7 @@ void OnGameLoaded() {
         if (xmlReader.hasError()) {
             LOG_ERROR(Loader, "Failed to parse XML for {}", g_game_serial);
         } else {
-            LOG_INFO(Loader, "Patches loaded successfully");
+            LOG_INFO(Loader, "Patches loaded successfully, repository: {}", folder.toStdString());
         }
         ApplyPendingPatches();
     }
