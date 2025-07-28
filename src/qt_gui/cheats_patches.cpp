@@ -389,61 +389,41 @@ void CheatsPatches::onSaveButtonClicked() {
                 xmlWriter.writeStartElement(xmlReader.name().toString());
 
                 QString name = xmlReader.attributes().value("Name").toString();
+                QString version = xmlReader.attributes().value("AppVer").toString();
+
+                bool versionMatch = version == m_gameVersion;
                 bool isEnabled = false;
-                bool hasIsEnabled = false;
                 bool foundPatchInfo = false;
 
                 // Check and update the isEnabled attribute
                 for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
-                    if (attr.name() == QStringLiteral("isEnabled")) {
-                        hasIsEnabled = true;
-                        auto it = m_patchInfos.find(name);
-                        if (it != m_patchInfos.end()) {
-                            QCheckBox* checkBox = findCheckBoxByName(it->name);
-                            if (checkBox) {
-                                foundPatchInfo = true;
-                                isEnabled = checkBox->isChecked();
-                                xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
-                            }
-                        }
-                        if (!foundPatchInfo) {
-                            auto maskIt = m_patchInfos.find(name + " (any version)");
-                            if (maskIt != m_patchInfos.end()) {
-                                QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
-                                if (checkBox) {
-                                    foundPatchInfo = true;
-                                    isEnabled = checkBox->isChecked();
-                                    xmlWriter.writeAttribute("isEnabled",
-                                                             isEnabled ? "true" : "false");
-                                }
-                            }
-                        }
-
-                    } else {
-                        xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
-                    }
+                    if (attr.name() == QStringLiteral("isEnabled"))
+                        continue;
+                    xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
                 }
 
-                if (!hasIsEnabled) {
-                    auto it = m_patchInfos.find(name);
-                    if (it != m_patchInfos.end()) {
-                        QCheckBox* checkBox = findCheckBoxByName(it->name);
+                auto it = m_patchInfos.find(name);
+                if (it != m_patchInfos.end()) {
+                    QCheckBox* checkBox = findCheckBoxByName(it->name);
+                    if (checkBox) {
+                        foundPatchInfo = true;
+                        isEnabled = checkBox->isChecked();
+                    }
+                }
+                if (!foundPatchInfo) {
+                    auto maskIt = m_patchInfos.find(name + " (any version)");
+                    if (maskIt != m_patchInfos.end()) {
+                        QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
                         if (checkBox) {
+                            versionMatch = true;
                             foundPatchInfo = true;
                             isEnabled = checkBox->isChecked();
                         }
                     }
-                    if (!foundPatchInfo) {
-                        auto maskIt = m_patchInfos.find(name + " (any version)");
-                        if (maskIt != m_patchInfos.end()) {
-                            QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
-                            if (checkBox) {
-                                foundPatchInfo = true;
-                                isEnabled = checkBox->isChecked();
-                            }
-                        }
-                    }
-                    xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
+                }
+                if (foundPatchInfo) {
+                    xmlWriter.writeAttribute("isEnabled",
+                                             (isEnabled && versionMatch) ? "true" : "false");
                 }
             } else {
                 xmlWriter.writeStartElement(xmlReader.name().toString());
