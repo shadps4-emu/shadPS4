@@ -20,6 +20,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
 
@@ -257,6 +258,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        file->socket->Close();
     }
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
@@ -289,6 +292,13 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->write(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -470,6 +480,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        s64 result = file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -666,6 +683,14 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_blocks = 0;
         // TODO incomplete
         break;
+    }
+    case Core::FileSys::FileType::Socket: {
+        s32 result = file->socket->fstat(sb);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     default:
         UNREACHABLE();

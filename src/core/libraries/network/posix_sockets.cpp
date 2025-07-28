@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <common/assert.h>
+#include "common/error.h"
+#include "core/libraries/kernel/file_system.h"
 #include "net.h"
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 #include "net_error.h"
 #include "sockets.h"
 
@@ -142,6 +147,14 @@ static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
+bool PosixSocket::IsValid() const {
+#ifdef _WIN32
+    return sock != INVALID_SOCKET;
+#else
+    return sock != -1;
+#endif
+}
+
 int PosixSocket::Close() {
     std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
@@ -194,14 +207,17 @@ int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* 
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
-    net_socket new_socket = ::accept(sock, &addr2, (socklen_t*)addrlen);
+    socklen_t len = sizeof(addr2);
+    net_socket new_socket = ::accept(sock, &addr2, &len);
 #ifdef _WIN32
     if (new_socket != INVALID_SOCKET) {
 #else
     if (new_socket >= 0) {
 #endif
-        convertPosixSockaddrToOrbis(&addr2, addr);
-        *addrlen = sizeof(OrbisNetSockaddrIn);
+        if (addr && addrlen) {
+            convertPosixSockaddrToOrbis(&addr2, addr);
+            *addrlen = sizeof(OrbisNetSockaddrIn);
+        }
         return std::make_shared<PosixSocket>(new_socket);
     }
     return nullptr;
@@ -211,7 +227,13 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
-    return ::connect(sock, &addr2, sizeof(sockaddr_in));
+    int result = 0;
+    do {
+        result = ::connect(sock, &addr2, sizeof(sockaddr_in));
+        LOG_DEBUG(Lib_Net, "raw connect result = {}, errno = {}", result,
+                  result == -1 ? Common::GetLastErrorMsg() : "none");
+    } while (result == -1 && (errno == EINTR || errno == EINPROGRESS));
+    return ConvertReturnErrorCode(result);
 }
 
 int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
@@ -392,6 +414,23 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
+}
+
+int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
+#ifdef _WIN32
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    sb->st_mode = 0000777u | 0140000u;
+    return 0;
+#else
+    struct stat st{};
+    int result = ::fstat(sock, &st);
+    sb->st_mode = 0000777u | 0140000u;
+    sb->st_size = st.st_size;
+    sb->st_blocks = st.st_blocks;
+    sb->st_blksize = st.st_blksize;
+    // sb->st_flags = st.st_flags;
+    return result;
+#endif
 }
 
 } // namespace Libraries::Net
