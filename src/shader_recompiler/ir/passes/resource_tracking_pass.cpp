@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -259,7 +260,9 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            return desc.sampler == existing.sampler;
+            return desc.sharp_idx == existing.sharp_idx &&
+                   desc.is_inline_sampler == existing.is_inline_sampler &&
+                   desc.inline_sampler == existing.inline_sampler;
         })};
         return index;
     }
@@ -313,11 +316,24 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
         return not_found;
     }
 
+    // The bitfield extract might be hidden by phi sometimes
+    auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
+    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
+        auto arg0 = prod0_arg0->Arg(0);
+        auto arg1 = prod0_arg0->Arg(1);
+        if (!arg0.IsImmediate() &&
+            arg0.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
+            prod0_arg0 = arg0.InstRecursive();
+        } else if (!arg1.IsImmediate() &&
+                   arg1.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
+            prod0_arg0 = arg1.InstRecursive();
+        }
+    }
+
     // The bits range is for lods (note that constants are changed after constant propagation pass)
-    const auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        !(prod0_arg0->Arg(1).IsIdentity() && prod0_arg0->Arg(1).U32() == 12) ||
-        !(prod0_arg0->Arg(2).IsIdentity() && prod0_arg0->Arg(2).U32() == 8)) {
+        !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
+        !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
         return not_found;
     }
 
@@ -330,102 +346,170 @@ std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
     // We're working on the first dword of s#
     const auto* prod2 = inst->Arg(2).InstRecursive();
     if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst) {
+        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
         return not_found;
     }
 
     return {prod2, true};
 }
 
-SharpLocation AttemptTrackSharp(const IR::Inst* inst, auto& visited_insts) {
-    // Search until we find a potential sharp source.
-    const auto pred = [&visited_insts](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-        if (std::ranges::find(visited_insts, inst) != visited_insts.end()) {
-            return std::nullopt;
+using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
+
+bool IsSharpSource(const IR::Inst* inst) {
+    return inst->GetOpcode() == IR::Opcode::GetUserData ||
+           inst->GetOpcode() == IR::Opcode::ReadConst;
+}
+
+SharpSources FindSharpSources(const IR::Inst* handle, u32 pc) {
+    SharpSources sources;
+    if (IsSharpSource(handle)) {
+        sources.push_back(handle);
+        return sources;
+    }
+
+    bool found_read_const_buffer = false;
+
+    boost::container::small_vector<const IR::Inst*, 8> visited;
+    std::queue<const IR::Inst*> queue;
+    queue.push(handle);
+
+    while (!queue.empty()) {
+        const IR::Inst* inst{queue.front()};
+        queue.pop();
+        if (IsSharpSource(inst)) {
+            sources.push_back(inst);
+            continue;
         }
-        if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-            inst->GetOpcode() == IR::Opcode::ReadConst) {
-            return inst;
+        found_read_const_buffer |= inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
+        if (inst->GetOpcode() != IR::Opcode::Phi) {
+            continue;
         }
-        return std::nullopt;
-    };
-    const auto result = IR::BreadthFirstSearch(inst, pred);
-    ASSERT_MSG(result, "Unable to track sharp source");
-    inst = result.value();
-    visited_insts.emplace_back(inst);
+        for (size_t arg = inst->NumArgs(); arg--;) {
+            const IR::Value arg_value = inst->Arg(arg);
+            if (arg_value.IsImmediate()) {
+                continue;
+            }
+            const IR::Inst* arg_inst = arg_value.InstRecursive();
+            if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                visited.push_back(arg_inst);
+                queue.push(arg_inst);
+            }
+        }
+    }
+    if (sources.empty()) {
+        if (found_read_const_buffer) {
+            UNREACHABLE_MSG("Bindless sharp access detected pc={:#x}", pc);
+        } else {
+            UNREACHABLE_MSG("Unable to find sharp sources pc={:#x}", pc);
+        }
+    }
+    return sources;
+}
+
+bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
+                           const Shader::Gcn::Block* block, const Shader::Gcn::Block* dest_block) {
+    if (block == maybe_dominator) {
+        return true;
+    }
+
+    boost::container::small_vector<const Shader::Gcn::Block*, 8> visited;
+    std::queue<const Shader::Gcn::Block*> queue;
+    queue.push(block);
+
+    while (!queue.empty()) {
+        const Shader::Gcn::Block* block{queue.front()};
+        queue.pop();
+        if (block == dest_block) {
+            return false;
+        }
+        if (block == maybe_dominator) {
+            continue;
+        }
+        if (block->branch_false && !std::ranges::contains(visited, block->branch_false)) {
+            visited.push_back(block->branch_false);
+            queue.push(block->branch_false);
+        }
+        if (block->branch_true && !std::ranges::contains(visited, block->branch_true)) {
+            visited.push_back(block->branch_true);
+            queue.push(block->branch_true);
+        }
+    }
+
+    return true;
+}
+
+SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-        return static_cast<u32>(inst->Arg(0).ScalarReg());
+        return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
     } else {
-        ASSERT_MSG(inst->GetOpcode() == IR::Opcode::ReadConst,
-                   "Sharp load not from constant memory");
         return inst->Flags<u32>();
     }
 }
 
-/// Tracks a sharp with validation of the chosen data type.
-template <typename DataType>
-std::pair<SharpLocation, DataType> TrackSharp(const IR::Inst* inst, const Info& info) {
-    boost::container::small_vector<const IR::Inst*, 4> visited_insts{};
-    while (true) {
-        const auto prev_size = visited_insts.size();
-        const auto sharp = AttemptTrackSharp(inst, visited_insts);
-        if (const auto data = info.ReadUdSharp<DataType>(sharp); data.Valid()) {
-            return std::make_pair(sharp, data);
+SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, u32 pc = 0) {
+    auto sources = FindSharpSources(inst, pc);
+    size_t num_sources = sources.size();
+    ASSERT(current_parent.cfg_block);
+
+    // Perform dominance analysis on found sources and eliminate ones that don't pass
+    // If a sharp source is dominated by another, the former can be eliminated.
+    for (s32 i = 0; i < num_sources;) {
+        const IR::Block* block = sources[i]->GetParent();
+        ASSERT(block->cfg_block);
+        bool was_removed = false;
+        for (s32 j = 0; j < num_sources;) {
+            const IR::Block* dominator = sources[j]->GetParent();
+            ASSERT(dominator->cfg_block);
+            if (i != j && IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
+                                                current_parent.cfg_block)) {
+                std::swap(sources[i], sources[num_sources - 1]);
+                --num_sources;
+                sources.pop_back();
+                was_removed = true;
+                break;
+            } else {
+                ++j;
+            }
         }
-        if (prev_size == visited_insts.size()) {
-            // No change in visited instructions, we've run out of paths.
-            UNREACHABLE_MSG("Unable to find valid sharp.");
+        if (!was_removed) {
+            ++i;
         }
     }
-}
 
-/// Tracks a sharp without data validation.
-SharpLocation TrackSharp(const IR::Inst* inst, const Info& info) {
-    boost::container::static_vector<const IR::Inst*, 1> visited_insts{};
-    return AttemptTrackSharp(inst, visited_insts);
-}
-
-s32 TryHandleInlineCbuf(IR::Inst& inst, Info& info, Descriptors& descriptors,
-                        AmdGpu::Buffer& cbuf) {
-
-    // Assuming V# is in UD s[32:35]
-    // The next pattern:
-    // s_getpc_b64     s[32:33]
-    // s_add_u32       s32, <const>, s32
-    // s_addc_u32      s33, 0, s33
-    // s_mov_b32       s35, <const>
-    // s_movk_i32      s34, <const>
-    // buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
-    // is used to define an inline constant buffer
-
-    IR::Inst* handle = inst.Arg(0).InstRecursive();
-    if (!handle->AreAllArgsImmediates()) {
-        return -1;
-    }
-    // We have found this pattern. Build the sharp.
-    std::array<u64, 2> buffer;
-    buffer[0] = info.pgm_base + (handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32);
-    buffer[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
-    cbuf = std::bit_cast<AmdGpu::Buffer>(buffer);
-    // Assign a binding to this sharp.
-    return descriptors.Add(BufferResource{
-        .sharp_idx = std::numeric_limits<u32>::max(),
-        .used_types = BufferDataType(inst, cbuf.GetNumberFmt()),
-        .inline_cbuf = cbuf,
-        .buffer_type = BufferType::Guest,
-    });
+    ASSERT_MSG(sources.size() == 1, "Unable to deduce sharp source");
+    return SharpLocationFromSource(sources[0]);
 }
 
 void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    s32 binding{};
-    AmdGpu::Buffer buffer;
-    if (binding = TryHandleInlineCbuf(inst, info, descriptors, buffer); binding == -1) {
-        IR::Inst* handle = inst.Arg(0).InstRecursive();
-        IR::Inst* producer = handle->Arg(0).InstRecursive();
-        SharpLocation sharp;
-        std::tie(sharp, buffer) = TrackSharp<AmdGpu::Buffer>(producer, info);
-        binding = descriptors.Add(BufferResource{
-            .sharp_idx = sharp,
+    IR::Inst* handle = inst.Arg(0).InstRecursive();
+    u32 buffer_binding = 0;
+    if (handle->AreAllArgsImmediates()) {
+        // Assuming V# is in UD s[32:35]
+        // The next pattern:
+        // s_getpc_b64     s[32:33]
+        // s_add_u32       s32, <const>, s32
+        // s_addc_u32      s33, 0, s33
+        // s_mov_b32       s35, <const>
+        // s_movk_i32      s34, <const>
+        // buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
+        // is used to define an inline buffer resource
+        std::array<u64, 2> raw;
+        raw[0] = info.pgm_base + (handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32);
+        raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
+        const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
+        buffer_binding = descriptors.Add(BufferResource{
+            .sharp_idx = std::numeric_limits<u32>::max(),
+            .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
+            .inline_cbuf = buffer,
+            .buffer_type = BufferType::Guest,
+        });
+    } else {
+        // Normal buffer resource.
+        IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
+        const auto sharp_idx = TrackSharp(buffer_handle, block);
+        const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        buffer_binding = descriptors.Add(BufferResource{
+            .sharp_idx = sharp_idx,
             .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
             .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
@@ -436,25 +520,14 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
 
     // Replace handle with binding index in buffer resource list.
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(0, ir.Imm32(binding));
+    inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
 void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
-    const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-        const auto opcode = inst->GetOpcode();
-        if (opcode == IR::Opcode::ReadConst || // IMAGE_LOAD (image only)
-            opcode == IR::Opcode::GetUserData) {
-            return inst;
-        }
-        return std::nullopt;
-    };
-    const auto result = IR::BreadthFirstSearch(&inst, pred);
-    ASSERT_MSG(result, "Unable to find image sharp source");
-    const IR::Inst* tsharp_handle = result.value();
-
     // Read image sharp.
-    const auto tsharp = TrackSharp(tsharp_handle, info);
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
+    const auto tsharp = TrackSharp(image_handle, block, inst_info.pc);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const ImageResource image_res = {
@@ -506,38 +579,34 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        // Read sampler sharp.
-        const auto sampler_binding = [&] -> u32 {
-            const auto sampler = inst.Arg(5).InstRecursive();
-            ASSERT(sampler && sampler->GetOpcode() == IR::Opcode::CompositeConstructU32x4);
-            const auto handle = sampler->Arg(0);
-            // Inline sampler resource.
-            if (handle.IsImmediate()) {
-                LOG_DEBUG(Render_Vulkan, "Inline sampler detected");
-                const auto [s1, s2, s3, s4] =
-                    std::tuple{sampler->Arg(0), sampler->Arg(1), sampler->Arg(2), sampler->Arg(3)};
-                ASSERT(s1.IsImmediate() && s2.IsImmediate() && s3.IsImmediate() &&
-                       s4.IsImmediate());
-                const auto inline_sampler = AmdGpu::Sampler{
-                    .raw0 = u64(s2.U32()) << 32 | u64(s1.U32()),
-                    .raw1 = u64(s4.U32()) << 32 | u64(s3.U32()),
-                };
-                const auto binding = descriptors.Add(SamplerResource{inline_sampler});
-                return binding;
-            } else {
-                // Normal sampler resource.
-                const auto ssharp_handle = handle.InstRecursive();
-                const auto& [ssharp_ud, disable_aniso] = TryDisableAnisoLod0(ssharp_handle);
-                const auto ssharp = TrackSharp(ssharp_ud, info);
-                const auto binding =
-                    descriptors.Add(SamplerResource{ssharp, image_binding, disable_aniso});
-                return binding;
-            }
-        }();
-        // Patch image and sampler handle.
+        u32 sampler_binding = 0;
+        const IR::Inst* sampler = inst.Arg(1).InstRecursive();
+        ASSERT(sampler && sampler->GetOpcode() == IR::Opcode::CompositeConstructU32x4);
+        // Inline sampler resource.
+        if (sampler->AreAllArgsImmediates()) {
+            const auto inline_sampler = AmdGpu::Sampler{
+                .raw0 = u64(sampler->Arg(1).U32()) << 32 | u64(sampler->Arg(0).U32()),
+                .raw1 = u64(sampler->Arg(3).U32()) << 32 | u64(sampler->Arg(2).U32()),
+            };
+            sampler_binding = descriptors.Add(SamplerResource{
+                .sharp_idx = std::numeric_limits<u32>::max(),
+                .inline_sampler = inline_sampler,
+                .is_inline_sampler = true,
+            });
+        } else {
+            // Normal sampler resource.
+            const auto& [sampler_handle, disable_aniso] =
+                TryDisableAnisoLod0(sampler->Arg(0).InstRecursive());
+            const auto ssharp = TrackSharp(sampler_handle, block, inst_info.pc);
+            sampler_binding = descriptors.Add(SamplerResource{
+                .sharp_idx = ssharp,
+                .is_inline_sampler = false,
+                .associated_image = image_binding,
+                .disable_aniso = disable_aniso,
+            });
+        }
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
     } else {
-        // Patch image handle.
         inst.SetArg(0, ir.Imm32(image_binding));
     }
 }
@@ -768,10 +837,10 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
-    IR::Inst* body1 = inst.Arg(1).InstRecursive();
-    IR::Inst* body2 = inst.Arg(2).InstRecursive();
-    IR::Inst* body3 = inst.Arg(3).InstRecursive();
-    IR::F32 body4 = IR::F32{inst.Arg(4)};
+    IR::Inst* body1 = inst.Arg(2).InstRecursive();
+    IR::Inst* body2 = inst.Arg(3).InstRecursive();
+    IR::Inst* body3 = inst.Arg(4).InstRecursive();
+    IR::F32 body4 = IR::F32{inst.Arg(5)};
     const auto get_addr_reg = [&](u32 index) -> IR::F32 {
         if (index <= 3) {
             return IR::F32{body1->Arg(index)};
@@ -942,14 +1011,13 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
         return;
     }
 
-    const auto handle = inst.Arg(0);
-    const auto image_res = info.images[handle.U32() & 0xFFFF];
+    const auto image_handle = inst.Arg(0);
+    const auto& image_res = info.images[image_handle.U32() & 0xFFFF];
     auto image = image_res.GetSharp(info);
 
     // Sample instructions must be handled separately using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        PatchImageSampleArgs(block, inst, info, image_res, image);
-        return;
+        return PatchImageSampleArgs(block, inst, info, image_res, image);
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -963,17 +1031,13 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
-            [[fallthrough]];
-        case AmdGpu::ImageType::Color2D: // x, y, [lod]
-            [[fallthrough]];
-        case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
+        case AmdGpu::ImageType::Color2D:      // x, y, [lod]
+        case AmdGpu::ImageType::Color2DMsaa:  // x, y. (sample is passed on different argument)
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
-        case AmdGpu::ImageType::Color2DArray: // x, y, slice, [lod]
-            [[fallthrough]];
+        case AmdGpu::ImageType::Color2DArray:     // x, y, slice, [lod]
         case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
                                                   // argument)
-            [[fallthrough]];
-        case AmdGpu::ImageType::Color3D: // x, y, z, [lod]
+        case AmdGpu::ImageType::Color3D:          // x, y, z, [lod]
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", view_type);
@@ -988,7 +1052,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     const auto is_storage = image_res.is_written;
     if (inst.GetOpcode() == IR::Opcode::ImageRead) {
-        auto texel = ir.ImageRead(handle, coords, lod, ms, inst_info);
+        auto texel = ir.ImageRead(image_handle, coords, lod, ms, inst_info);
         if (is_storage) {
             // Storage image requires shader swizzle.
             texel = ApplySwizzle(ir, texel, image.DstSelect());

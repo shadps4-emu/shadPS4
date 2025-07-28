@@ -4,7 +4,6 @@
 #pragma once
 
 #include <span>
-#include <variant>
 #include <vector>
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
@@ -93,14 +92,11 @@ struct ImageResource {
 using ImageResourceList = boost::container::small_vector<ImageResource, NumImages>;
 
 struct SamplerResource {
-    std::variant<u32, AmdGpu::Sampler> sampler;
+    u32 sharp_idx;
+    AmdGpu::Sampler inline_sampler;
+    u32 is_inline_sampler : 1;
     u32 associated_image : 4;
     u32 disable_aniso : 1;
-
-    SamplerResource(u32 sharp_idx, u32 associated_image_, bool disable_aniso_)
-        : sampler{sharp_idx}, associated_image{associated_image_}, disable_aniso{disable_aniso_} {}
-    SamplerResource(AmdGpu::Sampler sampler_)
-        : sampler{sampler_}, associated_image{0}, disable_aniso(0) {}
 
     constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
 };
@@ -312,20 +308,24 @@ struct Info {
 DECLARE_ENUM_FLAG_OPERATORS(Info::ReadConstType);
 
 constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    return inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+    const auto buffer = inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+    if (!buffer.Valid()) {
+        LOG_DEBUG(Render, "Encountered invalid buffer sharp");
+        return AmdGpu::Buffer::Null();
+    }
+    return buffer;
 }
 
 constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    AmdGpu::Image image{0};
+    AmdGpu::Image image{};
     if (!is_r128) {
         image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
     } else {
-        const auto buf = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
-        memcpy(&image, &buf, sizeof(buf));
+        const auto raw = info.ReadUdSharp<u128>(sharp_idx);
+        std::memcpy(&image, &raw, sizeof(raw));
     }
     if (!image.Valid()) {
-        // Fall back to null image if unbound.
-        LOG_DEBUG(Render_Vulkan, "Encountered unbound image!");
+        LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");
         image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
     } else if (is_depth) {
         const auto data_fmt = image.GetDataFmt();
@@ -338,9 +338,7 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
 }
 
 constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
-    return std::holds_alternative<AmdGpu::Sampler>(sampler)
-               ? std::get<AmdGpu::Sampler>(sampler)
-               : info.ReadUdSharp<AmdGpu::Sampler>(std::get<u32>(sampler));
+    return is_inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
 }
 
 constexpr AmdGpu::Image FMaskResource::GetSharp(const Info& info) const noexcept {

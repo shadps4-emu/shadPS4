@@ -486,6 +486,10 @@ struct Sampler {
         return raw0 != 0 || raw1 != 0;
     }
 
+    bool Valid() const {
+        return true;
+    }
+
     bool operator==(const Sampler& other) const noexcept {
         return std::memcmp(this, &other, sizeof(Sampler)) == 0;
     }

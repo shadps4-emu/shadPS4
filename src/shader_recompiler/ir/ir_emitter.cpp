@@ -2105,11 +2105,11 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
-                                const Value& address3, const Value& address4,
-                                const Value& inline_sampler, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
-                inline_sampler);
+Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                const Value& address1, const Value& address2, const Value& address3,
+                                const Value& address4, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, image_handle, sampler_handle, address1,
+                address2, address3, address4);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,
