@@ -390,8 +390,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
         return V_LSHL_B64(inst);
-    // case Opcode::V_ALIGNBIT_B32: // Not tested in games yet
-    // return V_ALIGNBIT_B32(inst);
+    case Opcode::V_ALIGNBIT_B32:
+        return V_ALIGNBIT_B32(inst);
     case Opcode::V_ALIGNBYTE_B32:
         return V_ALIGNBYTE_B32(inst);
     case Opcode::V_MUL_F64:
