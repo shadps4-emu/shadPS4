@@ -194,7 +194,7 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                                u32* fromlen) {
-    std::scoped_lock lock{m_mutex};
+    std::scoped_lock lock{receive_mutex};
     if (from != nullptr) {
         sockaddr addr;
         int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
