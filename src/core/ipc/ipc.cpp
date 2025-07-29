@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 
+#include "common/memory_patcher.h"
 #include "common/thread.h"
 #include "common/types.h"
 
@@ -33,10 +34,15 @@
 /**
  * Command list:
  * - CAPABILITIES:
- *   - N/A
+ *   - ENABLE_MEMORY_PATCH: enables PATCH_MEMORY command
  * - INPUT CMD:
  *   - RUN: start the emulator execution
  *   - START: start the game execution
+ *   - PATCH_MEMORY(
+ *       modName: str, offset: str, value: str,
+ *       target: str, size: str, isOffset: number, littleEndian: number,
+ *       patchMask: number, maskOffset: number
+ *     ): add a memory patch, check @ref MemoryPatcher::PatchMemory for details
  * - OUTPUT CMD:
  *   - N/A
  **/
@@ -54,6 +60,7 @@ void IPC::Init() {
     });
 
     std::cerr << ";#IPC_ENABLED\n";
+    std::cerr << ";ENABLE_MEMORY_PATCH\n";
     std::cerr << ";#IPC_END\n";
     std::cerr.flush();
 
@@ -86,6 +93,19 @@ void IPC::InputLoop() {
             run_semaphore.release();
         } else if (cmd == "START") {
             start_semaphore.release();
+        } else if (cmd == "PATCH_MEMORY") {
+            MemoryPatcher::patchInfo entry;
+            entry.gameSerial = "*";
+            entry.modNameStr = next_str();
+            entry.offsetStr = next_str();
+            entry.valueStr = next_str();
+            entry.targetStr = next_str();
+            entry.sizeStr = next_str();
+            entry.isOffset = next_u64() != 0;
+            entry.littleEndian = next_u64() != 0;
+            entry.patchMask = static_cast<MemoryPatcher::PatchMask>(next_u64());
+            entry.maskOffset = static_cast<int>(next_u64());
+            MemoryPatcher::AddPatchToQueue(entry);
         } else {
             std::cerr << "UNKNOWN CMD: " << cmd << std::endl;
         }
