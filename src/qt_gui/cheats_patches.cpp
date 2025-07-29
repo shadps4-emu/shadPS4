@@ -378,14 +378,12 @@ void CheatsPatches::onSaveButtonClicked() {
     xmlWriter.writeStartDocument();
 
     QXmlStreamReader xmlReader(xmlData);
-    bool insideMetadata = false;
 
     while (!xmlReader.atEnd()) {
         xmlReader.readNext();
 
         if (xmlReader.isStartElement()) {
             if (xmlReader.name() == QStringLiteral("Metadata")) {
-                insideMetadata = true;
                 xmlWriter.writeStartElement(xmlReader.name().toString());
 
                 QString name = xmlReader.attributes().value("Name").toString();
@@ -432,9 +430,6 @@ void CheatsPatches::onSaveButtonClicked() {
                 }
             }
         } else if (xmlReader.isEndElement()) {
-            if (xmlReader.name() == QStringLiteral("Metadata")) {
-                insideMetadata = false;
-            }
             xmlWriter.writeEndElement();
         } else if (xmlReader.isCharacters() && !xmlReader.isWhitespace()) {
             xmlWriter.writeCharacters(xmlReader.text().toString());
