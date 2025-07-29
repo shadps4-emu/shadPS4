@@ -4,6 +4,7 @@
 #include <common/assert.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/kernel.h"
 #include "net.h"
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -16,11 +17,13 @@ namespace Libraries::Net {
 #ifdef _WIN32
 #define ERROR_CASE(errname)                                                                        \
     case (WSA##errname):                                                                           \
-        return ORBIS_NET_##errname;
+        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
+        return -1;
 #else
 #define ERROR_CASE(errname)                                                                        \
     case (errname):                                                                                \
-        return ORBIS_NET_##errname;
+        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
+        return -1;
 #endif
 
 static int ConvertReturnErrorCode(int retval) {
@@ -107,7 +110,8 @@ static int ConvertReturnErrorCode(int retval) {
             ERROR_CASE(EHOSTUNREACH)
             ERROR_CASE(ENOTEMPTY)
         }
-        return ORBIS_NET_EINTERNAL;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EINTERNAL;
+        return -1;
     }
     // if it is 0 or positive return it as it is
     return retval;

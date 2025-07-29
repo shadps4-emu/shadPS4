@@ -12,10 +12,12 @@ int P2PSocket::Close() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return 0;
 }
+
 int P2PSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return 0;
 }
+
 int P2PSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return 0;
