@@ -49,13 +49,8 @@ public:
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 2_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
-    struct PageData {
-        BufferId buffer_id{};
-        u64 fence_tick;
-    };
-
     struct Traits {
-        using Entry = PageData;
+        using Entry = BufferId;
         static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 16;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
@@ -117,7 +112,6 @@ public:
         } else {
             return staging_buffer;
         }
-        UNREACHABLE();
     }
 
     /// Invalidates any buffer in the logical page range.
@@ -164,14 +158,14 @@ public:
     /// Processes the fault buffer.
     void ProcessFaultBuffer();
 
+    /// Processes ready preemptive downloads not consumed by the guest.
+    void ProcessPreemptiveDownloads();
+
     /// Synchronizes all buffers in the specified range.
     void SynchronizeBuffersInRange(VAddr device_addr, u64 size, bool is_written = false);
 
     /// Synchronizes all buffers neede for DMA.
     void SynchronizeDmaBuffers();
-
-    /// Record memory barrier. Used for buffers when accessed via BDA.
-    void MemoryBarrier();
 
     /// Runs the garbage collector.
     void RunGarbageCollector();
@@ -249,6 +243,15 @@ private:
     Common::LeastRecentlyUsedCache<BufferId, u64> lru_cache;
     RangeSet gpu_modified_ranges;
     RangeSet gpu_modified_ranges_pending;
+    struct PreemptiveDownload {
+        VAddr device_addr;
+        u64 size;
+        u8* staging;
+        u64 done_tick;
+
+        auto operator<=>(const PreemptiveDownload&) const = default;
+    };
+    SplitRangeMap<PreemptiveDownload> preemptive_downloads;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
     vk::UniqueDescriptorSetLayout fault_process_desc_layout;

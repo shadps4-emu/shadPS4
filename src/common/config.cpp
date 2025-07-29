@@ -697,7 +697,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
-        fenceDetectionMode = static_cast<FenceDetection>(toml::find_or<int>(gpu, "fenceDetection", static_cast<int>(fenceDetectionMode)));
+        fenceDetectionMode = static_cast<FenceDetection>(
+            toml::find_or<int>(gpu, "fenceDetection", static_cast<int>(fenceDetectionMode)));
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
         readbackLinearImagesEnabled =
             toml::find_or<bool>(gpu, "readbackLinearImages", readbackLinearImagesEnabled);

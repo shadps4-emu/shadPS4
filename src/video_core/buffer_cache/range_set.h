@@ -266,15 +266,22 @@ public:
     }
 
     template <typename Func>
-    void ForEach(Func&& func) const {
+    void ForEach(Func&& func) {
         if (m_ranges_map.empty()) {
             return;
         }
 
-        for (const auto& [interval, value] : m_ranges_map) {
+        for (auto it = m_ranges_map.begin(); it != m_ranges_map.end();) {
+            const auto& [interval, value] = *it;
             const VAddr inter_addr_end = interval.upper();
             const VAddr inter_addr = interval.lower();
-            func(inter_addr, inter_addr_end, value);
+            if (func(inter_addr, inter_addr_end, value)) {
+                const auto next_it = std::next(it);
+                m_ranges_map.erase(it);
+                it = next_it;
+            } else {
+                ++it;
+            }
         }
     }
 
