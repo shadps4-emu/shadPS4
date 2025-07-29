@@ -121,6 +121,8 @@ static int ConvertLevels(int level) {
         return IPPROTO_IP;
     case ORBIS_NET_IPPROTO_TCP:
         return IPPROTO_TCP;
+    case ORBIS_NET_IPPROTO_IPV6:
+        return IPPROTO_IPV6;
     }
     return -1;
 }
