@@ -16,11 +16,11 @@ namespace Libraries::Net {
 #ifdef _WIN32
 #define ERROR_CASE(errname)                                                                        \
     case (WSA##errname):                                                                           \
-        return ORBIS_NET_ERROR_##errname;
+        return ORBIS_NET_##errname;
 #else
 #define ERROR_CASE(errname)                                                                        \
     case (errname):                                                                                \
-        return ORBIS_NET_ERROR_##errname;
+        return ORBIS_NET_##errname;
 #endif
 
 static int ConvertReturnErrorCode(int retval) {
@@ -107,7 +107,7 @@ static int ConvertReturnErrorCode(int retval) {
             ERROR_CASE(EHOSTUNREACH)
             ERROR_CASE(ENOTEMPTY)
         }
-        return ORBIS_NET_ERROR_EINTERNAL;
+        return ORBIS_NET_EINTERNAL;
     }
     // if it is 0 or positive return it as it is
     return retval;
@@ -288,12 +288,12 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                return ORBIS_NET_ERROR_EPROCUNAVAIL;
+                return ORBIS_NET_EPROCUNAVAIL;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
                 LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
                           sizeof(OrbisNetLinger));
-                return ORBIS_NET_ERROR_EINVAL;
+                return ORBIS_NET_EINVAL;
             }
 
             const void* native_val = &native_linger;
@@ -305,10 +305,10 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         }
 
         case ORBIS_NET_SO_NAME:
-            return ORBIS_NET_ERROR_EINVAL; // don't support set for name
+            return ORBIS_NET_EINVAL; // don't support set for name
         case ORBIS_NET_SO_NBIO: {
             if (optlen != sizeof(sockopt_so_nbio)) {
-                return ORBIS_NET_ERROR_EFAULT;
+                return ORBIS_NET_EFAULT;
             }
             memcpy(&sockopt_so_nbio, optval, optlen);
 #ifdef _WIN32
@@ -334,7 +334,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
         case ORBIS_NET_IP_HDRINCL: {
             if (socket_type != ORBIS_NET_SOCK_RAW) {
-                return ORBIS_NET_ERROR_EPROCUNAVAIL;
+                return ORBIS_NET_EPROCUNAVAIL;
             }
             return ConvertReturnErrorCode(
                 setsockopt(sock, native_level, optname, (const char*)optval, optlen));
@@ -364,7 +364,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     case opt:                                                                                      \
         if (*optlen < sizeof(value)) {                                                             \
             *optlen = sizeof(value);                                                               \
-            return ORBIS_NET_ERROR_EFAULT;                                                         \
+            return ORBIS_NET_EFAULT;                                                         \
         }                                                                                          \
         *optlen = sizeof(value);                                                                   \
         *(decltype(value)*)optval = value;                                                         \
