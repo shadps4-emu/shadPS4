@@ -8,6 +8,7 @@ constexpr int ORBIS_NET_EPERM = 1;
 constexpr int ORBIS_NET_ENOENT = 2;
 constexpr int ORBIS_NET_EINTR = 4;
 constexpr int ORBIS_NET_EBADF = 9;
+constexpr int ORBIS_NET_ENOMEM = 12;
 constexpr int ORBIS_NET_EACCES = 13;
 constexpr int ORBIS_NET_EFAULT = 14;
 constexpr int ORBIS_NET_ENOTBLK = 15;
@@ -38,6 +39,7 @@ constexpr int ORBIS_NET_ENETUNREACH = 51;
 constexpr int ORBIS_NET_ENETRESET = 52;
 constexpr int ORBIS_NET_ECONNABORTED = 53;
 constexpr int ORBIS_NET_ECONNRESET = 54;
+constexpr int ORBIS_NET_ENOBUFS = 55;
 constexpr int ORBIS_NET_EISCONN = 56;
 constexpr int ORBIS_NET_ENOTCONN = 57;
 constexpr int ORBIS_NET_ETOOMANYREFS = 59;
@@ -78,10 +80,6 @@ constexpr int ORBIS_NET_RESOLVER_ENOTIMPLEMENTED = 231;
 constexpr int ORBIS_NET_RESOLVER_ESERVERREFUSED = 232;
 constexpr int ORBIS_NET_RESOLVER_ENORECORD = 233;
 constexpr int ORBIS_NET_RESOLVER_EALIGNMENT = 234;
-
-// common errno
-constexpr int ORBIS_NET_ENOMEM = 12;
-constexpr int ORBIS_NET_ENOBUFS = 55;
 
 // error codes
 constexpr int ORBIS_NET_ERROR_BASE = 0x80410100; // not existed used for calculation
