@@ -364,7 +364,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     case opt:                                                                                      \
         if (*optlen < sizeof(value)) {                                                             \
             *optlen = sizeof(value);                                                               \
-            return ORBIS_NET_EFAULT;                                                         \
+            return ORBIS_NET_EFAULT;                                                               \
         }                                                                                          \
         *optlen = sizeof(value);                                                                   \
         *(decltype(value)*)optval = value;                                                         \
