@@ -6,8 +6,9 @@
 #include <imgui.h>
 #include "common/config.h"
 #include "core/debug_state.h"
+#include "core/memory.h"
 #include "imgui_impl_sdl3.h"
-#include "sdl_window.h"
+#include "input/controller.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -731,7 +732,11 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    SDL_Gamepad* SDLGamepad = Input::m_gamepad;
+    auto memory = Core::Memory::Instance();
+    auto controller = Common::Singleton<Input::GameController>::Instance();
+    auto engine = controller->GetEngine();
+    SDL_Gamepad* SDLGamepad = engine->m_gamepad;
+
     if (SDLGamepad) {
         bd->gamepads.push_back(SDLGamepad);
         bd->want_update_gamepads_list = false;

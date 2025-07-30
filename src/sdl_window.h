@@ -17,8 +17,6 @@ union SDL_Event;
 
 namespace Input {
 
-extern SDL_Gamepad* m_gamepad;
-
 class SDLInputEngine : public Engine {
 public:
     ~SDLInputEngine() override;

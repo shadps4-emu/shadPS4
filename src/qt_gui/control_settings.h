@@ -46,7 +46,6 @@ private:
     void DisableMappingButtons();
     void EnableMappingButtons();
     void Cleanup();
-    void ResetActiveControllerBox();
 
     QList<QPushButton*> ButtonsList;
     QList<QPushButton*> AxisList;
@@ -85,7 +84,3 @@ protected:
         Cleanup();
     }
 };
-
-namespace ControllerSelect {
-extern std::string ActiveGamepad;
-} // namespace ControllerSelect

@@ -21,7 +21,6 @@
 #include "video_core/renderdoc.h"
 
 #ifdef ENABLE_QT_GUI
-#include "qt_gui/control_settings.h"
 #include "qt_gui/sdl_event_wrapper.h"
 #endif
 
@@ -30,8 +29,6 @@
 #endif
 
 namespace Input {
-
-SDL_Gamepad* m_gamepad = nullptr;
 
 using Libraries::Pad::OrbisPadButtonDataOffset;
 
@@ -103,7 +100,6 @@ void SDLInputEngine::Init() {
     if (m_gamepad) {
         SDL_CloseGamepad(m_gamepad);
         m_gamepad = nullptr;
-        LOG_WARNING(Input, "closed gamepad");
     }
 
     int gamepad_count;
@@ -118,46 +114,26 @@ void SDLInputEngine::Init() {
         return;
     }
 
-    std::string activeGamepad = "";
-    std::string defaultGamepad = Config::getDefaultControllerID();
-#ifdef ENABLE_QT_GUI
-    activeGamepad = ControllerSelect::ActiveGamepad;
-#endif
+    int selectedIndex = GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count,
+                                                        GamepadSelect::GetSelectedGamepad());
+    int defaultIndex =
+        GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count, Config::getDefaultControllerID());
 
-    // If user selects an active gamepad, use that, otherwise, try the default
+    // If user selects a gamepad in the GUI, use that, otherwise try the default
     if (!m_gamepad) {
-        if (activeGamepad != "") {
-            for (int i = 0; i < gamepad_count; i++) {
-                char pszGUID[33];
-                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
-                std::string currentGUID = std::string(pszGUID);
-                if (currentGUID == activeGamepad) {
-                    m_gamepad = SDL_OpenGamepad(gamepads[i]);
-                    if (!m_gamepad) {
-                        LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
-                    }
-                    break;
-                }
-            }
-        } else if (Config::getDefaultControllerID() != "") {
-            for (int i = 0; i < gamepad_count; i++) {
-                char pszGUID[33];
-                SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepads[i]), pszGUID, 33);
-                std::string currentGUID = std::string(pszGUID);
-                if (currentGUID == Config::getDefaultControllerID()) {
-                    m_gamepad = SDL_OpenGamepad(gamepads[i]);
-                    if (!m_gamepad) {
-                        LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
-                    }
-                    break;
-                }
-            }
+        if (selectedIndex != -1) {
+            m_gamepad = SDL_OpenGamepad(gamepads[selectedIndex]);
+            LOG_INFO(Input, "Opening gamepad selected in GUI.");
+        } else if (defaultIndex != -1) {
+            m_gamepad = SDL_OpenGamepad(gamepads[defaultIndex]);
+            LOG_INFO(Input, "Opening default gamepad.");
+        } else {
+            m_gamepad = SDL_OpenGamepad(gamepads[0]);
+            LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
         }
     }
 
     if (!m_gamepad) {
-        LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-        m_gamepad = SDL_OpenGamepad(gamepads[0]);
         if (!m_gamepad) {
             LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
             SDL_free(gamepads);
