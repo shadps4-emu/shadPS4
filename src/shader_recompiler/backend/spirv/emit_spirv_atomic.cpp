@@ -358,7 +358,7 @@ Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
 }
 
 Id EmitBufferAtomicFCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
-                             Id cmp_value) {
+                              Id cmp_value) {
     return BufferAtomicF32CmpSwap(ctx, inst, handle, address, value, cmp_value,
                                   &Sirit::Module::OpAtomicCompareExchange);
 }

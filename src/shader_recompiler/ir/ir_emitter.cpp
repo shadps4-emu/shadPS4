@@ -629,7 +629,7 @@ Value IREmitter::BufferAtomicCmpSwap(const Value& handle, const Value& address, 
 }
 
 Value IREmitter::BufferAtomicFCmpSwap(const Value& handle, const Value& address, const Value& vdata,
-                                     const Value& cmp_value, BufferInstInfo info) {
+                                      const Value& cmp_value, BufferInstInfo info) {
     return Inst(Opcode::BufferAtomicFCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
