@@ -226,6 +226,7 @@ SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
         }
         return std::make_shared<PosixSocket>(new_socket);
     }
+    ConvertReturnErrorCode(new_socket);
     return nullptr;
 }
 
@@ -254,7 +255,7 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
         convertPosixSockaddrToOrbis(&addr, name);
         *namelen = sizeof(OrbisNetSockaddrIn);
     }
-    return res;
+    return ConvertReturnErrorCode(res);
 }
 
 #define CASE_SETSOCKOPT(opt)                                                                       \
@@ -429,6 +430,23 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     return 0;
 }
 
+int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
+    std::scoped_lock lock{m_mutex};
+    LOG_DEBUG(Lib_Net, "called");
+
+    sockaddr addr;
+    convertOrbisNetSockaddrToPosix(name, &addr);
+    if (name != nullptr) {
+        *namelen = sizeof(sockaddr_in);
+    }
+    int res = ::getpeername(sock, &addr, (socklen_t*)namelen);
+    if (res >= 0) {
+        convertPosixSockaddrToOrbis(&addr, name);
+        *namelen = sizeof(OrbisNetSockaddrIn);
+    }
+    return ConvertReturnErrorCode(res);
+}
+
 int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
 #ifdef _WIN32
     LOG_ERROR(Lib_Net, "(STUBBED) called");
@@ -442,7 +460,7 @@ int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_blocks = st.st_blocks;
     sb->st_blksize = st.st_blksize;
     // sb->st_flags = st.st_flags;
-    return result;
+    return ConvertReturnErrorCode(result);
 #endif
 }
 
