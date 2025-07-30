@@ -58,6 +58,7 @@ struct Socket {
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
     virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
     std::mutex m_mutex;
+    std::mutex receive_mutex;
 };
 
 struct PosixSocket : public Socket {
