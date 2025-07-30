@@ -264,7 +264,8 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
 #define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
     case opt:                                                                                      \
         if (optlen != sizeof(*value)) {                                                            \
-            return ORBIS_NET_ERROR_EFAULT;                                                         \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                       \
+            return -1;                                                                             \
         }                                                                                          \
         memcpy(value, optval, optlen);                                                             \
         return 0
@@ -292,12 +293,14 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
+                return -1;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
                 LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
                           sizeof(OrbisNetLinger));
-                return ORBIS_NET_EINVAL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
             }
 
             const void* native_val = &native_linger;
@@ -309,10 +312,12 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         }
 
         case ORBIS_NET_SO_NAME:
-            return ORBIS_NET_EINVAL; // don't support set for name
+            *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+            return -1; // don't support set for name
         case ORBIS_NET_SO_NBIO: {
             if (optlen != sizeof(sockopt_so_nbio)) {
-                return ORBIS_NET_EFAULT;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;
+                return -1;
             }
             memcpy(&sockopt_so_nbio, optval, optlen);
 #ifdef _WIN32
@@ -338,7 +343,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
         case ORBIS_NET_IP_HDRINCL: {
             if (socket_type != ORBIS_NET_SOCK_RAW) {
-                return ORBIS_NET_EPROCUNAVAIL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
+                return -1;
             }
             return ConvertReturnErrorCode(
                 setsockopt(sock, native_level, optname, (const char*)optval, optlen));
@@ -368,7 +374,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     case opt:                                                                                      \
         if (*optlen < sizeof(value)) {                                                             \
             *optlen = sizeof(value);                                                               \
-            return ORBIS_NET_EFAULT;                                                               \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
+            return -1;                                                                             \
         }                                                                                          \
         *optlen = sizeof(value);                                                                   \
         *(decltype(value)*)optval = value;                                                         \
