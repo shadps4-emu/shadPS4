@@ -58,7 +58,6 @@ private:
     AvPlayerInitData m_init_data_original{};
     std::mutex m_file_io_mutex{};
 
-    std::atomic_bool m_has_source{};
     std::unique_ptr<AvPlayerState> m_state{};
 };
 

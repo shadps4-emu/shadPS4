@@ -212,7 +212,7 @@ s32 PS4_SYSV_ABI sceAvPlayerSetLooping(AvPlayerHandle handle, bool loop_flag) {
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerSetTrickSpeed(AvPlayerHandle handle, s32 trick_speed) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called speed = {}", trick_speed);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }

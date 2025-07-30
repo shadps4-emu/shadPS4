@@ -37,30 +37,38 @@ public:
     virtual void OnEOF() = 0;
 };
 
-class FrameBuffer {
+class GuestBuffer {
 public:
-    FrameBuffer(const AvPlayerMemAllocator& memory_replacement, u32 align, u32 size) noexcept
+    GuestBuffer(const AvPlayerMemAllocator& memory_replacement, u32 align, u32 size,
+                bool is_texture) noexcept
         : m_memory_replacement(memory_replacement),
-          m_data(Allocate(memory_replacement, align, size)) {
+          m_data(is_texture ? AllocateTexture(memory_replacement, align, size)
+                            : Allocate(memory_replacement, align, size)),
+          m_is_texture(is_texture) {
         ASSERT_MSG(m_data, "Could not allocate frame buffer.");
     }
 
-    ~FrameBuffer() {
+    ~GuestBuffer() {
         if (m_data != nullptr) {
-            Deallocate(m_memory_replacement, m_data);
+            if (m_is_texture) {
+                DeallocateTexture(m_memory_replacement, m_data);
+            } else {
+                Deallocate(m_memory_replacement, m_data);
+            }
             m_data = {};
         }
     }
 
-    FrameBuffer(const FrameBuffer&) noexcept = delete;
-    FrameBuffer& operator=(const FrameBuffer&) noexcept = delete;
+    GuestBuffer(const GuestBuffer&) noexcept = delete;
+    GuestBuffer& operator=(const GuestBuffer&) noexcept = delete;
 
-    FrameBuffer(FrameBuffer&& r) noexcept
-        : m_memory_replacement(r.m_memory_replacement), m_data(r.m_data) {
+    GuestBuffer(GuestBuffer&& r) noexcept
+        : m_memory_replacement(r.m_memory_replacement), m_data(r.m_data),
+          m_is_texture(r.m_is_texture) {
         r.m_data = nullptr;
     };
 
-    FrameBuffer& operator=(FrameBuffer&& r) noexcept {
+    GuestBuffer& operator=(GuestBuffer&& r) noexcept {
         std::swap(m_data, r.m_data);
         return *this;
     }
@@ -79,12 +87,23 @@ private:
         memory_replacement.deallocate(memory_replacement.object_ptr, ptr);
     }
 
+    static u8* AllocateTexture(const AvPlayerMemAllocator& memory_replacement, u32 align,
+                               u32 size) {
+        return reinterpret_cast<u8*>(
+            memory_replacement.allocate_texture(memory_replacement.object_ptr, align, size));
+    }
+
+    static void DeallocateTexture(const AvPlayerMemAllocator& memory_replacement, void* ptr) {
+        memory_replacement.deallocate_texture(memory_replacement.object_ptr, ptr);
+    }
+
     const AvPlayerMemAllocator& m_memory_replacement;
     u8* m_data = nullptr;
+    bool m_is_texture = false;
 };
 
 struct Frame {
-    FrameBuffer buffer;
+    GuestBuffer buffer;
     AvPlayerFrameInfoEx info;
 };
 
@@ -160,18 +179,19 @@ private:
     void AudioDecoderThread(std::stop_token stop);
 
     bool HasRunningThreads() const;
+    GuestBuffer CreateVideoBuffer();
 
     AVFramePtr ConvertAudioFrame(const AVFrame& frame);
     AVFramePtr ConvertVideoFrame(const AVFrame& frame);
 
-    Frame PrepareAudioFrame(FrameBuffer buffer, const AVFrame& frame);
-    Frame PrepareVideoFrame(FrameBuffer buffer, const AVFrame& frame);
+    Frame PrepareAudioFrame(GuestBuffer buffer, const AVFrame& frame);
+    Frame PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
     bool m_use_vdec2 = false;
 
     AvPlayerMemAllocator m_memory_replacement{};
-    u32 m_num_output_video_framebuffers{};
+    u32 m_max_num_video_framebuffers{};
 
     std::atomic_bool m_is_looping = false;
     std::atomic_bool m_is_paused = false;
@@ -179,8 +199,8 @@ private:
 
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
 
-    AvPlayerQueue<FrameBuffer> m_audio_buffers;
-    AvPlayerQueue<FrameBuffer> m_video_buffers;
+    AvPlayerQueue<GuestBuffer> m_audio_buffers;
+    u32 m_num_video_framebuffers{};
 
     AvPlayerQueue<AVPacketPtr> m_audio_packets;
     AvPlayerQueue<AVPacketPtr> m_video_packets;
@@ -213,7 +233,8 @@ private:
     SWRContextPtr m_swr_context{nullptr, &ReleaseSWRContext};
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 
-    std::chrono::high_resolution_clock::time_point m_start_time{};
+    std::optional<u64> m_last_audio_ts{};
+    std::optional<std::chrono::high_resolution_clock::time_point> m_start_time{};
     std::chrono::high_resolution_clock::time_point m_pause_time{};
     std::chrono::high_resolution_clock::duration m_pause_duration{};
 };
