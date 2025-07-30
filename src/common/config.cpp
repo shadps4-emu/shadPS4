@@ -57,6 +57,7 @@ static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
 static std::string micDevice = "Default Device";
+static std::string defaultControllerID = "";
 
 // Output
 static std::string mainOutputDevice = "Default Device";
@@ -632,6 +633,14 @@ void setPSNSignedIn(bool sign) {
     isPSNSignedIn = sign;
 }
 
+std::string getDefaultControllerID() {
+    return defaultControllerID;
+}
+
+void setDefaultControllerID(std::string id) {
+    defaultControllerID = id;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -676,6 +685,7 @@ void load(const std::filesystem::path& path) {
         isConnectedToNetwork =
             toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+        defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
         mainOutputDevice =
             toml::find_or<std::string>(general, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
@@ -870,6 +880,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
     data["General"]["isConnectedToNetwork"] = isConnectedToNetwork;
+    data["General"]["defaultControllerID"] = defaultControllerID;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["useSpecialPad"] = useSpecialPad;
