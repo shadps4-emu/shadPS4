@@ -1024,6 +1024,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.INotEqual(src0, src1);
         case ConditionOp::GT:
             if (src1.IsImmediate() && src1.U64() == 0) {
+                ASSERT(inst.src[0].field == OperandField::ScalarGPR);
                 return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
             }
             return ir.IGreaterThan(src0, src1, is_signed);
