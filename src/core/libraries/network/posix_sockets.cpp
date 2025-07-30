@@ -264,7 +264,7 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
 #define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
     case opt:                                                                                      \
         if (optlen != sizeof(*value)) {                                                            \
-            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                       \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
             return -1;                                                                             \
         }                                                                                          \
         memcpy(value, optval, optlen);                                                             \
