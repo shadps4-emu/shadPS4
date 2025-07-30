@@ -220,26 +220,6 @@ s32 PS4_SYSV_ABI posix_getpagesize() {
     return 16_KB;
 }
 
-s32 PS4_SYSV_ABI posix_getsockname(Libraries::Net::OrbisNetId s,
-                                   Libraries::Net::OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_INFO(Lib_Kernel, "s = {}", s);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto file = h->GetSocket(s);
-    if (!file) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EBADF;
-        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
-        return -1;
-    }
-    s32 returncode = file->socket->GetSocketAddress(addr, paddrlen);
-    if (returncode >= 0) {
-        LOG_ERROR(Lib_Net, "return code : {:#x}", (u32)returncode);
-        return 0;
-    }
-    *Libraries::Kernel::__Error() = 0x20;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
-    return -1;
-}
-
 // stubbed on non-devkit consoles
 s32 PS4_SYSV_ABI sceKernelGetGPI() {
     LOG_DEBUG(Kernel, "called");
@@ -308,7 +288,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  Libraries::Net::sys_getsockopt);
     LIB_FUNCTION("fFxGkxF2bVo", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sys_setsockopt);
-    LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1, posix_getsockname);
+    LIB_FUNCTION("RenI1lL1WFk", "libScePosix", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_getsockname);
     LIB_FUNCTION("KuOmgKoqCdY", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
     LIB_FUNCTION("5jRCs2axtr4", "libScePosix", 1, "libkernel", 1, 1,
                  Libraries::Net::sceNetInetNtop); // TODO fix it to sys_ ...
