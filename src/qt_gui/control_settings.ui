@@ -253,34 +253,6 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_13">
              <item>
-              <widget class="QGroupBox" name="gb_l2">
-               <property name="title">
-                <string>L2</string>
-               </property>
-               <layout class="QVBoxLayout" name="gb_l2_layout">
-                <property name="leftMargin">
-                 <number>5</number>
-                </property>
-                <property name="topMargin">
-                 <number>5</number>
-                </property>
-                <property name="rightMargin">
-                 <number>5</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>5</number>
-                </property>
-                <item>
-                 <widget class="QPushButton" name="L2Button">
-                  <property name="text">
-                   <string>unmapped</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
               <widget class="QGroupBox" name="gb_l1">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -306,6 +278,34 @@
                 </property>
                 <item>
                  <widget class="QPushButton" name="L1Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_l2">
+               <property name="title">
+                <string>L2</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_l2_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="L2Button">
                   <property name="text">
                    <string>unmapped</string>
                   </property>
@@ -1343,34 +1343,6 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_14">
              <item>
-              <widget class="QGroupBox" name="gb_r2">
-               <property name="title">
-                <string>R2</string>
-               </property>
-               <layout class="QVBoxLayout" name="gb_r2_layout">
-                <property name="leftMargin">
-                 <number>5</number>
-                </property>
-                <property name="topMargin">
-                 <number>5</number>
-                </property>
-                <property name="rightMargin">
-                 <number>5</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>5</number>
-                </property>
-                <item>
-                 <widget class="QPushButton" name="R2Button">
-                  <property name="text">
-                   <string>unmapped</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
               <widget class="QGroupBox" name="gb_r1">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1396,6 +1368,34 @@
                 </property>
                 <item>
                  <widget class="QPushButton" name="R1Button">
+                  <property name="text">
+                   <string>unmapped</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="gb_r2">
+               <property name="title">
+                <string>R2</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_r2_layout">
+                <property name="leftMargin">
+                 <number>5</number>
+                </property>
+                <property name="topMargin">
+                 <number>5</number>
+                </property>
+                <property name="rightMargin">
+                 <number>5</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>5</number>
+                </property>
+                <item>
+                 <widget class="QPushButton" name="R2Button">
                   <property name="text">
                    <string>unmapped</string>
                   </property>
