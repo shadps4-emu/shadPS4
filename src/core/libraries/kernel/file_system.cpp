@@ -5,6 +5,7 @@
 #include <ranges>
 
 #include "common/assert.h"
+#include "common/error.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
@@ -23,6 +24,13 @@
 #include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
+
+#ifdef _WIN32
+#include <io.h>
+#include <winsock2.h>
+#else
+#include <sys/select.h>
+#endif
 
 namespace D = Core::Devices;
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
@@ -1068,6 +1076,119 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              OrbisKernelTimeval* timeout) {
+    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+
+    fd_set read_host, write_host, except_host;
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    std::map<int, int> host_to_guest;
+    int max_fd = -1;
+
+    for (auto i = 0; i < nfds; ++i) {
+        auto read = readfds && FD_ISSET(i, readfds);
+        auto write = writefds && FD_ISSET(i, writefds);
+        auto except = exceptfds && FD_ISSET(i, exceptfds);
+        if (read || write || except) {
+            auto* file = h->GetFile(i);
+            if (file == nullptr ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+                LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+                *__Error() = POSIX_EBADF;
+                return -1;
+            }
+
+            int native_fd = [&] {
+                switch (file->type) {
+                case Core::FileSys::FileType::Regular:
+#ifndef _WIN32
+                    return static_cast<int>(file->f.GetFileMapping());
+#else
+                    LOG_ERROR(Kernel_Fs, "regular file fds are not supported (fd {})", i);
+                    return -1; // select from winsock2.h supports only sockets
+#endif
+                case Core::FileSys::FileType::Device:
+                    LOG_ERROR(Kernel_Fs, "device fds are not supported");
+                    return -1;
+                case Core::FileSys::FileType::Socket: {
+                    auto sock = file->socket->Native();
+                    // until P2P sockets contain a proper socket
+                    return sock ? static_cast<int>(*sock) : -1;
+                }
+                default:
+                    UNREACHABLE();
+                }
+            }();
+            if (native_fd == -1) {
+                continue;
+            }
+            host_to_guest.emplace(native_fd, i);
+
+            max_fd = std::max(max_fd, native_fd);
+
+            if (read) {
+                FD_SET(native_fd, &read_host);
+            }
+            if (write) {
+                FD_SET(native_fd, &write_host);
+            }
+            if (except) {
+                FD_SET(native_fd, &except_host);
+            }
+        }
+    }
+
+    if (max_fd == -1) {
+        LOG_WARNING(Kernel_Fs, "all requested file descriptors are unsupported");
+        return 0;
+    }
+
+    int ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
+
+    if (ret > 0) {
+        if (readfds) {
+            FD_ZERO(readfds);
+        }
+        if (writefds) {
+            FD_ZERO(writefds);
+        }
+        if (exceptfds) {
+            FD_ZERO(exceptfds);
+        }
+
+        for (auto i = 0; i < max_fd + 1; ++i) {
+            if (readfds && FD_ISSET(i, &read_host)) {
+                FD_SET(host_to_guest[i], readfds);
+            }
+            if (writefds && FD_ISSET(i, &write_host)) {
+                FD_SET(host_to_guest[i], writefds);
+            }
+            if (exceptfds && FD_ISSET(i, &except_host)) {
+                FD_SET(host_to_guest[i], exceptfds);
+            }
+        }
+    }
+
+    if (ret < 0) {
+#ifndef _WIN32
+        auto error = errno;
+#else
+        auto error = WSAGetLastError();
+#endif
+        LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
+                  Common::NativeErrorToString(error));
+        SetPosixErrno(error);
+    }
+
+    return ret;
+}
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -1125,6 +1246,8 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
     LIB_FUNCTION("mBd4AfLP+u8", "libkernel", 1, "libkernel", 1, 1, sceKernelPwritev);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
+    LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", 1, 1, posix_select);
 }
 
 } // namespace Libraries::Kernel
