@@ -29,7 +29,7 @@ class ImeState {
     bool has_extended = false;
 
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4> current_text;
+    Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> current_text;
 
     std::queue<OrbisImeEvent> event_queue;
     std::mutex queue_mutex;

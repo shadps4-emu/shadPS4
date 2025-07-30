@@ -33,7 +33,7 @@ class ImeDialogState final {
     std::vector<char> placeholder;
 
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4> current_text;
+    Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1> current_text;
 
 public:
     /*
