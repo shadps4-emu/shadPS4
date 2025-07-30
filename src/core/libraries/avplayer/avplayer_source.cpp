@@ -307,34 +307,31 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     }
 
     if (!IsActive() || m_is_paused) {
-        LOG_TRACE(Lib_AvPlayer, "!IsActive() || m_is_paused");
         return false;
     }
 
     if (m_video_frames.Size() == 0) {
-        LOG_TRACE(Lib_AvPlayer, "m_video_frames.Size() == 0");
         return false;
     }
 
     const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
         if (m_audio_codec_context != nullptr) {
+            // Sync with the audio
             auto avdiff = s64(new_frame.info.timestamp) - s64(m_last_audio_ts.value_or(0));
-            // 69 < avdiff = VIDEO_AHEAD, wait
             if (avdiff > 69) {
+                // VIDEO_AHEAD, wait
                 return false;
             }
+            // These will remain unimplemented for now:
             // avdiff < -28 = AUDIO_AHEAD, ??? skip frames ???
-            if (avdiff < -28) {
-                m_video_frames.Pop();
-                return GetVideoData(video_info);
+            // -2 < avdiff < 0 = WAIT_FOR_SYNC, ??? loop until synced ???
+        } else {
+            // Sync with the internal timer since audio is not available
+            const auto current_time = CurrentTime();
+            if (0 < current_time && current_time < new_frame.info.timestamp) {
+                return false;
             }
-            // -2 < avdiff < 69 = WAIT_FOR_SYNC, ??? loop until synced ???
-        }
-
-        const auto current_time = CurrentTime();
-        if (0 < current_time && current_time < new_frame.info.timestamp) {
-            return false;
         }
     }
 
