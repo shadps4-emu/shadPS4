@@ -188,8 +188,9 @@ void ImeUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
-                    input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
+    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(),
+                    ime_param->maxTextLength + 4, input_size, ImGuiInputTextFlags_CallbackAlways,
+                    InputTextCallback, this)) {
     }
 }
 
