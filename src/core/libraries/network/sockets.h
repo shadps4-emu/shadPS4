@@ -57,6 +57,7 @@ struct Socket {
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
     virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
+    virtual std::optional<net_socket> Native() = 0;
     std::mutex m_mutex;
 };
 
@@ -90,6 +91,9 @@ struct PosixSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return sock;
+    }
 };
 
 struct P2PSocket : public Socket {
@@ -109,6 +113,9 @@ struct P2PSocket : public Socket {
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return {};
+    }
 };
 
 } // namespace Libraries::Net
