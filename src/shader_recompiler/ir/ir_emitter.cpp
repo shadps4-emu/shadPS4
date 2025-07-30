@@ -628,6 +628,11 @@ Value IREmitter::BufferAtomicCmpSwap(const Value& handle, const Value& address, 
     return Inst(Opcode::BufferAtomicCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
+Value IREmitter::BufferAtomicFCmpSwap(const Value& handle, const Value& address, const Value& vdata,
+                                     const Value& cmp_value, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
+}
+
 U32 IREmitter::DataAppend(const U32& counter) {
     return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
 }

@@ -111,6 +111,21 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     });
 }
 
+Id BufferAtomicF32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                          Id cmp_value,
+                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
+    const auto& buffer = ctx.buffers[handle];
+    if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
+        address = ctx.OpIAdd(ctx.F32[1], address, offset);
+    }
+    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
+    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.f32_zero_value, address);
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
+        return (ctx.*atomic_func)(ctx.F32[1], ptr, scope, semantics, semantics, value, cmp_value);
+    });
+}
+
 Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& buffer = ctx.buffers[handle];
@@ -339,6 +354,12 @@ Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
 Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                              Id cmp_value) {
     return BufferAtomicU32CmpSwap(ctx, inst, handle, address, value, cmp_value,
+                                  &Sirit::Module::OpAtomicCompareExchange);
+}
+
+Id EmitBufferAtomicFCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                             Id cmp_value) {
+    return BufferAtomicF32CmpSwap(ctx, inst, handle, address, value, cmp_value,
                                   &Sirit::Module::OpAtomicCompareExchange);
 }
 

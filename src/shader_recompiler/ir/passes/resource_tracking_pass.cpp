@@ -36,6 +36,7 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicXor32:
     case IR::Opcode::BufferAtomicSwap32:
     case IR::Opcode::BufferAtomicCmpSwap32:
+    case IR::Opcode::BufferAtomicFCmpSwap32:
         return true;
     default:
         return false;
