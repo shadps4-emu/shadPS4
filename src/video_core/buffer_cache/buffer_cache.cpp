@@ -803,6 +803,11 @@ template <bool insert>
 void BufferCache::ChangeRegister(BufferId buffer_id) {
     Buffer& buffer = slot_buffers[buffer_id];
     const auto size = buffer.SizeBytes();
+    if constexpr (!insert) {
+        total_used_memory += Common::AlignUp(size, CACHING_PAGESIZE);
+    } else {
+        total_used_memory -= Common::AlignUp(size, CACHING_PAGESIZE);
+    }
     const VAddr device_addr_begin = buffer.CpuAddr();
     const VAddr device_addr_end = device_addr_begin + size;
     const u64 page_begin = device_addr_begin / CACHING_PAGESIZE;
@@ -1153,6 +1158,8 @@ void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* val
         .pBufferMemoryBarriers = &post_barrier,
     });
 }
+
+void BufferCache::RunGarbageCollector() {}
 
 void BufferCache::DeleteBuffer(BufferId buffer_id) {
     Buffer& buffer = slot_buffers[buffer_id];

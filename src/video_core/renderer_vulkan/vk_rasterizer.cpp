@@ -446,7 +446,7 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::EndCommandList() {
+void Rasterizer::OnSubmit() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();

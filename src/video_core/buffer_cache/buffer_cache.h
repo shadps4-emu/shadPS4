@@ -162,6 +162,9 @@ public:
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
 
+    /// Garbage collects buffers that were unused for a while.
+    void RunGarbageCollector();
+
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
@@ -220,6 +223,7 @@ private:
     Buffer fault_buffer;
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    u64 total_used_memory = 0;
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
