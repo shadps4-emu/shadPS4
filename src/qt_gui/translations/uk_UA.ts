@@ -1592,7 +1592,7 @@
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Ні</translation>
     </message>
     <message>
       <source>Default Device</source>
@@ -1700,11 +1700,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Увімкнути відгуки</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Увімкнути відгуки лінійних зображень</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1936,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Увімкнути відгуки:\nувімкнути відгуки та запис пам'яті GPU\nЦе потрібно для коректної поведінки у деяких іграх.\nМоже спричинити проблеми зі стабільністю та/або продуктивністю.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Увімкнути відгуки лінійних зображень:\nУвімкнути асинхронне завантаження зображень, модифікованих GPU.\nМоже виправити проблеми у деяких іграх.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2112,11 +2112,11 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Експериментальні функції</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ПОПЕРЕДЖЕННЯ: Ці функції є експериментальними і не повинні бути ввімкнені, якщо вам не було сказано про це, або якщо цього вимагає гра. Будь ласка, запитуйте на Discord сервері  shadPS4, якщо у вас виникнуть запитання.</translation>
     </message>
   </context>
   <context>
