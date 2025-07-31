@@ -611,7 +611,7 @@
     </message>
     <message>
       <source>No default selected</source>
-      <translation>Nenhum padrão selecionado</translation>
+      <translation>Nenhum selecionado como padrão</translation>
     </message>
     <message>
       <source>n/a</source>
@@ -639,7 +639,7 @@
     </message>
     <message>
       <source>Active controller set as default</source>
-      <translation>Controle ativo definido como padrão</translation>
+      <translation>O Controle ativo foi definido como padrão</translation>
     </message>
     <message>
       <source>Default Controller Removed</source>
