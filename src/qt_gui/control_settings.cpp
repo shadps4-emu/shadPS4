@@ -685,7 +685,6 @@ void ControlSettings::CheckGamePad() {
         gamepad = nullptr;
     }
 
-    SDL_free(gamepads);
     gamepads = SDL_GetGamepads(&gamepad_count);
 
     if (!gamepads) {
@@ -974,6 +973,11 @@ void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
             }
         }
     }
+
+    if (Type == SDL_EVENT_GAMEPAD_ADDED || SDL_EVENT_GAMEPAD_REMOVED) {
+        ui->ActiveGamepadBox->clear();
+        CheckGamePad();
+    }
 }
 
 void ControlSettings::pollSDLEvents() {
@@ -986,11 +990,6 @@ void ControlSettings::pollSDLEvents() {
 
         if (event.type == SDL_EVENT_QUIT) {
             return;
-        }
-
-        if (event.type == SDL_EVENT_GAMEPAD_ADDED) {
-            ui->ActiveGamepadBox->clear();
-            CheckGamePad();
         }
 
         SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
