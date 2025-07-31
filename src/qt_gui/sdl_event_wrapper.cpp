@@ -24,8 +24,10 @@ bool Wrapper::ProcessEvent(SDL_Event* event) {
     case SDL_EVENT_WINDOW_EXPOSED:
         return false;
     case SDL_EVENT_GAMEPAD_ADDED:
+        emit SDLEvent(SDL_EVENT_GAMEPAD_ADDED, 0, 0);
         return false;
     case SDL_EVENT_GAMEPAD_REMOVED:
+        emit SDLEvent(SDL_EVENT_GAMEPAD_REMOVED, 0, 0);
         return false;
     case SDL_EVENT_QUIT:
         emit SDLEvent(SDL_EVENT_QUIT, 0, 0);
