@@ -18,6 +18,7 @@
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
+#include "ipc/ipc.h"
 
 namespace Core {
 
@@ -115,6 +116,10 @@ void Linker::Execute(const std::vector<std::string> args) {
 
     main_thread.Run([this, module, args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
+        if (auto& ipc = IPC::Instance()) {
+            ipc.WaitForStart();
+        }
+
         LoadSharedLibraries();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
