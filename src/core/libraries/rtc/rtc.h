@@ -20,6 +20,10 @@ constexpr int ORBIS_RTC_DAYOFWEEK_THURSDAY = 4;
 constexpr int ORBIS_RTC_DAYOFWEEK_FRIDAY = 5;
 constexpr int ORBIS_RTC_DAYOFWEEK_SATURDAY = 6;
 
+constexpr int ORBIS_RTC_CLOCK_ID_NETWORK = 0x10;
+constexpr int ORBIS_RTC_CLOCK_ID_DEBUG_NETWORK = 0x11;
+constexpr int ORBIS_RTC_CLOCK_ID_AD_NETWORK = 0x12;
+
 constexpr s64 UNIX_EPOCH_TICKS = 0xdcbffeff2bc000;
 constexpr s64 WIN32_FILETIME_EPOCH_TICKS = 0xb36168b6a58000;
 
@@ -68,7 +72,7 @@ int PS4_SYSV_ABI sceRtcInit();
 int PS4_SYSV_ABI sceRtcIsLeapYear(int yearInt);
 int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDateTime);
 int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateTime);
-int PS4_SYSV_ABI sceRtcSetConf();
+void PS4_SYSV_ABI sceRtcSetConf(void* p1, void* p2, s32 minuteswest, s32 dsttime);
 int PS4_SYSV_ABI sceRtcSetCurrentAdNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick(OrbisRtcTick* pTick);
 int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick(OrbisRtcTick* pTick);
@@ -88,5 +92,5 @@ int PS4_SYSV_ABI sceRtcTickAddTicks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
 int PS4_SYSV_ABI sceRtcTickAddWeeks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, int32_t lAdd);
 int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, int32_t lAdd);
 
-void RegisterlibSceRtc(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Rtc

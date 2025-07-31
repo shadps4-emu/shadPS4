@@ -83,6 +83,9 @@ s32 PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
 s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time, OrbisTimesec* st,
                                                 u64* dst_sec);
 s32 PS4_SYSV_ABI sceKernelUsleep(u32 microseconds);
+s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp);
+s32 PS4_SYSV_ABI posix_settimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
+s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 
 void RegisterTime(Core::Loader::SymbolsResolver* sym);
 
