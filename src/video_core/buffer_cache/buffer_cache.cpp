@@ -131,9 +131,9 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
     instance.GetDevice().destroyShaderModule(module);
 
-    // Initialize GC
+    // Set up garbage collection parameters
     if (!instance.CanReportMemoryUsage()) {
-        minimum_gc_memory = DEFAULT_MINIMUM_GC_MEMORY;
+        trigger_gc_memory = DEFAULT_TRIGGER_GC_MEMORY;
         critical_gc_memory = DEFAULT_CRITICAL_GC_MEMORY;
         return;
     }
@@ -144,9 +144,9 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     const s64 mem_threshold = std::min<s64>(device_local_memory, TARGET_GC_THRESHOLD);
     const s64 min_vacancy_expected = (6 * mem_threshold) / 10;
     const s64 min_vacancy_critical = (2 * mem_threshold) / 10;
-    minimum_gc_memory = static_cast<u64>(
+    trigger_gc_memory = static_cast<u64>(
         std::max<u64>(std::min(device_local_memory - min_vacancy_expected, min_spacing_expected),
-                      DEFAULT_MINIMUM_GC_MEMORY));
+                      DEFAULT_TRIGGER_GC_MEMORY));
     critical_gc_memory = static_cast<u64>(
         std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                       DEFAULT_CRITICAL_GC_MEMORY));
@@ -1189,15 +1189,12 @@ void BufferCache::RunGarbageCollector() {
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
     }
-    if (total_used_memory < minimum_gc_memory) {
+    if (total_used_memory < trigger_gc_memory) {
         return;
     }
-    const bool aggressive_gc = total_used_memory >= critical_gc_memory;
-    const u64 ticks_to_destroy = aggressive_gc ? 80 : 160;
-    int max_deletions = aggressive_gc ? 64 : 32;
-    if (gc_tick < ticks_to_destroy) {
-        return;
-    }
+    const bool aggressive = total_used_memory >= critical_gc_memory;
+    const u64 ticks_to_destroy = std::min<u64>(aggressive ? 80 : 160, gc_tick);
+    int max_deletions = aggressive ? 64 : 32;
     const auto clean_up = [&](BufferId buffer_id) {
         if (max_deletions == 0) {
             return;

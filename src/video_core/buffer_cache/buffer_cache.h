@@ -45,9 +45,9 @@ public:
     static constexpr u64 FAULT_BUFFER_SIZE = CACHING_NUMPAGES / 8; // Bit per page
 
     // Default values for garbage collection
-    static constexpr u64 DEFAULT_MINIMUM_GC_MEMORY = 1_GB;
-    static constexpr u64 DEFAULT_CRITICAL_GC_MEMORY = 2_GB;
-    static constexpr u64 TARGET_GC_THRESHOLD = 8_GB;
+    static constexpr s64 DEFAULT_TRIGGER_GC_MEMORY = 1_GB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 2_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
     struct PageData {
         BufferId buffer_id{};
@@ -167,7 +167,7 @@ public:
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
 
-    /// Garbage collects buffers that were unused for a while.
+    /// Runs the garbage collector.
     void RunGarbageCollector();
 
 private:
@@ -231,7 +231,7 @@ private:
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
     u64 total_used_memory = 0;
-    u64 minimum_gc_memory = 0;
+    u64 trigger_gc_memory = 0;
     u64 critical_gc_memory = 0;
     u64 gc_tick = 0;
     Common::LeastRecentlyUsedCache<BufferId, u64> lru_cache;

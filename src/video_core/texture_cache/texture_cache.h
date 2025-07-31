@@ -7,6 +7,7 @@
 #include <boost/container/small_vector.hpp>
 #include <tsl/robin_map.h>
 
+#include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/multi_level_page_table.h"
@@ -37,6 +38,11 @@ DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
 static constexpr u32 MaxInvalidateDist = 12_MB;
 
 class TextureCache {
+    // Default values for garbage collection
+    static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
+
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
         static constexpr size_t AddressSpaceBits = 40;
@@ -199,6 +205,9 @@ public:
         return false;
     }
 
+    /// Runs the garbage collector.
+    void RunGarbageCollector();
+
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
@@ -305,6 +314,12 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
+    u64 total_used_memory = 0;
+    u64 trigger_gc_memory = 0;
+    u64 pressure_gc_memory = 0;
+    u64 critical_gc_memory = 0;
+    u64 gc_tick = 0;
+    Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
 
