@@ -25,14 +25,17 @@ class ImeState {
     void* work_buffer{};
     char16_t* text_buffer{};
 
+    OrbisImeParamExtended extended_param{};
+    bool has_extended = false;
+
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4> current_text;
+    Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> current_text;
 
     std::queue<OrbisImeEvent> event_queue;
     std::mutex queue_mutex;
 
 public:
-    ImeState(const OrbisImeParam* param = nullptr);
+    ImeState(const OrbisImeParam* param = nullptr, const OrbisImeParamExtended* extended = nullptr);
     ImeState(ImeState&& other) noexcept;
     ImeState& operator=(ImeState&& other) noexcept;
 
@@ -53,12 +56,14 @@ private:
 class ImeUi : public ImGui::Layer {
     ImeState* state{};
     const OrbisImeParam* ime_param{};
+    const OrbisImeParamExtended* extended_param{};
 
     bool first_render = true;
     std::mutex draw_mutex;
 
 public:
-    explicit ImeUi(ImeState* state = nullptr, const OrbisImeParam* param = nullptr);
+    explicit ImeUi(ImeState* state = nullptr, const OrbisImeParam* param = nullptr,
+                   const OrbisImeParamExtended* extended = nullptr);
     ~ImeUi() override;
     ImeUi(const ImeUi& other) = delete;
     ImeUi& operator=(ImeUi&& other);
