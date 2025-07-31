@@ -1652,7 +1652,7 @@
     </message>
     <message>
       <source>Default Device</source>
-      <translation>Стандартное устройство</translation>
+      <translation>Устройство по умолчанию</translation>
     </message>
     <message>
       <source>s</source>
