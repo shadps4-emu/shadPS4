@@ -33,7 +33,7 @@ static Shader::PushData MakeUserData(const AmdGpu::Liverpool::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, *this, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, buffer_cache, page_manager}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!Config::nullGpu()) {
@@ -446,11 +446,14 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::EndCommandList() {
+void Rasterizer::ProcessFaultBuffer() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
     }
+}
+
+void Rasterizer::ProcessDownloadImages() {
     texture_cache.ProcessDownloadImages();
 }
 
@@ -479,16 +482,12 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         uses_dma |= stage->uses_dma;
     }
 
-    if (uses_dma) {
+    if (uses_dma && !fault_process_pending) {
         // We only use fault buffer for DMA right now.
         {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-            for (auto& range : mapped_ranges) {
-                buffer_cache.SynchronizeBuffersInRange(range.lower(),
-                                                       range.upper() - range.lower());
-            }
+            buffer_cache.SynchronizeBuffersForDma();
         }
-        buffer_cache.MemoryBarrier();
     }
 
     fault_process_pending |= uses_dma;
@@ -995,16 +994,14 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
         // There is no memory, so not mapped.
         return false;
     }
-    const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
-
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-    return boost::icl::contains(mapped_ranges, range);
+    return mapped_ranges.Contains(addr, size);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
-        mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+        mapped_ranges.Add(addr, size);
     }
     page_manager.OnGpuMap(addr, size);
 }
@@ -1015,7 +1012,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     page_manager.OnGpuUnmap(addr, size);
     {
         std::scoped_lock lock{mapped_ranges_mutex};
-        mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+        mapped_ranges.Subtract(addr, size);
     }
 }
 
