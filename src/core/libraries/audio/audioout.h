@@ -25,7 +25,7 @@ enum class OrbisAudioOutPort {
     Bgm = 1,
     Voice = 2,
     Personal = 3,
-    Padspk = 4,
+    PadSpk = 4,
     Audio3d = 126,
     Aux = 127,
 };
