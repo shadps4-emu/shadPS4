@@ -527,7 +527,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>بدون تعيين</translation>
     </message>
     <message>
       <source>L1</source>
@@ -563,19 +563,19 @@
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>مثلث</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>مربع</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>دائرة</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>اكس</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
@@ -587,7 +587,7 @@
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>اضغط زر</translation>
     </message>
     <message>
       <source>Move analog stick</source>
@@ -834,7 +834,7 @@
     </message>
     <message>
       <source>Favorite</source>
-      <translation type="unfinished">Favorite</translation>
+      <translation>المفضلة</translation>
     </message>
   </context>
   <context>
@@ -1040,7 +1040,7 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>إزالة من المفضلة</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
@@ -1648,11 +1648,11 @@
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>لا شيء</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>الجهاز الافتراضي</translation>
     </message>
     <message>
       <source>s</source>
