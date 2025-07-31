@@ -9,6 +9,7 @@
 #include "core/memory.h"
 #include "imgui_impl_sdl3.h"
 #include "input/controller.h"
+#include "sdl_window.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -502,6 +503,9 @@ bool ProcessEvent(const SDL_Event* event) {
         bd->want_update_gamepads_list = true;
         return true;
     }
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        bd->want_update_gamepads_list = true;
+        return false;
     }
     return false;
 }
