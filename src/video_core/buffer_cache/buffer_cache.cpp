@@ -130,6 +130,26 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
                           "Fault Buffer Parser Pipeline");
 
     instance.GetDevice().destroyShaderModule(module);
+
+    // Initialize GC
+    if (!instance.CanReportMemoryUsage()) {
+        minimum_gc_memory = DEFAULT_MINIMUM_GC_MEMORY;
+        critical_gc_memory = DEFAULT_CRITICAL_GC_MEMORY;
+        return;
+    }
+
+    const s64 device_local_memory = static_cast<s64>(instance.GetTotalMemoryBudget());
+    const s64 min_spacing_expected = device_local_memory - 1_GB;
+    const s64 min_spacing_critical = device_local_memory - 512_MB;
+    const s64 mem_threshold = std::min<s64>(device_local_memory, TARGET_GC_THRESHOLD);
+    const s64 min_vacancy_expected = (6 * mem_threshold) / 10;
+    const s64 min_vacancy_critical = (2 * mem_threshold) / 10;
+    minimum_gc_memory = static_cast<u64>(
+        std::max<u64>(std::min(device_local_memory - min_vacancy_expected, min_spacing_expected),
+                      DEFAULT_MINIMUM_GC_MEMORY));
+    critical_gc_memory = static_cast<u64>(
+        std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
+                      DEFAULT_CRITICAL_GC_MEMORY));
 }
 
 BufferCache::~BufferCache() = default;
@@ -805,8 +825,10 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     const auto size = buffer.SizeBytes();
     if constexpr (!insert) {
         total_used_memory += Common::AlignUp(size, CACHING_PAGESIZE);
+        buffer.SetLRUId(lru_cache.Insert(buffer_id, gc_tick));
     } else {
         total_used_memory -= Common::AlignUp(size, CACHING_PAGESIZE);
+        lru_cache.Free(buffer.LRUId());
     }
     const VAddr device_addr_begin = buffer.CpuAddr();
     const VAddr device_addr_end = device_addr_begin + size;
@@ -879,6 +901,7 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &post_barrier,
     });
+    TouchBuffer(buffer);
 }
 
 vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
@@ -1159,7 +1182,36 @@ void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* val
     });
 }
 
-void BufferCache::RunGarbageCollector() {}
+void BufferCache::RunGarbageCollector() {
+    SCOPE_EXIT {
+        ++gc_tick;
+    };
+    if (instance.CanReportMemoryUsage()) {
+        total_used_memory = instance.GetDeviceMemoryUsage();
+    }
+    if (total_used_memory < minimum_gc_memory) {
+        return;
+    }
+    const bool aggressive_gc = total_used_memory >= critical_gc_memory;
+    const u64 ticks_to_destroy = aggressive_gc ? 80 : 160;
+    int max_deletions = aggressive_gc ? 64 : 32;
+    if (gc_tick < ticks_to_destroy) {
+        return;
+    }
+    const auto clean_up = [&](BufferId buffer_id) {
+        if (max_deletions == 0) {
+            return;
+        }
+        --max_deletions;
+        Buffer& buffer = slot_buffers[buffer_id];
+        InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
+        DeleteBuffer(buffer_id);
+    };
+}
+
+void BufferCache::TouchBuffer(const Buffer& buffer) {
+    lru_cache.Touch(buffer.LRUId(), gc_tick);
+}
 
 void BufferCache::DeleteBuffer(BufferId buffer_id) {
     Buffer& buffer = slot_buffers[buffer_id];
