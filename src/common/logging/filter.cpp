@@ -142,6 +142,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, CompanionHttpd)                                                                       \
     SUB(Lib, CompanionUtil)                                                                        \
     SUB(Lib, Voice)                                                                                \
+    SUB(Lib, Json)                                                                                 \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \
