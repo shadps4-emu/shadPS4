@@ -208,6 +208,10 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     return -1;
 }
 
+int PS4_SYSV_ABI sys_send(OrbisNetId s, const void* buf, u64 len, int flags) {
+    return sys_sendto(s, buf, len, flags, nullptr, 0);
+}
+
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
@@ -227,6 +231,10 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
+}
+
+s64 PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags) {
+    return sys_recvfrom(s, buf, len, flags, nullptr, nullptr);
 }
 
 s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
