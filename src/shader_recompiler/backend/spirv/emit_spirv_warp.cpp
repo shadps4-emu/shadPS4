@@ -42,4 +42,8 @@ Id EmitBallotFindLsb(EmitContext& ctx, Id mask) {
     return ctx.OpGroupNonUniformBallotFindLSB(ctx.U32[1], SubgroupScope(ctx), mask);
 }
 
+Id EmitGroupAny(EmitContext& ctx, Id bit) {
+    return ctx.OpGroupNonUniformAny(ctx.U1[1], SubgroupScope(ctx), bit);
+}
+
 } // namespace Shader::Backend::SPIRV

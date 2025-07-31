@@ -10,6 +10,7 @@
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
+#include "ir_emitter.h"
 
 namespace Shader::IR {
 namespace {
@@ -666,6 +667,10 @@ Value IREmitter::Ballot(const U1& bit) {
 
 U32 IREmitter::BallotFindLsb(const Value& mask) {
     return Inst<U32>(Opcode::BallotFindLsb, mask);
+}
+
+U1 IREmitter::GroupAny(const U1& bit) {
+    return Inst<U1>(Opcode::GroupAny, bit);
 }
 
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
