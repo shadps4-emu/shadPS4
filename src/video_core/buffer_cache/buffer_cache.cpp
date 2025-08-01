@@ -823,7 +823,7 @@ template <bool insert>
 void BufferCache::ChangeRegister(BufferId buffer_id) {
     Buffer& buffer = slot_buffers[buffer_id];
     const auto size = buffer.SizeBytes();
-    if constexpr (!insert) {
+    if constexpr (insert) {
         total_used_memory += Common::AlignUp(size, CACHING_PAGESIZE);
         buffer.SetLRUId(lru_cache.Insert(buffer_id, gc_tick));
     } else {
