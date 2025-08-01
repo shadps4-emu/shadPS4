@@ -165,10 +165,11 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory(buffer, device_addr, size, is_write);
+        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
     });
 }
 
+template <bool async>
 void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
@@ -203,17 +204,24 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    scheduler.Finish();
-    auto* memory = Core::Memory::Instance();
-    for (const auto& copy : copies) {
-        const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
-        const u64 dst_offset = copy.dstOffset - offset;
-        memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
-                                copy.size);
-    }
-    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
-    if (is_write) {
-        memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+    const auto write_data = [&]() {
+        auto* memory = Core::Memory::Instance();
+        for (const auto& copy : copies) {
+            const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
+            const u64 dst_offset = copy.dstOffset - offset;
+            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                    copy.size);
+        }
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+        if (is_write) {
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        }
+    };
+    if constexpr (async) {
+        scheduler.DeferOperation(write_data);
+    } else {
+        scheduler.Finish();
+        write_data();
     }
 }
 
@@ -1201,7 +1209,8 @@ void BufferCache::RunGarbageCollector() {
         }
         --max_deletions;
         Buffer& buffer = slot_buffers[buffer_id];
-        InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
+        // InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
+        DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
     };
 }
