@@ -7,6 +7,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/types.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -155,6 +156,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
 
     CreateDevice();
+    CollectPhysicalMemoryInfo();
     CollectToolingInfo();
 
     // Check and log format support details.
@@ -318,6 +320,8 @@ bool Instance::CreateDevice() {
         portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     }
 #endif
+
+    supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -617,9 +621,53 @@ void Instance::CollectDeviceParameters() {
 
     LOG_INFO(Render_Vulkan, "GPU_Vendor: {}", vendor_name);
     LOG_INFO(Render_Vulkan, "GPU_Model: {}", model_name);
+    LOG_INFO(Render_Vulkan, "GPU_Integrated: {}", IsIntegrated() ? "Yes" : "No");
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver: {}", driver_name);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version: {}", api_version);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
+}
+
+void Instance::CollectPhysicalMemoryInfo() {
+    vk::PhysicalDeviceMemoryBudgetPropertiesEXT budget{};
+    vk::PhysicalDeviceMemoryProperties2 props = {
+        .pNext = supports_memory_budget ? &budget : nullptr,
+    };
+    physical_device.getMemoryProperties2(&props);
+    const auto& memory_props = props.memoryProperties;
+    const size_t num_props = memory_props.memoryHeapCount;
+    total_memory_budget = 0;
+    u64 device_initial_usage = 0;
+    u64 local_memory = 0;
+    for (size_t i = 0; i < num_props; ++i) {
+        const bool is_device_local =
+            (memory_props.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) !=
+            vk::MemoryHeapFlags{};
+        if (!IsIntegrated() && !is_device_local) {
+            // Ignore non-device local memory on discrete GPUs.
+            continue;
+        }
+        valid_heaps.push_back(i);
+        if (is_device_local) {
+            local_memory += memory_props.memoryHeaps[i].size;
+        }
+        if (supports_memory_budget) {
+            device_initial_usage += budget.heapUsage[i];
+            total_memory_budget += budget.heapBudget[i];
+            continue;
+        }
+        // If memory budget is not supported, use the size of the heap as the budget.
+        total_memory_budget += memory_props.memoryHeaps[i].size;
+    }
+    if (!IsIntegrated()) {
+        // We reserve some memory for the system.
+        const u64 system_memory = std::min<u64>(total_memory_budget / 8, 1_GB);
+        total_memory_budget -= system_memory;
+        return;
+    }
+    // Leave at least 8 GB for the system on integrated GPUs.
+    const s64 available_memory = static_cast<s64>(total_memory_budget - device_initial_usage);
+    total_memory_budget =
+        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(local_memory)));
 }
 
 void Instance::CollectToolingInfo() const {
@@ -639,6 +687,20 @@ void Instance::CollectToolingInfo() const {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
     }
+}
+
+u64 Instance::GetDeviceMemoryUsage() const {
+    vk::PhysicalDeviceMemoryBudgetPropertiesEXT memory_budget_props{};
+    vk::PhysicalDeviceMemoryProperties2 props = {
+        .pNext = &memory_budget_props,
+    };
+    physical_device.getMemoryProperties2(&props);
+
+    u64 total_usage = 0;
+    for (const size_t heap : valid_heaps) {
+        total_usage += memory_budget_props.heapUsage[heap];
+    }
+    return total_usage;
 }
 
 vk::FormatFeatureFlags2 Instance::GetFormatFeatureFlags(vk::Format format) const {
