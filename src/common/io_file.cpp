@@ -41,7 +41,7 @@ namespace {
         case FileAccessMode::Read:
             return L"rb";
         case FileAccessMode::Write:
-            return L"wb";
+            return L"r+b";
         case FileAccessMode::Append:
             return L"ab";
         case FileAccessMode::ReadWrite:
@@ -55,7 +55,7 @@ namespace {
         case FileAccessMode::Read:
             return L"r";
         case FileAccessMode::Write:
-            return L"w";
+            return L"r+";
         case FileAccessMode::Append:
             return L"a";
         case FileAccessMode::ReadWrite:
@@ -92,7 +92,7 @@ namespace {
         case FileAccessMode::Read:
             return "rb";
         case FileAccessMode::Write:
-            return "wb";
+            return "r+b";
         case FileAccessMode::Append:
             return "ab";
         case FileAccessMode::ReadWrite:
@@ -106,7 +106,7 @@ namespace {
         case FileAccessMode::Read:
             return "r";
         case FileAccessMode::Write:
-            return "w";
+            return "r+";
         case FileAccessMode::Append:
             return "a";
         case FileAccessMode::ReadWrite:
