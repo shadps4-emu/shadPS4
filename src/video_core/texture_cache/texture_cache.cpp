@@ -909,6 +909,19 @@ void TextureCache::RunGarbageCollector() {
             return true;
         }
         --num_deletions;
+        auto& image = slot_images[image_id];
+        const bool download = True(image.flags & ImageFlagBits::GpuModified);
+        const bool linear = image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear;
+        if (!linear && download) {
+            // This is a workaround for now. We can't handle non-linear image downloads.
+            return false;
+        }
+        if (download && !pressured) {
+            return false;
+        }
+        if (download) {
+            DownloadImageMemory(image_id);
+        }
         FreeImage(image_id);
         if (total_used_memory < critical_gc_memory) {
             if (aggresive) {
