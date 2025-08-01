@@ -334,7 +334,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
 size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr) {
+    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -472,7 +472,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr) {
+    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -812,7 +812,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr) {
+    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
