@@ -180,7 +180,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     }
 
     if (!ignore_corrupt && !read_only) {
-        Common::FS::IOFile f(corrupt_file_path, Common::FS::FileAccessMode::Write);
+        Common::FS::IOFile f(corrupt_file_path, Common::FS::FileAccessMode::Create);
         f.Close();
     }
 
