@@ -202,22 +202,30 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         if (read) {
-            // Read only
+            // Open exclusively for reading
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (read_only) {
             // Can't open files with write/read-write access in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
             return -1;
-        } else if (append) {
-            // Append can be specified with rdwr or write, but we treat it as a separate mode.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
         } else if (write) {
-            // Write only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            if (append) {
+                // Open exclusively for appending
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+            } else {
+                // Open exclusively for writing
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            }
         } else if (rdwr) {
             // Read and write
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            if (append) {
+                // Open for reading and appending
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadAppend);
+            } else {
+                // Open for reading and writing
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            }
         }
     }
 
@@ -334,7 +342,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
 size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
+    if (file == nullptr || file->f.IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -472,7 +480,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
+    if (file == nullptr || file->f.IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -812,7 +820,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.GetAccessMode() == Common::FS::FileAccessMode::Write) {
+    if (file == nullptr || file->f.IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }

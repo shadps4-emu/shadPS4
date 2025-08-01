@@ -21,7 +21,7 @@ enum class FileAccessMode {
      */
     Read = 1 << 0,
     /**
-     * If the file at path exists, it opens the file for reading and writing.
+     * If the file at path exists, it opens the file for writing.
      * If the file at path does not exist, it fails to open the file.
      */
     Write = 1 << 1,
@@ -105,6 +105,11 @@ public:
 
     bool IsOpen() const {
         return file != nullptr;
+    }
+
+    bool IsWriteOnly() const {
+        return file_access_mode == FileAccessMode::Append ||
+               file_access_mode == FileAccessMode::Write;
     }
 
     uintptr_t GetFileMapping();
