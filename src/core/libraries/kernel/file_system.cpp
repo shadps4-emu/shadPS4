@@ -127,7 +127,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 return -1;
             }
             // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
