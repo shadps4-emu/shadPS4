@@ -784,11 +784,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
     if (file) {
-        // We need to force ReadWrite if the file had Write access before
-        // Otherwise f.Open will clear the file contents.
-        auto access_mode = file->f.GetAccessMode() == Common::FS::FileAccessMode::Write
-                               ? Common::FS::FileAccessMode::ReadWrite
-                               : file->f.GetAccessMode();
+        auto access_mode = file->f.GetAccessMode();
         file->f.Close();
         std::filesystem::remove(src_path);
         file->f.Open(dst_path, access_mode);
