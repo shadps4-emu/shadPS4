@@ -342,7 +342,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
 size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.IsWriteOnly()) {
+    if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -356,6 +356,12 @@ size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
     size_t total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
@@ -480,7 +486,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.IsWriteOnly()) {
+    if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -501,6 +507,12 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         }
         return result;
     }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
     return ReadFile(file->f, buf, nbytes);
 }
 
@@ -820,7 +832,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
-    if (file == nullptr || file->f.IsWriteOnly()) {
+    if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -833,6 +845,11 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
             return -1;
         }
         return result;
+    }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     const s64 pos = file->f.Tell();
