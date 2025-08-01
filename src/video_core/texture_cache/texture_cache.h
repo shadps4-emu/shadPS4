@@ -132,6 +132,7 @@ public:
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
+        TouchImage(image);
         RefreshImage(image, custom_scheduler);
     }
 
@@ -156,12 +157,18 @@ public:
 
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
-        return slot_images[id];
+        auto& image = slot_images[id];
+        TouchImage(image);
+        return image;
     }
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        return slot_image_views[id];
+        auto& view = slot_image_views[id];
+        // Maybe this is not needed.
+        Image& image = slot_images[view.image_id];
+        TouchImage(image);
+        return view;
     }
 
     /// Registers an image view for provided image
@@ -295,6 +302,9 @@ private:
 
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
+
+    /// Touch the image in the LRU cache.
+    void TouchImage(const Image& image);
 
     void FreeImage(ImageId image_id) {
         UntrackImage(image_id);
