@@ -47,9 +47,10 @@ private:
     void EnableMappingButtons();
     void Cleanup();
 
+    // use QMap instead of QSet to maintain order of inserted strings
+    QMap<int, QString> pressedButtons;
     QList<QPushButton*> ButtonsList;
     QList<QPushButton*> AxisList;
-    QSet<QString> pressedButtons;
 
     std::string RunningGameSerial;
     bool GameRunning;

@@ -859,61 +859,66 @@ bool ControlSettings::eventFilter(QObject* obj, QEvent* event) {
 
 void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
     if (EnableButtonMapping) {
+
+        if (pressedButtons.size() >= 3) {
+            return;
+        }
+
         if (Type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
             switch (Input) {
             case SDL_GAMEPAD_BUTTON_SOUTH:
-                pressedButtons.insert("cross");
+                pressedButtons.insert(5, "cross");
                 break;
             case SDL_GAMEPAD_BUTTON_EAST:
-                pressedButtons.insert("circle");
+                pressedButtons.insert(6, "circle");
                 break;
             case SDL_GAMEPAD_BUTTON_NORTH:
-                pressedButtons.insert("triangle");
+                pressedButtons.insert(7, "triangle");
                 break;
             case SDL_GAMEPAD_BUTTON_WEST:
-                pressedButtons.insert("square");
+                pressedButtons.insert(8, "square");
                 break;
             case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-                pressedButtons.insert("l1");
+                pressedButtons.insert(3, "l1");
                 break;
             case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-                pressedButtons.insert("r1");
+                pressedButtons.insert(4, "r1");
                 break;
             case SDL_GAMEPAD_BUTTON_LEFT_STICK:
-                pressedButtons.insert("l3");
+                pressedButtons.insert(9, "l3");
                 break;
             case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-                pressedButtons.insert("r3");
+                pressedButtons.insert(10, "r3");
                 break;
             case SDL_GAMEPAD_BUTTON_DPAD_UP:
-                pressedButtons.insert("pad_up");
+                pressedButtons.insert(13, "pad_up");
                 break;
             case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-                pressedButtons.insert("pad_down");
+                pressedButtons.insert(14, "pad_down");
                 break;
             case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-                pressedButtons.insert("pad_left");
+                pressedButtons.insert(15, "pad_left");
                 break;
             case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-                pressedButtons.insert("pad_right");
+                pressedButtons.insert(16, "pad_right");
                 break;
             case SDL_GAMEPAD_BUTTON_BACK:
-                pressedButtons.insert("back");
+                pressedButtons.insert(11, "back");
                 break;
             case SDL_GAMEPAD_BUTTON_LEFT_PADDLE1:
-                pressedButtons.insert("lpaddle_high");
+                pressedButtons.insert(17, "lpaddle_high");
                 break;
             case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1:
-                pressedButtons.insert("rpaddle_high");
+                pressedButtons.insert(18, "rpaddle_high");
                 break;
             case SDL_GAMEPAD_BUTTON_LEFT_PADDLE2:
-                pressedButtons.insert("lpaddle_low");
+                pressedButtons.insert(19, "lpaddle_low");
                 break;
             case SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2:
-                pressedButtons.insert("rpaddle_low");
+                pressedButtons.insert(20, "rpaddle_low");
                 break;
             case SDL_GAMEPAD_BUTTON_START:
-                pressedButtons.insert("options");
+                pressedButtons.insert(12, "options");
                 break;
             default:
                 break;
@@ -926,19 +931,19 @@ void ControlSettings::processSDLEvents(int Type, int Input, int Value) {
             switch (Input) {
             case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
                 if (Value > 16000) {
-                    pressedButtons.insert("l2");
+                    pressedButtons.insert(1, "l2");
                     L2Pressed = true;
                 } else if (Value < 5000) {
-                    if (L2Pressed)
+                    if (L2Pressed && !R2Pressed)
                         emit PushGamepadEvent();
                 }
                 break;
             case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
                 if (Value > 16000) {
-                    pressedButtons.insert("r2");
+                    pressedButtons.insert(2, "r2");
                     R2Pressed = true;
                 } else if (Value < 5000) {
-                    if (R2Pressed)
+                    if (R2Pressed && !L2Pressed)
                         emit PushGamepadEvent();
                 }
                 break;
