@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Mueve el stick analógico</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 y L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Mando Activo</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID del Mando</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Mando por Defecto</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Por defecto no seleccionado</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Establecer Mando Activo como Predeterminado</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Eliminar Mando por Defecto</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 y R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Mando por Defecto Seleccionado</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Mando activo establecido por defecto</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Mando por Defecto Eliminado</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Configuración del mando por defecto eliminada</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1588,15 +1644,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Micrófono</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Ninguno</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Dispositivo por Defecto</translation>
     </message>
     <message>
       <source>s</source>
@@ -1700,11 +1756,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Habilitar Retrolectura</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Habilitar Retrolectura de Imágenes Lineales</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1992,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Habilitar Retrolectura:\nHabilita la lectura y escritura de memoria desde y hacia la GPU.\nNecesario para el correcto funcionamiento de algunos juegos.\nPuede afectar el rendimiento o causar inestabilidad.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Habilitar Retrolectura de Imágenes Lineales:\nPermite la descarga asíncrona de imágenes lineales modificadas por la GPU.\nPuede corregir errores gráficos en ciertos juegos.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2108,15 +2164,15 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Características experimentales</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ADVERTENCIA: Estas funciones son experimentales y no deben activarse a menos que se te haya indicado o que un juego lo requiera específicamente. Si tienes dudas, por favor consulta en el servidor de Discord de shadPS4.</translation>
     </message>
   </context>
   <context>

@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>移动模拟摇杆</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1和L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>主手柄</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>手柄 ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>默认手柄</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>没有选择默认项</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>不可用</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>设置主手柄为默认值</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>移除默认手柄</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 和 R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:  </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>已选中默认控制器</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>主控制器设置为默认</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>默认控制器已移除</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>默认控制器设置已删除</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>

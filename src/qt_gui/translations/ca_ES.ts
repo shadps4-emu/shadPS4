@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Mou la palanca</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 i L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Controlador actiu</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID del controlador</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Controlador per defecte</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>No hi ha cap seleccionat per defecte</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Estableix el controlador actual per defecte</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Elimina el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 i R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Seleccionat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>El controlador actiu per defecte</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Eliminat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>S'ha eliminat el controlador per defecte</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>

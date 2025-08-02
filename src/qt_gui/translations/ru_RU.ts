@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Двиньте аналоговый стик</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 и L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Текущий геймпад</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID геймпада</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Не выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Выбрать текущий геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Удалить геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 и R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:</translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Выбран контроллер по умолчанию</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Текущий контроллер выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Контроллер по умолчанию удалён</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Настройки геймпада по умолчанию удалены</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1596,7 +1652,7 @@
     </message>
     <message>
       <source>Default Device</source>
-      <translation>Стандартное устройство</translation>
+      <translation>Устройство по умолчанию</translation>
     </message>
     <message>
       <source>s</source>
