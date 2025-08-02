@@ -595,59 +595,59 @@
     </message>
     <message>
       <source>L1 and L2</source>
-      <translation type="unfinished">L1 and L2</translation>
+      <translation>L1和L2</translation>
     </message>
     <message>
       <source>Active Gamepad</source>
-      <translation type="unfinished">Active Gamepad</translation>
+      <translation>主手柄</translation>
     </message>
     <message>
       <source>Gamepad ID</source>
-      <translation type="unfinished">Gamepad ID</translation>
+      <translation>手柄 ID</translation>
     </message>
     <message>
       <source>Default Gamepad</source>
-      <translation type="unfinished">Default Gamepad</translation>
+      <translation>默认手柄</translation>
     </message>
     <message>
       <source>No default selected</source>
-      <translation type="unfinished">No default selected</translation>
+      <translation>没有选择默认项</translation>
     </message>
     <message>
       <source>n/a</source>
-      <translation type="unfinished">n/a</translation>
+      <translation>不可用</translation>
     </message>
     <message>
       <source>Set Active Gamepad as Default</source>
-      <translation type="unfinished">Set Active Gamepad as Default</translation>
+      <translation>设置主手柄为默认值</translation>
     </message>
     <message>
       <source>Remove Default Gamepad</source>
-      <translation type="unfinished">Remove Default Gamepad</translation>
+      <translation>移除默认手柄</translation>
     </message>
     <message>
       <source>R1 and R2</source>
-      <translation type="unfinished">R1 and R2</translation>
+      <translation>R1 和 R2</translation>
     </message>
     <message>
       <source>ID: </source>
-      <translation type="unfinished">ID: </translation>
+      <translation>ID:  </translation>
     </message>
     <message>
       <source>Default Controller Selected</source>
-      <translation type="unfinished">Default Controller Selected</translation>
+      <translation>已选中默认控制器</translation>
     </message>
     <message>
       <source>Active controller set as default</source>
-      <translation type="unfinished">Active controller set as default</translation>
+      <translation>主控制器设置为默认</translation>
     </message>
     <message>
       <source>Default Controller Removed</source>
-      <translation type="unfinished">Default Controller Removed</translation>
+      <translation>默认控制器已移除</translation>
     </message>
     <message>
       <source>Default controller setting removed</source>
-      <translation type="unfinished">Default controller setting removed</translation>
+      <translation>默认控制器设置已删除</translation>
     </message>
   </context>
   <context>
