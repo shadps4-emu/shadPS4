@@ -220,7 +220,7 @@ public:
     }
 
     static size_t WriteBytes(const std::filesystem::path path, const auto& data) {
-        IOFile out(path, FileAccessMode::Write);
+        IOFile out(path, FileAccessMode::Create);
         return out.Write(data);
     }
 
