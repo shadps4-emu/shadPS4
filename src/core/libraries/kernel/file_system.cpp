@@ -298,12 +298,8 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally.
+        return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
     }
 
     return file->f.WriteRaw<u8>(buf, nbytes);
@@ -486,12 +482,8 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally.
+        return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
     return ReadFile(file->f, buf, nbytes);
 }
@@ -685,12 +677,8 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         break;
     }
     case Core::FileSys::FileType::Socket: {
-        s32 result = file->socket->fstat(sb);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally
+        return file->socket->fstat(sb);
     }
     default:
         UNREACHABLE();

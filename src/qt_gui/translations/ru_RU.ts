@@ -1588,15 +1588,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Микрофон</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Нет</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Стандартное устройство</translation>
     </message>
     <message>
       <source>s</source>
@@ -1700,11 +1700,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Включить считывание</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Включить считывание линейных изображений</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1936,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Включить считывание:\nВключить считывание и запись в память GPU.\nЭто требуется для правильного поведения в некоторых играх. \nМожет вызвать проблемы со стабильностью/производительностью.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Включить считывание линейных изображений:\nВключает асинхронную загрузку изображений, модифицированных GPU.\nМожет исправить проблемы в некоторых играх.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2108,15 +2108,15 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Экспериментальные функции</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ВНИМАНИЕ: Эти функции являются экспериментальными и не должны включаться, если вы не знаете об обратном, или если этого не требует игра. Если у вас есть вопросы, задавайте их на Discord сервере shadPS4.</translation>
     </message>
   </context>
   <context>

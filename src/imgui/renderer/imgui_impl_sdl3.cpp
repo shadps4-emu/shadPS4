@@ -6,7 +6,9 @@
 #include <imgui.h>
 #include "common/config.h"
 #include "core/debug_state.h"
+#include "core/memory.h"
 #include "imgui_impl_sdl3.h"
+#include "input/controller.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -730,18 +732,29 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    // Update list of gamepads to use
-    if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
-        CloseGamepads();
-        int sdl_gamepads_count = 0;
-        const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
-        for (int n = 0; n < sdl_gamepads_count; n++)
-            if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
-                bd->gamepads.push_back(gamepad);
-                if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
-                    break;
-            }
+    auto memory = Core::Memory::Instance();
+    auto controller = Common::Singleton<Input::GameController>::Instance();
+    auto engine = controller->GetEngine();
+    SDL_Gamepad* SDLGamepad = engine->m_gamepad;
+
+    if (SDLGamepad) {
+        bd->gamepads.push_back(SDLGamepad);
         bd->want_update_gamepads_list = false;
+    } else {
+        // Update list of gamepads to use
+        if (bd->want_update_gamepads_list &&
+            bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
+            CloseGamepads();
+            int sdl_gamepads_count = 0;
+            const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
+            for (int n = 0; n < sdl_gamepads_count; n++)
+                if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
+                    bd->gamepads.push_back(gamepad);
+                    if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
+                        break;
+                }
+            bd->want_update_gamepads_list = false;
+        }
     }
 
     // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.

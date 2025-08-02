@@ -107,6 +107,8 @@ bool isDevKitConsole();        // no set
 bool vkValidationGpuEnabled(); // no set
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use);
+std::string getDefaultControllerID();
+void setDefaultControllerID(std::string id);
 
 // TODO
 bool GetLoadGameSizeEnabled();
