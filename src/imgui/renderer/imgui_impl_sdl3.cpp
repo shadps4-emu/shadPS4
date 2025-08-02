@@ -9,6 +9,7 @@
 #include "core/memory.h"
 #include "imgui_impl_sdl3.h"
 #include "input/controller.h"
+#include "sdl_window.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -502,6 +503,9 @@ bool ProcessEvent(const SDL_Event* event) {
         bd->want_update_gamepads_list = true;
         return true;
     }
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        bd->want_update_gamepads_list = true;
+        return false;
     }
     return false;
 }
@@ -732,18 +736,15 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    auto memory = Core::Memory::Instance();
     auto controller = Common::Singleton<Input::GameController>::Instance();
     auto engine = controller->GetEngine();
     SDL_Gamepad* SDLGamepad = engine->m_gamepad;
-
-    if (SDLGamepad) {
-        bd->gamepads.push_back(SDLGamepad);
-        bd->want_update_gamepads_list = false;
-    } else {
-        // Update list of gamepads to use
-        if (bd->want_update_gamepads_list &&
-            bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
+    // Update list of gamepads to use
+    if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
+        if (SDLGamepad) {
+            bd->gamepads.push_back(SDLGamepad);
+            bd->want_update_gamepads_list = false;
+        } else {
             CloseGamepads();
             int sdl_gamepads_count = 0;
             const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
