@@ -20,6 +20,7 @@
 #include "common/string_util.h"
 #include "control_settings.h"
 #include "game_install_dialog.h"
+#include "hotkeys.h"
 #include "kbm_gui.h"
 #include "main_window.h"
 #include "settings_dialog.h"
@@ -493,6 +494,11 @@ void MainWindow::CreateConnects() {
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
         auto aboutDialog = new AboutDialog(m_gui_settings, this);
         aboutDialog->exec();
+    });
+
+    connect(ui->configureHotkeys, &QAction::triggered, this, [this]() {
+        auto hotkeyDialog = new hotkeys(isGameRunning, this);
+        hotkeyDialog->exec();
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {

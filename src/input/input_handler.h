@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -448,10 +449,16 @@ public:
     InputEvent ProcessBinding();
 };
 
+enum HotkeyPad { FullscreenPad, PausePad, SimpleFpsPad, QuitPad };
+
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
 bool UpdatePressedKeys(InputEvent event);
 
 void ActivateOutputsFromInputs();
+void LoadHotkeyInputs();
+bool HotkeyInputsPressed(std::vector<std::string> inputs);
+std::vector<std::string> GetHotkeyInputs(Input::HotkeyPad hotkey);
+void createHotkeyFile(std::filesystem::path hotkey_file);
 
 } // namespace Input
