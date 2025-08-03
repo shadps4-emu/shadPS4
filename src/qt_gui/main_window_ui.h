@@ -32,6 +32,7 @@ public:
 #endif
     QAction* aboutAct;
     QAction* configureAct;
+    QAction* configureHotkeys;
     QAction* setThemeDark;
     QAction* setThemeLight;
     QAction* setThemeGreen;
@@ -155,6 +156,9 @@ public:
         configureAct = new QAction(MainWindow);
         configureAct->setObjectName("configureAct");
         configureAct->setIcon(QIcon(":images/settings_icon.png"));
+        configureHotkeys = new QAction(MainWindow);
+        configureHotkeys->setObjectName("configureHotkeys");
+        configureHotkeys->setIcon(QIcon(":images/hotkey.png"));
         setThemeDark = new QAction(MainWindow);
         setThemeDark->setObjectName("setThemeDark");
         setThemeDark->setCheckable(true);
@@ -330,6 +334,7 @@ public:
         menuGame_List_Mode->addAction(setlistElfAct);
         menuSettings->addAction(configureAct);
         menuSettings->addAction(gameInstallPathAct);
+        menuSettings->addAction(configureHotkeys);
         menuSettings->addAction(menuUtils->menuAction());
         menuUtils->addAction(downloadCheatsPatchesAct);
         menuUtils->addAction(dumpGameListAct);
@@ -355,6 +360,8 @@ public:
 #endif
         aboutAct->setText(QCoreApplication::translate("MainWindow", "About shadPS4", nullptr));
         configureAct->setText(QCoreApplication::translate("MainWindow", "Configure...", nullptr));
+        configureHotkeys->setText(
+            QCoreApplication::translate("MainWindow", "Customize Hotkeys", nullptr));
 #if QT_CONFIG(tooltip)
 #endif // QT_CONFIG(tooltip)
         menuRecent->setTitle(QCoreApplication::translate("MainWindow", "Recent Games", nullptr));
