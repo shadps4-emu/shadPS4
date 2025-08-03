@@ -8,15 +8,15 @@
 #include "sdl_event_wrapper.h"
 
 namespace Ui {
-class hotkeys;
+class Hotkeys;
 }
 
-class hotkeys : public QDialog {
+class Hotkeys : public QDialog {
     Q_OBJECT
 
 public:
-    explicit hotkeys(bool GameRunning, QWidget* parent = nullptr);
-    ~hotkeys();
+    explicit Hotkeys(bool GameRunning, QWidget* parent = nullptr);
+    ~Hotkeys();
 
 signals:
     void PushGamepadEvent();
@@ -53,7 +53,7 @@ private:
     QList<QPushButton*> ButtonsList;
     QFuture<void> Polling;
 
-    Ui::hotkeys* ui;
+    Ui::Hotkeys* ui;
 
 protected:
     void closeEvent(QCloseEvent* event) override {

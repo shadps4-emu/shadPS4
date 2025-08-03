@@ -363,26 +363,24 @@ void L::Draw() {
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
             DebugState.IsShowingDebugMenuBar() ^= true;
-        } else {
-            show_simple_fps = !show_simple_fps;
         }
         visibility_toggled = true;
     }
 
-    if (IsKeyPressed(ImGuiKey_F9, false)) {
+    if (IsKeyPressed(ImGuiKey_F9, false)) { // todo
         if (io.KeyCtrl && io.KeyAlt) {
             if (!DebugState.ShouldPauseInSubmit()) {
                 DebugState.RequestFrameDump(dump_frame_count);
             }
         } else {
-            if (DebugState.IsGuestThreadsPaused()) {
-                DebugState.ResumeGuestThreads();
-                SDL_Log("Game resumed from Keyboard");
-            } else {
-                DebugState.PauseGuestThreads();
-                SDL_Log("Game paused from Keyboard");
-            }
-            visibility_toggled = true;
+            // if (DebugState.IsGuestThreadsPaused()) {
+            //     DebugState.ResumeGuestThreads();
+            //     SDL_Log("Game resumed from Keyboard");
+            // } else {
+            //     DebugState.PauseGuestThreads();
+            //     SDL_Log("Game paused from Keyboard");
+            // }
+            // visibility_toggled = true;
         }
     }
 
