@@ -111,6 +111,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
     if (desc.is_depth) {
         pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
+        props.is_depth = true;
     }
     type = image.GetBaseType();
     props.is_tiled = image.IsTiled();
