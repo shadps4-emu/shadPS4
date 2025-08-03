@@ -107,6 +107,8 @@ bool isNeoModeConsole();
 void setNeoMode(bool enable);  // no ui setting
 bool isDevKitConsole();        // no set
 bool vkValidationGpuEnabled(); // no set
+int GetExtraDmemInMbytes();
+void SetExtraDmemInMbytes(int value);
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use);
 std::string getDefaultControllerID();

@@ -103,6 +103,7 @@ public:
 static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<bool> isNeo(false);
 static ConfigEntry<bool> isDevKit(false);
+static ConfigEntry<int> extraDmemInMbytes = 0;
 static ConfigEntry<bool> isPSNSignedIn(false);
 static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
@@ -256,6 +257,14 @@ bool isNeoModeConsole() {
 
 bool isDevKitConsole() {
     return isDevKit.get();
+}
+
+int GetExtraDmemInMbytes() {
+    return extraDmemInMbytes.get();
+}
+
+void SetExtraDmemInMbytes(int value) {
+    extraDmemInMbytes.base_value = value;
 }
 
 bool getIsFullscreen() {
@@ -775,6 +784,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
         isNeo.setFromToml(general, "isPS4Pro", is_game_specific);
         isDevKit.setFromToml(general, "isDevKit", is_game_specific);
+        extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
         isPSNSignedIn.setFromToml(general, "isPSNSignedIn", is_game_specific);
         isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
         trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
@@ -959,6 +969,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["volumeSlider"] = volumeSlider.base_value;
     data["General"]["isPS4Pro"] = isNeo.base_value;
     data["General"]["isDevKit"] = isDevKit.base_value;
+    data["General"]["extraDmemInMbytes"] = extraDmemInMbytes.base_value;
     data["General"]["isPSNSignedIn"] = isPSNSignedIn.base_value;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled.base_value;
     data["General"]["trophyNotificationDuration"] = trophyNotificationDuration.base_value;
@@ -1063,6 +1074,7 @@ void setDefaultValues() {
     volumeSlider = 100;
     isNeo = false;
     isDevKit = false;
+    extraDmemInMbytes = 0;
     isPSNSignedIn = false;
     isTrophyPopupDisabled = false;
     trophyNotificationDuration = 6.0;
