@@ -412,7 +412,7 @@ uint32_t ComputeSurfaceAddrFromCoordMacroTiled(uint32_t x, uint32_t y, uint32_t 
 uint GetMipLevel(inout uint texel) {
     uint mip = 0;
     uint mip_size = info.mips[mip].size / BYTES_PER_PIXEL;
-    while (texel >= mip_size) {
+    while (texel >= mip_size && mip < info.num_mips) {
         texel -= mip_size;
         ++mip;
         mip_size = info.mips[mip].size / BYTES_PER_PIXEL;

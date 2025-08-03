@@ -74,7 +74,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     guest_address = buffer.Address();
     const auto color_slice_sz = buffer.GetColorSliceSize();
     guest_size = color_slice_sz * buffer.NumSlices();
-    mips_layout.emplace_back(color_slice_sz, pitch, buffer.Height(), 0);
+    mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
     alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && buffer.info.alt_tile_mode;
 }
 
@@ -104,7 +104,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
     const auto depth_slice_sz = buffer.GetDepthSliceSize();
     guest_size = depth_slice_sz * num_slices;
-    mips_layout.emplace_back(depth_slice_sz, pitch, buffer.Height(), 0);
+    mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
@@ -131,7 +131,6 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
 
     guest_address = image.Address();
 
-    mips_layout.reserve(resources.levels);
     alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && image.alt_tile_mode;
     UpdateSize();
 }
