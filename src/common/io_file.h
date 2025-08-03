@@ -116,7 +116,7 @@ public:
         return OpenImpl(path, AccessModeToPOSIX(mode, truncate));
     }
     // In the end, this one is called
-    int Open(const std::filesystem::path& path, int mode) ;
+    int Open(const std::filesystem::path& path, int mode);
 
     void Close();
 

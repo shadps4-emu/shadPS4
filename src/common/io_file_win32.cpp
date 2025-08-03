@@ -219,6 +219,7 @@ s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) {
 const int IOFile::GetErrno(void) const {
     return WindowsErrorToErrno(GetLastError());
 }
+
 void IOFile::ClearErrno(void) const {
     SetLastError(0);
 }
