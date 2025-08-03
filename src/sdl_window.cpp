@@ -450,6 +450,20 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_TOGGLE_SIMPLE_FPS:
         Overlay::ToggleSimpleFps();
         break;
+    case HOTKEY_RELOAD_INPUTS:
+        Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+        break;
+    case SDL_EVENT_MOUSE_TO_JOYSTICK:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+        break;
+    case SDL_EVENT_MOUSE_TO_GYRO:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
+        break;
+    case SDL_EVENT_RDOC_CAPTURE:
+        VideoCore::TriggerCapture();
+        break;
     default:
         break;
     }
