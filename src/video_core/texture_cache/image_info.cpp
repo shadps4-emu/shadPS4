@@ -9,6 +9,8 @@
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/tile.h"
 
+#include <magic_enum/magic_enum.hpp>
+
 namespace VideoCore {
 
 using namespace Vulkan;
@@ -184,7 +186,7 @@ void ImageInfo::UpdateSize() {
             break;
         }
         default: {
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown tile mode {}", magic_enum::enum_name(array_mode));
         }
         }
         if (props.is_block) {

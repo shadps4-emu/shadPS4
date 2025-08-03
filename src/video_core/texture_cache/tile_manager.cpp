@@ -164,6 +164,25 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
         return {in_buffer, in_offset};
     }
 
+    TilingInfo params{};
+    params.bank_swizzle = 0U;
+    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.num_mips = info.resources.levels;
+    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
+        auto& mip_info = params.mips[mip];
+        mip_info = info.mips_layout[mip];
+        if (info.props.is_block) {
+            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+        }
+    }
+
+    const vk::DescriptorBufferInfo params_buffer_info{
+        .buffer = stream_buffer.Handle(),
+        .offset = stream_buffer.Copy(&params, sizeof(params), instance.UniformMinAlignment()),
+        .range = sizeof(params),
+    };
+
     const auto [out_buffer, out_allocation] = GetScratchBuffer(info.guest_size);
     scheduler.DeferOperation([this, out_buffer, out_allocation]() {
         vmaDestroyBuffer(instance.GetAllocator(), out_buffer, out_allocation);
@@ -182,25 +201,6 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
         .buffer = out_buffer,
         .offset = 0,
         .range = info.guest_size,
-    };
-
-    TilingInfo params{};
-    params.bank_swizzle = 0U;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
-    params.num_mips = info.resources.levels;
-    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
-        auto& mip_info = params.mips[mip];
-        mip_info = info.mips_layout[mip];
-        if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
-        }
-    }
-
-    const vk::DescriptorBufferInfo params_buffer_info{
-        .buffer = stream_buffer.Handle(),
-        .offset = stream_buffer.Copy(&params, sizeof(params), instance.UniformMinAlignment()),
-        .range = sizeof(params),
     };
 
     const std::array<vk::WriteDescriptorSet, 3> set_writes = {{
@@ -246,6 +246,25 @@ void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk:
         return;
     }
 
+    TilingInfo params{};
+    params.bank_swizzle = 0U;
+    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.num_mips = info.resources.levels;
+    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
+        auto& mip_info = params.mips[mip];
+        mip_info = info.mips_layout[mip];
+        if (info.props.is_block) {
+            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+        }
+    }
+
+    const vk::DescriptorBufferInfo params_buffer_info{
+        .buffer = stream_buffer.Handle(),
+        .offset = stream_buffer.Copy(&params, sizeof(params), instance.UniformMinAlignment()),
+        .range = sizeof(params),
+    };
+
     const auto [temp_buffer, temp_allocation] = GetScratchBuffer(info.guest_size);
     scheduler.DeferOperation([this, temp_buffer, temp_allocation]() {
         vmaDestroyBuffer(instance.GetAllocator(), temp_buffer, temp_allocation);
@@ -265,25 +284,6 @@ void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk:
         .buffer = temp_buffer,
         .offset = 0,
         .range = info.guest_size,
-    };
-
-    TilingInfo params{};
-    params.bank_swizzle = 0U;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
-    params.num_mips = info.resources.levels;
-    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
-        auto& mip_info = params.mips[mip];
-        mip_info = info.mips_layout[mip];
-        if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
-        }
-    }
-
-    const vk::DescriptorBufferInfo params_buffer_info{
-        .buffer = stream_buffer.Handle(),
-        .offset = stream_buffer.Copy(&params, sizeof(params), instance.UniformMinAlignment()),
-        .range = sizeof(params),
     };
 
     const std::array<vk::WriteDescriptorSet, 3> set_writes = {{
