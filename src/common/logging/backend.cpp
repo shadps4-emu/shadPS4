@@ -62,7 +62,7 @@ private:
 class FileBackend {
 public:
     explicit FileBackend(const std::filesystem::path& filename)
-        : file{filename, FS::FileAccessMode::Write, FS::FileType::TextFile} {}
+        : file{filename, FS::FileAccessMode::Write} {}
 
     ~FileBackend() = default;
 
