@@ -5,21 +5,18 @@
 
 #include <vector>
 
+#include <io.h>
+#include <share.h>
+#include <windows.h>
+
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
-#include "common/path_util.h"
-
-#include "core/libraries/kernel/file_system.h"
-
 #include "common/ntapi.h"
-
-#include <io.h>
-#include <share.h>
-#include <windows.h>
-
+#include "common/path_util.h"
+#include "core/libraries/kernel/file_system.h"
 
 #ifdef _MSC_VER
 #define fileno _fileno
@@ -40,13 +37,29 @@ enum class FileShareFlag {
     ShareReadWrite, // Provides read and write shared access to the file.
 };
 
+DWORD PosixToWindowsAccess(int oflag) {
+    if ((oflag & O_RDWR) == O_RDWR)
+        return GENERIC_READ | GENERIC_WRITE;
+    if (oflag & O_WRONLY)
+        return GENERIC_WRITE;
+    return GENERIC_READ; // default O_RDONLY
+}
 
-// divide into access mode and access modifiers
-// I've found that FileAccessFlag is unused *everywhere* so let's assume
-// that we can straight up omit it.
-int IOFile::AccessModeToNative(FileAccessMode mode, bool truncate) {}
-int IOFile::AccessModeOrbisToNative(int mode) {
+DWORD PosixToWindowsCreation(int oflag) {
+    if (oflag & O_CREAT) {
+        if (oflag & O_EXCL)
+            return CREATE_NEW;
+        if (oflag & O_TRUNC)
+            return CREATE_ALWAYS;
+        return OPEN_ALWAYS;
+    } else if (oflag & O_TRUNC) {
+        return TRUNCATE_EXISTING;
+    }
+    return OPEN_EXISTING;
+}
 
+DWORD PosixToWindowsFlags(int oflag) {
+    return FILE_ATTRIBUTE_NORMAL | ((oflag & O_APPEND) ? FILE_APPEND_DATA : 0);
 }
 
 [[nodiscard]] constexpr int ToWindowsFileShareFlag(FileShareFlag flag) {
@@ -64,34 +77,9 @@ int IOFile::AccessModeOrbisToNative(int mode) {
 }
 
 // not ported
-[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
-    switch (origin) {
-    case SeekOrigin::SetOrigin:
-        return SEEK_SET;
-    case SeekOrigin::CurrentPosition:
-        return SEEK_CUR;
-    case SeekOrigin::End:
-        return SEEK_END;
-    default:
-        UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
-    }
-}
+//[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
 
 } // Anonymous namespace
-
-
-
-uintptr_t IOFile::GetFileMappingImpl() {
-    return file_descriptor;
-}
-
-s64 IOFile::WriteImpl(int __fd, const void* __buf, size_t __n) const {
-    return write(__fd, __buf, __n);
-}
-
-s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) const {
-    return read(__fd, __buf, __n);
-}
 
 int IOFile::OpenImpl(const fs::path& path, int mode) {
     Close();
@@ -102,7 +90,10 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
     errno = 0;
     int result = 0;
 
-    file_descriptor = open(path.c_str(), mode);
+    file_descriptor =
+        CreateFileW(path, PosixToWindowsAccess(mode), FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                    PosixToWindowsCreation(mode), PosixToWindowsFlags(mode), nullptr);
+
     if (!file_descriptor)
         return errno;
     result = errno;
@@ -116,16 +107,16 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
     return result;
 }
 
-int IOFile::OpenImpl(const fs::path& path, FileAccessMode mode, bool truncate) {
-    return OpenImpl(path, AccessModeToNative(mode, truncate));
-}
-
 bool IOFile::CloseImpl() {
     return close(file_descriptor) == 0;
 }
 
 bool IOFile::UnlinkImpl() {
     return unlink(file_path.c_str()) == 0;
+}
+
+uintptr_t IOFile::GetFileMappingImpl() {
+    return file_descriptor;
 }
 
 bool IOFile::FlushImpl() const {
@@ -171,7 +162,15 @@ s64 IOFile::TellImpl() const {
     return lseek(file_descriptor, 0, SEEK_CUR);
 }
 
-u64 GetDirectorySize(const std::filesystem::path& path) {
+s64 IOFile::WriteImpl(int __fd, const void* __buf, size_t __n) const {
+    return write(__fd, __buf, __n);
+}
+
+s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) const {
+    return read(__fd, __buf, __n);
+}
+
+u64 _GetDirectorySizeImpl(const std::filesystem::path& path) {
     if (!fs::exists(path)) {
         return 0;
     }

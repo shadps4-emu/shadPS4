@@ -4,6 +4,8 @@
 #include <span>
 #include <vector>
 
+#include <fcntl.h>
+
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/error.h"
@@ -60,6 +62,10 @@ void IOFile::Unlink() {
     const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
+}
+
+uintptr_t IOFile::GetFileMapping() {
+    return GetFileMappingImpl();
 }
 
 bool IOFile::Flush() const {
@@ -121,9 +127,7 @@ u64 IOFile::GetSize() const {
 
     return file_size;
 }
-uintptr_t IOFile::GetFileMapping() {
-    return GetFileMappingImpl();
-}
+
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     if (!IsOpen()) {
         return false;
@@ -171,6 +175,66 @@ u64 GetDirectorySize(const std::filesystem::path& path) {
     }
 
     return _GetDirectorySizeImpl(path);
+}
+
+/**
+ * These two functions are final for Linux/macOS, but intermediate
+ * for Windows. Native calls are converted to POSIX, and then
+ * will be processed by Windows to its own flags and attributes.
+ * This simplifies calls a lot, leaving Linux as a main convention and forcing Windows to adapt
+ */
+
+int AccessModeToPOSIX(FileAccessMode mode, bool truncate) {
+    const int _truncate = truncate ? 1 : 0;
+    // recreating how stream would handle access modes
+    switch (mode) {
+    default:
+    case FileAccessMode::Read:
+        return O_RDONLY;
+    case FileAccessMode::Write:
+        return O_WRONLY | O_CREAT | (O_TRUNC * _truncate);
+    case FileAccessMode::Append:
+        return O_APPEND | O_CREAT;
+    case FileAccessMode::ReadExtended:
+        return O_RDWR;
+    case FileAccessMode::WriteExtended:
+        return O_RDWR | O_CREAT | (O_TRUNC * _truncate);
+    case FileAccessMode::AppendExtended:
+        return O_RDONLY | O_APPEND | O_CREAT;
+    }
+    return O_RDONLY;
+}
+
+int AccessModeOrbisToPOSIX(int mode) {
+    int out = O_RDONLY; // O_RDONLY = 0, so we can safely assume it as the default
+
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_WRONLY)
+        out |= O_WRONLY;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_RDWR)
+        out |= O_RDWR;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_NONBLOCK) //< can ignore
+        out |= O_NONBLOCK;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_APPEND)
+        out |= O_APPEND;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_FSYNC) //< can ignore
+        out |= O_FSYNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_SYNC) ///< can ignore
+        out |= O_SYNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_CREAT)
+        out |= O_CREAT;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_TRUNC)
+        out |= O_TRUNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_EXCL)
+        out |= O_EXCL;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DSYNC) ///< can ignore
+        out |= O_DSYNC;
+#ifndef __APPLE__
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DIRECT) ///< can ignore
+        out |= O_DIRECT;
+#endif
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DIRECTORY)
+        out |= O_DIRECTORY;
+    return out;
 }
 
 } // namespace Common::FS
