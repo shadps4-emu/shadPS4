@@ -270,15 +270,17 @@ static string trophyKey = "";
 // Config version, used to determine if a user's config file is outdated.
 static string config_version = Common::g_scm_rev;
 
+#define GSC GameSpecificConfig
+
 int getVolumeSlider() {
-    return volumeSlider;
+    return GSC::volumeSlider.value_or(volumeSlider);
 }
 bool allowHDR() {
-    return isHDRAllowed;
+    return GSC::isHDRAllowed.value_or(isHDRAllowed);
 }
 
 bool GetUseUnifiedInputConfig() {
-    return useUnifiedInputConfig;
+    return GSC::useUnifiedInputConfig.value_or(useUnifiedInputConfig);
 }
 
 void SetUseUnifiedInputConfig(bool use) {
@@ -331,23 +333,23 @@ void setLoadGameSizeEnabled(bool enable) {
 }
 
 bool isNeoModeConsole() {
-    return isNeo;
+    return GSC::isNeo.value_or(isNeo);
 }
 
 bool isDevKitConsole() {
-    return isDevKit;
+    return GSC::isDevKit.value_or(isDevKit);
 }
 
 bool getIsFullscreen() {
-    return isFullscreen;
+    return GSC::isFullscreen.value_or(isFullscreen);
 }
 
 string getFullscreenMode() {
-    return fullscreenMode;
+    return GSC::fullscreenMode.value_or(fullscreenMode);
 }
 
 bool getisTrophyPopupDisabled() {
-    return isTrophyPopupDisabled;
+    return GSC::isTrophyPopupDisabled.value_or(isTrophyPopupDisabled);
 }
 
 bool getEnableDiscordRPC() {
@@ -355,51 +357,51 @@ bool getEnableDiscordRPC() {
 }
 
 s16 getCursorState() {
-    return cursorState;
+    return GSC::cursorState.value_or(cursorState);
 }
 
 int getCursorHideTimeout() {
-    return cursorHideTimeout;
+    return GSC::cursorHideTimeout.value_or(cursorHideTimeout);
 }
 
 string getMicDevice() {
-    return micDevice;
+    return GSC::micDevice.value_or(micDevice);
 }
 
 double getTrophyNotificationDuration() {
-    return trophyNotificationDuration;
+    return GSC::trophyNotificationDuration.value_or(trophyNotificationDuration);
 }
 
 u32 getWindowWidth() {
-    return windowWidth;
+    return GSC::windowWidth.value_or(windowWidth);
 }
 
 u32 getWindowHeight() {
-    return windowHeight;
+    return GSC::windowHeight.value_or(windowHeight);
 }
 
 u32 getInternalScreenWidth() {
-    return internalScreenHeight;
+    return GSC::internalScreenHeight.value_or(internalScreenHeight);
 }
 
 u32 getInternalScreenHeight() {
-    return internalScreenHeight;
+    return GSC::internalScreenHeight.value_or(internalScreenHeight);
 }
 
 s32 getGpuId() {
-    return gpuId;
+    return GSC::gpuId.value_or(gpuId);
 }
 
 string getLogFilter() {
-    return logFilter;
+    return GSC::logFilter.value_or(logFilter);
 }
 
 string getLogType() {
-    return logType;
+    return GSC::logType.value_or(logType);
 }
 
 string getUserName() {
-    return userName;
+    return GSC::userName.value_or(userName);
 }
 
 string getChooseHomeTab() {
@@ -407,63 +409,63 @@ string getChooseHomeTab() {
 }
 
 bool getUseSpecialPad() {
-    return useSpecialPad;
+    return GSC::useSpecialPad.value_or(useSpecialPad);
 }
 
 int getSpecialPadClass() {
-    return specialPadClass;
+    return GSC::specialPadClass.value_or(specialPadClass);
 }
 
 bool getIsMotionControlsEnabled() {
-    return isMotionControlsEnabled;
+    return GSC::isMotionControlsEnabled.value_or(isMotionControlsEnabled);
 }
 
 bool debugDump() {
-    return isDebugDump;
+    return GSC::isDebugDump.value_or(isDebugDump);
 }
 
 bool collectShadersForDebug() {
-    return isShaderDebug;
+    return GSC::isShaderDebug.value_or(isShaderDebug);
 }
 
 bool showSplash() {
-    return isShowSplash;
+    return GSC::isShowSplash.value_or(isShowSplash);
 }
 
 string sideTrophy() {
-    return isSideTrophy;
+    return GSC::isSideTrophy.value_or(isSideTrophy);
 }
 
 bool nullGpu() {
-    return isNullGpu;
+    return GSC::isNullGpu.value_or(isNullGpu);
 }
 
 bool copyGPUCmdBuffers() {
-    return shouldCopyGPUBuffers;
+    return GSC::shouldCopyGPUBuffers.value_or(shouldCopyGPUBuffers);
 }
 
 bool readbacks() {
-    return readbacksEnabled;
+    return GSC::readbacksEnabled.value_or(readbacksEnabled);
 }
 
 bool readbackLinearImages() {
-    return readbackLinearImagesEnabled;
+    return GSC::readbackLinearImagesEnabled.value_or(readbackLinearImagesEnabled);
 }
 
 bool directMemoryAccess() {
-    return directMemoryAccessEnabled;
+    return GSC::directMemoryAccessEnabled.value_or(directMemoryAccessEnabled);
 }
 
 bool dumpShaders() {
-    return shouldDumpShaders;
+    return GSC::shouldDumpShaders.value_or(shouldDumpShaders);
 }
 
 bool patchShaders() {
-    return shouldPatchShaders;
+    return GSC::shouldPatchShaders.value_or(shouldPatchShaders);
 }
 
 bool isRdocEnabled() {
-    return rdocEnable;
+    return GSC::rdocEnable.value_or(rdocEnable);
 }
 
 bool fpsColor() {
@@ -471,31 +473,31 @@ bool fpsColor() {
 }
 
 u32 vblankDiv() {
-    return vblankDivider;
+    return GSC::vblankDivider.value_or(vblankDivider);
 }
 
 bool vkValidationEnabled() {
-    return vkValidation;
+    return GSC::vkValidation.value_or(vkValidation);
 }
 
 bool vkValidationSyncEnabled() {
-    return vkValidationSync;
+    return GSC::vkValidationSync.value_or(vkValidationSync);
 }
 
 bool vkValidationGpuEnabled() {
-    return vkValidationGpu;
+    return GSC::vkValidationGpu.value_or(vkValidationGpu);
 }
 
 bool getVkCrashDiagnosticEnabled() {
-    return vkCrashDiagnostic;
+    return GSC::vkCrashDiagnostic.value_or(vkCrashDiagnostic);
 }
 
 bool getVkHostMarkersEnabled() {
-    return vkHostMarkers;
+    return GSC::vkHostMarkers.value_or(vkHostMarkers);
 }
 
 bool getVkGuestMarkersEnabled() {
-    return vkGuestMarkers;
+    return GSC::vkGuestMarkers.value_or(vkGuestMarkers);
 }
 
 void setVkCrashDiagnosticEnabled(bool enable) {
@@ -511,15 +513,15 @@ void setVkGuestMarkersEnabled(bool enable) {
 }
 
 bool getCompatibilityEnabled() {
-    return compatibilityData;
+    return GSC::compatibilityData.value_or(compatibilityData);
 }
 
 bool getCheckCompatibilityOnStartup() {
-    return checkCompatibilityOnStartup;
+    return GSC::checkCompatibilityOnStartup.value_or(checkCompatibilityOnStartup);
 }
 
 bool getIsConnectedToNetwork() {
-    return isConnectedToNetwork;
+    return GSC::isConnectedToNetwork.value_or(isConnectedToNetwork);
 }
 
 void setGpuId(s32 selectedGpuId) {
@@ -764,7 +766,7 @@ bool getSeparateLogFilesEnabled() {
 }
 
 bool getPSNSignedIn() {
-    return isPSNSignedIn;
+    return GSC::isPSNSignedIn.value_or(isPSNSignedIn);
 }
 
 void setPSNSignedIn(bool sign) {
@@ -772,7 +774,7 @@ void setPSNSignedIn(bool sign) {
 }
 
 string getDefaultControllerID() {
-    return defaultControllerID;
+    return GSC::defaultControllerID.value_or(defaultControllerID);
 }
 
 void setDefaultControllerID(string id) {
