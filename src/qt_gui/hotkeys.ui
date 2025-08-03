@@ -2,8 +2,8 @@
 <!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
- <class>hotkeys</class>
- <widget class="QDialog" name="hotkeys">
+ <class>Hotkeys</class>
+ <widget class="QDialog" name="Hotkeys">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -280,7 +280,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>hotkeys</receiver>
+   <receiver>Hotkeys</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -296,7 +296,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>hotkeys</receiver>
+   <receiver>Hotkeys</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

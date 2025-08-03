@@ -29,7 +29,11 @@
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER SDL_GAMEPAD_BUTTON_COUNT + 2
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT SDL_GAMEPAD_BUTTON_COUNT + 3
 
-// idk who already used what where so I just chose a big number
+#define SDL_EVENT_TOGGLE_FULLSCREEN SDL_EVENT_USER + 1
+#define SDL_EVENT_TOGGLE_PAUSE SDL_EVENT_USER + 2
+#define SDL_EVENT_CHANGE_CONTROLLER SDL_EVENT_USER + 3
+#define SDL_EVENT_TOGGLE_SIMPLE_FPS SDL_EVENT_USER + 4
+
 #define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
@@ -38,6 +42,11 @@
 
 #define KEY_TOGGLE 0x00200000
 #define MOUSE_GYRO_ROLL_MODE 0x00400000
+
+#define HOTKEY_FULLSCREEN 0xf0000001
+#define HOTKEY_PAUSE 0xf0000002
+#define HOTKEY_SIMPLE_FPS 0xf0000003
+#define HOTKEY_QUIT 0xf0000004
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -118,6 +127,10 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
     {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
     {"mouse_gyro_roll_mode", MOUSE_GYRO_ROLL_MODE},
+    {"hotkey_pause", HOTKEY_PAUSE},
+    {"hotkey_fullscreen", HOTKEY_FULLSCREEN},
+    {"hotkey_show_fps", HOTKEY_SIMPLE_FPS},
+    {"hotkey_quit", HOTKEY_QUIT},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {
@@ -177,6 +190,20 @@ const std::map<std::string, u32> string_to_keyboard_key_map = {
     {"7", SDLK_7},
     {"8", SDLK_8},
     {"9", SDLK_9},
+
+    // F keys
+    {"f1", SDLK_F1},
+    {"f2", SDLK_F2},
+    {"f3", SDLK_F3},
+    {"f4", SDLK_F4},
+    {"f5", SDLK_F5},
+    {"f6", SDLK_F6},
+    {"f7", SDLK_F7},
+    {"f8", SDLK_F8},
+    {"f9", SDLK_F9},
+    {"f10", SDLK_F10},
+    {"f11", SDLK_F11},
+    {"f12", SDLK_F12},
 
     // symbols
     {"grave", SDLK_GRAVE},
@@ -457,9 +484,5 @@ enum HotkeyPad { FullscreenPad, PausePad, SimpleFpsPad, QuitPad };
 bool UpdatePressedKeys(InputEvent event);
 
 void ActivateOutputsFromInputs();
-void LoadHotkeyInputs();
-bool HotkeyInputsPressed(std::vector<std::string> inputs);
-std::vector<std::string> GetHotkeyInputs(Input::HotkeyPad hotkey);
-void createHotkeyFile(std::filesystem::path hotkey_file);
 
 } // namespace Input

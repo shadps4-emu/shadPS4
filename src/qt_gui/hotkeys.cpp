@@ -13,8 +13,8 @@
 #include "input/input_handler.h"
 #include "ui_hotkeys.h"
 
-hotkeys::hotkeys(bool isGameRunning, QWidget* parent)
-    : QDialog(parent), GameRunning(isGameRunning), ui(new Ui::hotkeys) {
+Hotkeys::Hotkeys(bool isGameRunning, QWidget* parent)
+    : QDialog(parent), GameRunning(isGameRunning), ui(new Ui::Hotkeys) {
 
     ui->setupUi(this);
     installEventFilter(this);
@@ -55,33 +55,33 @@ hotkeys::hotkeys(bool isGameRunning, QWidget* parent)
                 [this, &button]() { StartTimer(button, true); });
     }
 
-    connect(this, &hotkeys::PushGamepadEvent, this, [this]() { CheckMapping(MappingButton); });
+    connect(this, &Hotkeys::PushGamepadEvent, this, [this]() { CheckMapping(MappingButton); });
 
     SdlEventWrapper::Wrapper::wrapperActive = true;
     QObject::connect(SdlEventWrapper::Wrapper::GetInstance(), &SdlEventWrapper::Wrapper::SDLEvent,
-                     this, &hotkeys::processSDLEvents);
+                     this, &Hotkeys::processSDLEvents);
 
     if (!GameRunning) {
-        Polling = QtConcurrent::run(&hotkeys::pollSDLEvents, this);
+        Polling = QtConcurrent::run(&Hotkeys::pollSDLEvents, this);
     }
 }
 
-void hotkeys::DisableMappingButtons() {
+void Hotkeys::DisableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(false);
     }
 }
 
-void hotkeys::EnableMappingButtons() {
+void Hotkeys::EnableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(true);
     }
 }
 
-void hotkeys::SaveHotkeys(bool CloseOnSave) {
+void Hotkeys::SaveHotkeys(bool CloseOnSave) {
     const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
     if (!std::filesystem::exists(hotkey_file)) {
-        Input::createHotkeyFile(hotkey_file);
+        // Input::createHotkeyFile(hotkey_file);
     }
 
     QString controllerFullscreenString, controllerPauseString, controllerFpsString,
@@ -121,16 +121,16 @@ void hotkeys::SaveHotkeys(bool CloseOnSave) {
     }
     output_file.close();
 
-    Input::LoadHotkeyInputs();
+    // Input::LoadHotkeyInputs();
 
     if (CloseOnSave)
         QWidget::close();
 }
 
-void hotkeys::LoadHotkeys() {
+void Hotkeys::LoadHotkeys() {
     const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
     if (!std::filesystem::exists(hotkey_file)) {
-        Input::createHotkeyFile(hotkey_file);
+        // Input::createHotkeyFile(hotkey_file);
     }
 
     QString controllerFullscreenString, controllerPauseString, controllerFpsString,
@@ -165,7 +165,7 @@ void hotkeys::LoadHotkeys() {
     ui->pauseButtonPad->setText(controllerPauseString);
 }
 
-void hotkeys::CheckGamePad() {
+void Hotkeys::CheckGamePad() {
     if (h_gamepad) {
         SDL_CloseGamepad(h_gamepad);
         h_gamepad = nullptr;
@@ -198,7 +198,7 @@ void hotkeys::CheckGamePad() {
     }
 }
 
-void hotkeys::StartTimer(QPushButton*& button, bool isButton) {
+void Hotkeys::StartTimer(QPushButton*& button, bool isButton) {
     MappingTimer = 3;
     EnableButtonMapping = true;
     MappingCompleted = false;
@@ -215,7 +215,7 @@ void hotkeys::StartTimer(QPushButton*& button, bool isButton) {
     connect(timer, &QTimer::timeout, this, [this]() { CheckMapping(MappingButton); });
 }
 
-void hotkeys::CheckMapping(QPushButton*& button) {
+void Hotkeys::CheckMapping(QPushButton*& button) {
     MappingTimer -= 1;
     button->setText(tr("Press a button") + " [" + QString::number(MappingTimer) + "]");
 
@@ -240,13 +240,13 @@ void hotkeys::CheckMapping(QPushButton*& button) {
     }
 }
 
-void hotkeys::SetMapping(QString input) {
+void Hotkeys::SetMapping(QString input) {
     mapping = input;
     MappingCompleted = true;
 }
 
 // use QT events instead of SDL to override default event closing the window with escape
-bool hotkeys::eventFilter(QObject* obj, QEvent* event) {
+bool Hotkeys::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::KeyPress && EnableButtonMapping) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_Escape) {
@@ -258,7 +258,7 @@ bool hotkeys::eventFilter(QObject* obj, QEvent* event) {
     return QDialog::eventFilter(obj, event);
 }
 
-void hotkeys::processSDLEvents(int Type, int Input, int Value) {
+void Hotkeys::processSDLEvents(int Type, int Input, int Value) {
     if (EnableButtonMapping) {
 
         if (pressedButtons.size() >= 3) {
@@ -350,7 +350,7 @@ void hotkeys::processSDLEvents(int Type, int Input, int Value) {
     }
 }
 
-void hotkeys::pollSDLEvents() {
+void Hotkeys::pollSDLEvents() {
     SDL_Event event;
     while (SdlEventWrapper::Wrapper::wrapperActive) {
 
@@ -366,7 +366,7 @@ void hotkeys::pollSDLEvents() {
     }
 }
 
-void hotkeys::Cleanup() {
+void Hotkeys::Cleanup() {
     SdlEventWrapper::Wrapper::wrapperActive = false;
     if (h_gamepad) {
         SDL_CloseGamepad(h_gamepad);
@@ -389,4 +389,4 @@ void hotkeys::Cleanup() {
     }
 }
 
-hotkeys::~hotkeys() {}
+Hotkeys::~Hotkeys() {}
