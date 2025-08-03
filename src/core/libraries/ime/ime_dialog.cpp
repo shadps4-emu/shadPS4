@@ -254,9 +254,8 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         return Error::INVALID_MAX_TEXT_LENGTH;
     }
 
-    // Title string validation
-    if (param->title != nullptr && !std::char_traits<char16_t>::length(param->title)) {
-        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: title is empty");
+    if (param->title == nullptr) {
+        LOG_ERROR(Lib_ImeDialog, "sceImeDialogInit: title must not be null");
         return Error::INVALID_PARAM;
     }
 
