@@ -261,7 +261,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
             auto& info = addcont_info[addcont_count++];
             info.status = OrbisAppContentAddcontDownloadStatus::Installed;
 
-            // Most DLC dumping methods prepend the folder name with the game serial
+            // Our recommended dumping method prepends the folder name with the game serial
             // Since they end the folder name with the entitlement label, copy from the end instead.
             entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label),
                                    entitlement_label.length() -
