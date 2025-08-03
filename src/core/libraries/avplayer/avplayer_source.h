@@ -179,7 +179,6 @@ private:
     void AudioDecoderThread(std::stop_token stop);
 
     bool HasRunningThreads() const;
-    GuestBuffer CreateVideoBuffer();
 
     AVFramePtr ConvertAudioFrame(const AVFrame& frame);
     AVFramePtr ConvertVideoFrame(const AVFrame& frame);
@@ -200,7 +199,7 @@ private:
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
 
     AvPlayerQueue<GuestBuffer> m_audio_buffers;
-    u32 m_num_video_framebuffers{};
+    AvPlayerQueue<GuestBuffer> m_video_buffers;
 
     AvPlayerQueue<AVPacketPtr> m_audio_packets;
     AvPlayerQueue<AVPacketPtr> m_video_packets;

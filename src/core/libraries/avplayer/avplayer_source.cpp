@@ -160,18 +160,6 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     return true;
 }
 
-GuestBuffer AvPlayerSource::CreateVideoBuffer() {
-    auto width = u32(m_video_codec_context->width);
-    auto height = u32(m_video_codec_context->height);
-    if (!m_use_vdec2) {
-        width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 16);
-    }
-    const auto size = (width * height * 3) / 2;
-    ++m_num_video_framebuffers;
-    return GuestBuffer(m_memory_replacement, 0x100, size, true);
-}
-
 bool AvPlayerSource::EnableStream(u32 stream_index) {
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
         return false;
@@ -211,12 +199,6 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
             LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for audio stream {}.", stream_index);
             return false;
         }
-        const auto num_channels = m_audio_codec_context->ch_layout.nb_channels;
-        const auto align = num_channels * sizeof(u16);
-        const auto size = num_channels * sizeof(u16) * 1024;
-        for (u64 index = 0; index < 4; ++index) {
-            m_audio_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, false));
-        }
         LOG_INFO(Lib_AvPlayer, "Audio stream {} enabled", stream_index);
         break;
     }
@@ -243,6 +225,26 @@ bool AvPlayerSource::Start() {
         LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
         return false;
     }
+    if (m_video_codec_context) {
+        auto width = u32(m_video_codec_context->width);
+        auto height = u32(m_video_codec_context->height);
+        if (!m_use_vdec2) {
+            width = Common::AlignUp(width, 16);
+            height = Common::AlignUp(height, 16);
+        }
+        const auto size = (width * height * 3) / 2;
+        for (u64 index = 0; index < m_max_num_video_framebuffers; ++index) {
+            m_video_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, true));
+        }
+    }
+    if (m_audio_codec_context) {
+        const auto num_channels = m_audio_codec_context->ch_layout.nb_channels;
+        const auto align = num_channels * sizeof(u16);
+        const auto size = num_channels * sizeof(u16) * 1024;
+        for (u64 index = 0; index < 8; ++index) {
+            m_audio_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, false));
+        }
+    }
     m_demuxer_thread.Run([this](std::stop_token stop) { this->DemuxerThread(stop); });
     m_video_decoder_thread.Run([this](std::stop_token stop) { this->VideoDecoderThread(stop); });
     m_audio_decoder_thread.Run([this](std::stop_token stop) { this->AudioDecoderThread(stop); });
@@ -262,16 +264,16 @@ bool AvPlayerSource::Stop() {
     m_audio_decoder_thread.Stop();
     m_demuxer_thread.Stop();
 
-    if (m_current_audio_frame.has_value()) {
-        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
-        m_current_audio_frame.reset();
-    }
+    m_current_audio_frame.reset();
     m_current_video_frame.reset();
 
+    m_video_buffers.Clear();
+    m_audio_buffers.Clear();
     m_audio_packets.Clear();
     m_video_packets.Clear();
     m_audio_frames.Clear();
     m_video_frames.Clear();
+
     return true;
 }
 
@@ -301,8 +303,8 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfo& video_info) {
 
 bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     if (m_current_video_frame.has_value()) {
+        m_video_buffers.Push(std::move(m_current_video_frame->buffer));
         m_current_video_frame.reset();
-        --m_num_video_framebuffers;
         m_video_buffers_cv.Notify();
     }
 
@@ -324,7 +326,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
                 return false;
             }
             // These will remain unimplemented for now:
-            // avdiff < -28 = AUDIO_AHEAD, ??? skip frames ???
+            // avdiff < -28 = VIDEO_BEHIND, ??? skip frames ???
             // -2 < avdiff < 0 = WAIT_FOR_SYNC, ??? loop until synced ???
         } else {
             // Sync with the internal timer since audio is not available
@@ -342,6 +344,13 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 }
 
 bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
+    if (m_current_audio_frame.has_value()) {
+        // return the buffer to the queue
+        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
+        m_current_audio_frame.reset();
+        m_audio_buffers_cv.Notify();
+    }
+
     if (!IsActive() || m_is_paused) {
         return false;
     }
@@ -351,12 +360,6 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
     }
 
     auto frame = m_audio_frames.Pop();
-    if (m_current_audio_frame.has_value()) {
-        // return the buffer to the queue
-        m_audio_buffers.Push(std::move(m_current_audio_frame->buffer));
-        m_audio_buffers_cv.Notify();
-    }
-
     m_last_audio_ts = frame->info.timestamp;
 
     audio_info = {};
@@ -616,12 +619,10 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
             return;
         }
         while (res >= 0) {
-            if (!m_video_buffers_cv.Wait(stop, [this] {
-                    return m_num_video_framebuffers < m_max_num_video_framebuffers;
-                })) {
+            if (!m_video_buffers_cv.Wait(stop, [this] { return m_video_buffers.Size() != 0; })) {
                 break;
             }
-            if (m_num_video_framebuffers >= m_max_num_video_framebuffers) {
+            if (m_video_buffers.Size() == 0) {
                 continue;
             }
             auto up_frame = AVFramePtr(av_frame_alloc(), &ReleaseAVFrame);
@@ -638,12 +639,16 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
                     return;
                 }
             } else {
-                auto buffer = CreateVideoBuffer();
+                auto buffer = m_video_buffers.Pop();
+                if (!buffer.has_value()) {
+                    // Video buffers queue was cleared. This means that player was stopped.
+                    break;
+                }
                 if (up_frame->format != AV_PIX_FMT_NV12) {
                     const auto nv12_frame = ConvertVideoFrame(*up_frame);
-                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer), *nv12_frame));
+                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *nv12_frame));
                 } else {
-                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer), *up_frame));
+                    m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *up_frame));
                 }
                 m_video_frames_cv.Notify();
             }
