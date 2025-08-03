@@ -217,6 +217,10 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         }
         break;
     }
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG:
+        info->http_proxy_config = 0; // off
+        LOG_DEBUG(Lib_NetCtl, "http proxy config: {}", info->http_proxy_config);
+        break;
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
     }
