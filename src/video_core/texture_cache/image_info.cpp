@@ -179,6 +179,10 @@ void ImageInfo::UpdateSize() {
                 ImageSizeMicroTiled(mip_w, mip_h, thickness, num_bits, num_samples);
             break;
         }
+        case AmdGpu::ArrayMode::Array2DTiledThick:
+            thickness = 4;
+            mip_d += (-mip_d) & (thickness - 1);
+            [[fallthrough]];
         case AmdGpu::ArrayMode::Array2DTiledThin1: {
             ASSERT(!props.is_block);
             std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled(
@@ -186,7 +190,7 @@ void ImageInfo::UpdateSize() {
             break;
         }
         default: {
-            UNREACHABLE_MSG("Unknown tile mode {}", magic_enum::enum_name(array_mode));
+            UNREACHABLE_MSG("Unknown array mode {}", magic_enum::enum_name(array_mode));
         }
         }
         if (props.is_block) {
