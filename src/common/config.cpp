@@ -1005,10 +1005,14 @@ constexpr std::string_view GetDefaultGlobalConfig() {
     return R"(# Anything put here will be loaded for all games,
 # alongside the game's config or default.ini depending on your preference.
 
+hotkey_renderdoc_capture = f12
 hotkey_fullscreen = f11
 hotkey_show_fps = f10
 hotkey_pause = f9
-hotkey_quit = lalt, f4
+hotkey_reload_inputs = f8
+hotkey_toggle_mouse_to_joystick = f7
+hotkey_toggle_mouse_to_gyro = f6
+hotkey_quit = lctrl, lshift, end
 )";
 }
 

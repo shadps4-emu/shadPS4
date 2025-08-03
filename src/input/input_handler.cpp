@@ -107,6 +107,10 @@ auto output_array = std::array{
     ControllerOutput(HOTKEY_PAUSE),
     ControllerOutput(HOTKEY_SIMPLE_FPS),
     ControllerOutput(HOTKEY_QUIT),
+    ControllerOutput(HOTKEY_RELOAD_INPUTS),
+    ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK),
+    ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
+    ControllerOutput(HOTKEY_RENDERDOC),
 
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
 };
@@ -525,6 +529,18 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         return;
     case HOTKEY_SIMPLE_FPS:
         PushSDLEvent(SDL_EVENT_TOGGLE_SIMPLE_FPS);
+        return;
+    case HOTKEY_RELOAD_INPUTS:
+        PushSDLEvent(SDL_EVENT_RELOAD_INPUTS);
+        return;
+    case HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK:
+        PushSDLEvent(SDL_EVENT_MOUSE_TO_JOYSTICK);
+        return;
+    case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
+        PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
+        return;
+    case HOTKEY_RENDERDOC:
+        PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
         return;
     case HOTKEY_QUIT:
         PushSDLEvent(SDL_EVENT_QUIT);
