@@ -69,7 +69,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool rdwr = (flags & 0x3) == ORBIS_KERNEL_O_RDWR;
 
     if (!read && !write && !rdwr) {
-        // Start by checking for invalid flags.
+        // R, W or RW flag must be present with every call
         *__Error() = POSIX_EINVAL;
         return -1;
     }
@@ -84,10 +84,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
-
-    if (sync || direct || dsync || nonblock) {
-        LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
-    }
 
     std::string_view path{raw_path};
     u32 handle = h->CreateHandle();
@@ -111,48 +107,72 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool exists = std::filesystem::exists(file->m_host_name);
     s32 e = 0;
 
+    // Weed out illegal combinations
     if (create) {
-        if (excl && exists) {
-            // Error if file exists
+        if (!exists && read_only) {
+            // Can't create files in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        if (exists && excl) {
+            // File exists
             h->DeleteHandle(handle);
             *__Error() = POSIX_EEXIST;
             return -1;
         }
-
-        if (!exists) {
-            if (read_only) {
-                // Can't create files in a read only directory
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EROFS;
-                return -1;
-            }
-            // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        }
     } else if (!exists) {
-        // If we're not creating a file, and it doesn't exist, return ENOENT
+        // We're not creating a file, and it doesn't exist
         h->DeleteHandle(handle);
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-
-    if (std::filesystem::is_directory(file->m_host_name) || directory) {
-        // Directories can be opened even if the directory flag isn't set.
-        // In these cases, error behavior is identical to the directory code path.
-        directory = true;
+    if (truncate && read_only) {
+        // Can't open files with truncate flag in a read only directory
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    if (truncate && read) {
+        // This combination is actually legal, but its behaviour is described as "undefined"
+        // Preventing potential data loss
+        LOG_WARNING(
+            Kernel_Fs,
+            "Read and Truncate flags specified. This makes no sense, neutering Truncate flag");
+        truncate = false;
     }
 
-    if (directory) {
-        if (!std::filesystem::is_directory(file->m_host_name)) {
+    if (!std::filesystem::is_directory(file->m_host_name)) {
+        if (directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
             *__Error() = POSIX_ENOTDIR;
             return -1;
         }
-
+    } else {
+        // Directories can be opened even if the directory flag isn't set.
+        // In these cases, error behavior is identical to the directory code path.
+        directory = true;
         file->type = Core::FileSys::FileType::Directory;
+    }
 
+    if (directory && (write || rdwr || truncate)) {
+        // Cannot open directories with any type of write access
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_EISDIR;
+        return -1;
+    }
+
+    if (directory && !read) {
+        // Cannot open directory without read
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    // Handle things
+    if (directory) {
         // Populate directory contents
         mnt->IterateDirectory(file->m_guest_name,
                               [&file](const auto& ent_path, const auto ent_is_file) {
@@ -162,63 +182,17 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                               });
         file->dirents_index = 0;
 
-        if (read) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write || rdwr) {
-            // Cannot open directories with any type of write access
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
-            return -1;
-        }
+        e = file->f.Open(file->m_host_name, flags);
 
         if (e == EACCES) {
-            // Hack to bypass some platform limitations, ignore the error and continue as normal.
+            // Hack to bypass some platform limitations, ignore the error and continue as
+            // normal.
             LOG_WARNING(Kernel_Fs, "Opening directories is not fully supported on this platform");
             e = 0;
         }
-
-        if (truncate) {
-            // Cannot open directories with truncate
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
-            return -1;
-        }
     } else {
         file->type = Core::FileSys::FileType::Regular;
-
-        if (truncate && read_only) {
-            // Can't open files with truncate flag in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (truncate) {
-            // Open the file as read-write so we can truncate regardless of flags.
-            // Since open starts by closing the file, this won't interfere with later open calls.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            if (e == 0) {
-                // If the file was opened successfully, reduce size to 0
-                file->f.SetSize(0);
-            }
-        }
-
-        if (read) {
-            // Read only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (read_only) {
-            // Can't open files with write/read-write access in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (append) {
-            // Append can be specified with rdwr or write, but we treat it as a separate mode.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-        } else if (write) {
-            // Write only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (rdwr) {
-            // Read and write
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-        }
+        e = file->f.Open(file->m_host_name, Common::FS::IOFile::AccessModeOrbisToNative(flags));
     }
 
     if (e != 0) {
@@ -771,18 +745,9 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
-    if (file) {
-        // We need to force ReadWrite if the file had Write access before
-        // Otherwise f.Open will clear the file contents.
-        auto access_mode = file->f.GetAccessMode() == Common::FS::FileAccessMode::Write
-                               ? Common::FS::FileAccessMode::ReadWrite
-                               : file->f.GetAccessMode();
-        file->f.Close();
-        std::filesystem::remove(src_path);
-        file->f.Open(dst_path, access_mode);
-    } else {
-        std::filesystem::remove(src_path);
-    }
+    if (file)
+        file->f.Open(dst_path, Common::FS::FileAccessMode::Write, false);
+    std::filesystem::remove(src_path);
 
     return ORBIS_OK;
 }
@@ -1049,7 +1014,8 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
         // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
+        // marecl: *may* fail. IDK if it's supposed to exist (yet)
+        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadExtended);
         file.Unlink();
     } else {
         file->f.Unlink();
