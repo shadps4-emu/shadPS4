@@ -24,6 +24,15 @@ struct ImageResource;
 
 namespace VideoCore {
 
+struct ImageProperties {
+    u32 is_volume : 1;
+    u32 is_tiled : 1;
+    u32 is_pow2 : 1;
+    u32 is_block : 1;
+    u32 is_depth : 1;
+    u32 has_stencil : 1;
+};
+
 struct ImageInfo {
     ImageInfo() = default;
     ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address) noexcept;
@@ -37,12 +46,8 @@ struct ImageInfo {
         return tile_mode != AmdGpu::TileMode::DisplayLinearAligned;
     }
     Extent3D BlockDim() const {
-        const u32 shift = props.is_block ? 2 : 0;
-        return Extent3D{size.width >> shift, size.height >> shift, size.depth};
+        return props.is_block ? Extent3D{size.width >> 2, size.height >> 2, size.depth} : size;
     }
-
-    bool IsDepthStencil() const;
-    bool HasStencil() const;
 
     s32 MipOf(const ImageInfo& info) const;
     s32 SliceOf(const ImageInfo& info, s32 mip) const;
@@ -57,14 +62,7 @@ struct ImageInfo {
         u32 htile_clear_mask = u32(-1);
     } meta_info{};
 
-    struct {
-        u32 is_volume : 1;
-        u32 is_tiled : 1;
-        u32 is_pow2 : 1;
-        u32 is_block : 1;
-        u32 is_depth : 1;
-    } props{};
-
+    ImageProperties props{};
     vk::Format pixel_format = vk::Format::eUndefined;
     AmdGpu::ImageType type;
     SubresourceExtent resources;

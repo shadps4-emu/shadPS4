@@ -313,7 +313,11 @@ constexpr NumberClass GetNumberClass(const NumberFormat nfmt) {
 }
 
 constexpr bool IsInteger(const NumberFormat nfmt) {
-    return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+    return nfmt == NumberFormat::Sint || nfmt == NumberFormat::Uint;
+}
+
+constexpr bool IsBlockCoded(DataFormat format) {
+    return format >= DataFormat::FormatBc1 && format <= DataFormat::FormatBc7;
 }
 
 std::string_view NameOf(DataFormat fmt);

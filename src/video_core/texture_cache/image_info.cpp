@@ -33,30 +33,6 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
     return {};
 }
 
-bool IsBlockCoded(vk::Format pixel_format) {
-    switch (pixel_format) {
-    case vk::Format::eBc1RgbaSrgbBlock:
-    case vk::Format::eBc1RgbaUnormBlock:
-    case vk::Format::eBc1RgbSrgbBlock:
-    case vk::Format::eBc1RgbUnormBlock:
-    case vk::Format::eBc2SrgbBlock:
-    case vk::Format::eBc2UnormBlock:
-    case vk::Format::eBc3SrgbBlock:
-    case vk::Format::eBc3UnormBlock:
-    case vk::Format::eBc4SnormBlock:
-    case vk::Format::eBc4UnormBlock:
-    case vk::Format::eBc5SnormBlock:
-    case vk::Format::eBc5UnormBlock:
-    case vk::Format::eBc6HSfloatBlock:
-    case vk::Format::eBc6HUfloatBlock:
-    case vk::Format::eBc7SrgbBlock:
-    case vk::Format::eBc7UnormBlock:
-        return true;
-    default:
-        return false;
-    }
-}
-
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
                      VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
@@ -73,18 +49,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
     ASSERT(num_bits == 32);
 
     guest_address = cpu_address;
-    if (!props.is_tiled) {
-        guest_size = pitch * size.height * 4;
-    } else {
-        if (Libraries::Kernel::sceKernelIsNeoMode()) {
-            guest_size = pitch * ((size.height + 127) & (~127)) * 4;
-        } else {
-            guest_size = pitch * ((size.height + 63) & (~63)) * 4;
-        }
-    }
-    const u32 old_guest_size = guest_size;
     UpdateSize();
-    ASSERT(old_guest_size == guest_size);
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
@@ -114,11 +79,14 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
 ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
                      VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
                      bool write_buffer) noexcept {
-    props.is_tiled = buffer.IsTiled();
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = AmdGpu::ImageType::Color2D;
+    props.is_tiled = buffer.IsTiled();
+    props.is_depth = true;
+    props.has_stencil =
+        buffer.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
     num_samples = buffer.NumSamples();
     num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -148,7 +116,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     props.is_tiled = image.IsTiled();
     props.is_volume = type == AmdGpu::ImageType::Color3D;
     props.is_pow2 = image.pow2pad;
-    props.is_block = IsBlockCoded(pixel_format);
+    props.is_block = AmdGpu::IsBlockCoded(image.GetDataFmt());
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = props.is_volume ? image.depth + 1 : 1;
@@ -163,27 +131,6 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     mips_layout.reserve(resources.levels);
     alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && image.alt_tile_mode;
     UpdateSize();
-}
-
-bool ImageInfo::IsDepthStencil() const {
-    switch (pixel_format) {
-    case vk::Format::eD16Unorm:
-    case vk::Format::eD16UnormS8Uint:
-    case vk::Format::eD32Sfloat:
-    case vk::Format::eD32SfloatS8Uint:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool ImageInfo::HasStencil() const {
-    if (pixel_format == vk::Format::eD32SfloatS8Uint ||
-        pixel_format == vk::Format::eD24UnormS8Uint ||
-        pixel_format == vk::Format::eD16UnormS8Uint) {
-        return true;
-    }
-    return false;
 }
 
 bool ImageInfo::IsCompatible(const ImageInfo& info) const {
@@ -255,19 +202,7 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    const auto is_compatible = [&](u32 lhs, u32 rhs) {
-        if (lhs == rhs) {
-            return true;
-        }
-        if (lhs == 0x0e && rhs == 0x0d) {
-            return true;
-        }
-        if (lhs == 0x0d && rhs == 0x0e) {
-            return true;
-        }
-        return false;
-    }(u32(info.tile_mode), u32(tile_mode));
-    if (!is_compatible) {
+    if (info.array_mode != array_mode) {
         return -1;
     }
 

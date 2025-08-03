@@ -687,7 +687,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (image.binding.force_general || image.binding.is_target) {
                 image.Transit(vk::ImageLayout::eGeneral,
                               vk::AccessFlagBits2::eShaderRead |
-                                  (image.info.IsDepthStencil()
+                                  (image.info.props.is_depth
                                        ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
                                        : vk::AccessFlagBits2::eColorAttachmentWrite),
                               {});
@@ -698,7 +698,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                                       vk::AccessFlagBits2::eShaderWrite,
                                   desc.view_info.range);
                 } else {
-                    const auto new_layout = image.info.IsDepthStencil()
+                    const auto new_layout = image.info.props.is_depth
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
                     image.Transit(new_layout, vk::AccessFlagBits2::eShaderRead,

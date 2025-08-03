@@ -108,8 +108,8 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
         .bufferImageHeight = image.info.size.height,
         .imageSubresource =
             {
-                .aspectMask = image.info.IsDepthStencil() ? vk::ImageAspectFlagBits::eDepth
-                                                          : vk::ImageAspectFlagBits::eColor,
+                .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                        : vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = 0,
                 .layerCount = image.info.resources.layers,
@@ -197,11 +197,12 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
                                           ImageId cache_image_id) {
     auto& cache_image = slot_images[cache_image_id];
 
-    if (!cache_image.info.IsDepthStencil() && !requested_info.IsDepthStencil()) {
+    if (!cache_image.info.props.is_depth && !requested_info.props.is_depth) {
         return {};
     }
 
-    const bool stencil_match = requested_info.HasStencil() == cache_image.info.HasStencil();
+    const bool stencil_match =
+        requested_info.props.has_stencil == cache_image.info.props.has_stencil;
     const bool bpp_match = requested_info.num_bits == cache_image.info.num_bits;
 
     // If an image in the cache has less slices we need to expand it
@@ -211,27 +212,27 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     case BindingType::Texture:
         // The guest requires a depth sampled texture, but cache can offer only Rxf. Need to
         // recreate the image.
-        recreate |= requested_info.IsDepthStencil() && !cache_image.info.IsDepthStencil();
+        recreate |= requested_info.props.is_depth && !cache_image.info.props.is_depth;
         break;
     case BindingType::Storage:
         // If the guest is going to use previously created depth as storage, the image needs to be
         // recreated. (TODO: Probably a case with linear rgba8 aliasing is legit)
-        recreate |= cache_image.info.IsDepthStencil();
+        recreate |= cache_image.info.props.is_depth;
         break;
     case BindingType::RenderTarget:
         // Render target can have only Rxf format. If the cache contains only Dx[S8] we need to
         // re-create the image.
-        ASSERT(!requested_info.IsDepthStencil());
-        recreate |= cache_image.info.IsDepthStencil();
+        ASSERT(!requested_info.props.is_depth);
+        recreate |= cache_image.info.props.is_depth;
         break;
     case BindingType::DepthTarget:
         // The guest has requested previously allocated texture to be bound as a depth target.
         // In this case we need to convert Rx float to a Dx[S8] as requested
-        recreate |= !cache_image.info.IsDepthStencil();
+        recreate |= !cache_image.info.props.is_depth;
 
         // The guest is trying to bind a depth target and cache has it. Need to be sure that aspects
         // and bpp match
-        recreate |= cache_image.info.IsDepthStencil() && !(stencil_match && bpp_match);
+        recreate |= cache_image.info.props.is_depth && !(stencil_match && bpp_match);
         break;
     default:
         break;
@@ -254,7 +255,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
             // Perform depth<->color copy using the intermediate copy buffer.
             const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
             new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
-        } else if (cache_image.info.num_samples == 1 && new_info.IsDepthStencil() &&
+        } else if (cache_image.info.num_samples == 1 && new_info.props.is_depth &&
                    new_info.num_samples > 1) {
             // Perform a rendering pass to transfer the channels of source as samples in dest.
             blit_helper.BlitColorToMsDepth(cache_image, new_image);
@@ -523,7 +524,6 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     const ImageId image_id = FindImage(desc);
     Image& image = slot_images[image_id];
-    ASSERT(image.info.mips_layout[0].height > 0);
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.render_target = 1u;
     UpdateImage(image_id);
@@ -549,7 +549,7 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
-    image.usage.stencil = image.info.HasStencil();
+    image.usage.stencil = image.info.props.has_stencil;
     UpdateImage(image_id);
 
     // Register meta data for this depth buffer

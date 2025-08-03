@@ -18,7 +18,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
-    if (info.IsDepthStencil()) {
+    if (info.props.is_depth) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
         if (!info.props.is_block) {
@@ -113,7 +113,6 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
-    ASSERT(info.mips_layout[0].height > 0);
     mip_hashes.resize(info.resources.levels);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested
@@ -388,8 +387,8 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
         .bufferImageHeight = 0,
         .imageSubresource =
             {
-                .aspectMask = src_info.IsDepthStencil() ? vk::ImageAspectFlagBits::eDepth
-                                                        : vk::ImageAspectFlagBits::eColor,
+                .aspectMask = src_info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                      : vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
@@ -450,7 +449,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
     });
 
     buffer_image_copy.imageSubresource.aspectMask =
-        info.IsDepthStencil() ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+        info.props.is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
 
     cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal,
                              buffer_image_copy);
