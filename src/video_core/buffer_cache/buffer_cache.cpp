@@ -983,76 +983,64 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         }
     }
     Image& image = texture_cache.GetImage(image_id);
-    ASSERT_MSG(device_addr == image.info.guest_address,
+    ASSERT_MSG(device_addr == image.info.guest_address && image.info.resources.levels == 1,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
-    boost::container::small_vector<vk::BufferImageCopy, 8> copies;
-    u32 offset = buffer.Offset(image.info.guest_address);
-    const u32 num_layers = image.info.resources.layers;
-    const u32 max_offset = offset + size;
-    for (u32 m = 0; m < image.info.resources.levels; m++) {
-        const u32 width = std::max(image.info.size.width >> m, 1u);
-        const u32 height = std::max(image.info.size.height >> m, 1u);
-        const u32 depth =
-            image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
-        const auto [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[m];
-        offset += mip_ofs;
-        if (offset + mip_size > max_offset) {
-            break;
-        }
-        copies.push_back({
-            .bufferOffset = offset,
-            .bufferRowLength = mip_pitch,
-            .bufferImageHeight = mip_height,
-            .imageSubresource{
-                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = m,
-                .baseArrayLayer = 0,
-                .layerCount = num_layers,
-            },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {width, height, depth},
-        });
+    const u32 offset = buffer.Offset(image.info.guest_address);
+    const auto [mip_size, mip_pitch, mip_height, mip_ofs] = image.info.mips_layout[0];
+    if (offset + image.info.guest_size > buffer.SizeBytes()) {
+        return false;
     }
-    if (!copies.empty()) {
-        scheduler.EndRendering();
-        const vk::BufferMemoryBarrier2 pre_barrier = {
-            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
-            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-            .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-            .buffer = buffer.Handle(),
-            .offset = max_offset - size,
-            .size = size,
-        };
-        const vk::BufferMemoryBarrier2 post_barrier = {
-            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-            .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
-            .buffer = buffer.Handle(),
-            .offset = max_offset - size,
-            .size = size,
-        };
-        auto barriers = image.GetBarriers(vk::ImageLayout::eTransferSrcOptimal,
-                                          vk::AccessFlagBits2::eTransferRead,
-                                          vk::PipelineStageFlagBits2::eTransfer, {});
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = 1,
-            .pBufferMemoryBarriers = &pre_barrier,
-            .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
-            .pImageMemoryBarriers = barriers.data(),
-        });
-        cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal, buffer.Handle(),
-                                 copies);
-        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = 1,
-            .pBufferMemoryBarriers = &post_barrier,
-        });
-    }
+    const vk::BufferImageCopy copy = {
+        .bufferOffset = 0,
+        .bufferRowLength = mip_pitch,
+        .bufferImageHeight = mip_height,
+        .imageSubresource{
+            .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = image.info.resources.layers,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {image.info.size.width, image.info.size.height, 1},
+    };
+    scheduler.EndRendering();
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = buffer.Handle(),
+        .offset = offset,
+        .size = size,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .buffer = buffer.Handle(),
+        .offset = offset,
+        .size = size,
+    };
+    auto barriers = image.GetBarriers(vk::ImageLayout::eTransferSrcOptimal,
+                                      vk::AccessFlagBits2::eTransferRead,
+                                      vk::PipelineStageFlagBits2::eTransfer, {});
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+        .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+    });
+    auto& tile_manager = texture_cache.GetTileManager();
+    tile_manager.TileImage(image.image, copy, buffer.Handle(), offset, image.info);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
     return true;
 }
 

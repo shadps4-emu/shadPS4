@@ -90,11 +90,11 @@ struct MipInfo {
 };
 
 layout (set = 0, binding = 0, scalar) buffer InputBuf {
-    BLOCK_TYPE in_data[];
+    BLOCK_TYPE tiled_data[];
 };
 
 layout (set = 0, binding = 1, scalar) buffer OutputBuf {
-    BLOCK_TYPE out_data[];
+    BLOCK_TYPE linear_data[];
 };
 
 layout (set = 0, binding = 2, scalar) uniform TilingInfo {
@@ -433,5 +433,9 @@ void main() {
     tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
 #endif
 
-    out_data[gl_GlobalInvocationID.x] = in_data[tiled_offset / BYTES_PER_PIXEL];
+#ifdef IS_TILER
+    tiled_data[tiled_offset / BYTES_PER_PIXEL] = linear_data[gl_GlobalInvocationID.x];
+#else
+    linear_data[gl_GlobalInvocationID.x] = tiled_data[tiled_offset / BYTES_PER_PIXEL];
+#endif
 }

@@ -103,6 +103,10 @@ public:
                  BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
+    TileManager& GetTileManager() noexcept {
+        return tile_manager;
+    }
+
     /// Invalidates any image in the logical page range.
     void InvalidateMemory(VAddr addr, size_t size);
 

@@ -17,17 +17,20 @@ class TileManager {
 
 public:
     using ScratchBuffer = std::pair<vk::Buffer, VmaAllocation>;
+    using Result = std::pair<vk::Buffer, u32>;
 
     explicit TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          StreamBuffer& stream_buffer);
     ~TileManager();
 
-    std::pair<vk::Buffer, u32> TryDetile(vk::Buffer in_buffer, u32 in_offset,
-                                         const ImageInfo& info);
+    void TileImage(vk::Image in_image, vk::BufferImageCopy in_copy,
+                   vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info);
+
+    Result DetileImage(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
 
 private:
+    vk::Pipeline GetTilingPipeline(const ImageInfo& info, bool is_tiler);
     ScratchBuffer GetScratchBuffer(u32 size);
-    vk::Pipeline GetDetiler(const ImageInfo& info);
 
 private:
     const Vulkan::Instance& instance;
@@ -36,6 +39,7 @@ private:
     vk::UniqueDescriptorSetLayout desc_layout;
     vk::UniquePipelineLayout pl_layout;
     std::array<vk::UniquePipeline, AmdGpu::NUM_TILE_MODES * NUM_BPPS> detilers{};
+    std::array<vk::UniquePipeline, AmdGpu::NUM_TILE_MODES * NUM_BPPS> tilers{};
 };
 
 } // namespace VideoCore

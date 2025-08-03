@@ -585,7 +585,7 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
 }
 
 void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
-    if ((False(image.flags & ImageFlagBits::Dirty) && image.info.guest_address != 0x265b00000) || image.info.num_samples > 1) {
+    if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
 
@@ -661,13 +661,9 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
     const VAddr image_addr = image.info.guest_address;
     const size_t image_size = image.info.guest_size;
-    const auto [vk_buffer, buf_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
-    const bool should_detile = vk_buffer == &buffer_cache.GetUtilityBuffer(MemoryUsage::Upload);
-
+    const auto [in_buffer, in_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
     const auto cmdbuf = sched_ptr->CommandBuffer();
-
-    // The obtained buffer may be GPU modified so we need to emit a barrier to prevent RAW hazard
-    if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
+    if (auto barrier = in_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
         cmdbuf.pipelineBarrier2(vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
@@ -676,11 +672,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         });
     }
 
-    vk::Buffer buffer = vk_buffer->Handle();
-    u32 offset = buf_offset;
-    if (!AmdGpu::IsMacroTiled(image.info.array_mode)) {
-        std::tie(buffer, offset) = tile_manager.TryDetile(vk_buffer->Handle(), buf_offset, image.info);
-    }
+    const auto [buffer, offset] = tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info);
     for (auto& copy : image_copy) {
         copy.bufferOffset += offset;
     }
