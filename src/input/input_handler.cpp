@@ -611,7 +611,7 @@ void ControllerOutput::FinalizeUpdate() {
             } else {
                 *value = (*value >= 0 ? 1 : -1) *
                          std::clamp(static_cast<s32>((128.0 * (std::abs(*value) - deadzone.first)) /
-                                          (float)(deadzone.second - deadzone.first)),
+                                                     (float)(deadzone.second - deadzone.first)),
                                     0, 128);
             }
         };
