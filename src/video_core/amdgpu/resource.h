@@ -276,7 +276,8 @@ struct Image {
     }
 
     bool IsTiled() const {
-        return tiling_index != TileMode::DisplayLinearAligned && tiling_index != TileMode::DisplayLinearGeneral;
+        return tiling_index != TileMode::DisplayLinearAligned &&
+               tiling_index != TileMode::DisplayLinearGeneral;
     }
 
     u32 GetBankSwizzle() const {

@@ -75,8 +75,9 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
 TileManager::~TileManager() = default;
 
 TileManager::ScratchBuffer TileManager::GetScratchBuffer(u32 size) {
-    constexpr auto usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer |
-                           vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+    constexpr auto usage =
+        vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer |
+        vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
 
     const vk::BufferCreateInfo buffer_ci = {
         .size = size,
@@ -112,22 +113,28 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         fmt::format("MICRO_TILE_THICKNESS={}", AmdGpu::GetMicroTileThickness(info.array_mode)),
     };
     if (AmdGpu::IsMacroTiled(info.array_mode)) {
-        const auto macro_tile_mode = AmdGpu::CalculateMacrotileMode(info.tile_mode, info.num_bits, info.num_samples);
+        const auto macro_tile_mode =
+            AmdGpu::CalculateMacrotileMode(info.tile_mode, info.num_bits, info.num_samples);
         const u32 num_banks = AmdGpu::GetNumBanks(macro_tile_mode);
-        defines.emplace_back(fmt::format("PIPE_CONFIG={}", u32(AmdGpu::GetPipeConfig(info.tile_mode))));
+        defines.emplace_back(
+            fmt::format("PIPE_CONFIG={}", u32(AmdGpu::GetPipeConfig(info.tile_mode))));
         defines.emplace_back(fmt::format("BANK_WIDTH={}", AmdGpu::GetBankWidth(macro_tile_mode)));
         defines.emplace_back(fmt::format("BANK_HEIGHT={}", AmdGpu::GetBankHeight(macro_tile_mode)));
         defines.emplace_back(fmt::format("NUM_BANKS={}", num_banks));
         defines.emplace_back(fmt::format("NUM_BANK_BITS={}", std::bit_width(num_banks) - 1));
-        defines.emplace_back(fmt::format("TILE_SPLIT_BYTES={}", AmdGpu::GetTileSplit(info.tile_mode)));
-        defines.emplace_back(fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
+        defines.emplace_back(
+            fmt::format("TILE_SPLIT_BYTES={}", AmdGpu::GetTileSplit(info.tile_mode)));
+        defines.emplace_back(
+            fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
     }
     if (is_tiler) {
         defines.emplace_back(fmt::format("IS_TILER=1"));
     }
 
-    const auto& module = Vulkan::Compile(HostShaders::TILING_COMP, vk::ShaderStageFlagBits::eCompute, device, defines);
-    const auto module_name = fmt::format("{}_{} {}", magic_enum::enum_name(info.tile_mode), info.num_bits, is_tiler ? "tiler" : "detiler");
+    const auto& module = Vulkan::Compile(HostShaders::TILING_COMP,
+                                         vk::ShaderStageFlagBits::eCompute, device, defines);
+    const auto module_name = fmt::format("{}_{} {}", magic_enum::enum_name(info.tile_mode),
+                                         info.num_bits, is_tiler ? "tiler" : "detiler");
     LOG_WARNING(Render_Vulkan, "Compiling shader {}", module_name);
     for (const auto& def : defines) {
         LOG_WARNING(Render_Vulkan, "#define {}", def);
@@ -142,14 +149,17 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         .stage = shader_ci,
         .layout = *pl_layout,
     };
-    auto [result, pipeline] = device.createComputePipelineUnique(VK_NULL_HANDLE, compute_pipeline_ci);
-    ASSERT_MSG(result == vk::Result::eSuccess, "Detiler pipeline creation failed {}", vk::to_string(result));
+    auto [result, pipeline] =
+        device.createComputePipelineUnique(VK_NULL_HANDLE, compute_pipeline_ci);
+    ASSERT_MSG(result == vk::Result::eSuccess, "Detiler pipeline creation failed {}",
+               vk::to_string(result));
     tiling_pipelines[pl_id] = std::move(pipeline);
     device.destroyShaderModule(module);
     return *tiling_pipelines[pl_id];
 }
 
-TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info) {
+TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset,
+                                             const ImageInfo& info) {
     if (!info.props.is_tiled) {
         return {in_buffer, in_offset};
     }
@@ -226,12 +236,13 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     return {out_buffer, 0};
 }
 
-void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy,
-                            vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info) {
+void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk::Buffer out_buffer,
+                            u32 out_offset, const ImageInfo& info) {
     if (!info.props.is_tiled) {
         const auto cmdbuf = scheduler.CommandBuffer();
         in_copy.bufferOffset += out_offset;
-        cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, out_buffer, in_copy);
+        cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, out_buffer,
+                                 in_copy);
         return;
     }
 
@@ -306,6 +317,5 @@ void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy,
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
 }
-
 
 } // namespace VideoCore

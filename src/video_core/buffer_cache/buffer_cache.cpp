@@ -1023,9 +1023,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         .offset = offset,
         .size = size,
     };
-    auto barriers = image.GetBarriers(vk::ImageLayout::eTransferSrcOptimal,
-                                      vk::AccessFlagBits2::eTransferRead,
-                                      vk::PipelineStageFlagBits2::eTransfer, {});
+    auto barriers =
+        image.GetBarriers(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
+                          vk::PipelineStageFlagBits2::eTransfer, {});
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,

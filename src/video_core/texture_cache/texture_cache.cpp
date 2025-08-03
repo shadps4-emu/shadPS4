@@ -25,7 +25,8 @@ static constexpr u64 NumFramesBeforeRemoval = 32;
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
-      blit_helper{instance, scheduler}, tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
+      blit_helper{instance, scheduler},
+      tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
@@ -672,7 +673,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         });
     }
 
-    const auto [buffer, offset] = tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info);
+    const auto [buffer, offset] =
+        tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info);
     for (auto& copy : image_copy) {
         copy.bufferOffset += offset;
     }

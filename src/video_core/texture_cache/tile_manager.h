@@ -23,8 +23,8 @@ public:
                          StreamBuffer& stream_buffer);
     ~TileManager();
 
-    void TileImage(vk::Image in_image, vk::BufferImageCopy in_copy,
-                   vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info);
+    void TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk::Buffer out_buffer,
+                   u32 out_offset, const ImageInfo& info);
 
     Result DetileImage(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
 

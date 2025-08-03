@@ -186,8 +186,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     image.Create(image_ci);
 
     Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {} {:#x}:{:#x}",
-                          info.size.width, info.size.height, info.size.depth, AmdGpu::NameOf(info.tile_mode),
-                          info.guest_address, info.guest_size);
+                          info.size.width, info.size.height, info.size.depth,
+                          AmdGpu::NameOf(info.tile_mode), info.guest_address, info.guest_size);
 }
 
 boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(

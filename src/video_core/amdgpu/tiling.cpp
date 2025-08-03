@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#pragma clang optimize off
+
 #include "common/assert.h"
 #include "video_core/amdgpu/tiling.h"
 
@@ -529,7 +529,8 @@ u32 GetPipeCount(PipeConfig pipe_cfg) {
 }
 
 MacroTileMode CalculateMacrotileMode(TileMode tile_mode, u32 bpp, u32 num_samples) {
-    ASSERT_MSG(std::has_single_bit(num_samples) && num_samples <= 16, "Invalid sample count {}", num_samples);
+    ASSERT_MSG(std::has_single_bit(num_samples) && num_samples <= 16, "Invalid sample count {}",
+               num_samples);
     ASSERT_MSG(bpp >= 1 && bpp <= 128, "Invalid bpp {}", bpp);
 
     const ArrayMode array_mode = GetArrayMode(tile_mode);
@@ -542,7 +543,8 @@ MacroTileMode CalculateMacrotileMode(TileMode tile_mode, u32 bpp, u32 num_sample
     const u32 tile_thickness = GetMicroTileThickness(array_mode);
     const u32 tile_bytes_1x = bpp * MICROTILE_SIZE * MICROTILE_SIZE * tile_thickness / 8;
     const u32 color_tile_split = std::max(256U, sample_split * tile_bytes_1x);
-    const u32 tile_split = micro_tile_mode == MicroTileMode::Depth ? tile_split_hw : color_tile_split;
+    const u32 tile_split =
+        micro_tile_mode == MicroTileMode::Depth ? tile_split_hw : color_tile_split;
     const u32 tilesplic = std::min(DRAM_ROW_SIZE, tile_split);
     const u32 tile_bytes = std::min(tilesplic, num_samples * tile_bytes_1x);
     const u32 mtm_idx = std::bit_width(tile_bytes / 64) - 1;

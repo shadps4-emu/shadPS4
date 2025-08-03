@@ -61,8 +61,8 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
                      VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
     props.is_tiled = attrib.tiling_mode == TilingMode::Tile;
-    tile_mode = props.is_tiled ? AmdGpu::TileMode::Display2DThin
-                               : AmdGpu::TileMode::DisplayLinearAligned;
+    tile_mode =
+        props.is_tiled ? AmdGpu::TileMode::Display2DThin : AmdGpu::TileMode::DisplayLinearAligned;
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = ConvertPixelFormat(attrib.pixel_format);
     type = AmdGpu::ImageType::Color2D;

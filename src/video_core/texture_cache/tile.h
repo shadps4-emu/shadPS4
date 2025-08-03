@@ -289,7 +289,8 @@ constexpr std::array macro_tile_extents_alt{
 constexpr std::pair micro_tile_extent{8u, 8u};
 constexpr auto hw_pipe_interleave = 256u;
 
-constexpr std::pair<u32, u32> GetMacroTileExtents(AmdGpu::TileMode tile_mode, u32 bpp, u32 num_samples, bool alt) {
+constexpr std::pair<u32, u32> GetMacroTileExtents(AmdGpu::TileMode tile_mode, u32 bpp,
+                                                  u32 num_samples, bool alt) {
     ASSERT(num_samples <= 8);
     const auto samples_log = static_cast<u32>(std::log2(num_samples));
     const auto row = u32(tile_mode) * 5;
@@ -311,8 +312,8 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeLinearAligned(u32 pitch, u32 hei
     return {pitch_aligned, height_aligned, (log_sz * bpp + 7) / 8};
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 thickness, u32 bpp,
-                                                           u32 num_samples) {
+constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 thickness,
+                                                           u32 bpp, u32 num_samples) {
     const auto& [pitch_align, height_align] = micro_tile_extent;
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
@@ -324,8 +325,9 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height
     return {pitch_aligned, height_aligned, log_sz};
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 thickness, u32 bpp,
-                                                           u32 num_samples, AmdGpu::TileMode tile_mode, u32 mip_n,
+constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 thickness,
+                                                           u32 bpp, u32 num_samples,
+                                                           AmdGpu::TileMode tile_mode, u32 mip_n,
                                                            bool alt) {
     const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
     ASSERT(pitch_align != 0 && height_align != 0);
