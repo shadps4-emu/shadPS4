@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <optional>
 #include <string>
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
@@ -12,12 +13,14 @@
 #include "common/path_util.h"
 #include "common/scm_rev.h"
 
+using std::string;
+
 namespace toml {
 template <typename TC, typename K>
 std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
                                       std::filesystem::path opt) {
     try {
-        auto str = find<std::string>(v, ky);
+        auto str = find<string>(v, ky);
         if (str.empty()) {
             return opt;
         }
@@ -31,6 +34,161 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
 
 namespace Config {
 
+namespace GameSpecificConfig {
+
+using std::nullopt;
+using std::optional;
+
+// General
+static optional<int> volumeSlider = nullopt;
+static optional<bool> isNeo = nullopt;
+static optional<bool> isDevKit = nullopt;
+static optional<bool> isPSNSignedIn = nullopt;
+static optional<bool> isTrophyPopupDisabled = nullopt;
+static optional<double> trophyNotificationDuration = nullopt;
+static optional<string> logFilter = nullopt;
+static optional<string> logType = nullopt;
+static optional<string> userName = nullopt;
+static optional<bool> isShowSplash = nullopt;
+static optional<string> isSideTrophy = nullopt;
+static optional<bool> compatibilityData = nullopt;
+static optional<bool> checkCompatibilityOnStartup = nullopt;
+static optional<bool> isConnectedToNetwork = nullopt;
+
+// Input
+static optional<int> cursorState = nullopt;
+static optional<int> cursorHideTimeout = nullopt;
+static optional<bool> useSpecialPad = nullopt;
+static optional<int> specialPadClass = nullopt;
+static optional<bool> isMotionControlsEnabled = nullopt;
+static optional<bool> useUnifiedInputConfig = nullopt;
+static optional<string> micDevice = nullopt;
+static optional<string> defaultControllerID = nullopt;
+
+// GPU
+static optional<u32> windowWidth = nullopt;
+static optional<u32> windowHeight = nullopt;
+static optional<u32> internalScreenWidth = nullopt;
+static optional<u32> internalScreenHeight = nullopt;
+static optional<bool> isNullGpu = nullopt;
+static optional<bool> shouldCopyGPUBuffers = nullopt;
+static optional<bool> readbacksEnabled = nullopt;
+static optional<bool> readbackLinearImagesEnabled = nullopt;
+static optional<bool> directMemoryAccessEnabled = nullopt;
+static optional<bool> shouldDumpShaders = nullopt;
+static optional<bool> shouldPatchShaders = nullopt;
+static optional<u32> vblankDivider = nullopt;
+static optional<bool> isFullscreen = nullopt;
+static optional<string> fullscreenMode = nullopt;
+static optional<bool> isHDRAllowed = nullopt;
+
+// Vulkan
+static optional<s32> gpuId = nullopt;
+static optional<bool> vkValidation = nullopt;
+static optional<bool> vkValidationSync = nullopt;
+static optional<bool> vkValidationGpu = nullopt;
+static optional<bool> vkCrashDiagnostic = nullopt;
+static optional<bool> vkHostMarkers = nullopt;
+static optional<bool> vkGuestMarkers = nullopt;
+static optional<bool> rdocEnable = nullopt;
+
+// Debug
+static optional<bool> isDebugDump = nullopt;
+static optional<bool> isShaderDebug = nullopt;
+
+void load(const std::filesystem::path& path) {
+    // If the configuration file does not exist, return
+    std::error_code error;
+    if (!std::filesystem::exists(path, error)) {
+        return;
+    }
+
+    toml::value data;
+
+    try {
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifs.open(path, std::ios_base::binary);
+        data = toml::parse(ifs, string{fmt::UTF(path.filename().u8string()).data});
+    } catch (std::exception& ex) {
+        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        return;
+    }
+
+    if (data.contains("General")) {
+        const toml::value& general = data.at("General");
+
+        volumeSlider = toml::find<int>(general, "volumeSlider");
+        isNeo = toml::find<bool>(general, "isPS4Pro");
+        isDevKit = toml::find<bool>(general, "isDevKit");
+        isPSNSignedIn = toml::find<bool>(general, "isPSNSignedIn");
+        isTrophyPopupDisabled = toml::find<bool>(general, "isTrophyPopupDisabled");
+        trophyNotificationDuration = toml::find<double>(general, "trophyNotificationDuration");
+        logFilter = toml::find<string>(general, "logFilter");
+        logType = toml::find<string>(general, "logType");
+        userName = toml::find<string>(general, "userName");
+        isShowSplash = toml::find<bool>(general, "showSplash");
+        isSideTrophy = toml::find<string>(general, "sideTrophy");
+
+        isConnectedToNetwork = toml::find<bool>(general, "isConnectedToNetwork");
+        defaultControllerID = toml::find<string>(general, "defaultControllerID");
+    }
+
+    if (data.contains("Input")) {
+        const toml::value& input = data.at("Input");
+
+        cursorState = toml::find<int>(input, "cursorState");
+        cursorHideTimeout = toml::find<int>(input, "cursorHideTimeout");
+        useSpecialPad = toml::find<bool>(input, "useSpecialPad");
+        specialPadClass = toml::find<int>(input, "specialPadClass");
+        isMotionControlsEnabled = toml::find<bool>(input, "isMotionControlsEnabled");
+        micDevice = toml::find<string>(input, "micDevice");
+    }
+
+    if (data.contains("GPU")) {
+        const toml::value& gpu = data.at("GPU");
+
+        windowWidth = toml::find<int>(gpu, "screenWidth");
+        windowHeight = toml::find<int>(gpu, "screenHeight");
+        internalScreenWidth = toml::find<int>(gpu, "internalScreenWidth");
+        internalScreenHeight = toml::find<int>(gpu, "internalScreenHeight");
+        isNullGpu = toml::find<bool>(gpu, "nullGpu");
+        shouldCopyGPUBuffers = toml::find<bool>(gpu, "copyGPUBuffers");
+        readbacksEnabled = toml::find<bool>(gpu, "readbacks");
+        readbackLinearImagesEnabled = toml::find<bool>(gpu, "readbackLinearImages");
+        directMemoryAccessEnabled = toml::find<bool>(gpu, "directMemoryAccess");
+        shouldDumpShaders = toml::find<bool>(gpu, "dumpShaders");
+        shouldPatchShaders = toml::find<bool>(gpu, "patchShaders");
+        vblankDivider = toml::find<int>(gpu, "vblankDivider");
+        isFullscreen = toml::find<bool>(gpu, "Fullscreen");
+        fullscreenMode = toml::find<string>(gpu, "FullscreenMode");
+        isHDRAllowed = toml::find<bool>(gpu, "allowHDR");
+    }
+
+    if (data.contains("Vulkan")) {
+        const toml::value& vk = data.at("Vulkan");
+
+        gpuId = toml::find<int>(vk, "gpuId");
+        vkValidation = toml::find<bool>(vk, "validation");
+        vkValidationSync = toml::find<bool>(vk, "validation_sync");
+        vkValidationGpu = toml::find<bool>(vk, "validation_gpu");
+        vkCrashDiagnostic = toml::find<bool>(vk, "crashDiagnostic");
+        vkHostMarkers = toml::find<bool>(vk, "hostMarkers");
+        vkGuestMarkers = toml::find<bool>(vk, "guestMarkers");
+        rdocEnable = toml::find<bool>(vk, "rdocEnable");
+    }
+
+    string current_version = {};
+    if (data.contains("Debug")) {
+        const toml::value& debug = data.at("Debug");
+
+        isDebugDump = toml::find<bool>(debug, "DebugDump");
+        isShaderDebug = toml::find<bool>(debug, "CollectShader");
+    }
+}
+
+} // namespace GameSpecificConfig
+
 // General
 static int volumeSlider = 100;
 static bool isNeo = false;
@@ -39,12 +197,12 @@ static bool isPSNSignedIn = false;
 static bool isTrophyPopupDisabled = false;
 static double trophyNotificationDuration = 6.0;
 static bool enableDiscordRPC = false;
-static std::string logFilter = "";
-static std::string logType = "sync";
-static std::string userName = "shadPS4";
-static std::string chooseHomeTab = "General";
+static string logFilter = "";
+static string logType = "sync";
+static string userName = "shadPS4";
+static string chooseHomeTab = "General";
 static bool isShowSplash = false;
-static std::string isSideTrophy = "right";
+static string isSideTrophy = "right";
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static bool isConnectedToNetwork = false;
@@ -56,8 +214,8 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
-static std::string micDevice = "Default Device";
-static std::string defaultControllerID = "";
+static string micDevice = "Default Device";
+static string defaultControllerID = "";
 
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
@@ -77,7 +235,7 @@ static bool shouldDumpShaders = false;
 static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
 static bool isFullscreen = false;
-static std::string fullscreenMode = "Windowed";
+static string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
 
 // Vulkan
@@ -107,10 +265,10 @@ std::filesystem::path save_data_path = {};
 u32 m_language = 1; // english
 
 // Keys
-static std::string trophyKey = "";
+static string trophyKey = "";
 
 // Config version, used to determine if a user's config file is outdated.
-static std::string config_version = Common::g_scm_rev;
+static string config_version = Common::g_scm_rev;
 
 int getVolumeSlider() {
     return volumeSlider;
@@ -145,11 +303,11 @@ void SetControllerCustomColor(int r, int b, int g) {
     controllerCustomColorRGB[2] = g;
 }
 
-std::string getTrophyKey() {
+string getTrophyKey() {
     return trophyKey;
 }
 
-void setTrophyKey(std::string key) {
+void setTrophyKey(string key) {
     trophyKey = key;
 }
 
@@ -184,7 +342,7 @@ bool getIsFullscreen() {
     return isFullscreen;
 }
 
-std::string getFullscreenMode() {
+string getFullscreenMode() {
     return fullscreenMode;
 }
 
@@ -204,7 +362,7 @@ int getCursorHideTimeout() {
     return cursorHideTimeout;
 }
 
-std::string getMicDevice() {
+string getMicDevice() {
     return micDevice;
 }
 
@@ -232,19 +390,19 @@ s32 getGpuId() {
     return gpuId;
 }
 
-std::string getLogFilter() {
+string getLogFilter() {
     return logFilter;
 }
 
-std::string getLogType() {
+string getLogType() {
     return logType;
 }
 
-std::string getUserName() {
+string getUserName() {
     return userName;
 }
 
-std::string getChooseHomeTab() {
+string getChooseHomeTab() {
     return chooseHomeTab;
 }
 
@@ -272,7 +430,7 @@ bool showSplash() {
     return isShowSplash;
 }
 
-std::string sideTrophy() {
+string sideTrophy() {
     return isSideTrophy;
 }
 
@@ -396,7 +554,7 @@ void setShowSplash(bool enable) {
     isShowSplash = enable;
 }
 
-void setSideTrophy(std::string side) {
+void setSideTrophy(string side) {
     isSideTrophy = side;
 }
 
@@ -448,7 +606,7 @@ void setIsFullscreen(bool enable) {
     isFullscreen = enable;
 }
 
-void setFullscreenMode(std::string mode) {
+void setFullscreenMode(string mode) {
     fullscreenMode = mode;
 }
 
@@ -468,7 +626,7 @@ void setCursorHideTimeout(int newcursorHideTimeout) {
     cursorHideTimeout = newcursorHideTimeout;
 }
 
-void setMicDevice(std::string device) {
+void setMicDevice(string device) {
     micDevice = device;
 }
 
@@ -484,11 +642,11 @@ void setNeoMode(bool enable) {
     isNeo = enable;
 }
 
-void setLogType(const std::string& type) {
+void setLogType(const string& type) {
     logType = type;
 }
 
-void setLogFilter(const std::string& type) {
+void setLogFilter(const string& type) {
     logFilter = type;
 }
 
@@ -496,11 +654,11 @@ void setSeparateLogFilesEnabled(bool enabled) {
     isSeparateLogFilesEnabled = enabled;
 }
 
-void setUserName(const std::string& type) {
+void setUserName(const string& type) {
     userName = type;
 }
 
-void setChooseHomeTab(const std::string& type) {
+void setChooseHomeTab(const string& type) {
     chooseHomeTab = type;
 }
 
@@ -613,11 +771,11 @@ void setPSNSignedIn(bool sign) {
     isPSNSignedIn = sign;
 }
 
-std::string getDefaultControllerID() {
+string getDefaultControllerID() {
     return defaultControllerID;
 }
 
-void setDefaultControllerID(std::string id) {
+void setDefaultControllerID(string id) {
     defaultControllerID = id;
 }
 
@@ -635,7 +793,7 @@ void load(const std::filesystem::path& path) {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifs.open(path, std::ios_base::binary);
-        data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+        data = toml::parse(ifs, string{fmt::UTF(path.filename().u8string()).data});
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
@@ -653,19 +811,19 @@ void load(const std::filesystem::path& path) {
         trophyNotificationDuration = toml::find_or<double>(general, "trophyNotificationDuration",
                                                            trophyNotificationDuration);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
-        logFilter = toml::find_or<std::string>(general, "logFilter", logFilter);
-        logType = toml::find_or<std::string>(general, "logType", logType);
-        userName = toml::find_or<std::string>(general, "userName", userName);
+        logFilter = toml::find_or<string>(general, "logFilter", logFilter);
+        logType = toml::find_or<string>(general, "logType", logType);
+        userName = toml::find_or<string>(general, "userName", userName);
         isShowSplash = toml::find_or<bool>(general, "showSplash", isShowSplash);
-        isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", isSideTrophy);
+        isSideTrophy = toml::find_or<string>(general, "sideTrophy", isSideTrophy);
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
 
         isConnectedToNetwork =
             toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
-        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
-        defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
+        chooseHomeTab = toml::find_or<string>(general, "chooseHomeTab", chooseHomeTab);
+        defaultControllerID = toml::find_or<string>(general, "defaultControllerID", "");
     }
 
     if (data.contains("Input")) {
@@ -679,7 +837,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
-        micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
+        micDevice = toml::find_or<string>(input, "micDevice", micDevice);
     }
 
     if (data.contains("GPU")) {
@@ -701,7 +859,7 @@ void load(const std::filesystem::path& path) {
         shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", shouldPatchShaders);
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
-        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
+        fullscreenMode = toml::find_or<string>(gpu, "FullscreenMode", fullscreenMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
     }
 
@@ -718,7 +876,7 @@ void load(const std::filesystem::path& path) {
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", rdocEnable);
     }
 
-    std::string current_version = {};
+    string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
@@ -727,7 +885,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
-        current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
+        current_version = toml::find_or<string>(debug, "ConfigVersion", current_version);
     }
 
     if (data.contains("GUI")) {
@@ -768,7 +926,7 @@ void load(const std::filesystem::path& path) {
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
-        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", trophyKey);
+        trophyKey = toml::find_or<string>(keys, "TrophyKey", trophyKey);
     }
 
     // Run save after loading to generate any missing fields with default values.
@@ -780,17 +938,17 @@ void load(const std::filesystem::path& path) {
 
 void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
-    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                              "Debug",   "Keys",  "GUI", "Settings"};
+    std::vector<string> section_order = {"General", "Input", "GPU", "Vulkan",
+                                         "Debug",   "Keys",  "GUI", "Settings"};
 
     for (const auto& section : section_order) {
         if (data.contains(section)) {
-            std::vector<std::string> keys;
+            std::vector<string> keys;
             for (const auto& item : data.at(section).as_table()) {
                 keys.push_back(item.first);
             }
 
-            std::sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
+            std::sort(keys.begin(), keys.end(), [](const string& a, const string& b) {
                 return std::lexicographical_compare(
                     a.begin(), a.end(), b.begin(), b.end(), [](char a_char, char b_char) {
                         return std::tolower(a_char) < std::tolower(b_char);
@@ -819,7 +977,7 @@ void save(const std::filesystem::path& path) {
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
             data = toml::parse<toml::ordered_type_config>(
-                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+                ifs, string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -885,19 +1043,18 @@ void save(const std::filesystem::path& path) {
     data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
-    std::vector<std::string> install_dirs;
+    std::vector<string> install_dirs;
     std::vector<bool> install_dirs_enabled;
 
     // temporary structure for ordering
     struct DirEntry {
-        std::string path_str;
+        string path_str;
         bool enabled;
     };
 
     std::vector<DirEntry> sorted_dirs;
     for (const auto& dirInfo : settings_install_dirs) {
-        sorted_dirs.push_back(
-            {std::string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
+        sorted_dirs.push_back({string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
     }
 
     // Sort directories alphabetically
@@ -914,11 +1071,10 @@ void save(const std::filesystem::path& path) {
 
     data["GUI"]["installDirs"] = install_dirs;
     data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
-    data["GUI"]["saveDataPath"] = std::string{fmt::UTF(save_data_path.u8string()).data};
+    data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
     data["GUI"]["loadGameSizeEnabled"] = load_game_size;
 
-    data["GUI"]["addonInstallDir"] =
-        std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+    data["GUI"]["addonInstallDir"] = string{fmt::UTF(settings_addon_install_dir.u8string()).data};
     data["Settings"]["consoleLanguage"] = m_language;
 
     // Sorting of TOML sections
@@ -1075,7 +1231,7 @@ analog_deadzone = rightjoystick, 2, 127
 override_controller_color = false, 0, 0, 255
 )";
 }
-std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
+std::filesystem::path GetFoolproofKbmConfigFile(const string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
