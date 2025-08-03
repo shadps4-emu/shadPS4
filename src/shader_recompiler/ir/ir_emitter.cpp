@@ -5,12 +5,12 @@
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
+#include "ir_emitter.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
-#include "ir_emitter.h"
 
 namespace Shader::IR {
 namespace {
