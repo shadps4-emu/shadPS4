@@ -367,20 +367,11 @@ void L::Draw() {
         visibility_toggled = true;
     }
 
-    if (IsKeyPressed(ImGuiKey_F9, false)) { // todo
+    if (IsKeyPressed(ImGuiKey_F9, false)) {
         if (io.KeyCtrl && io.KeyAlt) {
             if (!DebugState.ShouldPauseInSubmit()) {
                 DebugState.RequestFrameDump(dump_frame_count);
             }
-        } else {
-            // if (DebugState.IsGuestThreadsPaused()) {
-            //     DebugState.ResumeGuestThreads();
-            //     SDL_Log("Game resumed from Keyboard");
-            // } else {
-            //     DebugState.PauseGuestThreads();
-            //     SDL_Log("Game paused from Keyboard");
-            // }
-            // visibility_toggled = true;
         }
     }
 

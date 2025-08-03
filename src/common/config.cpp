@@ -1118,7 +1118,7 @@ std::filesystem::path GetFoolproofInputConfigFile(const std::string& game_id) {
     if (game_id.empty()) {
         return default_config_file;
     }
-    
+
     // Create global config if it doesn't exist yet
     if (game_id == "global" && !std::filesystem::exists(config_file)) {
         if (!std::filesystem::exists(config_file)) {
