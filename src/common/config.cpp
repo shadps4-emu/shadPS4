@@ -30,6 +30,40 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
         return opt;
     }
 }
+
+// why is it so hard to avoid exceptions with this library
+template <typename T>
+std::optional<T> get_optional(const toml::value& v, const std::string& key) {
+    if (!v.is_table())
+        return std::nullopt;
+    const auto& tbl = v.as_table();
+    auto it = tbl.find(key);
+    if (it == tbl.end())
+        return std::nullopt;
+
+    if constexpr (std::is_same_v<T, int>) {
+        if (it->second.is_integer()) {
+            return static_cast<int>(toml::get<int>(it->second));
+        }
+    } else if constexpr (std::is_same_v<T, double>) {
+        if (it->second.is_floating()) {
+            return toml::get<double>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        if (it->second.is_string()) {
+            return toml::get<std::string>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, bool>) {
+        if (it->second.is_boolean()) {
+            return toml::get<bool>(it->second);
+        }
+    } else {
+        static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
+    }
+
+    return std::nullopt;
+}
+
 } // namespace toml
 
 namespace Config {
@@ -118,72 +152,73 @@ void load(const std::filesystem::path& path) {
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        volumeSlider = toml::find<int>(general, "volumeSlider");
-        isNeo = toml::find<bool>(general, "isPS4Pro");
-        isDevKit = toml::find<bool>(general, "isDevKit");
-        isPSNSignedIn = toml::find<bool>(general, "isPSNSignedIn");
-        isTrophyPopupDisabled = toml::find<bool>(general, "isTrophyPopupDisabled");
-        trophyNotificationDuration = toml::find<double>(general, "trophyNotificationDuration");
-        logFilter = toml::find<string>(general, "logFilter");
-        logType = toml::find<string>(general, "logType");
-        userName = toml::find<string>(general, "userName");
-        isShowSplash = toml::find<bool>(general, "showSplash");
-        isSideTrophy = toml::find<string>(general, "sideTrophy");
+        volumeSlider = toml::get_optional<int>(general, "volumeSlider");
+        isNeo = toml::get_optional<bool>(general, "isPS4Pro");
+        isDevKit = toml::get_optional<bool>(general, "isDevKit");
+        isPSNSignedIn = toml::get_optional<bool>(general, "isPSNSignedIn");
+        isTrophyPopupDisabled = toml::get_optional<bool>(general, "isTrophyPopupDisabled");
+        trophyNotificationDuration =
+            toml::get_optional<double>(general, "trophyNotificationDuration");
+        logFilter = toml::get_optional<string>(general, "logFilter");
+        logType = toml::get_optional<string>(general, "logType");
+        userName = toml::get_optional<string>(general, "userName");
+        isShowSplash = toml::get_optional<bool>(general, "showSplash");
+        isSideTrophy = toml::get_optional<string>(general, "sideTrophy");
 
-        isConnectedToNetwork = toml::find<bool>(general, "isConnectedToNetwork");
-        defaultControllerID = toml::find<string>(general, "defaultControllerID");
+        isConnectedToNetwork = toml::get_optional<bool>(general, "isConnectedToNetwork");
+        defaultControllerID = toml::get_optional<string>(general, "defaultControllerID");
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
-        cursorState = toml::find<int>(input, "cursorState");
-        cursorHideTimeout = toml::find<int>(input, "cursorHideTimeout");
-        useSpecialPad = toml::find<bool>(input, "useSpecialPad");
-        specialPadClass = toml::find<int>(input, "specialPadClass");
-        isMotionControlsEnabled = toml::find<bool>(input, "isMotionControlsEnabled");
-        micDevice = toml::find<string>(input, "micDevice");
+        cursorState = toml::get_optional<int>(input, "cursorState");
+        cursorHideTimeout = toml::get_optional<int>(input, "cursorHideTimeout");
+        useSpecialPad = toml::get_optional<bool>(input, "useSpecialPad");
+        specialPadClass = toml::get_optional<int>(input, "specialPadClass");
+        isMotionControlsEnabled = toml::get_optional<bool>(input, "isMotionControlsEnabled");
+        micDevice = toml::get_optional<string>(input, "micDevice");
     }
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
-        windowWidth = toml::find<int>(gpu, "screenWidth");
-        windowHeight = toml::find<int>(gpu, "screenHeight");
-        internalScreenWidth = toml::find<int>(gpu, "internalScreenWidth");
-        internalScreenHeight = toml::find<int>(gpu, "internalScreenHeight");
-        isNullGpu = toml::find<bool>(gpu, "nullGpu");
-        shouldCopyGPUBuffers = toml::find<bool>(gpu, "copyGPUBuffers");
-        readbacksEnabled = toml::find<bool>(gpu, "readbacks");
-        readbackLinearImagesEnabled = toml::find<bool>(gpu, "readbackLinearImages");
-        directMemoryAccessEnabled = toml::find<bool>(gpu, "directMemoryAccess");
-        shouldDumpShaders = toml::find<bool>(gpu, "dumpShaders");
-        shouldPatchShaders = toml::find<bool>(gpu, "patchShaders");
-        vblankDivider = toml::find<int>(gpu, "vblankDivider");
-        isFullscreen = toml::find<bool>(gpu, "Fullscreen");
-        fullscreenMode = toml::find<string>(gpu, "FullscreenMode");
-        isHDRAllowed = toml::find<bool>(gpu, "allowHDR");
+        windowWidth = toml::get_optional<int>(gpu, "screenWidth");
+        windowHeight = toml::get_optional<int>(gpu, "screenHeight");
+        internalScreenWidth = toml::get_optional<int>(gpu, "internalScreenWidth");
+        internalScreenHeight = toml::get_optional<int>(gpu, "internalScreenHeight");
+        isNullGpu = toml::get_optional<bool>(gpu, "nullGpu");
+        shouldCopyGPUBuffers = toml::get_optional<bool>(gpu, "copyGPUBuffers");
+        readbacksEnabled = toml::get_optional<bool>(gpu, "readbacks");
+        readbackLinearImagesEnabled = toml::get_optional<bool>(gpu, "readbackLinearImages");
+        directMemoryAccessEnabled = toml::get_optional<bool>(gpu, "directMemoryAccess");
+        shouldDumpShaders = toml::get_optional<bool>(gpu, "dumpShaders");
+        shouldPatchShaders = toml::get_optional<bool>(gpu, "patchShaders");
+        vblankDivider = toml::get_optional<int>(gpu, "vblankDivider");
+        isFullscreen = toml::get_optional<bool>(gpu, "Fullscreen");
+        fullscreenMode = toml::get_optional<string>(gpu, "FullscreenMode");
+        isHDRAllowed = toml::get_optional<bool>(gpu, "allowHDR");
     }
 
     if (data.contains("Vulkan")) {
         const toml::value& vk = data.at("Vulkan");
 
-        gpuId = toml::find<int>(vk, "gpuId");
-        vkValidation = toml::find<bool>(vk, "validation");
-        vkValidationSync = toml::find<bool>(vk, "validation_sync");
-        vkValidationGpu = toml::find<bool>(vk, "validation_gpu");
-        vkCrashDiagnostic = toml::find<bool>(vk, "crashDiagnostic");
-        vkHostMarkers = toml::find<bool>(vk, "hostMarkers");
-        vkGuestMarkers = toml::find<bool>(vk, "guestMarkers");
-        rdocEnable = toml::find<bool>(vk, "rdocEnable");
+        gpuId = toml::get_optional<int>(vk, "gpuId");
+        vkValidation = toml::get_optional<bool>(vk, "validation");
+        vkValidationSync = toml::get_optional<bool>(vk, "validation_sync");
+        vkValidationGpu = toml::get_optional<bool>(vk, "validation_gpu");
+        vkCrashDiagnostic = toml::get_optional<bool>(vk, "crashDiagnostic");
+        vkHostMarkers = toml::get_optional<bool>(vk, "hostMarkers");
+        vkGuestMarkers = toml::get_optional<bool>(vk, "guestMarkers");
+        rdocEnable = toml::get_optional<bool>(vk, "rdocEnable");
     }
 
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
-        isDebugDump = toml::find<bool>(debug, "DebugDump");
-        isShaderDebug = toml::find<bool>(debug, "CollectShader");
+        isDebugDump = toml::get_optional<bool>(debug, "DebugDump");
+        isShaderDebug = toml::get_optional<bool>(debug, "CollectShader");
     }
 }
 
