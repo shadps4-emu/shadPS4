@@ -33,7 +33,6 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
         return GetErrno();
     result = GetErrno();
 
-
     return result;
 }
 
