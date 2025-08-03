@@ -143,25 +143,25 @@ struct Image {
     u64 base_address : 38;
     u64 mtype_l2 : 2;
     u64 min_lod : 12;
-    DataFormat data_format : 6;
-    NumberFormat num_format : 4;
+    u64 data_format : 6;
+    u64 num_format : 4;
     u64 mtype : 2;
 
     u64 width : 14;
     u64 height : 14;
     u64 perf_modulation : 3;
     u64 interlaced : 1;
-    CompSwizzle dst_sel_x : 3;
-    CompSwizzle dst_sel_y : 3;
-    CompSwizzle dst_sel_z : 3;
-    CompSwizzle dst_sel_w : 3;
+    u64 dst_sel_x : 3;
+    u64 dst_sel_y : 3;
+    u64 dst_sel_z : 3;
+    u64 dst_sel_w : 3;
     u64 base_level : 4;
     u64 last_level : 4;
-    TileMode tiling_index : 5;
+    u64 tiling_index : 5;
     u64 pow2pad : 1;
     u64 mtype2 : 1;
     u64 atc : 1;
-    ImageType type : 4; // overlaps with V# type, so shouldn't be 0 for buffer
+    u64 type : 4; // overlaps with V# type, so shouldn't be 0 for buffer
 
     u64 depth : 13;
     u64 pitch : 14;
@@ -184,19 +184,19 @@ struct Image {
 
     static constexpr Image Null(bool is_depth) {
         Image image{};
-        image.data_format = is_depth ? DataFormat::Format32 : DataFormat::Format8_8_8_8;
-        image.num_format = is_depth ? NumberFormat::Float : NumberFormat::Unorm;
-        image.dst_sel_x = CompSwizzle::Red;
-        image.dst_sel_y = CompSwizzle::Green;
-        image.dst_sel_z = CompSwizzle::Blue;
-        image.dst_sel_w = CompSwizzle::Alpha;
-        image.tiling_index = TileMode::Thin1DThin;
-        image.type = ImageType::Color2D;
+        image.data_format = u64(is_depth ? DataFormat::Format32 : DataFormat::Format8_8_8_8);
+        image.num_format = u64(is_depth ? NumberFormat::Float : NumberFormat::Unorm);
+        image.dst_sel_x = u64(CompSwizzle::Red);
+        image.dst_sel_y = u64(CompSwizzle::Green);
+        image.dst_sel_z = u64(CompSwizzle::Blue);
+        image.dst_sel_w = u64(CompSwizzle::Alpha);
+        image.tiling_index = u64(TileMode::Thin1DThin);
+        image.type = u64(ImageType::Color2D);
         return image;
     }
 
     bool Valid() const {
-        return type != ImageType::Invalid;
+        return (type & 0x8u) != 0;
     }
 
     VAddr Address() const {
@@ -252,11 +252,11 @@ struct Image {
     }
 
     bool IsCube() const noexcept {
-        return type == ImageType::Cube;
+        return static_cast<ImageType>(type) == ImageType::Cube;
     }
 
     ImageType GetType() const noexcept {
-        return IsCube() ? ImageType::Color2DArray : type;
+        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -272,22 +272,23 @@ struct Image {
     }
 
     TileMode GetTileMode() const {
-        return tiling_index;
+        return static_cast<TileMode>(tiling_index);
     }
 
     bool IsTiled() const {
-        return tiling_index != TileMode::DisplayLinearAligned &&
-               tiling_index != TileMode::DisplayLinearGeneral;
+        return GetTileMode() != TileMode::DisplayLinearAligned &&
+               GetTileMode() != TileMode::DisplayLinearGeneral;
     }
 
     u32 GetBankSwizzle() const {
-        const auto array_mode = GetArrayMode(tiling_index);
+        const auto tile_mode = GetTileMode();
+        const auto array_mode = GetArrayMode(tile_mode);
         const auto dfmt = GetDataFmt();
         if (!alt_tile_mode || dfmt == DataFormat::FormatInvalid || !IsMacroTiled(array_mode)) {
             return 0;
         }
         const u32 bpp = NumBitsPerElement(dfmt);
-        const auto macro_tile_mode = CalculateMacrotileMode(tiling_index, bpp, NumSamples());
+        const auto macro_tile_mode = CalculateMacrotileMode(tile_mode, bpp, NumSamples());
         const u32 banks = GetAltNumBanks(macro_tile_mode);
         return (((banks - 1) << 4) & base_address) >> 4;
     }
