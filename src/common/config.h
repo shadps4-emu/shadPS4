@@ -9,6 +9,12 @@
 
 namespace Config {
 
+namespace GameSpecificConfig {
+
+void load(const std::filesystem::path& path);
+
+}
+
 struct GameInstallDir {
     std::filesystem::path path;
     bool enabled;
