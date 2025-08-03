@@ -71,21 +71,14 @@ enum class SeekOrigin : u32 {
     End,             // Seeks from the end of the file.
 };
 
-namespace {
 // posix-specific. move somewhere
-[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
-    switch (origin) {
-    case SeekOrigin::SetOrigin:
-        return SEEK_SET;
-    case SeekOrigin::CurrentPosition:
-        return SEEK_CUR;
-    case SeekOrigin::End:
-        return SEEK_END;
-    default:
-        UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
-    }
-}
-} // Anonymous namespace
+[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
+
+int AccessModeToPOSIX(FileAccessMode mode, bool truncate);
+int AccessModeOrbisToPOSIX(int mode);
+
+u64 GetDirectorySize(const std::filesystem::path& path);
+u64 _GetDirectorySizeImpl(const std::filesystem::path& path);
 
 class IOFile final {
 public:
@@ -93,26 +86,6 @@ public:
 
     // Open - called by constructor, user
     // OpenImpl - called by Open (always)
-
-// os-specific constructor
-#ifdef _WIN32
-// in case if the constructor requires different parameters
-#else
-    // native access. OS-native mode
-    // if opening from kernel call, use AccessModeOrbisToNative
-    // may be redundant if *dows can be implemented with same/similar signature
-    int Open(const std::filesystem::path& path, int mode) {
-        return OpenImpl(path, mode);
-    }
-
-    explicit IOFile(const std::string& path, int mode) {
-        Open(path, mode);
-    }
-#endif
-
-    static int AccessModeToNative(FileAccessMode mode, bool truncate);
-    static int AccessModeOrbisToNative(int mode);
-
     // To conform with current convention, written files are truncated by default.
     // It is necessary to retain it available to handle kernel calls correctly
     explicit IOFile(const std::string& path, FileAccessMode mode, bool truncate = true) {
@@ -124,6 +97,10 @@ public:
     explicit IOFile(const std::filesystem::path& path, FileAccessMode mode, bool truncate = true) {
         Open(path, mode, truncate);
     }
+    explicit IOFile(const std::string& path, int mode) {
+        Open(path, mode);
+    }
+
     ~IOFile() {
         Close();
     }
@@ -134,10 +111,15 @@ public:
     IOFile(IOFile&& other) noexcept;
     IOFile& operator=(IOFile&& other) noexcept;
 
-    // Dumb access, convert to stream-equivalent modes at own discretion
+    // Simplified access, convert to stream-equivalent modes at own discretion
     int Open(const std::filesystem::path& path, FileAccessMode mode, bool truncate = true) {
-        return OpenImpl(path, mode, truncate);
+        return OpenImpl(path, AccessModeToPOSIX(mode, truncate));
     }
+    // In the end, this one is called
+    int Open(const std::filesystem::path& path, int mode) {
+        return OpenImpl(path, mode);
+    }
+
     void Close();
 
     void Unlink();
@@ -256,21 +238,19 @@ public:
 private:
     // Dumb access
     int OpenImpl(const std::filesystem::path& path, FileAccessMode mode, bool _truncate);
-    // Smart access
     int OpenImpl(const std::filesystem::path& path, int mode);
-    bool CloseImpl();
-    s64 WriteImpl(int __fd, const void* __buf, size_t __n) const;
-    s64 ReadImpl(int __fd, void* __buf, size_t __n) const;
-    bool UnlinkImpl();
 
+    bool CloseImpl();
+    bool UnlinkImpl();
+    uintptr_t GetFileMappingImpl();
     bool FlushImpl() const;
     bool CommitImpl() const;
-    uintptr_t GetFileMappingImpl();
     bool SetSizeImpl(u64 size) const;
     u64 GetSizeImpl() const;
-
     bool SeekImpl(s64 offset, SeekOrigin origin) const;
     s64 TellImpl() const;
+    s64 WriteImpl(int __fd, const void* __buf, size_t __n) const;
+    s64 ReadImpl(int __fd, void* __buf, size_t __n) const;
 
     std::filesystem::path file_path;
     int file_access_mode{};
@@ -282,8 +262,5 @@ private:
 #endif
     uintptr_t file_mapping = 0;
 };
-
-u64 GetDirectorySize(const std::filesystem::path& path);
-u64 _GetDirectorySizeImpl(const std::filesystem::path& path);
 
 } // namespace Common::FS
