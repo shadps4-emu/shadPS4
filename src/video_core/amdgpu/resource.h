@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
 
@@ -138,60 +139,29 @@ constexpr std::string_view NameOf(ImageType type) {
     }
 }
 
-enum class TilingMode : u32 {
-    Depth_MacroTiled = 0u,
-    Display_Linear = 0x8u,
-    Display_MicroTiled = 0x9u,
-    Display_MacroTiled = 0xAu,
-    Texture_MicroTiled = 0xDu,
-    Texture_MacroTiled = 0xEu,
-    Texture_Volume = 0x13u,
-};
-
-constexpr std::string_view NameOf(TilingMode type) {
-    switch (type) {
-    case TilingMode::Depth_MacroTiled:
-        return "Depth_MacroTiled";
-    case TilingMode::Display_Linear:
-        return "Display_Linear";
-    case TilingMode::Display_MicroTiled:
-        return "Display_MicroTiled";
-    case TilingMode::Display_MacroTiled:
-        return "Display_MacroTiled";
-    case TilingMode::Texture_MicroTiled:
-        return "Texture_MicroTiled";
-    case TilingMode::Texture_MacroTiled:
-        return "Texture_MacroTiled";
-    case TilingMode::Texture_Volume:
-        return "Texture_Volume";
-    default:
-        return "Unknown";
-    }
-}
-
 struct Image {
     u64 base_address : 38;
     u64 mtype_l2 : 2;
     u64 min_lod : 12;
-    u64 data_format : 6;
-    u64 num_format : 4;
+    DataFormat data_format : 6;
+    NumberFormat num_format : 4;
     u64 mtype : 2;
 
     u64 width : 14;
     u64 height : 14;
     u64 perf_modulation : 3;
     u64 interlaced : 1;
-    u64 dst_sel_x : 3;
-    u64 dst_sel_y : 3;
-    u64 dst_sel_z : 3;
-    u64 dst_sel_w : 3;
+    CompSwizzle dst_sel_x : 3;
+    CompSwizzle dst_sel_y : 3;
+    CompSwizzle dst_sel_z : 3;
+    CompSwizzle dst_sel_w : 3;
     u64 base_level : 4;
     u64 last_level : 4;
-    u64 tiling_index : 5;
+    TileMode tiling_index : 5;
     u64 pow2pad : 1;
     u64 mtype2 : 1;
     u64 atc : 1;
-    u64 type : 4; // overlaps with V# type, so shouldn't be 0 for buffer
+    ImageType type : 4; // overlaps with V# type, so shouldn't be 0 for buffer
 
     u64 depth : 13;
     u64 pitch : 14;
@@ -212,34 +182,21 @@ struct Image {
     u64 alt_tile_mode : 1;
     u64 : 39;
 
-    static constexpr Image Null() {
+    static constexpr Image Null(bool is_depth) {
         Image image{};
-        image.data_format = u64(DataFormat::Format8_8_8_8);
-        image.num_format = u64(NumberFormat::Unorm);
-        image.dst_sel_x = u64(CompSwizzle::Red);
-        image.dst_sel_y = u64(CompSwizzle::Green);
-        image.dst_sel_z = u64(CompSwizzle::Blue);
-        image.dst_sel_w = u64(CompSwizzle::Alpha);
-        image.tiling_index = u64(TilingMode::Texture_MicroTiled);
-        image.type = u64(ImageType::Color2D);
-        return image;
-    }
-
-    static constexpr Image NullDepth() {
-        Image image{};
-        image.data_format = u64(DataFormat::Format32);
-        image.num_format = u64(NumberFormat::Float);
-        image.dst_sel_x = u64(CompSwizzle::Red);
-        image.dst_sel_y = u64(CompSwizzle::Green);
-        image.dst_sel_z = u64(CompSwizzle::Blue);
-        image.dst_sel_w = u64(CompSwizzle::Alpha);
-        image.tiling_index = u64(TilingMode::Texture_MicroTiled);
-        image.type = u64(ImageType::Color2D);
+        image.data_format = is_depth ? DataFormat::Format32 : DataFormat::Format8_8_8_8;
+        image.num_format = is_depth ? NumberFormat::Float : NumberFormat::Unorm;
+        image.dst_sel_x = CompSwizzle::Red;
+        image.dst_sel_y = CompSwizzle::Green;
+        image.dst_sel_z = CompSwizzle::Blue;
+        image.dst_sel_w = CompSwizzle::Alpha;
+        image.tiling_index = TileMode::Thin1DThin;
+        image.type = ImageType::Color2D;
         return image;
     }
 
     bool Valid() const {
-        return (type & 0x8u) != 0;
+        return type != ImageType::Invalid;
     }
 
     VAddr Address() const {
@@ -295,11 +252,11 @@ struct Image {
     }
 
     bool IsCube() const noexcept {
-        return static_cast<ImageType>(type) == ImageType::Cube;
+        return type == ImageType::Cube;
     }
 
     ImageType GetType() const noexcept {
-        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
+        return IsCube() ? ImageType::Color2DArray : type;
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -314,16 +271,24 @@ struct Image {
         return MapNumberConversion(NumberFormat(num_format), DataFormat(data_format));
     }
 
-    TilingMode GetTilingMode() const {
-        if (tiling_index >= 0 && tiling_index <= 7) {
-            return tiling_index == 5 ? TilingMode::Texture_MicroTiled
-                                     : TilingMode::Depth_MacroTiled;
-        }
-        return static_cast<TilingMode>(tiling_index);
+    TileMode GetTileMode() const {
+        return tiling_index;
     }
 
     bool IsTiled() const {
-        return GetTilingMode() != TilingMode::Display_Linear;
+        return tiling_index != TileMode::DisplayLinearAligned && tiling_index != TileMode::DisplayLinearGeneral;
+    }
+
+    u32 GetBankSwizzle() const {
+        const auto array_mode = GetArrayMode(tiling_index);
+        const auto dfmt = GetDataFmt();
+        if (!alt_tile_mode || dfmt == DataFormat::FormatInvalid || !IsMacroTiled(array_mode)) {
+            return 0;
+        }
+        const u32 bpp = NumBitsPerElement(dfmt);
+        const auto macro_tile_mode = CalculateMacrotileMode(tiling_index, bpp, NumSamples());
+        const u32 banks = GetAltNumBanks(macro_tile_mode);
+        return (((banks - 1) << 4) & base_address) >> 4;
     }
 
     bool IsFmask() const noexcept {
@@ -331,7 +296,21 @@ struct Image {
                GetDataFmt() <= DataFormat::FormatFmask64_8;
     }
 
-    [[nodiscard]] ImageType GetViewType(const bool is_array) const noexcept {
+    ImageType GetBaseType() const noexcept {
+        const auto base_type = GetType();
+        if (base_type == ImageType::Color1DArray) {
+            return ImageType::Color1D;
+        }
+        if (base_type == ImageType::Color2DArray) {
+            return ImageType::Color2D;
+        }
+        if (base_type == ImageType::Color2DMsaa || base_type == ImageType::Color2DMsaaArray) {
+            return ImageType::Color2D;
+        }
+        return base_type;
+    }
+
+    ImageType GetViewType(const bool is_array) const noexcept {
         const auto base_type = GetType();
         if (IsCube()) {
             // Cube needs to remain array type regardless of instruction array specifier.
@@ -422,13 +401,7 @@ enum class Filter : u64 {
 };
 
 constexpr bool IsAnisoFilter(const Filter filter) {
-    switch (filter) {
-    case Filter::AnisoPoint:
-    case Filter::AnisoLinear:
-        return true;
-    default:
-        return false;
-    }
+    return filter == Filter::AnisoPoint || filter == Filter::AnisoLinear;
 }
 
 enum class MipFilter : u64 {
@@ -495,7 +468,7 @@ struct Sampler {
     }
 
     float LodBias() const noexcept {
-        return static_cast<float>(static_cast<int16_t>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /
+        return static_cast<float>(static_cast<s16>((lod_bias.Value() ^ 0x2000u) - 0x2000u)) /
                256.0f;
     }
 

@@ -21,7 +21,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     if (info.IsDepthStencil()) {
         usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
     } else {
-        if (!info.IsBlockCoded()) {
+        if (!info.props.is_block) {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
         }
         // In cases where an image is created as a render/depth target and cleared with compute,
@@ -33,6 +33,22 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     }
 
     return usage;
+}
+
+static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
+    switch (type) {
+    case AmdGpu::ImageType::Color1D:
+    case AmdGpu::ImageType::Color1DArray:
+        return vk::ImageType::e1D;
+    case AmdGpu::ImageType::Color2D:
+    case AmdGpu::ImageType::Color2DMsaa:
+    case AmdGpu::ImageType::Color2DArray:
+        return vk::ImageType::e2D;
+    case AmdGpu::ImageType::Color3D:
+        return vk::ImageType::e3D;
+    default:
+        UNREACHABLE();
+    }
 }
 
 static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usage_flags) {
@@ -97,6 +113,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
+    ASSERT(info.mips_layout[0].height > 0);
     mip_hashes.resize(info.resources.levels);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested
@@ -132,7 +149,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     const auto supported_format = instance->GetSupportedFormat(info.pixel_format, format_features);
     const vk::PhysicalDeviceImageFormatInfo2 format_info{
         .format = supported_format,
-        .type = info.type,
+        .type = ConvertImageType(info.type),
         .tiling = tiling,
         .usage = usage_flags,
         .flags = flags,
@@ -141,7 +158,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         instance->GetPhysicalDevice().getImageFormatProperties2(format_info);
     if (image_format_properties.result == vk::Result::eErrorFormatNotSupported) {
         LOG_ERROR(Render_Vulkan, "image format {} type {} is not supported (flags {}, usage {})",
-                  vk::to_string(supported_format), vk::to_string(info.type),
+                  vk::to_string(supported_format), vk::to_string(format_info.type),
                   vk::to_string(format_info.flags), vk::to_string(format_info.usage));
     }
     const auto supported_samples =
@@ -151,7 +168,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
-        .imageType = info.type,
+        .imageType = ConvertImageType(info.type),
         .format = supported_format,
         .extent{
             .width = info.size.width,
@@ -168,9 +185,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     image.Create(image_ci);
 
-    Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {:#x}:{:#x}",
-                          info.size.width, info.size.height, info.size.depth, info.guest_address,
-                          info.guest_size);
+    Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {} {:#x}:{:#x}",
+                          info.size.width, info.size.height, info.size.depth, AmdGpu::NameOf(info.tile_mode),
+                          info.guest_address, info.guest_size);
 }
 
 boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(

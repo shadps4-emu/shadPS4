@@ -326,12 +326,12 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
     }
     if (!image.Valid()) {
         LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");
-        image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
+        image = AmdGpu::Image::Null(is_depth);
     } else if (is_depth) {
         const auto data_fmt = image.GetDataFmt();
         if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
             LOG_DEBUG(Render_Vulkan, "Encountered non-depth image used with depth instruction!");
-            image = AmdGpu::Image::NullDepth();
+            image = AmdGpu::Image::Null(true);
         }
     }
     return image;
