@@ -983,7 +983,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         }
     }
     Image& image = texture_cache.GetImage(image_id);
-    ASSERT_MSG(device_addr == image.info.guest_address && image.info.resources.levels == 1,
+    ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
     const u32 offset = buffer.Offset(image.info.guest_address);
