@@ -3,6 +3,7 @@
 
 #include "layer.h"
 
+#include <SDL3/SDL_events.h>
 #include <imgui.h>
 
 #include "SDL3/SDL_log.h"
@@ -28,6 +29,7 @@ using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
+static bool show_quit_window = false;
 
 static float fps_scale = 1.0f;
 static int dump_frame_count = 1;
@@ -138,14 +140,7 @@ void L::DrawAdvanced() {
     const auto& ctx = *GImGui;
     const auto& io = ctx.IO;
 
-    auto isSystemPaused = DebugState.IsGuestThreadsPaused();
-
     frame_graph.Draw();
-
-    if (isSystemPaused) {
-        GetForegroundDrawList(GetMainViewport())
-            ->AddText({10.0f, io.DisplaySize.y - 40.0f}, IM_COL32_WHITE, "Emulator paused");
-    }
 
     if (DebugState.should_show_frame_dump && DebugState.waiting_reg_dumps.empty()) {
         DebugState.should_show_frame_dump = false;
@@ -383,20 +378,17 @@ void L::Draw() {
             if (DebugState.IsGuestThreadsPaused()) {
                 DebugState.ResumeGuestThreads();
                 SDL_Log("Game resumed from Keyboard");
-                show_pause_status = false;
             } else {
                 DebugState.PauseGuestThreads();
                 SDL_Log("Game paused from Keyboard");
-                show_pause_status = true;
             }
             visibility_toggled = true;
         }
     }
 
-    if (show_pause_status) {
+    if (DebugState.IsGuestThreadsPaused()) {
         ImVec2 pos = ImVec2(10, 10);
         ImU32 color = IM_COL32(255, 255, 255, 255);
-
         ImGui::GetForegroundDrawList()->AddText(pos, color, "Game Paused Press F9 to Resume");
     }
 
@@ -436,5 +428,56 @@ void L::Draw() {
         PopFont();
     }
 
+    if (show_quit_window) {
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (Begin("Quit Notification", nullptr,
+                  ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
+                      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
+            SetWindowFontScale(1.5f);
+            TextCentered("Are you sure you want to quit?");
+            NewLine();
+            Text("Press Escape or Circle/B button to cancel");
+            Text("Press Enter or Cross/A button to quit");
+
+            if (IsKeyPressed(ImGuiKey_Escape, false) ||
+                (IsKeyPressed(ImGuiKey_GamepadFaceRight, false))) {
+                show_quit_window = false;
+            }
+
+            if (IsKeyPressed(ImGuiKey_Enter, false) ||
+                (IsKeyPressed(ImGuiKey_GamepadFaceDown, false))) {
+                SDL_Event event;
+                SDL_memset(&event, 0, sizeof(event));
+                event.type = SDL_EVENT_QUIT;
+                SDL_PushEvent(&event);
+            }
+        }
+        End();
+    }
+
     PopID();
 }
+
+void L::TextCentered(const std::string& text) {
+    float window_width = ImGui::GetWindowSize().x;
+    float text_width = ImGui::CalcTextSize(text.c_str()).x;
+    float text_indentation = (window_width - text_width) * 0.5f;
+
+    ImGui::SameLine(text_indentation);
+    ImGui::Text("%s", text.c_str());
+}
+
+namespace Overlay {
+
+void ToggleSimpleFps() {
+    show_simple_fps = !show_simple_fps;
+    visibility_toggled = true;
+}
+
+void ToggleQuitWindow() {
+    show_quit_window = !show_quit_window;
+}
+
+} // namespace Overlay
