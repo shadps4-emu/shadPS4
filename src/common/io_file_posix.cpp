@@ -25,19 +25,14 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
     file_path = path;
     file_access_mode = mode;
 
-    errno = 0;
+    ClearErrno();
     int result = 0;
 
     file_descriptor = open(path.c_str(), mode);
     if (!file_descriptor)
-        return errno;
-    result = errno;
+        return GetErrno();
+    result = GetErrno();
 
-    if (!IsOpen()) {
-        const auto ec = std::error_code{result, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
-                  PathToUTF8String(file_path), ec.message());
-    }
 
     return result;
 }
@@ -103,6 +98,14 @@ s64 IOFile::WriteImpl(int __fd, const void* __buf, size_t __n) const {
 
 s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) const {
     return read(__fd, __buf, __n);
+}
+
+const int IOFile::GetErrno(void) const {
+    return errno;
+}
+
+void IOFile::ClearErrno(void) const {
+    errno = 0;
 }
 
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
