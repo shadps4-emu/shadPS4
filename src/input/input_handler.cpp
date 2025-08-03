@@ -512,7 +512,6 @@ void ControllerOutput::AddUpdate(InputEvent event) {
             SDL_memset(&e, 0, sizeof(e));
             e.type = event_type;
             SDL_PushEvent(&e);
-            LOG_INFO(Input, "Pushed event: {:#x}", event_type);
         }
     };
     switch (button) {
