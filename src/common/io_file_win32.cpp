@@ -3,6 +3,7 @@
 
 #error Don't bother compiling yet
 
+#include <cerrno>
 #include <vector>
 
 #include <io.h>
@@ -23,6 +24,15 @@
 #define fseeko _fseeki64
 #define ftello _ftelli64
 #endif
+
+/**
+ * A general convention regarding porting Windows calls
+ * All native functions are in xImpl()
+ * File attributes **should** be derived only from posix access attributes
+ * (since Orbis uses posix).
+ * functions should translate errors into errno equivalent (error messages are based on errno)
+ * Errno interactions are through _seterrno(int) and _geterrno()
+ */
 
 namespace Common::FS {
 
@@ -74,10 +84,42 @@ DWORD PosixToWindowsFlags(int oflag) {
     case FileShareFlag::ShareReadWrite:
         return _SH_DENYNO;
     }
+    return _SH_DENYRW;
 }
 
-// not ported
-//[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
+int WindowsErrorToErrno(DWORD error) {
+    switch (error) {
+    case ERROR_FILE_NOT_FOUND:
+        return ENOENT;
+    case ERROR_PATH_NOT_FOUND:
+        return ENOENT;
+    case ERROR_ACCESS_DENIED:
+        return EACCES;
+    case ERROR_ALREADY_EXISTS:
+        return EEXIST;
+    case ERROR_INVALID_HANDLE:
+        return EBADF;
+    case ERROR_NOT_ENOUGH_MEMORY:
+        return ENOMEM;
+    case ERROR_OUTOFMEMORY:
+        return ENOMEM;
+    case ERROR_INVALID_PARAMETER:
+        return EINVAL;
+    case ERROR_DISK_FULL:
+        return ENOSPC;
+    case ERROR_SHARING_VIOLATION:
+        return EBUSY;
+    case ERROR_LOCK_VIOLATION:
+        return EBUSY;
+    case ERROR_HANDLE_EOF:
+        return EOF;
+    case ERROR_FILE_EXISTS:
+        return EEXIST;
+    default:
+        return EIO; // domyślnie błąd wejścia/wyjścia
+    }
+    return EIO;
+}
 
 } // Anonymous namespace
 
@@ -94,9 +136,10 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
         CreateFileW(path, PosixToWindowsAccess(mode), FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                     PosixToWindowsCreation(mode), PosixToWindowsFlags(mode), nullptr);
 
-    if (!file_descriptor)
-        return errno;
-    result = errno;
+    result = WindowsErrorToErrno(GetLastError());
+
+    if (file_descriptor == INVALID_HANDLE_VALUE)
+        return result;
 
     if (!IsOpen()) {
         const auto ec = std::error_code{result, std::generic_category()};
@@ -108,11 +151,11 @@ int IOFile::OpenImpl(const fs::path& path, int mode) {
 }
 
 bool IOFile::CloseImpl() {
-    return close(file_descriptor) == 0;
+    return CloseHandle(file_descriptor);
 }
 
 bool IOFile::UnlinkImpl() {
-    return unlink(file_path.c_str()) == 0;
+    return DeleteFileW(file_path.c_str());
 }
 
 uintptr_t IOFile::GetFileMappingImpl() {
@@ -125,7 +168,7 @@ bool IOFile::FlushImpl() const {
 }
 
 bool IOFile::CommitImpl() const {
-    return fsync(file_descriptor) == 0;
+    return FlushFileBuffers(file_descriptor);
 }
 
 bool IOFile::SetSizeImpl(u64 size) const {
@@ -141,39 +184,58 @@ u64 IOFile::GetSizeImpl() const {
 bool IOFile::SeekImpl(s64 offset, SeekOrigin origin) const {
     int _origin = ToSeekOrigin(origin);
     int seek_start = Tell();
-    const off_t seek_pos = lseek(file_descriptor, offset, _origin);
-    bool seek_result = false;
+    int seek_pos = 0;
+    bool seek_result = SetFilePointerEx(file_descriptor, offset, &seek_pos, _origin);
+    if (!seek_result)
+        return false;
+
     switch (_origin) {
     default:
-    case SEEK_SET:
+    case FILE_BEGIN:
         return seek_pos == offset;
         break;
-    case SEEK_END:
+    case FILE_END:
         return seek_pos == GetSize();
         break;
-    case SEEK_CUR:
+    case FILE_CURRENT:
         return seek_start == (seek_pos + offset);
         break;
     }
     return false;
 }
 
-s64 IOFile::TellImpl() const {
+s64 IOFile::TellImpl() {
     return lseek(file_descriptor, 0, SEEK_CUR);
 }
 
-s64 IOFile::WriteImpl(int __fd, const void* __buf, size_t __n) const {
+s64 IOFile::WriteImpl(int __fd, const void* __buf, size_t __n) {
     return write(__fd, __buf, __n);
 }
 
-s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) const {
+s64 IOFile::ReadImpl(int __fd, void* __buf, size_t __n) {
     return read(__fd, __buf, __n);
 }
 
-u64 _GetDirectorySizeImpl(const std::filesystem::path& path) {
-    if (!fs::exists(path)) {
-        return 0;
+const int IOFile::GetErrno(void) const {
+    return WindowsErrorToErrno(GetLastError());
+}
+void IOFile::ClearErrno(void) const {
+    SetLastError(0);
+}
+
+[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
+    switch (origin) {
+    case SeekOrigin::SetOrigin:
+        return FILE_BEGIN;
+    case SeekOrigin::CurrentPosition:
+        return FILE_CURRENT;
+    case SeekOrigin::End:
+        return FILE_END;
     }
+    UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
+}
+
+u64 _GetDirectorySizeImpl(const std::filesystem::path& path) {
     u64 total = 0;
 
     struct stat statbuf{};
@@ -188,5 +250,4 @@ u64 _GetDirectorySizeImpl(const std::filesystem::path& path) {
 
     return total;
 }
-
 } // namespace Common::FS

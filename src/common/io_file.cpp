@@ -35,15 +35,26 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     return *this;
 }
 
+int IOFile::Open(const std::filesystem::path& path, int mode) {
+    ClearErrno();
+    int result = OpenImpl(path, mode);
+
+    if (!IsOpen()) {
+        const auto ec = std::error_code{result, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
+    return result;
+}
+
 void IOFile::Close() {
     if (!IsOpen()) {
         return;
     }
 
-    errno = 0;
-
+    ClearErrno();
     if (!CloseImpl()) {
-        const auto ec = std::error_code{errno, std::generic_category()};
+        const auto ec = std::error_code{GetErrno(), std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
     }
@@ -56,10 +67,11 @@ void IOFile::Unlink() {
         return;
     }
 
+    ClearErrno();
     if (UnlinkImpl())
         return;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
+    const auto ec = std::error_code{GetErrno(), std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 }
@@ -73,10 +85,11 @@ bool IOFile::Flush() const {
         return false;
     }
 
+    ClearErrno();
     if (FlushImpl())
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
+    const auto ec = std::error_code{GetErrno(), std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -88,11 +101,11 @@ bool IOFile::Commit() const {
         return false;
     }
 
-    errno = 0;
+    ClearErrno();
     if (CommitImpl())
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
+    const auto ec = std::error_code{GetErrno(), std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -104,11 +117,11 @@ bool IOFile::SetSize(u64 size) const {
         return false;
     }
 
-    errno = 0;
+    ClearErrno();
     if (SetSizeImpl(size))
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
+    const auto ec = std::error_code{GetErrno(), std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
               PathToUTF8String(file_path), size, ec.message());
 
@@ -120,8 +133,7 @@ u64 IOFile::GetSize() const {
         return 0;
     }
 
-    std::error_code ec;
-
+    ClearErrno();
     const u64 file_size = GetSizeImpl();
     // TODO: catch error (if any)
 
@@ -133,11 +145,11 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
-    errno = 0;
+    ClearErrno();
     const bool seek_result = SeekImpl(offset, origin);
 
     if (!seek_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
+        const auto ec = std::error_code{GetErrno(), std::generic_category()};
         LOG_ERROR(Common_Filesystem,
                   "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
                   PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
@@ -151,9 +163,10 @@ s64 IOFile::Tell() const {
         return 0;
     }
 
-    errno = 0;
+    ClearErrno();
+    const s64 ret = TellImpl();
 
-    return TellImpl();
+    return ret;
 }
 
 std::string IOFile::ReadString(size_t length) const {

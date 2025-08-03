@@ -116,9 +116,7 @@ public:
         return OpenImpl(path, AccessModeToPOSIX(mode, truncate));
     }
     // In the end, this one is called
-    int Open(const std::filesystem::path& path, int mode) {
-        return OpenImpl(path, mode);
-    }
+    int Open(const std::filesystem::path& path, int mode) ;
 
     void Close();
 
@@ -203,6 +201,7 @@ public:
             return 0;
         }
 
+        ClearErrno();
         return WriteImpl(file_descriptor, data.data(), sizeof(T) * data.size());
     }
 
@@ -215,6 +214,7 @@ public:
             return false;
         }
 
+        ClearErrno();
         return ReadImpl(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
@@ -232,6 +232,7 @@ public:
             return false;
         }
 
+        ClearErrno();
         return WriteImpl(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
@@ -251,6 +252,9 @@ private:
     s64 TellImpl() const;
     s64 WriteImpl(int __fd, const void* __buf, size_t __n) const;
     s64 ReadImpl(int __fd, void* __buf, size_t __n) const;
+
+    const int GetErrno(void) const;
+    void ClearErrno(void) const;
 
     std::filesystem::path file_path;
     int file_access_mode{};
