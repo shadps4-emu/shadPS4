@@ -37,6 +37,7 @@
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/np_web_api/np_web_api.h"
+#include "core/libraries/pad/SystemGesture.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
@@ -103,6 +104,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Random::RegisterLib(sym);
     Libraries::Usbd::RegisterLib(sym);
     Libraries::Pad::RegisterLib(sym);
+    Libraries::SystemGesture::RegisterLib(sym);
     Libraries::Ajm::RegisterLib(sym);
     Libraries::ErrorDialog::RegisterLib(sym);
     Libraries::ImeDialog::RegisterLib(sym);

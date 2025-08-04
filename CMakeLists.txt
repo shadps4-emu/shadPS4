@@ -525,6 +525,8 @@ set(IME_LIB src/core/libraries/ime/error_dialog.cpp
 set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad.h
             src/core/libraries/pad/pad_errors.h
+            src/core/libraries/pad/SystemGesture.cpp
+            src/core/libraries/pad/SystemGesture.h
 )
 
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
