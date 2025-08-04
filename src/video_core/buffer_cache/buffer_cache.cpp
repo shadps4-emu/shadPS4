@@ -396,7 +396,9 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         // Avoid using ObtainBuffer here as that might give us the stream buffer.
         const BufferId buffer_id = FindBuffer(src, num_bytes);
         auto& buffer = slot_buffers[buffer_id];
-        SynchronizeBuffer(buffer, src, num_bytes, false, false);
+        if (SynchronizeBuffer(buffer, src, num_bytes, false, true)) {
+            texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
+        }
         return buffer;
     }();
     auto& dst_buffer = [&] -> const Buffer& {
@@ -854,7 +856,7 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     }
 }
 
-void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
+bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                                     bool is_texel_buffer) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes = 0;
@@ -867,47 +869,47 @@ void BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
             total_size_bytes += range_size;
         },
         [&] { src_buffer = UploadCopies(buffer, copies, total_size_bytes); });
-    SCOPE_EXIT {
-        if (is_texel_buffer) {
-            SynchronizeBufferFromImage(buffer, device_addr, size);
-        }
-    };
-    if (!src_buffer) {
-        return;
+
+    if (src_buffer) {
+        scheduler.EndRendering();
+        const auto cmdbuf = scheduler.CommandBuffer();
+        const vk::BufferMemoryBarrier2 pre_barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
+                             vk::AccessFlagBits2::eTransferRead |
+                             vk::AccessFlagBits2::eTransferWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+            .buffer = buffer.Handle(),
+            .offset = 0,
+            .size = buffer.SizeBytes(),
+        };
+        const vk::BufferMemoryBarrier2 post_barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+            .buffer = buffer.Handle(),
+            .offset = 0,
+            .size = buffer.SizeBytes(),
+        };
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &pre_barrier,
+        });
+        cmdbuf.copyBuffer(src_buffer, buffer.buffer, copies);
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .bufferMemoryBarrierCount = 1,
+            .pBufferMemoryBarriers = &post_barrier,
+        });
+        TouchBuffer(buffer);
     }
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    const vk::BufferMemoryBarrier2 pre_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
-                         vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .buffer = buffer.Handle(),
-        .offset = 0,
-        .size = buffer.SizeBytes(),
-    };
-    const vk::BufferMemoryBarrier2 post_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .buffer = buffer.Handle(),
-        .offset = 0,
-        .size = buffer.SizeBytes(),
-    };
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-    });
-    cmdbuf.copyBuffer(src_buffer, buffer.buffer, copies);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
-    });
-    TouchBuffer(buffer);
+    if (is_texel_buffer) {
+        return SynchronizeBufferFromImage(buffer, device_addr, size);
+    }
+    return false;
 }
 
 vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
