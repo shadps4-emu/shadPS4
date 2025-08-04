@@ -1076,17 +1076,139 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return result;
 }
 
+static HANDLE fileToHandle(std::FILE* file) {
+    if (!file)
+        return INVALID_HANDLE_VALUE;
+
+    int fd = _fileno(file); // Get the file descriptor
+    if (fd == -1)
+        return INVALID_HANDLE_VALUE;
+
+    HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd)); // Convert to HANDLE
+    return h;
+}
+
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
     LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+
+#ifdef _WIN32
+    std::vector<WSAPOLLFD> socket_poll_fds;
+    std::vector<HANDLE> handle_list;
+    std::vector<int> handle_guest_fds;
+    std::vector<bool> handle_read;
+    std::vector<bool> handle_write;
+    std::map<SOCKET, int> socket_to_guest;
+
+    if (readfds)
+        FD_ZERO(readfds);
+    if (writefds)
+        FD_ZERO(writefds);
+    if (exceptfds)
+        FD_ZERO(exceptfds);
+
+    for (int i = 0; i < nfds; ++i) {
+        bool read = readfds && FD_ISSET(i, readfds);
+        bool write = writefds && FD_ISSET(i, writefds);
+        bool except = exceptfds && FD_ISSET(i, exceptfds);
+        if (!(read || write || except))
+            continue;
+
+        auto* file = h->GetFile(i);
+        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+
+        if (file->type == Core::FileSys::FileType::Socket) {
+            SOCKET s = *file->socket->Native();
+            if (s == INVALID_SOCKET)
+                continue;
+
+            short events = 0;
+            if (read)
+                events |= POLLRDNORM;
+            if (write)
+                events |= POLLWRNORM;
+            if (except)
+                events |= POLLPRI;
+
+            socket_poll_fds.push_back({.fd = s, .events = events, .revents = 0});
+            socket_to_guest[s] = i;
+        } else if (file->type == Core::FileSys::FileType::Regular) {
+            HANDLE hFile = fileToHandle(file->f.file);
+            if (hFile == INVALID_HANDLE_VALUE)
+                continue;
+
+            handle_list.push_back(hFile);
+            handle_guest_fds.push_back(i);
+            handle_read.push_back(read);
+            handle_write.push_back(write);
+        } else {
+            LOG_WARNING(Kernel_Fs, "unsupported fd type for fd {}", i);
+        }
+    }
+
+    DWORD timeout_ms = timeout ? (timeout->tv_sec * 1000 + timeout->tv_usec / 1000) : INFINITE;
+    int ret = 0;
+
+    if (!socket_poll_fds.empty()) {
+        int result =
+            WSAPoll(socket_poll_fds.data(), static_cast<ULONG>(socket_poll_fds.size()), timeout_ms);
+        if (result < 0) {
+            SetPosixErrno(WSAGetLastError());
+            return -1;
+        }
+
+        for (const auto& pfd : socket_poll_fds) {
+            if (pfd.revents != 0) {
+                int guest_fd = socket_to_guest[pfd.fd];
+                if (readfds && (pfd.revents & POLLRDNORM))
+                    FD_SET(guest_fd, readfds);
+                if (writefds && (pfd.revents & POLLWRNORM))
+                    FD_SET(guest_fd, writefds);
+                if (exceptfds && (pfd.revents & POLLPRI))
+                    FD_SET(guest_fd, exceptfds);
+                ++ret;
+            }
+        }
+    }
+
+    if (!handle_list.empty()) {
+        DWORD wait_result = WaitForMultipleObjects(static_cast<DWORD>(handle_list.size()),
+                                                   handle_list.data(), FALSE, timeout_ms);
+
+        if (wait_result >= WAIT_OBJECT_0 && wait_result < WAIT_OBJECT_0 + handle_list.size()) {
+            int index = static_cast<int>(wait_result - WAIT_OBJECT_0);
+            int guest_fd = handle_guest_fds[index];
+            if (handle_read[index] && readfds) {
+                FD_SET(guest_fd, readfds);
+                ++ret;
+            }
+        } else if (wait_result != WAIT_TIMEOUT) {
+            SetPosixErrno(GetLastError());
+            return -1;
+        }
+
+        for (size_t i = 0; i < handle_list.size(); ++i) {
+            if (handle_write[i] && writefds) {
+                FD_SET(handle_guest_fds[i], writefds);
+                ++ret;
+            }
+        }
+    }
+
+#else
     fd_set read_host, write_host, except_host;
     FD_ZERO(&read_host);
     FD_ZERO(&write_host);
     FD_ZERO(&except_host);
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     std::map<int, int> host_to_guest;
     int max_fd = -1;
 
@@ -1107,12 +1229,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
             int native_fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-#ifndef _WIN32
                     return static_cast<int>(file->f.GetFileMapping());
-#else
-                    LOG_ERROR(Kernel_Fs, "regular file fds are not supported (fd {})", i);
-                    return -1; // select from winsock2.h supports only sockets
-#endif
                 case Core::FileSys::FileType::Device:
                     LOG_ERROR(Kernel_Fs, "device fds are not supported");
                     return -1;
@@ -1174,7 +1291,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
             }
         }
     }
-
+#endif
     if (ret < 0) {
 #ifndef _WIN32
         auto error = errno;
