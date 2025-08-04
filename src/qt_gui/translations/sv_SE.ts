@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Rör analog spak</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 och L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Aktiv gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>Gamepad-id</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Gamepad (standard)</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Ingen standard vald</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>inte tillgänglig</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Ställ in aktiv gamepad som standard</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Ta bort gamepad som standard</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 och R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Standardkontroller vald</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Aktiv kontroller inställd som standard</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Standardkontroller borttagen</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Inställning för standardkontroller borttagen</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>

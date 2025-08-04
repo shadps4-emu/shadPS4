@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Muovi levetta analogica</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 e L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Gamepad Attivo</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID Gamepad</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Gamepad Predefinito</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Nessun predefinito selezionato</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Imposta Gamepad Attivo come Predefinito</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Rimuovi Gamepad Predefinito</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 e R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Controller Predefinito Selezionato</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Controller attivo impostato come predefinito</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Controller Predefinito Rimosso</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Impostazione predefinita del controller rimossa</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
