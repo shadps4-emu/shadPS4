@@ -1122,9 +1122,9 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         FD_ZERO(exceptfds);
 
     for (int i = 0; i < nfds; ++i) {
-        bool read = readfds && FD_ISSET(i, readfds_in);
-        bool write = writefds && FD_ISSET(i, writefds_in);
-        bool except = exceptfds && FD_ISSET(i, exceptfds_in);
+        bool read = readfds && FD_ISSET(i, &readfds_in);
+        bool write = writefds && FD_ISSET(i, &writefds_in);
+        bool except = exceptfds && FD_ISSET(i, &exceptfds_in);
         if (!(read || write || except))
             continue;
 
