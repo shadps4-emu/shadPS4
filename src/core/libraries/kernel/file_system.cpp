@@ -1075,6 +1075,7 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     }
     return result;
 }
+#ifdef _WIN32
 
 static HANDLE fileToHandle(std::FILE* file) {
     if (!file)
@@ -1087,7 +1088,7 @@ static HANDLE fileToHandle(std::FILE* file) {
     HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd)); // Convert to HANDLE
     return h;
 }
-
+#endif
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
     LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
