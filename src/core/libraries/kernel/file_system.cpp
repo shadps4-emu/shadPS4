@@ -1104,6 +1104,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     std::vector<bool> handle_write;
     std::map<SOCKET, int> socket_to_guest;
 
+    // Backup copies of fd_sets for input state
+    fd_set readfds_in = {}, writefds_in = {}, exceptfds_in = {};
+
+    if (readfds)
+        readfds_in = *readfds;
+    if (writefds)
+        writefds_in = *writefds;
+    if (exceptfds)
+        exceptfds_in = *exceptfds;
+
     if (readfds)
         FD_ZERO(readfds);
     if (writefds)
@@ -1112,9 +1122,9 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         FD_ZERO(exceptfds);
 
     for (int i = 0; i < nfds; ++i) {
-        bool read = readfds && FD_ISSET(i, readfds);
-        bool write = writefds && FD_ISSET(i, writefds);
-        bool except = exceptfds && FD_ISSET(i, exceptfds);
+        bool read = readfds && FD_ISSET(i, readfds_in);
+        bool write = writefds && FD_ISSET(i, writefds_in);
+        bool except = exceptfds && FD_ISSET(i, exceptfds_in);
         if (!(read || write || except))
             continue;
 
