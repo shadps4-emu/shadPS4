@@ -162,6 +162,10 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
 
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     LOG_DEBUG(Lib_NetCtl, "code = {}", code);
+    if (!Config::getIsConnectedToNetwork()) {
+        return ORBIS_NET_CTL_ERROR_NOT_CONNECTED;
+    }
+
     auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
 
     switch (code) {
@@ -220,6 +224,29 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     case ORBIS_NET_CTL_INFO_HTTP_PROXY_CONFIG:
         info->http_proxy_config = 0; // off
         LOG_DEBUG(Lib_NetCtl, "http proxy config: {}", info->http_proxy_config);
+        break;
+    case ORBIS_NET_CTL_INFO_PRIMARY_DNS:
+        strcpy(info->primary_dns, "1.1.1.1");
+        LOG_DEBUG(Lib_NetCtl, "http primary dns: {}", info->primary_dns);
+        break;
+    case ORBIS_NET_CTL_INFO_SECONDARY_DNS:
+        strcpy(info->secondary_dns, "1.1.1.1");
+        LOG_DEBUG(Lib_NetCtl, "http secondary dns: {}", info->secondary_dns);
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_SERVER:
+        strcpy(info->http_proxy_server, "0.0.0.0");
+        LOG_DEBUG(Lib_NetCtl, "http proxy server: {}", info->http_proxy_server);
+        break;
+    case ORBIS_NET_CTL_INFO_HTTP_PROXY_PORT:
+        info->http_proxy_port = 0;
+        LOG_DEBUG(Lib_NetCtl, "http proxy config: {}", info->http_proxy_port);
+        break;
+    case ORBIS_NET_CTL_INFO_IP_CONFIG:
+        info->ip_config = 1; // static
+        LOG_DEBUG(Lib_NetCtl, "ip config: {}", info->ip_config);
+        break;
+    case ORBIS_NET_CTL_INFO_DHCP_HOSTNAME:
+        LOG_DEBUG(Lib_NetCtl, "dhcp hostname: none");
         break;
     default:
         LOG_ERROR(Lib_NetCtl, "{} unsupported code", code);
