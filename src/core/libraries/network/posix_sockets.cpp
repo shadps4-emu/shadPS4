@@ -260,7 +260,8 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
 
 #define CASE_SETSOCKOPT(opt)                                                                       \
     case ORBIS_NET_##opt:                                                                          \
-        return ConvertReturnErrorCode(setsockopt(sock, level, opt, (const char*)optval, optlen))
+        return ConvertReturnErrorCode(                                                             \
+            setsockopt(sock, native_level, opt, (const char*)optval, optlen))
 
 #define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
     case opt:                                                                                      \
@@ -285,13 +286,16 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_RCVBUF);
             CASE_SETSOCKOPT(SO_SNDTIMEO);
             CASE_SETSOCKOPT(SO_RCVTIMEO);
-            CASE_SETSOCKOPT(SO_ERROR);
             CASE_SETSOCKOPT(SO_TYPE);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_ERROR: {
+            *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
+            return -1;
+        }
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
                 *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
@@ -316,11 +320,12 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
             return -1; // don't support set for name
         case ORBIS_NET_SO_NBIO: {
-            if (optlen != sizeof(sockopt_so_nbio)) {
-                *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;
+            if (optlen < sizeof(sockopt_so_nbio)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
                 return -1;
+            } else {
+                memcpy(&sockopt_so_nbio, optval, sizeof(sockopt_so_nbio));
             }
-            memcpy(&sockopt_so_nbio, optval, optlen);
 #ifdef _WIN32
             static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio),
                           "type used for ioctlsocket value does not have the expected size");
@@ -366,8 +371,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
 #define CASE_GETSOCKOPT(opt)                                                                       \
     case ORBIS_NET_##opt: {                                                                        \
         socklen_t optlen_temp = *optlen;                                                           \
-        auto retval =                                                                              \
-            ConvertReturnErrorCode(getsockopt(sock, level, opt, (char*)optval, &optlen_temp));     \
+        auto retval = ConvertReturnErrorCode(                                                      \
+            getsockopt(sock, native_level, opt, (char*)optval, &optlen_temp));                     \
         *optlen = optlen_temp;                                                                     \
         return retval;                                                                             \
     }
