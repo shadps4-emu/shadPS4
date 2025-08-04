@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Analog çubuğu taşı</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation type="unfinished">L1 and L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation type="unfinished">Active Gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation type="unfinished">Gamepad ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation type="unfinished">Default Gamepad</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation type="unfinished">No default selected</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation type="unfinished">n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation type="unfinished">Set Active Gamepad as Default</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation type="unfinished">Remove Default Gamepad</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation type="unfinished">R1 and R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation type="unfinished">ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation type="unfinished">Default Controller Selected</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation type="unfinished">Active controller set as default</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation type="unfinished">Default Controller Removed</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation type="unfinished">Default controller setting removed</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
