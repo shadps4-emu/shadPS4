@@ -81,6 +81,7 @@ struct ImageInfo {
     boost::container::static_vector<MipInfo, 16> mips_layout;
     VAddr guest_address{};
     u32 guest_size{};
+    u8 bank_swizzle{};
     bool alt_tile{};
 
     VAddr stencil_addr{};

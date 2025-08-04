@@ -165,10 +165,10 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     }
 
     TilingInfo params{};
-    params.bank_swizzle = 0U;
+    params.bank_swizzle = info.bank_swizzle;
     params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
     params.num_mips = info.resources.levels;
-    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
+    for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
@@ -236,21 +236,23 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     return {out_buffer, 0};
 }
 
-void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk::Buffer out_buffer,
-                            u32 out_offset, const ImageInfo& info) {
+void TileManager::TileImage(vk::Image in_image, std::span<vk::BufferImageCopy> buffer_copies,
+                            vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info) {
     if (!info.props.is_tiled) {
+        for (auto& copy : buffer_copies) {
+            copy.bufferOffset += out_offset;
+        }
         const auto cmdbuf = scheduler.CommandBuffer();
-        in_copy.bufferOffset += out_offset;
         cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, out_buffer,
-                                 in_copy);
+                                 buffer_copies);
         return;
     }
 
     TilingInfo params{};
-    params.bank_swizzle = 0U;
+    params.bank_swizzle = info.bank_swizzle;
     params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
-    params.num_mips = info.resources.levels;
-    for (u32 mip = 0; mip < info.resources.levels; ++mip) {
+    params.num_mips = static_cast<u32>(buffer_copies.size());
+    for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
@@ -271,7 +273,8 @@ void TileManager::TileImage(vk::Image in_image, vk::BufferImageCopy in_copy, vk:
     });
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, temp_buffer, in_copy);
+    cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, temp_buffer,
+                             buffer_copies);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
     const vk::DescriptorBufferInfo tiled_buffer_info{

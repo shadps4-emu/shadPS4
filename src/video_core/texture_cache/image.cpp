@@ -357,13 +357,13 @@ void Image::CopyImage(const Image& src_image) {
 
         image_copy.emplace_back(vk::ImageCopy{
             .srcSubresource{
-                .aspectMask = src_image.aspect_mask,
+                .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
                 .layerCount = src_info.resources.layers,
             },
             .dstSubresource{
-                .aspectMask = src_image.aspect_mask,
+                .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
                 .layerCount = src_info.resources.layers,

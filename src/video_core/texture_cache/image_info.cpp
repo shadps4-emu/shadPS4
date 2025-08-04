@@ -128,6 +128,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
     num_bits = NumBitsPerBlock(image.GetDataFmt());
+    bank_swizzle = image.GetBankSwizzle();
 
     guest_address = image.Address();
 

@@ -280,7 +280,7 @@ struct Image {
                GetTileMode() != TileMode::DisplayLinearGeneral;
     }
 
-    u32 GetBankSwizzle() const {
+    u8 GetBankSwizzle() const {
         const auto tile_mode = GetTileMode();
         const auto array_mode = GetArrayMode(tile_mode);
         const auto dfmt = GetDataFmt();

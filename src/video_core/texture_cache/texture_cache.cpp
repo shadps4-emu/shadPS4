@@ -296,12 +296,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {depth_image_id, -1, -1};
         }
 
+        // Compressed view of uncompressed image with same block size.
         if (image_info.props.is_block && !tex_cache_image.info.props.is_block) {
-            // Compressed view of uncompressed image with same block size.
-            // We need to recreate the image with compressed format and copy.
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // Size and resources are less than or equal, use image view.
         if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
             image_info.guest_size <= tex_cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
@@ -311,16 +311,15 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {is_compatible ? result_id : ImageId{}, -1, -1};
         }
 
+        // Size and resources are greater, expand the image.
         if (image_info.type == tex_cache_image.info.type &&
             image_info.resources > tex_cache_image.info.resources) {
-            // Size and resources are greater, expand the image.
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // Size is greater but resources are not, because the tiling mode is different.
+        // Likely the address is reused for a image with a different tiling mode.
         if (image_info.tile_mode != tex_cache_image.info.tile_mode) {
-            // Size is greater but resources are not, because the tiling mode is different.
-            // Likely this memory address is being reused for a different image with a different
-            // tiling mode.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
@@ -348,9 +347,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         // Left overlap, the image from cache is a possible subresource of the image requested
         if (auto mip = tex_cache_image.info.MipOf(image_info); mip >= 0) {
             if (auto slice = tex_cache_image.info.SliceOf(image_info, mip); slice >= 0) {
+                // We have a larger image created and a separate one, representing a subres of it
+                // bound as render target. In this case we need to rebind render target.
                 if (tex_cache_image.binding.is_target) {
-                    // We have a larger image created and a separate one, representing a subres of
-                    // it, bound as render target. In this case we need to rebind render target.
                     tex_cache_image.binding.needs_rebind = 1u;
                     if (merged_image_id) {
                         GetImage(merged_image_id).binding.is_target = 1u;
@@ -402,7 +401,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
+ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
 
     if (info.guest_address == 0) [[unlikely]] {
@@ -422,26 +421,20 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
         if (cache_image.info.guest_address != info.guest_address) {
             continue;
         }
-        if (False(flags & FindFlags::RelaxSize) && cache_image.info.guest_size != info.guest_size) {
+        if (cache_image.info.guest_size != info.guest_size) {
             continue;
         }
-        if (False(flags & FindFlags::RelaxDim) && cache_image.info.size != info.size) {
+        if (cache_image.info.size != info.size) {
             continue;
         }
-        if (False(flags & FindFlags::RelaxFmt) &&
-            (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format) ||
-             (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1}))) {
+        if (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format) ||
+            (cache_image.info.type != info.type && info.size != Extent3D{1, 1, 1})) {
             continue;
         }
-        if (True(flags & FindFlags::ExactFmt) &&
-            info.pixel_format != cache_image.info.pixel_format) {
+        if (exact_fmt && info.pixel_format != cache_image.info.pixel_format) {
             continue;
         }
         image_id = cache_id;
-    }
-
-    if (True(flags & FindFlags::NoCreate) && !image_id) {
-        return {};
     }
 
     // Try to resolve overlaps (if any)
@@ -465,8 +458,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
 
     if (image_id) {
         Image& image_resolved = slot_images[image_id];
-        if (True(flags & FindFlags::ExactFmt) &&
-            info.pixel_format != image_resolved.info.pixel_format) {
+        if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
         } else if (image_resolved.info.resources < info.resources) {
@@ -494,6 +486,44 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
         desc.view_info.range.base.layer = view_slice;
     }
 
+    return image_id;
+}
+
+ImageId TextureCache::FindImageFromRange(VAddr address, size_t size) {
+    boost::container::small_vector<ImageId, 6> image_ids;
+    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
+        if (image.info.guest_address != address) {
+            return;
+        }
+        if (False(image.flags & ImageFlagBits::GpuModified) ||
+            True(image.flags & ImageFlagBits::Dirty)) {
+            return;
+        }
+        image_ids.push_back(image_id);
+    });
+    if (image_ids.empty()) {
+        return {};
+    }
+    ImageId image_id{};
+    if (image_ids.size() == 1) {
+        // Sometimes image size might not exactly match with requested buffer size
+        // If we only found 1 candidate image use it without too many questions.
+        image_id = image_ids[0];
+    } else {
+        for (s32 i = 0; i < image_ids.size(); ++i) {
+            Image& image = slot_images[image_ids[i]];
+            if (image.info.guest_size == size) {
+                image_id = image_ids[i];
+                break;
+            }
+        }
+        if (!image_id) {
+            LOG_WARNING(Render_Vulkan,
+                        "Failed to find exact image match for copy addr={:#x}, size={:#x}", address,
+                        size);
+            return {};
+        }
+    }
     return image_id;
 }
 
