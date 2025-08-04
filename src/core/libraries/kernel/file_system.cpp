@@ -1162,7 +1162,21 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         int result =
             WSAPoll(socket_poll_fds.data(), static_cast<ULONG>(socket_poll_fds.size()), timeout_ms);
         if (result < 0) {
-            SetPosixErrno(WSAGetLastError());
+            int err = WSAGetLastError();
+            switch (err) {
+            case WSAEFAULT:
+                *__Error() = POSIX_EFAULT;
+                break;
+            case WSAEINVAL:
+                *__Error() = POSIX_EINVAL;
+                break;
+            case WSAENOBUFS:
+                *__Error() = POSIX_ENOBUFS;
+                break;
+            default:
+                LOG_ERROR(Kernel_Fs, "WSAPoll failed with error {}", err);
+                break;
+            }
             return -1;
         }
 
@@ -1192,7 +1206,21 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 ++ret;
             }
         } else if (wait_result != WAIT_TIMEOUT) {
-            SetPosixErrno(GetLastError());
+            int err = GetLastError();
+            switch (err) {
+            case ERROR_INVALID_HANDLE:
+                *__Error() = POSIX_EBADF;
+                break;
+            case ERROR_NOT_ENOUGH_MEMORY:
+                *__Error() = POSIX_ENOMEM;
+                break;
+            case ERROR_INVALID_PARAMETER:
+                *__Error() = POSIX_EINVAL;
+                break;
+            default:
+                LOG_ERROR(Kernel_Fs, "WaitForMultipleObjects failed with error {}", err);
+                break;
+            }
             return -1;
         }
 
@@ -1301,7 +1329,9 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
 #endif
         LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
                   Common::NativeErrorToString(error));
+#ifndef _WIN32
         SetPosixErrno(error);
+#endif
     }
 
     return ret;
