@@ -50,6 +50,7 @@ enum class Class : u8 {
     Lib_LibcInternal,      ///< The LibcInternal implementation.
     Lib_Kernel,            ///< The LibKernel implementation.
     Lib_Pad,               ///< The LibScePad implementation.
+    Lib_SystemGesture,     ///< The LibSceSystemGesture implementation.
     Lib_GnmDriver,         ///< The LibSceGnmDriver implementation.
     Lib_SystemService,     ///< The LibSceSystemService implementation.
     Lib_UserService,       ///< The LibSceUserService implementation.

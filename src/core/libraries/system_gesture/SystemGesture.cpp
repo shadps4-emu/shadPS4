@@ -6,183 +6,121 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/pad/pad.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
-#include "pad.h"
 
 namespace Libraries::SystemGesture {
 
 using Input::GameController;
 
 int PS4_SYSV_ABI sceSystemGestureAppendTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureClose() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureCreateTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureFinalizePrimitiveTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndex() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByPrimitiveID() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEvents() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventsCount() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetTouchEventByEventID() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetTouchEventByIndex() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetTouchEvents() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemGestureGetTouchEventsCount(s32 handle) {
-    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
-
-    auto* controller = Common::Singleton<GameController>::Instance();
-    Input::State states[64];
-    bool connected = false;
-    int connected_count = 0;
-
-    int ret_num = controller->ReadStates(states, 64, &connected, &connected_count);
-
-    if (!connected || ret_num <= 0) {
-        return 0;
-    }
-
-    int touchEventsCount = 0;
-    for (int i = 0; i < ret_num; i++) {
-        int touchNum =
-            (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
-        touchEventsCount += touchNum;
-    }
-
-    LOG_INFO(Lib_Pad, "Touch events count: {}", touchEventsCount);
-    return touchEventsCount;
+int PS4_SYSV_ABI sceSystemGestureGetTouchEventsCount() {
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureGetTouchRecognizerInformation() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureInitializePrimitiveTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureOpen() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureRemoveTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureResetPrimitiveTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureResetTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureUpdateAllTouchRecognizer() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemGestureUpdatePrimitiveTouchRecognizer(s32 handle) {
-    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
-
-    auto* controller = Common::Singleton<GameController>::Instance();
-    Input::State states[64];
-    bool connected = false;
-    int connected_count = 0;
-    int ret_num = controller->ReadStates(states, 64, &connected, &connected_count);
-
-    if (!connected || ret_num <= 0) {
-        return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
-    int touchNum = 0;
-
-    for (int i = 0; i < ret_num; i++) {
-        touchNum = (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
-
-        if (touchNum > 0) {
-            LOG_INFO(Lib_Pad, "Touch count: {}", touchNum);
-        }
-    }
-
-    return touchNum;
+int PS4_SYSV_ABI sceSystemGestureUpdatePrimitiveTouchRecognizer() {
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizer(s32 handle) {
-    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
-
-    auto* controller = Common::Singleton<GameController>::Instance();
-    Input::State states[64];
-    bool connected = false;
-    int connected_count = 0;
-
-    int ret_num = controller->ReadStates(states, 64, &connected, &connected_count);
-
-    if (!connected || ret_num <= 0) {
-        return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
-    int touchNum = 0;
-    for (int i = 0; i < ret_num; i++) {
-        touchNum = (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
-
-        if (touchNum == 1) {
-            LOG_INFO(Lib_Pad, "Single touch");
-        } else if (touchNum == 2) {
-            LOG_INFO(Lib_Pad, "Two touch");
-        }
-    }
-
-    return touchNum;
+int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizer() {
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizerRectangle() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;
 }
 
