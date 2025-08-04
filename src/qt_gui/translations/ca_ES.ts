@@ -1553,7 +1553,7 @@
     </message>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Personalitza les dreceres de teclat</translation>
     </message>
   </context>
   <context>
@@ -2210,71 +2210,71 @@
     <name>hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Personalitza les dreceres de teclat</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Dreceres del controlador</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>Mostra el comptador de fps</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>sense assignar</translation>
     </message>
     <message>
       <source>Stop Emulator</source>
-      <translation type="unfinished">Stop Emulator</translation>
+      <translation>Atura l'emulador</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Commuta pantalla completa</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Commuta la pausa</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Dreceres de teclat</translation>
     </message>
     <message>
       <source>Show Fps Counter: F10</source>
-      <translation type="unfinished">Show Fps Counter: F10</translation>
+      <translation>Mostra el comptador de fps: F10</translation>
     </message>
     <message>
       <source>Stop Emulator: n/a</source>
-      <translation type="unfinished">Stop Emulator: n/a</translation>
+      <translation>Atura l'emulador: n/a</translation>
     </message>
     <message>
       <source>Toggle Fullscreen: F11</source>
-      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+      <translation>Commuta pantalla completa: F11</translation>
     </message>
     <message>
       <source>Toggle Pause: F9</source>
-      <translation type="unfinished">Toggle Pause: F9</translation>
+      <translation>Commuta la pausa: F9</translation>
     </message>
     <message>
       <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation type="unfinished">Tip: Up to three inputs can be assigned for each function</translation>
+      <translation>Truc: Fins a tres botons poden ser assignats a cada funció</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Desa</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Aplica</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Cancel·la</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Clica un botó</translation>
     </message>
   </context>
 </TS>
