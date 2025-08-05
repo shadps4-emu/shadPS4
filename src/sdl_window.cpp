@@ -427,6 +427,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+    case SDL_EVENT_QUIT_DIALOG:
+        Overlay::ToggleQuitWindow();
+        break;
     case SDL_EVENT_TOGGLE_FULLSCREEN: {
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
             SDL_SetWindowFullscreen(window, 0);

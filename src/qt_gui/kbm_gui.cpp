@@ -285,7 +285,7 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
         }
 
         if (controllerInputdetected || output_string == "analog_deadzone" ||
-            output_string == "override_controller_color") {
+            output_string == "override_controller_color" || output_string.contains("hotkey")) {
             lines.push_back(line);
         }
     }
