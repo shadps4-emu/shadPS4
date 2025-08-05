@@ -260,7 +260,12 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
             auto entitlement_label = entry.path().filename().string();
             auto& info = addcont_info[addcont_count++];
             info.status = OrbisAppContentAddcontDownloadStatus::Installed;
-            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label));
+
+            // Our recommended dumping method prepends the folder name with the game serial
+            // Since they end the folder name with the entitlement label, copy from the end instead.
+            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label),
+                                   entitlement_label.length() -
+                                       ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE + 1);
         }
     }
 
