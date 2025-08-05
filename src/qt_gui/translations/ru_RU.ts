@@ -912,7 +912,7 @@
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>Скопирать размер</translation>
+      <translation>Скопировать размер</translation>
     </message>
     <message>
       <source>Copy All</source>
