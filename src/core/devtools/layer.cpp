@@ -378,7 +378,7 @@ void L::Draw() {
     if (DebugState.IsGuestThreadsPaused()) {
         ImVec2 pos = ImVec2(10, 10);
         ImU32 color = IM_COL32(255, 255, 255, 255);
-        ImGui::GetForegroundDrawList()->AddText(pos, color, "Game Paused Press F9 to Resume");
+        ImGui::GetForegroundDrawList()->AddText(pos, color, "Emulation Paused");
     }
 
     if (show_simple_fps) {

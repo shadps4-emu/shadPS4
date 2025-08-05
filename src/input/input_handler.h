@@ -4,11 +4,9 @@
 #pragma once
 
 #include <array>
-#include <filesystem>
 #include <map>
 #include <string>
 #include <unordered_set>
-#include <vector>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
@@ -37,7 +35,7 @@
 #define SDL_EVENT_MOUSE_TO_JOYSTICK SDL_EVENT_USER + 6
 #define SDL_EVENT_MOUSE_TO_GYRO SDL_EVENT_USER + 7
 #define SDL_EVENT_RDOC_CAPTURE SDL_EVENT_USER + 8
-
+#define SDL_EVENT_QUIT_DIALOG SDL_EVENT_USER + 9
 #define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
@@ -488,8 +486,6 @@ public:
     }
     InputEvent ProcessBinding();
 };
-
-enum HotkeyPad { FullscreenPad, PausePad, SimpleFpsPad, QuitPad };
 
 // Updates the list of pressed keys with the given input.
 // Returns whether the list was updated or not.
