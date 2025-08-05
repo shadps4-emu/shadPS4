@@ -111,6 +111,11 @@ struct Image {
         return track_addr != 0 && track_addr_end != 0;
     }
 
+    bool SafeToDownload() const {
+        return True(flags & ImageFlagBits::GpuModified) &&
+               False(flags & (ImageFlagBits::GpuDirty | ImageFlagBits::CpuDirty));
+    }
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;

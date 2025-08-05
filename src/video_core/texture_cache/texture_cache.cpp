@@ -910,7 +910,7 @@ void TextureCache::RunGarbageCollector() {
         }
         --num_deletions;
         auto& image = slot_images[image_id];
-        const bool download = True(image.flags & ImageFlagBits::GpuModified);
+        const bool download = image.SafeToDownload();
         const bool linear = image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear;
         if (!linear && download) {
             // This is a workaround for now. We can't handle non-linear image downloads.
