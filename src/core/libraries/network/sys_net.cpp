@@ -249,4 +249,13 @@ s64 PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
+
+int PS4_SYSV_ABI sys_htons(u16 v) {
+    return ((v << 8) & 0xff00) | ((v >> 8) & 0x00ff);
+}
+
+int PS4_SYSV_ABI sys_htonl(u32 v) {
+    return (v << 24) | ((v & 0xff00) << 8) | ((v >> 8) & 0xff00) | (v >> 24);
+}
+
 } // namespace Libraries::Net
