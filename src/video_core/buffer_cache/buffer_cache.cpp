@@ -675,16 +675,6 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
                                    AllFlags | vk::BufferUsageFlagBits::eShaderDeviceAddress, size);
     }();
     auto& new_buffer = slot_buffers[new_buffer_id];
-    boost::container::small_vector<vk::DeviceAddress, 128> bda_addrs;
-    const u64 start_page = overlap.begin >> CACHING_PAGEBITS;
-    const u64 size_pages = size >> CACHING_PAGEBITS;
-    bda_addrs.reserve(size_pages);
-    for (u64 i = 0; i < size_pages; ++i) {
-        vk::DeviceAddress addr = new_buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS);
-        bda_addrs.push_back(addr);
-    }
-    WriteDataBuffer(bda_pagetable_buffer, start_page * sizeof(vk::DeviceAddress), bda_addrs.data(),
-                    bda_addrs.size() * sizeof(vk::DeviceAddress));
     const size_t size_bytes = new_buffer.SizeBytes();
     const auto cmdbuf = scheduler.CommandBuffer();
     scheduler.EndRendering();
@@ -842,6 +832,7 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     const VAddr device_addr_end = device_addr_begin + size;
     const u64 page_begin = device_addr_begin / CACHING_PAGESIZE;
     const u64 page_end = Common::DivCeil(device_addr_end, CACHING_PAGESIZE);
+    const u64 size_pages = page_end - page_begin;
     for (u64 page = page_begin; page != page_end; ++page) {
         if constexpr (insert) {
             page_table[page].buffer_id = buffer_id;
@@ -850,8 +841,18 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
         }
     }
     if constexpr (insert) {
+        boost::container::small_vector<vk::DeviceAddress, 128> bda_addrs;
+        bda_addrs.reserve(size_pages);
+        for (u64 i = 0; i < size_pages; ++i) {
+            vk::DeviceAddress addr = buffer.BufferDeviceAddress() + (i << CACHING_PAGEBITS);
+            bda_addrs.push_back(addr);
+        }
+        WriteDataBuffer(bda_pagetable_buffer, page_begin * sizeof(vk::DeviceAddress),
+                        bda_addrs.data(), bda_addrs.size() * sizeof(vk::DeviceAddress));
         buffer_ranges.Add(buffer.CpuAddr(), buffer.SizeBytes(), buffer_id);
     } else {
+        FillBuffer(bda_pagetable_buffer, page_begin * sizeof(vk::DeviceAddress),
+                   size_pages * sizeof(vk::DeviceAddress), 0);
         buffer_ranges.Subtract(buffer.CpuAddr(), buffer.SizeBytes());
     }
 }
@@ -1183,6 +1184,41 @@ void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* val
         .pBufferMemoryBarriers = &pre_barrier,
     });
     cmdbuf.copyBuffer(src_buffer, buffer.Handle(), copy);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
+}
+
+void BufferCache::FillBuffer(Buffer& buffer, VAddr address, u32 num_bytes, u32 value) {
+    scheduler.EndRendering();
+    ASSERT_MSG(num_bytes % 4 == 0, "FillBuffer size must be a multiple of 4 bytes");
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = buffer.Handle(),
+        .offset = buffer.Offset(address),
+        .size = num_bytes,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = buffer.Handle(),
+        .offset = buffer.Offset(address),
+        .size = num_bytes,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+    });
+    cmdbuf.fillBuffer(buffer.Handle(), buffer.Offset(address), num_bytes, value);
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,

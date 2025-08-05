@@ -212,6 +212,8 @@ private:
 
     void WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
 
+    void FillBuffer(Buffer& buffer, VAddr address, u32 num_bytes, u32 value);
+
     void TouchBuffer(const Buffer& buffer);
 
     void DeleteBuffer(BufferId buffer_id);
