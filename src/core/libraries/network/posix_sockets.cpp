@@ -286,12 +286,12 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_RCVBUF);
             CASE_SETSOCKOPT(SO_SNDTIMEO);
             CASE_SETSOCKOPT(SO_RCVTIMEO);
-            CASE_SETSOCKOPT(SO_TYPE);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_TYPE:
         case ORBIS_NET_SO_ERROR: {
             *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
             return -1;
