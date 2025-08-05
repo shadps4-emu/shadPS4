@@ -450,7 +450,7 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_TOGGLE_SIMPLE_FPS:
         Overlay::ToggleSimpleFps();
         break;
-    case HOTKEY_RELOAD_INPUTS:
+    case SDL_EVENT_RELOAD_INPUTS:
         Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
         break;
     case SDL_EVENT_MOUSE_TO_JOYSTICK:
