@@ -1088,6 +1088,22 @@ static HANDLE fileToHandle(std::FILE* file) {
     HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd)); // Convert to HANDLE
     return h;
 }
+// Helper to validate file object
+static bool IsValidOpenFile(const Core::FileSys::File* file) {
+    return file && ((file->type == Core::FileSys::FileType::Regular && file->f.IsOpen()) ||
+                    (file->type == Core::FileSys::FileType::Socket && file->is_opened));
+}
+
+// Backup structure for fd_sets
+struct FdSetBackup {
+    fd_set in;
+    fd_set* out;
+};
+
+// Helper to check if fd was in original set
+inline bool IsInSet(FdSetBackup& set, int fd) {
+    return set.out && FD_ISSET(fd, &set.in);
+}
 #endif
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
@@ -1097,40 +1113,38 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
 
 #ifdef _WIN32
-    std::vector<WSAPOLLFD> socket_poll_fds;
     std::vector<HANDLE> handle_list;
     std::vector<int> handle_guest_fds;
     std::vector<bool> handle_read;
     std::vector<bool> handle_write;
     std::map<SOCKET, int> socket_to_guest;
 
-    // Backup copies of fd_sets for input state
-    fd_set readfds_in = {}, writefds_in = {}, exceptfds_in = {};
+    FdSetBackup sets[3] = {{{}, readfds}, {{}, writefds}, {{}, exceptfds}};
 
-    if (readfds)
-        readfds_in = *readfds;
-    if (writefds)
-        writefds_in = *writefds;
-    if (exceptfds)
-        exceptfds_in = *exceptfds;
+    // Backup original sets and clear output sets
+    for (auto& set : sets) {
+        if (set.out) {
+            set.in = *set.out;
+            FD_ZERO(set.out);
+        }
+    }
 
-    if (readfds)
-        FD_ZERO(readfds);
-    if (writefds)
-        FD_ZERO(writefds);
-    if (exceptfds)
-        FD_ZERO(exceptfds);
+    fd_set socket_read_set, socket_write_set, socket_except_set;
+    FD_ZERO(&socket_read_set);
+    FD_ZERO(&socket_write_set);
+    FD_ZERO(&socket_except_set);
+
+    SOCKET max_socket = 0;
 
     for (int i = 0; i < nfds; ++i) {
-        bool read = readfds && FD_ISSET(i, &readfds_in);
-        bool write = writefds && FD_ISSET(i, &writefds_in);
-        bool except = exceptfds && FD_ISSET(i, &exceptfds_in);
+        bool read = IsInSet(sets[0], i);
+        bool write = IsInSet(sets[1], i);
+        bool except = IsInSet(sets[2], i);
         if (!(read || write || except))
             continue;
 
         auto* file = h->GetFile(i);
-        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
-                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+        if (!IsValidOpenFile(file)) {
             LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
             *__Error() = POSIX_EBADF;
             return -1;
@@ -1141,16 +1155,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
             if (s == INVALID_SOCKET)
                 continue;
 
-            short events = 0;
             if (read)
-                events |= POLLRDNORM;
+                FD_SET(s, &socket_read_set);
             if (write)
-                events |= POLLWRNORM;
+                FD_SET(s, &socket_write_set);
             if (except)
-                events |= POLLPRI;
+                FD_SET(s, &socket_except_set);
 
-            socket_poll_fds.push_back({.fd = s, .events = events, .revents = 0});
             socket_to_guest[s] = i;
+            max_socket = std::max(max_socket, s);
+
         } else if (file->type == Core::FileSys::FileType::Regular) {
             HANDLE hFile = fileToHandle(file->f.file);
             if (hFile == INVALID_HANDLE_VALUE)
@@ -1165,13 +1179,24 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         }
     }
 
-    DWORD timeout_ms = timeout ? (timeout->tv_sec * 1000 + timeout->tv_usec / 1000) : INFINITE;
+    if (socket_to_guest.empty() && handle_list.empty()) {
+        return 0;
+    }
+
+    TIMEVAL timeout_tv;
+    TIMEVAL* timeout_ptr = nullptr;
+    if (timeout) {
+        timeout_tv.tv_sec = timeout->tv_sec;
+        timeout_tv.tv_usec = timeout->tv_usec;
+        timeout_ptr = &timeout_tv;
+    }
+
     int ret = 0;
 
-    if (!socket_poll_fds.empty()) {
-        int result =
-            WSAPoll(socket_poll_fds.data(), static_cast<ULONG>(socket_poll_fds.size()), timeout_ms);
-        if (result < 0) {
+    if (!socket_to_guest.empty()) {
+        int result = select(static_cast<int>(max_socket + 1), &socket_read_set, &socket_write_set,
+                            &socket_except_set, timeout_ptr);
+        if (result == SOCKET_ERROR) {
             int err = WSAGetLastError();
             switch (err) {
             case WSAEFAULT:
@@ -1184,35 +1209,35 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 *__Error() = POSIX_ENOBUFS;
                 break;
             default:
-                LOG_ERROR(Kernel_Fs, "WSAPoll failed with error {}", err);
+                LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
                 break;
             }
             return -1;
         }
 
-        for (const auto& pfd : socket_poll_fds) {
-            if (pfd.revents != 0) {
-                int guest_fd = socket_to_guest[pfd.fd];
-                if (readfds && (pfd.revents & POLLRDNORM))
-                    FD_SET(guest_fd, readfds);
-                if (writefds && (pfd.revents & POLLWRNORM))
-                    FD_SET(guest_fd, writefds);
-                if (exceptfds && (pfd.revents & POLLPRI))
-                    FD_SET(guest_fd, exceptfds);
-                ++ret;
-            }
+        for (const auto& [sock, guest_fd] : socket_to_guest) {
+            if (sets[0].out && FD_ISSET(sock, &socket_read_set))
+                FD_SET(guest_fd, sets[0].out);
+            if (sets[1].out && FD_ISSET(sock, &socket_write_set))
+                FD_SET(guest_fd, sets[1].out);
+            if (sets[2].out && FD_ISSET(sock, &socket_except_set))
+                FD_SET(guest_fd, sets[2].out);
         }
+
+        ret += result;
     }
 
     if (!handle_list.empty()) {
+        DWORD timeout_ms = timeout ? (timeout->tv_sec * 1000 + timeout->tv_usec / 1000) : INFINITE;
+
         DWORD wait_result = WaitForMultipleObjects(static_cast<DWORD>(handle_list.size()),
                                                    handle_list.data(), FALSE, timeout_ms);
 
         if (wait_result >= WAIT_OBJECT_0 && wait_result < WAIT_OBJECT_0 + handle_list.size()) {
             int index = static_cast<int>(wait_result - WAIT_OBJECT_0);
             int guest_fd = handle_guest_fds[index];
-            if (handle_read[index] && readfds) {
-                FD_SET(guest_fd, readfds);
+            if (handle_read[index] && sets[0].out) {
+                FD_SET(guest_fd, sets[0].out);
                 ++ret;
             }
         } else if (wait_result != WAIT_TIMEOUT) {
@@ -1235,8 +1260,8 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         }
 
         for (size_t i = 0; i < handle_list.size(); ++i) {
-            if (handle_write[i] && writefds) {
-                FD_SET(handle_guest_fds[i], writefds);
+            if (handle_write[i] && sets[1].out) {
+                FD_SET(handle_guest_fds[i], sets[1].out);
                 ++ret;
             }
         }
