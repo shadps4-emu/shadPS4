@@ -340,6 +340,10 @@ bool NetUtilInternal::RetrieveIp() {
     sa.sin_addr.s_addr = inet_addr("1.1.1.1");
     sa.sin_port = htons(80);
 
+#ifdef _WIN32
+#define close closesocket
+#endif
+
     if (connect(sockfd, (sockaddr*)&sa, sa_len) == -1) {
         close(sockfd);
         return false;
@@ -355,6 +359,10 @@ bool NetUtilInternal::RetrieveIp() {
     ip = netmaskStr;
 
     close(sockfd);
+
+#ifdef _WIN32
+#undef close
+#endif
 
     return true;
 }
