@@ -7,15 +7,15 @@
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation type="unfinished">About shadPS4</translation>
+      <translation>shadPS4 کے بارے میں</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <translation>shadPS4 ایک تجرباتی اوپن سورس ایمولیٹر ہے جو PlayStation 4 کے لیے بنایا گیا ہے۔</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>اس سافٹ ویئر کو ایسی گیمز کھیلنے کے لیے استعمال نہ کریں جو آپ نے قانونی طور پر حاصل نہیں کی ہیں۔</translation>
     </message>
   </context>
   <context>
@@ -30,7 +30,7 @@
     </message>
     <message>
       <source>No Image Available</source>
-      <translation type="unfinished">No Image Available</translation>
+      <translation>کوئی تصویر دستیاب نہیں</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -54,15 +54,15 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation type="unfinished">Download Cheats</translation>
+      <translation>چیٹس ڈاؤن لوڈ کریں</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation type="unfinished">Delete File</translation>
+      <translation>فائل حذف کریں</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation type="unfinished">No files selected.</translation>
+      <translation>کوئی فائل منتخب نہیں کی گئی۔</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
@@ -70,27 +70,27 @@
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation type="unfinished">Do you want to delete the selected file?\n%1</translation>
+      <translation>کیا آپ منتخب کردہ فائل کو حذف کرنا چاہتے ہیں؟\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation type="unfinished">Select Patch File:</translation>
+      <translation>پیچ فائل منتخب کریں:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation type="unfinished">Download Patches</translation>
+      <translation>پیچز ڈاؤن لوڈ کریں</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>محفوظ کریں</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>چیٹس</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation type="unfinished">Patches</translation>
+      <translation>پیچز</translation>
     </message>
     <message>
       <source>Error</source>
