@@ -15,9 +15,12 @@ std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
 std::vector<OrbisVideodec2LegacyAvcPictureInfo> gLegacyPictureInfos;
 
 static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    // sometimes output buffer is not aligned to ffmpeg's processing buffer,
-    // which adds extra padding at the end of every row.
-    // we can safely discard those to match target width
+    if (src.width == src.linesize[0]) {
+        std::memcpy(dst, src.data[0], src.width * src.height);
+        std::memcpy(dst + (src.width * src.height), src.data[1], (src.width * src.height) / 2);
+        return;
+    }
+
     for (u16 row = 0; row < src.height; row++) {
         u64 dst_offset = row * src.width;
         std::memcpy(dst + dst_offset, src.data[0] + (row * src.linesize[0]), src.width);
@@ -25,8 +28,8 @@ static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
 
     u64 dst_base = src.width * src.height;
     for (u16 row = 0; row < src.height / 2; row++) {
-        u64 dstoffset = row * src.width;
-        std::memcpy(dst + dst_base + dstoffset, src.data[1] + (row * src.linesize[1]), src.width);
+        u64 dst_offset = row * src.width;
+        std::memcpy(dst + dst_base + dst_offset, src.data[1] + (row * src.linesize[1]), src.width);
     }
 }
 
