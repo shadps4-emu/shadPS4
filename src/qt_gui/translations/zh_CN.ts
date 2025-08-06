@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>移动模拟摇杆</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1和L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>主手柄</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>手柄 ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>默认手柄</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>没有选择默认项</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>不可用</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>设置主手柄为默认值</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>移除默认手柄</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 和 R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:  </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>已选中默认控制器</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>主控制器设置为默认</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>默认控制器已移除</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>默认控制器设置已删除</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1700,11 +1756,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>启用Readbacks</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>启用Readback线性图像</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1992,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>启用Readbacks：\n启用 GPU 内存回读和回写功能。\n这是某些游戏中恰当运行所必需的。\n可能会导致稳定性以及性能问题。</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>启用Readback线性图像：\n启用异步下载GPU修改的线性图像。\n可能会修复一些游戏中的问题。</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2112,11 +2168,11 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>实验性功能</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>警告：这些功能是实验性的，除非您被告知或者游戏需要的话，否则不应启用。 如果您有任何疑问，请在 shadPS4 Discord 服务器上提问。</translation>
     </message>
   </context>
   <context>

@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Analog çubuğu taşı</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation type="unfinished">L1 and L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation type="unfinished">Active Gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation type="unfinished">Gamepad ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation type="unfinished">Default Gamepad</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation type="unfinished">No default selected</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation type="unfinished">n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation type="unfinished">Set Active Gamepad as Default</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation type="unfinished">Remove Default Gamepad</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation type="unfinished">R1 and R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation type="unfinished">ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation type="unfinished">Default Controller Selected</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation type="unfinished">Active controller set as default</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation type="unfinished">Default Controller Removed</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation type="unfinished">Default controller setting removed</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1592,11 +1648,11 @@
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Hiçbiri</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Varsayılan Cihaz</translation>
     </message>
     <message>
       <source>s</source>
@@ -1700,7 +1756,7 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Geri okuma özelliğini etkinleştir</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
@@ -1936,11 +1992,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Geri Okuma özelliğini etkinleştir:\nGPU belleğinden veri geri okuma ve yazmayı etkinleştirir.\nBazı oyunların doğru çalışması için gereklidir.\nKararlılık ve/veya performans sorunlarına neden olabilir.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Doğrusal görüntülerde geri okumayı etkinleştir:\nGPU tarafından değiştirilmiş doğrusal görüntülerin eşzamanlı olmayan indirilmesini etkinleştirir.\nBazı oyunlardaki sorunları düzeltebilir.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2112,7 +2168,7 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Deneysel Özellikler</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>

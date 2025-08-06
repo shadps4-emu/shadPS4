@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Mover analógico</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 e L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Controle Ativo</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID do controle</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Controle Padrão</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Nenhum selecionado como padrão</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Defina o Controle Ativo como Padrão</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Remover controle padrão</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 e R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Controle Padrão Selecionado</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>O Controle ativo foi definido como padrão</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Controle Padrão Removido</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Configuração do controle padrão removida</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -2112,11 +2168,11 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Recursos Experimentais</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>AVISO: Esses recursos são experimentais e só devem ser ativados se você foi instruído a fazê-lo ou um jogo requer isso. Por favor, pergunte no servidor do Discord shadPS4 se você tiver alguma dúvida.</translation>
     </message>
   </context>
   <context>

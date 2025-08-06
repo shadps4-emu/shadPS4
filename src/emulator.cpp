@@ -297,19 +297,15 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     // Start the timer (Play Time)
 #ifdef ENABLE_QT_GUI
     if (!id.empty()) {
-        auto* timer = new QTimer();
-        QObject::connect(timer, &QTimer::timeout, [this, id]() {
-            UpdatePlayTime(id);
-            start_time = std::chrono::steady_clock::now();
-        });
-        timer->start(60000); // 60000 ms = 1 minute
-
         start_time = std::chrono::steady_clock::now();
-        const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-        QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
-        QFile file(filePath);
-        ASSERT_MSG(file.open(QIODevice::ReadWrite | QIODevice::Text),
-                   "Error opening or creating play_time.txt");
+
+        std::thread([this, id]() {
+            while (true) {
+                std::this_thread::sleep_for(std::chrono::seconds(60));
+                UpdatePlayTime(id);
+                start_time = std::chrono::steady_clock::now();
+            }
+        }).detach();
     }
 #endif
 

@@ -4,6 +4,7 @@
 #include <common/assert.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/kernel.h"
 #include "net.h"
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -16,11 +17,13 @@ namespace Libraries::Net {
 #ifdef _WIN32
 #define ERROR_CASE(errname)                                                                        \
     case (WSA##errname):                                                                           \
-        return ORBIS_NET_ERROR_##errname;
+        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
+        return -1;
 #else
 #define ERROR_CASE(errname)                                                                        \
     case (errname):                                                                                \
-        return ORBIS_NET_ERROR_##errname;
+        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
+        return -1;
 #endif
 
 static int ConvertReturnErrorCode(int retval) {
@@ -107,7 +110,8 @@ static int ConvertReturnErrorCode(int retval) {
             ERROR_CASE(EHOSTUNREACH)
             ERROR_CASE(ENOTEMPTY)
         }
-        return ORBIS_NET_ERROR_EINTERNAL;
+        *Libraries::Kernel::__Error() = ORBIS_NET_EINTERNAL;
+        return -1;
     }
     // if it is 0 or positive return it as it is
     return retval;
@@ -121,6 +125,8 @@ static int ConvertLevels(int level) {
         return IPPROTO_IP;
     case ORBIS_NET_IPPROTO_TCP:
         return IPPROTO_TCP;
+    case ORBIS_NET_IPPROTO_IPV6:
+        return IPPROTO_IPV6;
     }
     return -1;
 }
@@ -192,7 +198,7 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                                u32* fromlen) {
-    std::scoped_lock lock{m_mutex};
+    std::scoped_lock lock{receive_mutex};
     if (from != nullptr) {
         sockaddr addr;
         int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
@@ -220,6 +226,7 @@ SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
         }
         return std::make_shared<PosixSocket>(new_socket);
     }
+    ConvertReturnErrorCode(new_socket);
     return nullptr;
 }
 
@@ -248,26 +255,28 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
         convertPosixSockaddrToOrbis(&addr, name);
         *namelen = sizeof(OrbisNetSockaddrIn);
     }
-    return res;
+    return ConvertReturnErrorCode(res);
 }
 
 #define CASE_SETSOCKOPT(opt)                                                                       \
     case ORBIS_NET_##opt:                                                                          \
-        return ConvertReturnErrorCode(setsockopt(sock, level, opt, (const char*)optval, optlen))
+        return ConvertReturnErrorCode(                                                             \
+            setsockopt(sock, native_level, opt, (const char*)optval, optlen))
 
 #define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
     case opt:                                                                                      \
         if (optlen != sizeof(*value)) {                                                            \
-            return ORBIS_NET_ERROR_EFAULT;                                                         \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
+            return -1;                                                                             \
         }                                                                                          \
         memcpy(value, optval, optlen);                                                             \
         return 0
 
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
     std::scoped_lock lock{m_mutex};
-    level = ConvertLevels(level);
+    s32 native_level = ConvertLevels(level);
     ::linger native_linger;
-    if (level == SOL_SOCKET) {
+    if (native_level == SOL_SOCKET) {
         switch (optname) {
             CASE_SETSOCKOPT(SO_REUSEADDR);
             CASE_SETSOCKOPT(SO_KEEPALIVE);
@@ -277,21 +286,26 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_RCVBUF);
             CASE_SETSOCKOPT(SO_SNDTIMEO);
             CASE_SETSOCKOPT(SO_RCVTIMEO);
-            CASE_SETSOCKOPT(SO_ERROR);
-            CASE_SETSOCKOPT(SO_TYPE);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_TYPE:
+        case ORBIS_NET_SO_ERROR: {
+            *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
+            return -1;
+        }
         case ORBIS_NET_SO_LINGER: {
             if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                return ORBIS_NET_ERROR_EPROCUNAVAIL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
+                return -1;
             }
             if (optlen < sizeof(OrbisNetLinger)) {
                 LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
                           sizeof(OrbisNetLinger));
-                return ORBIS_NET_ERROR_EINVAL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
             }
 
             const void* native_val = &native_linger;
@@ -299,16 +313,19 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             native_linger.l_onoff = reinterpret_cast<const OrbisNetLinger*>(optval)->l_onoff;
             native_linger.l_linger = reinterpret_cast<const OrbisNetLinger*>(optval)->l_linger;
             return ConvertReturnErrorCode(
-                setsockopt(sock, level, SO_LINGER, (const char*)native_val, native_len));
+                setsockopt(sock, native_level, SO_LINGER, (const char*)native_val, native_len));
         }
 
         case ORBIS_NET_SO_NAME:
-            return ORBIS_NET_ERROR_EINVAL; // don't support set for name
+            *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+            return -1; // don't support set for name
         case ORBIS_NET_SO_NBIO: {
-            if (optlen != sizeof(sockopt_so_nbio)) {
-                return ORBIS_NET_ERROR_EFAULT;
+            if (optlen < sizeof(sockopt_so_nbio)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
+            } else {
+                memcpy(&sockopt_so_nbio, optval, sizeof(sockopt_so_nbio));
             }
-            memcpy(&sockopt_so_nbio, optval, optlen);
 #ifdef _WIN32
             static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio),
                           "type used for ioctlsocket value does not have the expected size");
@@ -318,7 +335,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
 #endif
         }
         }
-    } else if (level == IPPROTO_IP) {
+    } else if (native_level == IPPROTO_IP) {
         switch (optname) {
             // CASE_SETSOCKOPT(IP_HDRINCL);
             CASE_SETSOCKOPT(IP_TOS);
@@ -332,13 +349,14 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
         case ORBIS_NET_IP_HDRINCL: {
             if (socket_type != ORBIS_NET_SOCK_RAW) {
-                return ORBIS_NET_ERROR_EPROCUNAVAIL;
+                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
+                return -1;
             }
             return ConvertReturnErrorCode(
-                setsockopt(sock, level, optname, (const char*)optval, optlen));
+                setsockopt(sock, native_level, optname, (const char*)optval, optlen));
         }
         }
-    } else if (level == IPPROTO_TCP) {
+    } else if (native_level == IPPROTO_TCP) {
         switch (optname) {
             CASE_SETSOCKOPT(TCP_NODELAY);
             CASE_SETSOCKOPT(TCP_MAXSEG);
@@ -353,8 +371,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
 #define CASE_GETSOCKOPT(opt)                                                                       \
     case ORBIS_NET_##opt: {                                                                        \
         socklen_t optlen_temp = *optlen;                                                           \
-        auto retval =                                                                              \
-            ConvertReturnErrorCode(getsockopt(sock, level, opt, (char*)optval, &optlen_temp));     \
+        auto retval = ConvertReturnErrorCode(                                                      \
+            getsockopt(sock, native_level, opt, (char*)optval, &optlen_temp));                     \
         *optlen = optlen_temp;                                                                     \
         return retval;                                                                             \
     }
@@ -362,7 +380,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     case opt:                                                                                      \
         if (*optlen < sizeof(value)) {                                                             \
             *optlen = sizeof(value);                                                               \
-            return ORBIS_NET_ERROR_EFAULT;                                                         \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
+            return -1;                                                                             \
         }                                                                                          \
         *optlen = sizeof(value);                                                                   \
         *(decltype(value)*)optval = value;                                                         \
@@ -370,8 +389,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
 
 int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
     std::scoped_lock lock{m_mutex};
-    level = ConvertLevels(level);
-    if (level == SOL_SOCKET) {
+    s32 native_level = ConvertLevels(level);
+    if (native_level == SOL_SOCKET) {
         switch (optname) {
             CASE_GETSOCKOPT(SO_REUSEADDR);
             CASE_GETSOCKOPT(SO_KEEPALIVE);
@@ -392,7 +411,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
                                   (char)0); // writes an empty string to the output buffer
         }
-    } else if (level == IPPROTO_IP) {
+    } else if (native_level == IPPROTO_IP) {
         switch (optname) {
             CASE_GETSOCKOPT(IP_HDRINCL);
             CASE_GETSOCKOPT(IP_TOS);
@@ -405,7 +424,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, sockopt_ip_ttlchk);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, sockopt_ip_maxttl);
         }
-    } else if (level == IPPROTO_TCP) {
+    } else if (native_level == IPPROTO_TCP) {
         switch (optname) {
             CASE_GETSOCKOPT(TCP_NODELAY);
             CASE_GETSOCKOPT(TCP_MAXSEG);
@@ -414,6 +433,23 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     }
     UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
     return 0;
+}
+
+int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
+    std::scoped_lock lock{m_mutex};
+    LOG_DEBUG(Lib_Net, "called");
+
+    sockaddr addr;
+    convertOrbisNetSockaddrToPosix(name, &addr);
+    if (name != nullptr) {
+        *namelen = sizeof(sockaddr_in);
+    }
+    int res = ::getpeername(sock, &addr, (socklen_t*)namelen);
+    if (res >= 0) {
+        convertPosixSockaddrToOrbis(&addr, name);
+        *namelen = sizeof(OrbisNetSockaddrIn);
+    }
+    return ConvertReturnErrorCode(res);
 }
 
 int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
@@ -429,7 +465,7 @@ int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_blocks = st.st_blocks;
     sb->st_blksize = st.st_blksize;
     // sb->st_flags = st.st_flags;
-    return result;
+    return ConvertReturnErrorCode(result);
 #endif
 }
 

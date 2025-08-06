@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#pragma once
 #include <QDialog>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gamepad.h>
@@ -29,6 +29,7 @@ private Q_SLOTS:
     void CheckMapping(QPushButton*& button);
     void StartTimer(QPushButton*& button, bool isButton);
     void ConnectAxisInputs(QPushButton*& button);
+    void ActiveControllerChanged(int value);
 
 private:
     std::unique_ptr<Ui::ControlSettings> ui;
@@ -46,9 +47,10 @@ private:
     void EnableMappingButtons();
     void Cleanup();
 
+    // use QMap instead of QSet to maintain order of inserted strings
+    QMap<int, QString> pressedButtons;
     QList<QPushButton*> ButtonsList;
     QList<QPushButton*> AxisList;
-    QSet<QString> pressedButtons;
 
     std::string RunningGameSerial;
     bool GameRunning;
@@ -59,9 +61,11 @@ private:
     bool MappingCompleted = false;
     QString mapping;
     int MappingTimer;
+    int gamepad_count;
     QTimer* timer;
     QPushButton* MappingButton;
     SDL_Gamepad* gamepad = nullptr;
+    SDL_JoystickID* gamepads;
     SdlEventWrapper::Wrapper* RemapWrapper;
     QFuture<void> Polling;
 

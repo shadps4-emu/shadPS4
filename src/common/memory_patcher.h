@@ -30,19 +30,18 @@ struct patchInfo {
     std::string modNameStr;
     std::string offsetStr;
     std::string valueStr;
+    std::string targetStr;
+    std::string sizeStr;
     bool isOffset;
     bool littleEndian;
     PatchMask patchMask;
     int maskOffset;
 };
 
-extern std::vector<patchInfo> pending_patches;
-
 std::string convertValueToHex(const std::string type, const std::string valueStr);
 
 void OnGameLoaded();
 void AddPatchToQueue(patchInfo patchToAdd);
-void ApplyPendingPatches();
 
 void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
                  std::string targetStr, std::string sizeStr, bool isOffset, bool littleEndian,
