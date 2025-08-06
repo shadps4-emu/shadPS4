@@ -94,11 +94,11 @@
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>خرابی</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation type="unfinished">No patch selected.</translation>
+      <translation>کوئی پیچ منتخب نہیں کیا گیا۔</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
@@ -122,7 +122,7 @@
     </message>
     <message>
       <source>Success</source>
-      <translation type="unfinished">Success</translation>
+      <translation>کامیابی</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
@@ -138,47 +138,49 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation type="unfinished">File Exists</translation>
+      <translation>فائل موجود ہے</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation type="unfinished">File already exists. Do you want to replace it?</translation>
+      <translation>فائل پہلے سے موجود ہے۔ کیا آپ اسے تبدیل کرنا چاہتے ہیں؟</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation type="unfinished">Failed to save file:</translation>
+      <translation>فائل محفوظ نہیں کی جا سکی:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation type="unfinished">Failed to download file:</translation>
+      <translation>فائل ڈاؤن لوڈ نہیں ہو سکی:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation type="unfinished">Cheats Not Found</translation>
+      <translation>کوئی چیٹس نہیں ملیں</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation type="unfinished">No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</translation>
+      <translation>منتخب کردہ ریپوزٹری کے اس ورژن میں اس گیم کے لیے کوئی چیٹس نہیں ملیں، کسی دوسری ریپوزٹری یا گیم کے مختلف ورژن کو آزمائیں۔</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation type="unfinished">Cheats Downloaded Successfully</translation>
+      <translation>چیٹس کامیابی سے ڈاؤن لوڈ ہو گئیں</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation type="unfinished">You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</translation>
+      <translation>پ نے منتخب کردہ ریپوزٹری سے اس گیم کے اس ورژن کے لیے چیٹس کامیابی سے ڈاؤن لوڈ کر لی ہیں۔
+آپ کسی دوسری ریپوزٹری سے بھی ڈاؤن لوڈ کرنے کی کوشش کر سکتے ہیں،
+اگر دستیاب ہو تو اسے فہرست سے فائل منتخب کر کے استعمال کرنا بھی ممکن ہوگا</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation type="unfinished">Failed to save:</translation>
+      <translation>محفوظ نہیں کیا جا سکا:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation type="unfinished">Failed to download:</translation>
+      <translation>ڈاؤن لوڈ نہیں ہو سکا:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>ڈاؤن لوڈ مکمل ہو گئی</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
@@ -202,7 +204,7 @@
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation type="unfinished">You may need to update your game.</translation>
+      <translation>پ کو اپنی گیم اپ ڈیٹ کرنے کی ضرورت ہو سکتی ہے۔</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -210,7 +212,7 @@
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation type="unfinished">Failed to open file:</translation>
+      <translation>فائل کھولی نہیں جا سکی:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
@@ -234,7 +236,7 @@
     </message>
     <message>
       <source>Name:</source>
-      <translation type="unfinished">Name:</translation>
+      <translation>نام:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
@@ -242,26 +244,26 @@
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>بند کریں</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation type="unfinished">Auto Updater</translation>
+      <translation>آٹو اپڈیٹر</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation type="unfinished">Error</translation>
+      <translation>خرابی</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation type="unfinished">Network error:</translation>
+      <translation>نیٹ ورک میں خرابی</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation type="unfinished">The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</translation>
+      <translation>ٹو اپڈیٹر ہر گھنٹے میں زیادہ سے زیادہ 60 اپڈیٹ چیکس کی اجازت دیتا ہے۔\nآپ اس حد تک پہنچ چکے ہیں۔ براہ کرم کچھ دیر بعد کوشش کیجیے۔</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
