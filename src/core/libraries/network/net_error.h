@@ -58,6 +58,7 @@ constexpr int ORBIS_NET_EINACTIVEDISABLED = 163;
 constexpr int ORBIS_NET_ENODATA = 164;
 constexpr int ORBIS_NET_EDESC = 165;
 constexpr int ORBIS_NET_EDESCTIMEDOUT = 166;
+constexpr int ORBIS_NET_ENETINTR = 167;
 constexpr int ORBIS_NET_ENOTINIT = 200;
 constexpr int ORBIS_NET_ENOLIBMEM = 201;
 constexpr int ORBIS_NET_ECALLBACK = 203;
