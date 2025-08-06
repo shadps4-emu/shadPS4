@@ -185,19 +185,12 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         break;
     case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
         strcpy(info->ip_address,
-               "127.0.0.1"); // placeholder in case gethostbyname can't find another ip
-        char devname[80];
-        gethostname(devname, 80);
-        if (struct hostent* resolved = gethostbyname(devname)) {
-            for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
-                struct in_addr addrIn;
-                memcpy(&addrIn, resolved->h_addr_list[i], sizeof(u32));
-                char* addr = inet_ntoa(addrIn);
-                if (strcmp(addr, "127.0.0.1") != 0) {
-                    strcpy(info->ip_address, addr);
-                    break;
-                }
-            }
+               "127.0.0.1"); // placeholder in case ip retrieval failed
+        auto success = netinfo->RetrieveIp();
+        if (success) {
+            strncpy(info->ip_address, netinfo->GetIp().data(), sizeof(info->ip_address));
+        } else {
+            LOG_WARNING(Lib_NetCtl, "local ip: failed to retrieve");
         }
         break;
     }
@@ -214,8 +207,9 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     case ORBIS_NET_CTL_INFO_DEFAULT_ROUTE: {
         auto success = netinfo->RetrieveDefaultGateway();
         if (success) {
-            strncpy(info->netmask, netinfo->GetDefaultGateway().data(), sizeof(info->netmask));
-            LOG_DEBUG(Lib_NetCtl, "default gateway: {}", info->netmask);
+            strncpy(info->default_route, netinfo->GetDefaultGateway().data(),
+                    sizeof(info->default_route));
+            LOG_DEBUG(Lib_NetCtl, "default gateway: {}", info->default_route);
         } else {
             LOG_WARNING(Lib_NetCtl, "default gateway: failed to retrieve");
         }
@@ -234,8 +228,8 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         LOG_DEBUG(Lib_NetCtl, "http secondary dns: {}", info->secondary_dns);
         break;
     case ORBIS_NET_CTL_INFO_HTTP_PROXY_SERVER:
-        strcpy(info->http_proxy_server, "0.0.0.0");
-        LOG_DEBUG(Lib_NetCtl, "http proxy server: {}", info->http_proxy_server);
+        info->http_proxy_server[0] = '\0';
+        LOG_DEBUG(Lib_NetCtl, "http proxy server: none");
         break;
     case ORBIS_NET_CTL_INFO_HTTP_PROXY_PORT:
         info->http_proxy_port = 0;
