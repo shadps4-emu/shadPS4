@@ -519,7 +519,7 @@ int PS4_SYSV_ABI sceNgs2VoiceRunCommands() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceNgs2(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3pCNbVM11UA", "libSceNgs2", 1, "libSceNgs2", 1, 1, sceNgs2CalcWaveformBlock);
     LIB_FUNCTION("6qN1zaEZuN0", "libSceNgs2", 1, "libSceNgs2", 1, 1,
                  sceNgs2CustomRackGetModuleInfo);
