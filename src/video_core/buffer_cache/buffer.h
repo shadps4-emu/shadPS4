@@ -112,6 +112,14 @@ public:
         return size_bytes;
     }
 
+    void SetLRUId(u64 id) noexcept {
+        lru_id = id;
+    }
+
+    u64 LRUId() const noexcept {
+        return lru_id;
+    }
+
     vk::Buffer Handle() const noexcept {
         return buffer;
     }
@@ -151,6 +159,7 @@ public:
     bool is_deleted{};
     int stream_score = 0;
     size_t size_bytes = 0;
+    u64 lru_id = 0;
     std::span<u8> mapped_data;
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;

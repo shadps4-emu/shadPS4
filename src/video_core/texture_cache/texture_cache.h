@@ -7,6 +7,7 @@
 #include <boost/container/small_vector.hpp>
 #include <tsl/robin_map.h>
 
+#include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/multi_level_page_table.h"
@@ -37,6 +38,11 @@ DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
 static constexpr u32 MaxInvalidateDist = 12_MB;
 
 class TextureCache {
+    // Default values for garbage collection
+    static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
+
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
         static constexpr size_t AddressSpaceBits = 40;
@@ -126,6 +132,7 @@ public:
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
+        TouchImage(image);
         RefreshImage(image, custom_scheduler);
     }
 
@@ -150,12 +157,18 @@ public:
 
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
-        return slot_images[id];
+        auto& image = slot_images[id];
+        TouchImage(image);
+        return image;
     }
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        return slot_image_views[id];
+        auto& view = slot_image_views[id];
+        // Maybe this is not needed.
+        Image& image = slot_images[view.image_id];
+        TouchImage(image);
+        return view;
     }
 
     /// Registers an image view for provided image
@@ -198,6 +211,9 @@ public:
         }
         return false;
     }
+
+    /// Runs the garbage collector.
+    void RunGarbageCollector();
 
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
@@ -287,6 +303,9 @@ private:
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
+    /// Touch the image in the LRU cache.
+    void TouchImage(const Image& image);
+
     void FreeImage(ImageId image_id) {
         UntrackImage(image_id);
         UnregisterImage(image_id);
@@ -305,6 +324,12 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
+    u64 total_used_memory = 0;
+    u64 trigger_gc_memory = 0;
+    u64 pressure_gc_memory = 0;
+    u64 critical_gc_memory = 0;
+    u64 gc_tick = 0;
+    Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
 
