@@ -488,7 +488,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                                                        range.upper() - range.lower());
             }
         }
-        buffer_cache.MemoryBarrier();
     }
 
     fault_process_pending |= uses_dma;
