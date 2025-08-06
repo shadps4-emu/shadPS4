@@ -821,13 +821,6 @@ template <bool insert>
 void BufferCache::ChangeRegister(BufferId buffer_id) {
     Buffer& buffer = slot_buffers[buffer_id];
     const auto size = buffer.SizeBytes();
-    if constexpr (insert) {
-        total_used_memory += Common::AlignUp(size, CACHING_PAGESIZE);
-        buffer.SetLRUId(lru_cache.Insert(buffer_id, gc_tick));
-    } else {
-        total_used_memory -= Common::AlignUp(size, CACHING_PAGESIZE);
-        lru_cache.Free(buffer.LRUId());
-    }
     const VAddr device_addr_begin = buffer.CpuAddr();
     const VAddr device_addr_end = device_addr_begin + size;
     const u64 page_begin = device_addr_begin / CACHING_PAGESIZE;
@@ -841,6 +834,8 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
         }
     }
     if constexpr (insert) {
+        total_used_memory += Common::AlignUp(size, CACHING_PAGESIZE);
+        buffer.SetLRUId(lru_cache.Insert(buffer_id, gc_tick));
         boost::container::small_vector<vk::DeviceAddress, 128> bda_addrs;
         bda_addrs.reserve(size_pages);
         for (u64 i = 0; i < size_pages; ++i) {
@@ -851,6 +846,8 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
                         bda_addrs.data(), bda_addrs.size() * sizeof(vk::DeviceAddress));
         buffer_ranges.Add(buffer.CpuAddr(), buffer.SizeBytes(), buffer_id);
     } else {
+        total_used_memory -= Common::AlignUp(size, CACHING_PAGESIZE);
+        lru_cache.Free(buffer.LRUId());
         FillBuffer(bda_pagetable_buffer, page_begin * sizeof(vk::DeviceAddress),
                    size_pages * sizeof(vk::DeviceAddress), 0);
         buffer_ranges.Subtract(buffer.CpuAddr(), buffer.SizeBytes());
