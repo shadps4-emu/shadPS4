@@ -29,6 +29,7 @@ EXPORT uintptr_t g_eboot_address;
 uint64_t g_eboot_image_size;
 std::string g_game_serial;
 std::string patchFile;
+bool patches_applied = false;
 std::vector<patchInfo> pending_patches;
 
 std::string toHex(u64 value, size_t byteSize) {
@@ -118,6 +119,8 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
     }
     return result;
 }
+
+void ApplyPendingPatches();
 
 void OnGameLoaded() {
 
@@ -377,20 +380,26 @@ void OnGameLoaded() {
 }
 
 void AddPatchToQueue(patchInfo patchToAdd) {
+    if (patches_applied) {
+        PatchMemory(patchToAdd.modNameStr, patchToAdd.offsetStr, patchToAdd.valueStr,
+                    patchToAdd.targetStr, patchToAdd.sizeStr, patchToAdd.isOffset,
+                    patchToAdd.littleEndian, patchToAdd.patchMask, patchToAdd.maskOffset);
+        return;
+    }
     pending_patches.push_back(patchToAdd);
 }
 
 void ApplyPendingPatches() {
-
+    patches_applied = true;
     for (size_t i = 0; i < pending_patches.size(); ++i) {
-        patchInfo currentPatch = pending_patches[i];
+        const patchInfo& currentPatch = pending_patches[i];
 
-        if (currentPatch.gameSerial != g_game_serial)
+        if (currentPatch.gameSerial != "*" && currentPatch.gameSerial != g_game_serial)
             continue;
 
-        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr, "", "",
-                    currentPatch.isOffset, currentPatch.littleEndian, currentPatch.patchMask,
-                    currentPatch.maskOffset);
+        PatchMemory(currentPatch.modNameStr, currentPatch.offsetStr, currentPatch.valueStr,
+                    currentPatch.targetStr, currentPatch.sizeStr, currentPatch.isOffset,
+                    currentPatch.littleEndian, currentPatch.patchMask, currentPatch.maskOffset);
     }
 
     pending_patches.clear();
