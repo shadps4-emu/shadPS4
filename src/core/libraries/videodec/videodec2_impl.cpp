@@ -42,8 +42,6 @@ VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
     mCodecContext->width = configInfo.maxFrameWidth;
     mCodecContext->height = configInfo.maxFrameHeight;
 
-    // mMemoryAlignment = memoryInfo.frameBufferAlignment;
-
     avcodec_open2(mCodecContext, codec, nullptr);
 }
 
