@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation type="unfinished">Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</translation>
+      <translation>چیٹس/پیچز تجرباتی ہیں۔\nاحتیاط کے ساتھ استعمال کریں۔\n\nچیٹس کو الگ الگ ڈاؤن لوڈ کرنے کے لیے، ریپوزٹری منتخب کریں اور ڈاؤن لوڈ بٹن پر کلک کریں۔\nپیچز کے ٹیب میں، آپ تمام پیچز ایک ساتھ ڈاؤن لوڈ کر سکتے ہیں۔ اپنی مرضی کے پیچز منتخب کریں، اور اپنا انتخاب محفوظ کر لیں۔\n\nچونکہ ہم چیٹس/پیچز خود نہیں بناتے،\nاس لیے کسی بھی مسئلے کی اطلاع متعلقہ چیٹ کے مصنف کو دیں۔\n\nکیا آپ نے نئی چیٹس بنائی ہیں؟ وزٹ کریں:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -184,7 +184,7 @@
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation type="unfinished">Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</translation>
+      <translation>پیچز کامیابی سے ڈاؤن لوڈ ہو گئے! تمام گیمز کے لیے دستیاب پیچز ڈاؤن لوڈ کر لیے گئے ہیں، اس لیے ہر گیم کے لیے الگ سے پیچز ڈاؤن لوڈ کرنے کی ضرورت نہیں ہے جیسا کہ چیٹس میں ہوتا ہے۔ اگر کوئی پیچ ظاہر نہیں ہو رہا تو ممکن ہے کہ وہ مخصوص سیریل اور ورژن کے لیے موجود نہ ہو۔</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
@@ -240,7 +240,7 @@
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation type="unfinished">Can&apos;t apply cheats before the game is started</translation>
+      <translation>گیم شروع ہونے سے پہلے چیٹس لاگو نہیں کی جا سکتیں</translation>
     </message>
     <message>
       <source>Close</source>
@@ -267,43 +267,43 @@
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation type="unfinished">Failed to parse update information.</translation>
+      <translation>اپ ڈیٹ کی معلومات پڑھنے میں ناکامی ہوئی۔</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation type="unfinished">No pre-releases found.</translation>
+      <translation>کوئی پری ریلیز نہیں ملی۔</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation type="unfinished">Invalid release data.</translation>
+      <translation>ریلیز کا ڈیٹا درست نہیں ہے۔</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation type="unfinished">No download URL found for the specified asset.</translation>
+      <translation>مخصوص کردہ اثاثے کے لیے کوئی ڈاؤن لوڈ URL نہیں ملا۔</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation type="unfinished">Your version is already up to date!</translation>
+      <translation>آپ کا ورژن پہلے سے ہی تازہ ترین ہے!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation type="unfinished">Update Available</translation>
+      <translation>نئی اپ ڈیٹ دستیاب ہے</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation type="unfinished">Update Channel</translation>
+      <translation>اپ ڈیٹس کا چینل</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation type="unfinished">Current Version</translation>
+      <translation>موجودہ ورژن</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation type="unfinished">Latest Version</translation>
+      <translation>تازہ ترین ورژن</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation type="unfinished">Do you want to update?</translation>
+      <translation>کیا آپ اپ ڈیٹ کرنا چاہتے ہیں؟</translation>
     </message>
     <message>
       <source>Show Changelog</source>
