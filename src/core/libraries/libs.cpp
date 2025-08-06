@@ -130,6 +130,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionHttpd::RegisterLib(sym);
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
+    Libraries::Rtc::RegisterLib(sym);
 }
 
 } // namespace Libraries

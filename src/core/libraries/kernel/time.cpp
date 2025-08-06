@@ -508,6 +508,24 @@ s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, clock_id: {}", clock_id);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_settimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz) {
+    s32 ret = posix_settimeofday(_tv, _tz);
+    if (ret < 0) {
+        return ErrnoToSceKernelError(ret);
+    }
+    return ret;
+}
+
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
@@ -525,6 +543,9 @@ void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, posix_clock_getres);
     LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, posix_gettimeofday);
     LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, posix_gettimeofday);
+    LIB_FUNCTION("ChCOChPU-YM", "libkernel", 1, "libkernel", 1, 1, sceKernelSettimeofday);
+    LIB_FUNCTION("VdXIDAbJ3tQ", "libScePosix", 1, "libkernel", 1, 1, posix_settimeofday);
+    LIB_FUNCTION("d7nUj1LOdDU", "libScePosix", 1, "libkernel", 1, 1, posix_clock_settime);
 
     // Orbis
     LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime);
