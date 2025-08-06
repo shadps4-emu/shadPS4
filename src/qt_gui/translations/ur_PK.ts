@@ -166,7 +166,7 @@
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>پ نے منتخب کردہ ریپوزٹری سے اس گیم کے اس ورژن کے لیے چیٹس کامیابی سے ڈاؤن لوڈ کر لی ہیں۔
+      <translation>آپ نے منتخب کردہ ریپوزٹری سے اس گیم کے اس ورژن کے لیے چیٹس کامیابی سے ڈاؤن لوڈ کر لی ہیں۔
 آپ کسی دوسری ریپوزٹری سے بھی ڈاؤن لوڈ کرنے کی کوشش کر سکتے ہیں،
 اگر دستیاب ہو تو اسے فہرست سے فائل منتخب کر کے استعمال کرنا بھی ممکن ہوگا</translation>
     </message>
@@ -204,7 +204,7 @@
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>پ کو اپنی گیم اپ ڈیٹ کرنے کی ضرورت ہو سکتی ہے۔</translation>
+      <translation>آپ کو اپنی گیم اپ ڈیٹ کرنے کی ضرورت ہو سکتی ہے۔</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
@@ -263,7 +263,7 @@
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>ٹو اپڈیٹر ہر گھنٹے میں زیادہ سے زیادہ 60 اپڈیٹ چیکس کی اجازت دیتا ہے۔\nآپ اس حد تک پہنچ چکے ہیں۔ براہ کرم کچھ دیر بعد کوشش کیجیے۔</translation>
+      <translation>آٹو اپڈیٹر ہر گھنٹے میں زیادہ سے زیادہ 60 اپڈیٹ چیکس کی اجازت دیتا ہے۔\nآپ اس حد تک پہنچ چکے ہیں۔ براہ کرم کچھ دیر بعد کوشش کیجیے۔</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
