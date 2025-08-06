@@ -679,6 +679,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
@@ -768,6 +769,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
+         src/core/ipc/ipc.cpp
+         src/core/ipc/ipc.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -1087,6 +1090,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/settings.h
            src/qt_gui/sdl_event_wrapper.cpp
            src/qt_gui/sdl_event_wrapper.h
+           src/qt_gui/hotkeys.h
+           src/qt_gui/hotkeys.cpp
+           src/qt_gui/hotkeys.ui
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}

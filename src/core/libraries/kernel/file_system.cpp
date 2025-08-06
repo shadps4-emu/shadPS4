@@ -227,8 +227,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         return -1;
     }
     if (fd < 3) {
-        // This is technically possible, but it's usually caused by some stubbed function instead.
-        LOG_WARNING(Kernel_Fs, "called on an std handle, fd = {}", fd);
+        *__Error() = POSIX_EPERM;
+        return -1;
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
@@ -272,12 +272,8 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally.
+        return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
     }
 
     return file->f.WriteRaw<u8>(buf, nbytes);
@@ -460,12 +456,8 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
-        s64 result = file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally.
+        return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
     return ReadFile(file->f, buf, nbytes);
 }
@@ -659,12 +651,8 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         break;
     }
     case Core::FileSys::FileType::Socket: {
-        s32 result = file->socket->fstat(sb);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+        // Socket functions handle errnos internally
+        return file->socket->fstat(sb);
     }
     default:
         UNREACHABLE();

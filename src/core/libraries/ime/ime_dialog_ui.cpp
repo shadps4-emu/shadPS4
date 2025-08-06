@@ -324,8 +324,8 @@ void ImeDialogUi::DrawInputText() {
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
     if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
-                    state->max_text_length + 1, input_size, ImGuiInputTextFlags_CallbackCharFilter,
-                    InputTextCallback, this)) {
+                    state->max_text_length * 4 + 1, input_size,
+                    ImGuiInputTextFlags_CallbackCharFilter, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }
@@ -340,7 +340,7 @@ void ImeDialogUi::DrawMultiLineInputText() {
     }
     const char* placeholder = state->placeholder.empty() ? nullptr : state->placeholder.data();
     if (InputTextEx("##ImeDialogInput", placeholder, state->current_text.begin(),
-                    state->max_text_length + 1, input_size, flags, InputTextCallback, this)) {
+                    state->max_text_length * 4 + 1, input_size, flags, InputTextCallback, this)) {
         state->input_changed = true;
     }
 }

@@ -60,6 +60,10 @@ std::pair<int, int> leftjoystick_deadzone, rightjoystick_deadzone, lefttrigger_d
 std::list<std::pair<InputEvent, bool>> pressed_keys;
 std::list<InputID> toggled_keys;
 static std::vector<BindingConnection> connections;
+static std::vector<std::string> fullscreenHotkeyInputsPad(3, "");
+static std::vector<std::string> pauseHotkeyInputsPad(3, "");
+static std::vector<std::string> simpleFpsHotkeyInputsPad(3, "");
+static std::vector<std::string> quitHotkeyInputsPad(3, "");
 
 auto output_array = std::array{
     // Important: these have to be the first, or else they will update in the wrong order
@@ -728,6 +732,160 @@ void ActivateOutputsFromInputs() {
     // Update all outputs
     for (auto& it : output_array) {
         it.FinalizeUpdate();
+    }
+}
+
+std::vector<std::string> GetHotkeyInputs(Input::HotkeyPad hotkey) {
+    switch (hotkey) {
+    case Input::HotkeyPad::FullscreenPad:
+        return fullscreenHotkeyInputsPad;
+    case Input::HotkeyPad::PausePad:
+        return pauseHotkeyInputsPad;
+    case Input::HotkeyPad::SimpleFpsPad:
+        return simpleFpsHotkeyInputsPad;
+    case Input::HotkeyPad::QuitPad:
+        return quitHotkeyInputsPad;
+    default:
+        return {};
+    }
+}
+
+void LoadHotkeyInputs() {
+    const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
+    if (!std::filesystem::exists(hotkey_file)) {
+        createHotkeyFile(hotkey_file);
+    }
+
+    std::string controllerFullscreenString, controllerPauseString, controllerFpsString,
+        controllerQuitString = "";
+    std::ifstream file(hotkey_file);
+    int lineCount = 0;
+    std::string line = "";
+
+    while (std::getline(file, line)) {
+        lineCount++;
+
+        std::size_t equal_pos = line.find('=');
+        if (equal_pos == std::string::npos)
+            continue;
+
+        if (line.contains("controllerFullscreen")) {
+            controllerFullscreenString = line.substr(equal_pos + 2);
+        } else if (line.contains("controllerQuit")) {
+            controllerQuitString = line.substr(equal_pos + 2);
+        } else if (line.contains("controllerFps")) {
+            controllerFpsString = line.substr(equal_pos + 2);
+        } else if (line.contains("controllerPause")) {
+            controllerPauseString = line.substr(equal_pos + 2);
+        }
+    }
+
+    file.close();
+
+    auto getVectorFromString = [&](std::vector<std::string>& inputVector,
+                                   const std::string& inputString) {
+        std::size_t comma_pos = inputString.find(',');
+        if (comma_pos == std::string::npos) {
+            inputVector[0] = inputString;
+            inputVector[1] = "unused";
+            inputVector[2] = "unused";
+        } else {
+            inputVector[0] = inputString.substr(0, comma_pos);
+            std::string substring = inputString.substr(comma_pos + 1);
+            std::size_t comma2_pos = substring.find(',');
+
+            if (comma2_pos == std::string::npos) {
+                inputVector[1] = substring;
+                inputVector[2] = "unused";
+            } else {
+                inputVector[1] = substring.substr(0, comma2_pos);
+                inputVector[2] = substring.substr(comma2_pos + 1);
+            }
+        }
+    };
+
+    getVectorFromString(fullscreenHotkeyInputsPad, controllerFullscreenString);
+    getVectorFromString(quitHotkeyInputsPad, controllerQuitString);
+    getVectorFromString(pauseHotkeyInputsPad, controllerPauseString);
+    getVectorFromString(simpleFpsHotkeyInputsPad, controllerFpsString);
+}
+
+bool HotkeyInputsPressed(std::vector<std::string> inputs) {
+    if (inputs[0] == "unmapped") {
+        return false;
+    }
+
+    auto controller = Common::Singleton<Input::GameController>::Instance();
+    auto engine = controller->GetEngine();
+    SDL_Gamepad* gamepad = engine->m_gamepad;
+
+    if (!gamepad) {
+        return false;
+    }
+
+    std::vector<bool> isPressed(3, false);
+    for (int i = 0; i < 3; i++) {
+        if (inputs[i] == "cross") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_SOUTH);
+        } else if (inputs[i] == "circle") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_EAST);
+        } else if (inputs[i] == "square") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_WEST);
+        } else if (inputs[i] == "triangle") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_NORTH);
+        } else if (inputs[i] == "pad_up") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP);
+        } else if (inputs[i] == "pad_down") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+        } else if (inputs[i] == "pad_left") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+        } else if (inputs[i] == "pad_right") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+        } else if (inputs[i] == "l1") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+        } else if (inputs[i] == "r1") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+        } else if (inputs[i] == "l3") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_LEFT_STICK);
+        } else if (inputs[i] == "r3") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
+        } else if (inputs[i] == "options") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_START);
+        } else if (inputs[i] == "back") {
+            isPressed[i] = SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_BACK);
+        } else if (inputs[i] == "l2") {
+            isPressed[i] = (SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 16000);
+        } else if (inputs[i] == "r2") {
+            isPressed[i] = (SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000);
+        } else if (inputs[i] == "unused") {
+            isPressed[i] = true;
+        } else {
+            isPressed[i] = false;
+        }
+    }
+
+    if (isPressed[0] && isPressed[1] && isPressed[2]) {
+        return true;
+    }
+
+    return false;
+}
+
+void createHotkeyFile(std::filesystem::path hotkey_file) {
+    std::string_view default_hotkeys = R"(controllerStop = unmapped
+controllerFps = l2,r2,r3
+controllerPause = l2,r2,options
+controllerFullscreen = l2,r2,l3
+
+keyboardStop = placeholder
+keyboardFps = placeholder
+keyboardPause = placeholder
+keyboardFullscreen = placeholder
+)";
+
+    std::ofstream default_hotkeys_stream(hotkey_file);
+    if (default_hotkeys_stream) {
+        default_hotkeys_stream << default_hotkeys;
     }
 }
 

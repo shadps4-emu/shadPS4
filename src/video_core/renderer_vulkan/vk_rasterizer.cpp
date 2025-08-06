@@ -446,12 +446,14 @@ void Rasterizer::Finish() {
     scheduler.Finish();
 }
 
-void Rasterizer::EndCommandList() {
+void Rasterizer::OnSubmit() {
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
+    texture_cache.RunGarbageCollector();
+    buffer_cache.RunGarbageCollector();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {

@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Rör analog spak</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 och L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Aktiv gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>Gamepad-id</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Gamepad (standard)</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Ingen standard vald</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>inte tillgänglig</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Ställ in aktiv gamepad som standard</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Ta bort gamepad som standard</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 och R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Standardkontroller vald</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Aktiv kontroller inställd som standard</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Standardkontroller borttagen</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Inställning för standardkontroller borttagen</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1700,11 +1756,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Aktivera återläsning</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Aktivera återläsning av linjära bilder</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1936,11 +1992,11 @@
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Aktivera återläsning:\nAktivera återläsning och återskrivning av GPU-minnet.\nDetta krävs för att vissa spel ska fungera korrekt.\nKan orsaka stabilitets- och/eller prestandaproblem.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Aktivera återläsning av linjära bilder:\nAktiverar asynkron nedladdning av GPU-modifierade linjära bilder.\nKan lösa problem i vissa spel.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2112,11 +2168,11 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Experimentella funktioner</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>VARNING: Dessa funktioner är experimentella och bör inte aktiveras om du inte har blivit tillsagd att göra det eller om ett spel kräver det. Fråga i shadPS4s Discord-server om du har några frågor.</translation>
     </message>
   </context>
   <context>

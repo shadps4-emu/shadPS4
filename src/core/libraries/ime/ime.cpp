@@ -21,8 +21,12 @@ public:
         LOG_INFO(Lib_Ime, "Creating ImeHandler for keyboard");
         Init(param, false);
     }
-    ImeHandler(const OrbisImeParam* param) {
+    ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
         LOG_INFO(Lib_Ime, "Creating ImeHandler for IME");
+        if (extended) {
+            m_extended = *extended;
+            m_has_extended = true;
+        }
         Init(param, true);
     }
     ~ImeHandler() = default;
@@ -61,8 +65,8 @@ public:
         }*/
 
         if (ime_mode) {
-            g_ime_state = ImeState(&m_param.ime);
-            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime);
+            g_ime_state = ImeState(&m_param.ime, m_has_extended ? &m_extended : nullptr);
+            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime, m_has_extended ? &m_extended : nullptr);
         }
     }
 
@@ -121,6 +125,9 @@ private:
         OrbisImeParam ime;
     } m_param{};
     bool m_ime_mode = false;
+
+    OrbisImeParamExtended m_extended{};
+    bool m_has_extended = false;
 };
 
 static std::unique_ptr<ImeHandler> g_ime_handler;
@@ -616,7 +623,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         return Error::BUSY;
     }
 
-    g_ime_handler = std::make_unique<ImeHandler>(param);
+    g_ime_handler = std::make_unique<ImeHandler>(param, extended);
     if (!g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create IME handler");
         return Error::NO_MEMORY; // or Error::INTERNAL

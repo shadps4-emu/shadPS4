@@ -284,6 +284,11 @@ public:
         return properties.deviceName;
     }
 
+    /// Returns if the device is an integrated GPU.
+    bool IsIntegrated() const {
+        return properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
+    }
+
     /// Returns the pipeline cache unique identifier
     const auto GetPipelineCacheUUID() const {
         return properties.pipelineCacheUUID;
@@ -386,6 +391,19 @@ public:
         return features.logicOp;
     }
 
+    /// Returns whether the device can report memory usage.
+    bool CanReportMemoryUsage() const {
+        return supports_memory_budget;
+    }
+
+    /// Returns the amount of memory used.
+    [[nodiscard]] u64 GetDeviceMemoryUsage() const;
+
+    /// Returns the total memory budget available to the device.
+    [[nodiscard]] u64 GetTotalMemoryBudget() const {
+        return total_memory_budget;
+    }
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
@@ -396,8 +414,9 @@ private:
     /// Creates the VMA allocator handle
     void CreateAllocator();
 
-    /// Collects telemetry information from the device.
+    /// Collects various information from the device.
     void CollectDeviceParameters();
+    void CollectPhysicalMemoryInfo();
     void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
@@ -450,6 +469,9 @@ private:
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
+    bool supports_memory_budget{};
+    u64 total_memory_budget{};
+    std::vector<size_t> valid_heaps;
 };
 
 } // namespace Vulkan

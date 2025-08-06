@@ -111,6 +111,11 @@ struct Image {
         return track_addr != 0 && track_addr_end != 0;
     }
 
+    bool SafeToDownload() const {
+        return True(flags & ImageFlagBits::GpuModified) &&
+               False(flags & (ImageFlagBits::GpuDirty | ImageFlagBits::CpuDirty));
+    }
+
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
@@ -122,6 +127,7 @@ struct Image {
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
     ImageId depth_id{};
+    u64 lru_id{};
 
     // Resource state tracking
     struct {

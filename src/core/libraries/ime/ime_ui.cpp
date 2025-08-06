@@ -10,13 +10,18 @@ using namespace ImGui;
 
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
-ImeState::ImeState(const OrbisImeParam* param) {
+ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* extended) {
     if (!param) {
         return;
     }
 
     work_buffer = param->work;
     text_buffer = param->inputTextBuffer;
+
+    if (extended) {
+        extended_param = *extended;
+        has_extended = true;
+    }
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
     if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
@@ -82,7 +87,8 @@ bool ImeState::ConvertUTF8ToOrbis(const char* utf8_text, std::size_t utf8_text_l
     return true;
 }
 
-ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param) : state(state), ime_param(param) {
+ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExtended* extended)
+    : state(state), ime_param(param), extended_param(extended) {
     if (param) {
         AddLayer(this);
     }
@@ -182,8 +188,9 @@ void ImeUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(), ime_param->maxTextLength,
-                    input_size, ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
+    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(),
+                    ime_param->maxTextLength * 4 + 1, input_size,
+                    ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
     }
 }
 

@@ -6,7 +6,10 @@
 #include <imgui.h>
 #include "common/config.h"
 #include "core/debug_state.h"
+#include "core/memory.h"
 #include "imgui_impl_sdl3.h"
+#include "input/controller.h"
+#include "sdl_window.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -500,6 +503,9 @@ bool ProcessEvent(const SDL_Event* event) {
         bd->want_update_gamepads_list = true;
         return true;
     }
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        bd->want_update_gamepads_list = true;
+        return false;
     }
     return false;
 }
@@ -730,18 +736,26 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
+    auto controller = Common::Singleton<Input::GameController>::Instance();
+    auto engine = controller->GetEngine();
+    SDL_Gamepad* SDLGamepad = engine->m_gamepad;
     // Update list of gamepads to use
     if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
-        CloseGamepads();
-        int sdl_gamepads_count = 0;
-        const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
-        for (int n = 0; n < sdl_gamepads_count; n++)
-            if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
-                bd->gamepads.push_back(gamepad);
-                if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
-                    break;
-            }
-        bd->want_update_gamepads_list = false;
+        if (SDLGamepad) {
+            bd->gamepads.push_back(SDLGamepad);
+            bd->want_update_gamepads_list = false;
+        } else {
+            CloseGamepads();
+            int sdl_gamepads_count = 0;
+            const SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
+            for (int n = 0; n < sdl_gamepads_count; n++)
+                if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n])) {
+                    bd->gamepads.push_back(gamepad);
+                    if (bd->gamepad_mode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
+                        break;
+                }
+            bd->want_update_gamepads_list = false;
+        }
     }
 
     // FIXME: Technically feeding gamepad shouldn't depend on this now that they are regular inputs.

@@ -26,10 +26,10 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -41,10 +41,10 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -54,9 +54,8 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     }
     auto new_sock = file->socket->Accept(addr, paddrlen);
     if (!new_sock) {
-        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
-        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {}",
-                  Common::GetLastErrorMsg());
+        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {:#x}",
+                  (u32)*Libraries::Kernel::__Error());
         return -1;
     }
     auto fd = FDTable::Instance()->CreateHandle();
@@ -66,10 +65,24 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     new_file->socket = new_sock;
     return fd;
 }
-int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, const OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+
+int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_INFO(Lib_Net, "s = {}", s);
+
+    auto file = FDTable::Instance()->GetSocket(s);
+    if (!file) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    int returncode = file->socket->GetPeerName(addr, paddrlen);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -81,10 +94,10 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -96,10 +109,10 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -111,10 +124,10 @@ int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                 u32 optlen) {
     auto file = FDTable::Instance()->GetSocket(s);
@@ -127,13 +140,14 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how) {
     return -1;
 }
+
 int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protocol) {
     if (name == nullptr) {
         LOG_INFO(Lib_Net, "name = no-named family = {} type = {} protocol = {}", family, type,
@@ -169,13 +183,16 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     sock->m_guest_name = name ? name : "anon_sock";
     return fd;
 }
+
 int PS4_SYSV_ABI sys_socket(int family, int type, int protocol) {
     return sys_socketex(nullptr, family, type, protocol);
 }
+
 int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
+
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
@@ -187,10 +204,10 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
@@ -203,14 +220,15 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
+
 s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen) {
     auto file = FDTable::Instance()->GetSocket(s);
@@ -223,12 +241,21 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
     if (returncode >= 0) {
         return returncode;
     }
-    *Libraries::Kernel::__Error() = returncode;
-    LOG_ERROR(Lib_Net, "error code returned : {:#x}", (u32)returncode);
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
+
 s64 PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return -1;
 }
+
+int PS4_SYSV_ABI sys_htons(u16 v) {
+    return ((v << 8) & 0xff00) | ((v >> 8) & 0x00ff);
+}
+
+int PS4_SYSV_ABI sys_htonl(u32 v) {
+    return (v << 24) | ((v & 0xff00) << 8) | ((v >> 8) & 0xff00) | (v >> 24);
+}
+
 } // namespace Libraries::Net

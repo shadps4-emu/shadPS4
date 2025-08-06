@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
@@ -28,6 +29,28 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
+
+    // Set up garbage collection parameters.
+    if (!instance.CanReportMemoryUsage()) {
+        trigger_gc_memory = 0;
+        pressure_gc_memory = DEFAULT_PRESSURE_GC_MEMORY;
+        critical_gc_memory = DEFAULT_CRITICAL_GC_MEMORY;
+        return;
+    }
+
+    const s64 device_local_memory = static_cast<s64>(instance.GetTotalMemoryBudget());
+    const s64 min_spacing_expected = device_local_memory - 1_GB;
+    const s64 min_spacing_critical = device_local_memory - 512_MB;
+    const s64 mem_threshold = std::min<s64>(device_local_memory, TARGET_GC_THRESHOLD);
+    const s64 min_vacancy_expected = (6 * mem_threshold) / 10;
+    const s64 min_vacancy_critical = (2 * mem_threshold) / 10;
+    pressure_gc_memory = static_cast<u64>(
+        std::max<u64>(std::min(device_local_memory - min_vacancy_expected, min_spacing_expected),
+                      DEFAULT_PRESSURE_GC_MEMORY));
+    critical_gc_memory = static_cast<u64>(
+        std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
+                      DEFAULT_CRITICAL_GC_MEMORY));
+    trigger_gc_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
 }
 
 TextureCache::~TextureCache() = default;
@@ -459,6 +482,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, FindFlags flags) {
 
     Image& image = slot_images[image_id];
     image.tick_accessed_last = scheduler.CurrentTick();
+    TouchImage(image);
 
     // If the image requested is a subresource of the image from cache record its location.
     if (view_mip > 0) {
@@ -557,6 +581,7 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
             RegisterImage(stencil_id);
         }
         Image& image = slot_images[stencil_id];
+        TouchImage(image);
         image.AssociateDepth(image_id);
     }
 
@@ -719,6 +744,8 @@ void TextureCache::RegisterImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
+    total_used_memory += Common::AlignUp(image.info.guest_size, 1024);
+    image.lru_id = lru_cache.Insert(image_id, gc_tick);
     ForEachPage(image.info.guest_address, image.info.guest_size,
                 [this, image_id](u64 page) { page_table[page].push_back(image_id); });
 }
@@ -728,6 +755,8 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already unregistered image");
     image.flags &= ~ImageFlagBits::Registered;
+    lru_cache.Free(image.lru_id);
+    total_used_memory -= Common::AlignUp(image.info.guest_size, 1024);
     ForEachPage(image.info.guest_address, image.info.guest_size, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
         if (page_it == nullptr) {
@@ -850,6 +879,77 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     tracker.UpdatePageWatchers<false>(addr, size);
+}
+
+void TextureCache::RunGarbageCollector() {
+    SCOPE_EXIT {
+        ++gc_tick;
+    };
+    if (instance.CanReportMemoryUsage()) {
+        total_used_memory = instance.GetDeviceMemoryUsage();
+    }
+    if (total_used_memory < trigger_gc_memory) {
+        return;
+    }
+    std::scoped_lock lock{mutex};
+    bool pressured = false;
+    bool aggresive = false;
+    u64 ticks_to_destroy = 0;
+    size_t num_deletions = 0;
+
+    const auto configure = [&](bool allow_aggressive) {
+        pressured = total_used_memory >= pressure_gc_memory;
+        aggresive = allow_aggressive && total_used_memory >= critical_gc_memory;
+        ticks_to_destroy = aggresive ? 160 : pressured ? 80 : 16;
+        ticks_to_destroy = std::min(ticks_to_destroy, gc_tick);
+        num_deletions = aggresive ? 40 : pressured ? 20 : 10;
+    };
+    const auto clean_up = [&](ImageId image_id) {
+        if (num_deletions == 0) {
+            return true;
+        }
+        --num_deletions;
+        auto& image = slot_images[image_id];
+        const bool download = image.SafeToDownload();
+        const bool linear = image.info.tiling_mode == AmdGpu::TilingMode::Display_Linear;
+        if (!linear && download) {
+            // This is a workaround for now. We can't handle non-linear image downloads.
+            return false;
+        }
+        if (download && !pressured) {
+            return false;
+        }
+        if (download) {
+            DownloadImageMemory(image_id);
+        }
+        FreeImage(image_id);
+        if (total_used_memory < critical_gc_memory) {
+            if (aggresive) {
+                num_deletions >>= 2;
+                aggresive = false;
+                return false;
+            }
+            if (pressured && total_used_memory < pressure_gc_memory) {
+                num_deletions >>= 1;
+                pressured = false;
+            }
+        }
+        return false;
+    };
+
+    // Try to remove anything old enough and not high priority.
+    configure(false);
+    lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+
+    if (total_used_memory >= critical_gc_memory) {
+        // If we are still over the critical limit, run an aggressive GC
+        configure(true);
+        lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+    }
+}
+
+void TextureCache::TouchImage(const Image& image) {
+    lru_cache.Touch(image.lru_id, gc_tick);
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

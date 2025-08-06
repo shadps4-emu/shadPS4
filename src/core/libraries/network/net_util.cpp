@@ -322,4 +322,49 @@ bool NetUtilInternal::RetrieveNetmask() {
     return success;
 }
 
+const std::string& NetUtilInternal::GetIp() const {
+    return ip;
+}
+
+bool NetUtilInternal::RetrieveIp() {
+    std::scoped_lock lock{m_mutex};
+
+    auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        return false;
+    }
+
+    sockaddr_in sa{};
+    socklen_t sa_len{sizeof(sa)};
+    sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = inet_addr("1.1.1.1");
+    sa.sin_port = htons(80);
+
+#ifdef _WIN32
+#define close closesocket
+#endif
+
+    if (connect(sockfd, (sockaddr*)&sa, sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    if (getsockname(sockfd, (struct sockaddr*)&sa, &sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    char netmaskStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &sa.sin_addr, netmaskStr, INET_ADDRSTRLEN);
+    ip = netmaskStr;
+
+    close(sockfd);
+
+#ifdef _WIN32
+#undef close
+#endif
+
+    return true;
+}
+
 } // namespace NetUtil
