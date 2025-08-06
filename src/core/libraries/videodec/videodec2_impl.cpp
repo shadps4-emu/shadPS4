@@ -15,8 +15,19 @@ std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
 std::vector<OrbisVideodec2LegacyAvcPictureInfo> gLegacyPictureInfos;
 
 static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + (src.width * src.height), src.data[1], (src.width * src.height) / 2);
+    // sometimes output buffer is not aligned to ffmpeg's processing buffer,
+    // which adds extra padding at the end of every row.
+    // we can safely discard those to match target width
+    for (u16 row = 0; row < src.height; row++) {
+        u64 dst_offset = row * src.width;
+        std::memcpy(dst + dst_offset, src.data[0] + (row * src.linesize[0]), src.width);
+    }
+
+    u64 dst_base = src.width * src.height;
+    for (u16 row = 0; row < src.height / 2; row++) {
+        u64 dstoffset = row * src.width;
+        std::memcpy(dst + dst_base + dstoffset, src.data[1] + (row * src.linesize[1]), src.width);
+    }
 }
 
 VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
@@ -30,6 +41,8 @@ VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
     ASSERT(mCodecContext);
     mCodecContext->width = configInfo.maxFrameWidth;
     mCodecContext->height = configInfo.maxFrameHeight;
+
+    // mMemoryAlignment = memoryInfo.frameBufferAlignment;
 
     avcodec_open2(mCodecContext, codec, nullptr);
 }
@@ -110,7 +123,7 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         outputInfo.codecType = 1; // FIXME: Hardcoded to AVC
         outputInfo.frameWidth = frame->width;
         outputInfo.frameHeight = frame->height;
-        outputInfo.framePitch = frame->linesize[0];
+        outputInfo.framePitch = frame->width;
         outputInfo.frameBufferSize = frameBuffer.frameBufferSize;
         outputInfo.frameBuffer = frameBuffer.frameBuffer;
 
@@ -121,7 +134,7 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         // For proper compatibility with older games, check the inputted OutputInfo struct size.
         if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
             // framePitchInBytes only exists in the newer struct.
-            outputInfo.framePitchInBytes = frame->linesize[0];
+            outputInfo.framePitchInBytes = frame->width;
             if (outputInfo.isValid) {
                 OrbisVideodec2AvcPictureInfo pictureInfo = {};
 

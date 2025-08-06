@@ -33,6 +33,7 @@ private:
     AVFrame* ConvertNV12Frame(AVFrame& frame);
 
 private:
+    //u32 mMemoryAlignment = 0;
     AVCodecContext* mCodecContext = nullptr;
     SwsContext* mSwsContext = nullptr;
 };
