@@ -1127,7 +1127,7 @@ typedef struct {
 
 #define FD_ZERO_POSIX(set) memset((set), 0, sizeof(fd_set_posix))
 
-s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* writefds,
+s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* writefds,
                               fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
     LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
@@ -1144,15 +1144,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
     FD_ZERO_POSIX(&write_ready);
     FD_ZERO_POSIX(&except_ready);
 
-    std::map<int, int> host_to_guest;
-    int socket_max_fd = -1;
+    std::map<s32, s32> host_to_guest;
+    s32 socket_max_fd = -1;
 
-    for (int i = 0; i < nfds; ++i) {
+    for (s32 i = 0; i < nfds; ++i) {
         bool want_read = readfds && FD_ISSET_POSIX(i, readfds);
         bool want_write = writefds && FD_ISSET_POSIX(i, writefds);
         bool want_except = exceptfds && FD_ISSET_POSIX(i, exceptfds);
-        if (!(want_read || want_write || want_except))
+        if (!(want_read || want_write || want_except)) {
             continue;
+        }
 
         auto* file = h->GetFile(i);
         if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
@@ -1182,28 +1183,36 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
             UNREACHABLE();
             break;
         }
-        if (native_fd == -1)
-            continue;
 
-        host_to_guest[native_fd] = i;
-        LOG_INFO(Kernel_Fs, "Mapping native_fd {} to guest_fd {}", native_fd, i);
-
-        if (file->type == Core::FileSys::FileType::Regular) {
+        if (file->type == Core::FileSys::FileType::Regular ||
+            file->type == Core::FileSys::FileType::Device) {
             // Disk files always ready
-            if (want_read)
+            if (want_read) {
                 FD_SET_POSIX(i, &read_ready);
-            if (want_write)
+            }
+            if (want_write) {
                 FD_SET_POSIX(i, &write_ready);
+            }
             // exceptfds not supported on regular files
         } else if (file->type == Core::FileSys::FileType::Socket) {
-            if (want_read)
+            if (want_read) {
                 FD_SET(native_fd, &read_host);
-            if (want_write)
+            }
+            if (want_write) {
                 FD_SET(native_fd, &write_host);
-            if (want_except)
+            }
+            if (want_except) {
                 FD_SET(native_fd, &except_host);
+            }
             socket_max_fd = std::max(socket_max_fd, native_fd);
         }
+
+        if (native_fd == -1) {
+            continue;
+        }
+
+        LOG_INFO(Kernel_Fs, "Mapping native_fd {} to guest_fd {}", native_fd, i);
+        host_to_guest[native_fd] = i;
     }
 
     LOG_INFO(Kernel_Fs,
@@ -1215,14 +1224,17 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
         LOG_WARNING(Kernel_Fs, "No sockets in fd_sets, select() will return immediately");
     }
 
-    if (readfds)
+    if (readfds) {
         FD_ZERO_POSIX(readfds);
-    if (writefds)
+    }
+    if (writefds) {
         FD_ZERO_POSIX(writefds);
-    if (exceptfds)
+    }
+    if (exceptfds) {
         FD_ZERO_POSIX(exceptfds);
+    }
 
-    int result = 0;
+    s32 result = 0;
     if (socket_max_fd != -1) {
         timeval tv = {};
         timeval* tv_ptr = nullptr;
@@ -1255,35 +1267,35 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
             return -1;
         }
 
-        for (u32 i = 0; i < read_host.fd_count; ++i) {
-            int fd = static_cast<int>(read_host.fd_array[i]);
+        for (s32 i = 0; i < read_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(read_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], readfds);
             LOG_INFO(Kernel_Fs, "Socket fd {} ready for read", host_to_guest[fd]);
         }
-        for (u32 i = 0; i < write_host.fd_count; ++i) {
-            int fd = static_cast<int>(write_host.fd_array[i]);
+        for (s32 i = 0; i < write_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(write_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], writefds);
             LOG_INFO(Kernel_Fs, "Socket fd {} ready for write", host_to_guest[fd]);
         }
-        for (u32 i = 0; i < except_host.fd_count; ++i) {
-            int fd = static_cast<int>(except_host.fd_array[i]);
+        for (s32 i = 0; i < except_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(except_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], exceptfds);
             LOG_INFO(Kernel_Fs, "Socket fd {} has exception", host_to_guest[fd]);
         }
     }
 
-    // Add regular files ready count
-    int disk_ready = 0;
-    for (int i = 0; i < nfds; ++i) {
+    // Add regular/device files ready count
+    s32 disk_ready = 0;
+    for (s32 i = 0; i < nfds; ++i) {
         if (FD_ISSET_POSIX(i, &read_ready)) {
             FD_SET_POSIX(i, readfds);
             disk_ready++;
-            LOG_INFO(Kernel_Fs, "Regular file fd {} ready for read", i);
+            LOG_INFO(Kernel_Fs, "fd {} ready for read", i);
         }
         if (FD_ISSET_POSIX(i, &write_ready)) {
             FD_SET_POSIX(i, writefds);
             disk_ready++;
-            LOG_INFO(Kernel_Fs, "Regular file fd {} ready for write", i);
+            LOG_INFO(Kernel_Fs, "fd {} ready for write", i);
         }
     }
 
