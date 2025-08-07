@@ -1128,7 +1128,150 @@ typedef struct {
 #define FD_ZERO_POSIX(set) memset((set), 0, sizeof(fd_set_posix))
 
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* writefds,
-                              fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {}
+                              fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
+    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+
+    fd_set read_host = {}, write_host = {}, except_host = {};
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+
+    fd_set_posix read_ready, write_ready, except_ready;
+    FD_ZERO_POSIX(&read_ready);
+    FD_ZERO_POSIX(&write_ready);
+    FD_ZERO_POSIX(&except_ready);
+
+    std::map<int, int> host_to_guest;
+    int socket_max_fd = -1;
+
+    for (int i = 0; i < nfds; ++i) {
+        bool want_read = readfds && FD_ISSET_POSIX(i, readfds);
+        bool want_write = writefds && FD_ISSET_POSIX(i, writefds);
+        bool want_except = exceptfds && FD_ISSET_POSIX(i, exceptfds);
+        if (!(want_read || want_write || want_except))
+            continue;
+
+        auto* file = h->GetFile(i);
+        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+
+        int native_fd = -1;
+        switch (file->type) {
+        case Core::FileSys::FileType::Regular:
+            native_fd = static_cast<int>(file->f.GetFileMapping());
+            break;
+        case Core::FileSys::FileType::Socket: {
+            auto sock = file->socket->Native();
+            native_fd = sock ? static_cast<int>(*sock) : -1;
+            break;
+        }
+        case Core::FileSys::FileType::Device:
+            LOG_ERROR(Kernel_Fs, "device fds are not supported");
+            native_fd = -1;
+            break;
+        default:
+            UNREACHABLE();
+            break;
+        }
+        if (native_fd == -1)
+            continue;
+
+        host_to_guest[native_fd] = i;
+
+        if (file->type == Core::FileSys::FileType::Regular) {
+            // Disk files always ready
+            if (want_read)
+                FD_SET_POSIX(i, &read_ready);
+            if (want_write)
+                FD_SET_POSIX(i, &write_ready);
+            // exceptfds not supported on regular files
+        } else if (file->type == Core::FileSys::FileType::Socket) {
+            if (want_read)
+                FD_SET(native_fd, &read_host);
+            if (want_write)
+                FD_SET(native_fd, &write_host);
+            if (want_except)
+                FD_SET(native_fd, &except_host);
+            socket_max_fd = std::max(socket_max_fd, native_fd);
+        }
+    }
+
+    if (readfds)
+        FD_ZERO_POSIX(readfds);
+    if (writefds)
+        FD_ZERO_POSIX(writefds);
+    if (exceptfds)
+        FD_ZERO_POSIX(exceptfds);
+
+    int result = 0;
+    if (socket_max_fd != -1) {
+        timeval tv = {};
+        timeval* tv_ptr = nullptr;
+        if (timeout) {
+            tv.tv_sec = timeout->tv_sec;
+            tv.tv_usec = timeout->tv_usec;
+            tv_ptr = &tv;
+        }
+
+        result = select(0, read_host.fd_count > 0 ? &read_host : nullptr,
+                        write_host.fd_count > 0 ? &write_host : nullptr,
+                        except_host.fd_count > 0 ? &except_host : nullptr, tv_ptr);
+
+        if (result == SOCKET_ERROR) {
+            int err = WSAGetLastError();
+            switch (err) {
+            case WSAEFAULT:
+                *__Error() = POSIX_EFAULT;
+                break;
+            case WSAEINVAL:
+                *__Error() = POSIX_EINVAL;
+                break;
+            case WSAENOBUFS:
+                *__Error() = POSIX_ENOBUFS;
+                break;
+            default:
+                LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
+                break;
+            }
+            return -1;
+        }
+
+        for (u32 i = 0; i < read_host.fd_count; ++i) {
+            int fd = static_cast<int>(read_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], readfds);
+        }
+        for (u32 i = 0; i < write_host.fd_count; ++i) {
+            int fd = static_cast<int>(write_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], writefds);
+        }
+        for (u32 i = 0; i < except_host.fd_count; ++i) {
+            int fd = static_cast<int>(except_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], exceptfds);
+        }
+    }
+
+    // Add regular files ready count
+    int disk_ready = 0;
+    for (int i = 0; i < nfds; ++i) {
+        if (FD_ISSET_POSIX(i, &read_ready)) {
+            FD_SET_POSIX(i, readfds);
+            disk_ready++;
+        }
+        if (FD_ISSET_POSIX(i, &write_ready)) {
+            FD_SET_POSIX(i, writefds);
+            disk_ready++;
+        }
+    }
+
+    return result + disk_ready;
+}
 #else
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
