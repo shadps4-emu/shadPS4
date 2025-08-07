@@ -208,6 +208,10 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     case IR::Attribute::BaryCoordSmooth:
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
                                                         ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordSmoothCentroid:
+        return ctx.OpLoad(
+            ctx.F32[1],
+            ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_centroid, ctx.ConstU32(comp)));
     case IR::Attribute::BaryCoordSmoothSample:
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample,
                                                         ctx.ConstU32(comp)));

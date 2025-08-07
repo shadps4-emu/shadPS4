@@ -133,7 +133,7 @@ void Translator::ExportUncompressed(IR::Attribute attribute, u32 comp, const IR:
 }
 
 void Translator::EmitExport(const GcnInst& inst) {
-    if (ir.block->has_multiple_predecessors && info.stage == Stage::Fragment) {
+    if (info.stage == Stage::Fragment && inst.control.exp.vm) {
         ir.Discard(ir.LogicalNot(ir.GetExec()));
     }
 

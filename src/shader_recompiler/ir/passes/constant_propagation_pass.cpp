@@ -204,6 +204,18 @@ void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     }
 }
 
+void FoldDiscardCond(IR::Inst& inst) {
+    const IR::U1 cond{inst.Arg(0)};
+    if (!cond.IsImmediate()) {
+        return;
+    }
+    if (cond.U1()) {
+        inst.ReplaceOpcode(IR::Opcode::Discard);
+    } else {
+        inst.Invalidate();
+    }
+}
+
 template <typename T>
 void FoldAdd(IR::Block& block, IR::Inst& inst) {
     if (!FoldCommutative<T>(inst, [](T a, T b) { return a + b; })) {
@@ -505,6 +517,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
         return FoldConvert(inst, IR::Opcode::ConvertF32F16);
+    case IR::Opcode::DiscardCond:
+        return FoldDiscardCond(inst);
     default:
         break;
     }

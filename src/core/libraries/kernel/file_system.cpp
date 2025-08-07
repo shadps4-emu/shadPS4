@@ -20,6 +20,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
 
@@ -252,11 +253,13 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         return -1;
     }
     if (fd < 3) {
-        // This is technically possible, but it's usually caused by some stubbed function instead.
-        LOG_WARNING(Kernel_Fs, "called on an std handle, fd = {}", fd);
+        *__Error() = POSIX_EPERM;
+        return -1;
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        file->socket->Close();
     }
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
@@ -294,6 +297,9 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        // Socket functions handle errnos internally.
+        return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
     }
 
     return file->f.WriteRaw<u8>(buf, nbytes);
@@ -475,6 +481,9 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Socket) {
+        // Socket functions handle errnos internally.
+        return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
     return ReadFile(file->f, buf, nbytes);
 }
@@ -666,6 +675,10 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_blocks = 0;
         // TODO incomplete
         break;
+    }
+    case Core::FileSys::FileType::Socket: {
+        // Socket functions handle errnos internally
+        return file->socket->fstat(sb);
     }
     default:
         UNREACHABLE();
@@ -1093,6 +1106,8 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", 1, 1, sceKernelFstat);
     LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", 1, 1, posix_ftruncate);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", 1, 1, sceKernelFtruncate);
+    LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", 1, 1, posix_rename);
+    LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", 1, 1, posix_rename);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", 1, 1, sceKernelRename);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", 1, 1, sceKernelPreadv);
     LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", 1, 1, posix_pread);

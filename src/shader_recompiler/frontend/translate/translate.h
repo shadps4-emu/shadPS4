@@ -61,13 +61,13 @@ public:
     explicit Translator(Info& info, const RuntimeInfo& runtime_info, const Profile& profile);
 
     void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list);
-    void TranslateInstruction(const GcnInst& inst, u32 pc);
+    void TranslateInstruction(const GcnInst& inst);
 
     // Instruction categories
     void EmitPrologue(IR::Block* first_block);
     void EmitFetch(const GcnInst& inst);
     void EmitExport(const GcnInst& inst);
-    void EmitFlowControl(u32 pc, const GcnInst& inst);
+    void EmitFlowControl(const GcnInst& inst);
     void EmitScalarAlu(const GcnInst& inst);
     void EmitScalarMemory(const GcnInst& inst);
     void EmitVectorAlu(const GcnInst& inst);
@@ -126,7 +126,7 @@ public:
     void S_FLBIT_I32_B32(const GcnInst& inst);
     void S_FLBIT_I32_B64(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
-    void S_GETPC_B64(u32 pc, const GcnInst& inst);
+    void S_GETPC_B64(const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
 
@@ -257,6 +257,8 @@ public:
     void V_CVT_PK_I16_I32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
+    void V_ALIGNBIT_B32(const GcnInst& inst);
+    void V_ALIGNBYTE_B32(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
     void V_MAX_F64(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
@@ -335,6 +337,7 @@ private:
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     bool opcode_missing = false;
+    u32 pc{};
 };
 
 } // namespace Shader::Gcn

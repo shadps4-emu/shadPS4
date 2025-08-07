@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>移动模拟摇杆</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1和L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>主手柄</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>手柄 ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>默认手柄</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>没有选择默认项</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>不可用</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>设置主手柄为默认值</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>移除默认手柄</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 和 R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:  </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>已选中默认控制器</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>主控制器设置为默认</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>默认控制器已移除</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>默认控制器设置已删除</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1587,6 +1643,18 @@
       <translation>光标隐藏闲置时长</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>麦克风</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>无</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>默认设备</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>秒</translation>
     </message>
@@ -1685,6 +1753,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Geust 调试标记</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>启用Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>启用Readback线性图像</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1991,14 @@
       <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层并安装 Vulkan SDK 才能使用此功能。</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>启用Readbacks：\n启用 GPU 内存回读和回写功能。\n这是某些游戏中恰当运行所必需的。\n可能会导致稳定性以及性能问题。</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>启用Readback线性图像：\n启用异步下载GPU修改的线性图像。\n可能会修复一些游戏中的问题。</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>复制 GPU 缓冲区：\n绕过涉及 GPU 提交的竞态条件。\n对于 PM4 type 0 崩溃可能有帮助，也可能没有帮助。</translation>
     </message>
@@ -2077,6 +2161,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * 不支持的 Vulkan 版本</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>实验性功能</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>警告：这些功能是实验性的，除非您被告知或者游戏需要的话，否则不应启用。 如果您有任何疑问，请在 shadPS4 Discord 服务器上提问。</translation>
     </message>
   </context>
   <context>

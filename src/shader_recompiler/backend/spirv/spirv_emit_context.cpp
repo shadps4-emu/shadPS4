@@ -384,8 +384,16 @@ void EmitContext::DefineInputs() {
             } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_smooth =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-            } else {
-                bary_coord_smooth = ConstF32(0.f, 0.f);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_smooth_centroid = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordSmoothCentroidAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_smooth_centroid =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+                // Decorate(bary_coord_smooth_centroid, spv::Decoration::Centroid);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
@@ -396,8 +404,6 @@ void EmitContext::DefineInputs() {
                 bary_coord_smooth_sample =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
                 // Decorate(bary_coord_smooth_sample, spv::Decoration::Sample);
-            } else {
-                bary_coord_smooth_sample = ConstF32(0.f, 0.f);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
@@ -407,8 +413,6 @@ void EmitContext::DefineInputs() {
             } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
                                                     spv::StorageClass::Input);
-            } else {
-                bary_coord_nopersp = ConstF32(0.f, 0.f);
             }
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
@@ -941,11 +945,11 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        auto sharp_desc = std::holds_alternative<u32>(samp_desc.sampler)
-                              ? fmt::format("sgpr:{}", std::get<u32>(samp_desc.sampler))
-                              : fmt::format("inline:{:#x}:{:#x}",
-                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw0,
-                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw1);
+        const auto sharp_desc =
+            samp_desc.is_inline_sampler
+                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
+                              samp_desc.inline_sampler.raw1)
+                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
         Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
         samplers.push_back(id);
         interfaces.push_back(id);

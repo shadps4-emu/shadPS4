@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Flytt på analog stikke</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 og L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Kontroller i bruk</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>Kontroller-ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Standardkontroller</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Ingen standard valgt</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>Ikke tilgjengelig</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Bruk gjeldende kontroller som standard</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Fjern standardkontroller</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 og R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Standardkontroller valgt</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Gjeldende kontroller satt som standard</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Fjernet standardkontroller</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Fjernet instillinger for standardkontroller</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1587,6 +1643,18 @@
       <translation>Skjul musepeker ved inaktivitet</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Mikrofon</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Ingen</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Standard enhet</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1685,6 +1753,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Gjestefeilsøkingsmarkører</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>Bruk tilbakelesninger</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Bruk tilbakelesninger av lineære bilder</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1991,14 @@
       <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis dette brukes, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Bruk tilbakelesninger:\nTa i bruk tilbakelesninger og tilbakeskrivninger.\nDette kreves av noen spill for å fungere ordentlig.\nKan forårsake stabilitets- og/eller ytelsesproblemer.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Bruk tilbakelesninger av lineære bilder:\nTar i bruk asynkron nedlasting av lineære bilder modifisert av GPU-en.\nKan rette feil i noen spill.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Kopier GPU-buffere:\nKommer rundt løpsforhold som involverer GPU-innsendinger.\nKan muligens hjelpe med PM4 type 0 krasj.</translation>
     </message>
@@ -2077,6 +2161,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> *Ustøttet Vulkan-versjon</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>Eksperimentelle funksjoner</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>Advarsel: Disse funksjonene er eksperimentelle og bør ikke tas i bruk med mindre du har fått beskjed om, eller et spill krever det. Spør i shadPS4-Discord-serveren dersom du har spørsmål.</translation>
     </message>
   </context>
   <context>

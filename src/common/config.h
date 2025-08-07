@@ -54,6 +54,7 @@ void setCopyGPUCmdBuffers(bool enable);
 bool readbacks();
 void setReadbacks(bool enable);
 bool readbackLinearImages();
+void setReadbackLinearImages(bool enable);
 bool directMemoryAccess();
 void setDirectMemoryAccess(bool enable);
 bool dumpShaders();
@@ -87,7 +88,9 @@ void setLogFilter(const std::string& type);
 double getTrophyNotificationDuration();
 void setTrophyNotificationDuration(double newTrophyNotificationDuration);
 int getCursorHideTimeout();
+std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout);
+void setMicDevice(std::string device);
 void setSeparateLogFilesEnabled(bool enabled);
 bool getSeparateLogFilesEnabled();
 u32 GetLanguage();
@@ -106,6 +109,8 @@ bool isDevKitConsole();        // no set
 bool vkValidationGpuEnabled(); // no set
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use);
+std::string getDefaultControllerID();
+void setDefaultControllerID(std::string id);
 
 // TODO
 bool GetLoadGameSizeEnabled();
@@ -113,6 +118,7 @@ std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
+bool getIsConnectedToNetwork();
 std::string getUserName();
 std::string getChooseHomeTab();
 bool GetUseUnifiedInputConfig();

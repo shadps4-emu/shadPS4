@@ -186,7 +186,7 @@ int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled() {
 
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_FAIL;
 }
 
 int PS4_SYSV_ABI sceHttpGetAuthEnabled() {
@@ -492,8 +492,9 @@ int PS4_SYSV_ABI sceHttpsFreeCaList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpsGetCaList() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list) {
+    LOG_ERROR(Lib_Http, "(DUMMY) called, httpCtxId = {}", httpCtxId);
+    list->certsNum = 0;
     return ORBIS_OK;
 }
 

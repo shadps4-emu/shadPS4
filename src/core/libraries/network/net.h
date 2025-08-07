@@ -20,6 +20,8 @@ class SymbolsResolver;
 
 namespace Libraries::Net {
 
+static int ConvertFamilies(int family);
+
 enum OrbisNetFamily : u32 {
     ORBIS_NET_AF_INET = 2,
     ORBIS_NET_AF_INET6 = 28,
@@ -38,6 +40,7 @@ enum OrbisNetProtocol : u32 {
     ORBIS_NET_IPPROTO_IGMP = 2,
     ORBIS_NET_IPPROTO_TCP = 6,
     ORBIS_NET_IPPROTO_UDP = 17,
+    ORBIS_NET_IPPROTO_IPV6 = 41,
     ORBIS_NET_SOL_SOCKET = 0xFFFF
 };
 
@@ -81,6 +84,25 @@ enum OrbisNetSocketOption : u32 {
     ORBIS_NET_SO_PRIORITY = 0x1203
 };
 
+enum OrbisNetEpollFlag : u32 {
+    ORBIS_NET_EPOLL_CTL_ADD = 1,
+    ORBIS_NET_EPOLL_CTL_MOD = 2,
+    ORBIS_NET_EPOLL_CTL_DEL = 3,
+};
+
+enum OrbisNetEpollEvents : u32 {
+    ORBIS_NET_EPOLLIN = 0x1,
+    ORBIS_NET_EPOLLOUT = 0x2,
+    ORBIS_NET_EPOLLERR = 0x8,
+    ORBIS_NET_EPOLLHUP = 0x10,
+    ORBIS_NET_EPOLLDESCID = 0x10000,
+};
+
+enum OrbisNetResolverFlag : u32 {
+    ORBIS_NET_RESOLVER_ASYNC = 0x1,
+    ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS = 0x10000,
+};
+
 using OrbisNetId = s32;
 
 struct OrbisNetSockaddr {
@@ -98,6 +120,12 @@ struct OrbisNetSockaddrIn {
     char sin_zero[6];
 };
 
+using OrbisNetInAddr_t = u32;
+
+struct OrbisNetInAddr {
+    OrbisNetInAddr_t inaddr_addr;
+};
+
 struct OrbisNetIovec {
     void* iov_base;
     u64 iov_len;
@@ -111,6 +139,38 @@ struct OrbisNetMsghdr {
     void* msg_control;
     u32 msg_controllen;
     int msg_flags;
+};
+
+union OrbisNetEpollData {
+    void* ptr;
+    u32 data_u32;
+    int fd;
+    u64 data_u64;
+};
+
+struct OrbisNetEpollEvent {
+    u32 events;
+    u32 pad;
+    u64 ident;
+    OrbisNetEpollData data;
+};
+
+union OrbisNetAddrUnion {
+    OrbisNetInAddr addr;
+    u8 addr6[16];
+};
+
+struct OrbisNetResolverAddr {
+    OrbisNetAddrUnion u;
+    u32 af;
+    u32 pad[3];
+};
+
+struct OrbisNetResolverInfo {
+    OrbisNetResolverAddr addrs[10];
+    u32 records;
+    u32 recordsv4;
+    u32 pad[14];
 };
 
 int PS4_SYSV_ABI in6addr_any();
@@ -256,7 +316,7 @@ u16 PS4_SYSV_ABI sceNetHtons(u16 host16);
 const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 size);
 int PS4_SYSV_ABI sceNetInetNtopWithScopeId();
 int PS4_SYSV_ABI sceNetInetPton(int af, const char* src, void* dst);
-int PS4_SYSV_ABI sceNetInetPtonEx();
+int PS4_SYSV_ABI sceNetInetPtonEx(int af, const char* src, void* dst, int flags);
 int PS4_SYSV_ABI sceNetInetPtonWithScopeId();
 int PS4_SYSV_ABI sceNetInfoDumpStart();
 int PS4_SYSV_ABI sceNetInfoDumpStop();
@@ -282,14 +342,17 @@ int PS4_SYSV_ABI sceNetResolverConnect();
 int PS4_SYSV_ABI sceNetResolverConnectAbort();
 int PS4_SYSV_ABI sceNetResolverConnectCreate();
 int PS4_SYSV_ABI sceNetResolverConnectDestroy();
-int PS4_SYSV_ABI sceNetResolverCreate();
-int PS4_SYSV_ABI sceNetResolverDestroy();
+int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int poolid, int flags);
+int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid);
 int PS4_SYSV_ABI sceNetResolverGetError();
 int PS4_SYSV_ABI sceNetResolverStartAton();
 int PS4_SYSV_ABI sceNetResolverStartAton6();
-int PS4_SYSV_ABI sceNetResolverStartNtoa();
+int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* hostname,
+                                         OrbisNetInAddr* addr, int timeout, int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoa6();
-int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords();
+int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId resolverid, const char* hostname,
+                                                        OrbisNetResolverInfo* info, int timeout,
+                                                        int retry, int flags);
 int PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
 int PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, int flags);
 int PS4_SYSV_ABI sceNetSendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);

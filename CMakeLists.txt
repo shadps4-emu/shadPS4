@@ -214,7 +214,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 
 message("-- end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
 
-if(NOT GIT_REMOTE_URL MATCHES "shadps4-emu/shadPS4" OR NOT GIT_BRANCH STREQUAL "main")
+string(TOLOWER "${GIT_REMOTE_URL}" GIT_REMOTE_URL_LOWER)
+if(NOT GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" OR NOT GIT_BRANCH STREQUAL "main")
     message(STATUS "not main, disabling auto update")
     set(ENABLE_UPDATER OFF)
 endif()
@@ -248,6 +249,7 @@ find_package(cereal 1.3.2 CONFIG)
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
+    find_package(epoll-shim 3.14 CONFIG)
 endif()
 list(POP_BACK CMAKE_MODULE_PATH)
 
@@ -262,7 +264,6 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
-include_directories(Resources)
 
 if(ENABLE_QT_GUI)
     find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
@@ -307,6 +308,8 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
 
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
+              src/core/libraries/audio/sdl_in.h
+              src/core/libraries/audio/sdl_in.cpp
               src/core/libraries/voice/voice.cpp
               src/core/libraries/voice/voice.h
               src/core/libraries/audio/audioout.cpp
@@ -679,6 +682,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
@@ -761,6 +765,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
+         src/core/ipc/ipc.cpp
+         src/core/ipc/ipc.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -894,6 +900,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/attribute.h
                       src/shader_recompiler/ir/basic_block.cpp
                       src/shader_recompiler/ir/basic_block.h
+                      src/shader_recompiler/ir/breadth_first_search.h
                       src/shader_recompiler/ir/condition.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
@@ -1082,6 +1089,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/settings.h
            src/qt_gui/sdl_event_wrapper.cpp
            src/qt_gui/sdl_event_wrapper.h
+           src/qt_gui/hotkeys.h
+           src/qt_gui/hotkeys.cpp
+           src/qt_gui/hotkeys.ui
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}
@@ -1179,7 +1189,7 @@ if (APPLE)
     endif()
 
     # Replacement for std::chrono::time_zone
-    target_link_libraries(shadps4 PRIVATE date::date-tz)
+    target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
 endif()
 
 if (ENABLE_QT_GUI)
@@ -1248,6 +1258,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png
         src/images/platinum.png

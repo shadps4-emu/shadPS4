@@ -123,8 +123,8 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             ret += fmt::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
         }
 
-        if (op == Opcode::ReadConst) {
-            ret += fmt::format(" (flags={}) ", inst.Flags<u32>());
+        if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
+            ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {

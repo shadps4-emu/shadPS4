@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Muovi levetta analogica</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 e L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Gamepad Attivo</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID Gamepad</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Gamepad Predefinito</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Nessun predefinito selezionato</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Imposta Gamepad Attivo come Predefinito</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Rimuovi Gamepad Predefinito</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 e R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Controller Predefinito Selezionato</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Controller attivo impostato come predefinito</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Controller Predefinito Rimosso</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Impostazione predefinita del controller rimossa</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1587,6 +1643,18 @@
       <translation>Timeout inattività per nascondere il cursore</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Microfono</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Nessuno</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Periferica Predefinita</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1685,6 +1753,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Marcatori di Debug del Guest </translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>Abilita Readback</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Abilita Immagini Lineari Di Readback</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1991,14 @@
       <translation>Diagnostica Crash:\nCrea un file .yaml che contiene informazioni riguardo lo stato del renderer Vulkan nel momento in cui si verifica un crash.\nUtile per poter effettuare il debug degli errori di tipo &quot;Device Lost&quot;. Se hai questa opzione attiva dovresti abilitare anche Marcatori di Debug Host e Guest.\nNon è funzionante su GPU Intel.\nVulkan Validation Layers deve essere abilitato e bisogna aver installato l&apos;SDK Vulkan per poter utilizzare questa funzione.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Abilita Readbacks:\nAbilita letture di memoria GPU e writebacks.\nQuesto è necessario per un comportamento corretto in alcuni giochi.\nPotrebbe causare problemi di stabilità e/o prestazioni.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Abilita le immagini lineari di Readback:\nConsente il download asincronico delle immagini lineari modificate dalla GPU.\nPotrebbe risolvere problemi grafici in alcuni giochi.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Copia Buffer GPU:\nCerca di aggirare le race conditions che riguardano gli invii alla GPU.\nPotrebbe aiutare ad evitare crash che riguardano i PM4 di tipo 0.</translation>
     </message>
@@ -2077,6 +2161,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * Versione Vulkan non supportata</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>Funzionalità Sperimentali</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>ATTENZIONE: Queste funzionalità sono sperimentali e non dovrebbero essere abilitate a meno che non sia stato indicato o che un gioco lo richieda. Si prega di chiedere informazioni nel server Discord shadPS4 se si è in dubbio.</translation>
     </message>
   </context>
   <context>

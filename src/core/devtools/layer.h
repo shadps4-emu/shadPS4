@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include <string>
 
 #include "imgui/imgui_layer.h"
 
@@ -19,7 +20,14 @@ public:
     static void SetupSettings();
 
     void Draw() override;
-    bool show_pause_status = false;
+    void TextCentered(const std::string& text);
 };
 
 } // namespace Core::Devtools
+
+namespace Overlay {
+
+void ToggleSimpleFps();
+void ToggleQuitWindow();
+
+} // namespace Overlay

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <SDL3/SDL_gamepad.h>
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 
@@ -55,6 +56,7 @@ public:
     virtual State ReadState() = 0;
     virtual float GetAccelPollRate() const = 0;
     virtual float GetGyroPollRate() const = 0;
+    SDL_Gamepad* m_gamepad;
 };
 
 inline int GetAxis(int min, int max, int value) {
@@ -127,3 +129,12 @@ private:
 };
 
 } // namespace Input
+
+namespace GamepadSelect {
+
+int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID);
+std::string GetGUIDString(SDL_JoystickID* gamepadIDs, int index);
+std::string GetSelectedGamepad();
+void SetSelectedGamepad(std::string GUID);
+
+} // namespace GamepadSelect

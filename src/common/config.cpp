@@ -47,6 +47,7 @@ static bool isShowSplash = false;
 static std::string isSideTrophy = "right";
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
+static bool isConnectedToNetwork = false;
 
 // Input
 static int cursorState = HideCursorState::Idle;
@@ -55,6 +56,8 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
+static std::string micDevice = "Default Device";
+static std::string defaultControllerID = "";
 
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
@@ -107,8 +110,8 @@ u32 m_language = 1; // english
 // Keys
 static std::string trophyKey = "";
 
-// Expected number of items in the config file
-static constexpr u64 total_entries = 55;
+// Config version, used to determine if a user's config file is outdated.
+static std::string config_version = Common::g_scm_rev;
 
 int getVolumeSlider() {
     return volumeSlider;
@@ -201,6 +204,10 @@ s16 getCursorState() {
 
 int getCursorHideTimeout() {
     return cursorHideTimeout;
+}
+
+std::string getMicDevice() {
+    return micDevice;
 }
 
 double getTrophyNotificationDuration() {
@@ -359,6 +366,10 @@ bool getCheckCompatibilityOnStartup() {
     return checkCompatibilityOnStartup;
 }
 
+bool getIsConnectedToNetwork() {
+    return isConnectedToNetwork;
+}
+
 void setGpuId(s32 selectedGpuId) {
     gpuId = selectedGpuId;
 }
@@ -411,6 +422,10 @@ void setReadbacks(bool enable) {
     readbacksEnabled = enable;
 }
 
+void setReadbackLinearImages(bool enable) {
+    readbackLinearImagesEnabled = enable;
+}
+
 void setDirectMemoryAccess(bool enable) {
     directMemoryAccessEnabled = enable;
 }
@@ -461,6 +476,10 @@ void setCursorState(s16 newCursorState) {
 
 void setCursorHideTimeout(int newcursorHideTimeout) {
     cursorHideTimeout = newcursorHideTimeout;
+}
+
+void setMicDevice(std::string device) {
+    micDevice = device;
 }
 
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
@@ -604,6 +623,14 @@ void setPSNSignedIn(bool sign) {
     isPSNSignedIn = sign;
 }
 
+std::string getDefaultControllerID() {
+    return defaultControllerID;
+}
+
+void setDefaultControllerID(std::string id) {
+    defaultControllerID = id;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -623,8 +650,6 @@ void load(const std::filesystem::path& path) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
-
-    u64 entry_count = 0;
 
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
@@ -646,9 +671,11 @@ void load(const std::filesystem::path& path) {
         compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
-        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
 
-        entry_count += general.size();
+        isConnectedToNetwork =
+            toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
+        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+        defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
     }
 
     if (data.contains("Input")) {
@@ -662,8 +689,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
-
-        entry_count += input.size();
+        micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
     }
 
     if (data.contains("GPU")) {
@@ -689,8 +715,6 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
-
-        entry_count += gpu.size();
     }
 
     if (data.contains("Vulkan")) {
@@ -704,10 +728,9 @@ void load(const std::filesystem::path& path) {
         vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", vkHostMarkers);
         vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", vkGuestMarkers);
         rdocEnable = toml::find_or<bool>(vk, "rdocEnable", rdocEnable);
-
-        entry_count += vk.size();
     }
 
+    std::string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
@@ -716,8 +739,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
-
-        entry_count += debug.size();
+        current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
     if (data.contains("GUI")) {
@@ -749,26 +771,20 @@ void load(const std::filesystem::path& path) {
 
         settings_addon_install_dir =
             toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
-
-        entry_count += gui.size();
     }
 
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
         m_language = toml::find_or<int>(settings, "consoleLanguage", m_language);
-
-        entry_count += settings.size();
     }
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
         trophyKey = toml::find_or<std::string>(keys, "TrophyKey", trophyKey);
-
-        entry_count += keys.size();
     }
 
     // Run save after loading to generate any missing fields with default values.
-    if (entry_count != total_entries) {
+    if (config_version != current_version) {
         fmt::print("Outdated config detected, updating config file.\n");
         save(path);
     }
@@ -842,12 +858,15 @@ void save(const std::filesystem::path& path) {
     data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+    data["General"]["isConnectedToNetwork"] = isConnectedToNetwork;
+    data["General"]["defaultControllerID"] = defaultControllerID;
     data["Input"]["cursorState"] = cursorState;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
     data["Input"]["useSpecialPad"] = useSpecialPad;
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
+    data["Input"]["micDevice"] = micDevice;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
@@ -876,6 +895,7 @@ void save(const std::filesystem::path& path) {
     data["Debug"]["CollectShader"] = isShaderDebug;
     data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
+    data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
     std::vector<std::string> install_dirs;
@@ -939,6 +959,7 @@ void setDefaultValues() {
     isSideTrophy = "right";
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
+    isConnectedToNetwork = false;
 
     // Input
     cursorState = HideCursorState::Idle;
@@ -951,6 +972,7 @@ void setDefaultValues() {
     controllerCustomColorRGB[0] = 0;
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
+    micDevice = "Default Device";
 
     // GPU
     windowWidth = 1280;

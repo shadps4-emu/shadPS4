@@ -592,6 +592,62 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Move analog stick</source>
       <translation>Bewege den Analogstick</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation type="unfinished">L1 and L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation type="unfinished">Active Gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation type="unfinished">Gamepad ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation type="unfinished">Default Gamepad</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation type="unfinished">No default selected</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation type="unfinished">n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation type="unfinished">Set Active Gamepad as Default</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation type="unfinished">Remove Default Gamepad</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation type="unfinished">R1 and R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation type="unfinished">ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation type="unfinished">Default Controller Selected</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation type="unfinished">Active controller set as default</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation type="unfinished">Default Controller Removed</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation type="unfinished">Default controller setting removed</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1586,6 +1642,18 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Inaktivitätszeitüberschreitung zum Ausblenden des Cursors</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation type="unfinished">Microphone</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation type="unfinished">None</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation type="unfinished">Default Device</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1684,6 +1752,14 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <message>
       <source>Guest Debug Markers</source>
       <translation>Guest-Debug-Markierer</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation type="unfinished">Enable Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation type="unfinished">Enable Readback Linear Images</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1914,6 +1990,14 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Absturzdiagnose:\nErstellt eine .yaml-Datei mit Informationen über den Vulkan-Status zum Zeitpunkt des Absturzes.\nNützlich zum Debuggen von „Gerät verloren“-Fehlern. Wenn Sie dies aktiviert haben, sollten Sie Host- UND Gast-Debug-Markierungen aktivieren.\nFunktioniert nicht auf Intel-GPUs.\nDamit dies funktioniert, müssen Vulkan Validationsschichten aktiviert und das Vulkan SDK installiert sein.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>GPU-Puffer kopieren:\nUmgeht Race-Bedingungen mit GPU-Übermittlungen.\nKann bei PM4-Abstürzen vom Typ 0 hilfreich sein oder auch nicht.</translation>
     </message>
@@ -2080,6 +2164,18 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * Nicht unterstützte Vulkan Version</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation type="unfinished">100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation type="unfinished">Experimental Features</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
     </message>
   </context>
   <context>

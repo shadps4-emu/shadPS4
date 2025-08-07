@@ -197,7 +197,7 @@ endif()
 
 # libusb
 if (NOT TARGET libusb::usb)
-    add_subdirectory(libusb)
+    add_subdirectory(ext-libusb)
     add_library(libusb::usb ALIAS usb-1.0)
 endif()
 
@@ -238,5 +238,9 @@ if (APPLE)
     # MoltenVK
     if (NOT TARGET MoltenVK)
         add_subdirectory(MoltenVK)
+    endif()
+
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
     endif()
 endif()

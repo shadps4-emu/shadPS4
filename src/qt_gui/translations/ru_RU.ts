@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Двиньте аналоговый стик</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 и L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Текущий геймпад</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID геймпада</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Не выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Выбрать текущий геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Удалить геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 и R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:</translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Выбран контроллер по умолчанию</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Текущий контроллер выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Контроллер по умолчанию удалён</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Настройки геймпада по умолчанию удалены</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1587,6 +1643,18 @@
       <translation>Время скрытия курсора при бездействии</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Микрофон</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Нет</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Устройство по умолчанию</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>сек</translation>
     </message>
@@ -1685,6 +1753,14 @@
     <message>
       <source>Guest Debug Markers</source>
       <translation>Маркеры отладки гостя</translation>
+    </message>
+    <message>
+      <source>Enable Readbacks</source>
+      <translation>Включить считывание</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Включить считывание линейных изображений</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1915,6 +1991,14 @@
       <translation>Диагностика сбоев:\nСоздает .yaml-файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
     </message>
     <message>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Включить считывание:\nВключить считывание и запись в память GPU.\nЭто требуется для правильного поведения в некоторых играх. \nМожет вызвать проблемы со стабильностью/производительностью.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Включить считывание линейных изображений:\nВключает асинхронную загрузку изображений, модифицированных GPU.\nМожет исправить проблемы в некоторых играх.</translation>
+    </message>
+    <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
       <translation>Копировать буферы GPU:\nПозволяет обойти состояния гонки, связанные с отправками GPU.\nМожет помочь или не помочь при сбоях PM4 типа 0.</translation>
     </message>
@@ -2077,6 +2161,18 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * Неподдерживаемая версия Vulkan</translation>
+    </message>
+    <message>
+      <source>100%</source>
+      <translation>100%</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>Экспериментальные функции</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>ВНИМАНИЕ: Эти функции являются экспериментальными и не должны включаться, если вы не знаете об обратном, или если этого не требует игра. Если у вас есть вопросы, задавайте их на Discord сервере shadPS4.</translation>
     </message>
   </context>
   <context>
