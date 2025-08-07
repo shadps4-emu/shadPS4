@@ -1166,10 +1166,12 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
         switch (file->type) {
         case Core::FileSys::FileType::Regular:
             native_fd = static_cast<int>(file->f.GetFileMapping());
+            LOG_INFO(Kernel_Fs, "fd {} is Regular file with native_fd {}", i, native_fd);
             break;
         case Core::FileSys::FileType::Socket: {
             auto sock = file->socket->Native();
             native_fd = sock ? static_cast<int>(*sock) : -1;
+            LOG_INFO(Kernel_Fs, "fd {} is Socket with native_fd {}", i, native_fd);
             break;
         }
         case Core::FileSys::FileType::Device:
@@ -1204,6 +1206,15 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
         }
     }
 
+    LOG_INFO(Kernel_Fs,
+             "Before select(): read_host.fd_count = {}, write_host.fd_count = {}, "
+             "except_host.fd_count = {}",
+             read_host.fd_count, write_host.fd_count, except_host.fd_count);
+
+    if (read_host.fd_count == 0 && write_host.fd_count == 0 && except_host.fd_count == 0) {
+        LOG_WARNING(Kernel_Fs, "No sockets in fd_sets, select() will return immediately");
+    }
+
     if (readfds)
         FD_ZERO_POSIX(readfds);
     if (writefds)
@@ -1220,14 +1231,13 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
             tv.tv_usec = timeout->tv_usec;
             tv_ptr = &tv;
         }
-        LOG_INFO(Kernel_Fs, "select() fd counts: read={}, write={}, except={}", read_host.fd_count,
-                 write_host.fd_count, except_host.fd_count);
         result = select(0, read_host.fd_count > 0 ? &read_host : nullptr,
                         write_host.fd_count > 0 ? &write_host : nullptr,
                         except_host.fd_count > 0 ? &except_host : nullptr, tv_ptr);
         LOG_INFO(Kernel_Fs, "select() returned {}", result);
         if (result == SOCKET_ERROR) {
             int err = WSAGetLastError();
+            LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
             switch (err) {
             case WSAEFAULT:
                 *__Error() = POSIX_EFAULT;
@@ -1248,14 +1258,17 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
         for (u32 i = 0; i < read_host.fd_count; ++i) {
             int fd = static_cast<int>(read_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], readfds);
+            LOG_INFO(Kernel_Fs, "Socket fd {} ready for read", host_to_guest[fd]);
         }
         for (u32 i = 0; i < write_host.fd_count; ++i) {
             int fd = static_cast<int>(write_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], writefds);
+            LOG_INFO(Kernel_Fs, "Socket fd {} ready for write", host_to_guest[fd]);
         }
         for (u32 i = 0; i < except_host.fd_count; ++i) {
             int fd = static_cast<int>(except_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], exceptfds);
+            LOG_INFO(Kernel_Fs, "Socket fd {} has exception", host_to_guest[fd]);
         }
     }
 
@@ -1265,10 +1278,12 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
         if (FD_ISSET_POSIX(i, &read_ready)) {
             FD_SET_POSIX(i, readfds);
             disk_ready++;
+            LOG_INFO(Kernel_Fs, "Regular file fd {} ready for read", i);
         }
         if (FD_ISSET_POSIX(i, &write_ready)) {
             FD_SET_POSIX(i, writefds);
             disk_ready++;
+            LOG_INFO(Kernel_Fs, "Regular file fd {} ready for write", i);
         }
     }
 
