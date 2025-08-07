@@ -726,6 +726,14 @@ set(COMMON src/common/logging/backend.cpp
            src/common/scm_rev.h
 )
 
+if(WIN32)
+    set(IOFILE_IMPL src/common/io_file_win32.cpp
+    )
+else()
+    set(IOFILE_IMPL src/common/io_file_posix.cpp
+    )
+endif()
+
 if (ENABLE_DISCORD_RPC)
     list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
 endif()
@@ -1043,7 +1051,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/compatibility_info.cpp
            src/qt_gui/compatibility_info.h
-	   src/qt_gui/control_settings.cpp	   
+           src/qt_gui/control_settings.cpp	   
            src/qt_gui/control_settings.h
            src/qt_gui/control_settings.ui
            src/qt_gui/kbm_gui.cpp	   
@@ -1099,6 +1107,7 @@ if (ENABLE_QT_GUI)
         ${INPUT}
         ${QT_GUI}
         ${COMMON}
+        ${IOFILE_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
@@ -1111,6 +1120,7 @@ else()
         ${IMGUI}
         ${INPUT}
         ${COMMON}
+        ${IOFILE_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
