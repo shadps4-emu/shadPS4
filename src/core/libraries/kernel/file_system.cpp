@@ -1219,11 +1219,12 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
             tv.tv_usec = timeout->tv_usec;
             tv_ptr = &tv;
         }
-
+        LOG_INFO(Kernel_Fs, "select() fd counts: read={}, write={}, except={}", read_host.fd_count,
+                 write_host.fd_count, except_host.fd_count);
         result = select(0, read_host.fd_count > 0 ? &read_host : nullptr,
                         write_host.fd_count > 0 ? &write_host : nullptr,
                         except_host.fd_count > 0 ? &except_host : nullptr, tv_ptr);
-
+        LOG_INFO(Kernel_Fs, "select() returned {}", result);
         if (result == SOCKET_ERROR) {
             int err = WSAGetLastError();
             switch (err) {
