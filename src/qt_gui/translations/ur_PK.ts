@@ -168,7 +168,7 @@
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
       <translation>آپ نے منتخب کردہ ریپوزٹری سے اس گیم کے اس ورژن کے لیے چیٹس کامیابی سے ڈاؤن لوڈ کر لی ہیں۔
 آپ کسی دوسری ریپوزٹری سے بھی ڈاؤن لوڈ کرنے کی کوشش کر سکتے ہیں،
-اگر دستیاب ہو تو اسے فہرست سے فائل منتخب کر کے استعمال کرنا بھی ممکن ہوگا</translation>
+اور اگر دستیاب ہو تو اسے فہرست سے فائل منتخب کر کے استعمال کرنا بھی ممکن ہوگا۔</translation>
     </message>
     <message>
       <source>Failed to save:</source>
