@@ -1105,169 +1105,37 @@ inline bool IsInSet(FdSetBackup& set, int fd) {
     return set.out && FD_ISSET(fd, &set.in);
 }
 #endif
+
+#ifdef _WIN32
+#define __FD_SETSIZE 1024
+
+typedef struct {
+    unsigned long fds_bits[__FD_SETSIZE / (8 * sizeof(unsigned long))];
+} fd_set_posix;
+
+#define FD_SET_POSIX(fd, set)                                                                      \
+    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] |=                                        \
+     (1UL << ((fd) % (8 * sizeof(unsigned long)))))
+
+#define FD_CLR_POSIX(fd, set)                                                                      \
+    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &=                                        \
+     ~(1UL << ((fd) % (8 * sizeof(unsigned long)))))
+
+#define FD_ISSET_POSIX(fd, set)                                                                    \
+    (((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &                                        \
+      (1UL << ((fd) % (8 * sizeof(unsigned long))))) != 0)
+
+#define FD_ZERO_POSIX(set) memset((set), 0, sizeof(fd_set_posix))
+
+s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* writefds,
+                              fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {}
+#else
 s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
     LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-
-#ifdef _WIN32
-    std::vector<HANDLE> handle_list;
-    std::vector<int> handle_guest_fds;
-    std::vector<bool> handle_read;
-    std::vector<bool> handle_write;
-    std::map<SOCKET, int> socket_to_guest;
-
-    FdSetBackup sets[3] = {{{}, readfds}, {{}, writefds}, {{}, exceptfds}};
-
-    // Backup original sets and clear output sets
-    for (auto& set : sets) {
-        if (set.out) {
-            set.in = *set.out;
-            FD_ZERO(set.out);
-        }
-    }
-
-    fd_set socket_read_set, socket_write_set, socket_except_set;
-    FD_ZERO(&socket_read_set);
-    FD_ZERO(&socket_write_set);
-    FD_ZERO(&socket_except_set);
-
-    SOCKET max_socket = 0;
-
-    for (int i = 0; i < nfds; ++i) {
-        bool read = IsInSet(sets[0], i);
-        bool write = IsInSet(sets[1], i);
-        bool except = IsInSet(sets[2], i);
-        if (!(read || write || except))
-            continue;
-
-        auto* file = h->GetFile(i);
-        if (!IsValidOpenFile(file)) {
-            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
-            *__Error() = POSIX_EBADF;
-            return -1;
-        }
-
-        if (file->type == Core::FileSys::FileType::Socket) {
-            SOCKET s = *file->socket->Native();
-            if (s == INVALID_SOCKET)
-                continue;
-
-            if (read)
-                FD_SET(s, &socket_read_set);
-            if (write)
-                FD_SET(s, &socket_write_set);
-            if (except)
-                FD_SET(s, &socket_except_set);
-
-            socket_to_guest[s] = i;
-            max_socket = std::max(max_socket, s);
-
-        } else if (file->type == Core::FileSys::FileType::Regular) {
-            HANDLE hFile = fileToHandle(file->f.file);
-            if (hFile == INVALID_HANDLE_VALUE)
-                continue;
-
-            handle_list.push_back(hFile);
-            handle_guest_fds.push_back(i);
-            handle_read.push_back(read);
-            handle_write.push_back(write);
-        } else {
-            LOG_WARNING(Kernel_Fs, "unsupported fd type for fd {}", i);
-        }
-    }
-
-    if (socket_to_guest.empty() && handle_list.empty()) {
-        return 0;
-    }
-
-    TIMEVAL timeout_tv;
-    TIMEVAL* timeout_ptr = nullptr;
-    if (timeout) {
-        timeout_tv.tv_sec = timeout->tv_sec;
-        timeout_tv.tv_usec = timeout->tv_usec;
-        timeout_ptr = &timeout_tv;
-    }
-
-    int ret = 0;
-
-    if (!socket_to_guest.empty()) {
-        int result = select(static_cast<int>(max_socket + 1), &socket_read_set, &socket_write_set,
-                            &socket_except_set, timeout_ptr);
-        if (result == SOCKET_ERROR) {
-            int err = WSAGetLastError();
-            switch (err) {
-            case WSAEFAULT:
-                *__Error() = POSIX_EFAULT;
-                break;
-            case WSAEINVAL:
-                *__Error() = POSIX_EINVAL;
-                break;
-            case WSAENOBUFS:
-                *__Error() = POSIX_ENOBUFS;
-                break;
-            default:
-                LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
-                break;
-            }
-            return -1;
-        }
-
-        for (const auto& [sock, guest_fd] : socket_to_guest) {
-            if (sets[0].out && FD_ISSET(sock, &socket_read_set))
-                FD_SET(guest_fd, sets[0].out);
-            if (sets[1].out && FD_ISSET(sock, &socket_write_set))
-                FD_SET(guest_fd, sets[1].out);
-            if (sets[2].out && FD_ISSET(sock, &socket_except_set))
-                FD_SET(guest_fd, sets[2].out);
-        }
-
-        ret += result;
-    }
-
-    if (!handle_list.empty()) {
-        DWORD timeout_ms = timeout ? (timeout->tv_sec * 1000 + timeout->tv_usec / 1000) : INFINITE;
-
-        DWORD wait_result = WaitForMultipleObjects(static_cast<DWORD>(handle_list.size()),
-                                                   handle_list.data(), FALSE, timeout_ms);
-
-        if (wait_result >= WAIT_OBJECT_0 && wait_result < WAIT_OBJECT_0 + handle_list.size()) {
-            int index = static_cast<int>(wait_result - WAIT_OBJECT_0);
-            int guest_fd = handle_guest_fds[index];
-            if (handle_read[index] && sets[0].out) {
-                FD_SET(guest_fd, sets[0].out);
-                ++ret;
-            }
-        } else if (wait_result != WAIT_TIMEOUT) {
-            int err = GetLastError();
-            switch (err) {
-            case ERROR_INVALID_HANDLE:
-                *__Error() = POSIX_EBADF;
-                break;
-            case ERROR_NOT_ENOUGH_MEMORY:
-                *__Error() = POSIX_ENOMEM;
-                break;
-            case ERROR_INVALID_PARAMETER:
-                *__Error() = POSIX_EINVAL;
-                break;
-            default:
-                LOG_ERROR(Kernel_Fs, "WaitForMultipleObjects failed with error {}", err);
-                break;
-            }
-            return -1;
-        }
-
-        for (size_t i = 0; i < handle_list.size(); ++i) {
-            if (handle_write[i] && sets[1].out) {
-                FD_SET(handle_guest_fds[i], sets[1].out);
-                ++ret;
-            }
-        }
-    }
-
-#else
     fd_set read_host, write_host, except_host;
     FD_ZERO(&read_host);
     FD_ZERO(&write_host);
@@ -1355,22 +1223,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
             }
         }
     }
-#endif
     if (ret < 0) {
-#ifndef _WIN32
         auto error = errno;
-#else
-        auto error = WSAGetLastError();
-#endif
         LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
                   Common::NativeErrorToString(error));
-#ifndef _WIN32
         SetPosixErrno(error);
-#endif
     }
 
     return ret;
 }
+#endif
 
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
