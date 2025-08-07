@@ -102,7 +102,9 @@ const u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
 
 enum class OrbisImeExtOption : u32 {
     DEFAULT = 0x00000000,
+    SET_COLOR = 0x00000001,
     SET_PRIORITY = 0x00000002,
+    PRIORITY_SHIFT = 0x00000004,
     PRIORITY_FULL_WIDTH = 0x00000008,
     PRIORITY_FIXED_PANEL = 0x00000010,
     DISABLE_POINTER = 0x00000040,
@@ -113,6 +115,7 @@ enum class OrbisImeExtOption : u32 {
     INIT_EXT_KEYBOARD_MODE = 0x00000800,
 
     ENABLE_ACCESSIBILITY = 0x00001000,                // ImeDialog unly
+    ACCESSIBILITY_PANEL_FORCED = 0x00002000,          // ImeDialog only
     ADDITIONAL_DICTIONARY_PRIORITY_MODE = 0x00004000, // ImeDialog only
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeExtOption);
