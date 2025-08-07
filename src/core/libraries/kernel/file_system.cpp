@@ -1184,6 +1184,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set_posix* readfds, fd_set_posix* wri
             continue;
 
         host_to_guest[native_fd] = i;
+        LOG_INFO(Kernel_Fs, "Mapping native_fd {} to guest_fd {}", native_fd, i);
 
         if (file->type == Core::FileSys::FileType::Regular) {
             // Disk files always ready
