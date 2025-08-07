@@ -980,6 +980,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         });
         copy_size += mip_info.size;
     }
+    if (copy_size == 0) {
+        return false;
+    }
     scheduler.EndRendering();
     const vk::BufferMemoryBarrier2 pre_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,

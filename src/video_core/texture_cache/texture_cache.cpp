@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <optional>
 #include <xxhash.h>
 
 #include "common/assert.h"
@@ -253,8 +252,12 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
 
         if (cache_image.info.num_samples == 1 && new_info.num_samples == 1) {
             // Perform depth<->color copy using the intermediate copy buffer.
-            const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
-            new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+            if (instance.IsMaintenance8Supported()) {
+                new_image.CopyImage(cache_image);
+            } else {
+                const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+                new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+            }
         } else if (cache_image.info.num_samples == 1 && new_info.props.is_depth &&
                    new_info.num_samples > 1) {
             // Perform a rendering pass to transfer the channels of source as samples in dest.
@@ -386,7 +389,6 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     auto& src_image = slot_images[image_id];
     auto& new_image = slot_images[new_image_id];
 
-    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     RefreshImage(new_image);
     new_image.CopyImage(src_image);
 
@@ -489,42 +491,35 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     return image_id;
 }
 
-ImageId TextureCache::FindImageFromRange(VAddr address, size_t size) {
-    boost::container::small_vector<ImageId, 6> image_ids;
+ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
+    boost::container::small_vector<ImageId, 4> image_ids;
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         if (image.info.guest_address != address) {
             return;
         }
-        if (False(image.flags & ImageFlagBits::GpuModified) ||
-            True(image.flags & ImageFlagBits::Dirty)) {
+        if (ensure_valid && (False(image.flags & ImageFlagBits::GpuModified) ||
+                             True(image.flags & ImageFlagBits::Dirty))) {
             return;
         }
         image_ids.push_back(image_id);
     });
-    if (image_ids.empty()) {
-        return {};
-    }
-    ImageId image_id{};
     if (image_ids.size() == 1) {
         // Sometimes image size might not exactly match with requested buffer size
         // If we only found 1 candidate image use it without too many questions.
-        image_id = image_ids[0];
-    } else {
+        return image_ids.back();
+    }
+    if (!image_ids.empty()) {
         for (s32 i = 0; i < image_ids.size(); ++i) {
             Image& image = slot_images[image_ids[i]];
             if (image.info.guest_size == size) {
-                image_id = image_ids[i];
-                break;
+                return image_ids[i];
             }
         }
-        if (!image_id) {
-            LOG_WARNING(Render_Vulkan,
-                        "Failed to find exact image match for copy addr={:#x}, size={:#x}", address,
-                        size);
-            return {};
-        }
+        LOG_WARNING(Render_Vulkan,
+                    "Failed to find exact image match for copy addr={:#x}, size={:#x}", address,
+                    size);
     }
-    return image_id;
+    return {};
 }
 
 ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo& view_info) {

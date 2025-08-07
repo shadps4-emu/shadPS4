@@ -39,7 +39,6 @@ class TextureCache {
         static constexpr size_t PageBits = 20;
     };
     using PageTable = MultiLevelPageTable<Traits>;
-    using ImageIds = boost::container::small_vector<ImageId, 8>;
 
 public:
     enum class BindingType : u32 {
@@ -113,7 +112,7 @@ public:
     [[nodiscard]] ImageId FindImage(BaseDesc& desc, bool exact_fmt = false);
 
     /// Retrieves image whose address matches provided
-    [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size);
+    [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
 
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);

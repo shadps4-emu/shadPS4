@@ -341,8 +341,9 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
-void Image::CopyImage(const Image& src_image) {
+void Image::CopyImage(Image& src_image) {
     scheduler->EndRendering();
+    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
@@ -363,7 +364,7 @@ void Image::CopyImage(const Image& src_image) {
                 .layerCount = src_info.resources.layers,
             },
             .dstSubresource{
-                .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = m,
                 .baseArrayLayer = 0,
                 .layerCount = src_info.resources.layers,
