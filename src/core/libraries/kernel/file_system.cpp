@@ -1075,36 +1075,6 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     }
     return result;
 }
-#ifdef _WIN32
-
-static HANDLE fileToHandle(std::FILE* file) {
-    if (!file)
-        return INVALID_HANDLE_VALUE;
-
-    int fd = _fileno(file); // Get the file descriptor
-    if (fd == -1)
-        return INVALID_HANDLE_VALUE;
-
-    HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(fd)); // Convert to HANDLE
-    return h;
-}
-// Helper to validate file object
-static bool IsValidOpenFile(const Core::FileSys::File* file) {
-    return file && ((file->type == Core::FileSys::FileType::Regular && file->f.IsOpen()) ||
-                    (file->type == Core::FileSys::FileType::Socket && file->is_opened));
-}
-
-// Backup structure for fd_sets
-struct FdSetBackup {
-    fd_set in;
-    fd_set* out;
-};
-
-// Helper to check if fd was in original set
-inline bool IsInSet(FdSetBackup& set, int fd) {
-    return set.out && FD_ISSET(fd, &set.in);
-}
-#endif
 
 #ifdef _WIN32
 #define __FD_SETSIZE 1024
@@ -1129,8 +1099,8 @@ typedef struct {
 
 s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* writefds,
                               fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
-    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
-             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+    LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
 
@@ -1163,20 +1133,17 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
             return -1;
         }
 
-        int native_fd = -1;
+        s32 native_fd = -1;
         switch (file->type) {
         case Core::FileSys::FileType::Regular:
-            native_fd = static_cast<int>(file->f.GetFileMapping());
-            LOG_INFO(Kernel_Fs, "fd {} is Regular file with native_fd {}", i, native_fd);
+            native_fd = static_cast<s32>(file->f.GetFileMapping());
             break;
         case Core::FileSys::FileType::Socket: {
             auto sock = file->socket->Native();
-            native_fd = sock ? static_cast<int>(*sock) : -1;
-            LOG_INFO(Kernel_Fs, "fd {} is Socket with native_fd {}", i, native_fd);
+            native_fd = sock ? static_cast<s32>(*sock) : -1;
             break;
         }
         case Core::FileSys::FileType::Device:
-            LOG_ERROR(Kernel_Fs, "device fds are not supported");
             native_fd = -1;
             break;
         default:
@@ -1211,14 +1178,13 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
             continue;
         }
 
-        LOG_INFO(Kernel_Fs, "Mapping native_fd {} to guest_fd {}", native_fd, i);
         host_to_guest[native_fd] = i;
     }
 
-    LOG_INFO(Kernel_Fs,
-             "Before select(): read_host.fd_count = {}, write_host.fd_count = {}, "
-             "except_host.fd_count = {}",
-             read_host.fd_count, write_host.fd_count, except_host.fd_count);
+    LOG_DEBUG(Kernel_Fs,
+              "Before select(): read_host.fd_count = {}, write_host.fd_count = {}, "
+              "except_host.fd_count = {}",
+              read_host.fd_count, write_host.fd_count, except_host.fd_count);
 
     if (read_host.fd_count == 0 && write_host.fd_count == 0 && except_host.fd_count == 0) {
         LOG_WARNING(Kernel_Fs, "No sockets in fd_sets, select() will return immediately");
@@ -1246,9 +1212,8 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         result = select(0, read_host.fd_count > 0 ? &read_host : nullptr,
                         write_host.fd_count > 0 ? &write_host : nullptr,
                         except_host.fd_count > 0 ? &except_host : nullptr, tv_ptr);
-        LOG_INFO(Kernel_Fs, "select() returned {}", result);
         if (result == SOCKET_ERROR) {
-            int err = WSAGetLastError();
+            s32 err = WSAGetLastError();
             LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
             switch (err) {
             case WSAEFAULT:
@@ -1261,7 +1226,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
                 *__Error() = POSIX_ENOBUFS;
                 break;
             default:
-                LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
+                LOG_ERROR(Kernel_Fs, "Unhandled error case {}", err);
                 break;
             }
             return -1;
@@ -1270,17 +1235,14 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         for (s32 i = 0; i < read_host.fd_count; ++i) {
             s32 fd = static_cast<s32>(read_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], readfds);
-            LOG_INFO(Kernel_Fs, "Socket fd {} ready for read", host_to_guest[fd]);
         }
         for (s32 i = 0; i < write_host.fd_count; ++i) {
             s32 fd = static_cast<s32>(write_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], writefds);
-            LOG_INFO(Kernel_Fs, "Socket fd {} ready for write", host_to_guest[fd]);
         }
         for (s32 i = 0; i < except_host.fd_count; ++i) {
             s32 fd = static_cast<s32>(except_host.fd_array[i]);
             FD_SET_POSIX(host_to_guest[fd], exceptfds);
-            LOG_INFO(Kernel_Fs, "Socket fd {} has exception", host_to_guest[fd]);
         }
     }
 
@@ -1290,22 +1252,20 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         if (FD_ISSET_POSIX(i, &read_ready)) {
             FD_SET_POSIX(i, readfds);
             disk_ready++;
-            LOG_INFO(Kernel_Fs, "fd {} ready for read", i);
         }
         if (FD_ISSET_POSIX(i, &write_ready)) {
             FD_SET_POSIX(i, writefds);
             disk_ready++;
-            LOG_INFO(Kernel_Fs, "fd {} ready for write", i);
         }
     }
 
     return result + disk_ready;
 }
 #else
-s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
-    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
-             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+    LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     fd_set read_host, write_host, except_host;
@@ -1313,10 +1273,10 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
     FD_ZERO(&write_host);
     FD_ZERO(&except_host);
 
-    std::map<int, int> host_to_guest;
-    int max_fd = -1;
+    std::map<s32, s32> host_to_guest;
+    s32 max_fd = -1;
 
-    for (auto i = 0; i < nfds; ++i) {
+    for (s32 i = 0; i < nfds; ++i) {
         auto read = readfds && FD_ISSET(i, readfds);
         auto write = writefds && FD_ISSET(i, writefds);
         auto except = exceptfds && FD_ISSET(i, exceptfds);
@@ -1330,17 +1290,16 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
                 return -1;
             }
 
-            int native_fd = [&] {
+            s32 native_fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<int>(file->f.GetFileMapping());
+                    return static_cast<s32>(file->f.GetFileMapping());
                 case Core::FileSys::FileType::Device:
-                    LOG_ERROR(Kernel_Fs, "device fds are not supported");
                     return -1;
                 case Core::FileSys::FileType::Socket: {
                     auto sock = file->socket->Native();
                     // until P2P sockets contain a proper socket
-                    return sock ? static_cast<int>(*sock) : -1;
+                    return sock ? static_cast<s32>(*sock) : -1;
                 }
                 default:
                     UNREACHABLE();
@@ -1370,7 +1329,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         return 0;
     }
 
-    int ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
+    s32 ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
 
     if (ret > 0) {
         if (readfds) {
@@ -1383,7 +1342,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
             FD_ZERO(exceptfds);
         }
 
-        for (auto i = 0; i < max_fd + 1; ++i) {
+        for (s32 i = 0; i < max_fd + 1; ++i) {
             if (readfds && FD_ISSET(i, &read_host)) {
                 FD_SET(host_to_guest[i], readfds);
             }
@@ -1396,7 +1355,7 @@ s32 PS4_SYSV_ABI posix_select(int nfds, fd_set* readfds, fd_set* writefds, fd_se
         }
     }
     if (ret < 0) {
-        auto error = errno;
+        s32 error = errno;
         LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
                   Common::NativeErrorToString(error));
         SetPosixErrno(error);
