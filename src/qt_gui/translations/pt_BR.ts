@@ -1551,6 +1551,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostrar Rótulos Sob Ícones</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atalhos</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -2200,6 +2204,77 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Mostrar Troféus Ocultos</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atalhos</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Atalhos do Controle</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Exibir Contador de FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>não mapeado</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation>Parar o Emulador</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Ativar/desativar Tela cheia</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Ativar/desativar Pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Atalhos do teclado</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation>Exibir Contador de Fps: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation>Parar o Emulador: n/a</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation>Ativar/Desativar Tela Cheia: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation>Ativar/Desativar Pausa: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation>Dica: até três entradas podem ser atribuídas para cada função</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Aperte um botão</translation>
     </message>
   </context>
 </TS>

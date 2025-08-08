@@ -2,20 +2,20 @@
 <!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <!DOCTYPE TS>
-<TS version="2.1" language="ro_RO" sourcelanguage="en">
+<TS version="2.1" language="ur_PK" sourcelanguage="en">
   <context>
     <name>AboutDialog</name>
     <message>
       <source>About shadPS4</source>
-      <translation>Despre shadPS4</translation>
+      <translation>shadPS4 کے بارے میں</translation>
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation type="unfinished">shadPS4 is an experimental open-source emulator for the PlayStation 4.</translation>
+      <translation>shadPS4 ایک تجرباتی اوپن سورس ایمولیٹر ہے جو PlayStation 4 کے لیے بنایا گیا ہے۔</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation type="unfinished">This software should not be used to play games you have not legally obtained.</translation>
+      <translation>اس سافٹ ویئر کو ایسی گیمز کھیلنے کے لیے استعمال نہ کریں جو آپ نے قانونی طور پر حاصل نہیں کی ہیں۔</translation>
     </message>
   </context>
   <context>
@@ -26,11 +26,11 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>Cheats/Patches sunt experimentale.\nUtilizați cu prudență.\n\nDescărcați cheats individual prin selectarea depozitului și făcând clic pe butonul de descărcare.\nÎn fila Patches, puteți descărca toate patch-urile deodată, alege pe cele pe care doriți să le utilizați și salvați selecția.\n\nDeoarece nu dezvoltăm Cheats/Patches,\nte rugăm să raportezi problemele autorului cheat-ului.\n\nAi creat un nou cheat? Vizitează:\n</translation>
+      <translation>چیٹس/پیچز تجرباتی ہیں۔\nاحتیاط کے ساتھ استعمال کریں۔\n\nچیٹس کو الگ الگ ڈاؤن لوڈ کرنے کے لیے، ریپوزٹری منتخب کریں اور ڈاؤن لوڈ بٹن پر کلک کریں۔\nپیچز کے ٹیب میں، آپ تمام پیچز ایک ساتھ ڈاؤن لوڈ کر سکتے ہیں۔ اپنی مرضی کے پیچز منتخب کریں، اور اپنا انتخاب محفوظ کر لیں۔\n\nچونکہ ہم چیٹس/پیچز خود نہیں بناتے،\nاس لیے کسی بھی مسئلے کی اطلاع متعلقہ چیٹ کے مصنف کو دیں۔\n\nکیا آپ نے نئی چیٹس بنائی ہیں؟ وزٹ کریں:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
-      <translation>Nu este disponibilă imaginea</translation>
+      <translation>کوئی تصویر دستیاب نہیں</translation>
     </message>
     <message>
       <source>Serial: </source>
@@ -38,15 +38,15 @@
     </message>
     <message>
       <source>Version: </source>
-      <translation>Versiune: </translation>
+      <translation type="unfinished">Version: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation>Dimensiune: </translation>
+      <translation type="unfinished">Size: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>Selectează fișierul Cheat:</translation>
+      <translation type="unfinished">Select Cheat File:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -54,353 +54,355 @@
     </message>
     <message>
       <source>Download Cheats</source>
-      <translation>Descarcă Cheats</translation>
+      <translation>چیٹس ڈاؤن لوڈ کریں</translation>
     </message>
     <message>
       <source>Delete File</source>
-      <translation>Șterge Fișierul</translation>
+      <translation>فائل حذف کریں</translation>
     </message>
     <message>
       <source>No files selected.</source>
-      <translation>Nu sunt fișiere selectate.</translation>
+      <translation>کوئی فائل منتخب نہیں کی گئی۔</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
-      <translation>Poti șterge cheats-urile pe care nu le dorești după ce le-ai descărcat.</translation>
+      <translation type="unfinished">You can delete the cheats you don&apos;t want after downloading them.</translation>
     </message>
     <message>
       <source>Do you want to delete the selected file?\n%1</source>
-      <translation>Vrei să ștergi fișierul selectat?\n%1</translation>
+      <translation>کیا آپ منتخب کردہ فائل کو حذف کرنا چاہتے ہیں؟\n%1</translation>
     </message>
     <message>
       <source>Select Patch File:</source>
-      <translation>Selectează fișierul Patch:</translation>
+      <translation>پیچ فائل منتخب کریں:</translation>
     </message>
     <message>
       <source>Download Patches</source>
-      <translation>Descarcă Patches</translation>
+      <translation>پیچز ڈاؤن لوڈ کریں</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>Salvează</translation>
+      <translation>محفوظ کریں</translation>
     </message>
     <message>
       <source>Cheats</source>
-      <translation type="unfinished">Cheats</translation>
+      <translation>چیٹس</translation>
     </message>
     <message>
       <source>Patches</source>
-      <translation type="unfinished">Patches</translation>
+      <translation>پیچز</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>Eroare</translation>
+      <translation>خرابی</translation>
     </message>
     <message>
       <source>No patch selected.</source>
-      <translation>Nu este selectat niciun patch.</translation>
+      <translation>کوئی پیچ منتخب نہیں کیا گیا۔</translation>
     </message>
     <message>
       <source>Unable to open files.json for reading.</source>
-      <translation>Imposibil de deschis files.json pentru citire.</translation>
+      <translation type="unfinished">Unable to open files.json for reading.</translation>
     </message>
     <message>
       <source>No patch file found for the current serial.</source>
-      <translation>Nu s-a găsit niciun fișier patch pentru serialul curent.</translation>
+      <translation type="unfinished">No patch file found for the current serial.</translation>
     </message>
     <message>
       <source>Unable to open the file for reading.</source>
-      <translation>Imposibil de deschis fișierul pentru citire.</translation>
+      <translation type="unfinished">Unable to open the file for reading.</translation>
     </message>
     <message>
       <source>Unable to open the file for writing.</source>
-      <translation>Imposibil de deschis fișierul pentru scriere.</translation>
+      <translation type="unfinished">Unable to open the file for writing.</translation>
     </message>
     <message>
       <source>Failed to parse XML: </source>
-      <translation>Nu s-a reușit pararea XML: </translation>
+      <translation type="unfinished">Failed to parse XML: </translation>
     </message>
     <message>
       <source>Success</source>
-      <translation>Succes</translation>
+      <translation>کامیابی</translation>
     </message>
     <message>
       <source>Options saved successfully.</source>
-      <translation>Opțiunile au fost salvate cu succes.</translation>
+      <translation type="unfinished">Options saved successfully.</translation>
     </message>
     <message>
       <source>Invalid Source</source>
-      <translation>Sursă invalidă</translation>
+      <translation type="unfinished">Invalid Source</translation>
     </message>
     <message>
       <source>The selected source is invalid.</source>
-      <translation>Sursa selectată este invalidă.</translation>
+      <translation type="unfinished">The selected source is invalid.</translation>
     </message>
     <message>
       <source>File Exists</source>
-      <translation>Fișier existent</translation>
+      <translation>فائل موجود ہے</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
-      <translation>Fișierul există deja. Vrei să-l înlocuiești?</translation>
+      <translation>فائل پہلے سے موجود ہے۔ کیا آپ اسے تبدیل کرنا چاہتے ہیں؟</translation>
     </message>
     <message>
       <source>Failed to save file:</source>
-      <translation>Nu s-a reușit salvarea fișierului:</translation>
+      <translation>فائل محفوظ نہیں کی جا سکی:</translation>
     </message>
     <message>
       <source>Failed to download file:</source>
-      <translation>Nu s-a reușit descărcarea fișierului:</translation>
+      <translation>فائل ڈاؤن لوڈ نہیں ہو سکی:</translation>
     </message>
     <message>
       <source>Cheats Not Found</source>
-      <translation>Cheats Nu au fost găsite</translation>
+      <translation>کوئی چیٹس نہیں ملیں</translation>
     </message>
     <message>
       <source>No Cheats found for this game in this version of the selected repository,try another repository or a different version of the game.</source>
-      <translation>Nu au fost găsite cheats pentru acest joc în această versiune a repository-ului selectat, încearcă un alt repository sau o versiune diferită a jocului.</translation>
+      <translation>منتخب کردہ ریپوزٹری کے اس ورژن میں اس گیم کے لیے کوئی چیٹس نہیں ملیں، کسی دوسری ریپوزٹری یا گیم کے مختلف ورژن کو آزمائیں۔</translation>
     </message>
     <message>
       <source>Cheats Downloaded Successfully</source>
-      <translation>Cheats descărcate cu succes</translation>
+      <translation>چیٹس کامیابی سے ڈاؤن لوڈ ہو گئیں</translation>
     </message>
     <message>
       <source>You have successfully downloaded the cheats for this version of the game from the selected repository. You can try downloading from another repository, if it is available it will also be possible to use it by selecting the file from the list.</source>
-      <translation>Ai descărcat cu succes cheats-urile pentru această versiune a jocului din repository-ul selectat. Poți încerca descărcarea din alt repository; dacă este disponibil, va fi posibil să-l folosești selectând fișierul din listă.</translation>
+      <translation>آپ نے منتخب کردہ ریپوزٹری سے اس گیم کے اس ورژن کے لیے چیٹس کامیابی سے ڈاؤن لوڈ کر لی ہیں۔
+آپ کسی دوسری ریپوزٹری سے بھی ڈاؤن لوڈ کرنے کی کوشش کر سکتے ہیں،
+اور اگر دستیاب ہو تو اسے فہرست سے فائل منتخب کر کے استعمال کرنا بھی ممکن ہوگا۔</translation>
     </message>
     <message>
       <source>Failed to save:</source>
-      <translation>Nu s-a reușit salvarea:</translation>
+      <translation>محفوظ نہیں کیا جا سکا:</translation>
     </message>
     <message>
       <source>Failed to download:</source>
-      <translation>Nu s-a reușit descărcarea:</translation>
+      <translation>ڈاؤن لوڈ نہیں ہو سکا:</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Descărcare completă</translation>
+      <translation>ڈاؤن لوڈ مکمل ہو گئی</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully! All Patches available for all games have been downloaded, there is no need to download them individually for each game as happens in Cheats. If the patch does not appear, it may be that it does not exist for the specific serial and version of the game.</source>
-      <translation>Patches descărcate cu succes! Toate Patches disponibile pentru toate jocurile au fost descărcate; nu este nevoie să le descarci individual pentru fiecare joc, așa cum se întâmplă cu Cheats. Dacă patch-ul nu apare, este posibil să nu existe pentru seria și versiunea specifică a jocului.</translation>
+      <translation>پیچز کامیابی سے ڈاؤن لوڈ ہو گئے! تمام گیمز کے لیے دستیاب پیچز ڈاؤن لوڈ کر لیے گئے ہیں، اس لیے ہر گیم کے لیے الگ سے پیچز ڈاؤن لوڈ کرنے کی ضرورت نہیں ہے جیسا کہ چیٹس میں ہوتا ہے۔ اگر کوئی پیچ ظاہر نہیں ہو رہا تو ممکن ہے کہ وہ مخصوص سیریل اور ورژن کے لیے موجود نہ ہو۔</translation>
     </message>
     <message>
       <source>Failed to parse JSON data from HTML.</source>
-      <translation>Nu s-a reușit pararea datelor JSON din HTML.</translation>
+      <translation type="unfinished">Failed to parse JSON data from HTML.</translation>
     </message>
     <message>
       <source>Failed to retrieve HTML page.</source>
-      <translation>Nu s-a reușit obținerea paginii HTML.</translation>
+      <translation type="unfinished">Failed to retrieve HTML page.</translation>
     </message>
     <message>
       <source>The game is in version: %1</source>
-      <translation>Jocul este în versiunea: %1</translation>
+      <translation type="unfinished">The game is in version: %1</translation>
     </message>
     <message>
       <source>The downloaded patch only works on version: %1</source>
-      <translation>Patch-ul descărcat funcționează doar pe versiunea: %1</translation>
+      <translation type="unfinished">The downloaded patch only works on version: %1</translation>
     </message>
     <message>
       <source>You may need to update your game.</source>
-      <translation>Este posibil să trebuiască să actualizezi jocul tău.</translation>
+      <translation>آپ کو اپنی گیم اپ ڈیٹ کرنے کی ضرورت ہو سکتی ہے۔</translation>
     </message>
     <message>
       <source>Incompatibility Notice</source>
-      <translation>Avertizare de incompatibilitate</translation>
+      <translation type="unfinished">Incompatibility Notice</translation>
     </message>
     <message>
       <source>Failed to open file:</source>
-      <translation>Nu s-a reușit deschiderea fișierului:</translation>
+      <translation>فائل کھولی نہیں جا سکی:</translation>
     </message>
     <message>
       <source>XML ERROR:</source>
-      <translation>EROARE XML:</translation>
+      <translation type="unfinished">XML ERROR:</translation>
     </message>
     <message>
       <source>Failed to open files.json for writing</source>
-      <translation>Nu s-a reușit deschiderea files.json pentru scriere</translation>
+      <translation type="unfinished">Failed to open files.json for writing</translation>
     </message>
     <message>
       <source>Author: </source>
-      <translation>Autor: </translation>
+      <translation type="unfinished">Author: </translation>
     </message>
     <message>
       <source>Directory does not exist:</source>
-      <translation>Directorul nu există:</translation>
+      <translation type="unfinished">Directory does not exist:</translation>
     </message>
     <message>
       <source>Failed to open files.json for reading.</source>
-      <translation>Nu s-a reușit deschiderea files.json pentru citire.</translation>
+      <translation type="unfinished">Failed to open files.json for reading.</translation>
     </message>
     <message>
       <source>Name:</source>
-      <translation>Nume:</translation>
+      <translation>نام:</translation>
     </message>
     <message>
       <source>Can&apos;t apply cheats before the game is started</source>
-      <translation>Nu poți aplica cheats înainte ca jocul să înceapă.</translation>
+      <translation>گیم شروع ہونے سے پہلے چیٹس لاگو نہیں کی جا سکتیں</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>Închide</translation>
+      <translation>بند کریں</translation>
     </message>
   </context>
   <context>
     <name>CheckUpdate</name>
     <message>
       <source>Auto Updater</source>
-      <translation>Actualizator automat</translation>
+      <translation>آٹو اپڈیٹر</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>Eroare</translation>
+      <translation>خرابی</translation>
     </message>
     <message>
       <source>Network error:</source>
-      <translation>Eroare de rețea:</translation>
+      <translation>نیٹ ورک میں خرابی</translation>
     </message>
     <message>
       <source>The Auto Updater allows up to 60 update checks per hour.\nYou have reached this limit. Please try again later.</source>
-      <translation>Actualizatorul automat permite până la 60 de verificări de actualizare pe oră.\nAți atins această limită. Vă rugăm să încercați din nou mai târziu.</translation>
+      <translation>آٹو اپڈیٹر ہر گھنٹے میں زیادہ سے زیادہ 60 اپڈیٹ چیکس کی اجازت دیتا ہے۔\nآپ اس حد تک پہنچ چکے ہیں۔ براہ کرم کچھ دیر بعد کوشش کیجیے۔</translation>
     </message>
     <message>
       <source>Failed to parse update information.</source>
-      <translation>Nu s-au putut analiza informațiile de actualizare.</translation>
+      <translation>اپ ڈیٹ کی معلومات پڑھنے میں ناکامی ہوئی۔</translation>
     </message>
     <message>
       <source>No pre-releases found.</source>
-      <translation>Nu au fost găsite pre-lansări.</translation>
+      <translation>کوئی پری ریلیز نہیں ملی۔</translation>
     </message>
     <message>
       <source>Invalid release data.</source>
-      <translation>Datele versiunii sunt invalide.</translation>
+      <translation>ریلیز کا ڈیٹا درست نہیں ہے۔</translation>
     </message>
     <message>
       <source>No download URL found for the specified asset.</source>
-      <translation>Nu s-a găsit URL de descărcare pentru resursa specificată.</translation>
+      <translation>مخصوص کردہ اثاثے کے لیے کوئی ڈاؤن لوڈ URL نہیں ملا۔</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
-      <translation>Versiunea ta este deja actualizată!</translation>
+      <translation>آپ کا ورژن پہلے سے ہی تازہ ترین ہے!</translation>
     </message>
     <message>
       <source>Update Available</source>
-      <translation>Actualizare disponibilă</translation>
+      <translation>نئی اپ ڈیٹ دستیاب ہے</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Canal de Actualizare</translation>
+      <translation>اپ ڈیٹس کا چینل</translation>
     </message>
     <message>
       <source>Current Version</source>
-      <translation>Versiunea curentă</translation>
+      <translation>موجودہ ورژن</translation>
     </message>
     <message>
       <source>Latest Version</source>
-      <translation>Ultima versiune</translation>
+      <translation>تازہ ترین ورژن</translation>
     </message>
     <message>
       <source>Do you want to update?</source>
-      <translation>Doriți să actualizați?</translation>
+      <translation>کیا آپ اپ ڈیٹ کرنا چاہتے ہیں؟</translation>
     </message>
     <message>
       <source>Show Changelog</source>
-      <translation>Afișați jurnalul de modificări</translation>
+      <translation type="unfinished">Show Changelog</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verifică actualizări la pornire</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation>Actualizare</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>No</source>
-      <translation>Nu</translation>
+      <translation type="unfinished">No</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation>Ascunde jurnalul de modificări</translation>
+      <translation type="unfinished">Hide Changelog</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation>Modificări</translation>
+      <translation type="unfinished">Changes</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation>A apărut o eroare de rețea în timpul încercării de a accesa URL-ul</translation>
+      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Descărcare completă</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation>Actualizarea a fost descărcată, apăsați OK pentru a instala.</translation>
+      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
-      <translation>Nu s-a putut salva fișierul de actualizare la</translation>
+      <translation type="unfinished">Failed to save the update file at</translation>
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation>Încep actualizarea...</translation>
+      <translation type="unfinished">Starting Update...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
-      <translation>Nu s-a putut crea fișierul script de actualizare</translation>
+      <translation type="unfinished">Failed to create the update script file</translation>
     </message>
   </context>
   <context>
     <name>CompatibilityInfoClass</name>
     <message>
       <source>Fetching compatibility data, please wait</source>
-      <translation>Se colectează datele de compatibilitate, vă rugăm să așteptați</translation>
+      <translation type="unfinished">Fetching compatibility data, please wait</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation>Anulează</translation>
+      <translation type="unfinished">Cancel</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation>Se încarcă...</translation>
+      <translation type="unfinished">Loading...</translation>
     </message>
     <message>
       <source>Error</source>
-      <translation>Eroare</translation>
+      <translation type="unfinished">Error</translation>
     </message>
     <message>
       <source>Unable to update compatibility data! Try again later.</source>
-      <translation>Nu se poate actualiza datele de compatibilitate! Încercați din nou mai târziu.</translation>
+      <translation type="unfinished">Unable to update compatibility data! Try again later.</translation>
     </message>
     <message>
       <source>Unable to open compatibility_data.json for writing.</source>
-      <translation>Nu se poate deschide compatibility_data.json pentru scriere.</translation>
+      <translation type="unfinished">Unable to open compatibility_data.json for writing.</translation>
     </message>
     <message>
       <source>Unknown</source>
-      <translation>Necunoscut</translation>
+      <translation type="unfinished">Unknown</translation>
     </message>
     <message>
       <source>Nothing</source>
-      <translation>Nimic</translation>
+      <translation type="unfinished">Nothing</translation>
     </message>
     <message>
       <source>Boots</source>
-      <translation>Botine</translation>
+      <translation type="unfinished">Boots</translation>
     </message>
     <message>
       <source>Menus</source>
-      <translation>Meniuri</translation>
+      <translation type="unfinished">Menus</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation>În joc</translation>
+      <translation type="unfinished">Ingame</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation>Jucabil</translation>
+      <translation type="unfinished">Playable</translation>
     </message>
   </context>
   <context>
@@ -739,7 +741,7 @@
     </message>
     <message>
       <source>Directory to install DLC</source>
-      <translation>Director pentru a instala DLC</translation>
+      <translation type="unfinished">Directory to install DLC</translation>
     </message>
   </context>
   <context>
@@ -750,11 +752,11 @@
     </message>
     <message>
       <source>Name</source>
-      <translation>Nume</translation>
+      <translation type="unfinished">Name</translation>
     </message>
     <message>
       <source>Serial</source>
-      <translation>Serie</translation>
+      <translation type="unfinished">Serial</translation>
     </message>
     <message>
       <source>Compatibility</source>
@@ -762,7 +764,7 @@
     </message>
     <message>
       <source>Region</source>
-      <translation>Regiune</translation>
+      <translation type="unfinished">Region</translation>
     </message>
     <message>
       <source>Firmware</source>
@@ -770,19 +772,19 @@
     </message>
     <message>
       <source>Size</source>
-      <translation>Dimensiune</translation>
+      <translation type="unfinished">Size</translation>
     </message>
     <message>
       <source>Version</source>
-      <translation>Versiune</translation>
+      <translation type="unfinished">Version</translation>
     </message>
     <message>
       <source>Path</source>
-      <translation>Drum</translation>
+      <translation type="unfinished">Path</translation>
     </message>
     <message>
       <source>Play Time</source>
-      <translation>Timp de Joacă</translation>
+      <translation type="unfinished">Play Time</translation>
     </message>
     <message>
       <source>Never Played</source>
@@ -826,11 +828,11 @@
     </message>
     <message>
       <source>Click to see details on github</source>
-      <translation>Faceți clic pentru a vedea detalii pe GitHub</translation>
+      <translation type="unfinished">Click to see details on github</translation>
     </message>
     <message>
       <source>Last updated</source>
-      <translation>Ultima actualizare</translation>
+      <translation type="unfinished">Last updated</translation>
     </message>
     <message>
       <source>Favorite</source>
@@ -880,19 +882,19 @@
     </message>
     <message>
       <source>Open Folder...</source>
-      <translation>Deschide Folder...</translation>
+      <translation type="unfinished">Open Folder...</translation>
     </message>
     <message>
       <source>Open Game Folder</source>
-      <translation>Deschide Folder Joc</translation>
+      <translation type="unfinished">Open Game Folder</translation>
     </message>
     <message>
       <source>Open Save Data Folder</source>
-      <translation>Deschide Folder Date Salvate</translation>
+      <translation type="unfinished">Open Save Data Folder</translation>
     </message>
     <message>
       <source>Open Log Folder</source>
-      <translation>Deschide Folder Jurnal</translation>
+      <translation type="unfinished">Open Log Folder</translation>
     </message>
     <message>
       <source>Copy info...</source>
@@ -1004,11 +1006,11 @@
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation>Șterge Salvare Date</translation>
+      <translation type="unfinished">Delete Save Data</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation>Acest joc nu are folderul de actualizări pentru a fi deschis!</translation>
+      <translation type="unfinished">This game has no update folder to open!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
@@ -1305,7 +1307,7 @@
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verifică actualizările</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>About shadPS4</source>
@@ -1377,7 +1379,7 @@
     </message>
     <message>
       <source>Download Cheats/Patches</source>
-      <translation>Descarcă Coduri / Patch-uri</translation>
+      <translation type="unfinished">Download Cheats/Patches</translation>
     </message>
     <message>
       <source>Dump Game List</source>
@@ -1425,7 +1427,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation>Ajutor</translation>
+      <translation type="unfinished">Help</translation>
     </message>
     <message>
       <source>Dark</source>
@@ -1453,47 +1455,47 @@
     </message>
     <message>
       <source>Game List</source>
-      <translation>Lista jocurilor</translation>
+      <translation type="unfinished">Game List</translation>
     </message>
     <message>
       <source>Download Cheats For All Installed Games</source>
-      <translation>Descarcă Cheats pentru toate jocurile instalate</translation>
+      <translation type="unfinished">Download Cheats For All Installed Games</translation>
     </message>
     <message>
       <source>Download Patches For All Games</source>
-      <translation>Descarcă Patches pentru toate jocurile</translation>
+      <translation type="unfinished">Download Patches For All Games</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation>Descărcare completă</translation>
+      <translation type="unfinished">Download Complete</translation>
     </message>
     <message>
       <source>You have downloaded cheats for all the games you have installed.</source>
-      <translation>Ai descărcat cheats pentru toate jocurile instalate.</translation>
+      <translation type="unfinished">You have downloaded cheats for all the games you have installed.</translation>
     </message>
     <message>
       <source>Patches Downloaded Successfully!</source>
-      <translation>Patches descărcate cu succes!</translation>
+      <translation type="unfinished">Patches Downloaded Successfully!</translation>
     </message>
     <message>
       <source>All Patches available for all games have been downloaded.</source>
-      <translation>Toate Patches disponibile pentru toate jocurile au fost descărcate.</translation>
+      <translation type="unfinished">All Patches available for all games have been downloaded.</translation>
     </message>
     <message>
       <source>Games: </source>
-      <translation>Jocuri: </translation>
+      <translation type="unfinished">Games: </translation>
     </message>
     <message>
       <source>ELF files (*.bin *.elf *.oelf)</source>
-      <translation>Fișiere ELF (*.bin *.elf *.oelf)</translation>
+      <translation type="unfinished">ELF files (*.bin *.elf *.oelf)</translation>
     </message>
     <message>
       <source>Game Boot</source>
-      <translation>Boot Joc</translation>
+      <translation type="unfinished">Game Boot</translation>
     </message>
     <message>
       <source>Only one file can be selected!</source>
-      <translation>Numai un fișier poate fi selectat!</translation>
+      <translation type="unfinished">Only one file can be selected!</translation>
     </message>
     <message>
       <source>Run Game</source>
@@ -1584,11 +1586,11 @@
     </message>
     <message>
       <source>Default tab when opening settings</source>
-      <translation>Tab-ul implicit la deschiderea setărilor</translation>
+      <translation type="unfinished">Default tab when opening settings</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
-      <translation>Afișează dimensiunea jocului în listă</translation>
+      <translation type="unfinished">Show Game Size In List</translation>
     </message>
     <message>
       <source>Show Splash</source>
@@ -1596,7 +1598,7 @@
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
-      <translation>Activați Discord Rich Presence</translation>
+      <translation type="unfinished">Enable Discord Rich Presence</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1628,11 +1630,11 @@
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Deschide locația jurnalului</translation>
+      <translation type="unfinished">Open Log Location</translation>
     </message>
     <message>
       <source>Input</source>
-      <translation>Introducere</translation>
+      <translation type="unfinished">Input</translation>
     </message>
     <message>
       <source>Cursor</source>
@@ -1640,11 +1642,11 @@
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>Ascunde cursorul</translation>
+      <translation type="unfinished">Hide Cursor</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>Timeout pentru ascunderea cursorului inactiv</translation>
+      <translation type="unfinished">Hide Cursor Idle Timeout</translation>
     </message>
     <message>
       <source>Microphone</source>
@@ -1664,7 +1666,7 @@
     </message>
     <message>
       <source>Controller</source>
-      <translation>Controler</translation>
+      <translation type="unfinished">Controller</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1672,11 +1674,11 @@
     </message>
     <message>
       <source>GUI</source>
-      <translation>Interfață</translation>
+      <translation type="unfinished">GUI</translation>
     </message>
     <message>
       <source>User</source>
-      <translation>Utilizator</translation>
+      <translation type="unfinished">User</translation>
     </message>
     <message>
       <source>Graphics Device</source>
@@ -1704,19 +1706,19 @@
     </message>
     <message>
       <source>Paths</source>
-      <translation>Trasee</translation>
+      <translation type="unfinished">Paths</translation>
     </message>
     <message>
       <source>Game Folders</source>
-      <translation>Dosare de joc</translation>
+      <translation type="unfinished">Game Folders</translation>
     </message>
     <message>
       <source>Add...</source>
-      <translation>Adaugă...</translation>
+      <translation type="unfinished">Add...</translation>
     </message>
     <message>
       <source>Remove</source>
-      <translation>Eliminare</translation>
+      <translation type="unfinished">Remove</translation>
     </message>
     <message>
       <source>Debug</source>
@@ -1768,27 +1770,27 @@
     </message>
     <message>
       <source>Update</source>
-      <translation>Actualizare</translation>
+      <translation type="unfinished">Update</translation>
     </message>
     <message>
       <source>Check for Updates at Startup</source>
-      <translation>Verifică actualizări la pornire</translation>
+      <translation type="unfinished">Check for Updates at Startup</translation>
     </message>
     <message>
       <source>Always Show Changelog</source>
-      <translation>Arată întotdeauna jurnalul modificărilor</translation>
+      <translation type="unfinished">Always Show Changelog</translation>
     </message>
     <message>
       <source>Update Channel</source>
-      <translation>Canal de Actualizare</translation>
+      <translation type="unfinished">Update Channel</translation>
     </message>
     <message>
       <source>Check for Updates</source>
-      <translation>Verifică actualizări</translation>
+      <translation type="unfinished">Check for Updates</translation>
     </message>
     <message>
       <source>GUI Settings</source>
-      <translation>Setări GUI</translation>
+      <translation type="unfinished">GUI Settings</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1812,7 +1814,7 @@
     </message>
     <message>
       <source>Play title music</source>
-      <translation>Redă muzica titlului</translation>
+      <translation type="unfinished">Play title music</translation>
     </message>
     <message>
       <source>Update Compatibility Database On Startup</source>
@@ -1832,47 +1834,47 @@
     </message>
     <message>
       <source>Volume</source>
-      <translation>Volum</translation>
+      <translation type="unfinished">Volume</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation>Salvează</translation>
+      <translation type="unfinished">Save</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation>Aplică</translation>
+      <translation type="unfinished">Apply</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Restabilește Impozitivele</translation>
+      <translation type="unfinished">Restore Defaults</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation>Închide</translation>
+      <translation type="unfinished">Close</translation>
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation>Indicați mouse-ul asupra unei opțiuni pentru a afișa descrierea acesteia.</translation>
+      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
-      <translation>Limba consolei:\nSetează limba pe care o folosește jocul PS4.\nSe recomandă să setezi această opțiune pe o limbă pe care jocul o suportă, ceea ce poate varia în funcție de regiune.</translation>
+      <translation type="unfinished">Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</translation>
     </message>
     <message>
       <source>Emulator Language:\nSets the language of the emulator&apos;s user interface.</source>
-      <translation>Limba emulatorului:\nSetează limba interfeței utilizatorului a emulatorului.</translation>
+      <translation type="unfinished">Emulator Language:\nSets the language of the emulator&apos;s user interface.</translation>
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>Afișează ecranul de încărcare:\nAfișează ecranul de încărcare al jocului (o imagine specială) în timp ce jocul pornește.</translation>
+      <translation type="unfinished">Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
-      <translation>Activați Discord Rich Presence:\nAfișează pictograma emulatorului și informații relevante pe profilul dumneavoastră Discord.</translation>
+      <translation type="unfinished">Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</translation>
     </message>
     <message>
       <source>Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</source>
-      <translation>Nume utilizator:\nSetează numele de utilizator al contului PS4, care poate fi afișat de unele jocuri.</translation>
+      <translation type="unfinished">Username:\nSets the PS4&apos;s account username, which may be displayed by some games.</translation>
     </message>
     <message>
       <source>Trophy Key:\nKey used to decrypt trophies. Must be obtained from your jailbroken console.\nMust contain only hex characters.</source>
@@ -1880,15 +1882,15 @@
     </message>
     <message>
       <source>Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</source>
-      <translation>Tip jurnal:\nSetează dacă să sincronizezi ieșirea ferestrei de jurnal pentru performanță. Aceasta poate avea efecte adverse asupra emulării.</translation>
+      <translation type="unfinished">Log Type:\nSets whether to synchronize the output of the log window for performance. May have adverse effects on emulation.</translation>
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Filtrul jurnalului:\nFiltrează jurnalul pentru a imprima doar informații specifice.\nExemple: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Niveluri: Trace, Debug, Info, Warning, Error, Critical - în această ordine, un nivel specific reduce toate nivelurile anterioare din listă și înregistrează toate nivelurile ulterioare.</translation>
+      <translation type="unfinished">Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
-      <translation>Actualizare:\nRelease: Versiuni oficiale lansate în fiecare lună, care pot fi foarte învechite, dar sunt mai fiabile și testate.\nNightly: Versiuni de dezvoltare care conțin toate cele mai recente funcții și corecții, dar pot conține erori și sunt mai puțin stabile.</translation>
+      <translation type="unfinished">Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</translation>
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
@@ -1896,7 +1898,7 @@
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
-      <translation>Redă muzica titlului:\nDacă un joc o suportă, activează redarea muzicii speciale când selectezi jocul în GUI.</translation>
+      <translation type="unfinished">Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</translation>
     </message>
     <message>
       <source>Disable Trophy Pop-ups:\nDisable in-game trophy notifications. Trophy progress can still be tracked using the Trophy Viewer (right-click the game in the main window).</source>
@@ -1904,11 +1906,11 @@
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Ascunde cursorul:\nAlegeți când va dispărea cursorul:\nNiciodată: Vei vedea întotdeauna mouse-ul.\nInactiv: Setează un timp pentru a dispărea după inactivitate.\nÎntotdeauna: nu vei vedea niciodată mouse-ul.</translation>
+      <translation type="unfinished">Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Setați un timp pentru ca mouse-ul să dispară după ce a fost inactiv.</translation>
+      <translation type="unfinished">Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
@@ -1924,35 +1926,35 @@
     </message>
     <message>
       <source>Never</source>
-      <translation>Niciodată</translation>
+      <translation type="unfinished">Never</translation>
     </message>
     <message>
       <source>Idle</source>
-      <translation>Inactiv</translation>
+      <translation type="unfinished">Idle</translation>
     </message>
     <message>
       <source>Always</source>
-      <translation>Întotdeauna</translation>
+      <translation type="unfinished">Always</translation>
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Dispozitiv grafic:\nPe sistemele cu mai multe GPU-uri, alege GPU-ul pe care emulatorul îl va folosi din lista derulantă,\nsau selectează &quot;Auto Select&quot; pentru a-l determina automat.</translation>
+      <translation type="unfinished">Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Lățime/Înălțime:\nSetează dimensiunea ferestrei emulatorului la lansare, care poate fi redimensionată în timpul jocului.\nAceasta este diferită de rezoluția din joc.</translation>
+      <translation type="unfinished">Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
       <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Împărțitor Vblank:\nRata de cadre cu care emulatorul se reîmprospătează este multiplicată cu acest număr. Schimbarea acestuia poate avea efecte adverse, cum ar fi creșterea vitezei jocului sau distrugerea funcționalității critice a jocului care nu se așteaptă ca aceasta să se schimbe!</translation>
+      <translation type="unfinished">Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
-      <translation>Activează salvarea shaderelor:\nÎn scopuri de depanare tehnică, salvează shader-urile jocului într-un folder pe măsură ce sunt randate.</translation>
+      <translation type="unfinished">Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Activează GPU Null:\nÎn scopuri de depanare tehnică, dezactivează redarea jocului ca și cum nu ar exista o placă grafică.</translation>
+      <translation type="unfinished">Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1960,31 +1962,31 @@
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>Folderele jocurilor:\nLista folderelor pentru a verifica jocurile instalate.</translation>
+      <translation type="unfinished">Game Folders:\nThe list of folders to check for installed games.</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
-      <translation>Adăugați:\nAdăugați un folder la listă.</translation>
+      <translation type="unfinished">Add:\nAdd a folder to the list.</translation>
     </message>
     <message>
       <source>Remove:\nRemove a folder from the list.</source>
-      <translation>Eliminați:\nÎndepărtați un folder din listă.</translation>
+      <translation type="unfinished">Remove:\nRemove a folder from the list.</translation>
     </message>
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
-      <translation>Activează salvarea pentru depanare:\nSalvează simbolurile de import și export și informațiile din antetul fișierului pentru aplicația PS4 care rulează în prezent într-un director.</translation>
+      <translation type="unfinished">Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activează straturile de validare Vulkan:\nActivează un sistem care validează starea renderer-ului Vulkan și înregistrează informații despre starea sa internă. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activează validarea sincronizării Vulkan:\nActivează un sistem care validează sincronizarea sarcinilor de redare Vulkan. Aceasta va reduce performanța și probabil va schimba comportamentul emulării.</translation>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
-      <translation>Activează depanarea RenderDoc:\nDacă este activat, emulatorul va oferi compatibilitate cu Renderdoc pentru a permite capturarea și analiza cadrului redat în prezent.</translation>
+      <translation type="unfinished">Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
