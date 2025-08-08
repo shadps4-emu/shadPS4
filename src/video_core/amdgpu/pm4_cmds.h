@@ -436,7 +436,7 @@ struct PM4CmdEventWriteEop {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -725,7 +725,7 @@ struct PM4CmdWriteData {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr64);
+        return std::bit_cast<T>(addr64);
     }
 };
 
@@ -756,7 +756,7 @@ struct PM4CmdEventWriteEos {
 
     template <typename T = u32*>
     T Address() const {
-        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -815,7 +815,7 @@ struct PM4DumpConstRam {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>((u64(addr_hi) << 32u) | addr_lo);
+        return std::bit_cast<T>((u64(addr_hi) << 32u) | addr_lo);
     }
 
     [[nodiscard]] u32 Offset() const {
@@ -904,7 +904,7 @@ struct PM4CmdReleaseMem {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
