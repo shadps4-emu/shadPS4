@@ -342,38 +342,40 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
 }
 
 void Image::CopyImage(Image& src_image) {
-    scheduler->EndRendering();
-    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
-
-    auto cmdbuf = scheduler->CommandBuffer();
     const auto& src_info = src_image.info;
-
-    boost::container::small_vector<vk::ImageCopy, 14> image_copy{};
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
-    for (u32 m = 0; m < num_mips; ++m) {
-        const auto mip_w = std::max(src_info.size.width >> m, 1u);
-        const auto mip_h = std::max(src_info.size.height >> m, 1u);
-        const auto mip_d = std::max(src_info.size.depth >> m, 1u);
+    ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
-        image_copy.emplace_back(vk::ImageCopy{
+    boost::container::small_vector<vk::ImageCopy, 8> image_copies;
+    for (u32 mip = 0; mip < num_mips; ++mip) {
+        const auto mip_w = std::max(src_info.size.width >> mip, 1u);
+        const auto mip_h = std::max(src_info.size.height >> mip, 1u);
+        const auto mip_d = std::max(src_info.size.depth >> mip, 1u);
+
+        image_copies.emplace_back(vk::ImageCopy{
             .srcSubresource{
                 .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = m,
+                .mipLevel = mip,
                 .baseArrayLayer = 0,
                 .layerCount = src_info.resources.layers,
             },
             .dstSubresource{
                 .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = m,
+                .mipLevel = mip,
                 .baseArrayLayer = 0,
                 .layerCount = src_info.resources.layers,
             },
             .extent = {mip_w, mip_h, mip_d},
         });
     }
+
+    scheduler->EndRendering();
+    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+
+    auto cmdbuf = scheduler->CommandBuffer();
     cmdbuf.copyImage(src_image.image, src_image.last_state.layout, image, last_state.layout,
-                     image_copy);
+                     image_copies);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -381,32 +383,29 @@ void Image::CopyImage(Image& src_image) {
 
 void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset) {
     const auto& src_info = src_image.info;
+    const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
+    ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
-    vk::BufferImageCopy buffer_image_copy = {
-        .bufferOffset = offset,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource =
-            {
-                .aspectMask = src_info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
-                                                      : vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
+    boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
+    for (u32 mip = 0; mip < num_mips; ++mip) {
+        const auto mip_w = std::max(src_info.size.width >> mip, 1u);
+        const auto mip_h = std::max(src_info.size.height >> mip, 1u);
+        const auto mip_d = std::max(src_info.size.depth >> mip, 1u);
+
+        buffer_copies.emplace_back(vk::BufferImageCopy{
+            .bufferOffset = offset,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource{
+                .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = 1,
+                .layerCount = src_info.resources.layers,
             },
-        .imageOffset =
-            {
-                .x = 0,
-                .y = 0,
-                .z = 0,
-            },
-        .imageExtent =
-            {
-                .width = src_info.size.width,
-                .height = src_info.size.height,
-                .depth = src_info.size.depth,
-            },
-    };
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {mip_w, mip_h, mip_d},
+        });
+    }
 
     const vk::BufferMemoryBarrier2 pre_copy_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
@@ -433,7 +432,6 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
-
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,
@@ -441,7 +439,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
     });
 
     cmdbuf.copyImageToBuffer(src_image.image, vk::ImageLayout::eTransferSrcOptimal, buffer,
-                             buffer_image_copy);
+                             buffer_copies);
 
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
@@ -449,11 +447,11 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
         .pBufferMemoryBarriers = &post_copy_barrier,
     });
 
-    buffer_image_copy.imageSubresource.aspectMask =
-        info.props.is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor;
+    for (auto& copy : buffer_copies) {
+        copy.imageSubresource.aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    }
 
-    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal,
-                             buffer_image_copy);
+    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, buffer_copies);
 }
 
 void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
