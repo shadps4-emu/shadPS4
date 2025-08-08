@@ -35,9 +35,22 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     return *this;
 }
 
-int IOFile::Open(const std::filesystem::path& path, int mode) {
+int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate,
+                 int mode) {
     ClearErrno();
-    int result = OpenImpl(path, mode);
+    int result = OpenImpl(path, AccessModeToPOSIX(flags, truncate), mode);
+
+    if (!IsOpen()) {
+        const auto ec = std::error_code{result, std::generic_category()};
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                  PathToUTF8String(file_path), ec.message());
+    }
+    return result;
+}
+
+int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
+    ClearErrno();
+    int result = OpenImpl(path, flags, mode);
 
     if (!IsOpen()) {
         const auto ec = std::error_code{result, std::generic_category()};

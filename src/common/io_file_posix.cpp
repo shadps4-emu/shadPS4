@@ -19,16 +19,17 @@ namespace Common::FS {
 
 namespace fs = std::filesystem;
 
-int IOFile::OpenImpl(const fs::path& path, int mode) {
+int IOFile::OpenImpl(const fs::path& path, int flags, int mode) {
     Close();
 
     file_path = path;
-    file_access_mode = mode;
+    file_access_mode = flags;
+    file_access_permissions = mode;
 
     ClearErrno();
     int result = 0;
 
-    file_descriptor = open(path.c_str(), mode);
+    file_descriptor = open(path.c_str(), flags, mode);
     if (!file_descriptor)
         return GetErrno();
     result = GetErrno();

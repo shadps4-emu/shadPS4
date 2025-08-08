@@ -74,8 +74,8 @@ enum class SeekOrigin : u32 {
 // posix-specific. move somewhere
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
 
-int AccessModeToPOSIX(FileAccessMode mode, bool truncate);
-int AccessModeOrbisToPOSIX(int mode);
+int AccessModeToPOSIX(FileAccessMode flags, bool truncate);
+int AccessModeOrbisToPOSIX(int flags);
 
 u64 GetDirectorySize(const std::filesystem::path& path);
 u64 _GetDirectorySizeImpl(const std::filesystem::path& path);
@@ -88,17 +88,19 @@ public:
     // OpenImpl - called by Open (always)
     // To conform with current convention, written files are truncated by default.
     // It is necessary to retain it available to handle kernel calls correctly
-    explicit IOFile(const std::string& path, FileAccessMode mode, bool truncate = true) {
-        Open(path, mode, truncate);
+    explicit IOFile(const std::string& path, FileAccessMode flags, bool truncate = true) {
+        Open(path, flags, truncate);
     }
-    explicit IOFile(std::string_view path, FileAccessMode mode, bool truncate = true) {
-        Open(path, mode, truncate);
+    explicit IOFile(std::string_view path, FileAccessMode flags, bool truncate = true) {
+        Open(path, flags, truncate);
     }
-    explicit IOFile(const std::filesystem::path& path, FileAccessMode mode, bool truncate = true) {
-        Open(path, mode, truncate);
+    explicit IOFile(const std::filesystem::path& path, FileAccessMode flags, bool truncate = true) {
+        Open(path, flags, truncate);
     }
-    explicit IOFile(const std::string& path, int mode) {
-        Open(path, mode);
+    // POSIX - regular file creation doesn't need to know/set access permissions
+    // this is for Orbis only
+    explicit IOFile(const std::string& path, int flags, int mode = 0644) {
+        Open(path, flags, mode);
     }
 
     ~IOFile() {
@@ -112,11 +114,10 @@ public:
     IOFile& operator=(IOFile&& other) noexcept;
 
     // Simplified access, convert to stream-equivalent modes at own discretion
-    int Open(const std::filesystem::path& path, FileAccessMode mode, bool truncate = true) {
-        return OpenImpl(path, AccessModeToPOSIX(mode, truncate));
-    }
+    int Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate = true,
+             int mode = 0644);
     // In the end, this one is called
-    int Open(const std::filesystem::path& path, int mode);
+    int Open(const std::filesystem::path& path, int flags, int mode = 0644);
 
     void Close();
 
@@ -141,6 +142,10 @@ public:
 
     int GetAccessMode() const {
         return file_access_mode;
+    }
+
+    int GetAccessPermissions() const {
+        return file_access_permissions;
     }
 
     bool IsOpen() const {
@@ -237,9 +242,7 @@ public:
     }
 
 private:
-    // Dumb access
-    int OpenImpl(const std::filesystem::path& path, FileAccessMode mode, bool _truncate);
-    int OpenImpl(const std::filesystem::path& path, int mode);
+    int OpenImpl(const std::filesystem::path& path, int flags, int mode = 0644);
 
     bool CloseImpl();
     bool UnlinkImpl();
@@ -256,8 +259,9 @@ private:
     const int GetErrno(void) const;
     void ClearErrno(void) const;
 
-    std::filesystem::path file_path;
-    int file_access_mode{};
+    std::filesystem::path file_path{};
+    int file_access_mode = 0;
+    int file_access_permissions = 0;
 
 #ifdef _WIN32
     HANDLE file_descriptor = 0;

@@ -192,7 +192,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
-        e = file->f.Open(file->m_host_name, Common::FS::AccessModeOrbisToPOSIX(flags));
+        e = file->f.Open(file->m_host_name, Common::FS::AccessModeOrbisToPOSIX(flags), mode);
     }
 
     if (e != 0) {
