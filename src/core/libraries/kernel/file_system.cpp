@@ -1184,7 +1184,8 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
             break;
         }
 
-        if (file->type == Core::FileSys::FileType::Regular || file->type == Core::FileSys::FileType::Device) {
+        if (file->type == Core::FileSys::FileType::Regular ||
+            file->type == Core::FileSys::FileType::Device) {
             // Disk files always ready
             if (want_read) {
                 FD_SET_POSIX(i, &read_ready);
