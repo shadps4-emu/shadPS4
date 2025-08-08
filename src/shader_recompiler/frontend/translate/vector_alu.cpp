@@ -331,6 +331,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U64(ConditionOp::EQ, false, false, inst);
     case Opcode::V_CMP_NE_U64:
         return V_CMP_U64(ConditionOp::LG, false, false, inst);
+    case Opcode::V_CMP_GT_U64:
+        return V_CMP_U64(ConditionOp::GT, false, false, inst);
 
     case Opcode::V_CMP_CLASS_F32:
         return V_CMP_CLASS_F32(inst);
@@ -1020,6 +1022,12 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.IEqual(src0, src1);
         case ConditionOp::LG: // NE
             return ir.INotEqual(src0, src1);
+        case ConditionOp::GT:
+            if (src1.IsImmediate() && src1.U64() == 0) {
+                ASSERT(inst.src[0].field == OperandField::ScalarGPR);
+                return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            }
+            return ir.IGreaterThan(src0, src1, is_signed);
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
