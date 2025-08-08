@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <set>
 #include <fmt/core.h>
+#include <hwinfo/hwinfo.h>
 
 #include "common/config.h"
 #include "common/debug.h"
@@ -150,6 +151,14 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
     LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+
+    hwinfo::Memory ram;
+    const auto cpus = hwinfo::getAllCPUs();
+    for (const auto& cpu : cpus) {
+        LOG_INFO(Config, "CPU Name: {}", cpu.modelName());
+        LOG_INFO(Config, "CPU Cores: {}", cpu.numPhysicalCores());
+    }
+    LOG_INFO(Config, "RAM [GB]: {}", ram.total_Bytes() / pow(1024, 3));
 
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
