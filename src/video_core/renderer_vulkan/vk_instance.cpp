@@ -253,6 +253,7 @@ bool Instance::CreateDevice() {
     ASSERT(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME));
 
     // Optional
+    maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
     depth_range_unrestricted = add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     if (dynamic_state_3) {
@@ -459,6 +460,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceVertexAttributeDivisorFeatures{
             .vertexAttributeInstanceRateDivisor = true,
         },
+        vk::PhysicalDeviceMaintenance8FeaturesKHR{
+            .maintenance8 = true,
+        },
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
             .shaderBufferFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax,
@@ -526,6 +530,9 @@ bool Instance::CreateDevice() {
     }
     if (!provoking_vertex) {
         device_chain.unlink<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
+    }
+    if (!maintenance_8) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
