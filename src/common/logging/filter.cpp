@@ -83,6 +83,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, LibcInternal)                                                                         \
     SUB(Lib, Kernel)                                                                               \
     SUB(Lib, Pad)                                                                                  \
+    SUB(Lib, SystemGesture)                                                                        \
     SUB(Lib, GnmDriver)                                                                            \
     SUB(Lib, SystemService)                                                                        \
     SUB(Lib, UserService)                                                                          \
