@@ -55,7 +55,7 @@
 #include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
-#include "core/libraries/system_gesture/SystemGesture.h"
+#include "core/libraries/system_gesture/system_gesture.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/videodec/videodec.h"

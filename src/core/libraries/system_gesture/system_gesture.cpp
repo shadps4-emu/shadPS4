@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "SystemGesture.h"
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -9,6 +8,7 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
+#include "system_gesture.h"
 
 namespace Libraries::SystemGesture {
 

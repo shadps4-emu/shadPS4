@@ -528,8 +528,8 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
 )
 
 set(SYSTEM_GESTURE_LIB 
-            src/core/libraries/system_gesture/SystemGesture.cpp
-            src/core/libraries/system_gesture/SystemGesture.h
+            src/core/libraries/system_gesture/system_gesture.cpp
+            src/core/libraries/system_gesture/system_gesture.h
 )
 
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
