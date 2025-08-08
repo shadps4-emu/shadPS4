@@ -217,6 +217,7 @@ if (NOT TARGET stb::headers)
 endif()
 
 # hwinfo
+set(HWINFO_STATIC ON)
 add_subdirectory(hwinfo)
 
 # Apple-only dependencies
