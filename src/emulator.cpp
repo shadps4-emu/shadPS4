@@ -153,12 +153,14 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
 
     hwinfo::Memory ram;
+    hwinfo::OS os;
     const auto cpus = hwinfo::getAllCPUs();
     for (const auto& cpu : cpus) {
         LOG_INFO(Config, "CPU Name: {}", cpu.modelName());
         LOG_INFO(Config, "CPU Cores: {}", cpu.numPhysicalCores());
     }
-    LOG_INFO(Config, "RAM [GB]: {}", ram.total_Bytes() / pow(1024, 3));
+    LOG_INFO(Config, "RAM: {}GB", ram.total_Bytes() / pow(1024, 3));
+    LOG_INFO(Config, "Operating System: {}", os.name());
 
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
