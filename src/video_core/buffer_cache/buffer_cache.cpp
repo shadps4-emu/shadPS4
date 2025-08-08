@@ -963,7 +963,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         const u32 height = std::max(image.info.size.height >> mip, 1u);
         const u32 depth = std::max(image.info.size.depth >> mip, 1u);
         if (buf_offset + mip_info.offset + mip_info.size > buffer.SizeBytes()) {
-            return false;
+            break;
         }
         buffer_copies.push_back(vk::BufferImageCopy{
             .bufferOffset = mip_info.offset,
