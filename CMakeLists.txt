@@ -935,6 +935,7 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/tiling.h
                src/video_core/amdgpu/types.h
                src/video_core/amdgpu/default_context.cpp
+               src/video_core/amdgpu/fence_detector.h
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
