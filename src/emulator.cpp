@@ -159,7 +159,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         LOG_INFO(Config, "CPU Name: {}", cpu.modelName());
         LOG_INFO(Config, "CPU Cores: {}", cpu.numPhysicalCores());
     }
-    LOG_INFO(Config, "RAM: {}GB", ram.total_Bytes() / pow(1024, 3));
+    LOG_INFO(Config, "Total RAM: {} GB", std::round(ram.total_Bytes() / pow(1024, 3)));
     LOG_INFO(Config, "Operating System: {}", os.name());
 
     if (param_sfo_exists) {
