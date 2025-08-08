@@ -527,6 +527,11 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad_errors.h
 )
 
+set(SYSTEM_GESTURE_LIB 
+            src/core/libraries/system_gesture/SystemGesture.cpp
+            src/core/libraries/system_gesture/SystemGesture.h
+)
+
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
             src/core/libraries/libpng/pngdec_error.h
@@ -780,6 +785,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${HLE_LIBC_INTERNAL_LIB}
          ${PAD_LIB}
+         ${SYSTEM_GESTURE_LIB}
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
