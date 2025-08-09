@@ -452,8 +452,8 @@ void Rasterizer::OnSubmit() {
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
-    texture_cache.RunGarbageCollector();
     buffer_cache.RunGarbageCollector();
+    texture_cache.RunGarbageCollector();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {

@@ -128,6 +128,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     const auto [download, offset] = download_buffer.Map(image_size);
     download_buffer.Commit();
     scheduler.EndRendering();
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     tile_manager.TileImage(image.image, buffer_copies, download_buffer.Handle(), offset,
                            image.info);
     scheduler.DeferOperation([image_addr, download, image_size] {
