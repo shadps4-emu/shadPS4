@@ -257,36 +257,49 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
     for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
         if (entry.is_directory()) {
-            auto entitlement_label = entry.path().filename().string();
-            auto& info = addcont_info[addcont_count++];
-            info.status = OrbisAppContentAddcontDownloadStatus::Installed;
-
-            // All officially endorsed dumping methods have two hypens before the entitlement label
-            u64 offset = 0;
-            for (s32 i = 0; i < 2; i++) {
-                offset = entitlement_label.find('-', offset) + 1;
-                if (offset == 0) {
-                    break;
-                }
+            // Look for a param.sfo in the additional content directory.
+            const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
+            if (!std::filesystem::exists(param_sfo_path)) {
+                LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
+                            entry.path().filename().string());
+                continue;
             }
 
-            if (offset == 0) {
-                // There is no hypen, DLC was likely installed prior to recent updates.
-                entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label) - 1);
-            } else {
-                u64 offset_two = entitlement_label.find('-', offset);
-                if (offset_two == -1) {
-                    // We've found the correct number of hypens, copy to the end of the string.
-                    entitlement_label.copy(info.entitlement_label,
-                                           sizeof(info.entitlement_label) - 1, offset);
-                } else {
-                    // There's an additional hypen, assume the label is what is between them.
-                    // Ensure the length is small enough to preserve the null terminator.
-                    u64 length = offset_two - offset >= sizeof(info.entitlement_label)
-                                     ? sizeof(info.entitlement_label) - 1
-                                     : offset_two - offset;
-                    entitlement_label.copy(info.entitlement_label, length, offset);
+            // Open the param.sfo, make sure it's actually for additional content.
+            PSF* dlc_params = new PSF(); 
+            dlc_params->Open(param_sfo_path);
+
+            auto category = dlc_params->GetString("CATEGORY");
+            if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
+                // We've located additional content. Find the entitlement id from the content id.
+                auto content_id = dlc_params->GetString("CONTENT_ID");
+                if (!content_id.has_value()) {
+                    LOG_WARNING(Lib_AppContent,
+                                "Additonal content {} param.sfo is missing CONTENT_ID",
+                                entry.path().filename().string());
+                    continue;
                 }
+
+                // content id's have consistent formatting, so this will always work.
+                // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+                if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+                    LOG_WARNING(Lib_AppContent,
+                                "Additonal content {} param.sfo has malformed CONTENT_ID",
+                                entry.path().filename().string());
+                    continue;
+                }
+                auto entitlement_id =
+                    content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+                LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+
+                // Save the additional content info in addcont_info.
+                auto& info = addcont_info[addcont_count++];
+                entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+                info.status = OrbisAppContentAddcontDownloadStatus::Installed;
+            } else {
+                LOG_WARNING(Lib_AppContent, "Additonal content folder {} is not additional content",
+                            entry.path().filename().string());
+                continue;
             }
         }
     }
