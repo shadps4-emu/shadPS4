@@ -216,6 +216,10 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+# hwinfo
+set(HWINFO_STATIC ON)
+add_subdirectory(hwinfo)
+
 # Apple-only dependencies
 if (APPLE)
     # date
