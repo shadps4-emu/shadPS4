@@ -342,7 +342,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     const auto& [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
 
-    VideoCore::Buffer* count_buffer{};
+    const VideoCore::Buffer* count_buffer{};
     u32 count_base{};
     if (count_address != 0) {
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);

@@ -5,6 +5,8 @@
 
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
+#include <tsl/robin_map.h>
+
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -136,21 +138,20 @@ public:
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
     /// Obtains a buffer for the specified region.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
-                                                       bool is_texel_buffer = false,
-                                                       BufferId buffer_id = {});
+    std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
+                                         bool is_texel_buffer = false, BufferId buffer_id = {});
 
     /// Attempts to obtain a buffer without modifying the cache contents.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferForImage(VAddr gpu_addr, u32 size);
+    std::pair<Buffer*, u32> ObtainBufferForImage(VAddr gpu_addr, u32 size);
 
     /// Return true when a region is registered on the cache
-    [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
+    bool IsRegionRegistered(VAddr addr, size_t size);
 
     /// Return true when a CPU region is modified from the CPU
-    [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
+    bool IsRegionCpuModified(VAddr addr, size_t size);
 
     /// Return true when a CPU region is modified from the GPU
-    [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
+    bool IsRegionGpuModified(VAddr addr, size_t size);
 
     /// Return buffer id for the specified region
     BufferId FindBuffer(VAddr device_addr, u32 size);
@@ -203,13 +204,13 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    bool SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
+    bool SynchronizeBuffer(const Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                            bool is_texel_buffer);
 
-    vk::Buffer UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
+    vk::Buffer UploadCopies(const Buffer& buffer, std::span<vk::BufferCopy> copies,
                             size_t total_size_bytes);
 
-    bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
+    bool SynchronizeBufferFromImage(const Buffer& buffer, VAddr device_addr, u32 size);
 
     void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
 
@@ -252,6 +253,8 @@ private:
         auto operator<=>(const PreemptiveDownload&) const = default;
     };
     SplitRangeMap<PreemptiveDownload> preemptive_downloads;
+    using BufferCopies = boost::container::small_vector<vk::BufferCopy, 8>;
+    tsl::robin_map<BufferId, BufferCopies> preemptive_copies;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
     vk::UniqueDescriptorSetLayout fault_process_desc_layout;

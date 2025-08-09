@@ -490,12 +490,14 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size,
-                      is_written &&
-                          /*Config::fenceDetection() == Config::FenceDetection::None*/ false,
-                      is_texel_buffer);
+    const bool fence_detection = Config::fenceDetection() != Config::FenceDetection::None;
+    SynchronizeBuffer(buffer, device_addr, size, is_written && !fence_detection, is_texel_buffer);
     if (is_written) {
-        gpu_modified_ranges_pending.Add(device_addr, size);
+        if (fence_detection) {
+            gpu_modified_ranges_pending.Add(device_addr, size);
+        } else {
+            gpu_modified_ranges.Add(device_addr, size);
+        }
     }
     return {&buffer, buffer.Offset(device_addr)};
 }
@@ -708,6 +710,9 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
 }
 
 void BufferCache::ProcessPreemptiveDownloads() {
+    if (Config::fenceDetection() == Config::FenceDetection::None) {
+        return;
+    }
     auto* memory = Core::Memory::Instance();
     preemptive_downloads.ForEach([this, memory](VAddr, VAddr, const PreemptiveDownload& download) {
         if (!scheduler.IsFree(download.done_tick)) {
@@ -887,8 +892,8 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
     }
 }
 
-bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
-                                    bool is_texel_buffer) {
+bool BufferCache::SynchronizeBuffer(const Buffer& buffer, VAddr device_addr, u32 size,
+                                    bool is_written, bool is_texel_buffer) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
@@ -946,7 +951,7 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     return false;
 }
 
-vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
+vk::Buffer BufferCache::UploadCopies(const Buffer& buffer, std::span<vk::BufferCopy> copies,
                                      size_t total_size_bytes) {
     if (copies.empty()) {
         return VK_NULL_HANDLE;
@@ -979,7 +984,7 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
     }
 }
 
-bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
+bool BufferCache::SynchronizeBufferFromImage(const Buffer& buffer, VAddr device_addr, u32 size) {
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);
     if (!image_id) {
         return false;
@@ -1070,8 +1075,6 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size, bool is
 }
 
 void BufferCache::CommitPendingGpuRanges() {
-    using BufferCopies = boost::container::small_vector<vk::BufferCopy, 8>;
-    static tsl::robin_map<BufferId, BufferCopies> preemptive_copies;
     size_t total_size_bytes = 0;
     gpu_modified_ranges_pending.ForEach([&](VAddr begin, VAddr end) {
         memory_tracker->ForEachPreemptiveFlushPage(begin, end - begin, [&](VAddr page_addr) {

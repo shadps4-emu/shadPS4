@@ -19,7 +19,7 @@ public:
     static constexpr size_t MAX_CPU_PAGE_BITS = 40;
     static constexpr size_t NUM_HIGH_PAGES = 1ULL << (MAX_CPU_PAGE_BITS - TRACKER_HIGHER_PAGE_BITS);
     static constexpr size_t MANAGER_POOL_SIZE = 32;
-    static constexpr size_t PREEMPTIVE_FLUSH_THRESHOLD = 32;
+    static constexpr size_t PREEMPTIVE_FLUSH_THRESHOLD = 16;
 
 public:
     explicit MemoryTracker(PageManager& tracker_) : tracker{&tracker_} {}

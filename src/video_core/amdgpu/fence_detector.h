@@ -6,6 +6,7 @@
 #include <span>
 #include <vector>
 
+#include "common/config.h"
 #include "common/types.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 
@@ -30,6 +31,9 @@ private:
     }
 
     void DetectFences(std::span<const u32> cmd) {
+        if (Config::fenceDetection() == Config::FenceDetection::None) {
+            return;
+        }
         while (!cmd.empty()) {
             const auto* header = reinterpret_cast<const PM4Header*>(cmd.data());
             const u32 type = header->type;
