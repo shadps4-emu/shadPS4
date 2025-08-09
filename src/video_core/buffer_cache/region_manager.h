@@ -98,10 +98,8 @@ public:
         }
         if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
-        } else {
-            if (Config::readbacks()) {
-                UpdateProtection<enable, true>();
-            }
+        } else if (Config::readbacks()) {
+            UpdateProtection<enable, true>();
             for (size_t page = start_page; page != end_page && !enable; ++page) {
                 ++flushes[page];
             }
