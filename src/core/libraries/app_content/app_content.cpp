@@ -261,13 +261,33 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
             auto& info = addcont_info[addcont_count++];
             info.status = OrbisAppContentAddcontDownloadStatus::Installed;
 
-            // Our recommended dumping method prepends the folder name with the game serial
-            // Since they end the folder name with the entitlement label, copy from the end instead.
-            u64 offset =
-                entitlement_label.length() <= ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1
-                    ? 0
-                    : entitlement_label.length() - ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE + 1;
-            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label), offset);
+            // All officially endorsed dumping methods have two hypens before the entitlement label
+            u64 offset = 0;
+            for (s32 i = 0; i < 2; i++) {
+                offset = entitlement_label.find('-', offset) + 1;
+                if (offset == 0) {
+                    break;
+                }
+            }
+
+            if (offset == 0) {
+                // There is no hypen, DLC was likely installed prior to recent updates.
+                entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label) - 1);
+            } else {
+                u64 offset_two = entitlement_label.find('-', offset);
+                if (offset_two == -1) {
+                    // We've found the correct number of hypens, copy to the end of the string.
+                    entitlement_label.copy(info.entitlement_label,
+                                           sizeof(info.entitlement_label) - 1, offset);
+                } else {
+                    // There's an additional hypen, assume the label is what is between them.
+                    // Ensure the length is small enough to preserve the null terminator.
+                    u64 length = offset_two - offset >= sizeof(info.entitlement_label)
+                                     ? sizeof(info.entitlement_label) - 1
+                                     : offset_two - offset;
+                    entitlement_label.copy(info.entitlement_label, length, offset);
+                }
+            }
         }
     }
 
