@@ -263,9 +263,11 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
             // Our recommended dumping method prepends the folder name with the game serial
             // Since they end the folder name with the entitlement label, copy from the end instead.
-            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label),
-                                   entitlement_label.length() -
-                                       ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE + 1);
+            u64 offset =
+                entitlement_label.length() <= ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1
+                    ? 0
+                    : entitlement_label.length() - ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE + 1;
+            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label), offset);
         }
     }
 
