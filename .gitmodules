@@ -112,3 +112,4 @@
 [submodule "externals/hwinfo"]
 	path = externals/hwinfo
 	url = https://github.com/rainmakerv3/hwinfo
+	shallow = true
