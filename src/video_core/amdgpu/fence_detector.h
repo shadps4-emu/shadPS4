@@ -40,7 +40,7 @@ private:
 
             switch (type) {
             default:
-                UNREACHABLE_MSG("Wrong PM4 type {}", type);
+                return;
             case 0:
                 UNREACHABLE_MSG("Unimplemented PM4 type 0, base reg: {}, size: {}",
                                 header->type0.base.Value(), header->type0.NumWords());
