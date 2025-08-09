@@ -5,7 +5,6 @@
 
 #include "common/config.h"
 #include "common/div_ceil.h"
-#include "common/logging/log.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"
@@ -46,6 +45,10 @@ public:
 
     VAddr GetCpuAddr() const {
         return cpu_addr;
+    }
+
+    u16& NumFlushes(u32 page) {
+        return flushes[page];
     }
 
     static constexpr size_t SanitizeAddress(size_t address) {
@@ -97,6 +100,9 @@ public:
             UpdateProtection<!enable, false>();
         } else if (Config::readbacks()) {
             UpdateProtection<enable, true>();
+            for (size_t page = start_page; page != end_page && !enable; ++page) {
+                ++flushes[page];
+            }
         }
     }
 
@@ -190,6 +196,7 @@ private:
     RegionBits gpu;
     RegionBits writeable;
     RegionBits readable;
+    RegionWords flushes{};
 };
 
 } // namespace VideoCore
