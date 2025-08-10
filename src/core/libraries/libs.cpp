@@ -34,6 +34,7 @@
 #include "core/libraries/np_common/np_common.h"
 #include "core/libraries/np_manager/np_manager.h"
 #include "core/libraries/np_party/np_party.h"
+#include "core/libraries/np_profiledialog/np_profiledialog.h"
 #include "core/libraries/np_score/np_score.h"
 #include "core/libraries/np_trophy/np_trophy.h"
 #include "core/libraries/np_web_api/np_web_api.h"
@@ -95,6 +96,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NpScore::RegisterLib(sym);
     Libraries::NpTrophy::RegisterLib(sym);
     Libraries::NpWebApi::RegisterLib(sym);
+    Libraries::NpProfileDialog::RegisterLib(sym);
     Libraries::NpAuth::RegisterLib(sym);
     Libraries::ScreenShot::RegisterLib(sym);
     Libraries::AppContent::RegisterLib(sym);
