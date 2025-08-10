@@ -44,7 +44,7 @@ s32 PS4_SYSV_ABI sceNpProfileDialogTerminate() {
 }
 
 s32 PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
+    LOG_DEBUG(Lib_NpProfileDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
 
