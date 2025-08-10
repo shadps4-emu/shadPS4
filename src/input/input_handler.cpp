@@ -502,43 +502,11 @@ void ControllerOutput::ResetUpdate() {
     *new_param = 0; // bruh
 }
 void ControllerOutput::AddUpdate(InputEvent event) {
-    auto PushSDLEvent = [&](u32 event_type) {
-        if (event.active) {
-            SDL_Event e;
-            SDL_memset(&e, 0, sizeof(e));
-            e.type = event_type;
-            SDL_PushEvent(&e);
-        }
-    };
     switch (button) {
     case KEY_TOGGLE:
         if (event.active) {
             ToggleKeyInList(event.input);
         }
-        return;
-    case HOTKEY_FULLSCREEN:
-        PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);
-        return;
-    case HOTKEY_PAUSE:
-        PushSDLEvent(SDL_EVENT_TOGGLE_PAUSE);
-        return;
-    case HOTKEY_SIMPLE_FPS:
-        PushSDLEvent(SDL_EVENT_TOGGLE_SIMPLE_FPS);
-        return;
-    case HOTKEY_RELOAD_INPUTS:
-        PushSDLEvent(SDL_EVENT_RELOAD_INPUTS);
-        return;
-    case HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK:
-        PushSDLEvent(SDL_EVENT_MOUSE_TO_JOYSTICK);
-        return;
-    case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
-        PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
-        return;
-    case HOTKEY_RENDERDOC:
-        PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
-        return;
-    case HOTKEY_QUIT:
-        PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
         return;
     default:
         break;
@@ -559,6 +527,14 @@ void ControllerOutput::AddUpdate(InputEvent event) {
     }
 }
 void ControllerOutput::FinalizeUpdate() {
+    auto PushSDLEvent = [&](u32 event_type) {
+        if (new_button_state) {
+            SDL_Event e;
+            SDL_memset(&e, 0, sizeof(e));
+            e.type = event_type;
+            SDL_PushEvent(&e);
+        }
+    };
     state_changed = old_button_state != new_button_state || old_param != *new_param;
     if (!state_changed) {
         return;
@@ -585,11 +561,31 @@ void ControllerOutput::FinalizeUpdate() {
         case RIGHTJOYSTICK_HALFMODE:
             rightjoystick_halfmode = new_button_state;
             break;
-        case KEY_TOGGLE:
         case HOTKEY_FULLSCREEN:
+            PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);
+            break;
         case HOTKEY_PAUSE:
+            PushSDLEvent(SDL_EVENT_TOGGLE_PAUSE);
+            break;
         case HOTKEY_SIMPLE_FPS:
+            PushSDLEvent(SDL_EVENT_TOGGLE_SIMPLE_FPS);
+            break;
+        case HOTKEY_RELOAD_INPUTS:
+            PushSDLEvent(SDL_EVENT_RELOAD_INPUTS);
+            break;
+        case HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_JOYSTICK);
+            break;
+        case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
+            break;
+        case HOTKEY_RENDERDOC:
+            PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            break;
         case HOTKEY_QUIT:
+            PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
+            break;
+        case KEY_TOGGLE:
             // noop
             break;
         case MOUSE_GYRO_ROLL_MODE:
