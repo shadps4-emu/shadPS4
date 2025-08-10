@@ -18,7 +18,7 @@
 
 namespace Common::FS {
 
-namespace fs = std::filesystem;
+namespace ntfs = Common::FS::Native;
 
 IOFile::IOFile() = default;
 
@@ -35,29 +35,26 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     return *this;
 }
 
-int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate,
-                 int mode) {
-    ClearErrno();
-    int result = OpenImpl(path, AccessModeToPOSIX(flags, truncate), mode);
-
-    if (!IsOpen()) {
-        const auto ec = std::error_code{result, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
-                  PathToUTF8String(file_path), ec.message());
-    }
-    return result;
+int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate, int mode) {
+    return Open(path, AccessModeToPOSIX(flags, truncate), mode);
 }
 
 int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
-    ClearErrno();
-    int result = OpenImpl(path, flags, mode);
+    Close();
+
+    errno = 0;
+    file_path = path;
+    file_access_mode = flags;
+    file_access_permissions = mode;
+    file_descriptor = ntfs::Open(path, file_access_mode, file_access_permissions);
 
     if (!IsOpen()) {
-        const auto ec = std::error_code{result, std::generic_category()};
+        const auto ec = std::error_code{errno, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
                   PathToUTF8String(file_path), ec.message());
     }
-    return result;
+
+    return errno;
 }
 
 void IOFile::Close() {
@@ -65,9 +62,9 @@ void IOFile::Close() {
         return;
     }
 
-    ClearErrno();
-    if (!CloseImpl()) {
-        const auto ec = std::error_code{GetErrno(), std::generic_category()};
+    errno = 0;
+    if (!ntfs::Close(file_descriptor)) {
+        const auto ec = std::error_code{errno, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
     }
@@ -80,17 +77,18 @@ void IOFile::Unlink() {
         return;
     }
 
-    ClearErrno();
-    if (UnlinkImpl())
+    errno = 0;
+    if (ntfs::Unlink(file_path))
         return;
 
-    const auto ec = std::error_code{GetErrno(), std::generic_category()};
+    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 }
 
 uintptr_t IOFile::GetFileMapping() {
-    return GetFileMappingImpl();
+    // posix only???
+    return file_descriptor;
 }
 
 bool IOFile::Flush() const {
@@ -98,11 +96,11 @@ bool IOFile::Flush() const {
         return false;
     }
 
-    ClearErrno();
-    if (FlushImpl())
+    errno = 0;
+    if (ntfs::Flush(file_descriptor))
         return true;
 
-    const auto ec = std::error_code{GetErrno(), std::generic_category()};
+    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -114,11 +112,11 @@ bool IOFile::Commit() const {
         return false;
     }
 
-    ClearErrno();
-    if (CommitImpl())
+    errno = 0;
+    if (ntfs::Commit(file_descriptor))
         return true;
 
-    const auto ec = std::error_code{GetErrno(), std::generic_category()};
+    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -130,11 +128,11 @@ bool IOFile::SetSize(u64 size) const {
         return false;
     }
 
-    ClearErrno();
-    if (SetSizeImpl(size))
+    errno = 0;
+    if (ntfs::SetSize(file_descriptor, size))
         return true;
 
-    const auto ec = std::error_code{GetErrno(), std::generic_category()};
+    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
               PathToUTF8String(file_path), size, ec.message());
 
@@ -146,9 +144,14 @@ u64 IOFile::GetSize() const {
         return 0;
     }
 
-    ClearErrno();
-    const u64 file_size = GetSizeImpl();
-    // TODO: catch error (if any)
+    errno = 0;
+    const u64 file_size = ntfs::GetSize(file_descriptor);
+    if (0 < file_size)
+        return file_size;
+
+    const auto ec = std::error_code{errno, std::generic_category()};
+    LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
+              PathToUTF8String(file_path), file_size, ec.message());
 
     return file_size;
 }
@@ -158,17 +161,16 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
-    ClearErrno();
-    const bool seek_result = SeekImpl(offset, origin);
+    errno = 0;
+    if (ntfs::Seek(file_descriptor, offset, origin))
+        return true;
 
-    if (!seek_result) {
-        const auto ec = std::error_code{GetErrno(), std::generic_category()};
-        LOG_ERROR(Common_Filesystem,
-                  "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
-                  PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
-    }
+    const auto ec = std::error_code{errno, std::generic_category()};
+    LOG_ERROR(Common_Filesystem,
+              "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
+              PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
 
-    return seek_result;
+    return false;
 }
 
 s64 IOFile::Tell() const {
@@ -176,10 +178,15 @@ s64 IOFile::Tell() const {
         return 0;
     }
 
-    ClearErrno();
-    const s64 ret = TellImpl();
+    errno = 0;
+    if (s64 ret = ntfs::Tell(file_descriptor); -1 != ret)
+        return ret;
 
-    return ret;
+    const auto ec = std::error_code{errno, std::generic_category()};
+    LOG_ERROR(Common_Filesystem, "Failed to tell file at path={}, ec_message={}",
+              PathToUTF8String(file_path), ec.message());
+
+    return -1;
 }
 
 std::string IOFile::ReadString(size_t length) const {
@@ -196,11 +203,11 @@ size_t IOFile::WriteString(std::span<const char> string) const {
 }
 
 u64 GetDirectorySize(const std::filesystem::path& path) {
-    if (!fs::exists(path)) {
+    if (!std::filesystem::exists(path)) {
         return 0;
     }
 
-    return _GetDirectorySizeImpl(path);
+    return ntfs::GetDirectorySize(path);
 }
 
 /**

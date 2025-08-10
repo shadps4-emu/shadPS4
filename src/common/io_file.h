@@ -11,8 +11,10 @@
 #include "common/concepts.h"
 #include "common/types.h"
 #include "enum.h"
+#include "native_fs.h"
 
 namespace Common::FS {
+namespace ntfs = Common::FS::Native;
 
 /**
  * Abstract access modes resembling how streams would work.
@@ -65,20 +67,9 @@ enum class FileAccessMode : int {
 };
 DECLARE_ENUM_FLAG_OPERATORS(FileAccessMode);
 
-enum class SeekOrigin : u32 {
-    SetOrigin,       // Seeks from the start of the file.
-    CurrentPosition, // Seeks from the current file pointer position.
-    End,             // Seeks from the end of the file.
-};
-
-// posix-specific. move somewhere
-[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
-
 int AccessModeToPOSIX(FileAccessMode flags, bool truncate);
 int AccessModeOrbisToPOSIX(int flags);
-
 u64 GetDirectorySize(const std::filesystem::path& path);
-u64 _GetDirectorySizeImpl(const std::filesystem::path& path);
 
 class IOFile final {
 public:
@@ -152,7 +143,7 @@ public:
         return file_descriptor != 0;
     }
 
-    static size_t WriteBytes(const std::filesystem::path path, const auto& data) {
+    static size_t WriteBytes(const std::filesystem::path path, const auto data) {
         IOFile out(path, FileAccessMode::Write, true);
         return out.Write(data);
     }
@@ -195,7 +186,8 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
-        return ReadImpl(file_descriptor, data, sizeof(T) * size);
+        errno = 0;
+        return ntfs::Read(file_descriptor, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -206,8 +198,8 @@ public:
             return 0;
         }
 
-        ClearErrno();
-        return WriteImpl(file_descriptor, data.data(), sizeof(T) * data.size());
+        errno = 0;
+        return ntfs::Write(file_descriptor, data.data(), sizeof(T) * data.size());
     }
 
     template <typename T>
@@ -219,13 +211,14 @@ public:
             return false;
         }
 
-        ClearErrno();
-        return ReadImpl(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        errno = 0;
+        return ntfs::Read(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        return WriteImpl(file_descriptor, data, sizeof(T) * size);
+        errno = 0;
+        return ntfs::Write(file_descriptor, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -237,28 +230,11 @@ public:
             return false;
         }
 
-        ClearErrno();
-        return WriteImpl(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        errno = 0;
+        return ntfs::Write(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
 private:
-    int OpenImpl(const std::filesystem::path& path, int flags, int mode = 0644);
-
-    bool CloseImpl();
-    bool UnlinkImpl();
-    uintptr_t GetFileMappingImpl();
-    bool FlushImpl() const;
-    bool CommitImpl() const;
-    bool SetSizeImpl(u64 size) const;
-    u64 GetSizeImpl() const;
-    bool SeekImpl(s64 offset, SeekOrigin origin) const;
-    s64 TellImpl() const;
-    s64 WriteImpl(int __fd, const void* __buf, size_t __n) const;
-    s64 ReadImpl(int __fd, void* __buf, size_t __n) const;
-
-    const int GetErrno(void) const;
-    void ClearErrno(void) const;
-
     std::filesystem::path file_path{};
     int file_access_mode = 0;
     int file_access_permissions = 0;

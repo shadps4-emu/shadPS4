@@ -186,7 +186,7 @@ void Elf::Open(const std::filesystem::path& file_name) {
     }
 
     if (is_self = IsSelfFile(); !is_self) {
-        m_f.Seek(0, SeekOrigin::SetOrigin);
+        m_f.Seek(0);
     } else {
         m_self_segments.resize(m_self.segment_count);
         m_f.Read(m_self_segments);
@@ -204,7 +204,7 @@ void Elf::Open(const std::filesystem::path& file_name) {
         }
 
         out.resize(num);
-        if (!m_f.Seek(offset, SeekOrigin::SetOrigin)) {
+        if (!m_f.Seek(offset)) {
             LOG_CRITICAL(Loader, "Failed to seek to header tables");
             return;
         }

@@ -679,6 +679,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/native_fs.h
            src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
@@ -727,10 +728,10 @@ set(COMMON src/common/logging/backend.cpp
 )
 
 if(WIN32)
-    set(IOFILE_IMPL src/common/io_file_win32.cpp
+    set(NATIVE_FS_IMPL src/common/native_fs_win32.cpp
     )
 else()
-    set(IOFILE_IMPL src/common/io_file_posix.cpp
+    set(NATIVE_FS_IMPL src/common/native_fs_posix.cpp
     )
 endif()
 
@@ -1107,7 +1108,7 @@ if (ENABLE_QT_GUI)
         ${INPUT}
         ${QT_GUI}
         ${COMMON}
-        ${IOFILE_IMPL}
+        ${NATIVE_FS_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
@@ -1120,7 +1121,7 @@ else()
         ${IMGUI}
         ${INPUT}
         ${COMMON}
-        ${IOFILE_IMPL}
+        ${NATIVE_FS_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
