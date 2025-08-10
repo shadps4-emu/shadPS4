@@ -490,10 +490,11 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    const bool fence_detection = Config::fenceDetection() != Config::FenceDetection::None;
-    SynchronizeBuffer(buffer, device_addr, size, is_written && !fence_detection, is_texel_buffer);
+    const bool defer_read_protect = Config::readbackAccuracy() != Config::ReadbackAccuracy::Extreme;
+    SynchronizeBuffer(buffer, device_addr, size, is_written && !defer_read_protect,
+                      is_texel_buffer);
     if (is_written) {
-        if (fence_detection) {
+        if (defer_read_protect) {
             gpu_modified_ranges_pending.Add(device_addr, size);
         } else {
             gpu_modified_ranges.Add(device_addr, size);
@@ -710,7 +711,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
 }
 
 void BufferCache::ProcessPreemptiveDownloads() {
-    if (Config::fenceDetection() == Config::FenceDetection::None) {
+    if (!Config::readbacks() || Config::readbackAccuracy() == Config::ReadbackAccuracy::Extreme) {
         return;
     }
     auto* memory = Core::Memory::Instance();

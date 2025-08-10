@@ -99,9 +99,13 @@ public:
         if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
         } else if (Config::readbacks()) {
-            UpdateProtection<enable, true>();
-            for (size_t page = start_page; page != end_page && !enable; ++page) {
-                ++flushes[page];
+            if (Config::readbackAccuracy() != Config::ReadbackAccuracy::Low) {
+                UpdateProtection<enable, true>();
+            }
+            if (Config::readbackAccuracy() != Config::ReadbackAccuracy::Extreme) {
+                for (size_t page = start_page; page != end_page && !enable; ++page) {
+                    ++flushes[page];
+                }
             }
         }
     }

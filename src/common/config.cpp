@@ -70,8 +70,8 @@ static u32 internalScreenWidth = 1280;
 static u32 internalScreenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
-static FenceDetection fenceDetectionMode = FenceDetection::Normal;
 static bool readbacksEnabled = false;
+static ReadbackAccuracy readbackAccuracyMode = ReadbackAccuracy::High;
 static bool readbackLinearImagesEnabled = false;
 static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
@@ -285,8 +285,8 @@ bool copyGPUCmdBuffers() {
     return shouldCopyGPUBuffers;
 }
 
-FenceDetection fenceDetection() {
-    return fenceDetectionMode;
+ReadbackAccuracy readbackAccuracy() {
+    return readbackAccuracyMode;
 }
 
 bool readbacks() {
@@ -697,8 +697,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
-        fenceDetectionMode = static_cast<FenceDetection>(
-            toml::find_or<int>(gpu, "fenceDetection", static_cast<int>(fenceDetectionMode)));
+        readbackAccuracyMode = static_cast<ReadbackAccuracy>(
+            toml::find_or<int>(gpu, "readbackAccuracy", static_cast<int>(readbackAccuracyMode)));
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
         readbackLinearImagesEnabled =
             toml::find_or<bool>(gpu, "readbackLinearImages", readbackLinearImagesEnabled);
@@ -868,8 +868,8 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["internalScreenHeight"] = internalScreenHeight;
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
-    data["GPU"]["fenceDetection"] = static_cast<int>(fenceDetectionMode);
     data["GPU"]["readbacks"] = readbacksEnabled;
+    data["GPU"]["readbackAccuracy"] = static_cast<int>(readbackAccuracyMode);
     data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled;
     data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
@@ -976,7 +976,7 @@ void setDefaultValues() {
     internalScreenHeight = 720;
     isNullGpu = false;
     shouldCopyGPUBuffers = false;
-    fenceDetectionMode = FenceDetection::None;
+    readbackAccuracyMode = ReadbackAccuracy::High;
     readbacksEnabled = false;
     readbackLinearImagesEnabled = false;
     directMemoryAccessEnabled = false;

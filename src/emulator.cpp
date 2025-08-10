@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <set>
 #include <fmt/core.h>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/config.h"
 #include "common/debug.h"
@@ -137,8 +138,9 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
-    LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
+    LOG_INFO(Config, "GPU readbackAccuracy: {}", magic_enum::enum_name(Config::readbackAccuracy()));
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
+    LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
     LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());

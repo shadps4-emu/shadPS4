@@ -20,10 +20,10 @@ enum HideCursorState : u32 {
     Always,
 };
 
-enum class FenceDetection : u32 {
-    None,
-    Normal,
-    Relaxed,
+enum class ReadbackAccuracy : u32 {
+    Low,
+    High,
+    Extreme,
 };
 
 void load(const std::filesystem::path& path);
@@ -61,7 +61,7 @@ bool nullGpu();
 void setNullGpu(bool enable);
 bool copyGPUCmdBuffers();
 void setCopyGPUCmdBuffers(bool enable);
-FenceDetection fenceDetection();
+ReadbackAccuracy readbackAccuracy();
 bool readbacks();
 void setReadbacks(bool enable);
 bool readbackLinearImages();
