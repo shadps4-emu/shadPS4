@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np_party/np_party.h"
+#include "core/libraries/np_party/np_party_error.h"
 
 namespace Libraries::NpParty {
 
@@ -30,22 +31,22 @@ s32 PS4_SYSV_ABI sceNpPartyGetId() {
 
 s32 PS4_SYSV_ABI sceNpPartyGetMemberInfo() {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_NP_PARTY_ERROR_NOT_IN_PARTY;
 }
 
 s32 PS4_SYSV_ABI sceNpPartyGetMemberInfoA() {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_NP_PARTY_ERROR_NOT_IN_PARTY;
 }
 
 s32 PS4_SYSV_ABI sceNpPartyGetMembers() {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_NP_PARTY_ERROR_NOT_IN_PARTY;
 }
 
 s32 PS4_SYSV_ABI sceNpPartyGetMembersA() {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_NP_PARTY_ERROR_NOT_IN_PARTY;
 }
 
 s32 PS4_SYSV_ABI sceNpPartyGetMemberSessionInfo() {
@@ -58,8 +59,9 @@ s32 PS4_SYSV_ABI sceNpPartyGetMemberVoiceInfo() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpPartyGetState() {
+s32 PS4_SYSV_ABI sceNpPartyGetState(OrbisNpPartyState* state) {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
+    *state = OrbisNpPartyState::NotInParty;
     return ORBIS_OK;
 }
 
