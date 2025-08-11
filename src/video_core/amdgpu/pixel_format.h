@@ -85,7 +85,7 @@ enum class NumberClass {
     Uint,
 };
 
-enum class CompSwizzle : u8 {
+enum class CompSwizzle : u32 {
     Zero = 0,
     One = 1,
     Red = 4,
@@ -313,7 +313,11 @@ constexpr NumberClass GetNumberClass(const NumberFormat nfmt) {
 }
 
 constexpr bool IsInteger(const NumberFormat nfmt) {
-    return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+    return nfmt == NumberFormat::Sint || nfmt == NumberFormat::Uint;
+}
+
+constexpr bool IsBlockCoded(DataFormat format) {
+    return format >= DataFormat::FormatBc1 && format <= DataFormat::FormatBc7;
 }
 
 std::string_view NameOf(DataFormat fmt);
@@ -321,6 +325,7 @@ std::string_view NameOf(NumberFormat fmt);
 
 u32 NumComponents(DataFormat format);
 u32 NumBitsPerBlock(DataFormat format);
+u32 NumBitsPerElement(DataFormat format);
 
 } // namespace AmdGpu
 

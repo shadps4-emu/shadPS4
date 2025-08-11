@@ -527,6 +527,11 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad_errors.h
 )
 
+set(SYSTEM_GESTURE_LIB 
+            src/core/libraries/system_gesture/system_gesture.cpp
+            src/core/libraries/system_gesture/system_gesture.h
+)
+
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
             src/core/libraries/libpng/pngdec_error.h
@@ -586,8 +591,11 @@ set(NP_LIBS src/core/libraries/np_common/np_common.cpp
             src/core/libraries/np_web_api/np_web_api.h
             src/core/libraries/np_party/np_party.cpp
             src/core/libraries/np_party/np_party.h
+            src/core/libraries/np_party/np_party_error.h
             src/core/libraries/np_auth/np_auth.cpp
             src/core/libraries/np_auth/np_auth.h
+            src/core/libraries/np_profiledialog/np_profiledialog.cpp
+            src/core/libraries/np_profiledialog/np_profiledialog.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -780,6 +788,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${HLE_LIBC_INTERNAL_LIB}
          ${PAD_LIB}
+         ${SYSTEM_GESTURE_LIB}
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
@@ -925,6 +934,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/tiling.cpp
+               src/video_core/amdgpu/tiling.h
                src/video_core/amdgpu/types.h
                src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp

@@ -1551,6 +1551,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Visa etiketter under ikoner</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -2200,6 +2204,77 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Visa dolda troféer</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Snabbtangenter för kontroller</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Visa FPS-räknare</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>inte mappad</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation>Stoppa emulator</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Växla helskärm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Växla paus</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Snabbtangenter för tangentbord</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation>Visa FPS-räknare: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation>Stoppa emulator: inte tillgänglig</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation>Växla helskärm: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation>Växla paus: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation>Tips: Upp till tre inmatningar kan tilldelas för varje funktion</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Tryck en knapp</translation>
     </message>
   </context>
 </TS>

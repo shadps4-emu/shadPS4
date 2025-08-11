@@ -6,8 +6,8 @@
 #include <bitset>
 
 #include "common/types.h"
-#include "frontend/fetch_shader.h"
 #include "shader_recompiler/backend/bindings.h"
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/info.h"
 
 namespace Shader {

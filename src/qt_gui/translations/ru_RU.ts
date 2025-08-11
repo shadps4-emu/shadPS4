@@ -912,7 +912,7 @@
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>Скопирать размер</translation>
+      <translation>Скопировать размер</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -1550,6 +1550,10 @@
     <message>
       <source>Show Labels Under Icons</source>
       <translation>Показывать метки под значками</translation>
+    </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
     </message>
   </context>
   <context>
@@ -2200,6 +2204,77 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Показать скрытые трофеи</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Горячие клавиши контроллера</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Показать счетчик FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation>Остановить эмулятор</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Полноэкранный режим</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Пауза</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Горячие клавиши клавиатуры</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation>Показать счетчик FPS: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation>Остановить эмулятор: н/н</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation>Полноэкранный режим: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation>Пауза: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation>Подсказка: для каждой функции может быть назначено до трёх вводов</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Нажмите кнопку</translation>
     </message>
   </context>
 </TS>

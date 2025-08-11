@@ -64,7 +64,7 @@ void RegPopup::DrawColorBuffer(const AmdGpu::Liverpool::ColorBuffer& buffer) {
             "NumSamples()",         buffer.NumSamples(),
             "NumSlices()",          buffer.NumSlices(),
             "GetColorSliceSize()",  buffer.GetColorSliceSize(),
-            "GetTilingMode()",      buffer.GetTilingMode(),
+            "GetTileMode()",        buffer.GetTileMode(),
             "IsTiled()",            buffer.IsTiled(),
             "NumFormat()",          buffer.GetNumberFmt()
         );
