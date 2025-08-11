@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "core/debug_state.h"
@@ -81,7 +82,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
         patch_bin_path = patch_path;
         patch_bin_path += ".spv";
         patch_path += ".glsl";
-        if (std::filesystem::exists(patch_path)) {
+        if (Common::FS::Native::Exists(patch_path)) {
             std::ifstream file{patch_path};
             value.patch_source =
                 std::string{std::istreambuf_iterator{file}, std::istreambuf_iterator<char>{}};

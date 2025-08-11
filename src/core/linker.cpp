@@ -7,6 +7,7 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "common/thread.h"
@@ -152,7 +153,7 @@ void Linker::Execute(const std::vector<std::string> args) {
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
 
-    if (!std::filesystem::exists(elf_name)) {
+    if (!Common::FS::Native::Exists(elf_name)) {
         LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
         return -1;
     }

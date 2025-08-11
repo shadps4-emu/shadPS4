@@ -15,6 +15,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
@@ -24,7 +25,6 @@ CMRC_DECLARE(res);
 namespace fs = std::filesystem;
 using namespace ImGui;
 namespace Libraries::NpTrophy {
-
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
@@ -41,7 +41,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     trophy_timer = Config::getTrophyNotificationDuration();
 
-    if (std::filesystem::exists(trophyIconPath)) {
+    if (Common::FS::Native::Exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
         LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",

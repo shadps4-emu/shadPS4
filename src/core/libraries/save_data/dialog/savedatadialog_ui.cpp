@@ -6,12 +6,15 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
+#include "common/native_fs.h"
 #include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/save_data/save_instance.h"
 #include "imgui/imgui_std.h"
 #include "savedatadialog_ui.h"
+
+namespace NativeFS = Common::FS::Native;
 
 using namespace ImGui;
 using namespace Libraries::CommonDialog;
@@ -88,7 +91,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
 
             auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
-            if (!std::filesystem::exists(param_sfo_path)) {
+            if (!NativeFS::Exists(param_sfo_path)) {
                 continue;
             }
 
@@ -105,11 +108,11 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
 
             auto icon_path = dir_path / "sce_sys" / "icon0.png";
             RefCountedTexture icon;
-            if (std::filesystem::exists(icon_path)) {
+            if (NativeFS::Exists(icon_path)) {
                 icon = RefCountedTexture::DecodePngFile(icon_path);
             }
 
-            bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
+            bool is_corrupted = NativeFS::Exists(dir_path / "sce_sys" / "corrupted");
 
             this->save_list.emplace_back(Item{
                 .dir_name = std::string{dir_name},
@@ -138,7 +141,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
             const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-            if (std::filesystem::exists(src_icon)) {
+            if (NativeFS::Exists(src_icon)) {
                 icon = RefCountedTexture::DecodePngFile(src_icon);
             }
         }

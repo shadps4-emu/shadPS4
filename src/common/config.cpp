@@ -9,8 +9,11 @@
 
 #include "common/config.h"
 #include "common/logging/formatter.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/scm_rev.h"
+
+namespace NativeFS = Common::FS::Native;
 
 namespace toml {
 template <typename TC, typename K>
@@ -624,7 +627,7 @@ void setDefaultControllerID(std::string id) {
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
-    if (!std::filesystem::exists(path, error)) {
+    if (!NativeFS::Exists(path, error)) {
         save(path);
         return;
     }
@@ -813,7 +816,7 @@ void save(const std::filesystem::path& path) {
     toml::ordered_value data;
 
     std::error_code error;
-    if (std::filesystem::exists(path, error)) {
+    if (NativeFS::Exists(path, error)) {
         try {
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -1085,12 +1088,12 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     const auto default_config_file = config_dir / "default.ini";
 
     // Ensure the config directory exists
-    if (!std::filesystem::exists(config_dir)) {
+    if (!NativeFS::Exists(config_dir)) {
         std::filesystem::create_directories(config_dir);
     }
 
     // Check if the default config exists
-    if (!std::filesystem::exists(default_config_file)) {
+    if (!NativeFS::Exists(default_config_file)) {
         // If the default config is also missing, create it from getDefaultConfig()
         const auto default_config = GetDefaultKeyboardConfig();
         std::ofstream default_config_stream(default_config_file);
@@ -1105,7 +1108,7 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     }
 
     // If game-specific config doesn't exist, create it from the default config
-    if (!std::filesystem::exists(config_file)) {
+    if (!NativeFS::Exists(config_file)) {
         std::filesystem::copy(default_config_file, config_file);
     }
     return config_file;

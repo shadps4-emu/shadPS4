@@ -8,12 +8,15 @@
 
 #include "common/config.h"
 #include "common/io_file.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
+
+namespace NativeFS = Common::FS::Native;
 
 void DumpProgram(const Program& program, const Info& info, const std::string& type) {
     using namespace Common::FS;
@@ -23,7 +26,7 @@ void DumpProgram(const Program& program, const Info& info, const std::string& ty
     }
 
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-    if (!std::filesystem::exists(dump_dir)) {
+    if (!NativeFS::Exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
     const auto ir_filename =

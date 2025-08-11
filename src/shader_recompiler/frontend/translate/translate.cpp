@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "common/native_fs.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -20,6 +21,8 @@
 #include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Gcn {
+
+namespace NativeFS = Common::FS::Native;
 
 static IR::VectorReg IterateBarycentrics(const RuntimeInfo& runtime_info, auto&& set_attribute) {
     if (runtime_info.stage != Stage::Fragment) {
@@ -540,7 +543,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     if (Config::dumpShaders()) {
         using namespace Common::FS;
         const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-        if (!std::filesystem::exists(dump_dir)) {
+        if (!NativeFS::Exists(dump_dir)) {
             std::filesystem::create_directories(dump_dir);
         }
         const auto filename = fmt::format("vs_{:#018x}.fetch.bin", info.pgm_hash);

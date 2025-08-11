@@ -18,6 +18,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -27,6 +28,8 @@
 #endif
 
 namespace Vulkan {
+
+namespace NativeFS = Common::FS::Native;
 
 static const char* const VALIDATION_LAYER_NAME = "VK_LAYER_KHRONOS_validation";
 static const char* const CRASH_DIAGNOSTIC_LAYER_NAME = "VK_LAYER_LUNARG_crash_diagnostic";
@@ -243,7 +246,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     // The loader has a clause to check for it, but at a lower priority than the bundled
     // libMoltenVK.dylib, so we need to handle it ourselves to give it priority.
     static const std::string usr_local_path = "/usr/local/lib/libvulkan.dylib";
-    static vk::detail::DynamicLoader dl = std::filesystem::exists(usr_local_path)
+    static vk::detail::DynamicLoader dl = NativeFS::Exists(usr_local_path)
                                               ? vk::detail::DynamicLoader(usr_local_path)
                                               : vk::detail::DynamicLoader();
 #else

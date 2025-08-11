@@ -10,6 +10,7 @@
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/native_fs.h"
 #include "common/signal_context.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
@@ -30,12 +31,14 @@ static const u8* g_srt_codegen_start = nullptr;
 
 namespace {
 
+namespace NativeFS = Common::FS::Native;
+
 static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t codesize) {
 #ifdef ARCH_X86_64
     using namespace Common::FS;
 
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-    if (!std::filesystem::exists(dump_dir)) {
+    if (!NativeFS::Exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
     const auto filename = fmt::format("{}_{:#018x}.srtprogram.txt", info.stage, info.pgm_hash);

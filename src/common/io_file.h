@@ -14,7 +14,8 @@
 #include "native_fs.h"
 
 namespace Common::FS {
-namespace ntfs = Common::FS::Native;
+    
+namespace NativeFS = Common::FS::Native;
 
 /**
  * Abstract access modes resembling how streams would work.
@@ -187,7 +188,7 @@ public:
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
         errno = 0;
-        return ntfs::Read(file_descriptor, data, sizeof(T) * size);
+        return NativeFS::Read(file_descriptor, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -199,7 +200,7 @@ public:
         }
 
         errno = 0;
-        return ntfs::Write(file_descriptor, data.data(), sizeof(T) * data.size());
+        return NativeFS::Write(file_descriptor, data.data(), sizeof(T) * data.size());
     }
 
     template <typename T>
@@ -212,13 +213,13 @@ public:
         }
 
         errno = 0;
-        return ntfs::Read(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        return NativeFS::Read(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
         errno = 0;
-        return ntfs::Write(file_descriptor, data, sizeof(T) * size);
+        return NativeFS::Write(file_descriptor, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -231,7 +232,7 @@ public:
         }
 
         errno = 0;
-        return ntfs::Write(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        return NativeFS::Write(file_descriptor, &object, sizeof(T)) == sizeof(T);
     }
 
 private:

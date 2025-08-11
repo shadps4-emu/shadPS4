@@ -15,7 +15,7 @@
 
 namespace Common::FS::Native {
 
-[[nodiscard]] int Open(const std::filesystem::path& path, int flags, int mode) {
+int Open(const std::filesystem::path& path, int flags, int mode) {
     return open(path.c_str(), flags, mode);
 }
 
@@ -84,7 +84,7 @@ s64 Read(int __fd, void* __buf, size_t __n) {
     return read(__fd, __buf, __n);
 }
 
-[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
+constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:
         return SEEK_SET;
@@ -97,6 +97,10 @@ s64 Read(int __fd, void* __buf, size_t __n) {
     }
 }
 
+/**
+ * >=0 on success
+ * -1 on error
+ */
 u64 GetDirectorySize(const std::filesystem::path& path) {
     u64 total = 0;
 
@@ -113,4 +117,28 @@ u64 GetDirectorySize(const std::filesystem::path& path) {
     return total;
 }
 
+/**
+ * 1 if exists, 0 if not, -1 on error
+ */
+bool Exists(const std::filesystem::path& path) {
+    struct stat statbuf{};
+
+    return -1 != stat(path.c_str(), &statbuf);
+}
+
+bool Exists(const std::filesystem::path& path, std::error_code& ec) {
+    ec.clear();
+    errno = 0;
+    
+    struct stat statbuf{};
+    int ret = stat(path.c_str(), &statbuf);
+    if (0 == ret) {
+        return true;
+    }
+    if (ENOENT == errno)
+        return false;
+
+    ec = std::error_code{errno, std::generic_category()};
+    return false;
+}
 } // namespace Common::FS::Native

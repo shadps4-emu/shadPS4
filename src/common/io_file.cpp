@@ -15,10 +15,11 @@
 #include "core/libraries/kernel/file_system.h"
 
 #include "io_file.h"
+#include "native_fs.h"
 
 namespace Common::FS {
 
-namespace ntfs = Common::FS::Native;
+namespace NativeFS = Common::FS::Native;
 
 IOFile::IOFile() = default;
 
@@ -46,7 +47,7 @@ int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
-    file_descriptor = ntfs::Open(path, file_access_mode, file_access_permissions);
+    file_descriptor = NativeFS::Open(path, file_access_mode, file_access_permissions);
 
     if (!IsOpen()) {
         const auto ec = std::error_code{errno, std::generic_category()};
@@ -63,7 +64,7 @@ void IOFile::Close() {
     }
 
     errno = 0;
-    if (!ntfs::Close(file_descriptor)) {
+    if (!NativeFS::Close(file_descriptor)) {
         const auto ec = std::error_code{errno, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
@@ -78,7 +79,7 @@ void IOFile::Unlink() {
     }
 
     errno = 0;
-    if (ntfs::Unlink(file_path))
+    if (NativeFS::Unlink(file_path))
         return;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -97,7 +98,7 @@ bool IOFile::Flush() const {
     }
 
     errno = 0;
-    if (ntfs::Flush(file_descriptor))
+    if (NativeFS::Flush(file_descriptor))
         return true;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -113,7 +114,7 @@ bool IOFile::Commit() const {
     }
 
     errno = 0;
-    if (ntfs::Commit(file_descriptor))
+    if (NativeFS::Commit(file_descriptor))
         return true;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -129,7 +130,7 @@ bool IOFile::SetSize(u64 size) const {
     }
 
     errno = 0;
-    if (ntfs::SetSize(file_descriptor, size))
+    if (NativeFS::SetSize(file_descriptor, size))
         return true;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -145,7 +146,7 @@ u64 IOFile::GetSize() const {
     }
 
     errno = 0;
-    const u64 file_size = ntfs::GetSize(file_descriptor);
+    const u64 file_size = NativeFS::GetSize(file_descriptor);
     if (0 < file_size)
         return file_size;
 
@@ -162,7 +163,7 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     }
 
     errno = 0;
-    if (ntfs::Seek(file_descriptor, offset, origin))
+    if (NativeFS::Seek(file_descriptor, offset, origin))
         return true;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -179,7 +180,7 @@ s64 IOFile::Tell() const {
     }
 
     errno = 0;
-    if (s64 ret = ntfs::Tell(file_descriptor); -1 != ret)
+    if (s64 ret = NativeFS::Tell(file_descriptor); -1 != ret)
         return ret;
 
     const auto ec = std::error_code{errno, std::generic_category()};
@@ -203,11 +204,11 @@ size_t IOFile::WriteString(std::span<const char> string) const {
 }
 
 u64 GetDirectorySize(const std::filesystem::path& path) {
-    if (!std::filesystem::exists(path)) {
+    if (!NativeFS::Exists(path)) {
         return 0;
     }
 
-    return ntfs::GetDirectorySize(path);
+    return NativeFS::GetDirectorySize(path);
 }
 
 /**

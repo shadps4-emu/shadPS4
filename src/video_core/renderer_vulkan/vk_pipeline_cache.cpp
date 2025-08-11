@@ -6,6 +6,7 @@
 #include "common/config.h"
 #include "common/hash.h"
 #include "common/io_file.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "core/debug_state.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -21,6 +22,8 @@
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Vulkan {
+
+namespace NativeFS = Common::FS::Native;
 
 using Shader::LogicalStage;
 using Shader::Stage;
@@ -607,7 +610,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
 
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-    if (!std::filesystem::exists(dump_dir)) {
+    if (!NativeFS::Exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
@@ -621,12 +624,12 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
 
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
-    if (!std::filesystem::exists(patch_dir)) {
+    if (!NativeFS::Exists(patch_dir)) {
         std::filesystem::create_directories(patch_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto filepath = patch_dir / filename;
-    if (!std::filesystem::exists(filepath)) {
+    if (!NativeFS::Exists(filepath)) {
         return {};
     }
     const auto file = IOFile{patch_dir / filename, FileAccessMode::Read};

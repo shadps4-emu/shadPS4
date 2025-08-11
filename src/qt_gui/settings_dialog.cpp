@@ -11,6 +11,7 @@
 #include <fmt/format.h>
 
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/scm_rev.h"
 #include "core/libraries/audio/audioout.h"
 #include "qt_gui/compatibility_info.h"
@@ -29,6 +30,8 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+
+namespace NativeFS = Common::FS::Native;
 
 QStringList languageNames = {"Arabic",
                              "Czech",
@@ -343,7 +346,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         connect(ui->PortableUserButton, &QPushButton::clicked, this, []() {
             QString userDir;
             Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
-            if (std::filesystem::exists(std::filesystem::current_path() / "user")) {
+            if (NativeFS::Exists(std::filesystem::current_path() / "user")) {
                 QMessageBox::information(NULL, tr("Cannot create portable user folder"),
                                          tr("%1 already exists").arg(userDir));
             } else {
@@ -446,7 +449,7 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     std::error_code error;
-    if (!std::filesystem::exists(userdir / "config.toml", error)) {
+    if (!NativeFS::Exists(userdir / "config.toml", error)) {
         Config::load(userdir / "config.toml");
         return;
     }

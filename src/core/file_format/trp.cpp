@@ -4,6 +4,7 @@
 #include "common/aes.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "core/file_format/trp.h"
 
@@ -58,7 +59,7 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
-    if (!std::filesystem::exists(gameSysDir)) {
+    if (!Common::FS::Native::Exists(gameSysDir)) {
         LOG_CRITICAL(Common_Filesystem, "Game sce_sys directory doesn't exist");
         return false;
     }

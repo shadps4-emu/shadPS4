@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/singleton.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -251,7 +252,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
     const auto addon_path = addons_dir / title_id;
-    if (!std::filesystem::exists(addon_path)) {
+    if (!Common::FS::Native::Exists(addon_path)) {
         return ORBIS_OK;
     }
 

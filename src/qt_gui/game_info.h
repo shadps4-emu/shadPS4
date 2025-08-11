@@ -7,8 +7,11 @@
 #include <QtConcurrent>
 
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "core/file_format/psf.h"
 #include "game_list_utils.h"
+
+namespace NativeFS = Common::FS::Native;
 
 class GameInfoClass : public QObject {
     Q_OBJECT
@@ -32,12 +35,12 @@ public:
         std::filesystem::path sce_folder_path = filePath / "sce_sys" / "param.sfo";
         std::filesystem::path game_update_path = filePath;
         game_update_path += "-UPDATE";
-        if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
+        if (NativeFS::Exists(game_update_path / "sce_sys" / "param.sfo")) {
             sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
         } else {
             game_update_path = filePath;
             game_update_path += "-patch";
-            if (std::filesystem::exists(game_update_path / "sce_sys" / "param.sfo")) {
+            if (NativeFS::Exists(game_update_path / "sce_sys" / "param.sfo")) {
                 sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
             }
         }

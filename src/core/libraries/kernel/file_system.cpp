@@ -6,6 +6,7 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/devices/console_device.h"
@@ -25,6 +26,8 @@
 #include "kernel.h"
 
 namespace D = Core::Devices;
+namespace NativeFS = Common::FS::Native;
+
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
 #define GET_DEVICE_FD(fd)                                                                          \
@@ -104,7 +107,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool read_only = false;
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = std::filesystem::exists(file->m_host_name);
+    bool exists = NativeFS::Exists(file->m_host_name);
     s32 e = 0;
 
     // Weed out illegal combinations
@@ -486,7 +489,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     bool ro = false;
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
-    if (std::filesystem::exists(dir_name)) {
+    if (NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
@@ -503,7 +506,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
-    if (!std::filesystem::exists(dir_name)) {
+    if (!NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -535,7 +538,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         return -1;
     }
 
-    if (!std::filesystem::exists(dir_name)) {
+    if (!NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -605,7 +608,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         }
     }
     const auto path_name = mnt->GetHostPath(guest_path);
-    if (!std::filesystem::exists(path_name)) {
+    if (!NativeFS::Exists(path_name)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -713,7 +716,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     bool ro = false;
     const auto src_path = mnt->GetHostPath(from, &ro);
-    if (!std::filesystem::exists(src_path)) {
+    if (!NativeFS::Exists(src_path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }

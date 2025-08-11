@@ -3,12 +3,15 @@
 
 #include <algorithm>
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/string_util.h"
 #include "core/devices/logger.h"
 #include "core/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
+
+namespace NativeFS = Common::FS::Native;
 
 bool MntPoints::ignore_game_patches = false;
 
@@ -72,14 +75,14 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     std::filesystem::path host_path = mount->host_path / rel_path;
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
-    if (!std::filesystem::exists(patch_path)) {
+    if (!NativeFS::Exists(patch_path)) {
         patch_path = mount->host_path;
         patch_path += "-patch";
     }
     patch_path /= rel_path;
 
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
+        !force_base_path && !ignore_game_patches && NativeFS::Exists(patch_path)) {
         return patch_path;
     }
 
@@ -93,7 +96,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         std::scoped_lock lk{m_mutex};
         path_parts.clear();
         auto current_path = host_path;
-        while (!std::filesystem::exists(current_path)) {
+        while (!NativeFS::Exists(current_path)) {
             // We have probably cached this if it's a folder.
             if (auto it = path_cache.find(current_path); it != path_cache.end()) {
                 current_path = it->second;
@@ -114,7 +117,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
                 path_parts.pop_back();
             };
             // Can happen when the mismatch is in upper folder.
-            if (std::filesystem::exists(current_path / part)) {
+            if (NativeFS::Exists(current_path / part)) {
                 add_match(part);
                 continue;
             }
@@ -159,14 +162,14 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     const auto base_path = GetHostPath(guest_directory, nullptr, true);
     const auto patch_path = GetHostPath(guest_directory, nullptr, false);
     // Only need to consider patch path if it exists and does not resolve to the same as base.
-    const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
+    const auto apply_patch = base_path != patch_path && NativeFS::Exists(patch_path);
 
     // Pass 1: Any files that existed in the base directory, using patch directory if needed.
-    if (std::filesystem::exists(base_path)) {
+    if (NativeFS::Exists(base_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
             if (apply_patch) {
                 const auto patch_entry_path = patch_path / entry.path().filename();
-                if (std::filesystem::exists(patch_entry_path)) {
+                if (NativeFS::Exists(patch_entry_path)) {
                     callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
                     continue;
                 }
@@ -179,7 +182,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     if (apply_patch) {
         for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
-            if (!std::filesystem::exists(base_entry_path)) {
+            if (!NativeFS::Exists(base_entry_path)) {
                 callback(entry.path(), !entry.is_directory());
             }
         }
