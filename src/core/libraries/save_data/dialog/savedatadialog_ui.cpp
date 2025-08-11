@@ -103,7 +103,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
                 fmt::format("{:%d %b, %Y %R}",
                             fmt::localtime(std::chrono::system_clock::to_time_t(last_write)));
 
-            size_t size = Common::FS::GetDirectorySize(dir_path);
+            size_t size = NativeFS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
 
             auto icon_path = dir_path / "sce_sys" / "icon0.png";

@@ -831,7 +831,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
             ASSERT_MSG(false, "Failed to read SFO");
         }
 
-        size_t size = Common::FS::GetDirectorySize(dir_path);
+        size_t size = NativeFS::GetDirectorySize(dir_path);
         size_t total = SaveInstance::GetMaxBlockFromSFO(sfo);
 
         map_dir_sfo.emplace(dir_name, std::move(sfo));
@@ -1004,7 +1004,7 @@ Error PS4_SYSV_ABI sceSaveDataGetMountInfo(const OrbisSaveDataMountPoint* mountP
     for (const auto& instance : g_mount_slots) {
         if (instance.has_value() && instance->GetMountPoint() == mount_point_str) {
             const u32 blocks = instance->GetMaxBlocks();
-            const u64 size = Common::FS::GetDirectorySize(instance->GetSavePath());
+            const u64 size = NativeFS::GetDirectorySize(instance->GetSavePath());
             info->blocks = blocks;
             info->freeBlocks = blocks - size / OrbisSaveDataBlockSize;
             return Error::OK;

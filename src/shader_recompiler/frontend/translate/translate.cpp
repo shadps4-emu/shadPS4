@@ -3,8 +3,8 @@
 
 #include "common/config.h"
 #include "common/io_file.h"
-#include "common/path_util.h"
 #include "common/native_fs.h"
+#include "common/path_util.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"

@@ -124,8 +124,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     }
     Common::Log::Start();
     if (!NativeFS::Exists(file)) {
-        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
-                     NativeFS::AbsolutePath(file).string());
+        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}", NativeFS::AbsolutePath(file).string());
         std::quick_exit(0);
     }
 

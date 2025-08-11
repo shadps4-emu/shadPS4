@@ -70,7 +70,6 @@ DECLARE_ENUM_FLAG_OPERATORS(FileAccessMode);
 
 int AccessModeToPOSIX(FileAccessMode flags, bool truncate);
 int AccessModeOrbisToPOSIX(int flags);
-u64 GetDirectorySize(const std::filesystem::path& path);
 
 class IOFile final {
 public:

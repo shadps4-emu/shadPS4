@@ -194,14 +194,6 @@ size_t IOFile::WriteString(std::span<const char> string) const {
     return WriteSpan(string);
 }
 
-u64 GetDirectorySize(const std::filesystem::path& path) {
-    if (!NativeFS::Exists(path)) {
-        return 0;
-    }
-
-    return NativeFS::GetDirectorySize(path);
-}
-
 /**
  * These two functions are final for Linux/macOS, but intermediate
  * for Windows. Native calls are converted to POSIX, and then

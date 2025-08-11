@@ -3,14 +3,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
-#include "common/path_util.h"
 #include "common/native_fs.h"
+#include "common/path_util.h"
 #include "common/signal_context.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"

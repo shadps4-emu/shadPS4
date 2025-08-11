@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
              std::string config_dir(argv[i]);
              std::filesystem::path config_path = std::filesystem::path(config_dir);
              std::error_code discard;
-             if (!NativeFS::Exists(config_path, discard)) {
+             if (!Common::FS::Native::Exists(config_path, discard)) {
                  std::cerr << "Error: File does not exist: " << config_path << "\n";
                  exit(1);
              }
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
              std::string config_dir(argv[i]);
              std::filesystem::path config_path = std::filesystem::path(config_dir);
              std::error_code discard;
-             if (!NativeFS::Exists(config_path, discard)) {
+             if (!Common::FS::Native::Exists(config_path, discard)) {
                  std::cerr << "Error: File does not exist: " << config_path << "\n";
                  exit(1);
              }
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path eboot_path(game_path);
 
     // Check if the provided path is a valid file
-    if (!NativeFS::Exists(eboot_path)) {
+    if (!Common::FS::Native::Exists(eboot_path)) {
         // If not a file, treat it as a game ID and search in install directories recursively
         bool game_found = false;
         const int max_depth = 5;
