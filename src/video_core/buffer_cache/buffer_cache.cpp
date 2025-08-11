@@ -208,7 +208,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    scheduler.DeferOperation([&]() {
+    scheduler.DeferOperation([this, &buffer, copies = std::move(copies), download, offset,
+                              device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
