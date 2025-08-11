@@ -750,7 +750,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto file = h->GetFile(src_path);
     if (file)
         file->f.Open(dst_path, Common::FS::FileAccessMode::Write, false);
-    std::filesystem::remove(src_path);
+    NativeFS::Remove(src_path);
 
     return ORBIS_OK;
 }

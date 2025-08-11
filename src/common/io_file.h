@@ -9,12 +9,12 @@
 
 #include "common/assert.h"
 #include "common/concepts.h"
+#include "common/native_fs.h"
 #include "common/types.h"
 #include "enum.h"
-#include "native_fs.h"
 
 namespace Common::FS {
-    
+
 namespace NativeFS = Common::FS::Native;
 
 /**

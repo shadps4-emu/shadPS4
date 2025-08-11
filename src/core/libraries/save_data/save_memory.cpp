@@ -13,6 +13,7 @@
 #include "boost/icl/concept/interval.hpp"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
@@ -30,6 +31,8 @@ constexpr std::string_view IconName = "icon0.png";
 constexpr std::string_view CorruptFileName = "corrupted";
 
 namespace Libraries::SaveData::SaveMemory {
+
+namespace NativeFS = Common::FS::Native;
 
 static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -52,7 +55,7 @@ void PersistMemory(u32 slot_id, bool lock) {
     }
     auto& data = g_attached_slots[slot_id];
     auto memoryPath = data.folder_path / FilenameSaveDataMemory;
-    fs::create_directories(memoryPath.parent_path());
+    NativeFS::CreateDirectories(memoryPath.parent_path());
 
     int n = 0;
     std::string errMsg;
@@ -116,19 +119,19 @@ size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_
     SaveInstance::SetupDefaultParamSFO(data.sfo, GetSaveDir(slot_id), std::string{game_serial});
 
     auto param_sfo_path = SaveInstance::GetParamSFOPath(save_dir);
-    if (!fs::exists(param_sfo_path)) {
+    if (!NativeFS::Exists(param_sfo_path)) {
         return 0;
     }
 
-    if (!data.sfo.Open(param_sfo_path) || fs::exists(save_dir / CorruptFileName)) {
+    if (!data.sfo.Open(param_sfo_path) || NativeFS::Exists(save_dir / CorruptFileName)) {
         if (!Backup::Restore(save_dir)) { // Could not restore the backup
             return 0;
         }
     }
 
     const auto memory = save_dir / FilenameSaveDataMemory;
-    if (fs::exists(memory)) {
-        return fs::file_size(memory);
+    if (NativeFS::Exists(memory)) {
+        return NativeFS::GetSize(memory);
     }
 
     return 0;
@@ -140,11 +143,11 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
     const auto icon_path = data.folder_path / sce_sys / "icon0.png";
     if (buf == nullptr) {
         const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-        if (fs::exists(icon_path)) {
-            fs::remove(icon_path);
+        if (NativeFS::Exists(icon_path)) {
+            NativeFS::Remove(icon_path);
         }
-        if (fs::exists(src_icon)) {
-            fs::create_directories(icon_path.parent_path());
+        if (NativeFS::Exists(src_icon)) {
+            NativeFS::CreateDirectories(icon_path.parent_path());
             fs::copy_file(src_icon, icon_path);
         }
     } else {
@@ -184,7 +187,7 @@ void SaveSFO(u32 slot_id) {
     std::lock_guard lck{g_slot_mtx};
     const auto& data = g_attached_slots[slot_id];
     const auto sfo_path = SaveInstance::GetParamSFOPath(data.folder_path);
-    fs::create_directories(sfo_path.parent_path());
+    NativeFS::CreateDirectories(sfo_path.parent_path());
     const bool ok = data.sfo.Encode(sfo_path);
     if (!ok) {
         LOG_ERROR(Lib_SaveData, "Failed to encode param.sfo");

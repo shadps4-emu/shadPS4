@@ -12,6 +12,7 @@
 
 #include "common/bit_field.h"
 #include "common/io_file.h"
+#include "common/native_fs.h"
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
@@ -22,6 +23,9 @@
 #endif
 
 namespace Core::Devtools::Widget {
+
+namespace NativeFS = Common::FS::Native;
+
 /*
  * Generic PM4 header
  */
@@ -169,7 +173,7 @@ inline std::string RunDisassembler(const std::string& disassembler_cli, const T&
                 shader_dis = "Could not disassemble shader";
             }
 
-            std::filesystem::remove(bin_path);
+            NativeFS::Remove(bin_path);
         }
     }
 

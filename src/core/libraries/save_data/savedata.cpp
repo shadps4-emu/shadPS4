@@ -13,6 +13,7 @@
 #include "common/elf_info.h"
 #include "common/enum.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "core/file_format/psf.h"
@@ -34,6 +35,8 @@ using Common::CString;
 using Common::ElfInfo;
 
 namespace Libraries::SaveData {
+
+namespace NativeFS = Common::FS::Native;
 
 enum class OrbisSaveDataSaveDataMemoryOption : u32 {
     NONE = 0,
@@ -440,7 +443,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
         }
 
         const auto root_save = Config::GetSaveDataPath();
-        fs::create_directories(root_save);
+        NativeFS::CreateDirectories(root_save);
         const auto available = fs::space(root_save).available;
 
         auto requested_size = save_instance.GetMaxBlocks() * OrbisSaveDataBlockSize;
@@ -606,7 +609,7 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
     }
 
     const auto backup_path = Backup::MakeBackupPath(save_path);
-    if (!fs::exists(backup_path)) {
+    if (!NativeFS::Exists(backup_path)) {
         return Error::NOT_FOUND;
     }
 
@@ -621,7 +624,7 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
 
     if (check->icon != nullptr) {
         const auto icon_path = backup_path / "sce_sys" / "icon0.png";
-        if (fs::exists(icon_path) && check->icon->LoadIcon(icon_path) != Error::OK) {
+        if (NativeFS::Exists(icon_path) && check->icon->LoadIcon(icon_path) != Error::OK) {
             return Error::INTERNAL;
         }
     }
@@ -740,7 +743,7 @@ Error PS4_SYSV_ABI sceSaveDataDelete(const OrbisSaveDataDelete* del) {
     }
     const auto save_path = SaveInstance::MakeDirSavePath(del->userId, g_game_serial, dirName);
     try {
-        if (fs::exists(save_path)) {
+        if (NativeFS::Exists(save_path)) {
             fs::remove_all(save_path);
         }
     } catch (const fs::filesystem_error& e) {
@@ -787,7 +790,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
                                         : std::string_view{cond->titleId->data}};
     const auto save_path = SaveInstance::MakeTitleSavePath(cond->userId, title_id);
 
-    if (!fs::exists(save_path)) {
+    if (!NativeFS::Exists(save_path)) {
         result->hitNum = 0;
         if (g_fw_ver >= ElfInfo::FW_17) {
             result->setNum = 0;
@@ -800,8 +803,8 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
     for (const auto& path : fs::directory_iterator{save_path}) {
         auto dir_name = path.path().filename().string();
         // skip non-directories, sce_* and directories without param.sfo
-        if (fs::is_directory(path) && !dir_name.starts_with("sce_") &&
-            fs::exists(SaveInstance::GetParamSFOPath(path))) {
+        if (NativeFS::IsDirectory(path) && !dir_name.starts_with("sce_") &&
+            NativeFS::Exists(SaveInstance::GetParamSFOPath(path))) {
             dir_list.push_back(dir_name);
         }
     }
@@ -1239,7 +1242,7 @@ Error PS4_SYSV_ABI sceSaveDataLoadIcon(const OrbisSaveDataMountPoint* mountPoint
     if (path.empty()) {
         return Error::NOT_MOUNTED;
     }
-    if (!fs::exists(path)) {
+    if (!NativeFS::Exists(path)) {
         return Error::NOT_FOUND;
     }
 
@@ -1340,7 +1343,7 @@ Error PS4_SYSV_ABI sceSaveDataRestoreBackupData(const OrbisSaveDataRestoreBackup
     }
 
     const auto backup_path = Backup::MakeBackupPath(save_path);
-    if (!fs::exists(backup_path)) {
+    if (!NativeFS::Exists(backup_path)) {
         return Error::NOT_FOUND;
     }
 

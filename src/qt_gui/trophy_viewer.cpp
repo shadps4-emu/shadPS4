@@ -6,13 +6,17 @@
 #include <QDockWidget>
 #include <QMessageBox>
 #include <QPushButton>
+
 #include <cmrc/cmrc.hpp>
-#include <common/config.h>
+
+#include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "main_window_themes.h"
 #include "trophy_viewer.h"
 
 namespace fs = std::filesystem;
+namespace NativeFS = Common::FS::Native;
 
 CMRC_DECLARE(res);
 
@@ -392,7 +396,7 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy);
             std::string customPath;
 
-            if (fs::exists(CustomTrophy_Dir / filename)) {
+            if (NativeFS::Exists(CustomTrophy_Dir / filename)) {
                 customPath = (CustomTrophy_Dir / filename).string();
             }
 

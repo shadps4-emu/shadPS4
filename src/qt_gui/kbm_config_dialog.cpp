@@ -196,7 +196,7 @@ void EditorDialog::onResetToDefaultClicked() {
     if (reply == QMessageBox::Yes) {
         if (default_default) {
             const auto default_file = Config::GetFoolproofKbmConfigFile("default");
-            std::filesystem::remove(default_file);
+            NativeFS::Remove(default_file);
         }
         const auto config_file = Config::GetFoolproofKbmConfigFile("default");
         QFile file(config_file);

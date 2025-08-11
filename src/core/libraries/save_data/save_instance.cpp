@@ -7,6 +7,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -45,6 +46,8 @@ static const std::unordered_map<int, std::string> default_title = {
 // clang-format on
 
 namespace Libraries::SaveData {
+
+namespace NativeFS = Common::FS::Native;
 
 fs::path SaveInstance::MakeTitleSavePath(OrbisUserServiceUserId user_id,
                                          std::string_view game_serial) {
@@ -104,7 +107,7 @@ SaveInstance::SaveInstance(int slot_num, OrbisUserServiceUserId user_id, std::st
 
     mount_point = "/savedata" + std::to_string(slot_num);
 
-    this->exists = fs::exists(param_sfo_path);
+    this->exists = NativeFS::Exists(param_sfo_path);
     this->mounted = g_mnt->GetMount(mount_point) != nullptr;
 }
 
@@ -146,15 +149,15 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     if (mounted) {
         UNREACHABLE_MSG("Save instance is already mounted");
     }
-    this->exists = fs::exists(param_sfo_path); // check again just in case
+    this->exists = NativeFS::Exists(param_sfo_path); // check again just in case
     if (!exists) {
         CreateFiles();
         if (copy_icon) {
             const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-            if (fs::exists(src_icon)) {
+            if (NativeFS::Exists(src_icon)) {
                 auto output_icon = GetIconPath();
-                if (fs::exists(output_icon)) {
-                    fs::remove(output_icon);
+                if (NativeFS::Exists(output_icon)) {
+                    NativeFS::Remove(output_icon);
                 }
                 fs::copy_file(src_icon, output_icon);
             }
@@ -162,7 +165,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         exists = true;
     } else {
         std::optional<fs::filesystem_error> err;
-        if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
+        if (!ignore_corrupt && NativeFS::Exists(corrupt_file_path)) {
             err = fs::filesystem_error("Corrupted save data", corrupt_file_path,
                                        std::make_error_code(std::errc::illegal_byte_sequence));
         } else if (!param_sfo.Open(param_sfo_path)) {
@@ -204,13 +207,13 @@ void SaveInstance::Umount() {
     }
     param_sfo = PSF();
 
-    fs::remove(corrupt_file_path);
+    NativeFS::Remove(corrupt_file_path);
     g_mnt->Unmount(save_path, mount_point);
 }
 
 void SaveInstance::CreateFiles() {
     const auto sce_sys_dir = save_path / sce_sys;
-    fs::create_directories(sce_sys_dir);
+    NativeFS::CreateDirectories(sce_sys_dir);
 
     SetupDefaultParamSFO(param_sfo, dir_name, game_serial);
     param_sfo.AddBinary(std::string{SaveParams::SAVEDATA_BLOCKS}, max_blocks, true);

@@ -210,9 +210,9 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
     }
 
     // Check if this is the game we're looking for
-    if (dir.filename() == game_id && fs::exists(dir / "sce_sys" / "param.sfo")) {
+    if (dir.filename() == game_id && NativeFS::Exists(dir / "sce_sys" / "param.sfo")) {
         auto eboot_path = dir / "eboot.bin";
-        if (fs::exists(eboot_path)) {
+        if (NativeFS::Exists(eboot_path)) {
             return eboot_path;
         }
     }
