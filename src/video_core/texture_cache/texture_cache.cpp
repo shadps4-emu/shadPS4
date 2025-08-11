@@ -131,6 +131,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     tile_manager.TileImage(image.image, buffer_copies, download_buffer.Handle(), offset,
                            image.info);
+    LOG_WARNING(Render_Vulkan, "Downloading image  {:x} ", image_addr);
     scheduler.DeferOperation([this, image_addr, download, image_size] {
         auto* memory = Core::Memory::Instance();
         // Should we download directly to main memory or put contents into the buffer cache?
@@ -140,6 +141,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
         // contents are uploaded from main memory the next time buffers in this
         // memory region are accessed.
         buffer_cache.InvalidateMemory(image_addr, image_size, false);
+        LOG_WARNING(Render_Vulkan, "Downloaded image  {:x} ", image_addr);
     });
 }
 
@@ -923,6 +925,7 @@ void TextureCache::RunGarbageCollector() {
     std::scoped_lock lock{mutex};
     bool pressured = false;
     bool aggresive = false;
+    bool downloaded = false;
     u64 ticks_to_destroy = 0;
     size_t num_deletions = 0;
 
@@ -945,6 +948,7 @@ void TextureCache::RunGarbageCollector() {
         }
         if (download) {
             DownloadImageMemory(image_id);
+            downloaded = true;
         }
         FreeImage(image_id);
         if (total_used_memory < critical_gc_memory) {
@@ -969,6 +973,13 @@ void TextureCache::RunGarbageCollector() {
         // If we are still over the critical limit, run an aggressive GC
         configure(true);
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+    }
+
+    if (downloaded) {
+        // We need to make downloads synchronous. It is possible that the contents
+        // of the image are requested before they are downloaded in which case
+        // outdated buffer cache contents are used instead.
+        scheduler.Finish();
     }
 }
 
