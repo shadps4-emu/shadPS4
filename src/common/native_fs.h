@@ -20,15 +20,16 @@ namespace Common::FS::Native {
 
 namespace fs = std::filesystem;
 
-[[nodiscard]] int Open(const fs::path& path, int flags, int mode);
-
+[[nodiscard]] bool Open(const fs::path& path, int flags, int mode);
 [[nodiscard]] bool Close(const int fd);
+
 [[nodiscard]] bool Unlink(const fs::path path);
 [[nodiscard]] bool Flush(const int fd);
 [[nodiscard]] bool Commit(const int fd);
 [[nodiscard]] bool SetSize(const int fd, u64 size);
 [[nodiscard]] u64 GetSize(const int fd);
 [[nodiscard]] bool Seek(const int fd, s64 offset, SeekOrigin origin = SeekOrigin::SetOrigin);
+
 [[nodiscard]] s64 Tell(int fd);
 [[nodiscard]] s64 Write(int __fd, const void* __buf, size_t __n);
 [[nodiscard]] s64 Read(int __fd, void* __buf, size_t __n);
@@ -44,16 +45,31 @@ namespace fs = std::filesystem;
 
 // 0777 to mimic default C++ mode (std::filesystem::perms::all)
 bool CreateDirectory(const fs::path& path, int mode = 0777);
-bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
-
 bool CreateDirectory(const fs::path& path, const fs::path& existing_path, int mode = 0777) = delete;
-bool CreateDirectory(const fs::path& path, const fs::path& existing_path, std::error_code& ec,
-                     int mode = 0777) = delete;
-
 bool CreateDirectories(const fs::path& path, int mode = 0777);
-bool CreateDirectories(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
 
 [[nodiscard]] fs::path AbsolutePath(const fs::path& path);
+[[nodiscard]] bool Remove(const fs::path& path);
+
+[[nodiscard]] bool Open(const fs::path& path, std::error_code& ec, int flags, int mode) noexcept;
+[[nodiscard]] bool Close(const int fd, std::error_code& ec) noexcept;
+[[nodiscard]] bool Unlink(const fs::path path, std::error_code& ec) noexcept;
+[[nodiscard]] bool Flush(const int fd, std::error_code& ec) noexcept;
+[[nodiscard]] bool Commit(const int fd, std::error_code& ec) noexcept;
+[[nodiscard]] bool SetSize(const int fd, std::error_code& ec, u64 size) noexcept;
+[[nodiscard]] u64 GetSize(const int fd, std::error_code& ec) noexcept;
+[[nodiscard]] bool Seek(const int fd, std::error_code& ec, s64 offset,
+                        SeekOrigin origin = SeekOrigin::SetOrigin) noexcept;
+[[nodiscard]] s64 Tell(int fd, std::error_code& ec) noexcept;
+[[nodiscard]] s64 Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept;
+[[nodiscard]] s64 Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept;
+
+bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
+bool CreateDirectory(const fs::path& path, const fs::path& existing_path, std::error_code& ec,
+                     int mode = 0777) = delete;
+bool CreateDirectories(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
+
 [[nodiscard]] fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept;
+[[nodiscard]] bool Remove(const fs::path& path, std::error_code& ec) noexcept;
 
 } // namespace Common::FS::Native

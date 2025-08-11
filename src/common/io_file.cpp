@@ -43,7 +43,6 @@ int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool t
 int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     Close();
 
-    errno = 0;
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
@@ -63,7 +62,6 @@ void IOFile::Close() {
         return;
     }
 
-    errno = 0;
     if (!NativeFS::Close(file_descriptor)) {
         const auto ec = std::error_code{errno, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
@@ -78,7 +76,6 @@ void IOFile::Unlink() {
         return;
     }
 
-    errno = 0;
     if (NativeFS::Unlink(file_path))
         return;
 
@@ -97,7 +94,6 @@ bool IOFile::Flush() const {
         return false;
     }
 
-    errno = 0;
     if (NativeFS::Flush(file_descriptor))
         return true;
 
@@ -113,7 +109,6 @@ bool IOFile::Commit() const {
         return false;
     }
 
-    errno = 0;
     if (NativeFS::Commit(file_descriptor))
         return true;
 
@@ -129,7 +124,6 @@ bool IOFile::SetSize(u64 size) const {
         return false;
     }
 
-    errno = 0;
     if (NativeFS::SetSize(file_descriptor, size))
         return true;
 
@@ -145,7 +139,6 @@ u64 IOFile::GetSize() const {
         return 0;
     }
 
-    errno = 0;
     const u64 file_size = NativeFS::GetSize(file_descriptor);
     if (0 < file_size)
         return file_size;
@@ -162,7 +155,6 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
-    errno = 0;
     if (NativeFS::Seek(file_descriptor, offset, origin))
         return true;
 
@@ -179,7 +171,6 @@ s64 IOFile::Tell() const {
         return 0;
     }
 
-    errno = 0;
     if (s64 ret = NativeFS::Tell(file_descriptor); -1 != ret)
         return ret;
 

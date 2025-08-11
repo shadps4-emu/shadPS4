@@ -10,13 +10,44 @@
 
 #include "native_fs.h"
 
+/**
+ * errno note - every sub-call clears errno
+ * If you need to catch anything, do it between calls
+ * C++ ports have throwable/errorable overloads, so it may be easier
+ */
+
 namespace Common::FS::Native {
 
 namespace fs = std::filesystem;
 
-int Open(const fs::path& path, int flags, int mode) {
+bool Close(const int fd, std::error_code& ec) noexcept {}
+bool Unlink(const fs::path path, std::error_code& ec) noexcept {}
+bool Flush(const int fd, std::error_code& ec) noexcept {}
+bool Commit(const int fd, std::error_code& ec) noexcept {}
+bool SetSize(const int fd, std::error_code& ec, u64 size) noexcept {}
+u64 GetSize(const int fd, std::error_code& ec) noexcept {}
+bool Seek(const int fd, std::error_code& ec, s64 offset,
+          SeekOrigin origin = SeekOrigin::SetOrigin) noexcept {}
+
+bool Open(const fs::path& path, int flags, int mode) {
+    std::error_code ec{};
+    bool opened = Open(path, ec, flags, mode);
+
+    if (!ec)
+        return opened;
+
+    throw fs::filesystem_error("Open(): ", path, std::error_code{errno, std::generic_category()});
+}
+
+bool Open(const fs::path& path, std::error_code& ec, int flags, int mode) noexcept {
+    ec.clear();
     errno = 0;
-    return open(path.c_str(), flags, mode);
+
+    if (0 == open(path.c_str(), flags, mode))
+        return true;
+
+    ec = std::error_code{errno, std::generic_category()};
+    return false;
 }
 
 bool Close(const int fd) {
@@ -59,6 +90,7 @@ bool Seek(const int fd, s64 offset, SeekOrigin origin) {
     if (-1 == seek_start)
         return false;
 
+    errno = 0;
     const off_t seek_pos = lseek(fd, offset, _origin);
     if (-1 == seek_pos)
         return false;
@@ -79,17 +111,75 @@ bool Seek(const int fd, s64 offset, SeekOrigin origin) {
 }
 
 s64 Tell(int fd) {
+    std::error_code ec{};
+    bool pointer_position = Tell(fd, ec);
+
+    if (!ec)
+        return pointer_position;
+
+    throw fs::filesystem_error("Tell(): ", std::error_code{errno, std::generic_category()});
+}
+
+s64 Tell(int fd, std::error_code& ec) noexcept {
+    ec.clear();
     errno = 0;
-    return lseek(fd, 0, SEEK_CUR);
+
+    s64 pointer_position = lseek(fd, 0, SEEK_CUR);
+    if (-1 == pointer_position)
+        ec = std::error_code{errno, std::generic_category()};
+
+    return pointer_position;
 }
 
 s64 Write(int __fd, const void* __buf, size_t __n) {
+    std::error_code ec{};
+    s64 bytes_written = Write(__fd, ec, __buf, __n);
+
+    if (!ec)
+        return bytes_written;
+
+    throw fs::filesystem_error(
+        "Write(): ",
+        std::format("File descriptor: {} wrote {} out of {} bytes", __fd, bytes_written, __n),
+        std::error_code{errno, std::generic_category()});
+
     errno = 0;
     return write(__fd, __buf, __n);
 }
 
+s64 Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept {
+    ec.clear();
+    errno = 0;
+
+    const s64 bytes_written = write(__fd, __buf, __n);
+    if (bytes_written != __n)
+        ec = std::error_code{errno, std::generic_category()};
+
+    return bytes_written;
+}
+
 s64 Read(int __fd, void* __buf, size_t __n) {
-    return read(__fd, __buf, __n);
+    std::error_code ec{};
+    s64 bytes_read = Read(__fd, ec, __buf, __n);
+
+    if (!ec)
+        return bytes_read;
+
+    throw fs::filesystem_error(
+        "Read(): ",
+        std::format("File descriptor: {} read {} out of {} bytes", __fd, bytes_read, __n),
+        std::error_code{errno, std::generic_category()});
+}
+
+s64 Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept {
+    ec.clear();
+    errno = 0;
+
+    const s64 bytes_read = read(__fd, __buf, __n);
+    if (bytes_read != __n)
+        ec = std::error_code{errno, std::generic_category()};
+
+    return bytes_read;
 }
 
 constexpr int ToSeekOrigin(SeekOrigin origin) {
@@ -130,17 +220,13 @@ u64 GetDirectorySize(const fs::path& path) {
 // This applies for C++ std::filesystem ports, but should also be applied to calls above
 
 bool Exists(const fs::path& path) {
-    errno = 0;
-    struct stat statbuf{};
-    if (0 == stat(path.c_str(), &statbuf))
-        return true;
+    std::error_code ec{};
+    bool exists = Exists(path, ec);
 
-    if (ENOENT == errno)
-        return false;
+    if (!ec)
+        return exists;
 
-    throw fs::filesystem_error("Exception: Exists: ", path,
-                               std::error_code{errno, std::generic_category()});
-    return false;
+    throw fs::filesystem_error("Exists(): ", path, std::error_code{errno, std::generic_category()});
 }
 
 bool Exists(const fs::path& path, std::error_code& ec) noexcept {
@@ -151,20 +237,21 @@ bool Exists(const fs::path& path, std::error_code& ec) noexcept {
     if (0 == stat(path.c_str(), &statbuf))
         return true;
 
+    if (ENOENT == errno)
+        return false;
+
     ec = std::error_code{errno, std::generic_category()};
     return false;
 }
 
 bool IsDirectory(const fs::path& path) {
-
     std::error_code ec{};
     bool is_directory = IsDirectory(path, ec);
 
-    if (!ec) {
+    if (!ec)
         return is_directory;
-    }
 
-    throw fs::filesystem_error("Exception: IsDirectory: ", path,
+    throw fs::filesystem_error("IsDirectory(): ", path,
                                std::error_code{errno, std::generic_category()});
 }
 
@@ -188,9 +275,8 @@ bool CreateDirectory(const fs::path& path, int mode) {
     if (!ec)
         return directory_created;
 
-    throw fs::filesystem_error("Exception: CreateDirectory: ", path,
+    throw fs::filesystem_error("CreateDirectory(): ", path,
                                std::error_code{errno, std::generic_category()});
-    return false;
 }
 
 bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode) noexcept {
@@ -220,7 +306,7 @@ bool CreateDirectories(const fs::path& path, int mode) {
     if (!ec)
         return directories_created;
 
-    throw fs::filesystem_error("Exception: CreateDirectories: ", path,
+    throw fs::filesystem_error("CreateDirectories(): ", path,
                                std::error_code{errno, std::generic_category()});
 }
 
@@ -267,10 +353,11 @@ fs::path AbsolutePath(const fs::path& path) {
     if (!ec)
         return resolved_path;
 
-    throw fs::filesystem_error("Exception: AbsolutePath: ", path, ec);
+    throw fs::filesystem_error("AbsolutePath(): ", path, ec);
 }
 
 fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept {
+    ec.clear();
     errno = 0;
 
     char* resolved_path = realpath(path.c_str(), nullptr);
@@ -282,6 +369,30 @@ fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept {
     fs::path _resolved_path{resolved_path};
     free(resolved_path); // man(3) realpath
     return _resolved_path;
+}
+
+bool Remove(const fs::path& path) {
+    std::error_code ec{};
+    bool file_removed = Remove(path, ec);
+
+    if (!ec)
+        return file_removed;
+
+    throw fs::filesystem_error("Remove(): ", path, ec);
+}
+
+bool Remove(const fs::path& path, std::error_code& ec) noexcept {
+    ec.clear();
+    errno = 0;
+
+    if (0 == remove(path.c_str()))
+        return true;
+
+    if (ENOENT == errno)
+        return false;
+
+    ec = std::error_code{errno, std::generic_category()};
+    return false;
 }
 
 } // namespace Common::FS::Native
