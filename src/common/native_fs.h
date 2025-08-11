@@ -78,7 +78,7 @@ u64 CurrentPath(const fs::path path, std::error_code& ec) noexcept = delete;
 
 bool Copy(const fs::path from, const fs::path to, std::error_code& ec) noexcept = delete;
 bool Copy(const fs::path from, const fs::path to, std::filesystem::copy_options options,
-         std::error_code& ec) noexcept = delete;
+          std::error_code& ec) noexcept = delete;
 
 bool CreateDirectory(const fs::path path, std::error_code& ec, int mode = 0777) noexcept;
 bool CreateDirectory(const fs::path path, const fs::path existing_path, std::error_code& ec,
