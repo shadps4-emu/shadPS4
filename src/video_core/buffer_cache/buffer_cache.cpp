@@ -490,7 +490,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    const bool defer_read_protect = Config::readbackAccuracy() != Config::ReadbackAccuracy::Extreme;
+    const bool defer_read_protect = Config::readbacks() && Config::readbackAccuracy() != Config::ReadbackAccuracy::Extreme;
     SynchronizeBuffer(buffer, device_addr, size, is_written && !defer_read_protect,
                       is_texel_buffer);
     if (is_written) {
