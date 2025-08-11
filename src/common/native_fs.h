@@ -16,6 +16,11 @@ enum class SeekOrigin : u32 {
 };
 }
 
+/**
+ * TODO: throw memory exception in some c++ ports
+ * rename, move, copy, remove_all
+ */
+
 namespace Common::FS::Native {
 
 namespace fs = std::filesystem;
@@ -42,8 +47,8 @@ bool Remove(const fs::path path);
 u64 RemoveAll(const fs::path path) = delete;
 u64 CurrentPath(const fs::path path) = delete;
 
-u64 Copy(const fs::path from, const fs::path to) = delete;
-u64 Copy(const fs::path from, const fs::path to, std::filesystem::copy_options options) = delete;
+bool Copy(const fs::path from, const fs::path to) = delete;
+bool Copy(const fs::path from, const fs::path to, std::filesystem::copy_options options) = delete;
 
 // 0777 to mimic default C++ mode (std::filesystem::perms::all)
 bool CreateDirectory(const fs::path path, int mode = 0777);
@@ -71,8 +76,8 @@ bool Remove(const fs::path path, std::error_code& ec) noexcept;
 u64 RemoveAll(const fs::path path, std::error_code& ec) noexcept = delete;
 u64 CurrentPath(const fs::path path, std::error_code& ec) noexcept = delete;
 
-u64 Copy(const fs::path from, const fs::path to, std::error_code& ec) noexcept = delete;
-u64 Copy(const fs::path from, const fs::path to, std::filesystem::copy_options options,
+bool Copy(const fs::path from, const fs::path to, std::error_code& ec) noexcept = delete;
+bool Copy(const fs::path from, const fs::path to, std::filesystem::copy_options options,
          std::error_code& ec) noexcept = delete;
 
 bool CreateDirectory(const fs::path path, std::error_code& ec, int mode = 0777) noexcept;
