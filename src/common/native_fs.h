@@ -18,10 +18,12 @@ enum class SeekOrigin : u32 {
 
 namespace Common::FS::Native {
 
-[[nodiscard]] int Open(const std::filesystem::path& path, int flags, int mode);
+namespace fs = std::filesystem;
+
+[[nodiscard]] int Open(const fs::path& path, int flags, int mode);
 
 [[nodiscard]] bool Close(const int fd);
-[[nodiscard]] bool Unlink(const std::filesystem::path path);
+[[nodiscard]] bool Unlink(const fs::path path);
 [[nodiscard]] bool Flush(const int fd);
 [[nodiscard]] bool Commit(const int fd);
 [[nodiscard]] bool SetSize(const int fd, u64 size);
@@ -32,24 +34,26 @@ namespace Common::FS::Native {
 [[nodiscard]] s64 Read(int __fd, void* __buf, size_t __n);
 
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
-[[nodiscard]] u64 GetDirectorySize(const std::filesystem::path& path);
+[[nodiscard]] u64 GetDirectorySize(const fs::path& path);
 
-[[nodiscard]] bool Exists(const std::filesystem::path& path);
-[[nodiscard]] bool Exists(const std::filesystem::path& path, std::error_code& ec);
+[[nodiscard]] bool Exists(const fs::path& path);
+[[nodiscard]] bool Exists(const fs::path& path, std::error_code& ec) noexcept;
 
-[[nodiscard]] bool IsDirectory(const std::filesystem::path& path);
-[[nodiscard]] bool IsDirectory(const std::filesystem::path& path, std::error_code& ec);
+[[nodiscard]] bool IsDirectory(const fs::path& path);
+[[nodiscard]] bool IsDirectory(const fs::path& path, std::error_code& ec) noexcept;
 
 // 0777 to mimic default C++ mode (std::filesystem::perms::all)
-bool CreateDirectory(const std::filesystem::path& path, int mode = 0777);
-bool CreateDirectory(const std::filesystem::path& path, std::error_code& ec, int mode = 0777);
+bool CreateDirectory(const fs::path& path, int mode = 0777);
+bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
 
-bool CreateDirectory(const std::filesystem::path& path, const std::filesystem::path& existing_path,
+bool CreateDirectory(const fs::path& path, const fs::path& existing_path, int mode = 0777) = delete;
+bool CreateDirectory(const fs::path& path, const fs::path& existing_path, std::error_code& ec,
                      int mode = 0777) = delete;
-bool CreateDirectory(const std::filesystem::path& path, const std::filesystem::path& existing_path,
-                     std::error_code& ec, int mode = 0777) = delete;
 
-bool CreateDirectories(const std::filesystem::path& path, int mode = 0777);
-bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, int mode = 0777);
+bool CreateDirectories(const fs::path& path, int mode = 0777);
+bool CreateDirectories(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept;
+
+[[nodiscard]] fs::path AbsolutePath(const fs::path& path);
+[[nodiscard]] fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept;
 
 } // namespace Common::FS::Native

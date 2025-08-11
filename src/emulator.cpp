@@ -125,7 +125,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     Common::Log::Start();
     if (!NativeFS::Exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
-                     std::filesystem::absolute(file).string());
+                     NativeFS::AbsolutePath(file).string());
         std::quick_exit(0);
     }
 
@@ -271,7 +271,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     std::filesystem::absolute(eboot_path).string());
+                     NativeFS::AbsolutePath(eboot_path).string());
         std::quick_exit(0);
     }
 

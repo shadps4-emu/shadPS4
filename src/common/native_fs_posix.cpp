@@ -12,32 +12,41 @@
 
 namespace Common::FS::Native {
 
-int Open(const std::filesystem::path& path, int flags, int mode) {
+namespace fs = std::filesystem;
+
+int Open(const fs::path& path, int flags, int mode) {
+    errno = 0;
     return open(path.c_str(), flags, mode);
 }
 
 bool Close(const int fd) {
+    errno = 0;
     return close(fd) == 0;
 }
 
-bool Unlink(const std::filesystem::path path) {
+bool Unlink(const fs::path path) {
+    errno = 0;
     return unlink(path.c_str()) == 0;
 }
 
 bool Flush(const int fd) {
     // POSIX rawdogs the file descriptor
+    errno = 0;
     return true;
 }
 
 bool Commit(const int fd) {
+    errno = 0;
     return fsync(fd) == 0;
 }
 
 bool SetSize(const int fd, u64 size) {
+    errno = 0;
     return ftruncate(fd, static_cast<s64>(size)) == 0;
 }
 
 u64 GetSize(const int fd) {
+    errno = 0;
     struct stat statbuf{};
     if (0 != fstat(fd, &statbuf))
         return -1;
@@ -70,10 +79,12 @@ bool Seek(const int fd, s64 offset, SeekOrigin origin) {
 }
 
 s64 Tell(int fd) {
+    errno = 0;
     return lseek(fd, 0, SEEK_CUR);
 }
 
 s64 Write(int __fd, const void* __buf, size_t __n) {
+    errno = 0;
     return write(__fd, __buf, __n);
 }
 
@@ -98,12 +109,12 @@ constexpr int ToSeekOrigin(SeekOrigin origin) {
  * >=0 on success
  * -1 on error
  */
-u64 GetDirectorySize(const std::filesystem::path& path) {
+u64 GetDirectorySize(const fs::path& path) {
     u64 total = 0;
 
     struct stat statbuf{};
     const int file_size = statbuf.st_size;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+    for (const auto& entry : fs::recursive_directory_iterator(path)) {
         if (0 != stat(entry.path().c_str(), &statbuf))
             return -1;
 
@@ -114,15 +125,50 @@ u64 GetDirectorySize(const std::filesystem::path& path) {
     return total;
 }
 
-/**
- * 1 if exists, 0 if not, -1 on error
- */
-bool Exists(const std::filesystem::path& path) {
+// Semi C++ mess
+// Most used functions are throwable, so we need to follow this
+// This applies for C++ std::filesystem ports, but should also be applied to calls above
+
+bool Exists(const fs::path& path) {
+    errno = 0;
     struct stat statbuf{};
-    return -1 != stat(path.c_str(), &statbuf);
+    if (0 == stat(path.c_str(), &statbuf))
+        return true;
+
+    if (ENOENT == errno)
+        return false;
+
+    throw fs::filesystem_error("Exception: Exists: ", path,
+                               std::error_code{errno, std::generic_category()});
+    return false;
 }
 
-bool Exists(const std::filesystem::path& path, std::error_code& ec) {
+bool Exists(const fs::path& path, std::error_code& ec) noexcept {
+    ec.clear();
+    errno = 0;
+
+    struct stat statbuf{};
+    if (0 == stat(path.c_str(), &statbuf))
+        return true;
+
+    ec = std::error_code{errno, std::generic_category()};
+    return false;
+}
+
+bool IsDirectory(const fs::path& path) {
+
+    std::error_code ec{};
+    bool is_directory = IsDirectory(path, ec);
+
+    if (!ec) {
+        return is_directory;
+    }
+
+    throw fs::filesystem_error("Exception: IsDirectory: ", path,
+                               std::error_code{errno, std::generic_category()});
+}
+
+bool IsDirectory(const fs::path& path, std::error_code& ec) noexcept {
     ec.clear();
     errno = 0;
 
@@ -132,82 +178,61 @@ bool Exists(const std::filesystem::path& path, std::error_code& ec) {
         return false;
     }
 
-    return true;
-}
-
-bool IsDirectory(const std::filesystem::path& path) {
-    struct stat statbuf{};
-    if (-1 == stat(path.c_str(), &statbuf))
-        return false;
-
     return S_ISDIR(statbuf.st_mode);
 }
 
-bool IsDirectory(const std::filesystem::path& path, std::error_code& ec) {
+bool CreateDirectory(const fs::path& path, int mode) {
+    std::error_code ec{};
+    bool directory_created = CreateDirectory(path, ec, mode);
+
+    if (!ec)
+        return directory_created;
+
+    throw fs::filesystem_error("Exception: CreateDirectory: ", path,
+                               std::error_code{errno, std::generic_category()});
+    return false;
+}
+
+bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode) noexcept {
     ec.clear();
+
+    std::error_code err{};
+    if (Exists(path, err))
+        return false;
+
+    if (err) {
+        ec = err;
+        return false;
+    }
+
     errno = 0;
+    if (0 == mkdir(path.c_str(), mode))
+        return true;
 
-    struct stat statbuf{};
-    if (-1 == stat(path.c_str(), &statbuf)) {
-        ec = std::error_code{errno, std::generic_category()};
-        return false;
-    }
-
-    return S_ISDIR(statbuf.st_mode);
+    ec = std::error_code{errno, std::generic_category()};
+    return false;
 }
 
-bool CreateDirectory(const std::filesystem::path& path, int mode) {
-    if (Exists(path))
-        return false;
-    return -1 == mkdir(path.c_str(), mode);
+bool CreateDirectories(const fs::path& path, int mode) {
+    std::error_code ec{};
+    bool directories_created = CreateDirectories(path, ec, mode);
+
+    if (!ec)
+        return directories_created;
+
+    throw fs::filesystem_error("Exception: CreateDirectories: ", path,
+                               std::error_code{errno, std::generic_category()});
 }
 
-bool CreateDirectory(const std::filesystem::path& path, std::error_code& ec, int mode) {
-    ec.clear();
-    errno = 0;
-
-    if (Exists(path))
-        return false;
-
-    if (-1 == mkdir(path.c_str(), mode)) {
-        ec = std::error_code{errno, std::generic_category()};
-        return false;
-    }
-
-    return true;
-}
-
-bool CreateDirectories(const std::filesystem::path& path, int mode) {
-    char sep = std::filesystem::path::preferred_separator;
-    const std::string path_str = path.string();
-    size_t path_idx = 0;
-
-    bool made_something = false;
-    bool end_reached = false;
-
-    while (!end_reached) {
-        path_idx = path_str.find(sep, path_idx + 1);
-        const std::string part = path_str.substr(0, path_idx);
-        if (std::string::npos == path_idx)
-            end_reached = true;
-        if (Exists(part))
-            continue;
-        if (CreateDirectory(part.c_str(), mode))
-            made_something = true;
-    }
-
-    return made_something;
-}
-
-bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, int mode) {
+bool CreateDirectories(const fs::path& path, std::error_code& ec, int mode) noexcept {
     ec.clear();
 
-    char sep = std::filesystem::path::preferred_separator;
+    char sep = fs::path::preferred_separator;
     const std::string path_str = path.string();
     size_t path_idx = 0;
 
     std::error_code err{};
-    bool made_something = false;
+    bool directories_created = false;
     bool end_reached = false;
 
     while (!end_reached) {
@@ -215,7 +240,6 @@ bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, i
         const std::string part = path_str.substr(0, path_idx);
         if (std::string::npos == path_idx)
             end_reached = true;
-
         if (Exists(part, err))
             continue;
 
@@ -225,7 +249,7 @@ bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, i
         }
 
         if (CreateDirectory(part.c_str(), err, mode))
-            made_something = true;
+            directories_created = true;
 
         if (err) {
             ec = err;
@@ -233,7 +257,31 @@ bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, i
         }
     }
 
-    return made_something;
+    return directories_created;
+}
+
+fs::path AbsolutePath(const fs::path& path) {
+    std::error_code ec{};
+    fs::path resolved_path = AbsolutePath(path, ec);
+
+    if (!ec)
+        return resolved_path;
+
+    throw fs::filesystem_error("Exception: AbsolutePath: ", path, ec);
+}
+
+fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept {
+    errno = 0;
+
+    char* resolved_path = realpath(path.c_str(), nullptr);
+    if (resolved_path == NULL) {
+        ec = std::error_code{errno, std::generic_category()};
+        return fs::path{};
+    }
+
+    fs::path _resolved_path{resolved_path};
+    free(resolved_path); // man(3) realpath
+    return _resolved_path;
 }
 
 } // namespace Common::FS::Native

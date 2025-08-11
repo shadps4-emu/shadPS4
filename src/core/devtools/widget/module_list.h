@@ -8,11 +8,14 @@
 #include <mutex>
 #include <string>
 #include <vector>
+
 #include "common/elf_info.h"
 #include "common/native_fs.h"
 #include "common/path_util.h"
 
 namespace Core::Devtools::Widget {
+
+namespace NativeFS = Common::FS::Native;
 
 class ModuleList {
 public:
@@ -25,8 +28,8 @@ public:
     static bool IsSystemModule(const std::filesystem::path& path) {
         const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
 
-        const auto abs_path = std::filesystem::absolute(path).lexically_normal();
-        const auto abs_sys_path = std::filesystem::absolute(sys_modules_path).lexically_normal();
+        const auto abs_path = NativeFS::AbsolutePath(path).lexically_normal();
+        const auto abs_sys_path = NativeFS::AbsolutePath(sys_modules_path).lexically_normal();
 
         const auto path_str = abs_path.string();
         const auto sys_path_str = abs_sys_path.string();
@@ -38,7 +41,7 @@ public:
         const auto game_modules_path = Common::ElfInfo::Instance().GetGameFolder() / "sce_module";
         const auto prx_path = game_modules_path / name;
 
-        if (!Common::FS::Native::Exists(prx_path)) {
+        if (!NativeFS ::Exists(prx_path)) {
             return true;
         }
         return false;
