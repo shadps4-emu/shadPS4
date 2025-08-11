@@ -611,7 +611,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
     using namespace Common::FS;
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
     if (!NativeFS::Exists(dump_dir)) {
-        std::filesystem::create_directories(dump_dir);
+        NativeFS::CreateDirectories(dump_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
@@ -625,7 +625,7 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
     if (!NativeFS::Exists(patch_dir)) {
-        std::filesystem::create_directories(patch_dir);
+        NativeFS::CreateDirectories(patch_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto filepath = patch_dir / filename;

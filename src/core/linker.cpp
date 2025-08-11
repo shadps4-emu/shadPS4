@@ -23,6 +23,8 @@
 
 namespace Core {
 
+namespace NativeFS = Common::FS::Native;
+
 static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
 }
@@ -444,12 +446,12 @@ void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
 void Linker::DebugDump() {
     const auto& log_dir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
     const std::filesystem::path debug(log_dir / "debugdump");
-    std::filesystem::create_directory(debug);
+    NativeFS::CreateDirectory(debug);
     for (const auto& m : m_modules) {
         Module* module = m.get();
         auto& elf = module->elf;
         const std::filesystem::path filepath(debug / module->file.stem());
-        std::filesystem::create_directory(filepath);
+        NativeFS::CreateDirectory(filepath);
         module->import_sym.DebugDump(filepath / "imports.txt");
         module->export_sym.DebugDump(filepath / "exports.txt");
         if (elf.IsSelfFile()) {

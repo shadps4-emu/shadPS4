@@ -64,7 +64,7 @@ Emulator::Emulator() {
 Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
-    if (std::filesystem::is_directory(file)) {
+    if (NativeFS::IsDirectory(file)) {
         file /= "eboot.bin";
     }
 
@@ -77,7 +77,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         // use the base game directory as the game folder.
         const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
         const auto base_path = game_folder.parent_path() / base_name;
-        if (std::filesystem::is_directory(base_path)) {
+        if (NativeFS::IsDirectory(base_path)) {
             game_folder = base_path;
         }
     }
@@ -237,7 +237,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
     if (!NativeFS::Exists(mount_data_dir)) {
-        std::filesystem::create_directory(mount_data_dir);
+        NativeFS::CreateDirectory(mount_data_dir);
     }
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
 
@@ -247,20 +247,20 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         // Temp folder should be cleared on each boot.
         std::filesystem::remove_all(mount_temp_dir);
     }
-    std::filesystem::create_directory(mount_temp_dir);
+    NativeFS::CreateDirectory(mount_temp_dir);
     mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
         Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
     if (!NativeFS::Exists(mount_download_dir)) {
-        std::filesystem::create_directory(mount_download_dir);
+        NativeFS::CreateDirectory(mount_download_dir);
     }
     mnt->Mount(mount_download_dir, "/download0");
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!NativeFS::Exists(mount_captures_dir)) {
-        std::filesystem::create_directory(mount_captures_dir);
+        NativeFS::CreateDirectory(mount_captures_dir);
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
 

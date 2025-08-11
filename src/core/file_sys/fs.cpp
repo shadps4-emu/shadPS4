@@ -170,7 +170,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
             if (apply_patch) {
                 const auto patch_entry_path = patch_path / entry.path().filename();
                 if (NativeFS::Exists(patch_entry_path)) {
-                    callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
+                    callback(patch_entry_path, !NativeFS::IsDirectory(patch_entry_path));
                     continue;
                 }
             }

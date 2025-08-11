@@ -145,7 +145,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         truncate = false;
     }
 
-    if (!std::filesystem::is_directory(file->m_host_name)) {
+    if (!NativeFS::IsDirectory(file->m_host_name)) {
         if (directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
@@ -501,7 +501,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
     std::error_code ec;
-    if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
+    if (dir_name.empty() || !NativeFS::CreateDirectory(dir_name, ec)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
@@ -533,7 +533,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         return -1;
     }
 
-    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
+    if (dir_name.empty() || !NativeFS::IsDirectory(dir_name)) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
     }
@@ -567,13 +567,13 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
-    const bool is_dir = std::filesystem::is_directory(path_name);
+    const bool is_dir = NativeFS::IsDirectory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
     if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (std::filesystem::is_directory(path_name)) {
+    if (NativeFS::IsDirectory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 0;
         sb->st_blksize = 512;
@@ -729,8 +729,8 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const bool src_is_dir = std::filesystem::is_directory(src_path);
-    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
+    const bool src_is_dir = NativeFS::IsDirectory(src_path);
+    const bool dst_is_dir = NativeFS::IsDirectory(dst_path);
     if (src_is_dir && !dst_is_dir) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
@@ -1009,7 +1009,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         return -1;
     }
 
-    if (std::filesystem::is_directory(host_path)) {
+    if (NativeFS::IsDirectory(host_path)) {
         *__Error() = POSIX_EPERM;
         return -1;
     }

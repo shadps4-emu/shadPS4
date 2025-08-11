@@ -1089,7 +1089,7 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
 
     // Ensure the config directory exists
     if (!NativeFS::Exists(config_dir)) {
-        std::filesystem::create_directories(config_dir);
+        NativeFS::CreateDirectories(config_dir);
     }
 
     // Check if the default config exists

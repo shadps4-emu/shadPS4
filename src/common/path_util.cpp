@@ -34,6 +34,7 @@
 namespace Common::FS {
 
 namespace fs = std::filesystem;
+namespace NativeFS = Common::FS::Native;
 
 #ifdef __APPLE__
 using IsTranslocatedURLFunc = Boolean (*)(CFURLRef path, bool* isTranslocated,
@@ -122,7 +123,7 @@ static auto UserPaths = [] {
     std::unordered_map<PathType, fs::path> paths;
 
     const auto create_path = [&](PathType shad_path, const fs::path& new_path) {
-        std::filesystem::create_directory(new_path);
+        NativeFS::CreateDirectory(new_path);
         paths.insert_or_assign(shad_path, new_path);
     };
 
@@ -193,7 +194,7 @@ std::string GetUserPathString(PathType shad_path) {
 }
 
 void SetUserPath(PathType shad_path, const fs::path& new_path) {
-    if (!std::filesystem::is_directory(new_path)) {
+    if (!NativeFS::IsDirectory(new_path)) {
         LOG_ERROR(Common_Filesystem, "Filesystem object at new_path={} is not a directory",
                   PathToUTF8String(new_path));
         return;

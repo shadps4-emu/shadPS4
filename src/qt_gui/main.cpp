@@ -17,6 +17,8 @@
 #include <windows.h>
 #endif
 
+namespace NativeFS = Common::FS::Native;
+
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
 
@@ -120,7 +122,7 @@ int main(int argc, char* argv[]) {
              std::string config_dir(argv[i]);
              std::filesystem::path config_path = std::filesystem::path(config_dir);
              std::error_code discard;
-             if (!std::filesystem::is_directory(config_path, discard)) {
+             if (!NativeFS::IsDirectory(config_path, discard)) {
                  std::cerr << "Error: Directory does not exist: " << config_path << "\n";
                  exit(1);
              }

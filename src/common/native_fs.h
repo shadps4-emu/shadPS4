@@ -4,11 +4,7 @@
 #pragma once
 
 #include <filesystem>
-#include <span>
-#include <type_traits>
 
-#include "common/assert.h"
-#include "common/concepts.h"
 #include "common/types.h"
 #include "enum.h"
 
@@ -40,5 +36,20 @@ namespace Common::FS::Native {
 
 [[nodiscard]] bool Exists(const std::filesystem::path& path);
 [[nodiscard]] bool Exists(const std::filesystem::path& path, std::error_code& ec);
+
+[[nodiscard]] bool IsDirectory(const std::filesystem::path& path);
+[[nodiscard]] bool IsDirectory(const std::filesystem::path& path, std::error_code& ec);
+
+// 0777 to mimic default C++ mode (std::filesystem::perms::all)
+bool CreateDirectory(const std::filesystem::path& path, int mode = 0777);
+bool CreateDirectory(const std::filesystem::path& path, std::error_code& ec, int mode = 0777);
+
+bool CreateDirectory(const std::filesystem::path& path, const std::filesystem::path& existing_path,
+                     int mode = 0777) = delete;
+bool CreateDirectory(const std::filesystem::path& path, const std::filesystem::path& existing_path,
+                     std::error_code& ec, int mode = 0777) = delete;
+
+bool CreateDirectories(const std::filesystem::path& path, int mode = 0777);
+bool CreateDirectories(const std::filesystem::path& path, std::error_code& ec, int mode = 0777);
 
 } // namespace Common::FS::Native
