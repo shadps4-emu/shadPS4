@@ -108,6 +108,10 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         ASSERT_MSG(ret == 0, "Unable to protect guard page");
     }
 
+    /* Control Flow Guard fix */
+    ret = memory->Protect(stackaddr + guardsize, stacksize, Core::MemoryProt::CpuReadWrite);
+    ASSERT_MSG(ret == 0, "Unable to protect stack memory");
+
     stackaddr += guardsize;
     attr->stackaddr_attr = (void*)stackaddr;
 
