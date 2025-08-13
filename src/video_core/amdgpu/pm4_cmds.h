@@ -435,8 +435,8 @@ struct PM4CmdEventWriteEop {
     u32 data_hi; ///< Value that will be written to memory when event occurs
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+    T Address() const {
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -448,7 +448,7 @@ struct PM4CmdEventWriteEop {
     }
 
     void SignalFence(auto&& write_mem) const {
-        u32* address = Address<u32>();
+        u32* address = Address<u32*>();
         switch (data_sel.Value()) {
         case DataSelect::None: {
             break;
@@ -663,7 +663,7 @@ struct PM4CmdWaitRegMem {
         return reg.Value();
     }
 
-    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+    bool Test(std::span<const u32> regs) const {
         u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
@@ -725,7 +725,7 @@ struct PM4CmdWriteData {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr64);
+        return std::bit_cast<T>(addr64);
     }
 };
 
@@ -756,7 +756,7 @@ struct PM4CmdEventWriteEos {
 
     template <typename T = u32*>
     T Address() const {
-        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -815,7 +815,7 @@ struct PM4DumpConstRam {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>((u64(addr_hi) << 32u) | addr_lo);
+        return std::bit_cast<T>((u64(addr_hi) << 32u) | addr_lo);
     }
 
     [[nodiscard]] u32 Offset() const {
@@ -903,8 +903,8 @@ struct PM4CmdReleaseMem {
     u32 data_hi;
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+    T Address() const {
+        return std::bit_cast<T>(address_lo | u64(address_hi) << 32);
     }
 
     u32 DataDWord() const {
@@ -918,19 +918,19 @@ struct PM4CmdReleaseMem {
     void SignalFence(Platform::InterruptId irq_id) const {
         switch (data_sel.Value()) {
         case DataSelect::Data32Low: {
-            *Address<u32>() = DataDWord();
+            *Address<u32*>() = DataDWord();
             break;
         }
         case DataSelect::Data64: {
-            *Address<u64>() = DataQWord();
+            *Address<u64*>() = DataQWord();
             break;
         }
         case DataSelect::GpuClock64: {
-            *Address<u64>() = GetGpuClock64();
+            *Address<u64*>() = GetGpuClock64();
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            *Address<u64*>() = Common::FencedRDTSC();
             break;
         }
         default: {

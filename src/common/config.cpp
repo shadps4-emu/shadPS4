@@ -71,6 +71,7 @@ static u32 internalScreenHeight = 720;
 static bool isNullGpu = false;
 static bool shouldCopyGPUBuffers = false;
 static bool readbacksEnabled = false;
+static ReadbackAccuracy readbackAccuracyMode = ReadbackAccuracy::High;
 static bool readbackLinearImagesEnabled = false;
 static bool directMemoryAccessEnabled = false;
 static bool shouldDumpShaders = false;
@@ -282,6 +283,10 @@ bool nullGpu() {
 
 bool copyGPUCmdBuffers() {
     return shouldCopyGPUBuffers;
+}
+
+ReadbackAccuracy readbackAccuracy() {
+    return readbackAccuracyMode;
 }
 
 bool readbacks() {
@@ -692,6 +697,8 @@ void load(const std::filesystem::path& path) {
             toml::find_or<int>(gpu, "internalScreenHeight", internalScreenHeight);
         isNullGpu = toml::find_or<bool>(gpu, "nullGpu", isNullGpu);
         shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", shouldCopyGPUBuffers);
+        readbackAccuracyMode = static_cast<ReadbackAccuracy>(
+            toml::find_or<int>(gpu, "readbackAccuracy", static_cast<int>(readbackAccuracyMode)));
         readbacksEnabled = toml::find_or<bool>(gpu, "readbacks", readbacksEnabled);
         readbackLinearImagesEnabled =
             toml::find_or<bool>(gpu, "readbackLinearImages", readbackLinearImagesEnabled);
@@ -862,6 +869,7 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["nullGpu"] = isNullGpu;
     data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
     data["GPU"]["readbacks"] = readbacksEnabled;
+    data["GPU"]["readbackAccuracy"] = static_cast<int>(readbackAccuracyMode);
     data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled;
     data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
     data["GPU"]["dumpShaders"] = shouldDumpShaders;
@@ -968,6 +976,7 @@ void setDefaultValues() {
     internalScreenHeight = 720;
     isNullGpu = false;
     shouldCopyGPUBuffers = false;
+    readbackAccuracyMode = ReadbackAccuracy::High;
     readbacksEnabled = false;
     readbackLinearImagesEnabled = false;
     directMemoryAccessEnabled = false;
