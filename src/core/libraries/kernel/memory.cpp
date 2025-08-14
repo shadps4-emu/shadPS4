@@ -571,7 +571,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
     LOG_INFO(Kernel_Vmm,
-             "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
+             "called addr = {}, len = {:#x}, prot = {}, flags = {}, fd = {}, phys_addr = {:#x}",
              fmt::ptr(addr), len, prot, flags, fd, phys_addr);
 
     void* addr_out;
