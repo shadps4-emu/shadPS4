@@ -678,9 +678,9 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Directory: {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
         break;
     }
