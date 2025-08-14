@@ -606,9 +606,9 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     }
     if (std::filesystem::is_directory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
