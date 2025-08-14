@@ -606,9 +606,9 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     }
     if (std::filesystem::is_directory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
@@ -678,9 +678,9 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Directory: {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
         break;
     }
@@ -890,7 +890,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
     return result;
 }
 
-static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
+static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     if (buf == nullptr) {
         *__Error() = POSIX_EFAULT;
         return -1;
@@ -901,6 +901,7 @@ static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
+
     if (file->type == Core::FileSys::FileType::Device) {
         s32 result = file->device->getdents(buf, nbytes, basep);
         if (result < 0) {
@@ -910,39 +911,49 @@ static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
         return result;
     }
 
-    if (file->dirents_index == file->dirents.size()) {
-        return ORBIS_OK;
-    }
     if (file->type != Core::FileSys::FileType::Directory || nbytes < 512 ||
         file->dirents_index > file->dirents.size()) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-    const auto& entry = file->dirents.at(file->dirents_index++);
-    auto str = entry.name;
-    static int fileno = 1000; // random
-    OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
-    sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
-    // hash or something?
-    sce_ent->d_reclen = sizeof(OrbisKernelDirent);
-    sce_ent->d_type = (entry.isFile ? 8 : 4);
-    sce_ent->d_namlen = str.size();
-    strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
-    sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+    s64 bytes_to_write = nbytes;
+    char* buf_to_write = buf;
+    u64 bytes_written = 0;
+    while (bytes_to_write >= sizeof(OrbisKernelDirent)) {
+        if (file->dirents_index == file->dirents.size()) {
+            break;
+        }
+        const auto& entry = file->dirents.at(file->dirents_index++);
+        auto str = entry.name;
+        static int fileno = 1000; // random
+        OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf_to_write;
+        // TODO this should be unique, maybe switch to a hash or something?
+        sce_ent->d_fileno = fileno++;
+        sce_ent->d_reclen = sizeof(OrbisKernelDirent);
+        sce_ent->d_type = (entry.isFile ? 8 : 4);
+        sce_ent->d_namlen = str.size();
+        strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
+        sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+        buf_to_write += sizeof(OrbisKernelDirent);
+        bytes_to_write -= sizeof(OrbisKernelDirent);
+        bytes_written += sizeof(OrbisKernelDirent);
+    }
 
     if (basep != nullptr) {
         *basep = file->dirents_index;
     }
 
-    return sizeof(OrbisKernelDirent);
+    return bytes_written;
 }
 
-s32 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, s32 nbytes) {
+s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
     return GetDents(fd, buf, nbytes, nullptr);
 }
 
-s32 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, s32 nbytes) {
-    s32 result = GetDents(fd, buf, nbytes, nullptr);
+s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 nbytes) {
+    s64 result = posix_getdents(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -950,16 +961,16 @@ s32 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, s32 nbytes) {
     return result;
 }
 
-s32 PS4_SYSV_ABI getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+s64 PS4_SYSV_ABI getdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
     return GetDents(fd, buf, nbytes, basep);
 }
 
-s32 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+s64 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
     return GetDents(fd, buf, nbytes, basep);
 }
 
-s32 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
-    s32 result = GetDents(fd, buf, nbytes, basep);
+s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
+    s64 result = GetDents(fd, buf, nbytes, basep);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
