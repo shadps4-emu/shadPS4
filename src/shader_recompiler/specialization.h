@@ -62,7 +62,8 @@ struct FMaskSpecialization {
 };
 
 struct SamplerSpecialization {
-    bool force_unnormalized = false;
+    u8 force_unnormalized : 1;
+    u8 force_degamma : 1;
 
     auto operator<=>(const SamplerSpecialization&) const = default;
 };
@@ -147,6 +148,7 @@ struct StageSpecialization {
         ForEachSharp(samplers, info->samplers,
                      [](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
                          spec.force_unnormalized = sharp.force_unnormalized;
+                         spec.force_degamma = sharp.force_degamma;
                      });
 
         // Initialize runtime_info fields that rely on analysis in tessellation passes

@@ -141,6 +141,10 @@ Id EmitFPExp2(EmitContext& ctx, Id value) {
     return ctx.OpExp2(ctx.F32[1], value);
 }
 
+Id EmitFPPow(EmitContext& ctx, Id x, Id y) {
+    return ctx.OpPow(ctx.F32[1], x, y);
+}
+
 Id EmitFPLdexp(EmitContext& ctx, Id value, Id exp) {
     return ctx.OpLdexp(ctx.F32[1], value, exp);
 }

@@ -293,11 +293,6 @@ struct Image {
         return (((banks - 1) << 4) & base_address) >> 4;
     }
 
-    bool IsFmask() const noexcept {
-        return GetDataFmt() >= DataFormat::FormatFmask8_1 &&
-               GetDataFmt() <= DataFormat::FormatFmask64_8;
-    }
-
     ImageType GetBaseType() const noexcept {
         const auto base_type = GetType();
         if (base_type == ImageType::Color1DArray) {
