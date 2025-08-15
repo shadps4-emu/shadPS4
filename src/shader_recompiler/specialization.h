@@ -48,6 +48,7 @@ struct ImageSpecialization {
     bool is_integer = false;
     bool is_storage = false;
     bool is_cube = false;
+    bool is_srgb = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
 
@@ -137,6 +138,8 @@ struct StageSpecialization {
                          spec.is_cube = sharp.IsCube();
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
+                         } else {
+                             spec.is_srgb = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Srgb;
                          }
                          spec.num_conversion = sharp.GetNumberConversion();
                      });
