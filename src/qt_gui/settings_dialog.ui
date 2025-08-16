@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -369,7 +369,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>375</width>
+                  <width>400</width>
                   <height>68</height>
                  </rect>
                 </property>
@@ -539,7 +539,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -988,7 +988,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1283,7 +1283,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1525,7 +1525,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1726,6 +1726,13 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QCheckBox" name="backgroundControllerCheckBox">
+                 <property name="text">
+                  <string>Enable Background Controller Input</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -1790,7 +1797,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1932,7 +1939,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>540</height>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
