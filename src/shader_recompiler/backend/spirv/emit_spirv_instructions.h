@@ -289,6 +289,7 @@ Id EmitFPNeg64(EmitContext& ctx, Id value);
 Id EmitFPSin(EmitContext& ctx, Id value);
 Id EmitFPCos(EmitContext& ctx, Id value);
 Id EmitFPExp2(EmitContext& ctx, Id value);
+Id EmitFPPow(EmitContext& ctx, Id x, Id y);
 Id EmitFPLdexp(EmitContext& ctx, Id value, Id exp);
 Id EmitFPLog2(EmitContext& ctx, Id value);
 Id EmitFPRecip32(EmitContext& ctx, Id value);

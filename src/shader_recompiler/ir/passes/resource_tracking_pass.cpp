@@ -542,7 +542,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
 
     // Patch image instruction if image is FMask.
-    if (image.IsFmask()) {
+    if (AmdGpu::IsFmask(image.GetDataFmt())) {
         ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
 
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -830,8 +830,8 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
                           const ImageResource& image_res, const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
-    const auto sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
-    auto sampler = sampler_res.GetSharp(info);
+    const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
+    const auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
@@ -1001,7 +1001,10 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
     }();
 
-    const auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+    auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+    if (sampler.force_degamma && image.GetNumberFmt() != AmdGpu::NumberFormat::Srgb) {
+        converted = ApplyForceDegamma(ir, texel, image.DstSelect());
+    }
     inst.ReplaceUsesWith(converted);
 }
 

@@ -312,12 +312,21 @@ constexpr NumberClass GetNumberClass(const NumberFormat nfmt) {
     }
 }
 
+constexpr bool IsRgb(CompSwizzle swizzle) {
+    return swizzle == CompSwizzle::Red || swizzle == CompSwizzle::Green ||
+           swizzle == CompSwizzle::Blue;
+}
+
 constexpr bool IsInteger(const NumberFormat nfmt) {
     return nfmt == NumberFormat::Sint || nfmt == NumberFormat::Uint;
 }
 
 constexpr bool IsBlockCoded(DataFormat format) {
     return format >= DataFormat::FormatBc1 && format <= DataFormat::FormatBc7;
+}
+
+constexpr bool IsFmask(DataFormat format) {
+    return format >= DataFormat::FormatFmask8_1 && format <= DataFormat::FormatFmask64_8;
 }
 
 std::string_view NameOf(DataFormat fmt);

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "shader_recompiler/ir/ir_emitter.h"
-#include "video_core/amdgpu/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
@@ -19,6 +19,36 @@ inline Value ApplySwizzle(IREmitter& ir, const Value& vector, const AmdGpu::Comp
         ir.CompositeShuffle(constants_vec, vector, size_t(swizzle.r), size_t(swizzle.g),
                             size_t(swizzle.b), size_t(swizzle.a));
     return swizzled;
+}
+
+/// Converts gamma corrected value to linear space
+inline F32 ApplyGammaToLinear(IREmitter& ir, F32& c) {
+    const F32 a =
+        ir.FPPow(ir.FPMul(ir.FPAdd(c, ir.Imm32(0.055f)), ir.Imm32(1.0f / 1.055f)), ir.Imm32(2.4f));
+    const F32 b = ir.FPMul(c, ir.Imm32(1.0f / 12.92f));
+    return IR::F32{ir.Select(ir.FPGreaterThan(c, ir.Imm32(0.04045f)), a, b)};
+}
+
+inline Value ApplyForceDegamma(IREmitter& ir, const Value& value,
+                               const AmdGpu::CompMapping& mapping) {
+    auto x = F32{ir.CompositeExtract(value, 0)};
+    auto y = F32{ir.CompositeExtract(value, 1)};
+    auto z = F32{ir.CompositeExtract(value, 2)};
+    auto w = F32{ir.CompositeExtract(value, 3)};
+    // Gamma correction is only applied to RGB components
+    if (AmdGpu::IsRgb(mapping.r)) {
+        x = ApplyGammaToLinear(ir, x);
+    }
+    if (AmdGpu::IsRgb(mapping.g)) {
+        y = ApplyGammaToLinear(ir, y);
+    }
+    if (AmdGpu::IsRgb(mapping.b)) {
+        z = ApplyGammaToLinear(ir, z);
+    }
+    if (AmdGpu::IsRgb(mapping.a)) {
+        w = ApplyGammaToLinear(ir, w);
+    }
+    return ir.CompositeConstruct(x, y, z, w);
 }
 
 /// Applies a number conversion in the read direction.
