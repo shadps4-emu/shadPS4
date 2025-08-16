@@ -1724,6 +1724,13 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QCheckBox" name="backgroundControllerCheckBox">
+                 <property name="text">
+                  <string>Enable Background Controller Input</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

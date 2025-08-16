@@ -58,6 +58,7 @@ static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
 static std::string micDevice = "Default Device";
 static std::string defaultControllerID = "";
+static bool backgroundControllerInput = false;
 
 // Output
 static std::string mainOutputDevice = "Default Device";
@@ -641,6 +642,14 @@ void setDefaultControllerID(std::string id) {
     defaultControllerID = id;
 }
 
+bool getBackgroundControllerInput() {
+    return backgroundControllerInput;
+}
+
+void setBackgroundControllerInput(bool enable) {
+    backgroundControllerInput = enable;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -704,6 +713,8 @@ void load(const std::filesystem::path& path) {
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
         micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
+        backgroundControllerInput =
+            toml::find_or<bool>(input, "backgroundControllerInput", backgroundControllerInput);
     }
 
     /*
@@ -888,6 +899,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
     data["Input"]["micDevice"] = micDevice;
+    data["Input"]["backgroundControllerInput"] = backgroundControllerInput;
     data["General"]["mainOutputDevice"] = mainOutputDevice;
     data["General"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth;
@@ -995,6 +1007,7 @@ void setDefaultValues() {
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
     micDevice = "Default Device";
+    backgroundControllerInput = false;
 
     // Output
     mainOutputDevice = "Default Device";
