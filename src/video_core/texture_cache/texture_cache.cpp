@@ -125,14 +125,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     if (buffer_copies.empty()) {
         return;
     }
-    const auto [download, offset] = download_buffer.Map(image_size);
+    StreamBufferMapping mapping(download_buffer, image_size);
     download_buffer.Commit();
     scheduler.EndRendering();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    tile_manager.TileImage(image.image, buffer_copies, download_buffer.Handle(), offset,
+    tile_manager.TileImage(image.image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            image.info);
-    LOG_WARNING(Render_Vulkan, "Downloading image  {:x} ", image_addr);
-    scheduler.DeferOperation([this, image_addr, download, image_size] {
+    scheduler.DeferOperation([this, image_addr, download = mapping.Data(), image_size] {
         auto* memory = Core::Memory::Instance();
         // Should we download directly to main memory or put contents into the buffer cache?
         memory->TryWriteBacking(std::bit_cast<u8*>(image_addr), download, image_size);
@@ -141,7 +140,6 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
         // contents are uploaded from main memory the next time buffers in this
         // memory region are accessed.
         buffer_cache.InvalidateMemory(image_addr, image_size, false);
-        LOG_WARNING(Render_Vulkan, "Downloaded image  {:x} ", image_addr);
     });
 }
 
