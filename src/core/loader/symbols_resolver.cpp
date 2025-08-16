@@ -32,7 +32,7 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
 }
 
 void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Create,
                          Common::FS::FileType::TextFile};
     for (const auto& symbol : m_symbols) {
         const auto ids = Common::SplitString(symbol.name, '#');
