@@ -581,7 +581,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Impossible de lier une entrée unique plus d'une fois. Inputs en double associés aux boutons suivants :
 
 %1</translation>
     </message>
@@ -599,7 +599,7 @@
     </message>
     <message>
       <source>Active Gamepad</source>
-      <translation type="unfinished">Active Gamepad</translation>
+      <translation>Manette Active</translation>
     </message>
     <message>
       <source>Gamepad ID</source>
