@@ -2178,6 +2178,14 @@
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
       <translation>Advarsel: Disse funksjonene er eksperimentelle og bør ikke tas i bruk med mindre du har fått beskjed om, eller et spill krever det. Spør i shadPS4-Discord-serveren dersom du har spørsmål.</translation>
     </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Bruk kontroller inndata ved mangel på fokus</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Bruk kontroller inndata ved mangel på fokus:\n Tillater shadPS4 å oppdage kontroller inndata når spillvinduet ikke er i fokus. Nyttig for flerskjerm-oppsett.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
