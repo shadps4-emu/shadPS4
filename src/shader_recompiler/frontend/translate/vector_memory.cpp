@@ -202,7 +202,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                              const GcnInst& inst, u32 scalar_width, bool is_signed) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
+    const bool is_ring = mubuf.glc && mubuf.slc && info.l_stage != LogicalStage::Vertex &&
+                         info.l_stage != LogicalStage::Fragment;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
@@ -289,7 +290,10 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                               const GcnInst& inst, u32 scalar_width) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
+    const bool is_ring =
+        mubuf.glc && mubuf.slc && info.l_stage != LogicalStage::Fragment &&
+        info.stage !=
+            Stage::Vertex; // VS passes attributes down with EXPORT, VS HW stage is always present
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
