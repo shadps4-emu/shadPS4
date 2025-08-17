@@ -2180,11 +2180,11 @@
     </message>
     <message>
       <source>Enable Background Controller Input</source>
-      <translation type="unfinished">Enable Background Controller Input</translation>
+      <translation>Включить фоновый ввод контроллера</translation>
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Включить фоновый ввод контроллера:\nРазрешить shadPS4 определять ввод контроллера, когда окно игры не в фокусе.</translation>
     </message>
   </context>
   <context>
