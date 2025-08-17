@@ -2180,6 +2180,14 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
       <translation>⚠️ تحذير: هذه الميزات تجريبية ويُفضّل عدم تفعيلها إلا إذا طُلب منك، أو إذا كانت مطلوبة لتشغيل لُعْبَة معينة.
 إذا كان لديك أي استفسار، يُرجى السؤال في مجتمع Discord الخاص بـمحاكي الظل PS4.</translation>
     </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation type="unfinished">Enable Background Controller Input</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
