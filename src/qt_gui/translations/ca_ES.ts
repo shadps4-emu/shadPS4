@@ -2180,11 +2180,11 @@
     </message>
     <message>
       <source>Enable Background Controller Input</source>
-      <translation type="unfinished">Enable Background Controller Input</translation>
+      <translation>Activa l'entrada del controlador en segon pla</translation>
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Activa l'entrada del controlador en segon pla:\nPermet a shadPS4 per detectar l'entrada del controlador quan la finestra del joc ja no té el focus.</translation>
     </message>
   </context>
   <context>
