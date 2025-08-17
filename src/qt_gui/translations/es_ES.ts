@@ -2178,6 +2178,14 @@
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
       <translation>ADVERTENCIA: Estas funciones son experimentales y no deben activarse a menos que se te haya indicado o que un juego lo requiera específicamente. Si tienes dudas, por favor consulta en el servidor de Discord de shadPS4.</translation>
     </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation type="unfinished">Enable Background Controller Input</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
