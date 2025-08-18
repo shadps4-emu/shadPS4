@@ -38,6 +38,8 @@ public:
     void InstallDirectory();
     void StartGame();
     void PauseGame();
+    void StopGame();
+    void RestartGame();
     bool showLabels;
 
 private Q_SLOTS:
@@ -75,10 +77,6 @@ private:
     void PlayBackgroundMusic();
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     void StartEmulator(std::filesystem::path);
-
-    void StopGame();
-
-    void RestartGame();
 
     bool isIconBlack = false;
     bool isTableList = true;
