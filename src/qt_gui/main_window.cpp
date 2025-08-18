@@ -102,6 +102,7 @@ bool MainWindow::Init() {
         // Reset flag after use
         Config::setAutoRestartGame(false);
         Config::save(config_dir / "config.toml");
+        UpdateToolbarButtons();
     }
 #ifdef ENABLE_UPDATER
     // Check for update
@@ -1272,7 +1273,7 @@ void MainWindow::StopGame() {
 
 void MainWindow::RestartGame() {
     if (!isGameRunning) {
-        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        QMessageBox::information(this, tr("Restart Game"), tr("No game is currently running."));
         return;
     }
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
