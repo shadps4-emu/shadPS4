@@ -45,19 +45,21 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
      * If the stack and guard sizes are default, try to allocate a stack
      * from the default-size stack cache:
      */
+    bool from_cache = false;
     if (stacksize == ThrStackDefault && guardsize == ThrGuardDefault) {
         if (!dstackq.empty()) {
             /* Use the spare stack. */
             Stack* spare_stack = dstackq.top();
             dstackq.pop();
             attr->stackaddr_attr = spare_stack->stackaddr;
+            from_cache = true;
         }
     }
     /*
      * The user specified a non-default stack and/or guard size, so try to
      * allocate a stack from the non-default size stack cache, using the
      * rounded up stack size (stack_size) in the search:
-     */
+     */ 
     else {
         const auto it = std::ranges::find_if(mstackq, [&](Stack* stack) {
             return stack->stacksize == stacksize && stack->guardsize == guardsize;
@@ -65,57 +67,60 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         if (it != mstackq.end()) {
             attr->stackaddr_attr = (*it)->stackaddr;
             mstackq.erase(it);
+            from_cache = true;
         }
     }
 
     /* A cached stack was found.  Release the lock. */
-    if (attr->stackaddr_attr != NULL) {
+    if (from_cache) {
         thread_list_lock.unlock();
-        return 0;
+    } else {
+        /* Allocate a stack from usrstack. */
+        if (last_stack == 0) {
+            static constexpr VAddr UsrStack = 0x7EFFF8000ULL;
+            last_stack = UsrStack - ThrStackInitial - ThrGuardDefault;
+        }
+
+        /* Allocate a new stack. */
+        VAddr stackaddr = last_stack - stacksize - guardsize;
+
+        /*
+        * Even if stack allocation fails, we don't want to try to
+        * use this location again, so unconditionally decrement
+        * last_stack.  Under normal operating conditions, the most
+        * likely reason for an mmap() error is a stack overflow of
+        * the adjacent thread stack.
+        */
+        last_stack -= (stacksize + guardsize);
+
+        /* Release the lock before mmap'ing it. */
+        thread_list_lock.unlock();
+
+            /* Map the stack and guard page together, and split guard
+               page from allocated space: */
+        auto* memory = Core::Memory::Instance();
+        int ret = memory->MapMemory(reinterpret_cast<void**>(&stackaddr), stackaddr,
+                                    stacksize + guardsize, Core::MemoryProt::CpuReadWrite,
+                                    Core::MemoryMapFlags::NoFlags, Core::VMAType::Stack);
+        if (ret != 0) {
+            return -1;
+        }
+        attr->stackaddr_attr = reinterpret_cast<void*>(stackaddr + guardsize);
     }
-
-    /* Allocate a stack from usrstack. */
-    if (last_stack == 0) {
-        static constexpr VAddr UsrStack = 0x7EFFF8000ULL;
-        last_stack = UsrStack - ThrStackInitial - ThrGuardDefault;
-    }
-
-    /* Allocate a new stack. */
-    VAddr stackaddr = last_stack - stacksize - guardsize;
-
-    /*
-     * Even if stack allocation fails, we don't want to try to
-     * use this location again, so unconditionally decrement
-     * last_stack.  Under normal operating conditions, the most
-     * likely reason for an mmap() error is a stack overflow of
-     * the adjacent thread stack.
-     */
-    last_stack -= (stacksize + guardsize);
-
-    /* Release the lock before mmap'ing it. */
-    thread_list_lock.unlock();
-
-    /* Map the stack and guard page together, and split guard
-       page from allocated space: */
-    auto* memory = Core::Memory::Instance();
-    int ret = memory->MapMemory(reinterpret_cast<void**>(&stackaddr), stackaddr,
-                                stacksize + guardsize, Core::MemoryProt::CpuReadWrite,
-                                Core::MemoryMapFlags::NoFlags, Core::VMAType::Stack);
-    ASSERT_MSG(ret == 0, "Unable to map stack memory");
-
-    if (guardsize != 0) {
-        ret = memory->Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
-        ASSERT_MSG(ret == 0, "Unable to protect guard page");
-    }
-
-    /* Control Flow Guard fix */
-    ret = memory->Protect(stackaddr + guardsize, stacksize, Core::MemoryProt::CpuReadWrite);
-    ASSERT_MSG(ret == 0, "Unable to protect stack memory");
-
-    stackaddr += guardsize;
-    attr->stackaddr_attr = (void*)stackaddr;
 
     if (attr->stackaddr_attr != nullptr) {
+        auto* memory = Core::Memory::Instance();
+        VAddr stack_base_addr = reinterpret_cast<VAddr>(attr->stackaddr_attr) - guardsize;
+
+        if (guardsize != 0) {
+            int ret = memory->Protect(stack_base_addr, guardsize, Core::MemoryProt::NoAccess);
+            ASSERT_MSG(ret == 0, "Unable to protect guard page");
+        }
+
+        /* Control Flow Guard fix */
+        int ret = memory->Protect(reinterpret_cast<VAddr>(attr->stackaddr_attr), stacksize, Core::MemoryProt::CpuReadWrite);
+        ASSERT_MSG(ret == 0, "Unable to protect stack memory");
+
         return 0;
     }
     return -1;
