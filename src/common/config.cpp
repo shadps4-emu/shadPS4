@@ -48,6 +48,7 @@ static std::string isSideTrophy = "right";
 static bool compatibilityData = false;
 static bool checkCompatibilityOnStartup = false;
 static bool isConnectedToNetwork = false;
+static bool autoRestartGame = false;
 
 // Input
 static int cursorState = HideCursorState::Idle;
@@ -179,6 +180,14 @@ bool isNeoModeConsole() {
 
 bool isDevKitConsole() {
     return isDevKit;
+}
+
+bool getAutoRestartGame() {
+    return autoRestartGame;
+}
+
+void setAutoRestartGame(bool enable) {
+    autoRestartGame = enable;
 }
 
 bool getIsFullscreen() {
@@ -656,6 +665,7 @@ void load(const std::filesystem::path& path) {
         volumeSlider = toml::find_or<int>(general, "volumeSlider", volumeSlider);
         isNeo = toml::find_or<bool>(general, "isPS4Pro", isNeo);
         isDevKit = toml::find_or<bool>(general, "isDevKit", isDevKit);
+        autoRestartGame = toml::find_or<bool>(general, "autoRestartGame", false);
         isPSNSignedIn = toml::find_or<bool>(general, "isPSNSignedIn", isPSNSignedIn);
         isTrophyPopupDisabled =
             toml::find_or<bool>(general, "isTrophyPopupDisabled", isTrophyPopupDisabled);
@@ -845,6 +855,7 @@ void save(const std::filesystem::path& path) {
     data["General"]["volumeSlider"] = volumeSlider;
     data["General"]["isPS4Pro"] = isNeo;
     data["General"]["isDevKit"] = isDevKit;
+    data["General"]["autoRestartGame"] = autoRestartGame;
     data["General"]["isPSNSignedIn"] = isPSNSignedIn;
     data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
     data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
@@ -959,6 +970,7 @@ void setDefaultValues() {
     compatibilityData = false;
     checkCompatibilityOnStartup = false;
     isConnectedToNetwork = false;
+    autoRestartGame = false;
 
     // Input
     cursorState = HideCursorState::Idle;
