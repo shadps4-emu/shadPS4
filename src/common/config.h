@@ -44,6 +44,8 @@ void setAllowHDR(bool enable);
 bool collectShadersForDebug();
 void setCollectShaderForDebug(bool enable);
 bool showSplash();
+bool getAutoRestartGame();
+void setAutoRestartGame(bool enable);
 void setShowSplash(bool enable);
 std::string sideTrophy();
 void setSideTrophy(std::string side);
