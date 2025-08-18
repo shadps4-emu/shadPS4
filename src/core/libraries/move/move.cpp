@@ -112,6 +112,9 @@ s32 PS4_SYSV_ABI sceMoveClose(s32 handle) {
 
 s32 PS4_SYSV_ABI sceMoveTerm() {
     LOG_DEBUG(Lib_Move, "called");
+    if (!g_library_initialized) {
+        return ORBIS_MOVE_ERROR_NOT_INIT;
+    }
     g_library_initialized = false;
     return ORBIS_OK;
 }
