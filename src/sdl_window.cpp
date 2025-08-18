@@ -22,13 +22,11 @@
 #include "video_core/renderdoc.h"
 
 #ifdef ENABLE_QT_GUI
-#include "qt_gui/sdl_event_wrapper.h"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QProcess>
 #include <QStandardPaths>
-#include <QString>
-#include <QThread>
+#include "qt_gui/sdl_event_wrapper.h"
 #endif
 
 #ifdef __APPLE__
