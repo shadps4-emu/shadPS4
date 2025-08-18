@@ -23,6 +23,12 @@
 
 #ifdef ENABLE_QT_GUI
 #include "qt_gui/sdl_event_wrapper.h"
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QProcess>
+#include <QStandardPaths>
+#include <QString>
+#include <QThread>
 #endif
 
 #ifdef __APPLE__
@@ -432,6 +438,12 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+    case SDL_EVENT_QUIT_RELAUNCH: {
+        is_open = false;
+        SDL_EVENT_QUIT;
+        RelaunchEmulator();
+        break;
+    }
     case SDL_EVENT_TOGGLE_FULLSCREEN: {
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
             SDL_SetWindowFullscreen(window, 0);
@@ -591,6 +603,69 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         // update bindings
         Input::ActivateOutputsFromInputs();
     }
+}
+
+void WindowSDL::RelaunchEmulator() {
+#ifdef Q_OS_WIN
+    QString emulatorPath = QCoreApplication::applicationFilePath();
+    QString emulatorDir = QFileInfo(emulatorPath).absolutePath();
+    QString scriptFileName =
+        QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/relaunch.ps1";
+
+    QString scriptContent =
+        QStringLiteral("Start-Sleep -Seconds 2\n"
+                       "Start-Process -FilePath \"%1\" -WorkingDirectory \"%2\"\n")
+            .arg(emulatorPath, emulatorDir);
+
+    QFile scriptFile(scriptFileName);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        scriptFile.write("\xEF\xBB\xBF");
+        out << scriptContent;
+        scriptFile.close();
+
+        bool started =
+            QProcess::startDetached("powershell.exe", QStringList() << "-ExecutionPolicy"
+                                                                    << "Bypass"
+                                                                    << "-File" << scriptFileName);
+        if (!started) {
+            qWarning() << "Failed to start relaunch PowerShell script";
+        }
+    } else {
+        qWarning() << "Failed to write relaunch PowerShell script";
+    }
+
+#elif defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+    QString emulatorPath = QCoreApplication::applicationFilePath();
+    QString emulatorDir = QFileInfo(emulatorPath).absolutePath();
+    QString scriptFileName = "/tmp/relaunch.sh";
+
+    QString scriptContent = QStringLiteral("#!/bin/bash\n"
+                                           "sleep 2\n"
+                                           "cd '%2'\n"
+                                           "./%1 &\n")
+                                .arg(QFileInfo(emulatorPath).fileName(), emulatorDir);
+
+    QFile scriptFile(scriptFileName);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << scriptContent;
+        scriptFile.close();
+
+        bool permSet = scriptFile.setPermissions(QFileDevice::ExeOwner | QFileDevice::ReadOwner |
+                                                 QFileDevice::WriteOwner);
+        if (!permSet) {
+            qWarning() << "Failed to set execute permissions on relaunch script";
+        }
+
+        bool started = QProcess::startDetached("bash", QStringList() << scriptFileName);
+        if (!started) {
+            qWarning() << "Failed to start relaunch bash script";
+        }
+    } else {
+        qWarning() << "Failed to write relaunch bash script";
+    }
+#endif
 }
 
 void WindowSDL::CheckHotkeys() {
