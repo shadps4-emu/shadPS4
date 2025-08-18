@@ -45,21 +45,19 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
      * If the stack and guard sizes are default, try to allocate a stack
      * from the default-size stack cache:
      */
-    bool from_cache = false;
     if (stacksize == ThrStackDefault && guardsize == ThrGuardDefault) {
         if (!dstackq.empty()) {
             /* Use the spare stack. */
             Stack* spare_stack = dstackq.top();
             dstackq.pop();
             attr->stackaddr_attr = spare_stack->stackaddr;
-            from_cache = true;
         }
     }
     /*
      * The user specified a non-default stack and/or guard size, so try to
      * allocate a stack from the non-default size stack cache, using the
      * rounded up stack size (stack_size) in the search:
-     */ 
+     */
     else {
         const auto it = std::ranges::find_if(mstackq, [&](Stack* stack) {
             return stack->stacksize == stacksize && stack->guardsize == guardsize;
@@ -67,12 +65,11 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         if (it != mstackq.end()) {
             attr->stackaddr_attr = (*it)->stackaddr;
             mstackq.erase(it);
-            from_cache = true;
         }
     }
 
     /* A cached stack was found.  Release the lock. */
-    if (from_cache) {
+    if (attr->stackaddr_attr != NULL) {
         thread_list_lock.unlock();
     } else {
         /* Allocate a stack from usrstack. */
@@ -85,27 +82,26 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         VAddr stackaddr = last_stack - stacksize - guardsize;
 
         /*
-        * Even if stack allocation fails, we don't want to try to
-        * use this location again, so unconditionally decrement
-        * last_stack.  Under normal operating conditions, the most
-        * likely reason for an mmap() error is a stack overflow of
-        * the adjacent thread stack.
-        */
+         * Even if stack allocation fails, we don't want to try to
+         * use this location again, so unconditionally decrement
+         * last_stack.  Under normal operating conditions, the most
+         * likely reason for an mmap() error is a stack overflow of
+         * the adjacent thread stack.
+         */
         last_stack -= (stacksize + guardsize);
 
         /* Release the lock before mmap'ing it. */
         thread_list_lock.unlock();
 
-            /* Map the stack and guard page together, and split guard
-               page from allocated space: */
+        /* Map the stack and guard page together, and split guard
+           page from allocated space: */
         auto* memory = Core::Memory::Instance();
         int ret = memory->MapMemory(reinterpret_cast<void**>(&stackaddr), stackaddr,
                                     stacksize + guardsize, Core::MemoryProt::CpuReadWrite,
                                     Core::MemoryMapFlags::NoFlags, Core::VMAType::Stack);
-        if (ret != 0) {
-            return -1;
-        }
-        attr->stackaddr_attr = reinterpret_cast<void*>(stackaddr + guardsize);
+        ASSERT_MSG(ret == 0, "Unable to map stack memory");
+
+        attr->stackaddr_attr = (void*)(stackaddr + guardsize);
     }
 
     if (attr->stackaddr_attr != nullptr) {
@@ -118,11 +114,13 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
         }
 
         /* Control Flow Guard fix */
-        int ret = memory->Protect(reinterpret_cast<VAddr>(attr->stackaddr_attr), stacksize, Core::MemoryProt::CpuReadWrite);
+        int ret = memory->Protect(reinterpret_cast<VAddr>(attr->stackaddr_attr), stacksize,
+                                  Core::MemoryProt::CpuReadWrite);
         ASSERT_MSG(ret == 0, "Unable to protect stack memory");
 
         return 0;
     }
+
     return -1;
 }
 
