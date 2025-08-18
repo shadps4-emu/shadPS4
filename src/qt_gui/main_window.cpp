@@ -78,11 +78,35 @@ bool MainWindow::Init() {
     this->show();
     // load game list
     LoadGameLists();
+
+    if (Config::getAutoRestartGame()) {
+        int argc = QCoreApplication::arguments().size();
+        if (argc > 1) {
+            QString lastGameArg = QCoreApplication::arguments().at(1);
+            if (!lastGameArg.isEmpty() && std::filesystem::exists(lastGameArg.toStdString())) {
+                StartEmulator(lastGameArg.toStdString());
+            }
+        } else {
+            QList<QString> recents =
+                gui_settings::Var2List(m_gui_settings->GetValue(gui::gen_recentFiles));
+
+            if (!recents.empty()) {
+                std::filesystem::path recent_path = recents[0].toStdString();
+                if (std::filesystem::exists(recent_path)) {
+                    StartEmulator(recent_path.string());
+                }
+            }
+        }
+        const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+
+        // Reset flag after use
+        Config::setAutoRestartGame(false);
+        Config::save(config_dir / "config.toml");
+    }
 #ifdef ENABLE_UPDATER
     // Check for update
     CheckUpdateMain(true);
 #endif
-
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     statusBar.reset(new QStatusBar);
@@ -400,6 +424,9 @@ void MainWindow::CreateConnects() {
 
     connect(ui->playButton, &QPushButton::clicked, this, &MainWindow::StartGame);
     connect(ui->pauseButton, &QPushButton::clicked, this, &MainWindow::PauseGame);
+    connect(ui->restartButton, &QPushButton::clicked, this, &MainWindow::RestartGame);
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::StopGame);
+
     connect(m_game_grid_frame.get(), &QTableWidget::cellDoubleClicked, this,
             &MainWindow::StartGame);
     connect(m_game_list_frame.get(), &QTableWidget::cellDoubleClicked, this,
@@ -1231,4 +1258,29 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     });
     emulator_thread.detach();
 #endif
+}
+
+void MainWindow::StopGame() {
+    if (!isGameRunning) {
+        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        return;
+    }
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT_RELAUNCH;
+    SDL_PushEvent(&quitEvent);
+}
+
+void MainWindow::RestartGame() {
+    if (!isGameRunning) {
+        QMessageBox::information(this, tr("Stop Game"), tr("No game is currently running."));
+        return;
+    }
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+
+    Config::setAutoRestartGame(true);
+    Config::save(config_dir / "config.toml");
+
+    SDL_Event quitEvent;
+    quitEvent.type = SDL_EVENT_QUIT_RELAUNCH;
+    SDL_PushEvent(&quitEvent);
 }
