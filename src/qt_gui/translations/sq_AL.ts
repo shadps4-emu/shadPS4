@@ -1553,7 +1553,7 @@
     </message>
     <message>
       <source>Customize Hotkeys</source>
-      <translation>Personalizo Shkurtoret e Tastierës</translation>
+      <translation>Personalizo Shkurtoret</translation>
     </message>
   </context>
   <context>
@@ -2184,7 +2184,7 @@
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Aktivo Hyrjen e Dorezës në Sfond:\nLejo shadPS4 të zbulojë hyrjet e kontrolluesit edhe kur dritarja e lojës nuk është e përqendruar.</translation>
     </message>
   </context>
   <context>
@@ -2218,71 +2218,71 @@
     <name>hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Personalizo Shkurtoret</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Shkurtoret e Dorezës</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>Shfaq numëruesin e FPS-ve</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>pacaktuar</translation>
     </message>
     <message>
       <source>Stop Emulator</source>
-      <translation type="unfinished">Stop Emulator</translation>
+      <translation>Ndalo Emulatorin</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Vendos/Hiq Ekranin e Plotë</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Vendos/Hiq Pezullimin</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Shkurtoret e Tastierës</translation>
     </message>
     <message>
       <source>Show Fps Counter: F10</source>
-      <translation type="unfinished">Show Fps Counter: F10</translation>
+      <translation>Shfaq numëruesin e Fps-ve: F10</translation>
     </message>
     <message>
       <source>Stop Emulator: n/a</source>
-      <translation type="unfinished">Stop Emulator: n/a</translation>
+      <translation>Ndalo Emulatorin: n/a</translation>
     </message>
     <message>
       <source>Toggle Fullscreen: F11</source>
-      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+      <translation>Vendos/Hiq Ekranin e Plotë: F11</translation>
     </message>
     <message>
       <source>Toggle Pause: F9</source>
-      <translation type="unfinished">Toggle Pause: F9</translation>
+      <translation>Vendos/Hiq Pezullimin: F9</translation>
     </message>
     <message>
       <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation type="unfinished">Tip: Up to three inputs can be assigned for each function</translation>
+      <translation>Këshillë: Deri në tre hyrje mund të caktohen për secilin funksion</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Ruaj</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Zbato</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Anulo</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Shtyp një buton</translation>
     </message>
   </context>
 </TS>
