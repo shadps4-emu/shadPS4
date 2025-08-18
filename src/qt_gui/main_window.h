@@ -76,6 +76,10 @@ private:
     QIcon RecolorIcon(const QIcon& icon, bool isWhite);
     void StartEmulator(std::filesystem::path);
 
+    void StopGame();
+
+    void RestartGame();
+
     bool isIconBlack = false;
     bool isTableList = true;
     bool isGameRunning = false;
