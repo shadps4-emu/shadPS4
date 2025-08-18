@@ -66,7 +66,7 @@ s32 PS4_SYSV_ABI sceMoveReadStateRecent(s32 handle, s64 timestamp, OrbisMoveData
     return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
 }
 
-s32 PS4_SYSV_ABI sceMoveGetExtensionPortInfo(s32 handle, OrbisMoveExtensionPortData* data) {
+s32 PS4_SYSV_ABI sceMoveGetExtensionPortInfo(s32 handle, void* data) {
     LOG_TRACE(Lib_Move, "called");
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
