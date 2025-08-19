@@ -922,15 +922,15 @@
     </message>
     <message>
       <source>Delete...</source>
-      <translation type="unfinished">Delete...</translation>
+      <translation>حذف کریں...</translation>
     </message>
     <message>
       <source>Delete Game</source>
-      <translation type="unfinished">Delete Game</translation>
+      <translation>گیم حذف کریں</translation>
     </message>
     <message>
       <source>Delete Update</source>
-      <translation type="unfinished">Delete Update</translation>
+      <translation>اپ ڈیٹ حذف کریں</translation>
     </message>
     <message>
       <source>Delete DLC</source>
@@ -974,19 +974,19 @@
     </message>
     <message>
       <source>Game</source>
-      <translation type="unfinished">Game</translation>
+      <translation>گیم</translation>
     </message>
     <message>
       <source>This game has no update to delete!</source>
-      <translation type="unfinished">This game has no update to delete!</translation>
+      <translation>اس گیم کے پاس حذف کرنے کے لیے کوئی اپ ڈیٹ موجود نہیں ہے۔</translation>
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>اپ ڈیٹ</translation>
     </message>
     <message>
       <source>This game has no DLC to delete!</source>
-      <translation type="unfinished">This game has no DLC to delete!</translation>
+      <translation>اس گیم کا کوئی DLC حذف کرنے کے لیے موجود نہیں ہے۔</translation>
     </message>
     <message>
       <source>DLC</source>
@@ -1002,23 +1002,23 @@
     </message>
     <message>
       <source>Open Update Folder</source>
-      <translation type="unfinished">Open Update Folder</translation>
+      <translation>اپ ڈیٹ فولڈر کھولیں</translation>
     </message>
     <message>
       <source>Delete Save Data</source>
-      <translation type="unfinished">Delete Save Data</translation>
+      <translation>سیو ڈیٹا حذف کریں</translation>
     </message>
     <message>
       <source>This game has no update folder to open!</source>
-      <translation type="unfinished">This game has no update folder to open!</translation>
+      <translation>اس گیم کا کوئی اپ ڈیٹ فولڈر کھولنے کے لیے موجود نہیں ہے!</translation>
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>اس گیم کے لیے کوئی لاگ فائل نہیں ملی!</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
-      <translation type="unfinished">Failed to convert icon.</translation>
+      <translation>آئیکون تبدیل کرنے میں ناکامی ہوئی۔</translation>
     </message>
     <message>
       <source>This game has no save data to delete!</source>
@@ -1030,11 +1030,11 @@
     </message>
     <message>
       <source>Save Data</source>
-      <translation type="unfinished">Save Data</translation>
+      <translation>سیو ڈیٹا</translation>
     </message>
     <message>
       <source>Trophy</source>
-      <translation type="unfinished">Trophy</translation>
+      <translation>ٹرافی</translation>
     </message>
     <message>
       <source>SFO Viewer for </source>
@@ -1248,7 +1248,7 @@
     </message>
     <message>
       <source>Press a key</source>
-      <translation type="unfinished">Press a key</translation>
+      <translation>کوئی بٹن دبائیں</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
@@ -1854,7 +1854,7 @@
     </message>
     <message>
       <source>Point your mouse at an option to display its description.</source>
-      <translation type="unfinished">Point your mouse at an option to display its description.</translation>
+      <translation>کسی آپشن کی تفصیل ظاہر کرنے کے لیے ماؤس اس پر لے جائیں۔</translation>
     </message>
     <message>
       <source>Console Language:\nSets the language that the PS4 game uses.\nIt&apos;s recommended to set this to a language the game supports, which will vary by region.</source>
@@ -2276,7 +2276,7 @@
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>کوئی ایک بٹن دبائیں</translation>
     </message>
   </context>
 </TS>

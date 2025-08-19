@@ -152,7 +152,6 @@ void CheatsPatches::setupUI() {
     controlLayout->setAlignment(Qt::AlignLeft);
     QComboBox* downloadComboBox = new QComboBox();
 
-    downloadComboBox->addItem("wolf2022", "wolf2022");
     downloadComboBox->addItem("GoldHEN", "GoldHEN");
     downloadComboBox->addItem("shadPS4", "shadPS4");
 
@@ -485,8 +484,6 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
     QString url;
     if (source == "GoldHEN") {
         url = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
-    } else if (source == "wolf2022") {
-        url = "https://wolf2022.ir/trainer/list.json";
     } else if (source == "shadPS4") {
         url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/CHEATS_JSON.txt";
     } else {
@@ -503,70 +500,7 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
             QByteArray jsonData = reply->readAll();
             bool foundFiles = false;
 
-            if (source == "wolf2022") {
-                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                QJsonArray gamesArray = jsonDoc.object().value("games").toArray();
-
-                foreach (const QJsonValue& value, gamesArray) {
-                    QJsonObject gameObject = value.toObject();
-                    QString title = gameObject.value("title").toString();
-                    QString version = gameObject.value("version").toString();
-
-                    if (title == gameSerial &&
-                        (version == gameVersion || version == gameVersion.mid(1))) {
-                        QString fileUrl =
-                            "https://wolf2022.ir/trainer/" + gameObject.value("url").toString();
-
-                        QString localFileName = gameObject.value("url").toString();
-                        localFileName =
-                            localFileName.left(localFileName.lastIndexOf('.')) + "_wolf2022.json";
-
-                        QString localFilePath = dir.filePath(localFileName);
-
-                        if (QFile::exists(localFilePath) && showMessageBox) {
-                            QMessageBox::StandardButton reply;
-                            reply = QMessageBox::question(
-                                this, tr("File Exists"),
-                                tr("File already exists. Do you want to replace it?") + "\n" +
-                                    localFileName,
-                                QMessageBox::Yes | QMessageBox::No);
-                            if (reply == QMessageBox::No) {
-                                continue;
-                            }
-                        }
-                        QNetworkRequest fileRequest(fileUrl);
-                        QNetworkReply* fileReply = manager->get(fileRequest);
-
-                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
-                            if (fileReply->error() == QNetworkReply::NoError) {
-                                QByteArray fileData = fileReply->readAll();
-                                QFile localFile(localFilePath);
-                                if (localFile.open(QIODevice::WriteOnly)) {
-                                    localFile.write(fileData);
-                                    localFile.close();
-                                } else {
-                                    QMessageBox::warning(
-                                        this, tr("Error"),
-                                        QString(tr("Failed to save file:") + "\n%1")
-                                            .arg(localFilePath));
-                                }
-                            } else {
-                                QMessageBox::warning(this, tr("Error"),
-                                                     QString(tr("Failed to download file:") +
-                                                             "%1\n\n" + tr("Error") + ":%2")
-                                                         .arg(fileUrl)
-                                                         .arg(fileReply->errorString()));
-                            }
-                            fileReply->deleteLater();
-                        });
-
-                        foundFiles = true;
-                    }
-                }
-                if (!foundFiles && showMessageBox) {
-                    QMessageBox::warning(this, tr("Cheats Not Found"), CheatsNotFound_MSG);
-                }
-            } else if (source == "GoldHEN" || source == "shadPS4") {
+            if (source == "GoldHEN" || source == "shadPS4") {
                 QString textContent(jsonData);
                 QRegularExpression regex(
                     QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
