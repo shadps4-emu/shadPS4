@@ -1,12 +1,21 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/hmd/hmd.h"
+#include "core/libraries/hmd/hmd_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Hmd {
+
+static bool g_library_initialized = false;
+static bool g_library_opened = false;
+static s32 g_firmware_version = 0;
+static s32 g_internal_handle = 0;
+static Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
 
 s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
@@ -54,12 +63,18 @@ s32 PS4_SYSV_ABI sceHmdDistortionSetOutputMinColor() {
 }
 
 s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    // Stubbed on real hardware.
+    return ORBIS_HMD_ERROR_PARAMETER_INVALID;
 }
 
-s32 PS4_SYSV_ABI sceHmdClose() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle < 1) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
     return ORBIS_OK;
 }
 
@@ -78,13 +93,23 @@ s32 PS4_SYSV_ABI sceHmdGetAssyError() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformation() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (info == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    memset(info, 0, sizeof(OrbisHmdDeviceInformation));
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
+    info->user_id = g_user_id;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
     return ORBIS_OK;
 }
 
@@ -123,13 +148,27 @@ s32 PS4_SYSV_ABI sceHmdGetWideNearDistortionCorrectionCommand() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInitialize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    g_library_initialized = true;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInitialize315() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    g_library_initialized = true;
     return ORBIS_OK;
 }
 
@@ -683,9 +722,29 @@ s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetOutput() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdOpen() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                            s32 index, OrbisHmdOpenParam* param) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (type != 0 || index != 0 || param != nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
+    }
+    if (g_library_opened) {
+        return ORBIS_HMD_ERROR_ALREADY_OPENED;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_60 &&
+        (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
+         user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM)) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
+    }
+
+    // Return positive value representing handle
+    g_library_opened = true;
+    g_internal_handle = 1;
+    g_user_id = user_id;
+    return g_internal_handle;
 }
 
 s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer() {
@@ -885,12 +944,12 @@ s32 PS4_SYSV_ABI Func_9952277839236BA7() {
 }
 
 s32 PS4_SYSV_ABI Func_9A276E739E54EEAF() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI Func_9E501994E289CBE7() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
@@ -910,7 +969,7 @@ s32 PS4_SYSV_ABI Func_A92D7C23AC364993() {
 }
 
 s32 PS4_SYSV_ABI Func_ADCCC25CB876FDBE() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
@@ -940,6 +999,8 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
+
     LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd", 1, 1,
                  sceHmdReprojectionStartMultilayer);
     LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,

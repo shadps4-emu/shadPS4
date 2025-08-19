@@ -4,12 +4,67 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::Hmd {
+
+enum OrbisHmdDeviceStatus : u32 {
+    ORBIS_HMD_DEVICE_STATUS_READY,
+    ORBIS_HMD_DEVICE_STATUS_NOT_READY,
+    ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED,
+    ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT,
+};
+
+struct OrbisHmdInitializeParam {
+    void* reserved0;
+    u8 reserved[8];
+};
+
+struct OrbisHmdOpenParam {
+    u8 reserve[32];
+};
+
+struct OrbisHmdFieldOfView {
+    float tan_out;
+    float tan_in;
+    float tan_top;
+    float tan_bottom;
+};
+
+struct OrbisHmdPanelResolution {
+    u32 width;
+    u32 height;
+};
+
+struct OrbisHmdFlipToDisplayLatency {
+    u16 refresh_rate_90hz;
+    u16 refresh_rate_120hz;
+};
+
+struct OrbisHmdDeviceInfo {
+    OrbisHmdPanelResolution panel_resolution;
+    OrbisHmdFlipToDisplayLatency flip_to_display_latency;
+};
+
+struct OrbisHmdDeviceInformation {
+    OrbisHmdDeviceStatus status;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    u8 reserve0[4];
+    OrbisHmdDeviceInfo device_info;
+    u8 hmu_mount;
+    u8 reserve1[7];
+};
+
+struct OrbisHmdEyeOffset {
+    float offset_x;
+    float offset_y;
+    float offset_z;
+    u8 reserve[20];
+};
 
 s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer();
 s32 PS4_SYSV_ABI sceHmdDistortionGet2dVrCommand();
@@ -21,21 +76,22 @@ s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemorySize();
 s32 PS4_SYSV_ABI sceHmdDistortionInitialize();
 s32 PS4_SYSV_ABI sceHmdDistortionSetOutputMinColor();
 s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0();
-s32 PS4_SYSV_ABI sceHmdClose();
-s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset();
+s32 PS4_SYSV_ABI sceHmdClose(s32 handle);
+s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
+                                      OrbisHmdEyeOffset* right_offset);
 s32 PS4_SYSV_ABI sceHmdGet2dVrCommand();
 s32 PS4_SYSV_ABI sceHmdGetAssyError();
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformation();
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle();
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info);
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info);
 s32 PS4_SYSV_ABI sceHmdGetDistortionCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdGetDistortionParams();
 s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemoryAlign();
 s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemorySize();
-s32 PS4_SYSV_ABI sceHmdGetFieldOfView();
+s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_view);
 s32 PS4_SYSV_ABI sceHmdGetInertialSensorData();
 s32 PS4_SYSV_ABI sceHmdGetWideNearDistortionCorrectionCommand();
-s32 PS4_SYSV_ABI sceHmdInitialize();
-s32 PS4_SYSV_ABI sceHmdInitialize315();
+s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param);
+s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param);
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioClose();
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioOpen();
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioSendData();
@@ -146,7 +202,8 @@ s32 PS4_SYSV_ABI sceHmdInternalSetVRMode();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenGetFadeState();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetFadeAndSwitch();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetOutput();
-s32 PS4_SYSV_ABI sceHmdOpen();
+s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                            s32 index, OrbisHmdOpenParam* param);
 s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer();
 s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventEnd();
 s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventStart();
