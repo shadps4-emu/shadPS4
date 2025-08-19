@@ -247,7 +247,7 @@ s32 PS4_SYSV_ABI sceCameraCloseByHandle(s32 handle);
 s32 PS4_SYSV_ABI sceCameraDeviceOpen();
 s32 PS4_SYSV_ABI sceCameraGetAttribute(s32 handle, OrbisCameraAttribute* attribute);
 s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel channel, u32* enable,
-                                              void* option);
+                                              OrbisCameraAutoExposureGainTarget* option);
 s32 PS4_SYSV_ABI sceCameraGetAutoWhiteBalance(s32 handle, OrbisCameraChannel channel, u32* enable,
                                               void* option);
 s32 PS4_SYSV_ABI sceCameraGetCalibData();
@@ -286,50 +286,53 @@ s32 PS4_SYSV_ABI sceCameraGetWhiteBalance(s32 handle, OrbisCameraChannel channel
 s32 PS4_SYSV_ABI sceCameraInitializeRegistryCalibData();
 s32 PS4_SYSV_ABI sceCameraIsAttached(s32 index);
 s32 PS4_SYSV_ABI sceCameraIsConfigChangeDone();
-s32 PS4_SYSV_ABI sceCameraIsValidFrameData(int handle, OrbisCameraFrameData* pFrameData);
+s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* frame_data);
 s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                                s32 index, OrbisCameraOpenParameter* param);
-s32 PS4_SYSV_ABI sceCameraOpenByModuleId(Libraries::UserService::OrbisUserServiceUserId user_id,
-                                         s32 type, s32 index);
+s32 PS4_SYSV_ABI sceCameraOpenByModuleId();
 s32 PS4_SYSV_ABI sceCameraRemoveAppModuleFocus();
 s32 PS4_SYSV_ABI sceCameraSetAppModuleFocus();
-s32 PS4_SYSV_ABI sceCameraSetAttribute(s32 handle, OrbisCameraAttribute* pAttribute);
+s32 PS4_SYSV_ABI sceCameraSetAttribute(s32 handle, OrbisCameraAttribute* attribute);
 s32 PS4_SYSV_ABI sceCameraSetAttributeInternal();
 s32 PS4_SYSV_ABI sceCameraSetAutoExposureGain(s32 handle, OrbisCameraChannel channel, u32 enable,
-                                              void* pOption);
+                                              OrbisCameraAutoExposureGainTarget* option);
 s32 PS4_SYSV_ABI sceCameraSetAutoWhiteBalance(s32 handle, OrbisCameraChannel channel, u32 enable,
-                                              void* pOption);
+                                              void* option);
 s32 PS4_SYSV_ABI sceCameraSetCalibData();
 s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config);
 s32 PS4_SYSV_ABI sceCameraSetConfigInternal(s32 handle, OrbisCameraConfig* config);
 s32 PS4_SYSV_ABI sceCameraSetContrast(s32 handle, OrbisCameraChannel channel, u32 contrast,
-                                      void* pOption);
-s32 PS4_SYSV_ABI sceCameraSetDebugStop();
+                                      void* option);
+s32 PS4_SYSV_ABI sceCameraSetDebugStop(u32 debug_stop_enable);
 s32 PS4_SYSV_ABI sceCameraSetDefectivePixelCancellation(s32 handle, OrbisCameraChannel channel,
-                                                        u32 enable, void* pOption);
-s32 PS4_SYSV_ABI sceCameraSetDefectivePixelCancellationInternal();
+                                                        u32 enable, void* option);
+s32 PS4_SYSV_ABI sceCameraSetDefectivePixelCancellationInternal(s32 handle,
+                                                                OrbisCameraChannel channel,
+                                                                u32 enable, void* option);
 s32 PS4_SYSV_ABI sceCameraSetExposureGain(s32 handle, OrbisCameraChannel channel,
-                                          OrbisCameraExposureGain* pExposureGain, void* pOption);
+                                          OrbisCameraExposureGain* exposure_gain, void* option);
 s32 PS4_SYSV_ABI sceCameraSetForceActivate();
-s32 PS4_SYSV_ABI sceCameraSetGamma(s32 handle, OrbisCameraChannel channel, OrbisCameraGamma* pGamma,
-                                   void* pOption);
-s32 PS4_SYSV_ABI sceCameraSetHue(s32 handle, OrbisCameraChannel channel, s32 hue, void* pOption);
+s32 PS4_SYSV_ABI sceCameraSetGamma(s32 handle, OrbisCameraChannel channel, OrbisCameraGamma* gamma,
+                                   void* option);
+s32 PS4_SYSV_ABI sceCameraSetHue(s32 handle, OrbisCameraChannel channel, s32 hue, void* option);
 s32 PS4_SYSV_ABI sceCameraSetLensCorrection(s32 handle, OrbisCameraChannel channel, u32 enable,
-                                            void* pOption);
-s32 PS4_SYSV_ABI sceCameraSetLensCorrectionInternal();
+                                            void* option);
+s32 PS4_SYSV_ABI sceCameraSetLensCorrectionInternal(s32 handle, OrbisCameraChannel channel,
+                                                    u32 enable, void* option);
 s32 PS4_SYSV_ABI sceCameraSetProcessFocus();
 s32 PS4_SYSV_ABI sceCameraSetProcessFocusByHandle();
 s32 PS4_SYSV_ABI sceCameraSetRegister();
 s32 PS4_SYSV_ABI sceCameraSetSaturation(s32 handle, OrbisCameraChannel channel, u32 saturation,
-                                        void* pOption);
+                                        void* option);
 s32 PS4_SYSV_ABI sceCameraSetSharpness(s32 handle, OrbisCameraChannel channel, u32 sharpness,
-                                       void* pOption);
+                                       void* option);
 s32 PS4_SYSV_ABI sceCameraSetTrackerMode();
 s32 PS4_SYSV_ABI sceCameraSetUacModeInternal();
-s32 PS4_SYSV_ABI sceCameraSetVideoSync(s32 handle, OrbisCameraVideoSyncParameter* pVideoSync);
-s32 PS4_SYSV_ABI sceCameraSetVideoSyncInternal();
+s32 PS4_SYSV_ABI sceCameraSetVideoSync(s32 handle, OrbisCameraVideoSyncParameter* video_sync);
+s32 PS4_SYSV_ABI sceCameraSetVideoSyncInternal(s32 handle,
+                                               OrbisCameraVideoSyncParameter* video_sync);
 s32 PS4_SYSV_ABI sceCameraSetWhiteBalance(s32 handle, OrbisCameraChannel channel,
-                                          OrbisCameraWhiteBalance* pWhiteBalance, void* pOption);
+                                          OrbisCameraWhiteBalance* white_balance, void* option);
 s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param);
 s32 PS4_SYSV_ABI sceCameraStartByHandle(s32 handle, OrbisCameraStartParameter* param);
 s32 PS4_SYSV_ABI sceCameraStop(s32 handle);
