@@ -12,7 +12,6 @@
 namespace Libraries::Hmd {
 
 static bool g_library_initialized = false;
-static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
 static s32 g_internal_handle = 0;
 static Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
@@ -72,14 +71,41 @@ s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
     if (!g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle < 1) {
+    if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
+
+    g_internal_handle = 0;
+    g_user_id = -1;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
+                                      OrbisHmdEyeOffset* right_offset) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Runs some additional checks that fail due to the lack of a PSVR headset.
+        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (left_offset == nullptr || right_offset == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+
+    // Return default values
+    left_offset->offset_x = 17;
+    left_offset->offset_y = 14;
+    left_offset->offset_z = 14;
+    right_offset->offset_x = 18;
+    right_offset->offset_y = 14;
+    right_offset->offset_z = 14;
+
     return ORBIS_OK;
 }
 
@@ -110,6 +136,24 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
 
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info) {
     LOG_DEBUG(Lib_Hmd, "called");
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Runs some additional checks that fail due to the lack of a PSVR headset.
+        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (info == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    memset(info, 0, sizeof(OrbisHmdDeviceInformation));
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
+    info->user_id = g_user_id;
     return ORBIS_OK;
 }
 
@@ -133,9 +177,22 @@ s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemorySize() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdGetFieldOfView() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_view) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (field_of_view == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Runs some additional checks that fail due to the lack of a PSVR headset.
+        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    // Fails on this for some reason?
+    return ORBIS_HMD_ERROR_HANDLE_INVALID;
 }
 
 s32 PS4_SYSV_ABI sceHmdGetInertialSensorData() {
@@ -731,7 +788,7 @@ s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_
     if (type != 0 || index != 0 || param != nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_INVALID;
     }
-    if (g_library_opened) {
+    if (g_internal_handle != 0) {
         return ORBIS_HMD_ERROR_ALREADY_OPENED;
     }
     if (g_firmware_version >= Common::ElfInfo::FW_60 &&
@@ -741,9 +798,8 @@ s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_
     }
 
     // Return positive value representing handle
-    g_library_opened = true;
-    g_internal_handle = 1;
     g_user_id = user_id;
+    g_internal_handle = 1;
     return g_internal_handle;
 }
 
@@ -899,7 +955,11 @@ s32 PS4_SYSV_ABI sceHmdReprojectionUnsetDisplayBuffers() {
 }
 
 s32 PS4_SYSV_ABI sceHmdTerminate() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    g_library_initialized = false;
     return ORBIS_OK;
 }
 
