@@ -1169,6 +1169,10 @@ F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
 }
 
+F32 IREmitter::FPPow(const F32& x, const F32& y) {
+    return Inst<F32>(Opcode::FPPow, x, y);
+}
+
 F32F64 IREmitter::FPRecip(const F32F64& value) {
     switch (value.Type()) {
     case Type::F32:
