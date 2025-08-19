@@ -13,6 +13,7 @@ namespace Libraries::Camera {
 
 static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
+static s32 g_handles = 0;
 
 s32 PS4_SYSV_ABI sceCameraAccGetData() {
     LOG_ERROR(Lib_Camera, "(STUBBED) called");
@@ -68,7 +69,12 @@ s32 PS4_SYSV_ABI sceCameraClose(s32 handle) {
     if (!g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
-    // TODO: g_library_opened = false when closing the last handle
+
+    // Decrement handles on close.
+    // If no handles remain, then the library itself is considered closed.
+    if (--g_handles == 0) {
+        g_library_opened = false;
+    }
     return ORBIS_OK;
 }
 
@@ -80,7 +86,12 @@ s32 PS4_SYSV_ABI sceCameraCloseByHandle(s32 handle) {
     if (!g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
-    // TODO: g_library_opened = false when closing the last handle
+
+    // Decrement handles on close.
+    // If no handles remain, then the library itself is considered closed.
+    if (--g_handles == 0) {
+        g_library_opened = false;
+    }
     return ORBIS_OK;
 }
 
@@ -515,9 +526,9 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     LOG_WARNING(Lib_Camera, "Cameras are not supported yet");
-    static s32 handle = 1;
+
     g_library_opened = true;
-    return handle++;
+    return ++g_handles;
 }
 
 s32 PS4_SYSV_ABI sceCameraOpenByModuleId() {
