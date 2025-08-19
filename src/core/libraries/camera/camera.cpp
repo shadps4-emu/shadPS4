@@ -845,6 +845,11 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
+    if (g_firmware_version >= Common::ElfInfo::FW_25 &&
+        (param->formatLevel[0] >= 0xf || param->formatLevel[1] >= 0xf ||
+         (param->formatLevel[0] | param->formatLevel[1]) == 0)) {
+        return ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN;
+    }
     if (!g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
