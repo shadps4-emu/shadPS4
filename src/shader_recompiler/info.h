@@ -29,17 +29,6 @@ static constexpr size_t NumBuffers = 40;
 static constexpr size_t NumSamplers = 16;
 static constexpr size_t NumFMasks = 8;
 
-enum class TextureType : u32 {
-    Color1D,
-    ColorArray1D,
-    Color2D,
-    ColorArray2D,
-    Color3D,
-    ColorCube,
-    Buffer,
-};
-constexpr u32 NUM_TEXTURE_TYPES = 7;
-
 enum class BufferType : u32 {
     Guest,
     Flatbuf,
