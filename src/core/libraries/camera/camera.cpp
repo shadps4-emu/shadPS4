@@ -494,7 +494,7 @@ s32 PS4_SYSV_ABI sceCameraInitializeRegistryCalibData() {
 }
 
 s32 PS4_SYSV_ABI sceCameraIsAttached(s32 index) {
-    LOG_DEBUG(Lib_Camera, "called");
+    LOG_INFO(Lib_Camera, "called");
     if (index != 0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
