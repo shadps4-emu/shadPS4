@@ -136,9 +136,8 @@ s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel cha
     }
 
     *enable = 0;
-
     if (option != nullptr) {
-        // TODO: figure out what's actually returned here.
+        option->sizeThis = 0;
         option->target = OrbisCameraAecAgcTarget::ORBIS_CAMERA_ATTRIBUTE_AECAGC_TARGET_DEF;
     }
     return ORBIS_OK;
