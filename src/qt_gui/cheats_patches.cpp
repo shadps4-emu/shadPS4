@@ -643,6 +643,14 @@ void CheatsPatches::populateFileListPatches() {
         }
     }
     QStringListModel* model = new QStringListModel(matchingFiles, this);
+    if (!matchingFiles.isEmpty()) {
+        QModelIndexList matches = model->match(model->index(0, 0), Qt::DisplayRole, "shadPS4", 1,
+                                               Qt::MatchContains | Qt::MatchCaseSensitive);
+        if (!matches.empty()) {
+            QModelIndex shadPS4Index = matches.first();
+            model->moveRow(QModelIndex(), shadPS4Index.row(), QModelIndex(), 0);
+        }
+    }
     patchesListView->setModel(model);
 
     connect(
