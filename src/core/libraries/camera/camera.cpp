@@ -9,33 +9,46 @@
 
 namespace Libraries::Camera {
 
+static bool g_library_opened = false;
+
 s32 PS4_SYSV_ABI sceCameraAccGetData() {
     LOG_ERROR(Lib_Camera, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraAudioClose() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+    LOG_DEBUG(Lib_Camera, "called");
+    // Returns ORBIS_OK while internally failing
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraAudioGetData() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraAudioGetData(void* data) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (data == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    // Returns ORBIS_OK while internally failing
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraAudioGetData2() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraAudioGetData2(void* data) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (data == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    // Returns ORBIS_OK while internally failing
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraAudioOpen() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Camera, "called");
+    // Returns error fatal as a side effect of not having a camera attached.
+    return ORBIS_CAMERA_ERROR_FATAL;
 }
 
 s32 PS4_SYSV_ABI sceCameraAudioReset() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+    LOG_DEBUG(Lib_Camera, "called");
+    // Returns ORBIS_OK while internally failing
     return ORBIS_OK;
 }
 
@@ -45,28 +58,77 @@ s32 PS4_SYSV_ABI sceCameraChangeAppModuleState() {
 }
 
 s32 PS4_SYSV_ABI sceCameraClose(s32 handle) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+    // TODO: g_library_opened = false when closing the last handle
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraCloseByHandle() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraCloseByHandle(s32 handle) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+    // TODO: g_library_opened = false when closing the last handle
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraDeviceOpen() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+    // Stubbed on real hardware
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraGetAttribute(s32 handle, OrbisCameraAttribute* pAttribute) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraGetAttribute(s32 handle, OrbisCameraAttribute* attribute) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || attribute == nullptr || attribute->sizeThis != sizeof(OrbisCameraAttribute) ||
+        attribute->channel >= OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_BOTH ||
+        attribute->channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+
+    auto channel = attribute->channel;
+
+    // Set default attributes
+    memset(attribute, 0, sizeof(OrbisCameraAttribute));
+    attribute->sizeThis = sizeof(OrbisCameraAttribute);
+    attribute->channel = channel;
+    attribute->exposureGain.exposure = 83;
+    attribute->exposureGain.gain = 100;
+    attribute->whiteBalance.gainRed = 768;
+    attribute->whiteBalance.gainBlue = 768;
+    attribute->whiteBalance.gainGreen = 512;
+    attribute->gamma.value = 4;
+    attribute->saturation = 64;
+    attribute->contrast = 32;
+    attribute->sharpness = 1;
+    attribute->hue = 1;
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel channel, u32* pEnable,
-                                              void* pOption) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel channel, u32* enable,
+                                              void* option) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || channel >= OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_BOTH ||
+        channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+
+    *enable = 0;
     return ORBIS_OK;
 }
 
@@ -91,8 +153,33 @@ s32 PS4_SYSV_ABI sceCameraGetCalibrationData() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraGetConfig(s32 handle, OrbisCameraConfig* pConfig) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraGetConfig(s32 handle, OrbisCameraConfig* config) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+
+    // Set default config
+    config->configType = ORBIS_CAMERA_CONFIG_TYPE1;
+    config->sizeThis = 0;
+
+    OrbisCameraConfigExtention default_extension;
+    default_extension.format.formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422;
+    default_extension.format.formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_Y8;
+    default_extension.format.formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_Y8;
+    default_extension.format.formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_Y8;
+    default_extension.resolution = ORBIS_CAMERA_RESOLUTION_1280X800;
+    default_extension.framerate = ORBIS_CAMERA_FRAMERATE_60;
+    default_extension.width = 0;
+    default_extension.height = 0;
+    default_extension.reserved1 = 0;
+
+    memcpy(&config->configExtention[0], &default_extension, sizeof(OrbisCameraConfigExtention));
+    memcpy(&config->configExtention[1], &default_extension, sizeof(OrbisCameraConfigExtention));
+
     return ORBIS_OK;
 }
 
@@ -210,8 +297,12 @@ s32 PS4_SYSV_ABI sceCameraInitializeRegistryCalibData() {
 }
 
 s32 PS4_SYSV_ABI sceCameraIsAttached(s32 index) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Camera, "called");
+    if (index != 0) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    // 0 = disconnected, 1 = connected
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceCameraIsConfigChangeDone() {
@@ -224,15 +315,21 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(int handle, OrbisCameraFrameData* pFr
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
-                               s32 index, OrbisCameraOpenParameter* pParam) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                               s32 index, OrbisCameraOpenParameter* param) {
+    if (user_id != Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || type != 0 ||
+        index != 0) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    LOG_WARNING(Lib_Camera, "Cameras are not supported yet");
+    static s32 handle = 1;
+    g_library_opened = true;
+    return handle++;
 }
 
-s32 PS4_SYSV_ABI sceCameraOpenByModuleId() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceCameraOpenByModuleId(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                         s32 type, s32 index) {
+    return sceCameraOpen(user_id, type, index, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceCameraRemoveAppModuleFocus() {
@@ -272,9 +369,15 @@ s32 PS4_SYSV_ABI sceCameraSetCalibData() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* pConfig) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
+    return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
 }
 
 s32 PS4_SYSV_ABI sceCameraSetConfigInternal() {
@@ -390,23 +493,47 @@ s32 PS4_SYSV_ABI sceCameraSetWhiteBalance(s32 handle, OrbisCameraChannel channel
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* pParam) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraStartByHandle() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraStartByHandle(s32 handle, OrbisCameraStartParameter* param) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraStop(s32 handle) {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraStopByHandle() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceCameraStopByHandle(s32 handle) {
+    LOG_DEBUG(Lib_Camera, "called");
+    if (handle < 1) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    if (!g_library_opened) {
+        return ORBIS_CAMERA_ERROR_NOT_OPEN;
+    }
     return ORBIS_OK;
 }
 
