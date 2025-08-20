@@ -27,8 +27,8 @@ s32 PS4_SYSV_ABI sceHmdDistortionGet2dVrCommand() {
 }
 
 s32 PS4_SYSV_ABI sceHmdDistortionGetCompoundEyeCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    // Stubbed on real hardware.
+    return ORBIS_HMD_ERROR_PARAMETER_INVALID;
 }
 
 s32 PS4_SYSV_ABI sceHmdDistortionGetCorrectionCommand() {
@@ -42,13 +42,11 @@ s32 PS4_SYSV_ABI sceHmdDistortionGetWideNearCorrectionCommand() {
 }
 
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemoryAlign() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x400;
 }
 
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemorySize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return 0x20000;
 }
 
 s32 PS4_SYSV_ABI sceHmdDistortionInitialize() {
@@ -429,8 +427,13 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (status == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    // Internal function fails with error DEVICE_DISCONNECTED
+    *status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
     return ORBIS_OK;
 }
 
@@ -575,8 +578,9 @@ s32 PS4_SYSV_ABI sceHmdInternalMmapGetSensorCalibrationData() {
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalMmapIsConnect() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Hmd, "called");
+    // Returns 0 when device is disconnected.
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalPushVr2dData() {

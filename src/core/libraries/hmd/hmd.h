@@ -132,7 +132,7 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDefaultLedData();
 s32 PS4_SYSV_ABI sceHmdInternalGetDemoMode();
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation();
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle();
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus();
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status);
 s32 PS4_SYSV_ABI sceHmdInternalGetEyeStatus();
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuOpticalParam();
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuPowerStatusForDebug();
