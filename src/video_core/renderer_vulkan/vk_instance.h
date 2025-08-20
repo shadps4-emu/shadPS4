@@ -111,7 +111,7 @@ public:
 
     /// Returns true if VK_KHR_maintenance8 is supported
     bool IsMaintenance8Supported() const {
-        return maintenance_8 && driver_id != vk::DriverId::eMoltenvk;
+        return maintenance_8;
     }
 
     /// Returns true when VK_EXT_custom_border_color is supported
