@@ -614,6 +614,7 @@ void CheatsPatches::populateFileListPatches() {
 
     QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     QStringList matchingFiles;
+    QString shadPS4entry = "";
 
     foreach (const QString& folder, folders) {
         QString folderPath = dir.filePath(folder);
@@ -636,6 +637,9 @@ void CheatsPatches::populateFileListPatches() {
                 if (serials.contains(QJsonValue(m_gameSerial))) {
                     QString fileEntry = fileName + " | " + folder;
                     if (!matchingFiles.contains(fileEntry)) {
+                        if (folder == "shadPS4") {
+                            shadPS4entry = fileEntry;
+                        }
                         matchingFiles << fileEntry;
                     }
                 }
@@ -643,13 +647,11 @@ void CheatsPatches::populateFileListPatches() {
         }
     }
     QStringListModel* model = new QStringListModel(matchingFiles, this);
-    if (!matchingFiles.isEmpty()) {
-        QModelIndexList matches = model->match(model->index(0, 0), Qt::DisplayRole, "shadPS4", 1,
-                                               Qt::MatchContains | Qt::MatchCaseSensitive);
-        if (!matches.empty()) {
-            QModelIndex shadPS4Index = matches.first();
-            model->moveRow(QModelIndex(), shadPS4Index.row(), QModelIndex(), 0);
-        }
+    if (shadPS4entry != "") {
+        QModelIndexList matches = model->match(model->index(0, 0), Qt::DisplayRole, shadPS4entry, 1,
+                                               Qt::MatchExactly | Qt::MatchCaseSensitive);
+        QModelIndex shadPS4Index = matches.first();
+        model->moveRow(QModelIndex(), shadPS4Index.row(), QModelIndex(), 0);
     }
     patchesListView->setModel(model);
 
