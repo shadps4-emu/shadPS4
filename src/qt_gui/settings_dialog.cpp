@@ -11,6 +11,7 @@
 #include <fmt/format.h>
 
 #include "common/config.h"
+#include "common/logging/log.h"
 #include "common/scm_rev.h"
 #include "core/libraries/audio/audioout.h"
 #include "qt_gui/compatibility_info.h"
@@ -26,6 +27,7 @@
 #include "background_music_player.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
+#include "sdl_event_wrapper.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -78,8 +80,9 @@ static std::vector<QString> m_physical_devices;
 
 SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                               QWidget* parent)
-    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)) {
+                               bool game_running, QWidget* parent)
+    : QDialog(parent), ui(new Ui::SettingsDialog), is_game_running(game_running),
+      m_gui_settings(std::move(gui_settings)) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
@@ -149,6 +152,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     }
 
     InitializeEmulatorLanguages();
+    onAudioDeviceChange(true);
     LoadValuesFromConfig();
 
     defaultTextEdit = tr("Point your mouse at an option to display its description.");
@@ -427,6 +431,16 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
     }
+
+    SdlEventWrapper::Wrapper::wrapperActive = true;
+    if (!is_game_running) {
+        SDL_InitSubSystem(SDL_INIT_EVENTS);
+        Polling = QtConcurrent::run(&SettingsDialog::pollSDLevents, this);
+    } else {
+        SdlEventWrapper::Wrapper* DeviceEventWrapper = SdlEventWrapper::Wrapper::GetInstance();
+        QObject::connect(DeviceEventWrapper, &SdlEventWrapper::Wrapper::audioDeviceChanged, this,
+                         &SettingsDialog::onAudioDeviceChange);
+    }
 }
 
 void SettingsDialog::closeEvent(QCloseEvent* event) {
@@ -438,11 +452,23 @@ void SettingsDialog::closeEvent(QCloseEvent* event) {
         ui->BGMVolumeSlider->setValue(bgm_volume_backup);
         BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
     }
+
+    SdlEventWrapper::Wrapper::wrapperActive = false;
+    if (!is_game_running) {
+        SDL_Event quitLoop{};
+        quitLoop.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&quitLoop);
+        Polling.waitForFinished();
+
+        SDL_QuitSubSystem(SDL_INIT_EVENTS);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_Quit();
+    }
+
     QDialog::closeEvent(event);
 }
 
 void SettingsDialog::LoadValuesFromConfig() {
-
     std::filesystem::path userdir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     std::error_code error;
     if (!std::filesystem::exists(userdir / "config.toml", error)) {
@@ -551,6 +577,10 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "General", "compatibilityEnabled", false));
     ui->checkCompatibilityOnStartupCheckBox->setChecked(
         toml::find_or<bool>(data, "General", "checkCompatibilityOnStartup", false));
+    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "mainOutputDevice", "")));
+    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(
+        toml::find_or<std::string>(data, "General", "padSpkOutputDevice", "")));
 
 #ifdef ENABLE_UPDATER
     ui->updateCheckBox->setChecked(m_gui_settings->GetValue(gui::gen_checkForUpdates).toBool());
@@ -854,6 +884,8 @@ void SettingsDialog::UpdateSettings() {
     emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
     m_gui_settings->SetValue(gui::gl_showBackgroundImage,
                              ui->showBackgroundImageCheckBox->isChecked());
+    Config::setMainOutputDevice(ui->GenAudioComboBox->currentText().toStdString());
+    Config::setPadSpkOutputDevice(ui->DsAudioComboBox->currentText().toStdString());
 
     std::vector<Config::GameInstallDir> dirs_with_states;
     for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
@@ -937,4 +969,60 @@ void SettingsDialog::setDefaultValues() {
         m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
     }
     m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
+}
+
+void SettingsDialog::pollSDLevents() {
+    SDL_Event event;
+    while (SdlEventWrapper::Wrapper::wrapperActive) {
+
+        if (!SDL_WaitEvent(&event)) {
+            return;
+        }
+
+        if (event.type == SDL_EVENT_QUIT) {
+            return;
+        }
+
+        if (event.type == SDL_EVENT_AUDIO_DEVICE_ADDED) {
+            onAudioDeviceChange(true);
+        }
+
+        if (event.type == SDL_EVENT_AUDIO_DEVICE_REMOVED) {
+            onAudioDeviceChange(false);
+        }
+    }
+}
+
+void SettingsDialog::onAudioDeviceChange(bool isAdd) {
+    ui->GenAudioComboBox->clear();
+    ui->DsAudioComboBox->clear();
+
+    // prevent device list from refreshing too fast when game not running
+    if (!is_game_running && isAdd == false)
+        QThread::msleep(100);
+
+    int deviceCount;
+    QStringList deviceList;
+    SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
+
+    if (!devices) {
+        LOG_ERROR(Lib_AudioOut, "Unable to retrieve audio device list {}", SDL_GetError());
+        return;
+    }
+
+    for (int i = 0; i < deviceCount; ++i) {
+        const char* name = SDL_GetAudioDeviceName(devices[i]);
+        std::string name_string = std::string(name);
+        deviceList.append(QString::fromStdString(name_string));
+    }
+
+    ui->GenAudioComboBox->addItem(tr("Default Device"), "Default Device");
+    ui->GenAudioComboBox->addItems(deviceList);
+    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(Config::getMainOutputDevice()));
+
+    ui->DsAudioComboBox->addItem(tr("Default Device"), "Default Device");
+    ui->DsAudioComboBox->addItems(deviceList);
+    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(Config::getPadSpkOutputDevice()));
+
+    SDL_free(devices);
 }

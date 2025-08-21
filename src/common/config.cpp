@@ -676,6 +676,10 @@ void load(const std::filesystem::path& path) {
         isConnectedToNetwork =
             toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+        mainOutputDevice =
+            toml::find_or<std::string>(general, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(general, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("Input")) {
@@ -692,13 +696,14 @@ void load(const std::filesystem::path& path) {
         micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
     }
 
+    /*
     if (data.contains("Output")) {
         const toml::value& output = data.at("Output");
 
         mainOutputDevice = toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
             toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
-    }
+    } */
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
@@ -872,8 +877,8 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
     data["Input"]["micDevice"] = micDevice;
-    data["Output"]["mainOutputDevice"] = mainOutputDevice;
-    data["Output"]["padSpkOutputDevice"] = padSpkOutputDevice;
+    data["General"]["mainOutputDevice"] = mainOutputDevice;
+    data["General"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
