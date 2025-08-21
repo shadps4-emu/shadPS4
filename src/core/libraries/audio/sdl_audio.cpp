@@ -62,8 +62,8 @@ public:
         // Otherwise, latency may grow over time unbounded.
         if (const auto queued = SDL_GetAudioStreamQueued(stream); queued >= queue_threshold) {
             LOG_INFO(Lib_AudioOut,
-                        "SDL audio queue backed up ({} queued, {} threshold), clearing.", queued,
-                        queue_threshold);
+                     "SDL audio queue backed up ({} queued, {} threshold), clearing.", queued,
+                     queue_threshold);
             SDL_ClearAudioStream(stream);
             // Recalculate the threshold in case this happened because of a device change.
             CalculateQueueThreshold();
