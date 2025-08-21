@@ -51,28 +51,12 @@ static int p2pSocketTypeToPosixSocketType(int type) {
     return hostSockType;
 }
 
-
 P2PSocket::P2PSocket(int domain, int type, int protocol)
     : PosixSocket(domain, p2pSocketTypeToPosixSocketType(type), protocol) {};
 
-int P2PSocket::Close() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
 int P2PSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+    const auto p2p_addr = ConvertP2PToPosix(addr);
+    return PosixSocket::Bind(&p2p_addr, addrlen);
 }
 
 int P2PSocket::Listen(int backlog) {
@@ -82,31 +66,33 @@ int P2PSocket::Listen(int backlog) {
 
 int P2PSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                           u32 tolen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
+    const auto p2p_to = ConvertP2PToPosix(to);
+    return PosixSocket::SendPacket(msg, len, flags, &p2p_to, tolen);
 }
 
 int P2PSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
+    const auto res = PosixSocket::ReceivePacket(buf, len, flags, from, fromlen);
+    if ((res > 0) && from)
+        *from = ConvertPosixToP2P(from);
+
+    return res;
 }
 
 SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return nullptr;
+    const auto res = PosixSocket::Accept(addr, addrlen);
+    *addr = ConvertPosixToP2P(addr);
+    return res;
 }
 
 int P2PSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+    const auto p2p_addr = ConvertP2PToPosix(addr);
+    return PosixSocket::Connect(&p2p_addr, namelen);
 }
 
 int P2PSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+    const auto res = PosixSocket::GetSocketAddress(name, namelen);
+    *name = ConvertPosixToP2P(name);
+    return res;
 }
 
 int P2PSocket::GetPeerName(OrbisNetSockaddr* addr, u32* namelen) {

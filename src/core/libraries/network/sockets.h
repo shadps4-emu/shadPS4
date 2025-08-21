@@ -104,9 +104,9 @@ struct P2PSocket : public PosixSocket {
     bool IsValid() const override {
         return true;
     }
-    int Close() override;
-    int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
-    int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
+    // int Close() override;
+    // int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
+    // int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
     int Listen(int backlog) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
