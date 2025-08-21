@@ -732,9 +732,8 @@ s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_
     if (g_internal_handle != 0) {
         return ORBIS_HMD_ERROR_ALREADY_OPENED;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_60 &&
-        (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
-         user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM)) {
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
         return ORBIS_HMD_ERROR_PARAMETER_INVALID;
     }
 
@@ -749,8 +748,8 @@ s32 PS4_SYSV_ABI sceHmdTerminate() {
     if (!g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    g_library_initialized = false;
     sceHmdDistortionTerminate();
+    g_library_initialized = false;
     return ORBIS_OK;
 }
 
