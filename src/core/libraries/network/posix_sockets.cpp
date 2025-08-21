@@ -410,6 +410,18 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, sockopt_so_usesignature);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
                                   (char)0); // writes an empty string to the output buffer
+        case ORBIS_NET_SO_ERROR_EX: {
+            socklen_t optlen_temp = *optlen;
+            auto retval = ConvertReturnErrorCode(
+                getsockopt(sock, level, SO_ERROR, (char*)optval, &optlen_temp));
+            *optlen = optlen_temp;
+            if (retval < 0) {
+                s32 r = *Libraries::Kernel::__Error();
+                *Libraries::Kernel::__Error() = 0;
+                return r;
+            }
+            return retval;
+        }
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {
