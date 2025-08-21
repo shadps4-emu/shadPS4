@@ -40,8 +40,8 @@ s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
     if (g_firmware_version >= Common::ElfInfo::FW_45) {
-        // Runs some additional checks that fail due to the lack of a PSVR headset.
-        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
     if (left_offset == nullptr || right_offset == nullptr) {
@@ -90,8 +90,8 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceIn
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
     if (g_firmware_version >= Common::ElfInfo::FW_45) {
-        // Runs some additional checks that fail due to the lack of a PSVR headset.
-        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
     if (info == nullptr) {
@@ -116,12 +116,19 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
     if (g_firmware_version >= Common::ElfInfo::FW_45) {
-        // Runs some additional checks that fail due to the lack of a PSVR headset.
-        // Not sure why it hits this instead of ORBIS_HMD_ERROR_DEVICE_DISCONNECTED though.
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
 
-    // Fails on this for some reason?
+    // These values are a hardcoded return when a headset is connected.
+    // Leaving this here for future developers.
+    // field_of_view->tan_out = 1.20743;
+    // field_of_view->tan_in = 1.181346;
+    // field_of_view->tan_top = 1.262872;
+    // field_of_view->tan_bottom = 1.262872;
+
+    // Fails internally due to some internal library checks that break when hmd is disconnected.
     return ORBIS_HMD_ERROR_HANDLE_INVALID;
 }
 
