@@ -57,7 +57,6 @@ s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0() {
     return ORBIS_HMD_ERROR_PARAMETER_INVALID;
 }
 
-
 s32 PS4_SYSV_ABI sceHmdGetDistortionParams() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -107,4 +106,4 @@ void RegisterDistortion(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("smQw6nT8PcA", "libSceHmdDistortion", 1, "libSceHmd", 1, 1, Func_B26430EA74FC3DC0);
     LIB_FUNCTION("thTykLZ-tZs", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B614F290B67FB59B);
 }
-}
+} // namespace Libraries::Hmd

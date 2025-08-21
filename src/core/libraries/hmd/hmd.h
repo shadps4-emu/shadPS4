@@ -66,26 +66,6 @@ struct OrbisHmdEyeOffset {
     u8 reserve[20];
 };
 
-struct OrbisHmdInternalDeviceInformation {
-    OrbisHmdDeviceStatus status;
-    Libraries::UserService::OrbisUserServiceUserId user_id;
-    u32 unk0;
-    OrbisHmdFieldOfView fov;
-    u32 unk1[4];
-    OrbisHmdPanelResolution panel_resolution;
-    u32 unk2;
-    u8 hmu_mount;
-    u8 unk3[3];
-    u32 unk4;
-};
-
-struct OrbisHmdAssyError {
-    float unk0;
-    float unk1;
-    float unk2;
-    float unk3;
-};
-
 // Reprojection
 s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer();
 s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer();
@@ -138,7 +118,7 @@ s32 PS4_SYSV_ABI Func_B614F290B67FB59B();
 s32 PS4_SYSV_ABI sceHmdClose(s32 handle);
 s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
                                       OrbisHmdEyeOffset* right_offset);
-s32 PS4_SYSV_ABI sceHmdGetAssyError(OrbisHmdAssyError* data);
+s32 PS4_SYSV_ABI sceHmdGetAssyError(void* data);
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info);
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info);
 
@@ -189,8 +169,8 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDebugSocialScreenMode();
 s32 PS4_SYSV_ABI sceHmdInternalGetDebugTextMode();
 s32 PS4_SYSV_ABI sceHmdInternalGetDefaultLedData();
 s32 PS4_SYSV_ABI sceHmdInternalGetDemoMode();
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation(OrbisHmdInternalDeviceInformation* info);
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle(s32 handle, OrbisHmdInternalDeviceInformation* info);
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation();
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle();
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status);
 s32 PS4_SYSV_ABI sceHmdInternalGetEyeStatus();
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuOpticalParam();
