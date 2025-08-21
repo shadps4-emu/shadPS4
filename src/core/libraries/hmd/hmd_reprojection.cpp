@@ -167,6 +167,16 @@ s32 PS4_SYSV_ABI sceHmdReprojectionUnsetDisplayBuffers() {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI Func_A31A0320D80EAD99() {
+    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
+    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
 void RegisterReprojection(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd", 1, 1,
                  sceHmdReprojectionStartMultilayer);
@@ -224,5 +234,7 @@ void RegisterReprojection(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0wnZViigP9o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionUnsetCallback);
     LIB_FUNCTION("iGNNpDDjcwo", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdReprojectionUnsetDisplayBuffers);
+    LIB_FUNCTION("oxoDINgOrZk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31A0320D80EAD99);
+    LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B9A6FA0735EC7E49);
 }
 } // namespace Libraries::Hmd

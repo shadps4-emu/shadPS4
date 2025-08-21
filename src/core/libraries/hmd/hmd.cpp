@@ -851,11 +851,6 @@ s32 PS4_SYSV_ABI Func_9E501994E289CBE7() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Func_A31A0320D80EAD99() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI Func_A31F4DA8B3BD2E12() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -872,11 +867,6 @@ s32 PS4_SYSV_ABI Func_ADCCC25CB876FDBE() {
 }
 
 s32 PS4_SYSV_ABI Func_B16652641FE69F0E() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1075,12 +1065,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mVIneDkja6c", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9952277839236BA7);
     LIB_FUNCTION("miduc55U7q8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9A276E739E54EEAF);
     LIB_FUNCTION("nlAZlOKJy+c", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9E501994E289CBE7);
-    LIB_FUNCTION("oxoDINgOrZk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31A0320D80EAD99);
     LIB_FUNCTION("ox9NqLO9LhI", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31F4DA8B3BD2E12);
     LIB_FUNCTION("qS18I6w2SZM", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A92D7C23AC364993);
     LIB_FUNCTION("rczCXLh2-b4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_ADCCC25CB876FDBE);
     LIB_FUNCTION("sWZSZB-mnw4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B16652641FE69F0E);
-    LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B9A6FA0735EC7E49);
     LIB_FUNCTION("-Bk71lPyry4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FC193BD653F2AF2E);
     LIB_FUNCTION("-y4OUwFf4jE", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FF2E0E53015FE231);
 
