@@ -127,7 +127,7 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
     }
 
     memset(info, 0, sizeof(OrbisHmdDeviceInformation));
-    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
     info->user_id = g_user_id;
     return ORBIS_OK;
 }
@@ -150,7 +150,7 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceIn
     }
 
     memset(info, 0, sizeof(OrbisHmdDeviceInformation));
-    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
     info->user_id = g_user_id;
     return ORBIS_OK;
 }
@@ -433,7 +433,7 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
     // Internal function fails with error DEVICE_DISCONNECTED
-    *status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT;
+    *status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
     return ORBIS_OK;
 }
 
