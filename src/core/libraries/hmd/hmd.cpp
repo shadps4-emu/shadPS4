@@ -419,7 +419,8 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation(OrbisHmdInternalDeviceInform
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle(s32 handle, OrbisHmdInternalDeviceInformation* info) {
+s32 PS4_SYSV_ABI
+sceHmdInternalGetDeviceInformationByHandle(s32 handle, OrbisHmdInternalDeviceInformation* info) {
     LOG_DEBUG(Lib_Hmd, "called");
     if (g_internal_handle != handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -967,7 +968,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalGetHmuPowerStatusForDebug);
     LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetHmuSerialNumber);
-    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetInertialSensorData);
+    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1,
+                 sceHmdInternalGetInertialSensorData);
     LIB_FUNCTION("9exeDpk7JU8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetIPD);
     LIB_FUNCTION("yNtYRsxZ6-A", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetIpdSettingEnableForSystemService);
