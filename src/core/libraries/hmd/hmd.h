@@ -73,8 +73,9 @@ s32 PS4_SYSV_ABI sceHmdDistortionGetCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWideNearCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemoryAlign();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemorySize();
-s32 PS4_SYSV_ABI sceHmdDistortionInitialize();
+s32 PS4_SYSV_ABI sceHmdDistortionInitialize(void* reserved);
 s32 PS4_SYSV_ABI sceHmdDistortionSetOutputMinColor();
+s32 PS4_SYSV_ABI sceHmdDistortionTerminate();
 s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0();
 s32 PS4_SYSV_ABI sceHmdClose(s32 handle);
 s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
@@ -256,5 +257,7 @@ s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49();
 s32 PS4_SYSV_ABI Func_FC193BD653F2AF2E();
 s32 PS4_SYSV_ABI Func_FF2E0E53015FE231();
 
+void RegisterDistortion(Core::Loader::SymbolsResolver* sym);
+void RegisterReprojection(Core::Loader::SymbolsResolver* sym);
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Hmd

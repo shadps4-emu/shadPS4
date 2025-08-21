@@ -604,6 +604,8 @@ set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
 )
 
 set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
+             src/core/libraries/hmd/hmd_reprojection.cpp
+             src/core/libraries/hmd/hmd_distortion.cpp
              src/core/libraries/hmd/hmd.h
 )
 
