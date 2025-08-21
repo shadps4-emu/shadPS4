@@ -166,6 +166,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+        LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
+        LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
     if (!args.empty()) {
         const auto argc = std::min<size_t>(args.size(), 32);

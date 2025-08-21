@@ -1,135 +1,216 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/hmd/hmd.h"
+#include "core/libraries/hmd/hmd_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Hmd {
 
-s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+static bool g_library_initialized = false;
+static s32 g_firmware_version = 0;
+static s32 g_internal_handle = 0;
+static Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
+
+s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    if (param->reserved0 != nullptr) {
+        sceHmdDistortionInitialize(param->reserved0);
+    }
+    g_library_initialized = true;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGet2dVrCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    g_library_initialized = true;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGetCompoundEyeCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                            s32 index, OrbisHmdOpenParam* param) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (type != 0 || index != 0 || param != nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
+    }
+    if (g_internal_handle != 0) {
+        return ORBIS_HMD_ERROR_ALREADY_OPENED;
+    }
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
+    }
+
+    // Return positive value representing handle
+    g_user_id = user_id;
+    g_internal_handle = 1;
+    return g_internal_handle;
+}
+
+s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
+                                      OrbisHmdEyeOffset* right_offset) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (left_offset == nullptr || right_offset == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+
+    // Return default values
+    left_offset->offset_x = -0.0315;
+    left_offset->offset_y = 0;
+    left_offset->offset_z = 0;
+    right_offset->offset_x = 0.0315;
+    right_offset->offset_y = 0;
+    right_offset->offset_z = 0;
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGetCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdGetAssyError(void* data) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (data == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
+}
+
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (info == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    memset(info, 0, sizeof(OrbisHmdDeviceInformation));
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
+    info->user_id = g_user_id;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGetWideNearCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (info == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    memset(info, 0, sizeof(OrbisHmdDeviceInformation));
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
+    info->user_id = g_user_id;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemoryAlign() {
+s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_view) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (field_of_view == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+
+    // These values are a hardcoded return when a headset is connected.
+    // Leaving this here for future developers.
+    // field_of_view->tan_out = 1.20743;
+    // field_of_view->tan_in = 1.181346;
+    // field_of_view->tan_top = 1.262872;
+    // field_of_view->tan_bottom = 1.262872;
+
+    // Fails internally due to some internal library checks that break without a connected headset.
+    return ORBIS_HMD_ERROR_HANDLE_INVALID;
+}
+
+s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
+}
+
+s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    g_internal_handle = 0;
+    g_user_id = -1;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemorySize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdDistortionInitialize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdDistortionSetOutputMinColor() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdClose() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGet2dVrCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetAssyError() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformation() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDistortionCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDistortionParams() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemoryAlign() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemorySize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetFieldOfView() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetInertialSensorData() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdGetWideNearDistortionCorrectionCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdInitialize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdInitialize315() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdTerminate() {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    sceHmdDistortionTerminate();
+    g_library_initialized = false;
     return ORBIS_OK;
 }
 
@@ -333,8 +414,13 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (status == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    // Internal function fails with error DEVICE_DISCONNECTED
+    *status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
     return ORBIS_OK;
 }
 
@@ -479,8 +565,9 @@ s32 PS4_SYSV_ABI sceHmdInternalMmapGetSensorCalibrationData() {
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalMmapIsConnect() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Hmd, "called");
+    // Returns 0 when device is disconnected.
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalPushVr2dData() {
@@ -683,167 +770,6 @@ s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetOutput() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdOpen() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventEnd() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventStart() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfo() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfoMultilayer() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionFinalize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionFinalizeCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionInitialize() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionInitializeCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffAlign() {
-    return 0x100;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffSize() {
-    return 0x100000;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffAlign() {
-    return 0x100;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffSize() {
-    return 0x810;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionSetCallback() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionSetDisplayBuffers() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionSetOutputMinColor() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventEnd() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventStart() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStart() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStart2dVr() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartLiveCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer2() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNear() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNearWithOverlay() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWithOverlay() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStop() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStopCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionStopLiveCapture() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionUnsetCallback() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdReprojectionUnsetDisplayBuffers() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdTerminate() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI Func_202D0D1A687FCD2F() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -864,9 +790,21 @@ s32 PS4_SYSV_ABI Func_63D403167DC08CF0() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF() {
+s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF(s32 handle, void* data, s32 unk) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
 }
 
 s32 PS4_SYSV_ABI Func_791560C32F4F6D68() {
@@ -885,17 +823,12 @@ s32 PS4_SYSV_ABI Func_9952277839236BA7() {
 }
 
 s32 PS4_SYSV_ABI Func_9A276E739E54EEAF() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI Func_9E501994E289CBE7() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_A31A0320D80EAD99() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
@@ -910,21 +843,11 @@ s32 PS4_SYSV_ABI Func_A92D7C23AC364993() {
 }
 
 s32 PS4_SYSV_ABI Func_ADCCC25CB876FDBE() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    // Stubbed on real hardware.
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI Func_B16652641FE69F0E() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_B614F290B67FB59B() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -940,43 +863,15 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartMultilayer);
-    LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGet2dVrCommand);
-    LIB_FUNCTION("ER2ar8yUmbk", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetCompoundEyeCorrectionCommand);
-    LIB_FUNCTION("HT8qWOTOGmo", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetCorrectionCommand);
-    LIB_FUNCTION("Vkkhy8RFIuk", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetWideNearCorrectionCommand);
-    LIB_FUNCTION("1cS7W5J-v3k", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetWorkMemoryAlign);
-    LIB_FUNCTION("36xDKk+Hw7o", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetWorkMemorySize);
-    LIB_FUNCTION("ao8NZ+FRYJE", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionInitialize);
-    LIB_FUNCTION("8A4T5ahi790", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionSetOutputMinColor);
-    LIB_FUNCTION("smQw6nT8PcA", "libSceHmdDistortion", 1, "libSceHmd", 1, 1, Func_B26430EA74FC3DC0);
+    Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
     LIB_FUNCTION("6biw1XHTSqQ", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdClose);
     LIB_FUNCTION("BWY-qKM5hxE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGet2DEyeOffset);
-    LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGet2dVrCommand);
     LIB_FUNCTION("Yx+CuF11D3Q", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetAssyError);
     LIB_FUNCTION("thDt9upZlp8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetDeviceInformation);
     LIB_FUNCTION("1pxQfif1rkE", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdGetDeviceInformationByHandle);
-    LIB_FUNCTION("grCYks4m8Jw", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdGetDistortionCorrectionCommand);
-    LIB_FUNCTION("mP2ZcYmDg-o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetDistortionParams);
-    LIB_FUNCTION("8Ick-e6cDVY", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdGetDistortionWorkMemoryAlign);
-    LIB_FUNCTION("D5JfdpJKvXk", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdGetDistortionWorkMemorySize);
     LIB_FUNCTION("NPQwYFqi0bs", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetFieldOfView);
     LIB_FUNCTION("rU3HK9Q0r8o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetInertialSensorData);
-    LIB_FUNCTION("goi5ASvH-V8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdGetWideNearDistortionCorrectionCommand);
     LIB_FUNCTION("K4KnH0QkT2c", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInitialize);
     LIB_FUNCTION("s-J66ar9g50", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInitialize315);
     LIB_FUNCTION("riPQfAdebHk", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternal3dAudioClose);
@@ -1044,6 +939,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalGetHmuPowerStatusForDebug);
     LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetHmuSerialNumber);
+    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_69383B2B4E3AEABF);
     LIB_FUNCTION("9exeDpk7JU8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetIPD);
     LIB_FUNCTION("yNtYRsxZ6-A", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetIpdSettingEnableForSystemService);
@@ -1140,80 +1036,25 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("-6FjKlMA+Yc", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalSocialScreenSetOutput);
     LIB_FUNCTION("d2g5Ij7EUzo", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdOpen);
-    LIB_FUNCTION("NTIbBpSH9ik", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionAddDisplayBuffer);
-    LIB_FUNCTION("94+Ggm38KCg", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionClearUserEventEnd);
-    LIB_FUNCTION("mdyFbaJj66M", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionClearUserEventStart);
-    LIB_FUNCTION("MdV0akauNow", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionDebugGetLastInfo);
-    LIB_FUNCTION("ymiwVjPB5+k", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionDebugGetLastInfoMultilayer);
-    LIB_FUNCTION("ZrV5YIqD09I", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionFinalize);
-    LIB_FUNCTION("utHD2Ab-Ixo", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionFinalizeCapture);
-    LIB_FUNCTION("OuygGEWkins", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionInitialize);
-    LIB_FUNCTION("BTrQnC6fcAk", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionInitializeCapture);
-    LIB_FUNCTION("TkcANcGM0s8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryGarlicBuffAlign);
-    LIB_FUNCTION("z0KtN1vqF2E", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryGarlicBuffSize);
-    LIB_FUNCTION("IWybWbR-xvA", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryOnionBuffAlign);
-    LIB_FUNCTION("kLUAkN6a1e8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryOnionBuffSize);
-    LIB_FUNCTION("6CRWGc-evO4", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionSetCallback);
-    LIB_FUNCTION("E+dPfjeQLHI", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetDisplayBuffers);
-    LIB_FUNCTION("LjdLRysHU6Y", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetOutputMinColor);
-    LIB_FUNCTION("knyIhlkpLgE", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetUserEventEnd);
-    LIB_FUNCTION("7as0CjXW1B8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetUserEventStart);
-    LIB_FUNCTION("dntZTJ7meIU", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStart);
-    LIB_FUNCTION("q3e8+nEguyE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStart2dVr);
-    LIB_FUNCTION("RrvyU1pjb9A", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStartCapture);
-    LIB_FUNCTION("XZ5QUzb4ae0", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartLiveCapture);
-    LIB_FUNCTION("8gH1aLgty5I", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartMultilayer);
-    LIB_FUNCTION("gqAG7JYeE7A", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartMultilayer2);
-    LIB_FUNCTION("3JyuejcNhC0", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStartWideNear);
-    LIB_FUNCTION("mKa8scOc4-k", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartWideNearWithOverlay);
-    LIB_FUNCTION("kcldQ7zLYQQ", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartWithOverlay);
-    LIB_FUNCTION("vzMEkwBQciM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStop);
-    LIB_FUNCTION("F7Sndm5teWw", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStopCapture);
-    LIB_FUNCTION("PAa6cUL5bR4", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStopLiveCapture);
-    LIB_FUNCTION("0wnZViigP9o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionUnsetCallback);
-    LIB_FUNCTION("iGNNpDDjcwo", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionUnsetDisplayBuffers);
     LIB_FUNCTION("z-RMILqP6tE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdTerminate);
     LIB_FUNCTION("IC0NGmh-zS8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_202D0D1A687FCD2F);
     LIB_FUNCTION("NY2-gYo9ihI", "libSceHmd", 1, "libSceHmd", 1, 1, Func_358DBF818A3D8A12);
     LIB_FUNCTION("XMutp2-o9A4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_5CCBADA76FE8F40E);
     LIB_FUNCTION("Y9QDFn3AjPA", "libSceHmd", 1, "libSceHmd", 1, 1, Func_63D403167DC08CF0);
-    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_69383B2B4E3AEABF);
     LIB_FUNCTION("eRVgwy9PbWg", "libSceHmd", 1, "libSceHmd", 1, 1, Func_791560C32F4F6D68);
     LIB_FUNCTION("fJVZYeqFttM", "libSceHmd", 1, "libSceHmd", 1, 1, Func_7C955961EA85B6D3);
     LIB_FUNCTION("mVIneDkja6c", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9952277839236BA7);
     LIB_FUNCTION("miduc55U7q8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9A276E739E54EEAF);
     LIB_FUNCTION("nlAZlOKJy+c", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9E501994E289CBE7);
-    LIB_FUNCTION("oxoDINgOrZk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31A0320D80EAD99);
     LIB_FUNCTION("ox9NqLO9LhI", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31F4DA8B3BD2E12);
     LIB_FUNCTION("qS18I6w2SZM", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A92D7C23AC364993);
     LIB_FUNCTION("rczCXLh2-b4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_ADCCC25CB876FDBE);
     LIB_FUNCTION("sWZSZB-mnw4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B16652641FE69F0E);
-    LIB_FUNCTION("thTykLZ-tZs", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B614F290B67FB59B);
-    LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B9A6FA0735EC7E49);
     LIB_FUNCTION("-Bk71lPyry4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FC193BD653F2AF2E);
     LIB_FUNCTION("-y4OUwFf4jE", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FF2E0E53015FE231);
+
+    RegisterDistortion(sym);
+    RegisterReprojection(sym);
 };
 
 } // namespace Libraries::Hmd
