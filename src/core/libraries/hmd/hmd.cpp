@@ -16,18 +16,54 @@ static s32 g_firmware_version = 0;
 static s32 g_internal_handle = 0;
 static Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
 
-s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
+s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    if (param->reserved0 != nullptr) {
+        sceHmdDistortionInitialize(param->reserved0);
+    }
+    g_library_initialized = true;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
+    if (g_library_initialized) {
+        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+    }
+    if (param == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    g_library_initialized = true;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                            s32 index, OrbisHmdOpenParam* param) {
     LOG_DEBUG(Lib_Hmd, "called");
     if (!g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle != g_internal_handle) {
-        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    if (type != 0 || index != 0 || param != nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
+    }
+    if (g_internal_handle != 0) {
+        return ORBIS_HMD_ERROR_ALREADY_OPENED;
+    }
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
     }
 
-    g_internal_handle = 0;
-    g_user_id = -1;
-    return ORBIS_OK;
+    // Return positive value representing handle
+    g_user_id = user_id;
+    g_internal_handle = 1;
+    return g_internal_handle;
 }
 
 s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
@@ -122,6 +158,9 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
 
     // These values are a hardcoded return when a headset is connected.
     // Leaving this here for future developers.
@@ -130,7 +169,7 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
     // field_of_view->tan_top = 1.262872;
     // field_of_view->tan_bottom = 1.262872;
 
-    // Fails internally due to some internal library checks that break when hmd is disconnected.
+    // Fails internally due to some internal library checks that break without a connected headset.
     return ORBIS_HMD_ERROR_HANDLE_INVALID;
 }
 
@@ -139,30 +178,27 @@ s32 PS4_SYSV_ABI sceHmdGetInertialSensorData() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
-    if (g_library_initialized) {
-        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (param == nullptr) {
-        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
-    if (param->reserved0 != nullptr) {
-        sceHmdDistortionInitialize(param->reserved0);
-    }
-    g_library_initialized = true;
+
+    g_internal_handle = 0;
+    g_user_id = -1;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
-    if (g_library_initialized) {
-        return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
+s32 PS4_SYSV_ABI sceHmdTerminate() {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (param == nullptr) {
-        return ORBIS_HMD_ERROR_PARAMETER_NULL;
-    }
-    LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
-    g_library_initialized = true;
+    sceHmdDistortionTerminate();
+    g_library_initialized = false;
     return ORBIS_OK;
 }
 
@@ -737,39 +773,6 @@ s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetFadeAndSwitch() {
 
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetOutput() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
-                            s32 index, OrbisHmdOpenParam* param) {
-    LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
-        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
-    }
-    if (type != 0 || index != 0 || param != nullptr) {
-        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
-    }
-    if (g_internal_handle != 0) {
-        return ORBIS_HMD_ERROR_ALREADY_OPENED;
-    }
-    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
-        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
-        return ORBIS_HMD_ERROR_PARAMETER_INVALID;
-    }
-
-    // Return positive value representing handle
-    g_user_id = user_id;
-    g_internal_handle = 1;
-    return g_internal_handle;
-}
-
-s32 PS4_SYSV_ABI sceHmdTerminate() {
-    LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
-        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
-    }
-    sceHmdDistortionTerminate();
-    g_library_initialized = false;
     return ORBIS_OK;
 }
 
