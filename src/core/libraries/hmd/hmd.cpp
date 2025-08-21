@@ -59,10 +59,6 @@ s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdGet2dVrCommand() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
 
 s32 PS4_SYSV_ABI sceHmdGetAssyError() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
@@ -846,11 +842,6 @@ s32 PS4_SYSV_ABI Func_B16652641FE69F0E() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Func_B614F290B67FB59B() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -870,7 +861,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
     LIB_FUNCTION("6biw1XHTSqQ", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdClose);
     LIB_FUNCTION("BWY-qKM5hxE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGet2DEyeOffset);
-    LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGet2dVrCommand);
     LIB_FUNCTION("Yx+CuF11D3Q", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetAssyError);
     LIB_FUNCTION("thDt9upZlp8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetDeviceInformation);
     LIB_FUNCTION("1pxQfif1rkE", "libSceHmd", 1, "libSceHmd", 1, 1,
@@ -1056,7 +1046,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("qS18I6w2SZM", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A92D7C23AC364993);
     LIB_FUNCTION("rczCXLh2-b4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_ADCCC25CB876FDBE);
     LIB_FUNCTION("sWZSZB-mnw4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B16652641FE69F0E);
-    LIB_FUNCTION("thTykLZ-tZs", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B614F290B67FB59B);
     LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B9A6FA0735EC7E49);
     LIB_FUNCTION("-Bk71lPyry4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FC193BD653F2AF2E);
     LIB_FUNCTION("-y4OUwFf4jE", "libSceHmd", 1, "libSceHmd", 1, 1, Func_FF2E0E53015FE231);
