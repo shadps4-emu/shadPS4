@@ -59,6 +59,19 @@ struct OrbisHmdDeviceInformation {
     u8 reserve1[7];
 };
 
+struct OrbisHmdInternalDeviceInformation {
+    OrbisHmdDeviceStatus status;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    u32 unk0;
+    OrbisHmdFieldOfView fov;
+    u32 unk1[4];
+    OrbisHmdPanelResolution panel_resolution;
+    u32 unk2;
+    u8 hmu_mount;
+    u8 unk3[3];
+    u32 unk4;
+};
+
 struct OrbisHmdEyeOffset {
     float offset_x;
     float offset_y;

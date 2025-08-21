@@ -354,14 +354,32 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDemoMode() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation(OrbisHmdInternalDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (info == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    memset(info, 0, sizeof(OrbisHmdInternalDeviceInformation));
+    // Internal call returns ORBIS_HMD_ERROR_DEVICE_DISCONNECTED
+    info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
+    info->user_id = -1;
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle(s32 handle, OrbisHmdInternalDeviceInformation* info) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (g_internal_handle != handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    return sceHmdInternalGetDeviceInformation(info);
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status) {
