@@ -173,9 +173,21 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
     return ORBIS_HMD_ERROR_HANDLE_INVALID;
 }
 
-s32 PS4_SYSV_ABI sceHmdGetInertialSensorData() {
+s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
 }
 
 s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
@@ -448,6 +460,23 @@ s32 PS4_SYSV_ABI sceHmdInternalGetHmuPowerStatusForDebug() {
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuSerialNumber() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceHmdInternalGetInertialSensorData(s32 handle, void* data, s32 unk) {
+    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
 }
 
 s32 PS4_SYSV_ABI sceHmdInternalGetIPD() {
@@ -796,11 +825,6 @@ s32 PS4_SYSV_ABI Func_63D403167DC08CF0() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI Func_791560C32F4F6D68() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -943,6 +967,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalGetHmuPowerStatusForDebug);
     LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetHmuSerialNumber);
+    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetInertialSensorData);
     LIB_FUNCTION("9exeDpk7JU8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetIPD);
     LIB_FUNCTION("yNtYRsxZ6-A", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetIpdSettingEnableForSystemService);
@@ -1044,7 +1069,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NY2-gYo9ihI", "libSceHmd", 1, "libSceHmd", 1, 1, Func_358DBF818A3D8A12);
     LIB_FUNCTION("XMutp2-o9A4", "libSceHmd", 1, "libSceHmd", 1, 1, Func_5CCBADA76FE8F40E);
     LIB_FUNCTION("Y9QDFn3AjPA", "libSceHmd", 1, "libSceHmd", 1, 1, Func_63D403167DC08CF0);
-    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_69383B2B4E3AEABF);
     LIB_FUNCTION("eRVgwy9PbWg", "libSceHmd", 1, "libSceHmd", 1, 1, Func_791560C32F4F6D68);
     LIB_FUNCTION("fJVZYeqFttM", "libSceHmd", 1, "libSceHmd", 1, 1, Func_7C955961EA85B6D3);
     LIB_FUNCTION("mVIneDkja6c", "libSceHmd", 1, "libSceHmd", 1, 1, Func_9952277839236BA7);
