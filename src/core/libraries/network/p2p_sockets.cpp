@@ -9,6 +9,52 @@
 
 namespace Libraries::Net {
 
+static OrbisNetSockaddr ConvertP2PToPosix(const OrbisNetSockaddr* addr) {
+    if (!addr) {
+        return OrbisNetSockaddr{};
+    }
+    OrbisNetSockaddrIn result = *reinterpret_cast<const OrbisNetSockaddrIn*>(addr);
+    // Convert ports from network to host order
+    const uint16_t port = ntohs(result.sin_port);
+    const uint16_t vport = ntohs(result.sin_vport);
+
+    // Combine the two ports in host order, then convert back to network order
+    result.sin_port = htons(port + vport);
+    result.sin_vport = 0; // Clear virtual port since it's not used in Posix
+    return std::bit_cast<OrbisNetSockaddr>(result);
+}
+
+static OrbisNetSockaddr ConvertPosixToP2P(const OrbisNetSockaddr* addr) {
+    if (!addr) {
+        return OrbisNetSockaddr{};
+    }
+    OrbisNetSockaddrIn result = *reinterpret_cast<const OrbisNetSockaddrIn*>(addr);
+    // Attempt to recover original port and virtual port if port was previously combined
+    const uint16_t port = ntohs(result.sin_port);
+    result.sin_port = htons(port);
+    result.sin_vport = 0;
+    return std::bit_cast<OrbisNetSockaddr>(result);
+}
+
+static int p2pSocketTypeToPosixSocketType(int type) {
+    int hostSockType;
+    switch (type) {
+    case ORBIS_NET_SOCK_DGRAM_P2P:
+        hostSockType = SOCK_DGRAM;
+        break;
+    case ORBIS_NET_SOCK_STREAM_P2P:
+        hostSockType = SOCK_STREAM;
+        break;
+    default:
+        hostSockType = -1;
+    }
+    return hostSockType;
+}
+
+
+P2PSocket::P2PSocket(int domain, int type, int protocol)
+    : PosixSocket(domain, p2pSocketTypeToPosixSocketType(type), protocol) {};
+
 int P2PSocket::Close() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return 0;
