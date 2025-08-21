@@ -771,7 +771,7 @@ void LoadHotkeyInputs() {
 
         if (line.contains("controllerFullscreen")) {
             controllerFullscreenString = line.substr(equal_pos + 2);
-        } else if (line.contains("controllerQuit")) {
+        } else if (line.contains("controllerStop")) {
             controllerQuitString = line.substr(equal_pos + 2);
         } else if (line.contains("controllerFps")) {
             controllerFpsString = line.substr(equal_pos + 2);
