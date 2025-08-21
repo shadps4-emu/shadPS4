@@ -463,23 +463,6 @@ s32 PS4_SYSV_ABI sceHmdInternalGetHmuSerialNumber() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHmdInternalGetInertialSensorData(s32 handle, void* data, s32 unk) {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    if (!g_library_initialized) {
-        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
-    }
-    if (handle != g_internal_handle) {
-        return ORBIS_HMD_ERROR_HANDLE_INVALID;
-    }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
-        // Due to some faulty in-library checks, a missing headset results in this error
-        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
-        return ORBIS_HMD_ERROR_HANDLE_INVALID;
-    }
-
-    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
-}
-
 s32 PS4_SYSV_ABI sceHmdInternalGetIPD() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -826,6 +809,23 @@ s32 PS4_SYSV_ABI Func_63D403167DC08CF0() {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF(s32 handle, void* data, s32 unk) {
+    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
+    if (handle != g_internal_handle) {
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+        // Due to some faulty in-library checks, a missing headset results in this error
+        // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
+        return ORBIS_HMD_ERROR_HANDLE_INVALID;
+    }
+
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
+}
+
 s32 PS4_SYSV_ABI Func_791560C32F4F6D68() {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
     return ORBIS_OK;
@@ -968,8 +968,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceHmdInternalGetHmuPowerStatusForDebug);
     LIB_FUNCTION("UhFPniZvm8U", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetHmuSerialNumber);
-    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdInternalGetInertialSensorData);
+    LIB_FUNCTION("aTg7K0466r8", "libSceHmd", 1, "libSceHmd", 1, 1, Func_69383B2B4E3AEABF);
     LIB_FUNCTION("9exeDpk7JU8", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdInternalGetIPD);
     LIB_FUNCTION("yNtYRsxZ6-A", "libSceHmd", 1, "libSceHmd", 1, 1,
                  sceHmdInternalGetIpdSettingEnableForSystemService);
