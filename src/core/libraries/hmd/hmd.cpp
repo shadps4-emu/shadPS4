@@ -138,6 +138,9 @@ s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
     LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
+    if (param->reserved0 != nullptr) {
+        sceHmdDistortionInitialize(param->reserved0);
+    }
     g_library_initialized = true;
     return ORBIS_OK;
 }
@@ -150,9 +153,6 @@ s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
     LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
-    if (param->reserved0 != nullptr) {
-        sceHmdDistortionInitialize(param->reserved0);
-    }
     g_library_initialized = true;
     return ORBIS_OK;
 }
