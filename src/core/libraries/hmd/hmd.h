@@ -79,6 +79,11 @@ struct OrbisHmdInternalDeviceInformation {
     u32 unk4;
 };
 
+struct OrbisHmdAssyError {
+    float unk0;
+    float unk1;
+    float unk2;
+    float unk3;
 };
 
 // Reprojection
@@ -133,7 +138,7 @@ s32 PS4_SYSV_ABI Func_B614F290B67FB59B();
 s32 PS4_SYSV_ABI sceHmdClose(s32 handle);
 s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
                                       OrbisHmdEyeOffset* right_offset);
-s32 PS4_SYSV_ABI sceHmdGetAssyError();
+s32 PS4_SYSV_ABI sceHmdGetAssyError(OrbisHmdAssyError* data);
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info);
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info);
 

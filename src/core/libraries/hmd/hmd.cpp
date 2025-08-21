@@ -59,10 +59,16 @@ s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceHmdGetAssyError(OrbisHmdAssyError* data) {
+    LOG_DEBUG(Lib_Hmd, "called");
+    if (data == nullptr) {
+        return ORBIS_HMD_ERROR_PARAMETER_NULL;
+    }
+    if (!g_library_initialized) {
+        return ORBIS_HMD_ERROR_NOT_INITIALIZED;
+    }
 
-s32 PS4_SYSV_ABI sceHmdGetAssyError() {
-    LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_HMD_ERROR_DEVICE_DISCONNECTED;
 }
 
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
