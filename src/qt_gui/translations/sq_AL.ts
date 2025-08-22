@@ -1991,10 +1991,6 @@
       <translation>Mblidh Shader-at:\nDuhet ta aktivizosh këtë për të redaktuar shader-at me menynë e korrigjimit (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnoza e rënies:\nKrijon një skedar .yaml me informacion rreth gjendjes së Vulkan-it në momentin e rënies.\nE dobishme për zgjidhjen e gabimeve &apos;Device lost&apos;. Nëse e ke aktivizuar këtë, duhet të aktivizosh Shënjuesit e korrigjimit të host-it DHE të guest-it.\nNuk punon me GPU-t Intel.\nDuhet të kesh aktivizuar Shtresat e Vlefshmërisë Vulkan dhe Vulkan SDK që kjo të punojë.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
       <translation>Aktivo Rikthimet e Leximit (Readbacks):\nAktivizo rikthimet dhe rishkrimet e kujtesës së GPU-së.\nKjo është e domosdoshme për funksionimin e duhur në disa lojëra.\nMund të shkaktojë probleme qëndrueshmërie dhe/ose performance.</translation>
     </message>
@@ -2185,6 +2181,10 @@
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
       <translation>Aktivo Hyrjen e Dorezës në Sfond:\nLejo shadPS4 të zbulojë hyrjet e kontrolluesit edhe kur dritarja e lojës nuk është e përqendruar.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
   </context>
   <context>
