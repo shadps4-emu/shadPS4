@@ -43,6 +43,9 @@ int Open(const fs::path path, std::error_code& ec, int flags, int mode) noexcept
 }
 
 bool IsOpen(const int fd) noexcept {
+    if (fd < 3)
+        return false;
+        
     int fcntl_ret = fcntl(fd, F_GETFD);
     // EBADF = fd not opened
     return fcntl_ret != -1 || errno != EBADF;

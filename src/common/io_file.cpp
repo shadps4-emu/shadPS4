@@ -41,8 +41,6 @@ int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool t
 }
 
 int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
-    Close();
-
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
