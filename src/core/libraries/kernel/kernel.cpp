@@ -107,6 +107,9 @@ void SetPosixErrno(s32 e) {
     case ENOENT:
         g_posix_errno = POSIX_ENOENT;
         break;
+    case EBADF:
+        g_posix_errno = POSIX_EBADF;
+        break;
     case EDEADLK:
         g_posix_errno = POSIX_EDEADLK;
         break;

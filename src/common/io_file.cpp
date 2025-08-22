@@ -44,6 +44,7 @@ int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
+    file_descriptor = -1;
 
     std::error_code ec{};
     if (int fd = NativeFS::Open(path, ec, file_access_mode, file_access_permissions); fd != -1) {
@@ -68,7 +69,7 @@ void IOFile::Close() {
                   PathToUTF8String(file_path), ec.message());
     }
 
-    file_descriptor = 0;
+    file_descriptor = -1;
 }
 
 void IOFile::Unlink() {

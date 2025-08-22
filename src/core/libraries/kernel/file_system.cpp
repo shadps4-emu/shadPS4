@@ -447,6 +447,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
+    LOG_ERROR(Debug, "XDXDXD {}\t{}", fd, file->f.GetFileMapping());
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -464,7 +465,10 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         // Socket functions handle errnos internally.
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
-    return ReadFile(file->f, buf, nbytes);
+
+    size_t readfile_ret = ReadFile(file->f, buf, nbytes);
+    SetPosixErrno(errno);
+    return readfile_ret;
 }
 
 s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, size_t nbytes) {

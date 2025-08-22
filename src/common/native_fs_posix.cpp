@@ -45,7 +45,7 @@ int Open(const fs::path path, std::error_code& ec, int flags, int mode) noexcept
 bool IsOpen(const int fd) noexcept {
     if (fd < 3)
         return false;
-        
+
     int fcntl_ret = fcntl(fd, F_GETFD);
     // EBADF = fd not opened
     return fcntl_ret != -1 || errno != EBADF;
@@ -178,8 +178,8 @@ size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexc
     ec.clear();
     errno = 0;
 
-    const size_t bytes_written = write(__fd, __buf, __n);
-    if (errno != 0)
+    const s64 bytes_written = write(__fd, __buf, __n);
+    if (-1 == bytes_written)
         ec = std::error_code{errno, std::generic_category()};
 
     return bytes_written;
@@ -189,8 +189,8 @@ size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept {
     ec.clear();
     errno = 0;
 
-    const size_t bytes_read = read(__fd, __buf, __n);
-    if (errno != 0)
+    const s64 bytes_read = read(__fd, __buf, __n);
+    if (-1 == bytes_read)
         ec = std::error_code{errno, std::generic_category()};
 
     return bytes_read;

@@ -240,9 +240,9 @@ private:
     int file_access_permissions = 0;
 
 #ifdef _WIN32
-    HANDLE file_descriptor = 0;
+    HANDLE file_descriptor = -1;
 #else
-    int file_descriptor = 0;
+    int file_descriptor = -1;
 #endif
     uintptr_t file_mapping = 0;
 };
