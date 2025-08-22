@@ -181,7 +181,7 @@ struct PsColorBuffer {
     u32 pad : 20;
     AmdGpu::CompMapping swizzle;
 
-    auto operator<=>(const PsColorBuffer&) const noexcept = default;
+    bool operator==(const PsColorBuffer& other) const noexcept = default;
 };
 
 struct FragmentRuntimeInfo {
@@ -191,11 +191,11 @@ struct FragmentRuntimeInfo {
         bool is_flat;
         u8 default_value;
 
-        [[nodiscard]] bool IsDefault() const {
+        bool IsDefault() const {
             return is_default && !is_flat;
         }
 
-        auto operator<=>(const PsInput&) const noexcept = default;
+        bool operator==(const PsInput&) const noexcept = default;
     };
     AmdGpu::Liverpool::PsInput en_flags;
     AmdGpu::Liverpool::PsInput addr_flags;
