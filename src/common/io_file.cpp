@@ -46,15 +46,17 @@ int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
-    file_descriptor = NativeFS::Open(path, file_access_mode, file_access_permissions);
 
-    if (!IsOpen()) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
-                  PathToUTF8String(file_path), ec.message());
+    std::error_code ec{};
+    if (int fd = NativeFS::Open(path, ec, file_access_mode, file_access_permissions); fd != -1) {
+        file_descriptor = fd;
+        return 0;
     }
 
-    return errno;
+    LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+              PathToUTF8String(file_path), ec.message());
+
+    return ec.value();
 }
 
 void IOFile::Close() {
@@ -62,8 +64,8 @@ void IOFile::Close() {
         return;
     }
 
-    if (!NativeFS::Close(file_descriptor)) {
-        const auto ec = std::error_code{errno, std::generic_category()};
+    std::error_code ec{};
+    if (!NativeFS::Close(file_descriptor, ec)) {
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
     }
@@ -76,10 +78,10 @@ void IOFile::Unlink() {
         return;
     }
 
-    if (NativeFS::Unlink(file_path))
+    std::error_code ec{};
+    if (NativeFS::Unlink(file_path, ec))
         return;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 }
@@ -94,10 +96,10 @@ bool IOFile::Flush() const {
         return false;
     }
 
-    if (NativeFS::Flush(file_descriptor))
+    std::error_code ec{};
+    if (NativeFS::Flush(file_descriptor, ec))
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -109,10 +111,10 @@ bool IOFile::Commit() const {
         return false;
     }
 
-    if (NativeFS::Commit(file_descriptor))
+    std::error_code ec{};
+    if (NativeFS::Commit(file_descriptor, ec))
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 
@@ -124,10 +126,10 @@ bool IOFile::SetSize(u64 size) const {
         return false;
     }
 
-    if (NativeFS::SetSize(file_descriptor, size))
+    std::error_code ec{};
+    if (NativeFS::SetSize(file_descriptor, ec, size))
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
               PathToUTF8String(file_path), size, ec.message());
 
@@ -139,11 +141,11 @@ u64 IOFile::GetSize() const {
         return 0;
     }
 
-    const u64 file_size = NativeFS::GetSize(file_descriptor);
+    std::error_code ec{};
+    const u64 file_size = NativeFS::GetSize(file_descriptor, ec);
     if (0 < file_size)
         return file_size;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
               PathToUTF8String(file_path), file_size, ec.message());
 
@@ -155,10 +157,10 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         return false;
     }
 
-    if (NativeFS::Seek(file_descriptor, offset, origin))
+    std::error_code ec{};
+    if (NativeFS::Seek(file_descriptor, ec, offset, origin))
         return true;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem,
               "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
               PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
@@ -171,10 +173,10 @@ s64 IOFile::Tell() const {
         return 0;
     }
 
-    if (s64 ret = NativeFS::Tell(file_descriptor); -1 != ret)
+    std::error_code ec{};
+    if (s64 ret = NativeFS::Tell(file_descriptor, ec); -1 != ret)
         return ret;
 
-    const auto ec = std::error_code{errno, std::generic_category()};
     LOG_ERROR(Common_Filesystem, "Failed to tell file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
 

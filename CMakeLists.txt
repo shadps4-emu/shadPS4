@@ -679,6 +679,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/native_fs.cpp
            src/common/native_fs.h
            src/common/lru_cache.h
            src/common/error.cpp

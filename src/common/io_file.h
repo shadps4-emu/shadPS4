@@ -140,7 +140,7 @@ public:
     }
 
     bool IsOpen() const {
-        return file_descriptor != 0;
+        return NativeFS::IsOpen(this->file_descriptor);
     }
 
     static size_t WriteBytes(const std::filesystem::path path, const auto data) {
@@ -186,8 +186,8 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
-        errno = 0;
-        return NativeFS::Read(file_descriptor, data, sizeof(T) * size);
+        std::error_code _;
+        return NativeFS::Read(file_descriptor, _, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -198,8 +198,8 @@ public:
             return 0;
         }
 
-        errno = 0;
-        return NativeFS::Write(file_descriptor, data.data(), sizeof(T) * data.size());
+        std::error_code _;
+        return NativeFS::Write(file_descriptor, _, data.data(), sizeof(T) * data.size());
     }
 
     template <typename T>
@@ -211,14 +211,14 @@ public:
             return false;
         }
 
-        errno = 0;
-        return NativeFS::Read(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        std::error_code _;
+        return NativeFS::Read(file_descriptor, _, &object, sizeof(T)) == sizeof(T);
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        errno = 0;
-        return NativeFS::Write(file_descriptor, data, sizeof(T) * size);
+        std::error_code _;
+        return NativeFS::Write(file_descriptor, _, data, sizeof(T) * size);
     }
 
     template <typename T>
@@ -230,8 +230,8 @@ public:
             return false;
         }
 
-        errno = 0;
-        return NativeFS::Write(file_descriptor, &object, sizeof(T)) == sizeof(T);
+        std::error_code _;
+        return NativeFS::Write(file_descriptor, _, &object, sizeof(T)) == sizeof(T);
     }
 
 private:
