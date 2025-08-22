@@ -37,19 +37,19 @@ namespace fs = std::filesystem;
 [[nodiscard]] bool Flush(const int fd, std::error_code& ec) noexcept;
 [[nodiscard]] bool Commit(const int fd, std::error_code& ec) noexcept;
 [[nodiscard]] bool SetSize(const int fd, std::error_code& ec, u64 size) noexcept;
-[[nodiscard]] size_t GetSize(const int fd, std::error_code& ec) noexcept;
+[[nodiscard]] s64 GetSize(const int fd, std::error_code& ec) noexcept;
 [[nodiscard]] bool Seek(const int fd, std::error_code& ec, s64 offset,
                         SeekOrigin origin = SeekOrigin::SetOrigin) noexcept;
-[[nodiscard]] size_t Tell(int fd, std::error_code& ec) noexcept;
+[[nodiscard]] s64 Tell(int fd, std::error_code& ec) noexcept;
 [[nodiscard]] size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept;
 [[nodiscard]] size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept;
 // Not a port, used by 2-3 functions that *never* check for errors
-[[nodiscard]] size_t GetDirectorySize(const fs::path path) noexcept;
+[[nodiscard]] s64 GetDirectorySize(const fs::path path) noexcept;
 
 // C++ ports with both except/noexcept
 
-[[nodiscard]] size_t GetSize(const fs::path path);
-[[nodiscard]] size_t GetSize(const fs::path path, std::error_code& ec) noexcept;
+[[nodiscard]] s64 GetSize(const fs::path path);
+[[nodiscard]] s64 GetSize(const fs::path path, std::error_code& ec) noexcept;
 [[nodiscard]] bool Exists(const fs::path path);
 [[nodiscard]] bool Exists(const fs::path path, std::error_code& ec) noexcept;
 [[nodiscard]] bool IsDirectory(const fs::path path);

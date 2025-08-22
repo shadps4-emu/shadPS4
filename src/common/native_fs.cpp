@@ -1,14 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <format>
-
 #include <errno.h>
-#include <sys/fcntl.h>
-#include <sys/stat.h>
 #include <unistd.h>
-
-#include "common/assert.h"
 
 #include "native_fs.h"
 
@@ -16,14 +10,15 @@ namespace Common::FS::Native {
 
 namespace fs = std::filesystem;
 
-size_t GetSize(const fs::path path) {
+s64 GetSize(const fs::path path) {
     std::error_code ec{};
     bool exists = GetSize(path, ec);
 
     if (!ec)
         return exists;
 
-    throw fs::filesystem_error("GetSize(): ", path, std::error_code{errno, std::generic_category()});
+    throw fs::filesystem_error("GetSize(): ", path,
+                               std::error_code{errno, std::generic_category()});
 }
 
 bool Exists(const fs::path path) {

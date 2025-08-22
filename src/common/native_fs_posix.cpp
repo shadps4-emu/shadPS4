@@ -99,19 +99,18 @@ bool SetSize(const int fd, std::error_code& ec, u64 size) noexcept {
     return false;
 }
 
-size_t GetSize(const int fd, std::error_code& ec) noexcept {
+s64 GetSize(const int fd, std::error_code& ec) noexcept {
     ec.clear();
     errno = 0;
     struct stat statbuf{};
-    if (0 != fstat(fd, &statbuf)) {
-        ec = std::error_code{errno, std::generic_category()};
-        return -1;
-    }
+    if (0 == fstat(fd, &statbuf))
+        return statbuf.st_size;
 
-    return statbuf.st_size;
+    ec = std::error_code{errno, std::generic_category()};
+    return -1;
 }
 
-size_t GetSize(const fs::path path, std::error_code& ec) noexcept {
+s64 GetSize(const fs::path path, std::error_code& ec) noexcept {
     ec.clear();
     errno = 0;
     struct stat statbuf{};
@@ -161,11 +160,11 @@ bool Seek(const int fd, std::error_code& ec, s64 offset, SeekOrigin origin) noex
     UNREACHABLE_MSG("Seek {}", static_cast<u32>(origin));
 }
 
-size_t Tell(int fd, std::error_code& ec) noexcept {
+s64 Tell(int fd, std::error_code& ec) noexcept {
     ec.clear();
     errno = 0;
 
-    size_t pointer_position = lseek(fd, 0, SEEK_CUR);
+    s64 pointer_position = lseek(fd, 0, SEEK_CUR);
     if (-1 == pointer_position)
         ec = std::error_code{errno, std::generic_category()};
 
@@ -177,7 +176,7 @@ size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexc
     errno = 0;
 
     const size_t bytes_written = write(__fd, __buf, __n);
-    if (bytes_written != __n)
+    if (errno != 0)
         ec = std::error_code{errno, std::generic_category()};
 
     return bytes_written;
@@ -188,13 +187,13 @@ size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept {
     errno = 0;
 
     const size_t bytes_read = read(__fd, __buf, __n);
-    if (bytes_read != __n)
+    if (errno != 0)
         ec = std::error_code{errno, std::generic_category()};
 
     return bytes_read;
 }
 
-size_t GetDirectorySize(const fs::path path) noexcept {
+s64 GetDirectorySize(const fs::path path) noexcept {
     size_t total = 0;
 
     struct stat statbuf{};

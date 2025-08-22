@@ -145,19 +145,21 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         truncate = false;
     }
 
-    if (!NativeFS::IsDirectory(file->m_host_name)) {
-        if (directory) {
+    // Wondering if this is actually necessary
+    if (exists) {
+        if (NativeFS::IsDirectory(file->m_host_name) || directory) {
+            // Directories can be opened even if the directory flag isn't set.
+            // In these cases, error behavior is identical to the directory code path.
+            directory = true;
+            file->type = Core::FileSys::FileType::Directory;
+        }
+        if (!NativeFS::IsDirectory(file->m_host_name) && directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
             *__Error() = POSIX_ENOTDIR;
             return -1;
         }
-    } else {
-        // Directories can be opened even if the directory flag isn't set.
-        // In these cases, error behavior is identical to the directory code path.
-        directory = true;
-        file->type = Core::FileSys::FileType::Directory;
     }
 
     if (directory && (write || rdwr || truncate)) {
