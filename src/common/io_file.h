@@ -244,7 +244,6 @@ private:
 #else
     int file_descriptor = -1;
 #endif
-    uintptr_t file_mapping = 0;
 };
 
 } // namespace Common::FS

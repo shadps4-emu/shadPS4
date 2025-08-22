@@ -6,9 +6,7 @@
 
 #include <fcntl.h>
 
-#include "common/alignment.h"
 #include "common/assert.h"
-#include "common/error.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -44,16 +42,13 @@ int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     file_path = path;
     file_access_mode = flags;
     file_access_permissions = mode;
-    file_descriptor = -1;
 
     std::error_code ec{};
-    if (int fd = NativeFS::Open(path, ec, file_access_mode, file_access_permissions); fd != -1) {
-        file_descriptor = fd;
-        return 0;
-    }
+    file_descriptor = NativeFS::Open(path, ec, file_access_mode, file_access_permissions);
 
-    LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
-              PathToUTF8String(file_path), ec.message());
+    if (-1 == file_descriptor)
+        LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
+                  PathToUTF8String(file_path), ec.message());
 
     return ec.value();
 }
