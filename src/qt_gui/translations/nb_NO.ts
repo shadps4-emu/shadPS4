@@ -2184,7 +2184,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis dette brukes, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
     </message>
   </context>
   <context>
