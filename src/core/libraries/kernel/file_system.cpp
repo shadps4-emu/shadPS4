@@ -137,11 +137,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
     if (truncate && read) {
-        // This combination is actually legal, but its behaviour is described as "undefined"
-        // Preventing potential data loss
-        LOG_WARNING(
-            Kernel_Fs,
-            "Read and Truncate flags specified. This makes no sense, neutering Truncate flag");
+        // This combination is "undefined" in POSIX
+        // Forcing behaviour implemented by PS4 (truncate and open for reading)
+        // Truncate here, will be opened later
+        Common::FS::IOFile{file->m_host_name, Common::FS::FileAccessMode::Write, true};
+        flags &= ~ORBIS_KERNEL_O_TRUNC;
         truncate = false;
     }
 
@@ -162,17 +162,10 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
-    if (directory && (write || rdwr || truncate)) {
+    if (directory && (write || rdwr)) {
         // Cannot open directories with any type of write access
         h->DeleteHandle(handle);
         *__Error() = POSIX_EISDIR;
-        return -1;
-    }
-
-    if (directory && !read) {
-        // Cannot open directory without read
-        h->DeleteHandle(handle);
-        *__Error() = POSIX_EINVAL;
         return -1;
     }
 
@@ -1022,7 +1015,6 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
         // File to unlink hasn't been opened, manually open and unlink it.
-        // marecl: *may* fail. IDK if it's supposed to exist (yet)
         Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadExtended);
         file.Unlink();
     } else {
