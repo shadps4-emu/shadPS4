@@ -1991,10 +1991,6 @@
       <translation>Lagre skyggeleggere:\nDu trenger dette for å redigere skyggeleggerne med feilsøkingsmenyen (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis dette brukes, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nFunker ikke med Intel GPU-er.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
       <translation>Bruk tilbakelesninger:\nTa i bruk tilbakelesninger og tilbakeskrivninger.\nDette kreves av noen spill for å fungere ordentlig.\nKan forårsake stabilitets- og/eller ytelsesproblemer.</translation>
     </message>
@@ -2185,6 +2181,10 @@
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
       <translation>Bruk kontroller inndata ved mangel på fokus:\n Tillater shadPS4 å oppdage kontroller inndata når spillvinduet ikke er i fokus. Nyttig for flerskjerm-oppsett.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
   </context>
   <context>
