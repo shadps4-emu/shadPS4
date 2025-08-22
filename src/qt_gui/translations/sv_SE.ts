@@ -2176,15 +2176,15 @@
     </message>
     <message>
       <source>Enable Background Controller Input</source>
-      <translation type="unfinished">Enable Background Controller Input</translation>
+      <translation>Aktivera bakgrundsinmatning från handkontroll</translation>
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Aktivera bakgrundsinmatning från handkontroll:\nTillåt shadPS4 att upptäcka inmatningar från handkontrollen när spelfönstret inte är aktivt.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Kraschdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-status vid kraschen.\nAnvändbart för felsökning av felmeddelanden om att enheten har förlorats. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för både värd och gäst.\nDu måste ha Vulkan Validation Layers aktiverat och Vulkan SDK för att detta ska fungera.</translation>
     </message>
   </context>
   <context>
