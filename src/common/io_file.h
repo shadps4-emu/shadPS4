@@ -234,8 +234,10 @@ public:
         std::error_code _;
         return NativeFS::Write(file_descriptor, _, &object, sizeof(T)) == sizeof(T);
     }
+    std::FILE* file = nullptr;
 
 private:
+
     std::filesystem::path file_path{};
     int file_access_mode = 0;
     int file_access_permissions = 0;

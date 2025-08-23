@@ -29,17 +29,6 @@ static constexpr size_t NumBuffers = 40;
 static constexpr size_t NumSamplers = 16;
 static constexpr size_t NumFMasks = 8;
 
-enum class TextureType : u32 {
-    Color1D,
-    ColorArray1D,
-    Color2D,
-    ColorArray2D,
-    Color3D,
-    ColorCube,
-    Buffer,
-};
-constexpr u32 NUM_TEXTURE_TYPES = 7;
-
 enum class BufferType : u32 {
     Guest,
     Flatbuf,
@@ -326,12 +315,12 @@ constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept
     }
     if (!image.Valid()) {
         LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");
-        image = is_depth ? AmdGpu::Image::NullDepth() : AmdGpu::Image::Null();
+        image = AmdGpu::Image::Null(is_depth);
     } else if (is_depth) {
         const auto data_fmt = image.GetDataFmt();
         if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
             LOG_DEBUG(Render_Vulkan, "Encountered non-depth image used with depth instruction!");
-            image = AmdGpu::Image::NullDepth();
+            image = AmdGpu::Image::Null(true);
         }
     }
     return image;

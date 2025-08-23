@@ -573,6 +573,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
 s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
     u64 unmapped_bytes = 0;
+    virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
+    size = Common::AlignUp(size, 16_KB);
     do {
         auto it = FindVMA(virtual_addr + unmapped_bytes);
         auto& vma_base = it->second;

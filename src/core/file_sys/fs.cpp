@@ -164,6 +164,10 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     // Only need to consider patch path if it exists and does not resolve to the same as base.
     const auto apply_patch = base_path != patch_path && NativeFS::Exists(patch_path);
 
+    // Prepend entries for . and .., as both are treated as files on PS4.
+    callback(base_path / ".", false);
+    callback(base_path / "..", false);
+
     // Pass 1: Any files that existed in the base directory, using patch directory if needed.
     if (NativeFS::Exists(base_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(base_path)) {

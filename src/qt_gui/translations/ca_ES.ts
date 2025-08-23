@@ -1551,6 +1551,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostra les etiquetes sota les icones</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -2200,6 +2204,77 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Mostra els trofeus ocults</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Dreceres del controlador</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostra el comptador de fps</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sense assignar</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation>Atura l'emulador</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Commuta pantalla completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Commuta la pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation>Mostra el comptador de fps: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation>Atura l'emulador: n/a</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation>Commuta pantalla completa: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation>Commuta la pausa: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation>Truc: Fins a tres botons poden ser assignats a cada funció</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Desa</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplica</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancel·la</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Clica un botó</translation>
     </message>
   </context>
 </TS>

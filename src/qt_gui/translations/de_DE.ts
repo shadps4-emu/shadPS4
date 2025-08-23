@@ -1550,6 +1550,10 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Show Labels Under Icons</source>
       <translation>Etiketten unter Symbolen anzeigen</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -2203,6 +2207,77 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Verborgene Trophäen anzeigen</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation type="unfinished">Stop Emulator</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation type="unfinished">Show Fps Counter: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation type="unfinished">Stop Emulator: n/a</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation type="unfinished">Toggle Pause: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation type="unfinished">Tip: Up to three inputs can be assigned for each function</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation type="unfinished">Press a button</translation>
     </message>
   </context>
 </TS>

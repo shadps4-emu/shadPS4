@@ -457,7 +457,7 @@ void Rasterizer::OnSubmit() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    if (IsComputeMetaClear(pipeline)) {
+    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline)) {
         return false;
     }
 
@@ -523,20 +523,80 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
     // If a shader wants to encode HTILE, for example, from a depth image it will have to compute
     // proper tile address from dispatch invocation id. This address calculation contains an xor
     // operation so use it as a heuristic for metadata writes that are probably not clears.
-    if (info.has_bitwise_xor) {
-        return false;
-    }
-
-    // Assume if a shader writes metadata without address calculation, it is a clear shader.
-    for (const auto& desc : info.buffers) {
-        const VAddr address = desc.GetSharp(info).base_address;
-        if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
-            // Assume all slices were updates
-            LOG_TRACE(Render_Vulkan, "Metadata update skipped");
-            return true;
+    if (!info.has_bitwise_xor) {
+        // Assume if a shader writes metadata without address calculation, it is a clear shader.
+        for (const auto& desc : info.buffers) {
+            const VAddr address = desc.GetSharp(info).base_address;
+            if (!desc.IsSpecial() && desc.is_written && texture_cache.ClearMeta(address)) {
+                // Assume all slices were updates
+                LOG_TRACE(Render_Vulkan, "Metadata update skipped");
+                return true;
+            }
         }
     }
     return false;
+}
+
+bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
+    if (!pipeline->IsCompute()) {
+        return false;
+    }
+
+    // Ensure shader only has 2 bound buffers
+    const auto& cs_pgm = liverpool->GetCsRegs();
+    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+        return false;
+    }
+
+    // Those 2 buffers must both be formatted. One must be source and another destination.
+    const auto& desc0 = info.buffers[0];
+    const auto& desc1 = info.buffers[1];
+    if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
+        return false;
+    }
+
+    // Buffers must have the same size and each thread of the dispatch must copy 1 dword of data
+    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
+    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
+    if (buf0.GetSize() != buf1.GetSize() || cs_pgm.dim_x != (buf0.GetSize() / 256)) {
+        return false;
+    }
+
+    // Find images the buffer alias
+    const auto image0_id = texture_cache.FindImageFromRange(buf0.base_address, buf0.GetSize());
+    if (!image0_id) {
+        return false;
+    }
+    const auto image1_id =
+        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false);
+    if (!image1_id) {
+        return false;
+    }
+
+    // Image copy must be valid
+    VideoCore::Image& image0 = texture_cache.GetImage(image0_id);
+    VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
+    if (image0.info.guest_size != image1.info.guest_size ||
+        image0.info.pitch != image1.info.pitch || image0.info.guest_size != buf0.GetSize() ||
+        image0.info.num_bits != image1.info.num_bits) {
+        return false;
+    }
+
+    // Perform image copy
+    VideoCore::Image& src_image = desc0.is_written ? image1 : image0;
+    VideoCore::Image& dst_image = desc0.is_written ? image0 : image1;
+    if (instance.IsMaintenance8Supported() ||
+        src_image.info.props.is_depth == dst_image.info.props.is_depth) {
+        dst_image.CopyImage(src_image);
+    } else {
+        const auto& copy_buffer =
+            buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::DeviceLocal);
+        dst_image.CopyImageWithBuffer(src_image, copy_buffer.Handle(), 0);
+    }
+    dst_image.flags |= VideoCore::ImageFlagBits::GpuModified;
+    dst_image.flags &= ~VideoCore::ImageFlagBits::Dirty;
+    return true;
 }
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
@@ -687,7 +747,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (image.binding.force_general || image.binding.is_target) {
                 image.Transit(vk::ImageLayout::eGeneral,
                               vk::AccessFlagBits2::eShaderRead |
-                                  (image.info.IsDepthStencil()
+                                  (image.info.props.is_depth
                                        ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
                                        : vk::AccessFlagBits2::eColorAttachmentWrite),
                               {});
@@ -698,7 +758,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                                       vk::AccessFlagBits2::eShaderWrite,
                                   desc.view_info.range);
                 } else {
-                    const auto new_layout = image.info.IsDepthStencil()
+                    const auto new_layout = image.info.props.is_depth
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
                     image.Transit(new_layout, vk::AccessFlagBits2::eShaderRead,
@@ -823,10 +883,8 @@ void Rasterizer::Resolve() {
                                                         mrt0_hint};
     VideoCore::TextureCache::RenderTargetDesc mrt1_desc{liverpool->regs.color_buffers[1],
                                                         mrt1_hint};
-    auto& mrt0_image =
-        texture_cache.GetImage(texture_cache.FindImage(mrt0_desc, VideoCore::FindFlags::ExactFmt));
-    auto& mrt1_image =
-        texture_cache.GetImage(texture_cache.FindImage(mrt1_desc, VideoCore::FindFlags::ExactFmt));
+    auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_desc, true));
+    auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_desc, true));
 
     VideoCore::SubresourceRange mrt0_range;
     mrt0_range.base.layer = liverpool->regs.color_buffers[0].view.slice_start;

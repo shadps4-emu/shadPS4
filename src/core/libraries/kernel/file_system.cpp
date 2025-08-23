@@ -5,6 +5,7 @@
 #include <ranges>
 
 #include "common/assert.h"
+#include "common/error.h"
 #include "common/logging/log.h"
 #include "common/native_fs.h"
 #include "common/scope_exit.h"
@@ -24,6 +25,13 @@
 #include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
+
+#ifdef _WIN32
+#include <io.h>
+#include <winsock2.h>
+#else
+#include <sys/select.h>
+#endif
 
 namespace D = Core::Devices;
 namespace NativeFS = Common::FS::Native;
@@ -573,9 +581,9 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     }
     if (NativeFS::IsDirectory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
@@ -645,9 +653,9 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Directory: {
         sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 0;
-        sb->st_blksize = 512;
-        sb->st_blocks = 0;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
         // TODO incomplete
         break;
     }
@@ -848,7 +856,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
     return result;
 }
 
-static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
+static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     if (buf == nullptr) {
         *__Error() = POSIX_EFAULT;
         return -1;
@@ -859,6 +867,7 @@ static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
+
     if (file->type == Core::FileSys::FileType::Device) {
         s32 result = file->device->getdents(buf, nbytes, basep);
         if (result < 0) {
@@ -868,39 +877,49 @@ static s32 GetDents(s32 fd, char* buf, s32 nbytes, s64* basep) {
         return result;
     }
 
-    if (file->dirents_index == file->dirents.size()) {
-        return ORBIS_OK;
-    }
     if (file->type != Core::FileSys::FileType::Directory || nbytes < 512 ||
         file->dirents_index > file->dirents.size()) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-    const auto& entry = file->dirents.at(file->dirents_index++);
-    auto str = entry.name;
-    static int fileno = 1000; // random
-    OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf;
-    sce_ent->d_fileno = fileno++; // TODO this should be unique but atm it changes maybe switch to a
-    // hash or something?
-    sce_ent->d_reclen = sizeof(OrbisKernelDirent);
-    sce_ent->d_type = (entry.isFile ? 8 : 4);
-    sce_ent->d_namlen = str.size();
-    strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
-    sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+    s64 bytes_to_write = nbytes;
+    char* buf_to_write = buf;
+    u64 bytes_written = 0;
+    while (bytes_to_write >= sizeof(OrbisKernelDirent)) {
+        if (file->dirents_index == file->dirents.size()) {
+            break;
+        }
+        const auto& entry = file->dirents.at(file->dirents_index++);
+        auto str = entry.name;
+        static int fileno = 1000; // random
+        OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf_to_write;
+        // TODO this should be unique, maybe switch to a hash or something?
+        sce_ent->d_fileno = fileno++;
+        sce_ent->d_reclen = sizeof(OrbisKernelDirent);
+        sce_ent->d_type = (entry.isFile ? 8 : 4);
+        sce_ent->d_namlen = str.size();
+        strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
+        sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
+
+        buf_to_write += sizeof(OrbisKernelDirent);
+        bytes_to_write -= sizeof(OrbisKernelDirent);
+        bytes_written += sizeof(OrbisKernelDirent);
+    }
 
     if (basep != nullptr) {
         *basep = file->dirents_index;
     }
 
-    return sizeof(OrbisKernelDirent);
+    return bytes_written;
 }
 
-s32 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, s32 nbytes) {
+s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
     return GetDents(fd, buf, nbytes, nullptr);
 }
 
-s32 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, s32 nbytes) {
-    s32 result = GetDents(fd, buf, nbytes, nullptr);
+s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 nbytes) {
+    s64 result = posix_getdents(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -908,16 +927,16 @@ s32 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, s32 nbytes) {
     return result;
 }
 
-s32 PS4_SYSV_ABI getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+s64 PS4_SYSV_ABI getdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
     return GetDents(fd, buf, nbytes, basep);
 }
 
-s32 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
+s64 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
     return GetDents(fd, buf, nbytes, basep);
 }
 
-s32 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, s32 nbytes, s64* basep) {
-    s32 result = GetDents(fd, buf, nbytes, basep);
+s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
+    s64 result = GetDents(fd, buf, nbytes, basep);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -1034,6 +1053,295 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
     return result;
 }
 
+#ifdef _WIN32
+#define __FD_SETSIZE 1024
+
+typedef struct {
+    unsigned long fds_bits[__FD_SETSIZE / (8 * sizeof(unsigned long))];
+} fd_set_posix;
+
+#define FD_SET_POSIX(fd, set)                                                                      \
+    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] |=                                        \
+     (1UL << ((fd) % (8 * sizeof(unsigned long)))))
+
+#define FD_CLR_POSIX(fd, set)                                                                      \
+    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &=                                        \
+     ~(1UL << ((fd) % (8 * sizeof(unsigned long)))))
+
+#define FD_ISSET_POSIX(fd, set)                                                                    \
+    (((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &                                        \
+      (1UL << ((fd) % (8 * sizeof(unsigned long))))) != 0)
+
+#define FD_ZERO_POSIX(set) memset((set), 0, sizeof(fd_set_posix))
+
+s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* writefds,
+                              fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
+    LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+
+    fd_set read_host = {}, write_host = {}, except_host = {};
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+
+    fd_set_posix read_ready, write_ready, except_ready;
+    FD_ZERO_POSIX(&read_ready);
+    FD_ZERO_POSIX(&write_ready);
+    FD_ZERO_POSIX(&except_ready);
+
+    std::map<s32, s32> host_to_guest;
+    s32 socket_max_fd = -1;
+
+    for (s32 i = 0; i < nfds; ++i) {
+        bool want_read = readfds && FD_ISSET_POSIX(i, readfds);
+        bool want_write = writefds && FD_ISSET_POSIX(i, writefds);
+        bool want_except = exceptfds && FD_ISSET_POSIX(i, exceptfds);
+        if (!(want_read || want_write || want_except)) {
+            continue;
+        }
+
+        auto* file = h->GetFile(i);
+        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+
+        s32 native_fd = -1;
+        switch (file->type) {
+        case Core::FileSys::FileType::Regular:
+            native_fd = static_cast<s32>(file->f.GetFileMapping());
+            break;
+        case Core::FileSys::FileType::Socket: {
+            auto sock = file->socket->Native();
+            native_fd = sock ? static_cast<s32>(*sock) : -1;
+            break;
+        }
+        case Core::FileSys::FileType::Device:
+            native_fd = -1;
+            break;
+        default:
+            UNREACHABLE();
+            break;
+        }
+
+        if (file->type == Core::FileSys::FileType::Regular ||
+            file->type == Core::FileSys::FileType::Device) {
+            // Disk files always ready
+            if (want_read) {
+                FD_SET_POSIX(i, &read_ready);
+            }
+            if (want_write) {
+                FD_SET_POSIX(i, &write_ready);
+            }
+            // exceptfds not supported on regular files
+        } else if (file->type == Core::FileSys::FileType::Socket) {
+            if (want_read) {
+                FD_SET(native_fd, &read_host);
+            }
+            if (want_write) {
+                FD_SET(native_fd, &write_host);
+            }
+            if (want_except) {
+                FD_SET(native_fd, &except_host);
+            }
+            socket_max_fd = std::max(socket_max_fd, native_fd);
+        }
+
+        if (native_fd == -1) {
+            continue;
+        }
+
+        host_to_guest[native_fd] = i;
+    }
+
+    LOG_DEBUG(Kernel_Fs,
+              "Before select(): read_host.fd_count = {}, write_host.fd_count = {}, "
+              "except_host.fd_count = {}",
+              read_host.fd_count, write_host.fd_count, except_host.fd_count);
+
+    if (read_host.fd_count == 0 && write_host.fd_count == 0 && except_host.fd_count == 0) {
+        LOG_WARNING(Kernel_Fs, "No sockets in fd_sets, select() will return immediately");
+    }
+
+    if (readfds) {
+        FD_ZERO_POSIX(readfds);
+    }
+    if (writefds) {
+        FD_ZERO_POSIX(writefds);
+    }
+    if (exceptfds) {
+        FD_ZERO_POSIX(exceptfds);
+    }
+
+    s32 result = 0;
+    if (socket_max_fd != -1) {
+        timeval tv = {};
+        timeval* tv_ptr = nullptr;
+        if (timeout) {
+            tv.tv_sec = timeout->tv_sec;
+            tv.tv_usec = timeout->tv_usec;
+            tv_ptr = &tv;
+        }
+        result = select(0, read_host.fd_count > 0 ? &read_host : nullptr,
+                        write_host.fd_count > 0 ? &write_host : nullptr,
+                        except_host.fd_count > 0 ? &except_host : nullptr, tv_ptr);
+        if (result == SOCKET_ERROR) {
+            s32 err = WSAGetLastError();
+            LOG_ERROR(Kernel_Fs, "select() failed with error {}", err);
+            switch (err) {
+            case WSAEFAULT:
+                *__Error() = POSIX_EFAULT;
+                break;
+            case WSAEINVAL:
+                *__Error() = POSIX_EINVAL;
+                break;
+            case WSAENOBUFS:
+                *__Error() = POSIX_ENOBUFS;
+                break;
+            default:
+                LOG_ERROR(Kernel_Fs, "Unhandled error case {}", err);
+                break;
+            }
+            return -1;
+        }
+
+        for (s32 i = 0; i < read_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(read_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], readfds);
+        }
+        for (s32 i = 0; i < write_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(write_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], writefds);
+        }
+        for (s32 i = 0; i < except_host.fd_count; ++i) {
+            s32 fd = static_cast<s32>(except_host.fd_array[i]);
+            FD_SET_POSIX(host_to_guest[fd], exceptfds);
+        }
+    }
+
+    // Add regular/device files ready count
+    s32 disk_ready = 0;
+    for (s32 i = 0; i < nfds; ++i) {
+        if (FD_ISSET_POSIX(i, &read_ready)) {
+            FD_SET_POSIX(i, readfds);
+            disk_ready++;
+        }
+        if (FD_ISSET_POSIX(i, &write_ready)) {
+            FD_SET_POSIX(i, writefds);
+            disk_ready++;
+        }
+    }
+
+    return result + disk_ready;
+}
+#else
+s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+                              OrbisKernelTimeval* timeout) {
+    LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    fd_set read_host, write_host, except_host;
+    FD_ZERO(&read_host);
+    FD_ZERO(&write_host);
+    FD_ZERO(&except_host);
+
+    std::map<s32, s32> host_to_guest;
+    s32 max_fd = -1;
+
+    for (s32 i = 0; i < nfds; ++i) {
+        auto read = readfds && FD_ISSET(i, readfds);
+        auto write = writefds && FD_ISSET(i, writefds);
+        auto except = exceptfds && FD_ISSET(i, exceptfds);
+        if (read || write || except) {
+            auto* file = h->GetFile(i);
+            if (file == nullptr ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+                LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+                *__Error() = POSIX_EBADF;
+                return -1;
+            }
+
+            s32 native_fd = [&] {
+                switch (file->type) {
+                case Core::FileSys::FileType::Regular:
+                    return static_cast<s32>(file->f.GetFileMapping());
+                case Core::FileSys::FileType::Device:
+                    return -1;
+                case Core::FileSys::FileType::Socket: {
+                    auto sock = file->socket->Native();
+                    // until P2P sockets contain a proper socket
+                    return sock ? static_cast<s32>(*sock) : -1;
+                }
+                default:
+                    UNREACHABLE();
+                }
+            }();
+            if (native_fd == -1) {
+                continue;
+            }
+            host_to_guest.emplace(native_fd, i);
+
+            max_fd = std::max(max_fd, native_fd);
+
+            if (read) {
+                FD_SET(native_fd, &read_host);
+            }
+            if (write) {
+                FD_SET(native_fd, &write_host);
+            }
+            if (except) {
+                FD_SET(native_fd, &except_host);
+            }
+        }
+    }
+
+    if (max_fd == -1) {
+        LOG_WARNING(Kernel_Fs, "all requested file descriptors are unsupported");
+        return 0;
+    }
+
+    s32 ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
+
+    if (ret > 0) {
+        if (readfds) {
+            FD_ZERO(readfds);
+        }
+        if (writefds) {
+            FD_ZERO(writefds);
+        }
+        if (exceptfds) {
+            FD_ZERO(exceptfds);
+        }
+
+        for (s32 i = 0; i < max_fd + 1; ++i) {
+            if (readfds && FD_ISSET(i, &read_host)) {
+                FD_SET(host_to_guest[i], readfds);
+            }
+            if (writefds && FD_ISSET(i, &write_host)) {
+                FD_SET(host_to_guest[i], writefds);
+            }
+            if (exceptfds && FD_ISSET(i, &except_host)) {
+                FD_SET(host_to_guest[i], exceptfds);
+            }
+        }
+    }
+    if (ret < 0) {
+        s32 error = errno;
+        LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
+                  Common::NativeErrorToString(error));
+        SetPosixErrno(error);
+    }
+
+    return ret;
+}
+#endif
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", 1, 1, open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", 1, 1, posix_open);
@@ -1091,6 +1399,8 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", 1, 1, sceKernelPwrite);
     LIB_FUNCTION("mBd4AfLP+u8", "libkernel", 1, "libkernel", 1, 1, sceKernelPwritev);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", 1, 1, sceKernelUnlink);
+    LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", 1, 1, posix_select);
+    LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", 1, 1, posix_select);
 }
 
 } // namespace Libraries::Kernel

@@ -397,6 +397,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
+        ui->backgroundControllerCheckBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
@@ -584,6 +585,8 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     ui->motionControlsCheckBox->setChecked(
         toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
+    ui->backgroundControllerCheckBox->setChecked(
+        toml::find_or<bool>(data, "Input", "backgroundControllerInput", false));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     SyncRealTimeWidgetstoConfig();
@@ -715,6 +718,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("Hide Idle Cursor Timeout:\\nThe duration (seconds) after which the cursor that has been idle hides itself.");
+    } else if (elementName == "backgroundControllerCheckBox") {
+        text = tr("Enable Controller Background Input:\\nAllow shadPS4 to detect controller inputs when the game window is not in focus.");
     }
 
     // Graphics
@@ -758,7 +763,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "rdocCheckBox") {
         text = tr("Enable RenderDoc Debugging:\\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.");
     } else if (elementName == "crashDiagnosticsCheckBox") {
-        text = tr("Crash Diagnostics:\\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\\nDoes not work on Intel GPUs.\\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.");
+        text = tr("Crash Diagnostics:\\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.");
     } else if (elementName == "guestMarkersCheckBox") {
         text = tr("Guest Debug Markers:\\nInserts any debug markers the game itself has added to the command buffer.\\nIf you have this enabled, you should enable Crash Diagnostics.\\nUseful for programs like RenderDoc.");
     } else if (elementName == "hostMarkersCheckBox") {
@@ -800,6 +805,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setFullscreenMode(
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
+    Config::setBackgroundControllerInput(ui->backgroundControllerCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value());
 

@@ -11,6 +11,11 @@ class SymbolsResolver;
 
 namespace Libraries::NpParty {
 
+enum class OrbisNpPartyState : u16 {
+    NotInParty = 2,
+    InPrivateParty = 3,
+};
+
 s32 PS4_SYSV_ABI sceNpPartyCheckCallback();
 s32 PS4_SYSV_ABI sceNpPartyCreate();
 s32 PS4_SYSV_ABI sceNpPartyCreateA();
@@ -21,7 +26,7 @@ s32 PS4_SYSV_ABI sceNpPartyGetMembers();
 s32 PS4_SYSV_ABI sceNpPartyGetMembersA();
 s32 PS4_SYSV_ABI sceNpPartyGetMemberSessionInfo();
 s32 PS4_SYSV_ABI sceNpPartyGetMemberVoiceInfo();
-s32 PS4_SYSV_ABI sceNpPartyGetState();
+s32 PS4_SYSV_ABI sceNpPartyGetState(OrbisNpPartyState* state);
 s32 PS4_SYSV_ABI sceNpPartyGetStateAsUser();
 s32 PS4_SYSV_ABI sceNpPartyGetStateAsUserA();
 s32 PS4_SYSV_ABI sceNpPartyGetVoiceChatPriority();

@@ -283,6 +283,7 @@ OPCODE(FPRecipSqrt64,                                       F64,            F64,
 OPCODE(FPSqrt,                                              F32,            F32,                                                                            )
 OPCODE(FPSin,                                               F32,            F32,                                                                            )
 OPCODE(FPExp2,                                              F32,            F32,                                                                            )
+OPCODE(FPPow,                                               F32,            F32,            F32,                                                            )
 OPCODE(FPLdexp,                                             F32,            F32,            U32,                                                            )
 OPCODE(FPCos,                                               F32,            F32,                                                                            )
 OPCODE(FPLog2,                                              F32,            F32,                                                                            )
@@ -478,3 +479,4 @@ OPCODE(Ballot,                                              U32x4,          U1, 
 OPCODE(BallotFindLsb,                                       U32,            U32x4,                                                                          )
 OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
 OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )
+OPCODE(GroupAny,                                            U1,             U1,                                                                             )

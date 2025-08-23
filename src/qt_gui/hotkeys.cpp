@@ -105,8 +105,8 @@ void hotkeys::SaveHotkeys(bool CloseOnSave) {
 
         if (line.contains("controllerFullscreen")) {
             line = "controllerFullscreen = " + ui->fullscreenButtonPad->text().toStdString();
-        } else if (line.contains("controllerQuit")) {
-            line = "controllerQuit = " + ui->quitButtonPad->text().toStdString();
+        } else if (line.contains("controllerStop")) {
+            line = "controllerStop = " + ui->quitButtonPad->text().toStdString();
         } else if (line.contains("controllerFps")) {
             line = "controllerFps = " + ui->fpsButtonPad->text().toStdString();
         } else if (line.contains("controllerPause")) {
@@ -151,7 +151,7 @@ void hotkeys::LoadHotkeys() {
 
         if (line.contains("controllerFullscreen")) {
             controllerFullscreenString = QString::fromStdString(line.substr(equal_pos + 2));
-        } else if (line.contains("controllerQuit")) {
+        } else if (line.contains("controllerStop")) {
             controllerQuitString = QString::fromStdString(line.substr(equal_pos + 2));
         } else if (line.contains("controllerFps")) {
             controllerFpsString = QString::fromStdString(line.substr(equal_pos + 2));
@@ -388,7 +388,9 @@ void hotkeys::Cleanup() {
         SDL_QuitSubSystem(SDL_INIT_EVENTS);
         SDL_Quit();
     } else {
-        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        if (!Config::getBackgroundControllerInput()) {
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        }
     }
 }
 

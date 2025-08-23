@@ -1551,6 +1551,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostrar etiquetas debajo de los iconos</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atajos</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -2200,6 +2204,77 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Mostrar Trofeos Ocultos</translation>
+    </message>
+  </context>
+  <context>
+    <name>hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atajos</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Atajos de Mando</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostrar Contador de FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sin vincular</translation>
+    </message>
+    <message>
+      <source>Stop Emulator</source>
+      <translation>Parar Emulador</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Alternar Pantalla Completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Alternar Pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Atajos de teclado</translation>
+    </message>
+    <message>
+      <source>Show Fps Counter: F10</source>
+      <translation>Mostrar Contador de Fps: F10</translation>
+    </message>
+    <message>
+      <source>Stop Emulator: n/a</source>
+      <translation>Parar emulador: n/a</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen: F11</source>
+      <translation>Alternar Pantalla Completa: F11</translation>
+    </message>
+    <message>
+      <source>Toggle Pause: F9</source>
+      <translation>Alternar Pausa: F9</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three inputs can be assigned for each function</source>
+      <translation>Consejo: Se pueden asignar hasta tres entradas para cada función</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Guardar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Press a button</source>
+      <translation>Presiona un botón</translation>
     </message>
   </context>
 </TS>
