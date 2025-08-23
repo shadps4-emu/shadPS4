@@ -35,8 +35,8 @@ constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
 
-u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs,
-               const AmdGpu::Liverpool::VsOutputControl& ctl) {
+static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs,
+                      const AmdGpu::Liverpool::VsOutputControl& ctl) {
     u32 num_outputs = 0;
 
     if (ctl.vs_out_misc_enable) {
@@ -473,7 +473,8 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
 
-        if (!regs.color_target_mask.GetMask(cb) || (key.mrt_mask & (1u << cb)) == 0) {
+        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        if (!target_mask || (key.mrt_mask & (1u << cb)) == 0) {
             // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
             // of the latter we need to change format to undefined, and either way we need to
             // increment the index for the null attachment binding.
@@ -484,7 +485,16 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.blend_controls[remapped_cb] = regs.blend_control[cb];
         key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
                                                       !col_buf.info.blend_bypass);
-        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
+        // Apply swizzle to target mask
+        for (u32 i = 0; i < 4; i++) {
+            if (target_mask & (1 << i)) {
+                const auto swizzled_comp =
+                    static_cast<u32>(key.color_buffers[remapped_cb].swizzle.array[i]);
+                constexpr u32 min_comp = static_cast<u32>(AmdGpu::CompSwizzle::Red);
+                const u32 comp = swizzled_comp >= min_comp ? swizzled_comp - min_comp : i;
+                key.write_masks[remapped_cb] |= vk::ColorComponentFlagBits{1u << comp};
+            }
+        }
         key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
         ++remapped_cb;
     }
