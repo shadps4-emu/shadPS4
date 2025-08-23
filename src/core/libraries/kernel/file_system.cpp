@@ -1270,7 +1270,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
             s32 native_fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<s32>(file->f.GetFileMapping());
+                    return static_cast<s32>(file->f.GetNativeFileDescriptor());
                 case Core::FileSys::FileType::Device:
                     return -1;
                 case Core::FileSys::FileType::Socket: {

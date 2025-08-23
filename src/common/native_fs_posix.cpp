@@ -12,8 +12,6 @@
 
 #include "native_fs.h"
 
-// Order is reversed. `noexcept` contains the meat, throwables are wrappers catching error codes
-
 namespace Common::FS::Native {
 
 namespace fs = std::filesystem;
