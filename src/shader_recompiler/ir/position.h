@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/logging/log.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/runtime_info.h"
 
@@ -45,8 +46,12 @@ inline void ExportPosition(IREmitter& ir, const auto& stage, Attribute attribute
     case Output::GsMrtIndex:
         ir.SetAttribute(IR::Attribute::RenderTargetId, value);
         break;
+    case Output::None:
+        LOG_WARNING(Render_Recompiler, "The {} component of {} isn't mapped, skipping",
+                    "xyzw"[comp], NameOf(attribute));
+        break;
     default:
-        UNREACHABLE_MSG("Unhandled output {} on attribute {}", u32(output), u32(attribute));
+        UNREACHABLE_MSG("Unhandled output {} on attribute {}", u32(output), NameOf(attribute));
     }
 }
 

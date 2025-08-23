@@ -93,7 +93,8 @@ struct VertexRuntimeInfo {
     u32 hs_output_cp_stride{};
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
-        return emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
+        return num_outputs == other.num_outputs && outputs == other.outputs &&
+               emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
                clip_disable == other.clip_disable && tess_type == other.tess_type &&
                tess_topology == other.tess_topology &&
                tess_partitioning == other.tess_partitioning &&
@@ -158,8 +159,9 @@ struct GeometryRuntimeInfo {
     u64 vs_copy_hash;
 
     bool operator==(const GeometryRuntimeInfo& other) const noexcept {
-        return num_invocations && other.num_invocations &&
-               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
+        return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
+               other.num_invocations && output_vertices == other.output_vertices &&
+               in_primitive == other.in_primitive &&
                std::ranges::equal(out_primitive, other.out_primitive);
     }
 };
