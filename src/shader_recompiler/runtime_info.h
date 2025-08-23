@@ -177,8 +177,6 @@ struct PsColorBuffer {
     AmdGpu::NumberFormat num_format : 4;
     AmdGpu::NumberConversion num_conversion : 3;
     AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
-    u32 needs_unorm_fixup : 1;
-    u32 pad : 20;
     AmdGpu::CompMapping swizzle;
 
     bool operator==(const PsColorBuffer& other) const noexcept = default;

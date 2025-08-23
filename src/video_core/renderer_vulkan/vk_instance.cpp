@@ -255,13 +255,6 @@ bool Instance::CreateDevice() {
     // Optional
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
     depth_range_unrestricted = add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
-    dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
-    if (dynamic_state_3) {
-        dynamic_state_3_features =
-            feature_chain.get<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
-        LOG_INFO(Render_Vulkan, "- extendedDynamicState3ColorWriteMask: {}",
-                 dynamic_state_3_features.extendedDynamicState3ColorWriteMask);
-    }
     robustness2 = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     if (robustness2) {
         robustness2_features = feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>();
@@ -426,10 +419,6 @@ bool Instance::CreateDevice() {
             .customBorderColors = true,
             .customBorderColorWithoutFormat = true,
         },
-        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
-            .extendedDynamicState3ColorWriteMask =
-                dynamic_state_3_features.extendedDynamicState3ColorWriteMask,
-        },
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
@@ -504,9 +493,6 @@ bool Instance::CreateDevice() {
 
     if (!custom_border_color) {
         device_chain.unlink<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
-    }
-    if (!dynamic_state_3) {
-        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
     if (!depth_clip_control) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();

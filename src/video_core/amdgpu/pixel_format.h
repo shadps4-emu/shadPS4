@@ -85,7 +85,7 @@ enum class NumberClass {
     Uint,
 };
 
-enum class CompSwizzle : u32 {
+enum class CompSwizzle : u8 {
     Zero = 0,
     One = 1,
     Red = 4,
@@ -134,6 +134,12 @@ union CompMapping {
         InverseSingle(result.b, CompSwizzle::Blue);
         InverseSingle(result.a, CompSwizzle::Alpha);
         return result;
+    }
+
+    [[nodiscard]] u32 Map(u32 comp) const {
+        const u32 swizzled_comp = u32(array[comp]);
+        constexpr u32 min_comp = u32(AmdGpu::CompSwizzle::Red);
+        return swizzled_comp >= min_comp ? swizzled_comp - min_comp : comp;
     }
 
 private:

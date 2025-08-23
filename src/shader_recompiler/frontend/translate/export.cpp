@@ -93,17 +93,24 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
         }
     }
 
+    // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
+    // need a bias applied to round correctly; detect and set the flag for that here.
+    const auto needs_unorm_fixup = profile.needs_unorm_fixup &&
+                                   (color_buffer.num_format == AmdGpu::NumberFormat::Unorm ||
+                                    color_buffer.num_format == AmdGpu::NumberFormat::Snorm ||
+                                    color_buffer.num_format == AmdGpu::NumberFormat::Srgb) &&
+                                   (color_buffer.data_format == AmdGpu::DataFormat::Format8 ||
+                                    color_buffer.data_format == AmdGpu::DataFormat::Format8_8 ||
+                                    color_buffer.data_format == AmdGpu::DataFormat::Format8_8_8_8);
+
     // Swizzle components and export
     for (u32 i = 0; i < 4; ++i) {
-        const u32 comp_swizzle = static_cast<u32>(color_buffer.swizzle.array[i]);
-        constexpr u32 min_swizzle = static_cast<u32>(AmdGpu::CompSwizzle::Red);
-        const auto swizzled_comp =
-            components[comp_swizzle >= min_swizzle ? comp_swizzle - min_swizzle : i];
+        const auto swizzled_comp = components[color_buffer.swizzle.Map(i)];
         if (swizzled_comp.IsEmpty()) {
             continue;
         }
         auto converted = ApplyWriteNumberConversion(ir, swizzled_comp, color_buffer.num_conversion);
-        if (color_buffer.needs_unorm_fixup) {
+        if (needs_unorm_fixup) {
             // FIXME: Fix-up for GPUs where float-to-unorm rounding is off from expected.
             converted = ir.FPSub(converted, ir.Imm32(1.f / 127500.f));
         }
