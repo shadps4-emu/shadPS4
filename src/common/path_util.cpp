@@ -100,7 +100,7 @@ static auto UserPaths = [] {
 
     // Try the portable user directory first.
     auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
-    if (!Common::FS::Native::Exists(user_dir)) {
+    if (!NativeFS::Exists(user_dir)) {
         // If it doesn't exist, use the standard path for the platform instead.
         // NOTE: On Windows we currently just create the portable directory instead.
 #ifdef __APPLE__

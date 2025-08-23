@@ -67,7 +67,7 @@ void IOFile::Close() {
     file_descriptor = -1;
 }
 
-void IOFile::Unlink() {
+void IOFile::Unlink() const {
     if (!IsOpen()) {
         return;
     }
@@ -78,11 +78,6 @@ void IOFile::Unlink() {
 
     LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
               PathToUTF8String(file_path), ec.message());
-}
-
-uintptr_t IOFile::GetFileMapping() {
-    // posix only???
-    return file_descriptor;
 }
 
 bool IOFile::Flush() const {

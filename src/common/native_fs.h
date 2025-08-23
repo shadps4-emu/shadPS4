@@ -28,8 +28,6 @@ namespace fs = std::filesystem;
 
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin);
 
-// IOFile functions converted to POSIX. No exceptions thrown
-// -1 **always** means an error, so we might as well collect return value OR errno
 [[nodiscard]] int Open(const fs::path path, std::error_code& ec, int flags, int mode) noexcept;
 [[nodiscard]] bool IsOpen(const int fd) noexcept;
 [[nodiscard]] bool Close(const int fd, std::error_code& ec) noexcept;

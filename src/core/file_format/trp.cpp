@@ -61,7 +61,7 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
-    if (!Common::FS::Native::Exists(gameSysDir)) {
+    if (!NativeFS::Exists(gameSysDir)) {
         LOG_CRITICAL(Common_Filesystem, "Game sce_sys directory doesn't exist");
         return false;
     }

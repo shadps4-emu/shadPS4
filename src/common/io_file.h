@@ -17,14 +17,6 @@ namespace Common::FS {
 
 namespace NativeFS = Common::FS::Native;
 
-/**
- * Abstract access modes resembling how streams would work.
- * This is only to simplify regular file operations with minimal configuration,
- * i.e. not dvelving into OS-specific calls.
- * Due to using native calls, file type (text/binary) is irrelevant.
- * Additionally, user may choose to truncate file when opened with Write or WriteExtended mode
- * (truncated by default)
- */
 enum class FileAccessMode : int {
     /**
      * If the file at path exists, it opens the file for reading.
@@ -75,10 +67,9 @@ class IOFile final {
 public:
     IOFile();
 
-    // Open - called by constructor, user
-    // OpenImpl - called by Open (always)
-    // To conform with current convention, written files are truncated by default.
-    // It is necessary to retain it available to handle kernel calls correctly
+    // `truncate` is a separate flag, that is implied when accessing files with streams
+    // This is not the case with native calls, desire to do so must be stated explicitly
+    // To conform with current stream-like convention, files are truncated by default
     explicit IOFile(const std::string& path, FileAccessMode flags, bool truncate = true) {
         Open(path, flags, truncate);
     }
@@ -88,8 +79,8 @@ public:
     explicit IOFile(const std::filesystem::path& path, FileAccessMode flags, bool truncate = true) {
         Open(path, flags, truncate);
     }
-    // POSIX - regular file creation doesn't need to know/set access permissions
-    // this is for Orbis only
+
+    // All flags must be converted to Linux-native
     explicit IOFile(const std::string& path, int flags, int mode = 0644) {
         Open(path, flags, mode);
     }
@@ -107,13 +98,11 @@ public:
     // Simplified access, convert to stream-equivalent modes at own discretion
     int Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate = true,
              int mode = 0644);
-    // In the end, this one is called
     int Open(const std::filesystem::path& path, int flags, int mode = 0644);
 
     void Close();
 
-    void Unlink();
-    uintptr_t GetFileMapping();
+    void Unlink() const;
 
     bool Flush() const;
     bool Commit() const;
@@ -139,7 +128,14 @@ public:
         return file_access_permissions;
     }
 
+    uintptr_t GetNativeFileDescriptor() const {
+        return file_descriptor;
+    }
+
     bool IsOpen() const {
+        if (-1 == file_descriptor)
+            return false;
+
         return NativeFS::IsOpen(this->file_descriptor);
     }
 
@@ -186,6 +182,7 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
+        // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Read(file_descriptor, _, data, sizeof(T) * size);
     }
@@ -198,6 +195,7 @@ public:
             return 0;
         }
 
+        // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Write(file_descriptor, _, data.data(), sizeof(T) * data.size());
     }
@@ -211,12 +209,14 @@ public:
             return false;
         }
 
+        // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Read(file_descriptor, _, &object, sizeof(T)) == sizeof(T);
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
+        // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Write(file_descriptor, _, data, sizeof(T) * size);
     }
@@ -230,6 +230,7 @@ public:
             return false;
         }
 
+        // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Write(file_descriptor, _, &object, sizeof(T)) == sizeof(T);
     }

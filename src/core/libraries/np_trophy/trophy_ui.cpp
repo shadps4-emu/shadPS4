@@ -45,7 +45,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     trophy_timer = Config::getTrophyNotificationDuration();
 
-    if (Common::FS::Native::Exists(trophyIconPath)) {
+    if (NativeFS::Exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
         LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",

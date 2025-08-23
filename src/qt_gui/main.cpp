@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
         std::filesystem::path game_file_path(game_path);
 
         // Check if the provided path is a valid file
-        if (!Common::FS::Native::Exists(game_file_path)) {
+        if (!NativeFS::Exists(game_file_path)) {
             // If not a file, treat it as a game ID and search in install directories recursively
             bool game_found = false;
             const int max_depth = 5;

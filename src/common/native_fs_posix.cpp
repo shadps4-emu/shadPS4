@@ -43,6 +43,7 @@ int Open(const fs::path path, std::error_code& ec, int flags, int mode) noexcept
 }
 
 bool IsOpen(const int fd) noexcept {
+    // stdout, stdin, stderr
     if (fd < 3)
         return false;
 
