@@ -2184,7 +2184,7 @@
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层和 Vulkan SDK 才能使用此功能。</translation>
     </message>
   </context>
   <context>
