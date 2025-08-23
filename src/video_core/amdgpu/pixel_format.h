@@ -104,13 +104,18 @@ enum class NumberConversion : u32 {
     Uint32ToUnorm = 6,
 };
 
-struct CompMapping {
-    CompSwizzle r;
-    CompSwizzle g;
-    CompSwizzle b;
-    CompSwizzle a;
+union CompMapping {
+    struct {
+        CompSwizzle r;
+        CompSwizzle g;
+        CompSwizzle b;
+        CompSwizzle a;
+    };
+    std::array<CompSwizzle, 4> array;
 
-    auto operator<=>(const CompMapping& other) const = default;
+    bool operator==(const CompMapping& other) const {
+        return array == other.array;
+    }
 
     template <typename T>
     [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {

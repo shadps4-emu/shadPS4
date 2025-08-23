@@ -52,7 +52,7 @@ struct ExportRuntimeInfo {
     auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
 };
 
-enum class VsOutput : u8 {
+enum class Output : u8 {
     None,
     PointSprite,
     EdgeFlag,
@@ -77,11 +77,11 @@ enum class VsOutput : u8 {
     ClipDist6,
     ClipDist7,
 };
-using VsOutputMap = std::array<VsOutput, 4>;
+using OutputMap = std::array<Output, 4>;
 
 struct VertexRuntimeInfo {
     u32 num_outputs;
-    std::array<VsOutputMap, 3> outputs;
+    std::array<OutputMap, 3> outputs;
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
     u32 step_rate_0;
@@ -145,6 +145,8 @@ struct HullRuntimeInfo {
 static constexpr auto GsMaxOutputStreams = 4u;
 using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
 struct GeometryRuntimeInfo {
+    u32 num_outputs;
+    std::array<OutputMap, 3> outputs;
     u32 num_invocations{};
     u32 output_vertices{};
     u32 in_vertex_data_size{};
@@ -179,7 +181,7 @@ struct PsColorBuffer {
     u32 pad : 20;
     AmdGpu::CompMapping swizzle;
 
-    auto operator<=>(const PsColorBuffer&) const noexcept = default;
+    bool operator==(const PsColorBuffer& other) const noexcept = default;
 };
 
 struct FragmentRuntimeInfo {
@@ -189,11 +191,11 @@ struct FragmentRuntimeInfo {
         bool is_flat;
         u8 default_value;
 
-        [[nodiscard]] bool IsDefault() const {
+        bool IsDefault() const {
             return is_default && !is_flat;
         }
 
-        auto operator<=>(const PsInput&) const noexcept = default;
+        bool operator==(const PsInput&) const noexcept = default;
     };
     AmdGpu::Liverpool::PsInput en_flags;
     AmdGpu::Liverpool::PsInput addr_flags;

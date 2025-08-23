@@ -317,13 +317,7 @@ private:
     IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
                              const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
 
-    void ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
-                        const PsColorBuffer& color_buffer);
-    void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-    void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-
+    void ExportRenderTarget(const GcnInst& inst);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
