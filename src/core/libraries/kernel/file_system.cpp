@@ -845,7 +845,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
             return -1;
         }
         return result;
-    } 
+    }
 
     const s64 pos = file->f.Tell();
     SCOPE_EXIT {

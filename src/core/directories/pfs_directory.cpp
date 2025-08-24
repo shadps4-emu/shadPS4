@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "pfs_directory.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
+#include "pfs_directory.h"
 
 namespace Core::Directories {
 

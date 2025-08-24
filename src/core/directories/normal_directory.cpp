@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -39,7 +40,8 @@ s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 i
     return 0;
 }
 
-s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
+                            s64 offset) {
     LOG_ERROR(Kernel_Fs, "TODO");
     return 0;
 }
