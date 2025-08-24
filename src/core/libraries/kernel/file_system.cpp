@@ -289,7 +289,7 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     return result;
 }
 
-s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -313,11 +313,11 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
     return write(fd, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     s64 result = write(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -326,7 +326,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
     return result;
 }
 
-size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
+s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
@@ -345,7 +345,7 @@ size_t PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        size_t result = file->device->readv(iov, iovcnt);
+        s64 result = file->device->readv(iov, iovcnt);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -473,7 +473,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
     return result;
 }
 
-s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -851,12 +851,12 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 nbytes, s64 offset) {
     OrbisKernelIovec iovec{buf, nbytes};
     return posix_preadv(fd, &iovec, 1, offset);
 }
 
-s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
     OrbisKernelIovec iovec{buf, nbytes};
     return sceKernelPreadv(fd, &iovec, 1, offset);
 }
@@ -903,7 +903,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     }
 
     if (file->type == Core::FileSys::FileType::Device) {
-        s32 result = file->device->getdents(buf, nbytes, basep);
+        s64 result = file->device->getdents(buf, nbytes, basep);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
