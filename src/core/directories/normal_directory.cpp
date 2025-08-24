@@ -45,7 +45,7 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
 
     u64 dirents_index = 0;
     char* current_dirent = data_buffer;
-   for (NormalDirectoryDirent dirent : dirents) {
+    for (NormalDirectoryDirent dirent : dirents) {
         NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
         dirent_to_write->d_fileno = dirent.d_fileno;
 

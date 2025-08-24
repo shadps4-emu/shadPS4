@@ -33,7 +33,7 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
                                               (dirent.d_namlen + 1),
                                           8);
 
-        // To handle some obscure dirents_index behavior, 
+        // To handle some obscure dirents_index behavior,
         // keep track of the "actual" length of this directory.
         directory_content_size += dirent.d_reclen;
     });
