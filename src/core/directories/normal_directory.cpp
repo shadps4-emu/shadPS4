@@ -97,7 +97,11 @@ s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
 }
 
 s64 NormalDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    // read behaves identically to getdents for normal directories.
+    s64 result = read(buf, nbytes);
+    if (basep != nullptr) {
+        *basep = dirents_index;
+    }
+    return result;
 }
 } // namespace Core::Directories

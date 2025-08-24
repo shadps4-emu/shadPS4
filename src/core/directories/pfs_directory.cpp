@@ -24,10 +24,10 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().c_str(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
-        dirent.d_reclen =
-            Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
-                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + (dirent.d_namlen + 1),
-                            8);
+        dirent.d_reclen = Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
+                                              sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) +
+                                              (dirent.d_namlen + 1),
+                                          8);
     });
 }
 
@@ -90,7 +90,44 @@ s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
 }
 
 s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    if (dirents_index == dirents.size()) {
+        // Nothing left to read.
+        return 0;
+    }
+
+    s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
+    memset(buf, 0, bytes_remaining);
+
+    u64 bytes_written = 0;
+    char* current_dirent = (char*)buf;
+    // getdents has to convert pfs dirents to normal dirents
+    NormalDirectoryDirent dirent = PfsToNormalDirent(dirents[dirents_index]);
+    while (bytes_remaining > dirent.d_reclen) {
+        NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
+        dirent_to_write->d_fileno = dirent.d_fileno;
+        strncpy(dirent_to_write->d_name, dirent.d_name, dirent.d_namlen + 1);
+        dirent_to_write->d_namlen = dirent.d_namlen;
+        dirent_to_write->d_reclen = dirent.d_reclen;
+        dirent_to_write->d_type = dirent.d_type;
+
+        if (dirents_index == dirents.size() - 1) {
+            // Last dirent's reclen gets set to the remainder of the buffer.
+            dirent_to_write->d_reclen = bytes_remaining;
+            bytes_written += bytes_remaining;
+            dirents_index++;
+            break;
+        }
+
+        current_dirent += dirent.d_reclen;
+        bytes_remaining -= dirent.d_reclen;
+        bytes_written += dirent.d_reclen;
+        dirent = PfsToNormalDirent(dirents[++dirents_index]);
+    }
+
+    if (basep != nullptr) {
+        *basep = dirents_index;
+    }
+
+    return bytes_written;
 }
 } // namespace Core::Directories
