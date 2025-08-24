@@ -26,8 +26,8 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
         dirent.d_namlen = ent_path.filename().string().size();
         dirent.d_reclen =
             Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
-                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen,
-                            4);
+                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + (dirent.d_namlen + 1),
+                            8);
     });
 }
 
@@ -53,7 +53,7 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
 
 s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     stat->st_mode = 0000777u | 0040000u;
-    stat->st_size = 0x10000;
+    stat->st_size = directory_size;
     stat->st_blksize = 0x10000;
     stat->st_blocks = 0x80;
     return 0;
