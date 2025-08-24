@@ -32,8 +32,38 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
 }
 
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    if (dirents_index == dirents.size()) {
+        // Nothing left to read.
+        return 0;
+    }
+
+    s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
+    // read on PfsDirectories will always return the maximum possible value.
+    u64 bytes_written = bytes_remaining;
+    memset(buf, 0, bytes_remaining);
+
+    char* current_dirent = (char*)buf;
+    PfsDirectoryDirent dirent = dirents[dirents_index];
+    while (bytes_remaining > dirent.d_reclen) {
+        PfsDirectoryDirent* dirent_to_write = (PfsDirectoryDirent*)current_dirent;
+        dirent_to_write->d_fileno = dirent.d_fileno;
+        strncpy(dirent_to_write->d_name, dirent.d_name, dirent.d_namlen + 1);
+        dirent_to_write->d_namlen = dirent.d_namlen;
+        dirent_to_write->d_reclen = dirent.d_reclen;
+        dirent_to_write->d_type = dirent.d_type;
+
+        current_dirent += dirent.d_reclen;
+        bytes_remaining -= dirent.d_reclen;
+
+        if (dirents_index == dirents.size() - 1) {
+            // Currently at the last dirent, so break out of the loop.
+            dirents_index++;
+            break;
+        }
+        dirent = dirents[++dirents_index];
+    }
+
+    return bytes_written;
 }
 
 s64 PfsDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
