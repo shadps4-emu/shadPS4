@@ -121,14 +121,19 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
         dirents_index = 0;
     }
     case 1: {
+        // There aren't any dirents left to pass through.
+        if (dirents_index >= dirents.size()) {
+            dirents_index = dirents_index + offset;
+            break;
+        }
         s64 data_to_skip = offset;
         while (data_to_skip > 0) {
             auto dirent = dirents[dirents_index++];
             data_to_skip -= dirent.d_reclen;
-            if (dirents_index == dirents.size() - 1) {
+            if (dirents_index == dirents.size()) {
                 // We've passed through all file dirents.
                 // Set dirents_index to directory_size + remaining_offset instead.
-                dirents_index = directory_size + data_to_skip;
+                dirents_index = directory_content_size + data_to_skip;
                 break;
             }
         }
@@ -144,17 +149,7 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     }
     }
 
-    if (dirents_index > dirents.size()) {
-        // No need to calculate, as dirents_index is the file pointer if this happens.
-        return dirents_index;
-    }
-
-    s64 current_data_pointer = 0;
-    for (s32 i = 0; i < dirents_index; i++) {
-        auto dirent = dirents[i];
-        current_data_pointer += dirent.d_reclen;
-    }
-    return current_data_pointer;
+    return dirents_index;
 }
 
 s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
