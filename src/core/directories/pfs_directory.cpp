@@ -139,7 +139,7 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     }
 
     if (dirents_index > dirents.size()) {
-        // No need to calculate, as dirents_index is based on directory size if this happens.
+        // No need to calculate, as dirents_index is the file pointer if this happens.
         return dirents_index;
     }
 
