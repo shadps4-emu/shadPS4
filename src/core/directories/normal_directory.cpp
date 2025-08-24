@@ -36,6 +36,12 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
         directory_size += dirent.d_reclen;
     });
 
+    // The last entry of a normal directory should have d_reclen covering the remaining data.
+    // Since the dirents of a folder are constant by this point, we can modify the last dirent
+    // before creating the emulated file buffer.
+    u64 filler_count = Common::AlignUp(directory_size, 512) - directory_size;
+    dirents[dirents.size() - 1].d_reclen += filler_count;
+
     // Reading from standard directories seems to be based around file pointer logic.
     // Keep an internal buffer representing the raw contents of this file descriptor,
     // then emulate the various read functions with that.
@@ -43,7 +49,6 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
     data_buffer = (char*)malloc(directory_size);
     memset(data_buffer, 0, directory_size);
 
-    u64 dirents_index = 0;
     char* current_dirent = data_buffer;
     for (NormalDirectoryDirent dirent : dirents) {
         NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
