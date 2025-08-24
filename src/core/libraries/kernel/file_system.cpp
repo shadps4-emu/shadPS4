@@ -335,7 +335,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
-size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -359,11 +359,11 @@ size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     return total_read;
 }
 
-size_t PS4_SYSV_ABI posix_readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI posix_readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return readv(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     size_t result = readv(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -372,7 +372,7 @@ size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt
     return result;
 }
 
-size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -397,11 +397,11 @@ size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     return total_written;
 }
 
-size_t PS4_SYSV_ABI posix_writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI posix_writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return writev(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     size_t result = writev(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -804,7 +804,7 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
@@ -842,7 +842,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
     return total_read;
 }
 
-s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 result = posix_preadv(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -852,12 +852,12 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 of
 }
 
 s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+    OrbisKernelIovec iovec{buf, nbytes};
     return posix_preadv(fd, &iovec, 1, offset);
 }
 
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+    OrbisKernelIovec iovec{buf, nbytes};
     return sceKernelPreadv(fd, &iovec, 1, offset);
 }
 
@@ -978,7 +978,7 @@ s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* base
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
@@ -1017,7 +1017,7 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s6
 }
 
 s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+    OrbisKernelIovec iovec{buf, nbytes};
     return posix_pwritev(fd, &iovec, 1, offset);
 }
 
@@ -1030,7 +1030,7 @@ s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 result = posix_pwritev(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());

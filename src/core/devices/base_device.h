@@ -9,7 +9,7 @@
 
 namespace Libraries::Kernel {
 struct OrbisKernelStat;
-struct SceKernelIovec;
+struct OrbisKernelIovec;
 } // namespace Libraries::Kernel
 
 namespace Core::Devices {
@@ -28,19 +28,19 @@ public:
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+    virtual size_t readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+    virtual size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual s64 preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
+    virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t pwritev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
+    virtual size_t pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 

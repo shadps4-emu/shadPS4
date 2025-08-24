@@ -24,17 +24,17 @@ s64 SRandomDevice::write(const void* buf, size_t nbytes) {
     return 0;
 }
 
-size_t SRandomDevice::writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+size_t SRandomDevice::writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
 
-size_t SRandomDevice::readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+size_t SRandomDevice::readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
 
-s64 SRandomDevice::preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
+s64 SRandomDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }

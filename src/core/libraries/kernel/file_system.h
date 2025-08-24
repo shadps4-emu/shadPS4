@@ -14,7 +14,7 @@ namespace Libraries::Kernel {
 
 constexpr int ORBIS_MAX_PATH = 255;
 
-struct SceKernelIovec {
+struct OrbisKernelIovec {
     void* iov_base;
     std::size_t iov_len;
 };
