@@ -127,6 +127,14 @@ union CompMapping {
         };
     }
 
+    [[nodiscard]] u32 ApplyMask(u32 mask) const {
+        u32 swizzled_mask{};
+        for (u32 i = 0; i < 4; ++i) {
+            swizzled_mask |= ((mask >> i) & 1) << Map(i);
+        }
+        return swizzled_mask;
+    }
+
     [[nodiscard]] CompMapping Inverse() const {
         CompMapping result{};
         InverseSingle(result.r, CompSwizzle::Red);
