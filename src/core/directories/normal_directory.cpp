@@ -17,17 +17,23 @@ std::shared_ptr<BaseDirectory> NormalDirectory::Create(std::string_view guest_di
 NormalDirectory::NormalDirectory(std::string_view guest_directory) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
+    static s32 fileno = 0;
     mnt->IterateDirectory(guest_directory, [this](const auto& ent_path, const auto ent_is_file) {
-        static s32 fileno = 0;
         NormalDirectoryDirent dirent;
         dirent.d_fileno = ++fileno;
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().c_str(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
-        dirent.d_reclen = sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
-                          sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen;
+        dirent.d_reclen =
+            Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
+                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen,
+                            4);
         dirents.emplace_back(&dirent);
+
+        directory_size += dirent.d_reclen;
     });
+
+    directory_size = Common::AlignUp(directory_size, 512);
 }
 
 s64 NormalDirectory::read(void* buf, u64 nbytes) {
@@ -52,7 +58,10 @@ s64 NormalDirectory::lseek(s64 offset, s32 whence) {
 }
 
 s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
-    LOG_ERROR(Kernel_Fs, "TODO");
+    stat->st_mode = 0000777u | 0040000u;
+    stat->st_size = directory_size;
+    stat->st_blksize = 0x8000;
+    stat->st_blocks = 8;
     return 0;
 }
 

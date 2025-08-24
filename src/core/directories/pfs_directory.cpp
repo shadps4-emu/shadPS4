@@ -50,7 +50,10 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
 }
 
 s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
-    LOG_ERROR(Kernel_Fs, "TODO");
+    stat->st_mode = 0000777u | 0040000u;
+    stat->st_size = 0x10000;
+    stat->st_blksize = 0x10000;
+    stat->st_blocks = 0x80;
     return 0;
 }
 

@@ -36,6 +36,7 @@ private:
         char d_name[MAX_LENGTH + 1];
     };
 
+    u64 directory_size = 0;
     s64 dirents_index = 0;
     std::vector<NormalDirectoryDirent*> dirents;
 };
