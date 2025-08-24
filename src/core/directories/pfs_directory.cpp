@@ -79,8 +79,18 @@ s64 PfsDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovc
 }
 
 s64 PfsDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    u64 old_dirent_index = dirents_index;
+    dirents_index = 0;
+    s64 data_to_skip = offset;
+    // If offset is part-way through one dirent, that dirent is skipped.
+    while (data_to_skip > 0) {
+        auto dirent = dirents[++dirents_index];
+        data_to_skip -= dirent.d_reclen;
+    }
+    
+    s64 bytes_read = readv(iov, iovcnt);
+    dirents_index = old_dirent_index;
+    return bytes_read;
 }
 
 s64 PfsDirectory::lseek(s64 offset, s32 whence) {
