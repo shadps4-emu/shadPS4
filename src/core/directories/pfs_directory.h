@@ -44,19 +44,6 @@ private:
         char d_name[MAX_LENGTH + 1];
     };
 
-    static NormalDirectoryDirent PfsToNormalDirent(PfsDirectoryDirent dirent) {
-        NormalDirectoryDirent converted;
-        converted.d_fileno = dirent.d_fileno;
-        converted.d_type = dirent.d_type;
-        converted.d_namlen = dirent.d_namlen;
-        strncpy(converted.d_name, dirent.d_name, dirent.d_namlen + 1);
-
-        // Reclen needs converting because the structs have different member sizes.
-        converted.d_reclen =
-            dirent.d_reclen - (sizeof(PfsDirectoryDirent) - sizeof(NormalDirectoryDirent));
-        return converted;
-    }
-
     u64 directory_size = 0x10000;
     s64 dirents_index = 0;
     std::vector<PfsDirectoryDirent> dirents;
