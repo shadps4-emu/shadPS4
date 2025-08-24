@@ -25,10 +25,10 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().string().data(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
-        dirent.d_reclen =
-            Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
-                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen,
-                            4);
+        dirent.d_reclen = Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
+                                              sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) +
+                                              (dirent.d_namlen + 1),
+                                          4);
 
         directory_size += dirent.d_reclen;
     });
