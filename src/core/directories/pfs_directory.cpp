@@ -41,7 +41,7 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
 
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
     if (dirents_index >= dirents.size()) {
-        if (!is_eof) {
+        if (dirents_index < directory_content_size) {
             // We need to find the appropriate dirents_index to start from.
             s64 data_to_skip = dirents_index;
             u64 corrected_index = 0;
@@ -79,7 +79,6 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
         if (dirents_index == dirents.size() - 1) {
             // Currently at the last dirent, so break out of the loop.
             dirents_index++;
-            is_eof = true;
             break;
         }
         dirent = dirents[++dirents_index];
@@ -120,13 +119,11 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     // Seek start
     case 0: {
         dirents_index = 0;
-        is_eof = false;
     }
     case 1: {
         // There aren't any dirents left to pass through.
         if (dirents_index >= dirents.size()) {
             dirents_index = dirents_index + offset;
-            is_eof = true;
             break;
         }
         s64 data_to_skip = offset;
@@ -137,7 +134,6 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
                 // We've passed through all file dirents.
                 // Set dirents_index to directory_size + remaining_offset instead.
                 dirents_index = directory_content_size + data_to_skip;
-                is_eof = true;
                 break;
             }
         }
@@ -146,7 +142,6 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     case 2: {
         // Seems like real hardware gives up on tracking dirents_index if you go this route.
         dirents_index = directory_size + offset;
-        is_eof = true;
         break;
     }
     default: {
@@ -172,7 +167,7 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
     }
 
     if (dirents_index >= dirents.size()) {
-        if (!is_eof) {
+        if (dirents_index < directory_content_size) {
             // We need to find the appropriate dirents_index to start from.
             s64 data_to_skip = dirents_index;
             u64 corrected_index = 0;
@@ -209,7 +204,6 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
         if (dirents_index == dirents.size() - 1) {
             // Currently at the last dirent, so set dirents_index appropriately and break.
             dirents_index = directory_size;
-            is_eof = true;
             break;
         }
         dirent = dirents[++dirents_index];
