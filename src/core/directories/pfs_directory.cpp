@@ -25,6 +25,9 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().string().data(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
+
+        // Calculate the appropriate length for this dirent.
+        // Account for the null terminator in d_name too.
         dirent.d_reclen = Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
                                               sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) +
                                               (dirent.d_namlen + 1),
@@ -48,6 +51,8 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
     while (bytes_remaining > dirent.d_reclen) {
         PfsDirectoryDirent* dirent_to_write = (PfsDirectoryDirent*)current_dirent;
         dirent_to_write->d_fileno = dirent.d_fileno;
+
+        // Using size d_namlen + 1 to account for null terminator.
         strncpy(dirent_to_write->d_name, dirent.d_name, dirent.d_namlen + 1);
         dirent_to_write->d_namlen = dirent.d_namlen;
         dirent_to_write->d_reclen = dirent.d_reclen;
@@ -99,11 +104,9 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     // Seek start
     case 0: {
         dirents_index = 0;
-        // Fall into next case
     }
     case 1: {
         s64 data_to_skip = offset;
-        // If offset is part-way through one dirent, that dirent is skipped.
         while (data_to_skip > 0) {
             auto dirent = dirents[dirents_index++];
             data_to_skip -= dirent.d_reclen;
@@ -113,7 +116,6 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     case 2: {
         dirents_index = dirents.size() - 1;
         s64 data_to_skip = offset;
-        // If offset is part-way through one dirent, that dirent is skipped.
         while (data_to_skip > 0) {
             auto dirent = dirents[dirents_index--];
             data_to_skip -= dirent.d_reclen;
@@ -125,7 +127,6 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
     }
     }
 
-    // Tell
     s64 current_data_pointer = 0;
     for (s32 i = 0; i < dirents_index; i++) {
         auto dirent = dirents[i];
