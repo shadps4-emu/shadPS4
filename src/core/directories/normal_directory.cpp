@@ -73,8 +73,15 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
 }
 
 s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    s64 bytes_read = 0;
+    for (s32 i = 0; i < iovcnt; i++) {
+        s64 result = read(iov[i].iov_base, iov[i].iov_len);
+        if (result < 0) {
+            return result;
+        }
+        bytes_read += result;
+    }
+    return bytes_read;
 }
 
 s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
