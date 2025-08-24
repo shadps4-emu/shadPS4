@@ -278,11 +278,6 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     const IR::U32 soffset{GetSrc(inst.src[3])};
     const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
 
-    if (info.stage != Stage::Export && info.stage != Stage::Hull && info.stage != Stage::Geometry) {
-        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
-                   "Non immediate offset not supported");
-    }
-
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
     buffer_info.voffset_enable.Assign(mubuf.offen);
@@ -349,7 +344,6 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
     const IR::U32 soffset{GetSrc(inst.src[3])};
     const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
-    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
