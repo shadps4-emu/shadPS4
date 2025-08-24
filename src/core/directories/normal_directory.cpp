@@ -36,22 +36,16 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
         directory_size += dirent.d_reclen;
     });
 
+    // Reading from standard directories seems to be based around file pointer logic.
+    // Keep an internal buffer representing the raw contents of this file descriptor,
+    // then emulate the various read functions with that.
     directory_size = Common::AlignUp(directory_size, 512);
-}
+    data_buffer = (char*)malloc(directory_size);
+    memset(data_buffer, 0, directory_size);
 
-s64 NormalDirectory::read(void* buf, u64 nbytes) {
-    if (dirents_index == dirents.size()) {
-        // Nothing left to read.
-        return ORBIS_OK;
-    }
-
-    s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
-    memset(buf, 0, bytes_remaining);
-
-    u64 bytes_written = 0;
-    char* current_dirent = (char*)buf;
-    NormalDirectoryDirent dirent = dirents[dirents_index];
-    while (bytes_remaining > dirent.d_reclen) {
+    u64 dirents_index = 0;
+    char* current_dirent = data_buffer;
+   for (NormalDirectoryDirent dirent : dirents) {
         NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
         dirent_to_write->d_fileno = dirent.d_fileno;
 
@@ -61,21 +55,25 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
         dirent_to_write->d_reclen = dirent.d_reclen;
         dirent_to_write->d_type = dirent.d_type;
 
-        if (dirents_index == dirents.size() - 1) {
-            // Last dirent's reclen gets set to the remainder of the buffer.
-            dirent_to_write->d_reclen = bytes_remaining;
-            bytes_written += bytes_remaining;
-            dirents_index++;
-            break;
-        }
-
         current_dirent += dirent.d_reclen;
-        bytes_remaining -= dirent.d_reclen;
-        bytes_written += dirent.d_reclen;
-        dirent = dirents[++dirents_index];
+    }
+}
+
+s64 NormalDirectory::read(void* buf, u64 nbytes) {
+    // Nothing left to read.
+    if (file_offset >= directory_size) {
+        return ORBIS_OK;
     }
 
-    return bytes_written;
+    s64 remaining_data = directory_size - file_offset;
+    s64 bytes = nbytes > remaining_data ? remaining_data : nbytes;
+    memset(buf, 0, bytes);
+
+    char* read_pointer = data_buffer + file_offset;
+    memcpy(buf, read_pointer, bytes);
+
+    file_offset += bytes;
+    return bytes;
 }
 
 s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
@@ -92,53 +90,31 @@ s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 i
 
 s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
                             s64 offset) {
-    u64 old_dirent_index = dirents_index;
-    dirents_index = 0;
-    s64 data_to_skip = offset;
-    // If offset is part-way through one dirent, that dirent is skipped.
-    while (data_to_skip > 0) {
-        auto dirent = dirents[dirents_index++];
-        data_to_skip -= dirent.d_reclen;
-    }
-
+    u64 old_file_pointer = file_offset;
+    file_offset = offset;
     s64 bytes_read = readv(iov, iovcnt);
-    dirents_index = old_dirent_index;
+    file_offset = old_file_pointer;
     return bytes_read;
 }
 
 s64 NormalDirectory::lseek(s64 offset, s32 whence) {
     switch (whence) {
     case 0: {
-        dirents_index = 0;
+        file_offset = 0;
     }
     case 1: {
-        s64 data_to_skip = offset;
-        while (data_to_skip > 0) {
-            auto dirent = dirents[dirents_index++];
-            data_to_skip -= dirent.d_reclen;
-        }
+        file_offset += offset;
         break;
     }
     case 2: {
-        dirents_index = dirents.size() - 1;
-        s64 data_to_skip = offset;
-        while (data_to_skip > 0) {
-            auto dirent = dirents[dirents_index--];
-            data_to_skip -= dirent.d_reclen;
-        }
+        file_offset = directory_size + offset;
         break;
     }
     default: {
         UNREACHABLE_MSG("lseek with unknown whence {}", whence);
     }
     }
-
-    s64 current_data_pointer = 0;
-    for (s32 i = 0; i < dirents_index; i++) {
-        auto dirent = dirents[i];
-        current_data_pointer += dirent.d_reclen;
-    }
-    return current_data_pointer;
+    return file_offset;
 }
 
 s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
@@ -150,11 +126,10 @@ s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
 }
 
 s64 NormalDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
-    // read behaves identically to getdents for normal directories.
-    s64 result = read(buf, nbytes);
     if (basep != nullptr) {
-        *basep = dirents_index;
+        *basep = file_offset;
     }
-    return result;
+    // read behaves identically to getdents for normal directories.
+    return read(buf, nbytes);
 }
 } // namespace Core::Directories
