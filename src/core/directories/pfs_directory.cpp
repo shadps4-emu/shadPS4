@@ -32,13 +32,28 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
                                               sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) +
                                               (dirent.d_namlen + 1),
                                           8);
+
+        // To handle some obscure dirents_index behavior, 
+        // keep track of the "actual" length of this directory.
+        directory_content_size += dirent.d_reclen;
     });
 }
 
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
-    if (dirents_index == dirents.size()) {
-        // Nothing left to read.
-        return ORBIS_OK;
+    if (dirents_index >= dirents.size()) {
+        if (dirents_index < directory_content_size) {
+            // We need to find the appropriate dirents_index to start from.
+            s64 data_to_skip = dirents_index;
+            u64 corrected_index = 0;
+            while (data_to_skip > 0) {
+                auto dirent = dirents[corrected_index++];
+                data_to_skip -= dirent.d_reclen;
+            }
+            dirents_index = corrected_index;
+        } else {
+            // Nothing left to read.
+            return ORBIS_OK;
+        }
     }
 
     s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
@@ -114,17 +129,18 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
         break;
     }
     case 2: {
-        dirents_index = dirents.size() - 1;
-        s64 data_to_skip = offset;
-        while (data_to_skip > 0) {
-            auto dirent = dirents[dirents_index--];
-            data_to_skip -= dirent.d_reclen;
-        }
+        // Seems like real hardware gives up on tracking dirents_index if you go this route.
+        dirents_index = directory_size + offset;
         break;
     }
     default: {
         UNREACHABLE_MSG("lseek with unknown whence {}", whence);
     }
+    }
+
+    if (dirents_index > dirents.size()) {
+        // No need to calculate, as dirents_index is based on directory size if this happens.
+        return dirents_index;
     }
 
     s64 current_data_pointer = 0;
@@ -144,9 +160,25 @@ s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
 }
 
 s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
-    if (dirents_index == dirents.size()) {
-        // Nothing left to read.
-        return ORBIS_OK;
+    // basep is set at the start of the function.
+    if (basep != nullptr) {
+        *basep = dirents_index;
+    }
+
+    if (dirents_index >= dirents.size()) {
+        if (dirents_index < directory_content_size) {
+            // We need to find the appropriate dirents_index to start from.
+            s64 data_to_skip = dirents_index;
+            u64 corrected_index = 0;
+            while (data_to_skip > 0) {
+                auto dirent = dirents[corrected_index++];
+                data_to_skip -= dirent.d_reclen;
+            }
+            dirents_index = corrected_index;
+        } else {
+            // Nothing left to read.
+            return ORBIS_OK;
+        }
     }
 
     s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
@@ -169,15 +201,11 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
         bytes_written += dirent.d_reclen;
 
         if (dirents_index == dirents.size() - 1) {
-            // Currently at the last dirent, so break out of the loop.
-            dirents_index++;
+            // Currently at the last dirent, so set dirents_index appropriately and break.
+            dirents_index = directory_size;
             break;
         }
         dirent = dirents[++dirents_index];
-    }
-
-    if (basep != nullptr) {
-        *basep = dirents_index;
     }
 
     return bytes_written;

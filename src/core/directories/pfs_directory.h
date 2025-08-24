@@ -45,6 +45,7 @@ private:
     };
 
     u64 directory_size = 0x10000;
+    u64 directory_content_size = 0;
     s64 dirents_index = 0;
     std::vector<PfsDirectoryDirent> dirents;
 };
