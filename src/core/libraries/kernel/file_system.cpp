@@ -922,7 +922,21 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
 
-    if (file->type == Core::FileSys::FileType::Device) {
+    if (nbytes < 512) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    switch(file->type) {
+    case Core::FileSys::FileType::Directory: {
+        s64 result = file->directory->getdents(buf, nbytes, basep);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    }
+    case Core::FileSys::FileType::Device: {
         s64 result = file->device->getdents(buf, nbytes, basep);
         if (result < 0) {
             ErrSceToPosix(result);
@@ -930,18 +944,14 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         }
         return result;
     }
-
-    if (file->type != Core::FileSys::FileType::Directory) {
+    default: {
+        // Not directory or device
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-
-    s64 result = file->directory->getdents(buf, nbytes, basep);
-    if (result < 0) {
-        ErrSceToPosix(result);
-        return -1;
     }
-    return result;
+    
+    return ORBIS_OK;
 }
 
 s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
