@@ -241,6 +241,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
+        .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk,
         // When binding a UBO, we calculate its size considering the offset in the larger buffer
         // cache underlying resource. In some cases, it may produce sizes exceeding the system
         // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
@@ -297,8 +298,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 
 bool PipelineCache::RefreshGraphicsKey() {
     std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
-
-    auto& regs = liverpool->regs;
+    const auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
     key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
@@ -312,65 +312,72 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.provoking_vtx_last = regs.polygon_control.provoking_vtx_last;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
+    key.patch_control_points =
+        regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
     key.num_samples = regs.NumSamples();
+    key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
 
-    // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
-    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
-    // order. We need to do some arrays compaction at this stage
-    key.num_color_attachments = 0;
-    key.color_buffers.fill({});
-    key.blend_controls.fill({});
-    key.write_masks.fill({});
-    key.vertex_buffer_formats.fill(vk::Format::eUndefined);
-
-    key.patch_control_points = 0;
-    if (regs.stage_enable.hs_en.Value()) {
-        key.patch_control_points = regs.ls_hs_config.hs_input_control_points.Value();
-    }
-
-    // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
-    // recompiler.
-    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
-        auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf) {
-            // No attachment bound and no incremented index.
+    // First pass to fill render target information
+    for (s32 cb = 0; cb < Liverpool::NumColorBuffers && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        if (!col_buf || !target_mask) {
+            // No attachment bound or writing to it is disabled.
             continue;
         }
 
-        const auto remapped_cb = key.num_color_attachments++;
-        if (!regs.color_target_mask.GetMask(cb)) {
-            // Bound to null handle, skip over this attachment index.
-            continue;
-        }
-
-        // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
-        // need a bias applied to round correctly; detect and set the flag for that here.
-        const auto needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk &&
-                                       (col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Snorm ||
-                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Srgb) &&
-                                       (col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8 ||
-                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
-                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
-
-        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
+        // Fill color target information
+        key.color_buffers[cb] = Shader::PsColorBuffer{
             .data_format = col_buf.GetDataFmt(),
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
             .export_format = regs.color_export_format.GetFormat(cb),
-            .needs_unorm_fixup = needs_unorm_fixup,
             .swizzle = col_buf.Swizzle(),
         };
+
+        // Fill color blending information
+        key.blend_controls[cb] = regs.blend_control[cb];
+        key.blend_controls[cb].enable.Assign(regs.blend_control[cb].enable &&
+                                             !col_buf.info.blend_bypass);
+
+        // Apply swizzle to target mask
+        const auto& swizzle = key.color_buffers[cb].swizzle;
+        for (u32 i = 0; i < 4; ++i) {
+            key.write_masks[cb] |= ((target_mask >> i) & 1) << swizzle.Map(i);
+        }
     }
 
+    // Compile and bind shader stages
+    if (!RefreshGraphicsStages()) {
+        return false;
+    }
+
+    // Second pass to mask out render targets not written by fragment shader
+    for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
+            continue;
+        }
+        if ((key.mrt_mask & (1u << cb)) == 0) {
+            // Attachment is bound and mask allows writes but shader does not output to it.
+            key.color_buffers[cb] = {};
+        }
+    }
+
+    return true;
+}
+
+bool PipelineCache::RefreshGraphicsStages() {
+    const auto& regs = liverpool->regs;
+    auto& key = graphics_key;
     fetch_shader = std::nullopt;
 
     Shader::Backend::Bindings binding{};
-    const auto& TryBindStage = [&](Shader::Stage stage_in, Shader::LogicalStage stage_out) -> bool {
+    const auto bind_stage = [&](Shader::Stage stage_in, Shader::LogicalStage stage_out) -> bool {
         const auto stage_in_idx = static_cast<u32>(stage_in);
         const auto stage_out_idx = static_cast<u32>(stage_out);
         if (!regs.stage_enable.IsStageEnabled(stage_in_idx)) {
@@ -405,51 +412,49 @@ bool PipelineCache::RefreshGraphicsKey() {
         return true;
     };
 
-    const auto& IsGsFeaturesSupported = [&]() -> bool {
-        // These checks are temporary until all functionality is implemented.
-        return !regs.vgt_gs_mode.onchip && !regs.vgt_strmout_config.raw;
-    };
-
     infos.fill(nullptr);
-    TryBindStage(Stage::Fragment, LogicalStage::Fragment);
+    bind_stage(Stage::Fragment, LogicalStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
-    case Liverpool::ShaderStageEnable::VgtStages::EsGs: {
-        if (!instance.IsGeometryStageSupported() || !IsGsFeaturesSupported()) {
+    case Liverpool::ShaderStageEnable::VgtStages::EsGs:
+        if (!instance.IsGeometryStageSupported()) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");
             return false;
         }
-        if (!TryBindStage(Stage::Export, LogicalStage::Vertex)) {
+        if (regs.vgt_gs_mode.onchip || regs.vgt_strmout_config.raw) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader features unsupported, skipping");
             return false;
         }
-        if (!TryBindStage(Stage::Geometry, LogicalStage::Geometry)) {
+        if (!bind_stage(Stage::Export, LogicalStage::Vertex)) {
+            return false;
+        }
+        if (!bind_stage(Stage::Geometry, LogicalStage::Geometry)) {
             return false;
         }
         break;
-    }
-    case Liverpool::ShaderStageEnable::VgtStages::LsHs: {
+    case Liverpool::ShaderStageEnable::VgtStages::LsHs:
         if (!instance.IsTessellationSupported() ||
             (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
              !instance.IsTessellationIsolinesSupported())) {
             return false;
         }
-        if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
+        if (!bind_stage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;
         }
-        if (!TryBindStage(Stage::Vertex, LogicalStage::TessellationEval)) {
+        if (!bind_stage(Stage::Vertex, LogicalStage::TessellationEval)) {
             return false;
         }
-        if (!TryBindStage(Stage::Local, LogicalStage::Vertex)) {
+        if (!bind_stage(Stage::Local, LogicalStage::Vertex)) {
             return false;
         }
         break;
-    }
-    default: {
-        TryBindStage(Stage::Vertex, LogicalStage::Vertex);
+    default:
+        bind_stage(Stage::Vertex, LogicalStage::Vertex);
         break;
-    }
     }
 
     const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
@@ -463,40 +468,6 @@ bool PipelineCache::RefreshGraphicsKey() {
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
         }
-    }
-
-    // Second pass to fill remain CB pipeline key data
-    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
-        auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf) {
-            // No attachment bound and no incremented index.
-            continue;
-        }
-
-        const u32 target_mask = regs.color_target_mask.GetMask(cb);
-        if (!target_mask || (key.mrt_mask & (1u << cb)) == 0) {
-            // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
-            // of the latter we need to change format to undefined, and either way we need to
-            // increment the index for the null attachment binding.
-            key.color_buffers[remapped_cb++] = {};
-            continue;
-        }
-
-        key.blend_controls[remapped_cb] = regs.blend_control[cb];
-        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
-                                                      !col_buf.info.blend_bypass);
-        // Apply swizzle to target mask
-        for (u32 i = 0; i < 4; i++) {
-            if (target_mask & (1 << i)) {
-                const auto swizzled_comp =
-                    static_cast<u32>(key.color_buffers[remapped_cb].swizzle.array[i]);
-                constexpr u32 min_comp = static_cast<u32>(AmdGpu::CompSwizzle::Red);
-                const u32 comp = swizzled_comp >= min_comp ? swizzled_comp - min_comp : i;
-                key.write_masks[remapped_cb] |= vk::ColorComponentFlagBits{1u << comp};
-            }
-        }
-        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
-        ++remapped_cb;
     }
 
     return true;

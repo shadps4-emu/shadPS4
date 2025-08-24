@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <mutex>
 #include "common/assert.h"
 #include "common/debug.h"
-#include "common/logging/log.h"
 #include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -324,12 +322,6 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     if (dirty_state.blend_constants) {
         dirty_state.blend_constants = false;
         cmdbuf.setBlendConstants(blend_constants.data());
-    }
-    if (dirty_state.color_write_masks) {
-        dirty_state.color_write_masks = false;
-        if (instance.IsDynamicColorWriteMaskSupported()) {
-            cmdbuf.setColorWriteMaskEXT(0, color_write_masks);
-        }
     }
     if (dirty_state.line_width) {
         dirty_state.line_width = false;
