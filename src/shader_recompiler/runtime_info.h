@@ -82,6 +82,7 @@ using OutputMap = std::array<Output, 4>;
 struct VertexRuntimeInfo {
     u32 num_outputs;
     std::array<OutputMap, 3> outputs;
+    bool tess_emulated_primitive{};
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
     u32 step_rate_0;
@@ -94,6 +95,7 @@ struct VertexRuntimeInfo {
 
     bool operator==(const VertexRuntimeInfo& other) const noexcept {
         return num_outputs == other.num_outputs && outputs == other.outputs &&
+               tess_emulated_primitive == other.tess_emulated_primitive &&
                emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
                clip_disable == other.clip_disable && tess_type == other.tess_type &&
                tess_topology == other.tess_topology &&
