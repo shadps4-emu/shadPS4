@@ -125,6 +125,12 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
         while (data_to_skip > 0) {
             auto dirent = dirents[dirents_index++];
             data_to_skip -= dirent.d_reclen;
+            if (dirents_index == dirents.size() - 1) {
+                // We've passed through all file dirents.
+                // Set dirents_index to directory_size + remaining_offset instead.
+                dirents_index = directory_size + data_to_skip;
+                break;
+            }
         }
         break;
     }
