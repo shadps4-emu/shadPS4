@@ -23,7 +23,7 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
         auto& dirent = dirents.emplace_back();
         dirent.d_fileno = ++fileno;
         dirent.d_type = (ent_is_file ? 8 : 4);
-        strncpy(dirent.d_name, ent_path.filename().c_str(), MAX_LENGTH + 1);
+        strncpy(dirent.d_name, ent_path.string().data(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
         dirent.d_reclen =
             Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
