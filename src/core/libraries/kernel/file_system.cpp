@@ -16,6 +16,8 @@
 #include "core/devices/random_device.h"
 #include "core/devices/srandom_device.h"
 #include "core/devices/urandom_device.h"
+#include "core/directories/normal_directory.h"
+#include "core/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -159,30 +161,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        file->type = Core::FileSys::FileType::Directory;
-
-        // Populate directory contents
-        mnt->IterateDirectory(file->m_guest_name,
-                              [&file](const auto& ent_path, const auto ent_is_file) {
-                                  auto& dir_entry = file->dirents.emplace_back();
-                                  dir_entry.name = ent_path.filename().string();
-                                  dir_entry.isFile = ent_is_file;
-                              });
-        file->dirents_index = 0;
-
-        if (read) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write || rdwr) {
+        if (write || rdwr) {
             // Cannot open directories with any type of write access
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             return -1;
-        }
-
-        if (e == EACCES) {
-            // Hack to bypass some platform limitations, ignore the error and continue as normal.
-            LOG_WARNING(Kernel_Fs, "Opening directories is not fully supported on this platform");
-            e = 0;
         }
 
         if (truncate) {
@@ -190,6 +173,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             return -1;
+        }
+
+        file->type = Core::FileSys::FileType::Directory;
+        file->is_opened = true;
+        if (file->m_guest_name.starts_with("/app0")) {
+            // TODO: Properly identify type for paths like "/app0/.."
+            file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
+        } else {
+            file->directory = Core::Directories::NormalDirectory::Create(file->m_guest_name);
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
@@ -351,6 +343,13 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->readv(iov, iovcnt);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
@@ -426,6 +425,13 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->lseek(offset, whence);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
 
     Common::FS::SeekOrigin origin{};
@@ -484,6 +490,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->read(buf, nbytes);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -677,12 +690,12 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         break;
     }
     case Core::FileSys::FileType::Directory: {
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 65536;
-        sb->st_blksize = 65536;
-        sb->st_blocks = 128;
-        // TODO incomplete
-        break;
+        s32 result = file->directory->fstat(sb);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     case Core::FileSys::FileType::Socket: {
         // Socket functions handle errnos internally
@@ -825,7 +838,14 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
             return -1;
         }
         return result;
-    }
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->preadv(iov, iovcnt, offset);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } 
 
     const s64 pos = file->f.Tell();
     SCOPE_EXIT {
@@ -911,41 +931,17 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return result;
     }
 
-    if (file->type != Core::FileSys::FileType::Directory || nbytes < 512 ||
-        file->dirents_index > file->dirents.size()) {
+    if (file->type != Core::FileSys::FileType::Directory) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
 
-    s64 bytes_to_write = nbytes;
-    char* buf_to_write = buf;
-    u64 bytes_written = 0;
-    while (bytes_to_write >= sizeof(OrbisKernelDirent)) {
-        if (file->dirents_index == file->dirents.size()) {
-            break;
-        }
-        const auto& entry = file->dirents.at(file->dirents_index++);
-        auto str = entry.name;
-        static int fileno = 1000; // random
-        OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf_to_write;
-        // TODO this should be unique, maybe switch to a hash or something?
-        sce_ent->d_fileno = fileno++;
-        sce_ent->d_reclen = sizeof(OrbisKernelDirent);
-        sce_ent->d_type = (entry.isFile ? 8 : 4);
-        sce_ent->d_namlen = str.size();
-        strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
-        sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
-
-        buf_to_write += sizeof(OrbisKernelDirent);
-        bytes_to_write -= sizeof(OrbisKernelDirent);
-        bytes_written += sizeof(OrbisKernelDirent);
+    s64 result = file->directory->getdents(buf, nbytes, basep);
+    if (result < 0) {
+        ErrSceToPosix(result);
+        return -1;
     }
-
-    if (basep != nullptr) {
-        *basep = file->dirents_index;
-    }
-
-    return bytes_written;
+    return result;
 }
 
 s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {

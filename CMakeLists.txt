@@ -763,6 +763,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/devices/urandom_device.h
          src/core/devices/srandom_device.cpp
          src/core/devices/srandom_device.h
+         src/core/directories/base_directory.cpp
+         src/core/directories/base_directory.h
+         src/core/directories/normal_directory.cpp
+         src/core/directories/normal_directory.h
+         src/core/directories/pfs_directory.cpp
+         src/core/directories/pfs_directory.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
