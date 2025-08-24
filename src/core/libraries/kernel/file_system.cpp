@@ -116,14 +116,39 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
     bool exists = NativeFS::Exists(file->m_host_name);
+    bool is_really_directory = exists ? NativeFS::IsDirectory(file->m_host_name) : false;
     s32 e = 0;
 
-    // Weed out illegal combinations
+    // determine target file type first (file/directory)
+    if (exists && !create) {
+        if (is_really_directory || directory) {
+            // Directories can be opened even if the directory flag isn't set.
+            // In these cases, error behavior is identical to the directory code path.
+            directory = true;
+            file->type = Core::FileSys::FileType::Directory;
+        }
+        if (!is_really_directory && directory) {
+            // If the opened file is not a directory, return ENOTDIR.
+            // This will trigger when create & directory is specified, this is expected.
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_ENOTDIR;
+            return -1;
+        }
+    }
+
+    // handle creation of target entity
     if (create) {
         if (!exists && read_only) {
             // Can't create files in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        if (!exists && directory) {
+            // we can safely assume this will not return an error
+            NativeFS::Touch(file->m_host_name, mode);
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_ENOTDIR;
             return -1;
         }
         if (exists && excl) {
@@ -138,46 +163,32 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (truncate && read_only) {
-        // Can't open files with truncate flag in a read only directory
-        h->DeleteHandle(handle);
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
-    if (truncate && read) {
-        // This combination is "undefined" in POSIX
-        // Forcing behaviour implemented by PS4 (truncate and open for reading)
-        // Truncate here, will be opened later
-        Common::FS::IOFile{file->m_host_name, Common::FS::FileAccessMode::Write, true};
-        flags &= ~ORBIS_KERNEL_O_TRUNC;
-        truncate = false;
-    }
 
-    // Wondering if this is actually necessary
-    if (exists) {
-        if (NativeFS::IsDirectory(file->m_host_name) || directory) {
-            // Directories can be opened even if the directory flag isn't set.
-            // In these cases, error behavior is identical to the directory code path.
-            directory = true;
-            file->type = Core::FileSys::FileType::Directory;
-        }
-        if (!NativeFS::IsDirectory(file->m_host_name) && directory) {
-            // If the opened file is not a directory, return ENOTDIR.
-            // This will trigger when create & directory is specified, this is expected.
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOTDIR;
-            return -1;
-        }
-    }
-
-    if (directory && (write || rdwr)) {
-        // Cannot open directories with any type of write access
+    // directories can't take *anything* related to writing
+    if (directory && (write || rdwr || truncate)) {
         h->DeleteHandle(handle);
         *__Error() = POSIX_EISDIR;
         return -1;
     }
 
-    // Handle things
+    if (!directory) {
+        if (read_only && (write || rdwr || truncate)) {
+            // Can't open files with truncate flag in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        if (truncate && read) {
+            // This combination is "undefined" in POSIX
+            // Forcing behaviour implemented by PS4 (truncate and open for reading)
+            // Truncate here, will be opened later
+            Common::FS::IOFile{file->m_host_name, Common::FS::FileAccessMode::Write, true};
+            flags &= ~ORBIS_KERNEL_O_TRUNC;
+            truncate = false;
+        }
+    }
+
+    // handle opening
     if (directory) {
         // Populate directory contents
         mnt->IterateDirectory(file->m_guest_name,

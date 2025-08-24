@@ -98,51 +98,6 @@ s32 PS4_SYSV_ABI sceKernelError(s32 posix_error) {
     return posix_error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-void SetPosixErrno(s32 e) {
-    // Some error numbers are different between supported OSes
-    switch (e) {
-    case EPERM:
-        g_posix_errno = POSIX_EPERM;
-        break;
-    case ENOENT:
-        g_posix_errno = POSIX_ENOENT;
-        break;
-    case EBADF:
-        g_posix_errno = POSIX_EBADF;
-        break;
-    case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
-        break;
-    case ENOMEM:
-        g_posix_errno = POSIX_ENOMEM;
-        break;
-    case EACCES:
-        g_posix_errno = POSIX_EACCES;
-        break;
-    case EFAULT:
-        g_posix_errno = POSIX_EFAULT;
-        break;
-    case EINVAL:
-        g_posix_errno = POSIX_EINVAL;
-        break;
-    case ENOSPC:
-        g_posix_errno = POSIX_ENOSPC;
-        break;
-    case ERANGE:
-        g_posix_errno = POSIX_ERANGE;
-        break;
-    case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
-        break;
-    case ETIMEDOUT:
-        g_posix_errno = POSIX_ETIMEDOUT;
-        break;
-    default:
-        LOG_WARNING(Kernel, "Unhandled errno {}", e);
-        g_posix_errno = e;
-    }
-}
-
 static u64 g_mspace_atomic_id_mask = 0;
 static u64 g_mstate_table[64] = {0};
 
@@ -311,6 +266,369 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("4oXYe9Xmk0Q", "libkernel", 1, "libkernel", 1, 1, sceKernelGetGPI);
     LIB_FUNCTION("ca7v6Cxulzs", "libkernel", 1, "libkernel", 1, 1, sceKernelSetGPO);
+}
+
+void SetPosixErrno(s32 e) {
+    // Some error numbers are different between supported OSes
+    switch (e) {
+    case EPERM:
+        g_posix_errno = POSIX_EPERM;
+        break;
+    case ENOENT:
+        g_posix_errno = POSIX_ENOENT;
+        break;
+    case ESRCH:
+        g_posix_errno = POSIX_ESRCH;
+        break;
+    case EINTR:
+        g_posix_errno = POSIX_EINTR;
+        break;
+    case EIO:
+        g_posix_errno = POSIX_EIO;
+        break;
+    case ENXIO:
+        g_posix_errno = POSIX_ENXIO;
+        break;
+    case E2BIG:
+        g_posix_errno = POSIX_E2BIG;
+        break;
+    case ENOEXEC:
+        g_posix_errno = POSIX_ENOEXEC;
+        break;
+    case EBADF:
+        g_posix_errno = POSIX_EBADF;
+        break;
+    case ECHILD:
+        g_posix_errno = POSIX_ECHILD;
+        break;
+    case EDEADLK:
+        g_posix_errno = POSIX_EDEADLK;
+        break;
+    case ENOMEM:
+        g_posix_errno = POSIX_ENOMEM;
+        break;
+    case EACCES:
+        g_posix_errno = POSIX_EACCES;
+        break;
+    case EFAULT:
+        g_posix_errno = POSIX_EFAULT;
+        break;
+    case ENOTBLK:
+        g_posix_errno = POSIX_ENOTBLK;
+        break;
+    case EBUSY:
+        g_posix_errno = POSIX_EBUSY;
+        break;
+    case EEXIST:
+        g_posix_errno = POSIX_EEXIST;
+        break;
+    case EXDEV:
+        g_posix_errno = POSIX_EXDEV;
+        break;
+    case ENODEV:
+        g_posix_errno = POSIX_ENODEV;
+        break;
+    case ENOTDIR:
+        g_posix_errno = POSIX_ENOTDIR;
+        break;
+    case EISDIR:
+        g_posix_errno = POSIX_EISDIR;
+        break;
+    case EINVAL:
+        g_posix_errno = POSIX_EINVAL;
+        break;
+    case ENFILE:
+        g_posix_errno = POSIX_ENFILE;
+        break;
+    case EMFILE:
+        g_posix_errno = POSIX_EMFILE;
+        break;
+    case ENOTTY:
+        g_posix_errno = POSIX_ENOTTY;
+        break;
+    case ETXTBSY:
+        g_posix_errno = POSIX_ETXTBSY;
+        break;
+    case EFBIG:
+        g_posix_errno = POSIX_EFBIG;
+        break;
+    case ENOSPC:
+        g_posix_errno = POSIX_ENOSPC;
+        break;
+    case ESPIPE:
+        g_posix_errno = POSIX_ESPIPE;
+        break;
+    case EROFS:
+        g_posix_errno = POSIX_EROFS;
+        break;
+    case EMLINK:
+        g_posix_errno = POSIX_EMLINK;
+        break;
+    case EPIPE:
+        g_posix_errno = POSIX_EPIPE;
+        break;
+    case EDOM:
+        g_posix_errno = POSIX_EDOM;
+        break;
+    case ERANGE:
+        g_posix_errno = POSIX_ERANGE;
+        break;
+    case EAGAIN: // same as EWOULDBLOCK
+        g_posix_errno = POSIX_EAGAIN; // same as POSIX_EWOULDBLOCK
+        break;
+    case EINPROGRESS:
+        g_posix_errno = POSIX_EINPROGRESS;
+        break;
+    case EALREADY:
+        g_posix_errno = POSIX_EALREADY;
+        break;
+    case ENOTSOCK:
+        g_posix_errno = POSIX_ENOTSOCK;
+        break;
+    case EDESTADDRREQ:
+        g_posix_errno = POSIX_EDESTADDRREQ;
+        break;
+    case EMSGSIZE:
+        g_posix_errno = POSIX_EMSGSIZE;
+        break;
+    case EPROTOTYPE:
+        g_posix_errno = POSIX_EPROTOTYPE;
+        break;
+    case ENOPROTOOPT:
+        g_posix_errno = POSIX_ENOPROTOOPT;
+        break;
+    case EPROTONOSUPPORT:
+        g_posix_errno = POSIX_EPROTONOSUPPORT;
+        break;
+    case ESOCKTNOSUPPORT:
+        g_posix_errno = POSIX_ESOCKTNOSUPPORT;
+        break;
+    case EOPNOTSUPP: // same as ENOTSUP
+        g_posix_errno = POSIX_EOPNOTSUPP; // same as POSIX_ENOTSUP
+        break;
+    case EPFNOSUPPORT:
+        g_posix_errno = POSIX_EPFNOSUPPORT;
+        break;
+    case EAFNOSUPPORT:
+        g_posix_errno = POSIX_EAFNOSUPPORT;
+        break;
+    case EADDRINUSE:
+        g_posix_errno = POSIX_EADDRINUSE;
+        break;
+    case EADDRNOTAVAIL:
+        g_posix_errno = POSIX_EADDRNOTAVAIL;
+        break;
+    case ENETDOWN:
+        g_posix_errno = POSIX_ENETDOWN;
+        break;
+    case ENETUNREACH:
+        g_posix_errno = POSIX_ENETUNREACH;
+        break;
+    case ENETRESET:
+        g_posix_errno = POSIX_ENETRESET;
+        break;
+    case ECONNABORTED:
+        g_posix_errno = POSIX_ECONNABORTED;
+        break;
+    case ECONNRESET:
+        g_posix_errno = POSIX_ECONNRESET;
+        break;
+    case ENOBUFS:
+        g_posix_errno = POSIX_ENOBUFS;
+        break;
+    case EISCONN:
+        g_posix_errno = POSIX_EISCONN;
+        break;
+    case ENOTCONN:
+        g_posix_errno = POSIX_ENOTCONN;
+        break;
+    case ESHUTDOWN:
+        g_posix_errno = POSIX_ESHUTDOWN;
+        break;
+    case ETOOMANYREFS:
+        g_posix_errno = POSIX_ETOOMANYREFS;
+        break;
+    case ETIMEDOUT:
+        g_posix_errno = POSIX_ETIMEDOUT;
+        break;
+    case ECONNREFUSED:
+        g_posix_errno = POSIX_ECONNREFUSED;
+        break;
+    case ELOOP:
+        g_posix_errno = POSIX_ELOOP;
+        break;
+    case ENAMETOOLONG:
+        g_posix_errno = POSIX_ENAMETOOLONG;
+        break;
+    case EHOSTDOWN:
+        g_posix_errno = POSIX_EHOSTDOWN;
+        break;
+    case EHOSTUNREACH:
+        g_posix_errno = POSIX_EHOSTUNREACH;
+        break;
+    case ENOTEMPTY:
+        g_posix_errno = POSIX_ENOTEMPTY;
+        break;
+    //case EPROCLIM:
+    //    g_posix_errno = POSIX_EPROCLIM;
+    //    break;
+    case EUSERS:
+        g_posix_errno = POSIX_EUSERS;
+        break;
+    case EDQUOT:
+        g_posix_errno = POSIX_EDQUOT;
+        break;
+    case ESTALE:
+        g_posix_errno = POSIX_ESTALE;
+        break;
+    case EREMOTE:
+        g_posix_errno = POSIX_EREMOTE;
+        break;
+    //case EBADRPC:
+    //    g_posix_errno = POSIX_EBADRPC;
+    //    break;
+    //case ERPCMISMATCH:
+    //    g_posix_errno = POSIX_ERPCMISMATCH;
+    //    break;
+    //case EPROGUNAVAIL:
+    //    g_posix_errno = POSIX_EPROGUNAVAIL;
+    //    break;
+    //case EPROGMISMATCH:
+    //    g_posix_errno = POSIX_EPROGMISMATCH;
+    //    break;
+    //case EPROCUNAVAIL:
+    //    g_posix_errno = POSIX_EPROCUNAVAIL;
+    //    break;
+    case ENOLCK:
+        g_posix_errno = POSIX_ENOLCK;
+        break;
+    case ENOSYS:
+        g_posix_errno = POSIX_ENOSYS;
+        break;
+    //case EFTYPE:
+    //    g_posix_errno = POSIX_EFTYPE;
+    //    break;
+    //case EAUTH:
+    //    g_posix_errno = POSIX_EAUTH;
+    //    break;
+    //case ENEEDAUTH:
+    //    g_posix_errno = POSIX_ENEEDAUTH;
+    //    break;
+    case EIDRM:
+        g_posix_errno = POSIX_EIDRM;
+        break;
+    case ENOMSG:
+        g_posix_errno = POSIX_ENOMSG;
+        break;
+    case EOVERFLOW:
+        g_posix_errno = POSIX_EOVERFLOW;
+        break;
+    case ECANCELED:
+        g_posix_errno = POSIX_ECANCELED;
+        break;
+    case EILSEQ:
+        g_posix_errno = POSIX_EILSEQ;
+        break;
+    //case ENOATTR:
+    //    g_posix_errno = POSIX_ENOATTR;
+    //    break;
+    //case EDOOFUS:
+    //    g_posix_errno = POSIX_EDOOFUS;
+    //    break;
+    case EBADMSG:
+        g_posix_errno = POSIX_EBADMSG;
+        break;
+    case EMULTIHOP:
+        g_posix_errno = POSIX_EMULTIHOP;
+        break;
+    case ENOLINK:
+        g_posix_errno = POSIX_ENOLINK;
+        break;
+    case EPROTO:
+        g_posix_errno = POSIX_EPROTO;
+        break;
+    //case ENOTCAPABLE:
+    //    g_posix_errno = POSIX_ENOTCAPABLE;
+    //    break;
+    //case ECAPMODE:
+    //    g_posix_errno = POSIX_ECAPMODE;
+    //    break;
+    //case ENOBLK:
+    //    g_posix_errno = POSIX_ENOBLK;
+    //    break;
+    //case EICV:
+    //    g_posix_errno = POSIX_EICV;
+    //    break;
+    //case ENOPLAYGOENT:
+    //    g_posix_errno = POSIX_ENOPLAYGOENT;
+    //    break;
+    //case EREVOKE:
+    //    g_posix_errno = POSIX_EREVOKE;
+    //    break;
+    //case ESDKVERSION:
+    //    g_posix_errno = POSIX_ESDKVERSION;
+    //    break;
+    //case ESTART:
+    //    g_posix_errno = POSIX_ESTART;
+    //    break;
+    //case ESTOP:
+    //    g_posix_errno = POSIX_ESTOP;
+    //    break;
+    //case EINVALID2MB:
+    //    g_posix_errno = POSIX_EINVALID2MB;
+    //    break;
+    //case ELAST:
+    //    g_posix_errno = POSIX_ELAST;
+    //    break;
+    //case EADHOC:
+    //    g_posix_errno = POSIX_EADHOC;
+    //    break;
+    //case EINACTIVEDISABLED:
+    //    g_posix_errno = POSIX_EINACTIVEDISABLED;
+    //    break;
+    //case ENETNODATA:
+    //    g_posix_errno = POSIX_ENETNODATA;
+    //    break;
+    //case ENETDESC:
+    //    g_posix_errno = POSIX_ENETDESC;
+    //    break;
+    //case ENETDESCTIMEDOUT:
+    //    g_posix_errno = POSIX_ENETDESCTIMEDOUT;
+    //    break;
+    //case ENETINTR:
+    //    g_posix_errno = POSIX_ENETINTR;
+    //    break;
+    //case ERETURN:
+    //    g_posix_errno = POSIX_ERETURN;
+    //    break;
+    //case EFPOS:
+    //    g_posix_errno = POSIX_EFPOS;
+    //    break;
+    case ENODATA:
+        g_posix_errno = POSIX_ENODATA;
+        break;
+    case ENOSR:
+        g_posix_errno = POSIX_ENOSR;
+        break;
+    case ENOSTR:
+        g_posix_errno = POSIX_ENOSTR;
+        break;
+    case ENOTRECOVERABLE:
+        g_posix_errno = POSIX_ENOTRECOVERABLE;
+        break;
+    //case EOTHER:
+    //    g_posix_errno = POSIX_EOTHER;
+    //    break;
+    case EOWNERDEAD:
+        g_posix_errno = POSIX_EOWNERDEAD;
+        break;
+    case ETIME:
+        g_posix_errno = POSIX_ETIME;
+        break;
+    default:
+        LOG_WARNING(Kernel, "Unhandled errno {}", e);
+        g_posix_errno = e;
+    }
 }
 
 } // namespace Libraries::Kernel

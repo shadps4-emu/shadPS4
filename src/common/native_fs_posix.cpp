@@ -213,6 +213,10 @@ s64 GetDirectorySize(const fs::path path) noexcept {
     return total;
 }
 
+bool Touch(const fs::path path, int mode) noexcept {
+    return -1 != close(open(path.c_str(), O_WRONLY | O_CREAT, mode));
+}
+
 bool Exists(const fs::path path, std::error_code& ec) noexcept {
     ec.clear();
     errno = 0;

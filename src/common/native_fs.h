@@ -43,7 +43,8 @@ namespace fs = std::filesystem;
 [[nodiscard]] size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept;
 // Not a port, used by 2-3 functions that *never* check for errors
 [[nodiscard]] s64 GetDirectorySize(const fs::path path) noexcept;
-
+// Not really necessary but handy
+[[nodiscard]] bool Touch(const fs::path path, int mode) noexcept;
 // C++ ports with both except/noexcept
 
 [[nodiscard]] s64 GetSize(const fs::path path);
