@@ -335,7 +335,7 @@ s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
-size_t PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -352,19 +352,19 @@ size_t PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     }
-    size_t total_read = 0;
+    s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
 
-size_t PS4_SYSV_ABI posix_readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI posix_readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return readv(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    size_t result = readv(fd, iov, iovcnt);
+s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    s64 result = readv(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -372,7 +372,7 @@ size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovc
     return result;
 }
 
-size_t PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -383,26 +383,26 @@ size_t PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     std::scoped_lock lk{file->m_mutex};
 
     if (file->type == Core::FileSys::FileType::Device) {
-        size_t result = file->device->writev(iov, iovcnt);
+        s64 result = file->device->writev(iov, iovcnt);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
         return result;
     }
-    size_t total_written = 0;
+    s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }
 
-size_t PS4_SYSV_ABI posix_writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI posix_writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return writev(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    size_t result = writev(fd, iov, iovcnt);
+s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    us64 result = writev(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -496,11 +496,11 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     return ReadFile(file->f, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
     return read(fd, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
     s64 result = read(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -835,8 +835,8 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
         *__Error() = POSIX_EIO;
         return -1;
     }
-    size_t total_read = 0;
-    for (int i = 0; i < iovcnt; i++) {
+    s64 total_read = 0;
+    for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
@@ -1009,19 +1009,19 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
         *__Error() = POSIX_EIO;
         return -1;
     }
-    size_t total_written = 0;
-    for (int i = 0; i < iovcnt; i++) {
+    s64 total_written = 0;
+    for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }
 
-s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
     OrbisKernelIovec iovec{buf, nbytes};
     return posix_pwritev(fd, &iovec, 1, offset);
 }
 
-s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
     s64 result = posix_pwrite(fd, buf, nbytes, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
