@@ -20,15 +20,20 @@ namespace Vulkan {
 class Instance;
 
 struct RenderState {
-    std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
-    vk::RenderingAttachmentInfo depth_attachment{};
-    vk::RenderingAttachmentInfo stencil_attachment{};
-    u32 num_color_attachments{};
-    u32 num_layers{1};
-    bool has_depth{};
-    bool has_stencil{};
-    u32 width{};
-    u32 height{};
+    std::array<vk::RenderingAttachmentInfo, 8> color_attachments;
+    vk::RenderingAttachmentInfo depth_attachment;
+    vk::RenderingAttachmentInfo stencil_attachment;
+    u32 num_color_attachments;
+    u32 num_layers;
+    bool has_depth;
+    bool has_stencil;
+    u32 width;
+    u32 height;
+
+    RenderState() {
+        std::memset(this, 0, sizeof(*this));
+        num_layers = 1;
+    }
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
