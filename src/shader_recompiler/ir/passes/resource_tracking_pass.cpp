@@ -862,8 +862,8 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     };
     u32 addr_reg = 0;
 
-    // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series
-    // Instruction Set Architecture
+    // Load first address components as denoted in 8.2.4 VGPR Usage Sea Islands Series Instruction
+    // Set Architecture
     const IR::Value offset = [&] -> IR::Value {
         if (!inst_info.has_offset) {
             return IR::U32{};
@@ -963,8 +963,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             [[fallthrough]];
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             addr_reg = addr_reg + 3;
-            // Note we can use FixCubeCoords with fallthrough cases since it checks for image
-            // type.
+            // Note we can use FixCubeCoords with fallthrough cases since it checks for image type.
             return FixCubeCoords(ir, image, get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                  get_addr_reg(addr_reg - 1));
         case AmdGpu::ImageType::Color3D: // x, y, z

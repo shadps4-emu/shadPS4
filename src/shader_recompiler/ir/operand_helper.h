@@ -27,8 +27,22 @@ static_assert(LoadBufferArgs::Address == StoreBufferArgs::Address);
 
 // Get certain components of buffer address argument, used in Load/StoreBuffer variants.
 // We keep components separate as u32x3, before combining after sharp tracking
-U32 GetBufferIndexArg(const Inst* buffer_inst);
-U32 GetBufferVOffsetArg(const Inst* buffer_inst);
-U32 GetBufferSOffsetArg(const Inst* buffer_inst);
+static inline IR::U32 GetBufferAddressComponent(const Inst* buffer_inst, u32 comp) {
+    Inst* address = buffer_inst->Arg(1).InstRecursive();
+    ASSERT(address->GetOpcode() == IR::Opcode::CompositeConstructU32x3);
+    return IR::U32{address->Arg(comp).Resolve()};
+}
+
+static inline U32 GetBufferIndexArg(const Inst* buffer_inst) {
+    return GetBufferAddressComponent(buffer_inst, 0);
+}
+
+static inline U32 GetBufferVOffsetArg(const Inst* buffer_inst) {
+    return GetBufferAddressComponent(buffer_inst, 1);
+}
+
+static inline U32 GetBufferSOffsetArg(const Inst* buffer_inst) {
+    return GetBufferAddressComponent(buffer_inst, 2);
+}
 
 } // namespace Shader::IR
