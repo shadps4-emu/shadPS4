@@ -34,7 +34,7 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
     if (dirents_index == dirents.size()) {
         // Nothing left to read.
-        return 0;
+        return ORBIS_OK;
     }
 
     s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
@@ -103,13 +103,13 @@ s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     stat->st_size = directory_size;
     stat->st_blksize = 0x10000;
     stat->st_blocks = 0x80;
-    return 0;
+    return ORBIS_OK;
 }
 
 s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
     if (dirents_index == dirents.size()) {
         // Nothing left to read.
-        return 0;
+        return ORBIS_OK;
     }
 
     s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
