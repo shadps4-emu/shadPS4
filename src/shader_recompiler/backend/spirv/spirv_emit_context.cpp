@@ -539,24 +539,26 @@ void EmitContext::DefineInputs() {
     }
 }
 
+void EmitContext::DefineVertexBlock() {
+    output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+    if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
+        clip_distances = DefineVariable(TypeArray(F32[1], ConstU32(8U)), spv::BuiltIn::ClipDistance,
+                                        spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::CullDistance)) {
+        cull_distances = DefineVariable(TypeArray(F32[1], ConstU32(8U)), spv::BuiltIn::CullDistance,
+                                        spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::RenderTargetId)) {
+        output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+    }
+}
+
 void EmitContext::DefineOutputs() {
     switch (l_stage) {
     case LogicalStage::Vertex: {
-        // No point in defining builtin outputs (i.e. position) unless next stage is fragment?
-        // Might cause problems linking with tcs
-
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
-        if (stage == Stage::Local) {
+        DefineVertexBlock();
+        if (stage == Shader::Stage::Local) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
@@ -615,17 +617,7 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::TessellationEval: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
+        DefineVertexBlock();
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -665,8 +657,7 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::Geometry: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-
+        DefineVertexBlock();
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
             Name(id, fmt::format("out_attr{}", attr_id));

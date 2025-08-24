@@ -17,7 +17,7 @@ struct VsAttribSpecialization {
     AmdGpu::NumberClass num_class{};
     AmdGpu::CompMapping dst_select{};
 
-    auto operator<=>(const VsAttribSpecialization&) const = default;
+    bool operator==(const VsAttribSpecialization&) const = default;
 };
 
 struct BufferSpecialization {
@@ -52,21 +52,21 @@ struct ImageSpecialization {
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
 
-    auto operator<=>(const ImageSpecialization&) const = default;
+    bool operator==(const ImageSpecialization&) const = default;
 };
 
 struct FMaskSpecialization {
     u32 width;
     u32 height;
 
-    auto operator<=>(const FMaskSpecialization&) const = default;
+    bool operator==(const FMaskSpecialization&) const = default;
 };
 
 struct SamplerSpecialization {
     u8 force_unnormalized : 1;
     u8 force_degamma : 1;
 
-    auto operator<=>(const SamplerSpecialization&) const = default;
+    bool operator==(const SamplerSpecialization&) const = default;
 };
 
 /**

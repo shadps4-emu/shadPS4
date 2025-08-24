@@ -595,59 +595,59 @@
     </message>
     <message>
       <source>L1 and L2</source>
-      <translation type="unfinished">L1 and L2</translation>
+      <translation>L1 i L2</translation>
     </message>
     <message>
       <source>Active Gamepad</source>
-      <translation type="unfinished">Active Gamepad</translation>
+      <translation>Aktywny kontroler</translation>
     </message>
     <message>
       <source>Gamepad ID</source>
-      <translation type="unfinished">Gamepad ID</translation>
+      <translation>Identyfikator kontrolera</translation>
     </message>
     <message>
       <source>Default Gamepad</source>
-      <translation type="unfinished">Default Gamepad</translation>
+      <translation>Domyślny kontroler</translation>
     </message>
     <message>
       <source>No default selected</source>
-      <translation type="unfinished">No default selected</translation>
+      <translation>Brak domyślnego kontrolera</translation>
     </message>
     <message>
       <source>n/a</source>
-      <translation type="unfinished">n/a</translation>
+      <translation>n/d</translation>
     </message>
     <message>
       <source>Set Active Gamepad as Default</source>
-      <translation type="unfinished">Set Active Gamepad as Default</translation>
+      <translation>Ustaw jako domyślny</translation>
     </message>
     <message>
       <source>Remove Default Gamepad</source>
-      <translation type="unfinished">Remove Default Gamepad</translation>
+      <translation>Usuń domyślny kontroler</translation>
     </message>
     <message>
       <source>R1 and R2</source>
-      <translation type="unfinished">R1 and R2</translation>
+      <translation>R1 i R2</translation>
     </message>
     <message>
       <source>ID: </source>
-      <translation type="unfinished">ID: </translation>
+      <translation>ID: </translation>
     </message>
     <message>
       <source>Default Controller Selected</source>
-      <translation type="unfinished">Default Controller Selected</translation>
+      <translation>Wybrano domyślny kontroler</translation>
     </message>
     <message>
       <source>Active controller set as default</source>
-      <translation type="unfinished">Active controller set as default</translation>
+      <translation>Aktywny kontroler ustawiono jako domyślny</translation>
     </message>
     <message>
       <source>Default Controller Removed</source>
-      <translation type="unfinished">Default Controller Removed</translation>
+      <translation>Usunięto domyślny kontroler</translation>
     </message>
     <message>
       <source>Default controller setting removed</source>
-      <translation type="unfinished">Default controller setting removed</translation>
+      <translation>Usunięto ustawienia domyślnego kontrolera</translation>
     </message>
   </context>
   <context>
@@ -1553,7 +1553,7 @@
     </message>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Dostosuj skróty klawiszowe</translation>
     </message>
   </context>
   <context>
@@ -1648,15 +1648,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Mikrofon</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Brak</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Urządzenie domyślne</translation>
     </message>
     <message>
       <source>s</source>
@@ -1760,11 +1760,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Włącz odczyt zwrotny</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Włącz odczyt zwrotny obrazów liniowych</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1991,16 +1991,12 @@
       <translation>Zbieranie cieni:\nPotrzebujesz tej opcji aby edytować cienie za pomocą menu debugowania (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos; . Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nNie działa na kartach graficznych Intela.\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Odczyt zwrotny:\nWłącz odczyt i zapis zwrotny do GPU.\nNiektóre gry wymagają tej opcji, żeby funkcjonować poprawnie.\nMoże powodować problemy ze stabilnością i/lub wydajnością.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Odczyt zwrotny obrazów liniowych:\nWłącza asynchroniczne pobieranie obrazów liniowych zmodyfikowanych przez GPU.\nMoże naprawić błędy w niektórych grach.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2168,15 +2164,27 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Funkcje eksperymentalne</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>UWAGA: Te funkcje są eksperymentalne. Nie włączaj ich, jeśli członek zespołu nie dał Ci takiej instrukcji, lub jeśli gra tego nie wymaga. Jeśli masz pytania, dołącz do naszego serwera na Discordzie.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Używaj kontrolera w tle</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Używaj kontrolera w tle:\nPozwól na rejestrację wejścia z kontrolera, kiedy okno nie jest aktywne.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos;. Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
     </message>
   </context>
   <context>
@@ -2210,71 +2218,71 @@
     <name>hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Dostosuj skróty klawiszowe</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Skróty kontrolera</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>Pokaż licznik klatek</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>nieprzypisane</translation>
     </message>
     <message>
       <source>Stop Emulator</source>
-      <translation type="unfinished">Stop Emulator</translation>
+      <translation>Zatrzymaj emulator</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Przełącz tryb pełnoekranowy</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Przełącz pauzę</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Skróty klawiatury</translation>
     </message>
     <message>
       <source>Show Fps Counter: F10</source>
-      <translation type="unfinished">Show Fps Counter: F10</translation>
+      <translation>Pokaż licznik klatek: F10</translation>
     </message>
     <message>
       <source>Stop Emulator: n/a</source>
-      <translation type="unfinished">Stop Emulator: n/a</translation>
+      <translation>Zatrzymaj emulator: n/a</translation>
     </message>
     <message>
       <source>Toggle Fullscreen: F11</source>
-      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+      <translation>Przełącz tryb pełnoekranowy: F11</translation>
     </message>
     <message>
       <source>Toggle Pause: F9</source>
-      <translation type="unfinished">Toggle Pause: F9</translation>
+      <translation>Przełącz pauzę: F9</translation>
     </message>
     <message>
       <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation type="unfinished">Tip: Up to three inputs can be assigned for each function</translation>
+      <translation>Porada: Dla każdej funkcji mogą zostać przypisane maksymalnie 3 wejścia</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Zapisz</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Zastosuj</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Anuluj</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Naciśnij przycisk</translation>
     </message>
   </context>
 </TS>

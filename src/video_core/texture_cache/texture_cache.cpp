@@ -538,7 +538,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
+        if (Config::readbackLinearImages() && !image.info.props.is_tiled &&
+            image.info.guest_address != 0) {
             download_images.emplace(image_id);
         }
     }

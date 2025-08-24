@@ -784,7 +784,6 @@ void load(const std::filesystem::path& path) {
 
     // Run save after loading to generate any missing fields with default values.
     if (config_version != current_version) {
-        fmt::print("Outdated config detected, updating config file.\n");
         save(path);
     }
 }

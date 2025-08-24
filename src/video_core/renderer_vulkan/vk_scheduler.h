@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <boost/container/static_vector.hpp>
+
 #include "common/types.h"
 #include "common/unique_function.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -20,14 +21,20 @@ namespace Vulkan {
 class Instance;
 
 struct RenderState {
-    std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
-    vk::RenderingAttachmentInfo depth_attachment{};
-    vk::RenderingAttachmentInfo stencil_attachment{};
-    u32 num_color_attachments{};
-    bool has_depth{};
-    bool has_stencil{};
-    u32 width{};
-    u32 height{};
+    std::array<vk::RenderingAttachmentInfo, 8> color_attachments;
+    vk::RenderingAttachmentInfo depth_attachment;
+    vk::RenderingAttachmentInfo stencil_attachment;
+    u32 num_color_attachments;
+    u32 num_layers;
+    bool has_depth;
+    bool has_stencil;
+    u32 width;
+    u32 height;
+
+    RenderState() {
+        std::memset(this, 0, sizeof(*this));
+        num_layers = 1;
+    }
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
@@ -101,7 +108,6 @@ struct DynamicState {
         bool front_face : 1;
 
         bool blend_constants : 1;
-        bool color_write_masks : 1;
         bool line_width : 1;
     } dirty_state{};
 
@@ -137,7 +143,6 @@ struct DynamicState {
     vk::FrontFace front_face{};
 
     std::array<float, 4> blend_constants{};
-    ColorWriteMasks color_write_masks{};
     float line_width{};
 
     /// Commits the dynamic state to the provided command buffer.
@@ -298,13 +303,6 @@ struct DynamicState {
         if (rasterizer_discard_enable != enabled) {
             rasterizer_discard_enable = enabled;
             dirty_state.rasterizer_discard_enable = true;
-        }
-    }
-
-    void SetColorWriteMasks(const ColorWriteMasks& color_write_masks_) {
-        if (!std::ranges::equal(color_write_masks, color_write_masks_)) {
-            color_write_masks = color_write_masks_;
-            dirty_state.color_write_masks = true;
         }
     }
 

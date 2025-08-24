@@ -112,6 +112,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
     RenderState state;
     state.width = instance.GetMaxFramebufferWidth();
     state.height = instance.GetMaxFramebufferHeight();
+    state.num_layers = std::numeric_limits<u32>::max();
+    state.num_color_attachments = std::bit_width(mrt_mask);
 
     cb_descs.clear();
     db_desc.reset();
@@ -124,29 +126,31 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
-    for (auto col_buf_id = 0u; col_buf_id < Liverpool::NumColorBuffers; ++col_buf_id) {
-        const auto& col_buf = regs.color_buffers[col_buf_id];
-        if (skip_cb_binding || !col_buf) {
+
+    for (s32 cb = 0; cb < state.num_color_attachments && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        if (!col_buf) {
+            state.color_attachments[cb].imageView = VK_NULL_HANDLE;
             continue;
         }
 
         // Skip stale color buffers if shader doesn't output to them. Otherwise it will perform
         // an unnecessary transition and may result in state conflict if the resource is already
         // bound for reading.
-        if ((mrt_mask & (1 << col_buf_id)) == 0) {
-            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
+        if ((mrt_mask & (1 << cb)) == 0) {
+            state.color_attachments[cb].imageView = VK_NULL_HANDLE;
             continue;
         }
 
         // If the color buffer is still bound but rendering to it is disabled by the target
         // mask, we need to prevent the render area from being affected by unbound render target
         // extents.
-        if (!regs.color_target_mask.GetMask(col_buf_id)) {
-            state.color_attachments[state.num_color_attachments++].imageView = VK_NULL_HANDLE;
+        if (!regs.color_target_mask.GetMask(cb)) {
+            state.color_attachments[cb].imageView = VK_NULL_HANDLE;
             continue;
         }
 
-        const auto& hint = liverpool->last_cb_extent[col_buf_id];
+        const auto& hint = liverpool->last_cb_extent[cb];
         auto& [image_id, desc] = cb_descs.emplace_back(std::piecewise_construct, std::tuple{},
                                                        std::tuple{col_buf, hint});
         const auto& image_view = texture_cache.FindRenderTarget(desc);
@@ -161,7 +165,8 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         const auto mip = image_view.info.range.base.level;
         state.width = std::min<u32>(state.width, std::max(image.info.size.width >> mip, 1u));
         state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
-        state.color_attachments[state.num_color_attachments++] = {
+        state.num_layers = std::min<u32>(state.num_layers, image_view.info.range.extent.layers);
+        state.color_attachments[cb] = {
             .imageView = *image_view.image_view,
             .imageLayout = vk::ImageLayout::eUndefined,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
@@ -194,6 +199,7 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         state.height = std::min<u32>(state.height, image.info.size.height);
         state.has_depth = regs.depth_buffer.DepthValid();
         state.has_stencil = regs.depth_buffer.StencilValid();
+        state.num_layers = std::min<u32>(state.num_layers, image_view.info.range.extent.layers);
         if (state.has_depth) {
             state.depth_attachment = {
                 .imageView = *image_view.image_view,
@@ -215,6 +221,10 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
             };
         }
         texture_cache.TouchMeta(htile_address, slice, false);
+    }
+
+    if (state.num_layers == std::numeric_limits<u32>::max()) {
+        state.num_layers = 1;
     }
 
     return state;
@@ -1087,7 +1097,6 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
 
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
-    dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
 
     // Commit new dynamic state to the command buffer.
     dynamic_state.Commit(instance, scheduler.CommandBuffer());

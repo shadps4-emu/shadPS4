@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <mutex>
 #include "common/assert.h"
 #include "common/debug.h"
 #include "imgui/renderer/texture_manager.h"
@@ -40,7 +39,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
                 .offset = {0, 0},
                 .extent = {render_state.width, render_state.height},
             },
-        .layerCount = 1,
+        .layerCount = render_state.num_layers,
         .colorAttachmentCount = render_state.num_color_attachments,
         .pColorAttachments = render_state.num_color_attachments > 0
                                  ? render_state.color_attachments.data()
@@ -323,12 +322,6 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     if (dirty_state.blend_constants) {
         dirty_state.blend_constants = false;
         cmdbuf.setBlendConstants(blend_constants.data());
-    }
-    if (dirty_state.color_write_masks) {
-        dirty_state.color_write_masks = false;
-        if (instance.IsDynamicColorWriteMaskSupported()) {
-            cmdbuf.setColorWriteMaskEXT(0, color_write_masks);
-        }
     }
     if (dirty_state.line_width) {
         dirty_state.line_width = false;
