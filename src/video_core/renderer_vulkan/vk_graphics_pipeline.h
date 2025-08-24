@@ -56,6 +56,10 @@ struct GraphicsPipelineKey {
         u32 depth_clip_enable : 1;
     };
 
+    GraphicsPipelineKey() {
+        std::memset(this, 0, sizeof(*this));
+    }
+
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;
     }
