@@ -607,7 +607,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
+    LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
@@ -659,7 +659,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 }
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
     if (sb == nullptr) {
         *__Error() = POSIX_EFAULT;
         return -1;
