@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -16,16 +17,17 @@ std::shared_ptr<BaseDirectory> PfsDirectory::Create(std::string_view guest_direc
 PfsDirectory::PfsDirectory(std::string_view guest_directory) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
+    static s32 fileno = 0;
     mnt->IterateDirectory(guest_directory, [this](const auto& ent_path, const auto ent_is_file) {
-        static s32 fileno = 0;
-        PfsDirectoryDirent dirent;
+        auto& dirent = dirents.emplace_back();
         dirent.d_fileno = ++fileno;
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().c_str(), MAX_LENGTH + 1);
         dirent.d_namlen = ent_path.filename().string().size();
-        dirent.d_reclen = sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
-                          sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen;
-        dirents.emplace_back(&dirent);
+        dirent.d_reclen =
+            Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
+                                sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen,
+                            4);
     });
 }
 

@@ -19,7 +19,7 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
 
     static s32 fileno = 0;
     mnt->IterateDirectory(guest_directory, [this](const auto& ent_path, const auto ent_is_file) {
-        NormalDirectoryDirent dirent;
+        auto& dirent = dirents.emplace_back();
         dirent.d_fileno = ++fileno;
         dirent.d_type = (ent_is_file ? 8 : 4);
         strncpy(dirent.d_name, ent_path.filename().c_str(), MAX_LENGTH + 1);
@@ -28,7 +28,6 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
             Common::AlignUp(sizeof(dirent.d_fileno) + sizeof(dirent.d_type) +
                                 sizeof(dirent.d_namlen) + sizeof(dirent.d_reclen) + dirent.d_namlen,
                             4);
-        dirents.emplace_back(&dirent);
 
         directory_size += dirent.d_reclen;
     });

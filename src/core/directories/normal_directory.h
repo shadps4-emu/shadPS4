@@ -38,6 +38,6 @@ private:
 
     u64 directory_size = 0;
     s64 dirents_index = 0;
-    std::vector<NormalDirectoryDirent*> dirents;
+    std::vector<NormalDirectoryDirent> dirents;
 };
 } // namespace Core::Directories

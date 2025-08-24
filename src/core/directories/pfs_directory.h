@@ -37,6 +37,6 @@ private:
     };
 
     s64 dirents_index = 0;
-    std::vector<PfsDirectoryDirent*> dirents;
+    std::vector<PfsDirectoryDirent> dirents;
 };
 } // namespace Core::Directories
