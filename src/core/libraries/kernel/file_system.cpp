@@ -927,7 +927,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
 
-    switch(file->type) {
+    switch (file->type) {
     case Core::FileSys::FileType::Directory: {
         s64 result = file->directory->getdents(buf, nbytes, basep);
         if (result < 0) {
@@ -950,7 +950,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
     }
-    
+
     return ORBIS_OK;
 }
 
