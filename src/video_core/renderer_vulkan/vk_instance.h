@@ -139,6 +139,12 @@ public:
         return depth_range_unrestricted;
     }
 
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature o
+    /// VK_EXT_extended_dynamic_state3 is supported.
+    bool IsDynamicColorWriteMaskSupported() const {
+        return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
+    }
+
     /// Returns true when VK_EXT_vertex_input_dynamic_state is supported.
     bool IsVertexInputDynamicState() const {
         return vertex_input_dynamic_state;
@@ -433,6 +439,7 @@ private:
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
+    vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
@@ -453,6 +460,7 @@ private:
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
+    bool dynamic_state_3{};
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
