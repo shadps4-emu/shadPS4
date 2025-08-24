@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -84,18 +85,53 @@ s64 PfsDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iov
     s64 data_to_skip = offset;
     // If offset is part-way through one dirent, that dirent is skipped.
     while (data_to_skip > 0) {
-        auto dirent = dirents[++dirents_index];
+        auto dirent = dirents[dirents_index++];
         data_to_skip -= dirent.d_reclen;
     }
-    
+
     s64 bytes_read = readv(iov, iovcnt);
     dirents_index = old_dirent_index;
     return bytes_read;
 }
 
 s64 PfsDirectory::lseek(s64 offset, s32 whence) {
-    LOG_ERROR(Kernel_Fs, "TODO");
-    return 0;
+    switch (whence) {
+    // Seek start
+    case 0: {
+        dirents_index = 0;
+        // Fall into next case
+    }
+    case 1: {
+        s64 data_to_skip = offset;
+        // If offset is part-way through one dirent, that dirent is skipped.
+        while (data_to_skip > 0) {
+            auto dirent = dirents[dirents_index++];
+            data_to_skip -= dirent.d_reclen;
+        }
+        break;
+    }
+    case 2: {
+        dirents_index = dirents.size() - 1;
+        s64 data_to_skip = offset;
+        // If offset is part-way through one dirent, that dirent is skipped.
+        while (data_to_skip > 0) {
+            auto dirent = dirents[dirents_index--];
+            data_to_skip -= dirent.d_reclen;
+        }
+        break;
+    }
+    default: {
+        UNREACHABLE_MSG("lseek with unknown whence {}", whence);
+    }
+    }
+
+    // Tell
+    s64 current_data_pointer = 0;
+    for (s32 i = 0; i < dirents_index; i++) {
+        auto dirent = dirents[i];
+        current_data_pointer += dirent.d_reclen;
+    }
+    return current_data_pointer;
 }
 
 s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
