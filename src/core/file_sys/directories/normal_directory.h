@@ -12,7 +12,7 @@
 
 namespace Core::Directories {
 
-class NormalDirectory final : BaseDirectory {
+class NormalDirectory final : public BaseDirectory {
 public:
     static std::shared_ptr<BaseDirectory> Create(std::string_view guest_path);
     explicit NormalDirectory(std::string_view guest_path);

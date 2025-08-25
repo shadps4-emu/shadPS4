@@ -11,8 +11,7 @@
 namespace Core::Directories {
 
 std::shared_ptr<BaseDirectory> PfsDirectory::Create(std::string_view guest_directory) {
-    return std::shared_ptr<BaseDirectory>(
-        reinterpret_cast<Directories::BaseDirectory*>(new PfsDirectory(guest_directory)));
+    return std::static_pointer_cast<BaseDirectory>(std::make_shared<PfsDirectory>(guest_directory));
 }
 
 PfsDirectory::PfsDirectory(std::string_view guest_directory) {
