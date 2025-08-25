@@ -62,7 +62,7 @@ private:
 class FileBackend {
 public:
     explicit FileBackend(const std::filesystem::path& filename)
-        : file{filename, FS::FileAccessMode::Write, FS::FileType::TextFile} {}
+        : file{filename, FS::FileAccessMode::Write} {}
 
     ~FileBackend() = default;
 
@@ -136,7 +136,7 @@ public:
             return;
         }
         const auto& log_dir = GetUserPath(PathType::LogDir);
-        std::filesystem::create_directory(log_dir);
+        NativeFS::CreateDirectory(log_dir);
         Filter filter;
         filter.ParseFilterString(Config::getLogFilter());
         const auto& log_file_path = log_file.empty() ? LOG_FILE : log_file;

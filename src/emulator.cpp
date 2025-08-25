@@ -22,6 +22,7 @@
 #endif
 #include "common/elf_info.h"
 #include "common/memory_patcher.h"
+#include "common/native_fs.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
@@ -47,6 +48,8 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
+namespace NativeFS = Common::FS::Native;
+
 Emulator::Emulator() {
     // Initialize NT API functions and set high priority
 #ifdef _WIN32
@@ -62,7 +65,7 @@ Emulator::Emulator() {
 Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
-    if (std::filesystem::is_directory(file)) {
+    if (NativeFS::IsDirectory(file)) {
         file /= "eboot.bin";
     }
 
@@ -75,7 +78,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         // use the base game directory as the game folder.
         const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
         const auto base_path = game_folder.parent_path() / base_name;
-        if (std::filesystem::is_directory(base_path)) {
+        if (NativeFS::IsDirectory(base_path)) {
             game_folder = base_path;
         }
     }
@@ -87,7 +90,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     mnt->Mount(game_folder, "/hostapp", true);
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
+    const auto param_sfo_exists = NativeFS::Exists(param_sfo_path);
 
     // Load param.sfo details if it exists
     std::string id;
@@ -121,9 +124,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         Common::Log::Initialize();
     }
     Common::Log::Start();
-    if (!std::filesystem::exists(file)) {
-        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
-                     std::filesystem::absolute(file).string());
+    if (!NativeFS::Exists(file)) {
+        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}", NativeFS::AbsolutePath(file).string());
         std::quick_exit(0);
     }
 
@@ -197,7 +199,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
         const auto trophyDir =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
-        if (!std::filesystem::exists(trophyDir)) {
+        if (!NativeFS::Exists(trophyDir)) {
             TRP trp;
             if (!trp.Extract(game_folder, id)) {
                 LOG_ERROR(Loader, "Couldn't extract trophies");
@@ -215,7 +217,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
+    if (NativeFS::Exists(pic1_path)) {
         game_info.splash_path = pic1_path;
     }
 
@@ -247,31 +249,31 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     g_window = window.get();
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
-    if (!std::filesystem::exists(mount_data_dir)) {
-        std::filesystem::create_directory(mount_data_dir);
+    if (!NativeFS::Exists(mount_data_dir)) {
+        NativeFS::CreateDirectory(mount_data_dir);
     }
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
 
     // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    if (std::filesystem::exists(mount_temp_dir)) {
+    if (NativeFS::Exists(mount_temp_dir)) {
         // Temp folder should be cleared on each boot.
         std::filesystem::remove_all(mount_temp_dir);
     }
-    std::filesystem::create_directory(mount_temp_dir);
+    NativeFS::CreateDirectory(mount_temp_dir);
     mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
         Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
-    if (!std::filesystem::exists(mount_download_dir)) {
-        std::filesystem::create_directory(mount_download_dir);
+    if (!NativeFS::Exists(mount_download_dir)) {
+        NativeFS::CreateDirectory(mount_download_dir);
     }
     mnt->Mount(mount_download_dir, "/download0");
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
-    if (!std::filesystem::exists(mount_captures_dir)) {
-        std::filesystem::create_directory(mount_captures_dir);
+    if (!NativeFS::Exists(mount_captures_dir)) {
+        NativeFS::CreateDirectory(mount_captures_dir);
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
@@ -282,7 +284,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     std::filesystem::absolute(eboot_path).string());
+                     NativeFS::AbsolutePath(eboot_path).string());
         std::quick_exit(0);
     }
 
@@ -370,7 +372,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
             LOG_INFO(Loader, "No HLE available for {} module", module_name);
         }
     }
-    if (!game_serial.empty() && std::filesystem::exists(sys_module_path / game_serial)) {
+    if (!game_serial.empty() && NativeFS::Exists(sys_module_path / game_serial)) {
         for (const auto& entry :
              std::filesystem::directory_iterator(sys_module_path / game_serial)) {
             LOG_INFO(Loader, "Loading {} from game serial file {}", entry.path().string(),

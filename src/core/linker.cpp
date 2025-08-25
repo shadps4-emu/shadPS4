@@ -7,6 +7,7 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "common/thread.h"
@@ -21,6 +22,8 @@
 #include "ipc/ipc.h"
 
 namespace Core {
+
+namespace NativeFS = Common::FS::Native;
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
@@ -152,7 +155,7 @@ void Linker::Execute(const std::vector<std::string> args) {
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
 
-    if (!std::filesystem::exists(elf_name)) {
+    if (!NativeFS::Exists(elf_name)) {
         LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
         return -1;
     }
@@ -443,12 +446,12 @@ void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
 void Linker::DebugDump() {
     const auto& log_dir = Common::FS::GetUserPath(Common::FS::PathType::LogDir);
     const std::filesystem::path debug(log_dir / "debugdump");
-    std::filesystem::create_directory(debug);
+    NativeFS::CreateDirectory(debug);
     for (const auto& m : m_modules) {
         Module* module = m.get();
         auto& elf = module->elf;
         const std::filesystem::path filepath(debug / module->file.stem());
-        std::filesystem::create_directory(filepath);
+        NativeFS::CreateDirectory(filepath);
         module->import_sym.DebugDump(filepath / "imports.txt");
         module->export_sym.DebugDump(filepath / "exports.txt");
         if (elf.IsSelfFile()) {

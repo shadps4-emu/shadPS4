@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/signal_context.h"
 #include "core/signals.h"
@@ -30,16 +33,18 @@ static const u8* g_srt_codegen_start = nullptr;
 
 namespace {
 
+namespace NativeFS = Common::FS::Native;
+
 static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t codesize) {
 #ifdef ARCH_X86_64
     using namespace Common::FS;
 
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
-    if (!std::filesystem::exists(dump_dir)) {
+    if (!NativeFS::Exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
     const auto filename = fmt::format("{}_{:#018x}.srtprogram.txt", info.stage, info.pgm_hash);
-    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write, FileType::TextFile};
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
 
     u64 address = reinterpret_cast<u64>(code);
     u64 code_end = address + codesize;

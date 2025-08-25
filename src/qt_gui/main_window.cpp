@@ -15,6 +15,7 @@
 #include "check_update.h"
 #endif
 #include "common/io_file.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/scm_rev.h"
 #include "common/string_util.h"
@@ -28,6 +29,8 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+
+namespace NativeFS = Common::FS::Native;
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -740,12 +743,12 @@ void MainWindow::CreateConnects() {
 
         auto game_update_path = Common::FS::PathFromQString(gameTrpPath);
         game_update_path += "-UPDATE";
-        if (std::filesystem::exists(game_update_path)) {
+        if (NativeFS::Exists(game_update_path)) {
             Common::FS::PathToQString(gameTrpPath, game_update_path);
         } else {
             game_update_path = Common::FS::PathFromQString(gameTrpPath);
             game_update_path += "-patch";
-            if (std::filesystem::exists(game_update_path)) {
+            if (NativeFS::Exists(game_update_path)) {
                 Common::FS::PathToQString(gameTrpPath, game_update_path);
             }
         }
@@ -759,12 +762,12 @@ void MainWindow::CreateConnects() {
 
             auto update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
             update_path += "-UPDATE";
-            if (std::filesystem::exists(update_path)) {
+            if (NativeFS::Exists(update_path)) {
                 Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
             } else {
                 update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
                 update_path += "-patch";
-                if (std::filesystem::exists(update_path)) {
+                if (NativeFS::Exists(update_path)) {
                     Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
                 }
             }
@@ -871,7 +874,7 @@ void MainWindow::StartGame() {
     if (gamePath != "") {
         AddRecentFiles(gamePath);
         const auto path = Common::FS::PathFromQString(gamePath);
-        if (!std::filesystem::exists(path)) {
+        if (!NativeFS::Exists(path)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }
@@ -969,7 +972,7 @@ void MainWindow::BootGame() {
                                   QString(tr("Only one file can be selected!")));
         } else {
             std::filesystem::path path = Common::FS::PathFromQString(fileNames[0]);
-            if (!std::filesystem::exists(path)) {
+            if (!NativeFS::Exists(path)) {
                 QMessageBox::critical(nullptr, tr("Run Game"),
                                       QString(tr("Eboot.bin file not found")));
                 return;
@@ -1160,7 +1163,7 @@ void MainWindow::CreateRecentGameActions() {
     connect(m_recent_files_group, &QActionGroup::triggered, this, [this](QAction* action) {
         auto gamePath = Common::FS::PathFromQString(action->text());
         AddRecentFiles(action->text()); // Update the list.
-        if (!std::filesystem::exists(gamePath)) {
+        if (!NativeFS::Exists(gamePath)) {
             QMessageBox::critical(nullptr, tr("Run Game"), QString(tr("Eboot.bin file not found")));
             return;
         }

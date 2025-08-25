@@ -451,7 +451,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    const auto handle = file->f.GetFileMapping();
+    const auto handle = file->f.GetNativeFileDescriptor();
 
     impl.MapFile(mapped_addr, size_aligned, phys_addr, std::bit_cast<u32>(prot), handle);
 

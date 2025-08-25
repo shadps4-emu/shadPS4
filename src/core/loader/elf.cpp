@@ -186,7 +186,7 @@ void Elf::Open(const std::filesystem::path& file_name) {
     }
 
     if (is_self = IsSelfFile(); !is_self) {
-        m_f.Seek(0, SeekOrigin::SetOrigin);
+        m_f.Seek(0);
     } else {
         m_self_segments.resize(m_self.segment_count);
         m_f.Read(m_self_segments);
@@ -204,7 +204,7 @@ void Elf::Open(const std::filesystem::path& file_name) {
         }
 
         out.resize(num);
-        if (!m_f.Seek(offset, SeekOrigin::SetOrigin)) {
+        if (!m_f.Seek(offset)) {
             LOG_CRITICAL(Loader, "Failed to seek to header tables");
             return;
         }
@@ -502,28 +502,24 @@ bool Elf::IsSharedLib() {
 }
 
 void Elf::ElfHeaderDebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
-                         Common::FS::FileType::TextFile};
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write};
     f.WriteString(ElfHeaderStr());
 }
 
 void Elf::SelfHeaderDebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
-                         Common::FS::FileType::TextFile};
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write};
     f.WriteString(SElfHeaderStr());
 }
 
 void Elf::SelfSegHeaderDebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
-                         Common::FS::FileType::TextFile};
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write};
     for (u16 i = 0; i < m_self.segment_count; i++) {
         f.WriteString(SELFSegHeader(i));
     }
 }
 
 void Elf::PHeaderDebugDump(const std::filesystem::path& file_name) {
-    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write,
-                         Common::FS::FileType::TextFile};
+    Common::FS::IOFile f{file_name, Common::FS::FileAccessMode::Write};
     if (m_elf_header.e_phentsize > 0) {
         for (u16 i = 0; i < m_elf_header.e_phnum; i++) {
             f.WriteString(ElfPHeaderStr(i));

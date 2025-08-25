@@ -15,6 +15,7 @@
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "imgui/imgui_std.h"
@@ -23,7 +24,10 @@
 CMRC_DECLARE(res);
 namespace fs = std::filesystem;
 using namespace ImGui;
+
 namespace Libraries::NpTrophy {
+
+namespace NativeFS = Common::FS::Native;
 
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
@@ -41,7 +45,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     trophy_timer = Config::getTrophyNotificationDuration();
 
-    if (std::filesystem::exists(trophyIconPath)) {
+    if (NativeFS::Exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
         LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
@@ -63,13 +67,13 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     const auto CustomTrophy_Dir = Common::FS::GetUserPath(Common::FS::PathType::CustomTrophy);
     std::string customPath;
 
-    if (trophy_type == "P" && fs::exists(CustomTrophy_Dir / "platinum.png")) {
+    if (trophy_type == "P" && NativeFS::Exists(CustomTrophy_Dir / "platinum.png")) {
         customPath = (CustomTrophy_Dir / "platinum.png").string();
-    } else if (trophy_type == "G" && fs::exists(CustomTrophy_Dir / "gold.png")) {
+    } else if (trophy_type == "G" && NativeFS::Exists(CustomTrophy_Dir / "gold.png")) {
         customPath = (CustomTrophy_Dir / "gold.png").string();
-    } else if (trophy_type == "S" && fs::exists(CustomTrophy_Dir / "silver.png")) {
+    } else if (trophy_type == "S" && NativeFS::Exists(CustomTrophy_Dir / "silver.png")) {
         customPath = (CustomTrophy_Dir / "silver.png").string();
-    } else if (trophy_type == "B" && fs::exists(CustomTrophy_Dir / "bronze.png")) {
+    } else if (trophy_type == "B" && NativeFS::Exists(CustomTrophy_Dir / "bronze.png")) {
         customPath = (CustomTrophy_Dir / "bronze.png").string();
     }
 
@@ -96,11 +100,11 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 #ifdef ENABLE_QT_GUI
     QString musicPathWav = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.wav");
     QString musicPathMp3 = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.mp3");
-    if (fs::exists(musicPathWav.toStdString())) {
+    if (NativeFS::Exists(musicPathWav.toStdString())) {
         BackgroundMusicPlayer::getInstance().setVolume(100);
         BackgroundMusicPlayer::getInstance().playMusic(musicPathWav, false);
         customsoundplayed = true;
-    } else if (fs::exists(musicPathMp3.toStdString())) {
+    } else if (NativeFS::Exists(musicPathMp3.toStdString())) {
         BackgroundMusicPlayer::getInstance().setVolume(100);
         BackgroundMusicPlayer::getInstance().playMusic(musicPathMp3, false);
         customsoundplayed = true;

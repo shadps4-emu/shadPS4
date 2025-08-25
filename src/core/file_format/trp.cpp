@@ -4,8 +4,11 @@
 #include "common/aes.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "core/file_format/trp.h"
+
+namespace NativeFS = Common::FS::Native;
 
 static void DecryptEFSM(std::span<u8, 16> trophyKey, std::span<u8, 16> NPcommID,
                         std::span<u8, 16> efsmIv, std::span<u8> ciphertext,
@@ -58,7 +61,7 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string titleId) {
     std::filesystem::path gameSysDir = trophyPath / "sce_sys/trophy/";
-    if (!std::filesystem::exists(gameSysDir)) {
+    if (!NativeFS::Exists(gameSysDir)) {
         LOG_CRITICAL(Common_Filesystem, "Game sce_sys directory doesn't exist");
         return false;
     }
@@ -93,8 +96,8 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
             std::filesystem::path trpFilesPath(
                 Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / titleId /
                 "TrophyFiles" / it.path().stem());
-            std::filesystem::create_directories(trpFilesPath / "Icons");
-            std::filesystem::create_directory(trpFilesPath / "Xml");
+            NativeFS::CreateDirectories(trpFilesPath / "Icons");
+            NativeFS::CreateDirectory(trpFilesPath / "Xml");
 
             for (int i = 0; i < header.entry_num; i++) {
                 if (!file.Seek(seekPos)) {

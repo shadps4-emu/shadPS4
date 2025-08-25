@@ -8,10 +8,13 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "hotkeys.h"
 #include "input/input_handler.h"
 #include "ui_hotkeys.h"
+
+namespace NativeFS = Common::FS::Native;
 
 hotkeys::hotkeys(bool isGameRunning, QWidget* parent)
     : QDialog(parent), GameRunning(isGameRunning), ui(new Ui::hotkeys) {
@@ -80,7 +83,7 @@ void hotkeys::EnableMappingButtons() {
 
 void hotkeys::SaveHotkeys(bool CloseOnSave) {
     const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
-    if (!std::filesystem::exists(hotkey_file)) {
+    if (!NativeFS::Exists(hotkey_file)) {
         Input::createHotkeyFile(hotkey_file);
     }
 
@@ -129,7 +132,7 @@ void hotkeys::SaveHotkeys(bool CloseOnSave) {
 
 void hotkeys::LoadHotkeys() {
     const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
-    if (!std::filesystem::exists(hotkey_file)) {
+    if (!NativeFS::Exists(hotkey_file)) {
         Input::createHotkeyFile(hotkey_file);
     }
 
