@@ -51,7 +51,8 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
 
     char* current_dirent = data_buffer;
     for (NormalDirectoryDirent dirent : dirents) {
-        NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
+        NormalDirectoryDirent* dirent_to_write =
+            reinterpret_cast<NormalDirectoryDirent*>(current_dirent);
         dirent_to_write->d_fileno = dirent.d_fileno;
 
         // Using size d_namlen + 1 to account for null terminator.

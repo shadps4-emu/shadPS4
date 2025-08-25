@@ -63,10 +63,10 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
     u64 bytes_written = bytes_remaining;
     memset(buf, 0, bytes_remaining);
 
-    char* current_dirent = (char*)buf;
+    char* current_dirent = static_cast<char*>(buf);
     PfsDirectoryDirent dirent = dirents[dirents_index];
     while (bytes_remaining > dirent.d_reclen) {
-        PfsDirectoryDirent* dirent_to_write = (PfsDirectoryDirent*)current_dirent;
+        PfsDirectoryDirent* dirent_to_write = reinterpret_cast<PfsDirectoryDirent*>(current_dirent);
         dirent_to_write->d_fileno = dirent.d_fileno;
 
         // Using size d_namlen + 1 to account for null terminator.
@@ -188,11 +188,12 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
     memset(buf, 0, bytes_remaining);
 
     u64 bytes_written = 0;
-    char* current_dirent = (char*)buf;
+    char* current_dirent = static_cast<char*>(buf);
     // getdents has to convert pfs dirents to normal dirents
     PfsDirectoryDirent dirent = dirents[dirents_index];
     while (bytes_remaining > dirent.d_reclen) {
-        NormalDirectoryDirent* dirent_to_write = (NormalDirectoryDirent*)current_dirent;
+        NormalDirectoryDirent* dirent_to_write =
+            reinterpret_cast<NormalDirectoryDirent*>(current_dirent);
         dirent_to_write->d_fileno = dirent.d_fileno;
         strncpy(dirent_to_write->d_name, dirent.d_name, dirent.d_namlen + 1);
         dirent_to_write->d_namlen = dirent.d_namlen;
