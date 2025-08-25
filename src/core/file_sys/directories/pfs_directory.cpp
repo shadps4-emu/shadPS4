@@ -109,6 +109,10 @@ s64 PfsDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iov
     while (data_to_skip > 0) {
         auto dirent = dirents[dirents_index++];
         data_to_skip -= dirent.d_reclen;
+        if (dirents_index == dirents.size()) {
+            // We've reached the end of the dirents, nothing more can be skipped.
+            break;
+        }
     }
 
     s64 bytes_read = readv(iov, iovcnt);
