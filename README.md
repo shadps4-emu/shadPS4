@@ -47,7 +47,7 @@ You can donate to the project via our [**Kofi page**](https://ko-fi.com/shadps4)
 > [!IMPORTANT]
 > shadPS4 is early in development, don't expect a flawless experience.
 
-Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=5sZgWyVflFM), [**Driveclub**](https://www.youtube.com/watch?v=dFgm2U4RKdI), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag), and many other games.
+Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=5sZgWyVflFM), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag), and many other games.
 
 # Why
 
