@@ -11,7 +11,8 @@
 namespace Core::Directories {
 
 std::shared_ptr<BaseDirectory> NormalDirectory::Create(std::string_view guest_directory) {
-    return std::static_pointer_cast<BaseDirectory>(std::make_shared<NormalDirectory>(guest_directory));
+    return std::static_pointer_cast<BaseDirectory>(
+        std::make_shared<NormalDirectory>(guest_directory));
 }
 
 NormalDirectory::NormalDirectory(std::string_view guest_directory) {
