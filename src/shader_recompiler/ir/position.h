@@ -10,8 +10,9 @@
 namespace Shader::IR {
 
 /// Maps special position export to builtin attribute stores
-inline void ExportPosition(IREmitter& ir, const auto& stage, Attribute attribute, u32 comp,
-                           const IR::F32& value) {
+template <typename StageRuntimeInfo>
+inline void ExportPosition(IREmitter& ir, const StageRuntimeInfo& stage, Attribute attribute,
+                           u32 comp, const IR::F32& value) {
     if (attribute == Attribute::Position0) {
         ir.SetAttribute(attribute, value, comp);
         return;
@@ -44,6 +45,18 @@ inline void ExportPosition(IREmitter& ir, const auto& stage, Attribute attribute
         break;
     }
     case Output::GsMrtIndex:
+        if constexpr (std::is_same_v<StageRuntimeInfo, VertexRuntimeInfo>) {
+            // When using tessellation, layer is supposed to be set by the tessellation evaluation
+            // stage. We don't currently have a mechanism for that when emulating rect/quad lists
+            // using tessellation, so just ignore the write for now. Note that this only matters
+            // for vertex shaders, as geometry shaders come last in the pre-rasterization stage.
+            if (stage.tess_emulated_primitive) {
+                LOG_WARNING(Render,
+                            "Exporting Layer from a vertex shader when using tessellation-based "
+                            "primitive emulation is currently unsupported.");
+                return;
+            }
+        }
         ir.SetAttribute(IR::Attribute::RenderTargetId, value);
         break;
     case Output::None:
