@@ -287,6 +287,7 @@ void OnGameLoaded() {
                     QString appVer = xmlReader.attributes().value("AppVer").toString();
 
                     // Check and update the isEnabled attribute
+                    isEnabled = false;
                     for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
                         if (attr.name() == QStringLiteral("isEnabled")) {
                             isEnabled = (attr.value().toString() == "true");
