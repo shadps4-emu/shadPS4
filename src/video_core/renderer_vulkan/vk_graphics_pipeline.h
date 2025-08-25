@@ -38,7 +38,7 @@ struct GraphicsPipelineKey {
     u32 num_color_attachments;
     std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
     std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
-    std::array<u32, Liverpool::NumColorBuffers> write_masks;
+    std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
     Liverpool::ColorBufferMask cb_shader_mask;
     Liverpool::ColorControl::LogicOp logic_op;
     u32 num_samples;
@@ -78,6 +78,10 @@ public:
 
     const std::optional<const Shader::Gcn::FetchShaderData>& GetFetchShader() const noexcept {
         return fetch_shader;
+    }
+
+    auto GetWriteMasks() const {
+        return key.write_masks;
     }
 
     u32 GetMrtMask() const {

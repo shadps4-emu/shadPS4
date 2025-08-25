@@ -128,6 +128,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+        info.vs_info.tess_emulated_primitive =
+            regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
+            regs.primitive_type == AmdGpu::PrimitiveType::QuadList;
         info.vs_info.clip_disable = regs.IsClipDisabled();
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
@@ -345,10 +348,8 @@ bool PipelineCache::RefreshGraphicsKey() {
                                              !col_buf.info.blend_bypass);
 
         // Apply swizzle to target mask
-        const auto& swizzle = key.color_buffers[cb].swizzle;
-        for (u32 i = 0; i < 4; ++i) {
-            key.write_masks[cb] |= ((target_mask >> i) & 1) << swizzle.Map(i);
-        }
+        key.write_masks[cb] =
+            vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
     }
 
     // Compile and bind shader stages

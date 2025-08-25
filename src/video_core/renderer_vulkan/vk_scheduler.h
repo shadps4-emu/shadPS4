@@ -108,6 +108,7 @@ struct DynamicState {
         bool front_face : 1;
 
         bool blend_constants : 1;
+        bool color_write_masks : 1;
         bool line_width : 1;
     } dirty_state{};
 
@@ -143,6 +144,7 @@ struct DynamicState {
     vk::FrontFace front_face{};
 
     std::array<float, 4> blend_constants{};
+    ColorWriteMasks color_write_masks{};
     float line_width{};
 
     /// Commits the dynamic state to the provided command buffer.
@@ -303,6 +305,13 @@ struct DynamicState {
         if (rasterizer_discard_enable != enabled) {
             rasterizer_discard_enable = enabled;
             dirty_state.rasterizer_discard_enable = true;
+        }
+    }
+
+    void SetColorWriteMasks(const ColorWriteMasks& color_write_masks_) {
+        if (!std::ranges::equal(color_write_masks, color_write_masks_)) {
+            color_write_masks = color_write_masks_;
+            dirty_state.color_write_masks = true;
         }
     }
 
