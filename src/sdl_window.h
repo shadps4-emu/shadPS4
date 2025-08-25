@@ -12,6 +12,7 @@
 #define SDL_EVENT_TOGGLE_FULLSCREEN (SDL_EVENT_USER + 1)
 #define SDL_EVENT_TOGGLE_PAUSE (SDL_EVENT_USER + 2)
 #define SDL_EVENT_CHANGE_CONTROLLER (SDL_EVENT_USER + 3)
+#define SDL_EVENT_QUIT_RELAUNCH (SDL_EVENT_USER + 4)
 
 struct SDL_Window;
 struct SDL_Gamepad;
@@ -100,6 +101,7 @@ private:
     void OnResize();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
+    void RelaunchEmulator();
     void CheckHotkeys();
 
 private:

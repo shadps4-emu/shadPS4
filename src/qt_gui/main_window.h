@@ -38,6 +38,8 @@ public:
     void InstallDirectory();
     void StartGame();
     void PauseGame();
+    void StopGame();
+    void RestartGame();
     bool showLabels;
 
 private Q_SLOTS:
