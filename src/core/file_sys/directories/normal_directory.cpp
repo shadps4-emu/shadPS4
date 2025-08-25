@@ -46,10 +46,10 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
     // Keep an internal buffer representing the raw contents of this file descriptor,
     // then emulate the various read functions with that.
     directory_size = Common::AlignUp(directory_size, 512);
-    data_buffer = (char*)malloc(directory_size);
-    memset(data_buffer, 0, directory_size);
+    data_buffer.reserve(directory_size);
+    memset(data_buffer.data(), 0, directory_size);
 
-    char* current_dirent = data_buffer;
+    u8* current_dirent = data_buffer.data();
     for (NormalDirectoryDirent dirent : dirents) {
         NormalDirectoryDirent* dirent_to_write =
             reinterpret_cast<NormalDirectoryDirent*>(current_dirent);
@@ -74,8 +74,7 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
     s64 remaining_data = directory_size - file_offset;
     s64 bytes = nbytes > remaining_data ? remaining_data : nbytes;
 
-    char* read_pointer = data_buffer + file_offset;
-    memcpy(buf, read_pointer, bytes);
+    memcpy(buf, data_buffer.data() + file_offset, bytes);
 
     file_offset += bytes;
     return bytes;

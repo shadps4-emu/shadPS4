@@ -38,7 +38,7 @@ private:
 
     u64 directory_size = 0;
     s64 file_offset = 0;
-    char* data_buffer;
+    std::vector<u8> data_buffer;
     std::vector<NormalDirectoryDirent> dirents;
 };
 } // namespace Core::Directories
