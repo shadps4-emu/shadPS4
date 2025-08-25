@@ -47,7 +47,7 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
             s64 data_to_skip = dirents_index;
             u64 corrected_index = 0;
             while (data_to_skip > 0) {
-                auto dirent = dirents[corrected_index++];
+                const auto dirent = dirents[corrected_index++];
                 data_to_skip -= dirent.d_reclen;
             }
             dirents_index = corrected_index;
@@ -59,7 +59,7 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
 
     s64 bytes_remaining = nbytes > directory_size ? directory_size : nbytes;
     // read on PfsDirectories will always return the maximum possible value.
-    u64 bytes_written = bytes_remaining;
+    const u64 bytes_written = bytes_remaining;
     memset(buf, 0, bytes_remaining);
 
     char* current_dirent = static_cast<char*>(buf);
@@ -91,7 +91,7 @@ s64 PfsDirectory::read(void* buf, u64 nbytes) {
 s64 PfsDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
     s64 bytes_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        s64 result = read(iov[i].iov_base, iov[i].iov_len);
+        const s64 result = read(iov[i].iov_base, iov[i].iov_len);
         if (result < 0) {
             return result;
         }
@@ -101,12 +101,12 @@ s64 PfsDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovc
 }
 
 s64 PfsDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    u64 old_dirent_index = dirents_index;
+    const u64 old_dirent_index = dirents_index;
     dirents_index = 0;
     s64 data_to_skip = offset;
     // If offset is part-way through one dirent, that dirent is skipped.
     while (data_to_skip > 0) {
-        auto dirent = dirents[dirents_index++];
+        const auto dirent = dirents[dirents_index++];
         data_to_skip -= dirent.d_reclen;
         if (dirents_index == dirents.size()) {
             // We've reached the end of the dirents, nothing more can be skipped.
@@ -114,7 +114,7 @@ s64 PfsDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iov
         }
     }
 
-    s64 bytes_read = readv(iov, iovcnt);
+    const s64 bytes_read = readv(iov, iovcnt);
     dirents_index = old_dirent_index;
     return bytes_read;
 }
@@ -133,7 +133,7 @@ s64 PfsDirectory::lseek(s64 offset, s32 whence) {
         }
         s64 data_to_skip = offset;
         while (data_to_skip > 0) {
-            auto dirent = dirents[dirents_index++];
+            const auto dirent = dirents[dirents_index++];
             data_to_skip -= dirent.d_reclen;
             if (dirents_index == dirents.size()) {
                 // We've passed through all file dirents.
@@ -177,7 +177,7 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
             s64 data_to_skip = dirents_index;
             u64 corrected_index = 0;
             while (data_to_skip > 0) {
-                auto dirent = dirents[corrected_index++];
+                const auto dirent = dirents[corrected_index++];
                 data_to_skip -= dirent.d_reclen;
             }
             dirents_index = corrected_index;

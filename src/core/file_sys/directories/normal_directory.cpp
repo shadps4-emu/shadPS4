@@ -39,7 +39,7 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
     // The last entry of a normal directory should have d_reclen covering the remaining data.
     // Since the dirents of a folder are constant by this point, we can modify the last dirent
     // before creating the emulated file buffer.
-    u64 filler_count = Common::AlignUp(directory_size, DIRECTORY_ALIGNMENT) - directory_size;
+    const u64 filler_count = Common::AlignUp(directory_size, DIRECTORY_ALIGNMENT) - directory_size;
     dirents[dirents.size() - 1].d_reclen += filler_count;
 
     // Reading from standard directories seems to be based around file pointer logic.
@@ -50,7 +50,7 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory) {
     memset(data_buffer.data(), 0, directory_size);
 
     u8* current_dirent = data_buffer.data();
-    for (NormalDirectoryDirent dirent : dirents) {
+    for (const NormalDirectoryDirent& dirent : dirents) {
         NormalDirectoryDirent* dirent_to_write =
             reinterpret_cast<NormalDirectoryDirent*>(current_dirent);
         dirent_to_write->d_fileno = dirent.d_fileno;
@@ -71,8 +71,8 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
         return ORBIS_OK;
     }
 
-    s64 remaining_data = directory_size - file_offset;
-    s64 bytes = nbytes > remaining_data ? remaining_data : nbytes;
+    const s64 remaining_data = directory_size - file_offset;
+    const s64 bytes = nbytes > remaining_data ? remaining_data : nbytes;
 
     std::memcpy(buf, data_buffer.data() + file_offset, bytes);
 
@@ -83,7 +83,7 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
 s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
     s64 bytes_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        s64 result = read(iov[i].iov_base, iov[i].iov_len);
+        const s64 result = read(iov[i].iov_base, iov[i].iov_len);
         if (result < 0) {
             return result;
         }
@@ -94,9 +94,9 @@ s64 NormalDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 i
 
 s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
                             s64 offset) {
-    u64 old_file_pointer = file_offset;
+    const u64 old_file_pointer = file_offset;
     file_offset = offset;
-    s64 bytes_read = readv(iov, iovcnt);
+    const s64 bytes_read = readv(iov, iovcnt);
     file_offset = old_file_pointer;
     return bytes_read;
 }
