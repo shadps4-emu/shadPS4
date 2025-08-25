@@ -28,6 +28,7 @@ public:
 
 private:
     static constexpr s32 MAX_LENGTH = 255;
+    static constexpr s64 DIRECTORY_ALIGNMENT = 0x200;
     struct NormalDirectoryDirent {
         u32 d_fileno;
         u16 d_reclen;

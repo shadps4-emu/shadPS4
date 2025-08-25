@@ -28,6 +28,7 @@ public:
 
 private:
     static constexpr s32 MAX_LENGTH = 255;
+    static constexpr s32 DIRECTORY_ALIGNMENT = 0x10000;
     struct PfsDirectoryDirent {
         u32 d_fileno;
         u32 d_type;

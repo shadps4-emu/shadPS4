@@ -37,7 +37,7 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
         directory_content_size += dirent.d_reclen;
     });
 
-    directory_size = Common::AlignUp(directory_content_size, 0x10000);
+    directory_size = Common::AlignUp(directory_content_size, DIRECTORY_ALIGNMENT);
 }
 
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
