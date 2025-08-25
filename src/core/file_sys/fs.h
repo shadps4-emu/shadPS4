@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -10,8 +10,8 @@
 #include <tsl/robin_map.h>
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
-#include "core/devices/base_device.h"
-#include "core/directories/base_directory.h"
+#include "core/file_sys/devices/base_device.h"
+#include "core/file_sys/directories/base_directory.h"
 
 namespace Libraries::Net {
 struct Socket;

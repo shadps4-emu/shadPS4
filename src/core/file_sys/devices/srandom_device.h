@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,14 +7,14 @@
 
 namespace Core::Devices {
 
-class ConsoleDevice final : BaseDevice {
+class SRandomDevice final : BaseDevice {
     u32 handle;
 
 public:
     static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, int, u16);
-    explicit ConsoleDevice(u32 handle) : handle(handle) {}
+    explicit SRandomDevice(u32 handle) : handle(handle) {}
 
-    ~ConsoleDevice() override = default;
+    ~SRandomDevice() override = default;
 
     int ioctl(u64 cmd, Common::VaCtx* args) override;
     s64 write(const void* buf, size_t nbytes) override;

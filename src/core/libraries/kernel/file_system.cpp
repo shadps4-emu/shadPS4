@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -9,15 +9,15 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/devices/console_device.h"
-#include "core/devices/deci_tty6_device.h"
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
-#include "core/devices/random_device.h"
-#include "core/devices/srandom_device.h"
-#include "core/devices/urandom_device.h"
-#include "core/directories/normal_directory.h"
-#include "core/directories/pfs_directory.h"
+#include "core/file_sys/devices/console_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
+#include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/srandom_device.h"
+#include "core/file_sys/devices/urandom_device.h"
+#include "core/file_sys/directories/normal_directory.h"
+#include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
