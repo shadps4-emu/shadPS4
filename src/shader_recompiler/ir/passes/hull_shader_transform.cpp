@@ -374,11 +374,27 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             case IR::Opcode::StoreBufferU32x2:
             case IR::Opcode::StoreBufferU32x3:
             case IR::Opcode::StoreBufferU32x4: {
-                const auto info = inst.Flags<IR::BufferInstInfo>();
-                if (!info.globally_coherent) {
+                IR::Value soffset = IR::GetBufferSOffsetArg(&inst);
+                if (!M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::TessFactorsBufferBase),
+                                       MatchIgnore())
+                         .Match(soffset)) {
                     break;
                 }
+
+                const auto info = inst.Flags<IR::BufferInstInfo>();
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+
+                IR::Value voffset;
+                bool success =
+                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchImm(voffset), MatchIgnore())
+                        .Match(inst.Arg(IR::StoreBufferArgs::Address));
+                ASSERT_MSG(success, "unhandled pattern in tess factor store");
+
+                const u32 gcn_factor_idx = (info.inst_offset.Value() + voffset.U32()) >> 2;
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
+
+                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
+
                 const auto GetValue = [&](IR::Value data) -> IR::F32 {
                     if (auto* inst = data.TryInstRecursive();
                         inst && inst->GetOpcode() == IR::Opcode::BitCastU32F32) {
@@ -386,19 +402,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
-                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
-                IR::Value voffset, soffset;
-                bool success =
-                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchImm(voffset), MatchValue(soffset))
-                        .Match(inst.Arg(IR::StoreBufferArgs::Address));
-                // Some shaders seen using an uninitialized sgpr for soffset. Ignore undef soffset
-                // arg. TODO figure out if there's defined behavior or just UB
-                success &= (soffset.IsImmediate() && soffset.U32() == 0) ||
-                           soffset.InstRecursive()->GetOpcode() == IR::Opcode::UndefU32;
-                ASSERT_MSG(success, "unhandled pattern in tess factor store");
-                const u32 gcn_factor_idx = (info.inst_offset.Value() + voffset.U32()) >> 2;
 
-                const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,

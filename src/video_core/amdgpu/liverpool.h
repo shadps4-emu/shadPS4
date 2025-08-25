@@ -118,6 +118,7 @@ struct Liverpool {
         u32 address_lo;
         BitField<0, 8, u32> address_hi;
         union {
+            // SPI_SHADER_PGM_RSRC1_XX
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
             BitField<10, 2, u64> priority;
@@ -127,7 +128,12 @@ struct Liverpool {
             BitField<18, 2, FpDenormMode> fp_denorm_mode64;
             BitField<12, 8, u64> float_mode;
             BitField<24, 2, u64> vgpr_comp_cnt; // SPI provided per-thread inputs
+            // SPI_SHADER_PGM_RSRC2_XX
+            BitField<32, 1, u64> scratch_en;
             BitField<33, 5, u64> num_user_regs;
+            union {
+                BitField<39, 1, u64> oc_lds_en;
+            } rsrc2_hs;
         } settings;
         UserData user_data;
 
