@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
 #include "common/config.h"
 #include "common/string_util.h"
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {

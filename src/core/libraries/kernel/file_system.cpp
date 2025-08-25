@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -9,13 +9,15 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/devices/console_device.h"
-#include "core/devices/deci_tty6_device.h"
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
-#include "core/devices/random_device.h"
-#include "core/devices/srandom_device.h"
-#include "core/devices/urandom_device.h"
+#include "core/file_sys/devices/console_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
+#include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/srandom_device.h"
+#include "core/file_sys/devices/urandom_device.h"
+#include "core/file_sys/directories/normal_directory.h"
+#include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -159,30 +161,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             return -1;
         }
 
-        file->type = Core::FileSys::FileType::Directory;
-
-        // Populate directory contents
-        mnt->IterateDirectory(file->m_guest_name,
-                              [&file](const auto& ent_path, const auto ent_is_file) {
-                                  auto& dir_entry = file->dirents.emplace_back();
-                                  dir_entry.name = ent_path.filename().string();
-                                  dir_entry.isFile = ent_is_file;
-                              });
-        file->dirents_index = 0;
-
-        if (read) {
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (write || rdwr) {
+        if (write || rdwr) {
             // Cannot open directories with any type of write access
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             return -1;
-        }
-
-        if (e == EACCES) {
-            // Hack to bypass some platform limitations, ignore the error and continue as normal.
-            LOG_WARNING(Kernel_Fs, "Opening directories is not fully supported on this platform");
-            e = 0;
         }
 
         if (truncate) {
@@ -190,6 +173,15 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             return -1;
+        }
+
+        file->type = Core::FileSys::FileType::Directory;
+        file->is_opened = true;
+        if (file->m_guest_name.starts_with("/app0")) {
+            // TODO: Properly identify type for paths like "/app0/.."
+            file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
+        } else {
+            file->directory = Core::Directories::NormalDirectory::Create(file->m_guest_name);
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
@@ -289,7 +281,7 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     return result;
 }
 
-s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -313,11 +305,11 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
     return file->f.WriteRaw<u8>(buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
     return write(fd, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     s64 result = write(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -326,7 +318,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes) {
     return result;
 }
 
-size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
+s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
@@ -335,7 +327,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
-size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -345,26 +337,33 @@ size_t PS4_SYSV_ABI readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
 
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
-        size_t result = file->device->readv(iov, iovcnt);
+        s64 result = file->device->readv(iov, iovcnt);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->readv(iov, iovcnt);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
         return result;
     }
-    size_t total_read = 0;
+    s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
 
-size_t PS4_SYSV_ABI posix_readv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI posix_readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return readv(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
-    size_t result = readv(fd, iov, iovcnt);
+s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    s64 result = readv(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -372,7 +371,7 @@ size_t PS4_SYSV_ABI sceKernelReadv(s32 fd, const SceKernelIovec* iov, s32 iovcnt
     return result;
 }
 
-size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -383,26 +382,26 @@ size_t PS4_SYSV_ABI writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
     std::scoped_lock lk{file->m_mutex};
 
     if (file->type == Core::FileSys::FileType::Device) {
-        size_t result = file->device->writev(iov, iovcnt);
+        s64 result = file->device->writev(iov, iovcnt);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
         return result;
     }
-    size_t total_written = 0;
+    s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }
 
-size_t PS4_SYSV_ABI posix_writev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
+s64 PS4_SYSV_ABI posix_writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     return writev(fd, iov, iovcnt);
 }
 
-size_t PS4_SYSV_ABI sceKernelWritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt) {
-    size_t result = writev(fd, iov, iovcnt);
+s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    s64 result = writev(fd, iov, iovcnt);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -421,6 +420,13 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s64 result = file->device->lseek(offset, whence);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->lseek(offset, whence);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
@@ -473,7 +479,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
     return result;
 }
 
-s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -489,6 +495,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->read(buf, nbytes);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     } else if (file->type == Core::FileSys::FileType::Socket) {
         // Socket functions handle errnos internally.
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
@@ -496,11 +509,11 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
     return ReadFile(file->f, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
     return read(fd, buf, nbytes);
 }
 
-s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, size_t nbytes) {
+s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
     s64 result = read(fd, buf, nbytes);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -594,7 +607,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}", path);
+    LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
@@ -646,7 +659,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 }
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
-    LOG_INFO(Kernel_Fs, "(PARTIAL) fd = {}", fd);
+    LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
     if (sb == nullptr) {
         *__Error() = POSIX_EFAULT;
         return -1;
@@ -677,12 +690,12 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         break;
     }
     case Core::FileSys::FileType::Directory: {
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 65536;
-        sb->st_blksize = 65536;
-        sb->st_blocks = 128;
-        // TODO incomplete
-        break;
+        s32 result = file->directory->fstat(sb);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     case Core::FileSys::FileType::Socket: {
         // Socket functions handle errnos internally
@@ -804,7 +817,7 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
@@ -825,6 +838,13 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        s64 result = file->directory->preadv(iov, iovcnt, offset);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
 
     const s64 pos = file->f.Tell();
@@ -835,14 +855,14 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offse
         *__Error() = POSIX_EIO;
         return -1;
     }
-    size_t total_read = 0;
-    for (int i = 0; i < iovcnt; i++) {
+    s64 total_read = 0;
+    for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
 
-s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 result = posix_preadv(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -851,13 +871,13 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, SceKernelIovec* iov, s32 iovcnt, s64 of
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 nbytes, s64 offset) {
+    OrbisKernelIovec iovec{buf, nbytes};
     return posix_preadv(fd, &iovec, 1, offset);
 }
 
-s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
+    OrbisKernelIovec iovec{buf, nbytes};
     return sceKernelPreadv(fd, &iovec, 1, offset);
 }
 
@@ -902,50 +922,36 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
 
-    if (file->type == Core::FileSys::FileType::Device) {
-        s32 result = file->device->getdents(buf, nbytes, basep);
+    if (nbytes < 512) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    switch (file->type) {
+    case Core::FileSys::FileType::Directory: {
+        s64 result = file->directory->getdents(buf, nbytes, basep);
         if (result < 0) {
             ErrSceToPosix(result);
             return -1;
         }
         return result;
     }
-
-    if (file->type != Core::FileSys::FileType::Directory || nbytes < 512 ||
-        file->dirents_index > file->dirents.size()) {
+    case Core::FileSys::FileType::Device: {
+        s64 result = file->device->getdents(buf, nbytes, basep);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
+    }
+    default: {
+        // Not directory or device
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-
-    s64 bytes_to_write = nbytes;
-    char* buf_to_write = buf;
-    u64 bytes_written = 0;
-    while (bytes_to_write >= sizeof(OrbisKernelDirent)) {
-        if (file->dirents_index == file->dirents.size()) {
-            break;
-        }
-        const auto& entry = file->dirents.at(file->dirents_index++);
-        auto str = entry.name;
-        static int fileno = 1000; // random
-        OrbisKernelDirent* sce_ent = (OrbisKernelDirent*)buf_to_write;
-        // TODO this should be unique, maybe switch to a hash or something?
-        sce_ent->d_fileno = fileno++;
-        sce_ent->d_reclen = sizeof(OrbisKernelDirent);
-        sce_ent->d_type = (entry.isFile ? 8 : 4);
-        sce_ent->d_namlen = str.size();
-        strncpy(sce_ent->d_name, str.c_str(), ORBIS_MAX_PATH);
-        sce_ent->d_name[ORBIS_MAX_PATH] = '\0';
-
-        buf_to_write += sizeof(OrbisKernelDirent);
-        bytes_to_write -= sizeof(OrbisKernelDirent);
-        bytes_written += sizeof(OrbisKernelDirent);
     }
 
-    if (basep != nullptr) {
-        *basep = file->dirents_index;
-    }
-
-    return bytes_written;
+    return ORBIS_OK;
 }
 
 s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
@@ -978,7 +984,7 @@ s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* base
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (offset < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
@@ -1009,19 +1015,19 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s6
         *__Error() = POSIX_EIO;
         return -1;
     }
-    size_t total_written = 0;
-    for (int i = 0; i < iovcnt; i++) {
+    s64 total_written = 0;
+    for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }
 
-s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
-    SceKernelIovec iovec{buf, nbytes};
+s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
+    OrbisKernelIovec iovec{buf, nbytes};
     return posix_pwritev(fd, &iovec, 1, offset);
 }
 
-s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
     s64 result = posix_pwrite(fd, buf, nbytes, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -1030,7 +1036,7 @@ s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset) {
     return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const SceKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 result = posix_pwritev(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
