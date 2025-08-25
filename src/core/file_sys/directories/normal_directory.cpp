@@ -104,7 +104,8 @@ s64 NormalDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 
 s64 NormalDirectory::lseek(s64 offset, s32 whence) {
     switch (whence) {
     case 0: {
-        file_offset = 0;
+        file_offset = offset;
+        break;
     }
     case 1: {
         file_offset += offset;
