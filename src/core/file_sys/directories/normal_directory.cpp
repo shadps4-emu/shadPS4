@@ -73,7 +73,6 @@ s64 NormalDirectory::read(void* buf, u64 nbytes) {
 
     s64 remaining_data = directory_size - file_offset;
     s64 bytes = nbytes > remaining_data ? remaining_data : nbytes;
-    memset(buf, 0, bytes);
 
     char* read_pointer = data_buffer + file_offset;
     memcpy(buf, read_pointer, bytes);
