@@ -5,8 +5,8 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
-#include "pfs_directory.h"
 
 namespace Core::Directories {
 
