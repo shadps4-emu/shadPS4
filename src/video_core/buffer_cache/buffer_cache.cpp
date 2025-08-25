@@ -154,22 +154,26 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
 BufferCache::~BufferCache() = default;
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool flush) {
     if (!IsRegionRegistered(device_addr, size)) {
         return;
     }
-    memory_tracker->InvalidateRegion(
-        device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
+    if (flush) {
+        memory_tracker->InvalidateRegion(
+            device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
+    } else {
+        memory_tracker->InvalidateRegion(device_addr, size);
+    }
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
+        DownloadBufferMemory(buffer, device_addr, size, is_write);
+        scheduler.Finish();
     });
 }
 
-template <bool async>
 void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
@@ -204,7 +208,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    const auto write_data = [&]() {
+    scheduler.DeferOperation([this, &buffer, copies = std::move(copies), download, offset,
+                              device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
@@ -216,13 +221,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         if (is_write) {
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
         }
-    };
-    if constexpr (async) {
-        scheduler.DeferOperation(write_data);
-    } else {
-        scheduler.Finish();
-        write_data();
-    }
+    });
 }
 
 void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
@@ -396,9 +395,7 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         // Avoid using ObtainBuffer here as that might give us the stream buffer.
         const BufferId buffer_id = FindBuffer(src, num_bytes);
         auto& buffer = slot_buffers[buffer_id];
-        if (SynchronizeBuffer(buffer, src, num_bytes, false, true)) {
-            texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
-        }
+        SynchronizeBuffer(buffer, src, num_bytes, false, true);
         return buffer;
     }();
     auto& dst_buffer = [&] -> const Buffer& {
@@ -906,8 +903,12 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         });
         TouchBuffer(buffer);
     }
-    if (is_texel_buffer) {
-        return SynchronizeBufferFromImage(buffer, device_addr, size);
+    if (is_texel_buffer || is_written) {
+        const bool synced = SynchronizeBufferFromImage(buffer, device_addr, size);
+        if (is_written) {
+            texture_cache.InvalidateMemoryFromGPU(device_addr, size);
+        }
+        return synced;
     }
     return false;
 }
@@ -954,6 +955,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
+    if (!image.SafeToDownload()) {
+        return false;
+    }
     const u32 buf_offset = buffer.Offset(image.info.guest_address);
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     u32 copy_size = 0;
@@ -1210,8 +1214,7 @@ void BufferCache::RunGarbageCollector() {
         }
         --max_deletions;
         Buffer& buffer = slot_buffers[buffer_id];
-        // InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
-        DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
+        DownloadBufferMemory(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
     };
 }

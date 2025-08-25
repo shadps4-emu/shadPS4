@@ -75,6 +75,8 @@ public:
                         manager->template IsRegionModified<Type::GPU>(offset, size)) {
                         return true;
                     }
+                    manager->template ChangeRegionState<Type::GPU, false>(
+                        manager->GetCpuAddr() + offset, size);
                     manager->template ChangeRegionState<Type::CPU, true>(
                         manager->GetCpuAddr() + offset, size);
                     return false;
@@ -83,6 +85,20 @@ public:
                     on_flush();
                 }
             });
+    }
+
+    /// Removes all protection from a page (lose any non downloaded GPU modifications)
+    void InvalidateRegion(VAddr cpu_addr, u64 size) noexcept {
+        IteratePages<false>(cpu_addr, size, [](RegionManager* manager, u64 offset, size_t size) {
+            // Perform both the GPU modification check and CPU state change with the lock
+            // in case we are racing with GPU thread trying to mark the page as GPU
+            // modified.
+            std::scoped_lock lk{manager->lock};
+            manager->template ChangeRegionState<Type::GPU, false>(manager->GetCpuAddr() + offset,
+                                                                  size);
+            manager->template ChangeRegionState<Type::CPU, true>(manager->GetCpuAddr() + offset,
+                                                                 size);
+        });
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
