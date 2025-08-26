@@ -656,45 +656,6 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
 #endif
                 break;
 
-                // f keys
-
-            case Qt::Key_F1:
-                pressedKeys.insert(8, "f1");
-                break;
-            case Qt::Key_F2:
-                pressedKeys.insert(9, "f2");
-                break;
-            case Qt::Key_F3:
-                pressedKeys.insert(10, "f3");
-                break;
-            case Qt::Key_F4:
-                pressedKeys.insert(11, "f4");
-                break;
-            case Qt::Key_F5:
-                pressedKeys.insert(12, "f5");
-                break;
-            case Qt::Key_F6:
-                pressedKeys.insert(13, "f6");
-                break;
-            case Qt::Key_F7:
-                pressedKeys.insert(14, "f7");
-                break;
-            case Qt::Key_F8:
-                pressedKeys.insert(15, "f8");
-                break;
-            case Qt::Key_F9:
-                pressedKeys.insert(16, "f9");
-                break;
-            case Qt::Key_F10:
-                pressedKeys.insert(17, "f10");
-                break;
-            case Qt::Key_F11:
-                pressedKeys.insert(18, "f11");
-                break;
-            case Qt::Key_F12:
-                pressedKeys.insert(19, "f12");
-                break;
-
                 // alphanumeric
             case Qt::Key_A:
                 pressedKeys.insert(20, "a");
