@@ -958,6 +958,11 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             case Qt::Key_Right:
                 pressedKeys.insert(124, "right");
                 break;
+
+                // cancel mapping
+            case Qt::Key_Escape:
+                SetMapping("unmapped");
+                break;
             default:
                 break;
             }
