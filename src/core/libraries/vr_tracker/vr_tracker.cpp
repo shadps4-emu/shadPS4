@@ -254,6 +254,42 @@ sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam
 
 s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    if (param == nullptr || param->size != sizeof(OrbisVrTrackerRecalibrateParam) ||
+        param->device_type > OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    OrbisVrTrackerDeviceType device_type = param->device_type;
+    switch (device_type) {
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_HMD: {
+        // Seems like the lack of a connected hmd results in this?
+        return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_DUALSHOCK4: {
+        if (g_pad_handle == -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
+        }
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_MOVE: {
+        if (g_move_handle == -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
+        }
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN: {
+        if (g_gun_handle == -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
+        }
+        break;
+    }
+    }
+
+    // TODO: handle internal recalibration behaviors.
     return ORBIS_OK;
 }
 
