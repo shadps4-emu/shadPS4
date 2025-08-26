@@ -1,0 +1,360 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "common/logging/log.h"
+#include "core/libraries/error_codes.h"
+#include "core/libraries/libs.h"
+#include "core/libraries/vr_tracker/vr_tracker.h"
+
+namespace Libraries::VrTracker {
+
+s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param, OrbisVrTrackerQueryMemoryResult* result) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type, const s32 handle) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice2() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerCpuProcess(const OrbisVrTrackerCpuProcessParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGetPlayAreaWarningInfo(OrbisVrTrackerPlayAreaWarningInfo* info) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param, OrbisVrTrackerResultData* result) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGetTime(u64* time) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGpuSubmit(const OrbisVrTrackerGpuSubmitParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGpuWait(const OrbisVrTrackerGpuWaitParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGpuWaitAndCpuProcess() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerResetAll() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerResetOrientationRelative(const OrbisVrTrackerDeviceType device_type, const s32 handle) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSaveInternalBuffers() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSetExtendedMode() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSetLEDBrightness() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSetRestingMode() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerUpdateMotionSensorData(const OrbisVrTrackerUpdateMotionSensorDataParam* param) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_0FA4C949F8D3024E() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_285C6AFC09C42F7E() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_9A6CDB2103664F8A() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_B4D26B7D8B18DF06() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerSetDeviceRejection() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_1119B0BE399F37E7() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_4928B43816BC440D() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_863EF32EFCB0FA9C() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_E6E726CBC85C48F9() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_F6407E46C66DF383() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerCpuPopMarker() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerCpuPushMarker() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerGetLiveCaptureId() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerStartLiveCapture() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerStopLiveCapture() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle) {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVrTrackerTerm() {
+    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    // OpenOrbis Toolchain seems to link with module version 1,1 while actual games use 0,0
+    LIB_FUNCTION("24kDA+A0Ox0", "libSceVrTrackerFourDeviceAllowed", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerRegisterDevice2);
+    LIB_FUNCTION("5IFOAYv-62g", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerCpuProcess);
+    LIB_FUNCTION("zvyKP0Z3UvU", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerGetPlayAreaWarningInfo);
+    LIB_FUNCTION("76OBvrrQXUc", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerGetResult);
+    LIB_FUNCTION("XoeWzXlrnMw", "libSceVrTracker", 1, "libSceVrTracker", 1, 1, sceVrTrackerGetTime);
+    LIB_FUNCTION("TVegDMLaBB8", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerGpuSubmit);
+    LIB_FUNCTION("gkGuO9dd57M", "libSceVrTracker", 1, "libSceVrTracker", 1, 1, sceVrTrackerGpuWait);
+    LIB_FUNCTION("ARhgpXvwoR0", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerGpuWaitAndCpuProcess);
+    LIB_FUNCTION("QkRl7pART9M", "libSceVrTracker", 1, "libSceVrTracker", 1, 1, sceVrTrackerInit);
+    LIB_FUNCTION("VItTwN8DmS8", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerNotifyEndOfCpuProcess);
+    LIB_FUNCTION("K7yhYrsIBPc", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerQueryMemory);
+    LIB_FUNCTION("EUCaQtXXYNI", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerRecalibrate);
+    LIB_FUNCTION("sIh8GwcevaQ", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerRegisterDevice);
+    LIB_FUNCTION("ufexf4aNiwg", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerRegisterDeviceInternal);
+    LIB_FUNCTION("CtWUbFgmq+I", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerResetAll);
+    LIB_FUNCTION("E0P0sN-wy+4", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerResetOrientationRelative);
+    LIB_FUNCTION("bDGZVTwwZ1A", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSaveInternalBuffers);
+    LIB_FUNCTION("qBjnR0HtMYI", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSetDurationUntilStatusNotTracking);
+    LIB_FUNCTION("NhPkY3V8E+8", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSetExtendedMode);
+    LIB_FUNCTION("vpsLLotiSUg", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSetLEDBrightness);
+    LIB_FUNCTION("lgWSHQ8p4i4", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSetRestingMode);
+    LIB_FUNCTION("IBv4P3q1pQ0", "libSceVrTracker", 1, "libSceVrTracker", 1, 1, sceVrTrackerTerm);
+    LIB_FUNCTION("Q8skQqEwn5c", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerUnregisterDevice);
+    LIB_FUNCTION("9fvHMUbsom4", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerUpdateMotionSensorData);
+    LIB_FUNCTION("D6TJSfjTAk4", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 Func_0FA4C949F8D3024E);
+    LIB_FUNCTION("KFxq-AnEL34", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 Func_285C6AFC09C42F7E);
+    LIB_FUNCTION("mmzbIQNmT4o", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 Func_9A6CDB2103664F8A);
+    LIB_FUNCTION("tNJrfYsY3wY", "libSceVrTracker", 1, "libSceVrTracker", 1, 1,
+                 Func_B4D26B7D8B18DF06);
+    LIB_FUNCTION("jGqEkPy0iLU", "libSceVrTrackerDeviceRejection", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerSetDeviceRejection);
+    LIB_FUNCTION("ERmwvjmfN+c", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 1, 1,
+                 Func_1119B0BE399F37E7);
+    LIB_FUNCTION("SSi0OBa8RA0", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 1, 1,
+                 Func_4928B43816BC440D);
+    LIB_FUNCTION("hj7zLvyw+pw", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 1, 1,
+                 Func_863EF32EFCB0FA9C);
+    LIB_FUNCTION("5ucmy8hcSPk", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 1, 1,
+                 Func_E6E726CBC85C48F9);
+    LIB_FUNCTION("9kB+RsZt84M", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 1, 1,
+                 Func_F6407E46C66DF383);
+    LIB_FUNCTION("sBkAqyF5Gns", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerCpuPopMarker);
+    LIB_FUNCTION("rvCywCbc7Pk", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerCpuPushMarker);
+    LIB_FUNCTION("lm6T1Ur6JRk", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerGetLiveCaptureId);
+    LIB_FUNCTION("qa1+CeXKDPc", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerStartLiveCapture);
+    LIB_FUNCTION("3YCwwpHkHIg", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 1, 1,
+                 sceVrTrackerStopLiveCapture);
+
+    // For proper games
+    LIB_FUNCTION("24kDA+A0Ox0", "libSceVrTrackerFourDeviceAllowed", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerRegisterDevice2);
+    LIB_FUNCTION("5IFOAYv-62g", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerCpuProcess);
+    LIB_FUNCTION("zvyKP0Z3UvU", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerGetPlayAreaWarningInfo);
+    LIB_FUNCTION("76OBvrrQXUc", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerGetResult);
+    LIB_FUNCTION("XoeWzXlrnMw", "libSceVrTracker", 1, "libSceVrTracker", 0, 0, sceVrTrackerGetTime);
+    LIB_FUNCTION("TVegDMLaBB8", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerGpuSubmit);
+    LIB_FUNCTION("gkGuO9dd57M", "libSceVrTracker", 1, "libSceVrTracker", 0, 0, sceVrTrackerGpuWait);
+    LIB_FUNCTION("ARhgpXvwoR0", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerGpuWaitAndCpuProcess);
+    LIB_FUNCTION("QkRl7pART9M", "libSceVrTracker", 1, "libSceVrTracker", 0, 0, sceVrTrackerInit);
+    LIB_FUNCTION("VItTwN8DmS8", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerNotifyEndOfCpuProcess);
+    LIB_FUNCTION("K7yhYrsIBPc", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerQueryMemory);
+    LIB_FUNCTION("EUCaQtXXYNI", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerRecalibrate);
+    LIB_FUNCTION("sIh8GwcevaQ", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerRegisterDevice);
+    LIB_FUNCTION("ufexf4aNiwg", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerRegisterDeviceInternal);
+    LIB_FUNCTION("CtWUbFgmq+I", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerResetAll);
+    LIB_FUNCTION("E0P0sN-wy+4", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerResetOrientationRelative);
+    LIB_FUNCTION("bDGZVTwwZ1A", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSaveInternalBuffers);
+    LIB_FUNCTION("qBjnR0HtMYI", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSetDurationUntilStatusNotTracking);
+    LIB_FUNCTION("NhPkY3V8E+8", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSetExtendedMode);
+    LIB_FUNCTION("vpsLLotiSUg", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSetLEDBrightness);
+    LIB_FUNCTION("lgWSHQ8p4i4", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSetRestingMode);
+    LIB_FUNCTION("IBv4P3q1pQ0", "libSceVrTracker", 1, "libSceVrTracker", 0, 0, sceVrTrackerTerm);
+    LIB_FUNCTION("Q8skQqEwn5c", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerUnregisterDevice);
+    LIB_FUNCTION("9fvHMUbsom4", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerUpdateMotionSensorData);
+    LIB_FUNCTION("D6TJSfjTAk4", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 Func_0FA4C949F8D3024E);
+    LIB_FUNCTION("KFxq-AnEL34", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 Func_285C6AFC09C42F7E);
+    LIB_FUNCTION("mmzbIQNmT4o", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 Func_9A6CDB2103664F8A);
+    LIB_FUNCTION("tNJrfYsY3wY", "libSceVrTracker", 1, "libSceVrTracker", 0, 0,
+                 Func_B4D26B7D8B18DF06);
+    LIB_FUNCTION("jGqEkPy0iLU", "libSceVrTrackerDeviceRejection", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerSetDeviceRejection);
+    LIB_FUNCTION("ERmwvjmfN+c", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 0, 0,
+                 Func_1119B0BE399F37E7);
+    LIB_FUNCTION("SSi0OBa8RA0", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 0, 0,
+                 Func_4928B43816BC440D);
+    LIB_FUNCTION("hj7zLvyw+pw", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 0, 0,
+                 Func_863EF32EFCB0FA9C);
+    LIB_FUNCTION("5ucmy8hcSPk", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 0, 0,
+                 Func_E6E726CBC85C48F9);
+    LIB_FUNCTION("9kB+RsZt84M", "libSceVrTrackerGpuTest", 1, "libSceVrTracker", 0, 0,
+                 Func_F6407E46C66DF383);
+    LIB_FUNCTION("sBkAqyF5Gns", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerCpuPopMarker);
+    LIB_FUNCTION("rvCywCbc7Pk", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerCpuPushMarker);
+    LIB_FUNCTION("lm6T1Ur6JRk", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerGetLiveCaptureId);
+    LIB_FUNCTION("qa1+CeXKDPc", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerStartLiveCapture);
+    LIB_FUNCTION("3YCwwpHkHIg", "libSceVrTrackerLiveCapture", 1, "libSceVrTracker", 0, 0,
+                 sceVrTrackerStopLiveCapture);
+};
+
+} // namespace Libraries::VrTracker
