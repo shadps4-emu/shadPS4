@@ -628,25 +628,16 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             switch (keyEvent->key()) {
             // modifiers
             case Qt::Key_Shift:
-                if (keyEvent->nativeScanCode() == LSHIFT_KEY) {
-                    pressedKeys.insert(1, "lshift");
-                } else {
-                    pressedKeys.insert(2, "rshift");
-                }
+                keyEvent->nativeScanCode() == LSHIFT_KEY ? pressedKeys.insert(1, "lshift")
+                                                         : pressedKeys.insert(2, "rshift");
                 break;
             case Qt::Key_Alt:
-                if (keyEvent->nativeScanCode() == LALT_KEY) {
-                    pressedKeys.insert(3, "lalt");
-                } else {
-                    pressedKeys.insert(4, "ralt");
-                }
+                keyEvent->nativeScanCode() == LALT_KEY ? pressedKeys.insert(3, "lalt")
+                                                       : pressedKeys.insert(4, "ralt");
                 break;
             case Qt::Key_Control:
-                if (keyEvent->nativeScanCode() == LCTRL_KEY) {
-                    pressedKeys.insert(5, "lctrl");
-                } else {
-                    pressedKeys.insert(6, "rctrl");
-                }
+                keyEvent->nativeScanCode() == LCTRL_KEY ? pressedKeys.insert(5, "lctrl")
+                                                        : pressedKeys.insert(6, "rctrl");
                 break;
             case Qt::Key_Meta:
 #ifdef _WIN32
