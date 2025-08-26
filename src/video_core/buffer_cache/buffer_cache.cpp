@@ -395,7 +395,9 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         // Avoid using ObtainBuffer here as that might give us the stream buffer.
         const BufferId buffer_id = FindBuffer(src, num_bytes);
         auto& buffer = slot_buffers[buffer_id];
-        SynchronizeBuffer(buffer, src, num_bytes, false, true);
+        if (SynchronizeBuffer(buffer, src, num_bytes, false, true)) {
+            texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
+        }
         return buffer;
     }();
     auto& dst_buffer = [&] -> const Buffer& {
@@ -903,12 +905,8 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
         });
         TouchBuffer(buffer);
     }
-    if (is_texel_buffer || is_written) {
-        const bool synced = SynchronizeBufferFromImage(buffer, device_addr, size);
-        if (is_written) {
-            texture_cache.InvalidateMemoryFromGPU(device_addr, size);
-        }
-        return synced;
+    if (is_texel_buffer) {
+        return SynchronizeBufferFromImage(buffer, device_addr, size);
     }
     return false;
 }
@@ -955,9 +953,6 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     ASSERT_MSG(device_addr == image.info.guest_address,
                "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
                image.info.guest_address);
-    if (!image.SafeToDownload()) {
-        return false;
-    }
     const u32 buf_offset = buffer.Offset(image.info.guest_address);
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     u32 copy_size = 0;
