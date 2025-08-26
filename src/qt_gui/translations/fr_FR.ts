@@ -591,7 +591,7 @@
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation/>
     </message>
     <message>
       <source>L1 and L2</source>
