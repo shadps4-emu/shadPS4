@@ -132,14 +132,15 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     tile_manager.TileImage(image.image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            image.info);
     scheduler.DeferOperation([this, image_addr, download = mapping.Data(), image_size] {
+        if (buffer_cache.IsRegionGpuModified(image_addr, image_size)) {
+            return;
+        }
+        LOG_WARNING(Render_Vulkan, "Downloading image memory at {:#x} ({} bytes)", image_addr,
+                    image_size); 
         auto* memory = Core::Memory::Instance();
         // Should we download directly to main memory or put contents into the buffer cache?
         memory->TryWriteBacking(std::bit_cast<u8*>(image_addr), download, image_size);
-        // Can happen that the buffer that the image is read from still holds
-        // old invalid data. We need to invalidate memory in buffer cache so that
-        // contents are uploaded from main memory the next time buffers in this
-        // memory region are accessed.
-        buffer_cache.InvalidateMemory(image_addr, image_size, false);
+        buffer_cache.InvalidateMemory(image_addr, image_size);
     });
 }
 

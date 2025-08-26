@@ -114,7 +114,7 @@ public:
     }
 
     /// Invalidates any buffer in the logical page range.
-    void InvalidateMemory(VAddr device_addr, u64 size, bool flush);
+    void InvalidateMemory(VAddr device_addr, u64 size);
 
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
     void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
@@ -183,7 +183,7 @@ private:
         return !buffer_id || slot_buffers[buffer_id].is_deleted;
     }
 
-    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
+    bool DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
