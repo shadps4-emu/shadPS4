@@ -6,6 +6,8 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/vr_tracker/vr_tracker_error.h"
+#include "core/memory.h"
+#include "video_core/amdgpu/liverpool.h"
 
 namespace Libraries::VrTracker {
 
@@ -55,7 +57,70 @@ s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* p
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    if (g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_ALREADY_INITIALIZED;
+    }
+
+    // Calculate correct onion size for parameter checks
+    u32 required_onion_size = ORBIS_VR_TRACKER_BASE_ONION_SIZE;
+    if (param->calibration_settings.move_position == ORBIS_VR_TRACKER_CALIBRATION_AUTO) {
+        required_onion_size *= 2;
+    }
+
+    // Parameter checks are fairly thorough here.
+    if (param->size != sizeof(OrbisVrTrackerInitParam) ||
+        // Check garlic memory parameters
+        param->direct_memory_garlic == nullptr ||
+        param->direct_memory_garlic_alignment != ORBIS_VR_TRACKER_MEMORY_ALIGNMENT ||
+        param->direct_memory_garlic_size != ORBIS_VR_TRACKER_GARLIC_SIZE ||
+        // Check onion memory parameters
+        param->direct_memory_onion == nullptr ||
+        param->direct_memory_onion_alignment != ORBIS_VR_TRACKER_MEMORY_ALIGNMENT ||
+        param->direct_memory_onion_size != required_onion_size ||
+        // Check work memory parameters
+        param->work_memory == nullptr ||
+        param->work_memory_alignment != ORBIS_VR_TRACKER_MEMORY_ALIGNMENT ||
+        param->work_memory_size != ORBIS_VR_TRACKER_WORK_SIZE ||
+        // Check compute queue parameters
+        param->gpu_pipe_id >= AmdGpu::Liverpool::NumComputePipes ||
+        param->gpu_queue_id >= AmdGpu::Liverpool::NumQueuesPerPipe ||
+        // Check calibration settings
+        param->calibration_settings.pad_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO ||
+        param->calibration_settings.hmd_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_MANUAL ||
+        param->calibration_settings.move_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO ||
+        param->calibration_settings.gun_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    // Real hardware will segfault if any of the supplied mappings aren't long enough,
+    // Validate each of them to ensure nothing weird can occur when this library is implemented.
+    auto* memory = Core::Memory::Instance();
+    Libraries::Kernel::OrbisVirtualQueryInfo info;
+    // The memory type for the whole range should be the same here,
+    // so the memory should be contained in one VMA.
+    VAddr addr_to_check = std::bit_cast<VAddr>(param->direct_memory_garlic);
+    s32 result = memory->VirtualQuery(addr_to_check, 0, &info);
+    ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_garlic_size,
+               "Insufficient garlic memory provided");
+
+    addr_to_check = std::bit_cast<VAddr>(param->direct_memory_onion);
+    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_onion_size,
+               "Insufficient onion memory provided");
+
+    addr_to_check = std::bit_cast<VAddr>(param->work_memory);
+    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->work_memory_size,
+               "Insufficient work memory provided");
+
+    // All initialization checks passed.
+    LOG_WARNING(Lib_VrTracker, "PSVR headsets are not supported yet");
+    g_library_initialized = true;
+
     return ORBIS_OK;
 }
 
