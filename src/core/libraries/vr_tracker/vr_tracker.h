@@ -12,6 +12,11 @@ class SymbolsResolver;
 
 namespace Libraries::VrTracker {
 
+static constexpr u32 ORBIS_VR_TRACKER_MEMORY_ALIGNMENT = 0x10000;
+static constexpr u32 ORBIS_VR_TRACKER_BASE_ONION_SIZE = 0x400000;
+static constexpr u32 ORBIS_VR_TRACKER_GARLIC_SIZE = 0x3000000;
+static constexpr u32 ORBIS_VR_TRACKER_WORK_SIZE = 0x1000000;
+
 enum OrbisVrTrackerProfile {
     ORBIS_VR_TRACKER_PROFILE_000 = 0,
     ORBIS_VR_TRACKER_PROFILE_100 = 100,
@@ -346,7 +351,8 @@ struct OrbisVrTrackerPlayAreaWarningInfo {
     u32 reserved4[5];
 };
 
-s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param, OrbisVrTrackerQueryMemoryResult* result);
+s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param,
+                                         OrbisVrTrackerQueryMemoryResult* result);
 s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type, const s32 handle);
 s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice2();

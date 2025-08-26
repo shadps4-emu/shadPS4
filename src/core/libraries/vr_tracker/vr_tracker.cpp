@@ -5,11 +5,52 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
+#include "core/libraries/vr_tracker/vr_tracker_error.h"
 
 namespace Libraries::VrTracker {
 
-s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param, OrbisVrTrackerQueryMemoryResult* result) {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+static bool g_library_initialized = false;
+
+static void* g_garlic_memory_pointer = nullptr;
+static u32 g_garlic_size = 0;
+static void* g_onion_memory_pointer = nullptr;
+static u32 g_onion_size = 0;
+static void* g_work_memory_pointer = nullptr;
+static u32 g_work_size = 0;
+
+s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param,
+                                         OrbisVrTrackerQueryMemoryResult* result) {
+    LOG_DEBUG(Lib_VrTracker, "called");
+    if (param == nullptr || result == nullptr ||
+        param->size != sizeof(OrbisVrTrackerQueryMemoryParam) ||
+        (param->profile != OrbisVrTrackerProfile::ORBIS_VR_TRACKER_PROFILE_000 &&
+         param->profile != OrbisVrTrackerProfile::ORBIS_VR_TRACKER_PROFILE_100) ||
+        param->calibration_settings.pad_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO ||
+        // Hmd doesn't support auto calibration
+        param->calibration_settings.hmd_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_MANUAL ||
+        param->calibration_settings.move_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO ||
+        param->calibration_settings.gun_position >
+            OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    // Setting move_position to ORBIS_VR_TRACKER_CALIBRATION_AUTO doubles required onion memory.
+    u32 required_onion_size = ORBIS_VR_TRACKER_BASE_ONION_SIZE;
+    if (param->calibration_settings.move_position ==
+        OrbisVrTrackerCalibrationMode::ORBIS_VR_TRACKER_CALIBRATION_AUTO) {
+        required_onion_size *= 2;
+    }
+
+    result->direct_memory_onion_size = required_onion_size;
+    result->direct_memory_onion_alignment = ORBIS_VR_TRACKER_MEMORY_ALIGNMENT;
+    result->direct_memory_garlic_size = ORBIS_VR_TRACKER_GARLIC_SIZE;
+    result->direct_memory_garlic_alignment = ORBIS_VR_TRACKER_MEMORY_ALIGNMENT;
+    result->work_memory_size = ORBIS_VR_TRACKER_WORK_SIZE;
+    result->work_memory_alignment = ORBIS_VR_TRACKER_MEMORY_ALIGNMENT;
+
     return ORBIS_OK;
 }
 
