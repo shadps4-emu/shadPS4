@@ -59,7 +59,8 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type, const s32 handle) {
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type,
+                                            const s32 handle) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -84,7 +85,8 @@ s32 PS4_SYSV_ABI sceVrTrackerGetPlayAreaWarningInfo(OrbisVrTrackerPlayAreaWarnin
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param, OrbisVrTrackerResultData* result) {
+s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param,
+                                       OrbisVrTrackerResultData* result) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -109,7 +111,8 @@ s32 PS4_SYSV_ABI sceVrTrackerGpuWaitAndCpuProcess() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam* param) {
+s32 PS4_SYSV_ABI
+sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -124,7 +127,8 @@ s32 PS4_SYSV_ABI sceVrTrackerResetAll() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerResetOrientationRelative(const OrbisVrTrackerDeviceType device_type, const s32 handle) {
+s32 PS4_SYSV_ABI sceVrTrackerResetOrientationRelative(const OrbisVrTrackerDeviceType device_type,
+                                                      const s32 handle) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -134,7 +138,8 @@ s32 PS4_SYSV_ABI sceVrTrackerSaveInternalBuffers() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames) {
+s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(
+    const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -154,7 +159,8 @@ s32 PS4_SYSV_ABI sceVrTrackerSetRestingMode() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerUpdateMotionSensorData(const OrbisVrTrackerUpdateMotionSensorDataParam* param) {
+s32 PS4_SYSV_ABI
+sceVrTrackerUpdateMotionSensorData(const OrbisVrTrackerUpdateMotionSensorDataParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
     return ORBIS_OK;
 }

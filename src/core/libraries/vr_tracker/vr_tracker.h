@@ -12,6 +12,7 @@ class SymbolsResolver;
 
 namespace Libraries::VrTracker {
 
+static constexpr s32 ORBIS_VR_TRACKER_MAX_LED_NUM = 16;
 static constexpr u32 ORBIS_VR_TRACKER_MEMORY_ALIGNMENT = 0x10000;
 static constexpr u32 ORBIS_VR_TRACKER_BASE_ONION_SIZE = 0x400000;
 static constexpr u32 ORBIS_VR_TRACKER_GARLIC_SIZE = 0x3000000;
@@ -334,8 +335,10 @@ struct OrbisVrTrackerResultData {
     OrbisVrTrackerLedAdjustmentStatus led_adjustment_status;
     u64 timestamp_of_led_result;
     u32 reserved2[2];
-    s32 number_of_led_result[2];
-    OrbisVrTrackerLedResult led[2][16];
+    s32 number_of_led_result[Libraries::Camera::ORBIS_CAMERA_MAX_DEVICE_NUM];
+    u32 reserved3[4];
+    OrbisVrTrackerLedResult led[Libraries::Camera::ORBIS_CAMERA_MAX_DEVICE_NUM]
+                               [ORBIS_VR_TRACKER_MAX_LED_NUM];
 };
 
 struct OrbisVrTrackerPlayAreaWarningInfo {
@@ -354,26 +357,32 @@ struct OrbisVrTrackerPlayAreaWarningInfo {
 s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param,
                                          OrbisVrTrackerQueryMemoryResult* result);
 s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param);
-s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type, const s32 handle);
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type,
+                                            const s32 handle);
 s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice2();
 s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal();
 s32 PS4_SYSV_ABI sceVrTrackerCpuProcess(const OrbisVrTrackerCpuProcessParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerGetPlayAreaWarningInfo(OrbisVrTrackerPlayAreaWarningInfo* info);
-s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param, OrbisVrTrackerResultData* result);
+s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param,
+                                       OrbisVrTrackerResultData* result);
 s32 PS4_SYSV_ABI sceVrTrackerGetTime(u64* time);
 s32 PS4_SYSV_ABI sceVrTrackerGpuSubmit(const OrbisVrTrackerGpuSubmitParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerGpuWait(const OrbisVrTrackerGpuWaitParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerGpuWaitAndCpuProcess();
-s32 PS4_SYSV_ABI sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam* param);
+s32 PS4_SYSV_ABI
+sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* param);
 s32 PS4_SYSV_ABI sceVrTrackerResetAll();
-s32 PS4_SYSV_ABI sceVrTrackerResetOrientationRelative(const OrbisVrTrackerDeviceType device_type, const s32 handle);
+s32 PS4_SYSV_ABI sceVrTrackerResetOrientationRelative(const OrbisVrTrackerDeviceType device_type,
+                                                      const s32 handle);
 s32 PS4_SYSV_ABI sceVrTrackerSaveInternalBuffers();
-s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames);
+s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(
+    const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames);
 s32 PS4_SYSV_ABI sceVrTrackerSetExtendedMode();
 s32 PS4_SYSV_ABI sceVrTrackerSetLEDBrightness();
 s32 PS4_SYSV_ABI sceVrTrackerSetRestingMode();
-s32 PS4_SYSV_ABI sceVrTrackerUpdateMotionSensorData(const OrbisVrTrackerUpdateMotionSensorDataParam* param);
+s32 PS4_SYSV_ABI
+sceVrTrackerUpdateMotionSensorData(const OrbisVrTrackerUpdateMotionSensorDataParam* param);
 s32 PS4_SYSV_ABI Func_0FA4C949F8D3024E();
 s32 PS4_SYSV_ABI Func_285C6AFC09C42F7E();
 s32 PS4_SYSV_ABI Func_9A6CDB2103664F8A();
