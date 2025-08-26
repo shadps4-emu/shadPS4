@@ -139,6 +139,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, NpParty)                                                                              \
     SUB(Lib, Zlib)                                                                                 \
     SUB(Lib, Hmd)                                                                                  \
+    SUB(Lib, HmdSetupDialog)                                                                       \
     SUB(Lib, SigninDialog)                                                                         \
     SUB(Lib, Camera)                                                                               \
     SUB(Lib, CompanionHttpd)                                                                       \
