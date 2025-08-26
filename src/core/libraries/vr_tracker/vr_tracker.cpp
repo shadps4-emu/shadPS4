@@ -13,12 +13,19 @@ namespace Libraries::VrTracker {
 
 static bool g_library_initialized = false;
 
+// Internal memory
 static void* g_garlic_memory_pointer = nullptr;
 static u32 g_garlic_size = 0;
 static void* g_onion_memory_pointer = nullptr;
 static u32 g_onion_size = 0;
 static void* g_work_memory_pointer = nullptr;
 static u32 g_work_size = 0;
+
+// Registered handles
+static s32 g_pad_handle = -1;
+static s32 g_move_handle = -1;
+static s32 g_gun_handle = -1;
+static s32 g_hmd_handle = -1;
 
 s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param,
                                          OrbisVrTrackerQueryMemoryResult* result) {
@@ -135,17 +142,51 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
 
 s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice(const OrbisVrTrackerDeviceType device_type,
                                             const s32 handle) {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_VrTracker, "redirected to sceVrTrackerRegisterDeviceInternal");
+    return sceVrTrackerRegisterDeviceInternal(device_type, handle, -1, 0);
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice2() {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDevice2(const OrbisVrTrackerDeviceType device_type,
+                                             const s32 handle) {
+    LOG_TRACE(Lib_VrTracker, "redirected to sceVrTrackerRegisterDeviceInternal");
+    return sceVrTrackerRegisterDeviceInternal(device_type, handle, -1, 1);
 }
 
-s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal() {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal(const OrbisVrTrackerDeviceType device_type,
+                                                    const s32 handle, s32 unk0, s32 unk1) {
+    LOG_WARNING(Lib_VrTracker, "(STUBBED) called, device_type = {}, handle = {}",
+                static_cast<u32>(device_type), handle);
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    if (device_type > OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN || unk0 > 4) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    // Ignore handle handle validation for now, since most of that logic isn't really handled.
+    switch (device_type) {
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_HMD: {
+        g_hmd_handle = handle;
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_DUALSHOCK4: {
+        g_pad_handle = handle;
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_MOVE: {
+        g_move_handle = handle;
+        break;
+    }
+    case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN: {
+        g_gun_handle = handle;
+        break;
+    }
+    default: {
+        // Shouldn't be possible to hit this.
+        UNREACHABLE();
+    }
+    }
+
     return ORBIS_OK;
 }
 
