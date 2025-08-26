@@ -381,7 +381,11 @@ s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle) {
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerTerm() {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    LOG_DEBUG(Lib_VrTracker, "called");
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    g_library_initialized = false;
     return ORBIS_OK;
 }
 
