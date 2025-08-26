@@ -356,7 +356,27 @@ s32 PS4_SYSV_ABI sceVrTrackerStopLiveCapture() {
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle) {
-    LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    LOG_DEBUG(Lib_VrTracker, "called");
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    if (handle < 0) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+    // Since this function only takes a handle, compare the handle to registered handles.
+    if (handle == g_hmd_handle) {
+        g_hmd_handle = -1;
+    } else if (handle == g_pad_handle) {
+        g_pad_handle = -1;
+    } else if (handle == g_move_handle) {
+        g_move_handle = -1;
+    } else if (handle == g_gun_handle) {
+        g_gun_handle = -1;
+    } else {
+        // If none of the handles match up, then return an error.
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
     return ORBIS_OK;
 }
 
