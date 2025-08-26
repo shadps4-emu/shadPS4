@@ -233,17 +233,35 @@ s32 PS4_SYSV_ABI sceVrTrackerGetTime(u64* time) {
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuSubmit(const OrbisVrTrackerGpuSubmitParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+
+    // Impossible to submit valid data here since sceCameraGetFrameData returns an error.
+    return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuWait(const OrbisVrTrackerGpuWaitParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    if (param == nullptr || param->size != sizeof(OrbisVrTrackerGpuWaitParam)) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    // Impossible to perform GPU submits
+    return ORBIS_VR_TRACKER_ERROR_NOT_EXECUTE_GPU_SUBMIT;
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuWaitAndCpuProcess() {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    return ORBIS_OK;
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+
+    // Impossible to perform GPU submits
+    return ORBIS_VR_TRACKER_ERROR_NOT_EXECUTE_GPU_SUBMIT;
 }
 
 s32 PS4_SYSV_ABI
