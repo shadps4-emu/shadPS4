@@ -287,6 +287,10 @@ s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* p
         }
         break;
     }
+    default: {
+        // Shouldn't be possible to hit this.
+        UNREACHABLE();
+    }
     }
 
     // TODO: handle internal recalibration behaviors.
