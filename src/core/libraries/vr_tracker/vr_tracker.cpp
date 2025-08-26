@@ -316,6 +316,14 @@ s32 PS4_SYSV_ABI sceVrTrackerSaveInternalBuffers() {
 s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(
     const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
+    if (!g_library_initialized) {
+        return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
+    }
+    if (device_type > OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN) {
+        return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
+    }
+
+    // Seems to unconditionally return 0 when parameters are valid.
     return ORBIS_OK;
 }
 
