@@ -107,15 +107,24 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_garlic_size,
                "Insufficient garlic memory provided");
 
+    g_garlic_memory_pointer = param->direct_memory_garlic;
+    g_garlic_size = param->direct_memory_garlic_size;
+
     addr_to_check = std::bit_cast<VAddr>(param->direct_memory_onion);
     result = memory->VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_onion_size,
                "Insufficient onion memory provided");
 
+    g_onion_memory_pointer = param->direct_memory_onion;
+    g_onion_size = param->direct_memory_onion_size;
+
     addr_to_check = std::bit_cast<VAddr>(param->work_memory);
     result = memory->VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->work_memory_size,
                "Insufficient work memory provided");
+
+    g_work_memory_pointer = param->work_memory;
+    g_work_size = param->work_memory_size;
 
     // All initialization checks passed.
     LOG_WARNING(Lib_VrTracker, "PSVR headsets are not supported yet");
