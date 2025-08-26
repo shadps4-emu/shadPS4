@@ -181,7 +181,7 @@ std::string IOFile::ReadString(size_t length) const {
     return std::string{string_buffer.data(), string_size};
 }
 
-size_t IOFile::WriteString(std::span<const char> string) const {
+s64 IOFile::WriteString(std::span<const char> string) const {
     return WriteSpan(string);
 }
 

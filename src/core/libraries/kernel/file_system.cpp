@@ -293,7 +293,12 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, size_t nbytes) {
         return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
     }
 
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    s64 write_ret = file->f.WriteRaw<u8>(buf, nbytes);
+    if (write_ret < 0) {
+        SetPosixErrno(errno);
+        return 1;
+    }
+    return write_ret;
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, size_t nbytes) {
@@ -477,8 +482,11 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, size_t nbytes) {
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
 
-    size_t readfile_ret = ReadFile(file->f, buf, nbytes);
-    SetPosixErrno(errno);
+    s64 readfile_ret = ReadFile(file->f, buf, nbytes);
+    if (readfile_ret < 0) {
+        SetPosixErrno(errno);
+        return -1;
+    }
     return readfile_ret;
 }
 

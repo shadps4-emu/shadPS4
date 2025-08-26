@@ -39,8 +39,8 @@ namespace fs = std::filesystem;
 [[nodiscard]] bool Seek(const int fd, std::error_code& ec, s64 offset,
                         SeekOrigin origin = SeekOrigin::SetOrigin) noexcept;
 [[nodiscard]] s64 Tell(int fd, std::error_code& ec) noexcept;
-[[nodiscard]] size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept;
-[[nodiscard]] size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept;
+[[nodiscard]] s64 Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept;
+[[nodiscard]] s64 Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept;
 // Not a port, used by 2-3 functions that *never* check for errors
 [[nodiscard]] s64 GetDirectorySize(const fs::path path) noexcept;
 // Not really necessary but handy

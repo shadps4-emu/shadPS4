@@ -114,7 +114,7 @@ public:
     s64 Tell() const;
 
     std::string ReadString(size_t length) const;
-    size_t WriteString(std::span<const char> string) const;
+    s64 WriteString(std::span<const char> string) const;
 
     std::filesystem::path GetPath() const {
         return file_path;
@@ -139,13 +139,13 @@ public:
         return NativeFS::IsOpen(this->file_descriptor);
     }
 
-    static size_t WriteBytes(const std::filesystem::path path, const auto data) {
+    static s64 WriteBytes(const std::filesystem::path path, const auto data) {
         IOFile out(path, FileAccessMode::Write, true);
         return out.Write(data);
     }
 
     template <typename T>
-    size_t Read(T& data) const {
+    s64 Read(T& data) const {
         if constexpr (IsContiguousContainer<T>) {
             using ContiguousType = typename T::value_type;
             static_assert(std::is_trivially_copyable_v<ContiguousType>,
@@ -157,7 +157,7 @@ public:
     }
 
     template <typename T>
-    size_t Write(const T& data) const {
+    s64 Write(const T& data) const {
         if constexpr (IsContiguousContainer<T>) {
             using ContiguousType = typename T::value_type;
             static_assert(std::is_trivially_copyable_v<ContiguousType>,
@@ -170,7 +170,7 @@ public:
     }
 
     template <typename T>
-    size_t ReadSpan(std::span<T> data) const {
+    s64 ReadSpan(std::span<T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
 
         if (!IsOpen()) {
@@ -181,14 +181,14 @@ public:
     }
 
     template <typename T>
-    size_t ReadRaw(void* data, size_t size) const {
+    s64 ReadRaw(void* data, size_t size) const {
         // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Read(file_descriptor, _, data, sizeof(T) * size);
     }
 
     template <typename T>
-    size_t WriteSpan(std::span<const T> data) const {
+    s64 WriteSpan(std::span<const T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
 
         if (!IsOpen()) {
@@ -215,7 +215,7 @@ public:
     }
 
     template <typename T>
-    size_t WriteRaw(const void* data, size_t size) const {
+    s64 WriteRaw(const void* data, size_t size) const {
         // Ignored in current context, errno is preserved and valid
         std::error_code _;
         return NativeFS::Write(file_descriptor, _, data, sizeof(T) * size);

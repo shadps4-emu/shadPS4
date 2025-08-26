@@ -173,7 +173,7 @@ s64 Tell(int fd, std::error_code& ec) noexcept {
     return pointer_position;
 }
 
-size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept {
+s64 Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexcept {
     ec.clear();
     errno = 0;
 
@@ -184,7 +184,7 @@ size_t Write(int __fd, std::error_code& ec, const void* __buf, size_t __n) noexc
     return bytes_written;
 }
 
-size_t Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept {
+s64 Read(int __fd, std::error_code& ec, void* __buf, size_t __n) noexcept {
     ec.clear();
     errno = 0;
 
