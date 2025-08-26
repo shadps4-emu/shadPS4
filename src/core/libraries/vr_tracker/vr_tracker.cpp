@@ -166,18 +166,30 @@ s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal(const OrbisVrTrackerDeviceTy
     // Ignore handle handle validation for now, since most of that logic isn't really handled.
     switch (device_type) {
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_HMD: {
+        if (g_hmd_handle != -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
+        }
         g_hmd_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_DUALSHOCK4: {
+        if (g_pad_handle != -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
+        }
         g_pad_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_MOVE: {
+        if (g_move_handle != -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
+        }
         g_move_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN: {
+        if (g_gun_handle != -1) {
+            return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
+        }
         g_gun_handle = handle;
         break;
     }
