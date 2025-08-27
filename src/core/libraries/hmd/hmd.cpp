@@ -60,9 +60,10 @@ s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_
         return ORBIS_HMD_ERROR_PARAMETER_INVALID;
     }
 
-    // Return positive value representing handle
+    // Return positive value representing handle.
+    // Internal libSceVrTracker logic requires this handle to be different from other devices.
     g_user_id = user_id;
-    g_internal_handle = 1;
+    g_internal_handle = 0xf000000;
     return g_internal_handle;
 }
 
