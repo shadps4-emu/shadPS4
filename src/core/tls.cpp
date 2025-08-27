@@ -19,8 +19,8 @@
 #include <pthread.h>
 #endif
 #if defined(__linux__) && defined(ARCH_X86_64)
-#include <sys/prctl.h>
 #include <asm/prctl.h>
+#include <sys/prctl.h>
 #endif
 
 namespace Core {
