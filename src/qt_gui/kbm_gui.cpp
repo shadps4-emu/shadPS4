@@ -31,7 +31,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGa
     ui->MouseJoystickBox->addItem("right");
     ui->MouseJoystickBox->addItem("left");
 
-    ui->ProfileComboBox->addItem("Common Config");
+    ui->ProfileComboBox->addItem(tr("Common Config"));
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
@@ -69,8 +69,8 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGa
     SetUIValuestoMappings("default");
     installEventFilter(this);
 
-    ui->ProfileComboBox->setCurrentText("Common Config");
-    ui->TitleLabel->setText("Common Config");
+    ui->ProfileComboBox->setCurrentText(tr("Common Config"));
+    ui->TitleLabel->setText(tr("Common Config"));
     config_id = "default";
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton* button) {
@@ -113,7 +113,7 @@ KBMSettings::KBMSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGa
     });
 
     connect(ui->CopyCommonButton, &QPushButton::clicked, this, [this] {
-        if (ui->ProfileComboBox->currentText() == "Common Config") {
+        if (ui->ProfileComboBox->currentText() == tr("Common Config")) {
             QMessageBox::information(this, tr("Common Config Selected"),
                                      // clang-format off
 tr("This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config."));
@@ -513,8 +513,8 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
 }
 
 void KBMSettings::GetGameTitle() {
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        ui->TitleLabel->setText("Common Config");
+    if (ui->ProfileComboBox->currentText() == tr("Common Config")) {
+        ui->TitleLabel->setText(tr("Common Config"));
     } else {
         for (int i = 0; i < m_game_info->m_games.size(); i++) {
             if (m_game_info->m_games[i].serial ==
@@ -523,7 +523,7 @@ void KBMSettings::GetGameTitle() {
             }
         }
     }
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
 }

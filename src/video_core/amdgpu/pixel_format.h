@@ -104,13 +104,18 @@ enum class NumberConversion : u32 {
     Uint32ToUnorm = 6,
 };
 
-struct CompMapping {
-    CompSwizzle r;
-    CompSwizzle g;
-    CompSwizzle b;
-    CompSwizzle a;
+union CompMapping {
+    struct {
+        CompSwizzle r;
+        CompSwizzle g;
+        CompSwizzle b;
+        CompSwizzle a;
+    };
+    std::array<CompSwizzle, 4> array;
 
-    auto operator<=>(const CompMapping& other) const = default;
+    bool operator==(const CompMapping& other) const {
+        return array == other.array;
+    }
 
     template <typename T>
     [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
@@ -122,6 +127,14 @@ struct CompMapping {
         };
     }
 
+    [[nodiscard]] u32 ApplyMask(u32 mask) const {
+        u32 swizzled_mask{};
+        for (u32 i = 0; i < 4; ++i) {
+            swizzled_mask |= ((mask >> i) & 1) << Map(i);
+        }
+        return swizzled_mask;
+    }
+
     [[nodiscard]] CompMapping Inverse() const {
         CompMapping result{};
         InverseSingle(result.r, CompSwizzle::Red);
@@ -129,6 +142,12 @@ struct CompMapping {
         InverseSingle(result.b, CompSwizzle::Blue);
         InverseSingle(result.a, CompSwizzle::Alpha);
         return result;
+    }
+
+    [[nodiscard]] u32 Map(u32 comp) const {
+        const u32 swizzled_comp = u32(array[comp]);
+        constexpr u32 min_comp = u32(AmdGpu::CompSwizzle::Red);
+        return swizzled_comp >= min_comp ? swizzled_comp - min_comp : comp;
     }
 
 private:

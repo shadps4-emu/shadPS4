@@ -604,7 +604,13 @@ set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
 )
 
 set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
+             src/core/libraries/hmd/hmd_reprojection.cpp
+             src/core/libraries/hmd/hmd_distortion.cpp
              src/core/libraries/hmd/hmd.h
+             src/core/libraries/hmd/hmd_setup_dialog.cpp
+             src/core/libraries/hmd/hmd_setup_dialog.h
+             src/core/libraries/vr_tracker/vr_tracker.cpp
+             src/core/libraries/vr_tracker/vr_tracker.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
@@ -745,22 +751,28 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/devices/base_device.cpp
-         src/core/devices/base_device.h
-         src/core/devices/ioccom.h
-         src/core/devices/logger.cpp
-         src/core/devices/logger.h
-         src/core/devices/nop_device.h
-         src/core/devices/console_device.cpp
-         src/core/devices/console_device.h
-         src/core/devices/deci_tty6_device.cpp
-         src/core/devices/deci_tty6_device.h
-         src/core/devices/random_device.cpp
-         src/core/devices/random_device.h
-         src/core/devices/urandom_device.cpp
-         src/core/devices/urandom_device.h
-         src/core/devices/srandom_device.cpp
-         src/core/devices/srandom_device.h
+         src/core/file_sys/devices/base_device.cpp
+         src/core/file_sys/devices/base_device.h
+         src/core/file_sys/devices/ioccom.h
+         src/core/file_sys/devices/logger.cpp
+         src/core/file_sys/devices/logger.h
+         src/core/file_sys/devices/nop_device.h
+         src/core/file_sys/devices/console_device.cpp
+         src/core/file_sys/devices/console_device.h
+         src/core/file_sys/devices/deci_tty6_device.cpp
+         src/core/file_sys/devices/deci_tty6_device.h
+         src/core/file_sys/devices/random_device.cpp
+         src/core/file_sys/devices/random_device.h
+         src/core/file_sys/devices/urandom_device.cpp
+         src/core/file_sys/devices/urandom_device.h
+         src/core/file_sys/devices/srandom_device.cpp
+         src/core/file_sys/devices/srandom_device.h
+         src/core/file_sys/directories/base_directory.cpp
+         src/core/file_sys/directories/base_directory.h
+         src/core/file_sys/directories/normal_directory.cpp
+         src/core/file_sys/directories/normal_directory.h
+         src/core/file_sys/directories/pfs_directory.cpp
+         src/core/file_sys/directories/pfs_directory.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
@@ -916,6 +928,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/opcodes.inc
                       src/shader_recompiler/ir/patch.cpp
                       src/shader_recompiler/ir/patch.h
+                      src/shader_recompiler/ir/position.h
                       src/shader_recompiler/ir/post_order.cpp
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp

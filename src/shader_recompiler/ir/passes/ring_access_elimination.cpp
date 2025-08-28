@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/recompiler.h"
@@ -142,11 +143,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 ASSERT(it != info.gs_copy_data.attr_map.cend());
                 const auto& [attr, comp] = it->second;
 
-                inst.ReplaceOpcode(IR::Opcode::SetAttribute);
-                inst.ClearArgs();
-                inst.SetArg(0, IR::Value{attr});
-                inst.SetArg(1, data);
-                inst.SetArg(2, ir.Imm32(comp));
+                inst.Invalidate();
+                if (IsPosition(attr)) {
+                    ExportPosition(ir, runtime_info.gs_info, attr, comp, data);
+                } else {
+                    ir.SetAttribute(attr, data, comp);
+                }
                 break;
             }
             default:

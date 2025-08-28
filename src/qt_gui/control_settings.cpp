@@ -178,7 +178,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
 
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
     const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
@@ -397,17 +397,17 @@ void ControlSettings::SetDefault() {
 }
 
 void ControlSettings::AddBoxItems() {
-    ui->ProfileComboBox->addItem("Common Config");
+    ui->ProfileComboBox->addItem(tr("Common Config"));
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
-    ui->ProfileComboBox->setCurrentText("Common Config");
-    ui->TitleLabel->setText("Common Config");
+    ui->ProfileComboBox->setCurrentText(tr("Common Config"));
+    ui->TitleLabel->setText(tr("Common Config"));
 }
 
 void ControlSettings::SetUIValuestoMappings() {
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
 
@@ -641,8 +641,8 @@ void ControlSettings::SetUIValuestoMappings() {
 }
 
 void ControlSettings::GetGameTitle() {
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        ui->TitleLabel->setText("Common Config");
+    if (ui->ProfileComboBox->currentText() == tr("Common Config")) {
+        ui->TitleLabel->setText(tr("Common Config"));
     } else {
         for (int i = 0; i < m_game_info->m_games.size(); i++) {
             if (m_game_info->m_games[i].serial ==

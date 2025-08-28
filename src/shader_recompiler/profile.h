@@ -35,6 +35,7 @@ struct Profile {
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
     bool needs_buffer_offsets{};
+    bool needs_unorm_fixup{};
     u64 max_ubo_size{};
     u32 max_viewport_width{};
     u32 max_viewport_height{};
