@@ -17,10 +17,6 @@ namespace Libraries::Net {
 struct Socket;
 }
 
-namespace Libraries::Net {
-struct Socket;
-}
-
 namespace Core::FileSys {
 
 class MntPoints {
