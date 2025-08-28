@@ -701,10 +701,6 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         // Socket functions handle errnos internally
         return file->socket->fstat(sb);
     }
-    case Core::FileSys::FileType::Socket: {
-        // Socket functions handle errnos internally
-        return file->socket->fstat(sb);
-    }
     default:
         UNREACHABLE();
     }
