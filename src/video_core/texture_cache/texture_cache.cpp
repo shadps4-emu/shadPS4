@@ -133,14 +133,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
                            image.info);
     scheduler.DeferOperation([this, image_addr, download = mapping.Data(), image_size] {
         if (buffer_cache.IsRegionGpuModified(image_addr, image_size)) {
-            return;
+            LOG_WARNING(Render_Vulkan,
+                        "Image {:x} was modified by GPU during download", image_addr);
         }
-        LOG_WARNING(Render_Vulkan, "Downloading image memory at {:#x} ({} bytes)", image_addr,
-                    image_size); 
         auto* memory = Core::Memory::Instance();
         // Should we download directly to main memory or put contents into the buffer cache?
         memory->TryWriteBacking(std::bit_cast<u8*>(image_addr), download, image_size);
-        buffer_cache.InvalidateMemory(image_addr, image_size);
+        buffer_cache.InvalidateMemory(image_addr, image_size, false);
     });
 }
 
@@ -417,6 +416,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
+    new_image.flags |= src_image.flags & ImageFlagBits::GpuModified;
     return new_image_id;
 }
 
