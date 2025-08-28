@@ -36,6 +36,9 @@ public:
         } else {
             try {
                 devId = static_cast<u32>(std::stoul(port_name));
+                if (port_name != SDL_GetAudioDeviceName(devId)) {
+                    throw std::runtime_error("Invalid device ID");
+                }
             } catch (const std::exception& e) {
                 LOG_WARNING(Lib_AudioOut, "Invalid audio output device: {}", port_name);
                 devId = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;

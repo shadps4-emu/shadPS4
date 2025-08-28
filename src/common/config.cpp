@@ -56,11 +56,11 @@ static bool useSpecialPad = false;
 static int specialPadClass = 1;
 static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
-static std::string micDevice = "Default Device";
 static std::string defaultControllerID = "";
 static bool backgroundControllerInput = false;
 
-// Output
+// Audio
+static std::string micDevice = "Default Device";
 static std::string mainOutputDevice = "Default Device";
 static std::string padSpkOutputDevice = "Default Device";
 
@@ -695,10 +695,6 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
         chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
         defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
-        mainOutputDevice =
-            toml::find_or<std::string>(general, "mainOutputDevice", mainOutputDevice);
-        padSpkOutputDevice =
-            toml::find_or<std::string>(general, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("Input")) {
@@ -712,19 +708,18 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
-        micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
         backgroundControllerInput =
             toml::find_or<bool>(input, "backgroundControllerInput", backgroundControllerInput);
     }
 
-    /*
-    if (data.contains("Output")) {
-        const toml::value& output = data.at("Output");
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
 
-        mainOutputDevice = toml::find_or<std::string>(output, "mainOutputDevice", mainOutputDevice);
+        micDevice = toml::find_or<std::string>(audio, "micDevice", micDevice);
+        mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
-            toml::find_or<std::string>(output, "padSpkOutputDevice", padSpkOutputDevice);
-    } */
+            toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
+    }
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
@@ -898,10 +893,10 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
-    data["Input"]["micDevice"] = micDevice;
     data["Input"]["backgroundControllerInput"] = backgroundControllerInput;
-    data["General"]["mainOutputDevice"] = mainOutputDevice;
-    data["General"]["padSpkOutputDevice"] = padSpkOutputDevice;
+    data["Audio"]["micDevice"] = micDevice;
+    data["Audio"]["mainOutputDevice"] = mainOutputDevice;
+    data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
@@ -1006,10 +1001,10 @@ void setDefaultValues() {
     controllerCustomColorRGB[0] = 0;
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
-    micDevice = "Default Device";
     backgroundControllerInput = false;
 
-    // Output
+    // Audio
+    micDevice = "Default Device";
     mainOutputDevice = "Default Device";
     padSpkOutputDevice = "Default Device";
 
