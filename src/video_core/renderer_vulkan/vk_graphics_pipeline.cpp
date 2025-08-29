@@ -111,8 +111,8 @@ GraphicsPipeline::GraphicsPipeline(
 
     vk::StructureChain raster_chain = {
         vk::PipelineRasterizationStateCreateInfo{
-            .depthClampEnable = key.depth_clamp_enable ||
-                                (!key.depth_clip_enable && !instance.IsDepthClipEnableSupported()),
+            .depthClampEnable = key.depth_clamp_enable &&
+                                (!key.depth_clip_enable || instance.IsDepthClipEnableSupported()),
             .rasterizerDiscardEnable = false,
             .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
             .lineWidth = 1.0f,
