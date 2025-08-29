@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -53,9 +52,8 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
     struct VsharpLoad {
         u32 dword_offset{};
         s32 base_sgpr{};
-        s32 dst_reg{-1};
     };
-    boost::container::static_vector<VsharpLoad, 16> loads;
+    std::array<VsharpLoad, 104> loads{};
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
@@ -67,7 +65,8 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
         }
 
         if (inst.inst_class == InstClass::ScalarMemRd) {
-            loads.emplace_back(inst.control.smrd.offset, inst.src[0].code * 2, inst.dst[0].code);
+            loads[inst.dst[0].code] =
+                VsharpLoad{inst.control.smrd.offset, static_cast<s32>(inst.src[0].code) * 2};
             continue;
         }
 
@@ -92,21 +91,17 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
 
             // Find the load instruction that loaded the V# to the SPGR.
             // This is so we can determine its index in the vertex table.
-            const auto it = std::ranges::find_if(
-                loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
+            const auto it = loads[base_sgpr];
 
             auto& attrib = data.attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
             attrib.num_elements = inst.control.mubuf.count;
-            attrib.sgpr_base = it->base_sgpr;
-            attrib.dword_offset = it->dword_offset;
+            attrib.sgpr_base = it.base_sgpr;
+            attrib.dword_offset = it.dword_offset;
 
             // Store instance id rate
             attrib.instance_data = inst.src[0].code;
-
-            // Mark load as used.
-            it->dst_reg = -1;
         }
     }
 
