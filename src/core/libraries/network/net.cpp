@@ -11,12 +11,16 @@
 #endif
 
 #include <core/libraries/kernel/kernel.h>
+#include <magic_enum/magic_enum.hpp>
 #include "common/assert.h"
+#include "common/error.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net.h"
+#include "net_epoll.h"
 #include "net_error.h"
 #include "net_util.h"
 #include "netctl.h"
@@ -24,6 +28,8 @@
 #include "sys_net.h"
 
 namespace Libraries::Net {
+
+using FDTable = Common::Singleton<Core::FileSys::HandleTable>;
 
 static thread_local int32_t net_errno = 0;
 
@@ -613,28 +619,171 @@ int PS4_SYSV_ABI sceNetEpollAbort() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollControl() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
+                                    OrbisNetEpollEvent* event) {
+    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
+    if (!epoll) {
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    LOG_WARNING(Lib_Net, "called, epollid = {} ({}), op = {}, id = {}", epollid, epoll->name,
+                magic_enum::enum_name(op), id);
+
+    auto find_id = [&](OrbisNetId id) {
+        return std::ranges::find_if(epoll->events, [&](const auto& el) { return el.first == id; });
+    };
+
+    switch (op) {
+    case ORBIS_NET_EPOLL_CTL_ADD: {
+        if (event == nullptr) {
+            *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+            return ORBIS_NET_ERROR_EINVAL;
+        }
+        if (find_id(id) != epoll->events.end()) {
+            *sceNetErrnoLoc() = ORBIS_NET_EEXIST;
+            return ORBIS_NET_ERROR_EEXIST;
+        }
+
+        auto file = FDTable::Instance()->GetSocket(id);
+        if (!file) {
+            *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+            LOG_ERROR(Lib_Net, "socket id is invalid = {}", id);
+            return ORBIS_NET_ERROR_EBADF;
+        }
+        epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
+                                    .data = {.fd = id}};
+        ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *file->socket->Native(), &native_event) ==
+               0);
+        epoll->events.emplace_back(id, *event);
+        break;
+    }
+    case ORBIS_NET_EPOLL_CTL_MOD: {
+        if (event == nullptr) {
+            *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+            return ORBIS_NET_ERROR_EINVAL;
+        }
+
+        UNREACHABLE();
+        break;
+    }
+    case ORBIS_NET_EPOLL_CTL_DEL: {
+        if (event != nullptr) {
+            *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+            return ORBIS_NET_ERROR_EINVAL;
+        }
+
+        auto it = find_id(id);
+        if (it == epoll->events.end()) {
+            *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+            return ORBIS_NET_ERROR_EBADF;
+        }
+
+        auto file = FDTable::Instance()->GetSocket(id);
+        if (!file) {
+            *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+            LOG_ERROR(Lib_Net, "socket id is invalid = {}", id);
+            return ORBIS_NET_ERROR_EBADF;
+        }
+        ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *file->socket->Native(), nullptr) == 0);
+        epoll->events.erase(it);
+        break;
+    }
+    default:
+        *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
+    LOG_INFO(Lib_Net, "called, name = {}, flags = {}", name, flags);
+    if (flags != 0) {
+        *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+
+    auto epoll = Common::Singleton<EpollTable>::Instance()->CreateHandle(name);
+
+    return epoll;
+}
+
+int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
+    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
+    if (!epoll) {
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
+
+    LOG_INFO(Lib_Net, "called, epollid = {} ({})", epollid, epoll->name);
+
+    epoll->Destroy();
+
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollDestroy() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
+int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
+                                 int timeout) {
+    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
+    if (!epoll) {
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
 
-int PS4_SYSV_ABI sceNetEpollWait() {
-    LOG_TRACE(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
+             epoll->name, maxevents, timeout);
+
+    std::vector<epoll_event> native_events{static_cast<size_t>(maxevents)};
+#ifdef __linux__
+    const timespec epoll_timeout{.tv_sec = timeout / 1000000,
+                                 .tv_nsec = (timeout % 1000000) * 1000};
+    int result = epoll_pwait2(epoll->epoll_fd, native_events.data(), maxevents,
+                              timeout < 0 ? nullptr : &epoll_timeout, nullptr);
+#else
+    int result = epoll_wait(epoll->epoll_fd, native_events.data(), maxevents,
+                            timeout < 0 ? timeout : timeout / 1000);
+#endif
+    if (result < 0) {
+        LOG_ERROR(Lib_Net, "epoll_wait failed with {}", Common::GetLastErrorMsg());
+        switch (errno) {
+        case EINTR:
+            *sceNetErrnoLoc() = ORBIS_NET_EINTR;
+            return ORBIS_NET_ERROR_EINTR;
+        case EINVAL:
+            *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+            return ORBIS_NET_ERROR_EINVAL;
+        case EBADF:
+            *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+            return ORBIS_NET_ERROR_EBADF;
+        default:
+            *sceNetErrnoLoc() = ORBIS_NET_EINTERNAL;
+            return ORBIS_NET_ERROR_EINTERNAL;
+        }
+    } else if (result == 0) {
+        LOG_DEBUG(Lib_Net, "timed out");
+    } else {
+        for (int i = 0; i < result; ++i) {
+            const auto& current_event = native_events[i];
+            LOG_DEBUG(Lib_Net, "native_event[{}] = ( .events = {}, .data = {:#x} )", i,
+                      current_event.events, current_event.data.u64);
+            const auto it = std::ranges::find_if(
+                epoll->events, [&](auto& el) { return el.first == current_event.data.fd; });
+            ASSERT(it != epoll->events.end());
+            events[i] = {
+                .events = ConvertEpollEventsOut(current_event.events),
+                .ident = static_cast<u64>(current_event.data.fd),
+                .data = it->second.data,
+            };
+            LOG_DEBUG(Lib_Net, "event[{}] = ( .events = {:#x}, .ident = {}, .data = {:#x} )", i,
+                      events[i].events, events[i].ident, events[i].data.data_u64);
+        }
+    }
+
+    return result;
 }
 
 int* PS4_SYSV_ABI sceNetErrnoLoc() {
-    LOG_DEBUG(Lib_Net, "called");
+    LOG_TRACE(Lib_Net, "called");
     return &net_errno;
 }
 
@@ -713,6 +862,8 @@ int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr,
         LOG_ERROR(Lib_Net, "addr is null!");
         return ORBIS_NET_EINVAL;
     }
+    LOG_DEBUG(Lib_Net, "called");
+
     auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
     netinfo->RetrieveEthernetAddr();
     memcpy(addr->data, netinfo->GetEthernetAddr().data(), 6);
@@ -767,7 +918,6 @@ int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* pa
 }
 
 int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen) {
-    LOG_INFO(Lib_Net, "s={} level={} optname={}", s, level, optname);
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
@@ -926,6 +1076,7 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
         return nullptr;
     }
+
     const char* returnvalue = nullptr;
     switch (af) {
     case ORBIS_NET_AF_INET:
@@ -942,6 +1093,8 @@ const char* PS4_SYSV_ABI sceNetInetNtop(int af, const void* src, char* dst, u32 
     if (returnvalue == nullptr) {
         *sceNetErrnoLoc() = ORBIS_NET_ENOSPC;
         LOG_ERROR(Lib_Net, "returned ORBIS_NET_ENOSPC");
+    } else {
+        LOG_DEBUG(Lib_Net, "{}: {}", magic_enum::enum_name((OrbisNetFamily)af), dst);
     }
     return returnvalue;
 }
@@ -1241,7 +1394,6 @@ int PS4_SYSV_ABI sceNetSetDnsInfoToKernel() {
 
 int PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, int level, int optname, const void* optval,
                                   u32 optlen) {
-    LOG_INFO(Lib_Net, "s={} level={} optname={} optlen={}", s, level, optname, optlen);
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
