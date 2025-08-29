@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -52,7 +51,7 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
 
     struct VsharpLoad {
         u32 dword_offset{};
-        u32 base_sgpr{};
+        s32 base_sgpr{};
     };
     std::array<VsharpLoad, 104> loads{};
 
@@ -66,7 +65,8 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
         }
 
         if (inst.inst_class == InstClass::ScalarMemRd) {
-            loads[inst.dst[0].code] = VsharpLoad{inst.control.smrd.offset, inst.src[0].code * 2};
+            loads[inst.dst[0].code] =
+                VsharpLoad{inst.control.smrd.offset, static_cast<s32>(inst.src[0].code) * 2};
             continue;
         }
 
