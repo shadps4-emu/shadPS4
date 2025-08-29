@@ -540,14 +540,20 @@ void EmitContext::DefineInputs() {
 }
 
 void EmitContext::DefineVertexBlock() {
+    const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value,
+                                 f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value};
     output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
     if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
-        clip_distances = DefineVariable(TypeArray(F32[1], ConstU32(8U)), spv::BuiltIn::ClipDistance,
-                                        spv::StorageClass::Output);
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
     }
     if (info.stores.GetAny(IR::Attribute::CullDistance)) {
-        cull_distances = DefineVariable(TypeArray(F32[1], ConstU32(8U)), spv::BuiltIn::CullDistance,
-                                        spv::StorageClass::Output);
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
+                                        initializer);
     }
     if (info.stores.GetAny(IR::Attribute::RenderTargetId)) {
         output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
