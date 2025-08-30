@@ -367,7 +367,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         const auto value_lo = ir.GetScalarReg(IR::ScalarReg(operand.code));
         const auto value_hi = ir.GetScalarReg(IR::ScalarReg(operand.code + 1));
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
