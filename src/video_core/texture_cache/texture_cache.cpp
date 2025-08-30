@@ -132,10 +132,6 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     tile_manager.TileImage(image.image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            image.info);
     scheduler.DeferOperation([this, image_addr, download = mapping.Data(), image_size] {
-        if (buffer_cache.IsRegionGpuModified(image_addr, image_size)) {
-            LOG_WARNING(Render_Vulkan,
-                        "Image {:x} was modified by GPU during download", image_addr);
-        }
         auto* memory = Core::Memory::Instance();
         // Should we download directly to main memory or put contents into the buffer cache?
         memory->TryWriteBacking(std::bit_cast<u8*>(image_addr), download, image_size);
@@ -924,9 +920,9 @@ void TextureCache::RunGarbageCollector() {
     std::scoped_lock lock{mutex};
     bool pressured = false;
     bool aggresive = false;
-    bool downloaded = false;
     u64 ticks_to_destroy = 0;
     size_t num_deletions = 0;
+    boost::container::small_vector<ImageId, 8> download_pending;
 
     const auto configure = [&](bool allow_aggressive) {
         pressured = total_used_memory >= pressure_gc_memory;
@@ -946,10 +942,13 @@ void TextureCache::RunGarbageCollector() {
             return false;
         }
         if (download) {
-            DownloadImageMemory(image_id);
-            downloaded = true;
+            download_pending.push_back(image_id);
+            buffer_cache.ReadEdgeImagePages(image);
+            UntrackImage(image_id);
+            UnregisterImage(image_id);
+        } else {
+            FreeImage(image_id);
         }
-        FreeImage(image_id);
         if (total_used_memory < critical_gc_memory) {
             if (aggresive) {
                 num_deletions >>= 2;
@@ -974,7 +973,12 @@ void TextureCache::RunGarbageCollector() {
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
     }
 
-    if (downloaded) {
+    for (const auto& image_id : download_pending) {
+        DownloadImageMemory(image_id);
+        DeleteImage(image_id);
+    }
+
+    if (!download_pending.empty()) {
         // We need to make downloads synchronous. It is possible that the contents
         // of the image are requested before they are downloaded in which case
         // outdated buffer cache contents are used instead.

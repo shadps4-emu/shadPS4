@@ -163,6 +163,7 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool download) {
             device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
     } else {
         memory_tracker->InvalidateRegion(device_addr, size);
+        gpu_modified_ranges.Subtract(device_addr, size);
     }
 }
 
@@ -208,12 +209,12 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     download_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    scheduler.DeferOperation([this, &buffer, copies = std::move(copies), download, offset,
+    cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), copies);
+    scheduler.DeferOperation([this, buf_addr = buffer.CpuAddr(), copies = std::move(copies), download, offset,
                               device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
-            const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
+            const VAddr copy_device_addr = buf_addr + copy.srcOffset;
             const u64 dst_offset = copy.dstOffset - offset;
             memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
@@ -225,6 +226,58 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     });
 
     return true;
+}
+
+void BufferCache::ReadEdgeImagePages(const Image& image) {
+    // May happen that after downloading the image and invalidating region,
+    // that there were GPU modified ranges that are lost due to CPU reuploading.
+    // This doesn't change tracker state and it is spected to call DownloadImageMemory after this.
+    const VAddr image_addr = image.info.guest_address;
+    const u64 image_size = image.info.guest_size;
+    const VAddr image_end = image_addr + image_size;
+    const VAddr page_start = PageManager::GetPageAddr(image_addr);
+    const VAddr page_end = PageManager::GetNextPageAddr(image_end - 1);
+    boost::container::small_vector<vk::BufferCopy, 2> copies;
+    u64 total_size_bytes = 0;
+    const auto [buffer, offset] = ObtainBufferForImage(image_addr, image_size);
+    const auto add_download = [&](VAddr start, VAddr end) {
+        const u64 new_offset = start - buffer->CpuAddr();
+        const u64 new_size = end - start;
+        copies.push_back(vk::BufferCopy{
+            .srcOffset = new_offset,
+            .dstOffset = total_size_bytes,
+            .size = new_size,
+        });
+        // Align up to avoid cache conflicts
+        constexpr u64 align = 64ULL;
+        constexpr u64 mask = ~(align - 1ULL);
+        total_size_bytes += (new_size + align - 1) & mask;
+    };
+    gpu_modified_ranges.ForEachInRange(page_start, image_addr - page_start, add_download);
+    gpu_modified_ranges.ForEachInRange(image_end, page_end - image_end, add_download);
+    gpu_modified_ranges.Subtract(page_start, page_end - page_start);
+    if (total_size_bytes == 0) {
+        return;
+    }
+    const auto [download, download_offset] = download_buffer.Map(total_size_bytes);
+    for (auto& copy : copies) {
+        // Modify copies to have the staging offset in mind
+        copy.dstOffset += download_offset;
+    }
+    download_buffer.Commit();
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyBuffer(buffer->Handle(), download_buffer.Handle(), copies);
+    scheduler.DeferOperation([this, buf_addr = buffer->CpuAddr(), copies = std::move(copies), download, download_offset,
+                              image_addr, image_size]() {
+        auto* memory = Core::Memory::Instance();
+        for (const auto& copy : copies) {
+            const VAddr copy_device_addr = buf_addr + copy.srcOffset;
+            const u64 dst_offset = copy.dstOffset - download_offset;
+            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                    copy.size);
+        }
+    });
 }
 
 void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
