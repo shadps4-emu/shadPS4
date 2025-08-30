@@ -15,6 +15,7 @@
 #include "core/devtools/widget/module_list.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/libc_internal/libc_internal_memory.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -50,7 +51,17 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-Linker::Linker() : memory{Memory::Instance()} {}
+Linker::Linker()
+    : memory{Memory::Instance()},
+      heap_api{new HeapAPI{.heap_malloc = &Libraries::LibcInternal::internal_malloc,
+                           .heap_free = &Libraries::LibcInternal::internal_free,
+                           .heap_calloc = &Libraries::LibcInternal::internal_calloc,
+                           .heap_realloc = &Libraries::LibcInternal::internal_realloc,
+                           .heap_memalign = nullptr,
+                           .heap_posix_memalign = Libraries::LibcInternal::internal_posix_memalign,
+                           .heap_reallocalign = nullptr,
+                           .heap_malloc_stats = nullptr,
+                           .heap_malloc_usable_size = nullptr}} {}
 
 Linker::~Linker() = default;
 
