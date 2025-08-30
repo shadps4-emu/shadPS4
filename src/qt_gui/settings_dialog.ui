@@ -99,19 +99,6 @@
             </property>
            </spacer>
           </item>
-          <item row="2" column="2">
-           <spacer name="verticalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="0" column="3">
            <layout class="QVBoxLayout" name="updaterTabLayoutLeft">
             <property name="spacing">
@@ -286,64 +273,6 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="0">
-           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
-            <property name="spacing">
-             <number>6</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QGroupBox" name="SystemSettings">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="sizeIncrement">
-               <size>
-                <width>0</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="title">
-               <string>System</string>
-              </property>
-              <layout class="QVBoxLayout" name="emuSettingsLayout">
-               <property name="bottomMargin">
-                <number>70</number>
-               </property>
-               <item>
-                <widget class="QGroupBox" name="consoleLanguageGroupBox">
-                 <property name="title">
-                  <string>Console Language</string>
-                 </property>
-                 <layout class="QVBoxLayout" name="settingsLayout">
-                  <item>
-                   <widget class="QComboBox" name="consoleLanguageComboBox"/>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="emulatorLanguageGroupBox">
-                 <property name="title">
-                  <string>Emulator Language</string>
-                 </property>
-                 <layout class="QVBoxLayout" name="langSettingsLayout">
-                  <item>
-                   <widget class="QComboBox" name="emulatorLanguageComboBox"/>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
           <item row="1" column="0">
            <widget class="QGroupBox" name="volumeSliderElement">
             <property name="title">
@@ -424,6 +353,64 @@
              </item>
             </layout>
            </widget>
+          </item>
+          <item row="0" column="0">
+           <layout class="QVBoxLayout" name="systemTabLayoutLeft">
+            <property name="spacing">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="SystemSettings">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="sizeIncrement">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="title">
+               <string>System</string>
+              </property>
+              <layout class="QVBoxLayout" name="emuSettingsLayout">
+               <property name="bottomMargin">
+                <number>70</number>
+               </property>
+               <item>
+                <widget class="QGroupBox" name="consoleLanguageGroupBox">
+                 <property name="title">
+                  <string>Console Language</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="settingsLayout">
+                  <item>
+                   <widget class="QComboBox" name="consoleLanguageComboBox"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="emulatorLanguageGroupBox">
+                 <property name="title">
+                  <string>Emulator Language</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="langSettingsLayout">
+                  <item>
+                   <widget class="QComboBox" name="emulatorLanguageComboBox"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item row="0" column="2">
            <layout class="QVBoxLayout" name="emulatorTabLayoutMiddle">
@@ -508,18 +495,29 @@
             </item>
            </layout>
           </item>
-          <item row="2" column="3">
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
+          <item row="1" column="2">
+           <widget class="QGroupBox" name="GenAudioGroupBox">
+            <property name="title">
+             <string>Audio Device (general)</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <item>
+              <widget class="QComboBox" name="GenAudioComboBox"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QGroupBox" name="DsSpeakerGroupBox">
+            <property name="title">
+             <string>Audio Device (DS4 speaker)</string>
             </property>
-           </spacer>
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <item>
+              <widget class="QComboBox" name="DsAudioComboBox"/>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </item>
