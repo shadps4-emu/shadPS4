@@ -274,23 +274,40 @@ GraphicsPipeline::GraphicsPipeline(
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
     for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
+
         const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
         const auto color_blend = LiverpoolToVK::BlendOp(control.color_func);
+
+        const auto src_alpha = control.separate_alpha_blend
+                                   ? LiverpoolToVK::BlendFactor(control.alpha_src_factor)
+                                   : src_color;
+        const auto dst_alpha = control.separate_alpha_blend
+                                   ? LiverpoolToVK::BlendFactor(control.alpha_dst_factor)
+                                   : dst_color;
+        const auto alpha_blend =
+            control.separate_alpha_blend ? LiverpoolToVK::BlendOp(control.alpha_func) : color_blend;
+
+        const auto color_scaled_min_max =
+            (color_blend == vk::BlendOp::eMin || color_blend == vk::BlendOp::eMax) &&
+            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne);
+        const auto alpha_scaled_min_max =
+            (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) &&
+            (src_alpha != vk::BlendFactor::eOne || dst_alpha != vk::BlendFactor::eOne);
+        if (color_scaled_min_max || alpha_scaled_min_max) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Unimplemented use of min/max blend op with blend factor not equal to one.");
+        }
+
         attachments[i] = vk::PipelineColorBlendAttachmentState{
             .blendEnable = control.enable,
             .srcColorBlendFactor = src_color,
             .dstColorBlendFactor = dst_color,
             .colorBlendOp = color_blend,
-            .srcAlphaBlendFactor = control.separate_alpha_blend
-                                       ? LiverpoolToVK::BlendFactor(control.alpha_src_factor)
-                                       : src_color,
-            .dstAlphaBlendFactor = control.separate_alpha_blend
-                                       ? LiverpoolToVK::BlendFactor(control.alpha_dst_factor)
-                                       : dst_color,
-            .alphaBlendOp = control.separate_alpha_blend
-                                ? LiverpoolToVK::BlendOp(control.alpha_func)
-                                : color_blend,
+            .srcAlphaBlendFactor = src_alpha,
+            .dstAlphaBlendFactor = dst_alpha,
+            .alphaBlendOp = alpha_blend,
             .colorWriteMask =
                 instance.IsDynamicColorWriteMaskSupported()
                     ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
