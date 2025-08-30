@@ -926,6 +926,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
+                      src/shader_recompiler/ir/operand_helper.h
                       src/shader_recompiler/ir/patch.cpp
                       src/shader_recompiler/ir/patch.h
                       src/shader_recompiler/ir/position.h

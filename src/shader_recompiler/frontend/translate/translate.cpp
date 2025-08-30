@@ -179,6 +179,14 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
+
+        if (runtime_info.hs_info.offchip_lds_enable) {
+            // No off-chip tessellation has been observed yet. If this survives dead code elim,
+            // revisit
+            ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
+        }
+        ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::TessFactorsBufferBase));
+
         break;
     }
     case LogicalStage::TessellationEval:

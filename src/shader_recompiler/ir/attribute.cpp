@@ -153,7 +153,11 @@ std::string NameOf(Attribute attribute) {
     case Attribute::TessellationEvaluationPointV:
         return "TessellationEvaluationPointV";
     case Attribute::PackedHullInvocationInfo:
+        return "OffChipLdsBase";
+    case Attribute::OffChipLdsBase:
         return "PackedHullInvocationInfo";
+    case Attribute::TessFactorsBufferBase:
+        return "TessFactorsBufferBase";
     default:
         break;
     }
