@@ -85,6 +85,7 @@ public:
     static constexpr u32 FW_45 = 0x4500000;
     static constexpr u32 FW_50 = 0x5000000;
     static constexpr u32 FW_55 = 0x5500000;
+    static constexpr u32 FW_60 = 0x6000000;
     static constexpr u32 FW_80 = 0x8000000;
 
     static ElfInfo& Instance() {

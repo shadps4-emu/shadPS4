@@ -242,8 +242,8 @@ void CheatsPatches::setupUI() {
 
     // Add the combo box with options
     patchesComboBox = new QComboBox();
-    patchesComboBox->addItem("GoldHEN", "GoldHEN");
     patchesComboBox->addItem("shadPS4", "shadPS4");
+    patchesComboBox->addItem("GoldHEN", "GoldHEN");
     patchesControlLayout->addWidget(patchesComboBox);
 
     QPushButton* patchesButton = new QPushButton(tr("Download Patches"));
@@ -614,6 +614,7 @@ void CheatsPatches::populateFileListPatches() {
 
     QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     QStringList matchingFiles;
+    QString shadPS4entry = "";
 
     foreach (const QString& folder, folders) {
         QString folderPath = dir.filePath(folder);
@@ -636,6 +637,9 @@ void CheatsPatches::populateFileListPatches() {
                 if (serials.contains(QJsonValue(m_gameSerial))) {
                     QString fileEntry = fileName + " | " + folder;
                     if (!matchingFiles.contains(fileEntry)) {
+                        if (folder == "shadPS4") {
+                            shadPS4entry = fileEntry;
+                        }
                         matchingFiles << fileEntry;
                     }
                 }
@@ -643,6 +647,12 @@ void CheatsPatches::populateFileListPatches() {
         }
     }
     QStringListModel* model = new QStringListModel(matchingFiles, this);
+    if (shadPS4entry != "") {
+        QModelIndexList matches = model->match(model->index(0, 0), Qt::DisplayRole, shadPS4entry, 1,
+                                               Qt::MatchExactly | Qt::MatchCaseSensitive);
+        QModelIndex shadPS4Index = matches.first();
+        model->moveRow(QModelIndex(), shadPS4Index.row(), QModelIndex(), 0);
+    }
     patchesListView->setModel(model);
 
     connect(
@@ -664,11 +674,11 @@ void CheatsPatches::populateFileListPatches() {
 
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
-    if (repository == "GoldHEN") {
-        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
-    }
     if (repository == "shadPS4") {
         url = "https://api.github.com/repos/shadps4-emu/ps4_cheats/contents/PATCHES";
+    }
+    if (repository == "GoldHEN") {
+        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
     }
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request(url);
