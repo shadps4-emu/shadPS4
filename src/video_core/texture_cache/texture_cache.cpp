@@ -23,8 +23,8 @@ static constexpr u64 NumFramesBeforeRemoval = 32;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            BufferCache& buffer_cache_, PageManager& page_manager_)
-    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, page_manager{page_manager_},
-      blit_helper{instance, scheduler},
+    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_},
+      page_manager{page_manager_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
