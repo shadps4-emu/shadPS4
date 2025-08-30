@@ -210,8 +210,8 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), copies);
-    scheduler.DeferOperation([this, buf_addr = buffer.CpuAddr(), copies = std::move(copies), download, offset,
-                              device_addr, size, is_write]() {
+    scheduler.DeferOperation([this, buf_addr = buffer.CpuAddr(), copies = std::move(copies),
+                              download, offset, device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buf_addr + copy.srcOffset;
@@ -268,8 +268,8 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer->Handle(), download_buffer.Handle(), copies);
-    scheduler.DeferOperation([this, buf_addr = buffer->CpuAddr(), copies = std::move(copies), download, download_offset,
-                              image_addr, image_size]() {
+    scheduler.DeferOperation([this, buf_addr = buffer->CpuAddr(), copies = std::move(copies),
+                              download, download_offset, image_addr, image_size]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buf_addr + copy.srcOffset;
