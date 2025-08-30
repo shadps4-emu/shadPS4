@@ -183,6 +183,11 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
+int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{m_mutex};
+    return ConvertReturnErrorCode(sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags));
+}
+
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
     std::scoped_lock lock{m_mutex};
@@ -194,6 +199,12 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     } else {
         return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
     }
+}
+
+int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{receive_mutex};
+    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    return ConvertReturnErrorCode(res);
 }
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
