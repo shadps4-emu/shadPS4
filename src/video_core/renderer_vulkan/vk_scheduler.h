@@ -33,9 +33,9 @@ struct RenderState {
 
     RenderState() {
         std::memset(this, 0, sizeof(*this));
-        color_attachments.fill({});
-        depth_attachment = {};
-        stencil_attachment = {};
+        color_attachments.fill(vk::RenderingAttachmentInfo{});
+        depth_attachment = vk::RenderingAttachmentInfo{};
+        stencil_attachment = vk::RenderingAttachmentInfo{};
         num_layers = 1;
     }
 
