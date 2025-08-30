@@ -168,13 +168,17 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
         const auto& cb0_blend = regs.blend_control[0];
-        info.fs_info.dual_source_blending =
-            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
-            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
-        if (cb0_blend.separate_alpha_blend) {
-            info.fs_info.dual_source_blending |=
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
+        if (cb0_blend.enable) {
+            info.fs_info.dual_source_blending =
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
+            if (cb0_blend.separate_alpha_blend) {
+                info.fs_info.dual_source_blending |=
+                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
+                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
+            }
+        } else {
+            info.fs_info.dual_source_blending = false;
         }
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs[i] = {
@@ -344,9 +348,9 @@ bool PipelineCache::RefreshGraphicsKey() {
         };
 
         // Fill color blending information
-        key.blend_controls[cb] = regs.blend_control[cb];
-        key.blend_controls[cb].enable.Assign(regs.blend_control[cb].enable &&
-                                             !col_buf.info.blend_bypass);
+        if (regs.blend_control[cb].enable && !col_buf.info.blend_bypass) {
+            key.blend_controls[cb] = regs.blend_control[cb];
+        }
 
         // Apply swizzle to target mask
         key.write_masks[cb] =
