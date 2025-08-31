@@ -548,8 +548,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
-    ui->enableLoggingCheckBox->setChecked(
-        toml::find_or<bool>(data, "Debug", "logEnabled", true));
+    ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
     ui->readbackLinearImagesCheckBox->setChecked(
         toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->enableCompatibilityCheckBox->setChecked(
@@ -821,7 +820,7 @@ void SettingsDialog::UpdateSettings() {
         Config::setSideTrophy("bottom");
     }
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
-        Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked());
+    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString());
