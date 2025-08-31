@@ -49,7 +49,7 @@ public:
             game_patch_path += "-patch";
             if (std::filesystem::exists(game_update_path / "sce_sys" / "icon0.png")) {
                 game.icon_path = game_update_path / "sce_sys" / "icon0.png";
-            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "icon0.png")){
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "icon0.png")) {
                 game.icon_path = game_patch_path / "sce_sys" / "icon0.png";
             } else {
                 game.icon_path = game.path / "sce_sys" / "icon0.png";
@@ -59,19 +59,19 @@ public:
             game.icon = QImage(iconpath);
             if (std::filesystem::exists(game_update_path / "sce_sys" / "pic1.png")) {
                 game.pic_path = game_update_path / "sce_sys" / "pic1.png";
-            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "pic1.png")){
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "pic1.png")) {
                 game.pic_path = game_patch_path / "sce_sys" / "pic1.png";
-            } else{
+            } else {
                 game.pic_path = game.path / "sce_sys" / "pic1.png";
             }
             if (std::filesystem::exists(game_update_path / "sce_sys" / "snd0.at9")) {
                 game.snd0_path = game_update_path / "sce_sys" / "snd0.at9";
-            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "snd0.at9")){
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "snd0.at9")) {
                 game.snd0_path = game_patch_path / "sce_sys" / "snd0.at9";
-            } else{
+            } else {
                 game.snd0_path = game.path / "sce_sys" / "snd0.at9";
             }
-            
+
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
             }
