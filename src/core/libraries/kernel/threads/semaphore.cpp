@@ -172,9 +172,9 @@ public:
             wait_list.push_back(waiter);
             return --wait_list.end();
         }
-        // Find the first with priority less then us and insert right before it.
+        // Find the first with lower priority (greater number) than us and insert right before it.
         auto it = wait_list.begin();
-        while (it != wait_list.end() && (*it)->priority > waiter->priority) {
+        while (it != wait_list.end() && (*it)->priority <= waiter->priority) {
             ++it;
         }
         return wait_list.insert(it, waiter);
