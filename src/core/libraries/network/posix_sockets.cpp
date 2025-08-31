@@ -225,23 +225,22 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     std::scoped_lock lock{receive_mutex};
 #ifdef _WIN32
-    static LPFN_WSASENDMSG wsasendmsg = nullptr;
-    if (!wsasendmsg) {
-        GUID guid = WSAID_WSASENDMSG;
-        DWORD bytes = 0;
-        if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
-                     sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
-            return ConvertReturnErrorCode(WSAGetLastError());
-        }
+    LPFN_WSARECVMSG wsarecvmsg = nullptr;
+    GUID guid = WSAID_WSARECVMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsarecvmsg,
+                 sizeof(wsarecvmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
     }
 
-    DWORD bytesSent = 0;
-    int res = wsasendmsg(sock, reinterpret_cast<const LPWSAMSG>(msg), flags, &bytesSent, nullptr,
-                         nullptr);
+    DWORD bytesReceived = 0;
+    int res = wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), &bytesReceived, nullptr, nullptr);
+
     if (res == SOCKET_ERROR) {
-        return ConvertReturnErrorCode(WSAGetLastError());
+        return ConvertReturnErrorCode(-1);
     }
-    return static_cast<int>(bytesSent);
+    return static_cast<int>(bytesReceived);
 #else
     int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
 #endif

@@ -20,6 +20,16 @@ typedef INT(PASCAL* LPFN_WSASENDMSG)(SOCKET s, LPWSAMSG lpMsg, DWORD dwFlags,
 static const GUID WSAID_WSASENDMSG = {
     0xa441e712, 0x754f, 0x43ca, {0x84, 0xa7, 0x0d, 0xee, 0x44, 0xcf, 0x60, 0x6d}};
 #endif
+#ifndef LPFN_WSARECVMSG
+typedef INT(PASCAL* LPFN_WSARECVMSG)(SOCKET s, LPWSAMSG lpMsg, LPDWORD lpdwNumberOfBytesRecvd,
+                                     LPWSAOVERLAPPED lpOverlapped,
+                                     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+#endif
+
+#ifndef WSAID_WSARECVMSG
+static const GUID WSAID_WSARECVMSG = {
+    0xf689d7c8, 0x6f1f, 0x436b, {0x8a, 0x53, 0xe5, 0x4f, 0xe3, 0x51, 0xc3, 0x22}};
+#endif
 #else
 #include <cerrno>
 #include <arpa/inet.h>
