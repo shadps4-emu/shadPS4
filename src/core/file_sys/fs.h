@@ -12,6 +12,7 @@
 #include "common/logging/formatter.h"
 #include "core/file_sys/devices/base_device.h"
 #include "core/file_sys/directories/base_directory.h"
+#include "core/libraries/network/sockets.h"
 
 namespace Libraries::Net {
 struct Socket;

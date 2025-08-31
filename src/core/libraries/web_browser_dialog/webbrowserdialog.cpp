@@ -4,6 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/system/commondialog.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 
 namespace Libraries::WebBrowserDialog {
@@ -25,7 +26,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult() {
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
     LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return (s32)Libraries::CommonDialog::Status::INITIALIZED;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
