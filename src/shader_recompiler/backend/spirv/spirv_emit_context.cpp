@@ -658,8 +658,10 @@ void EmitContext::DefineOutputs() {
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
-        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,
-                   "Dual source blending enabled, there must be exactly two MRT exports");
+        // Dual source blending allows at most 2 render targets, one for each source.
+        // Fewer targets are allowed but the missing blending source values will be undefined.
+        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
+                   "Dual source blending enabled, there must be at most two MRT exports");
         break;
     }
     case LogicalStage::Geometry: {
