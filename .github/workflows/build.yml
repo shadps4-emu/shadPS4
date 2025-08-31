@@ -141,16 +141,10 @@ jobs:
     - name: Deploy and Package
       run: |
         mkdir upload
-        move build/shadPS4.exe upload
-        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         mkdir upload/qtplugins
-        move build/generic upload/qtplugins
-        move build/imageformats upload/qtplugins
-        move build/multimedia upload/qtplugins
-        move build/networkinformation upload/qtplugins
-        move build/platforms upload/qtplugins
-        move build/styles upload/qtplugins
-        move build/tls upload/qtplugins
+        move build/shadPS4.exe upload
+        cp /qt.conf upload/qt.conf
+        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload/qtplugins upload/shadPS4.exe
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
     - name: Upload Windows Qt artifact
