@@ -143,15 +143,8 @@ jobs:
         mkdir upload
         mkdir upload/qtplugins
         move build/shadPS4.exe upload
-        cp qt.conf upload/qt.conf
-        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
-        move upload/generic upload/qtplugins
-        move upload/imageformats upload/qtplugins
-        move upload/multimedia upload/qtplugins
-        move upload/networkinformation upload/qtplugins
-        move upload/platforms upload/qtplugins
-        move upload/styles upload/qtplugins
-        move upload/tls upload/qtplugins
+        cp dist/qt.conf upload/qt.conf
+        windeployqt --plugindir upload/qtplugins --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
     - name: Upload Windows Qt artifact
