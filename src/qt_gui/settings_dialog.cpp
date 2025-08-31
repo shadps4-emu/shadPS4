@@ -458,7 +458,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         const toml::value data = toml::parse(userdir / "config.toml");
     } catch (std::exception& ex) {
-        fmt::print("Got exception trying to load config file. Exception: {}n", ex.what());
+        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
 
