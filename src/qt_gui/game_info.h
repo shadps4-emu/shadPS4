@@ -41,16 +41,37 @@ public:
                 sce_folder_path = game_update_path / "sce_sys" / "param.sfo";
             }
         }
-
         PSF psf;
         if (psf.Open(sce_folder_path)) {
-            game.icon_path = game.path / "sce_sys" / "icon0.png";
+            std::filesystem::path game_update_path = filePath;
+            game_update_path += "-UPDATE";
+            std::filesystem::path game_patch_path = filePath;
+            game_patch_path += "-patch";
+            if (std::filesystem::exists(game_update_path / "sce_sys" / "icon0.png")) {
+                game.icon_path = game_update_path / "sce_sys" / "icon0.png";
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "icon0.png")){
+                game.icon_path = game_patch_path / "sce_sys" / "icon0.png";
+            } else {
+                game.icon_path = game.path / "sce_sys" / "icon0.png";
+            }
             QString iconpath;
             Common::FS::PathToQString(iconpath, game.icon_path);
             game.icon = QImage(iconpath);
-            game.pic_path = game.path / "sce_sys" / "pic1.png";
-            game.snd0_path = game.path / "sce_sys" / "snd0.at9";
-
+            if (std::filesystem::exists(game_update_path / "sce_sys" / "pic1.png")) {
+                game.pic_path = game_update_path / "sce_sys" / "pic1.png";
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "pic1.png")){
+                game.pic_path = game_patch_path / "sce_sys" / "pic1.png";
+            } else{
+                game.pic_path = game.path / "sce_sys" / "pic1.png";
+            }
+            if (std::filesystem::exists(game_update_path / "sce_sys" / "snd0.at9")) {
+                game.snd0_path = game_update_path / "sce_sys" / "snd0.at9";
+            } else if (std::filesystem::exists(game_patch_path / "sce_sys" / "snd0.at9")){
+                game.snd0_path = game_patch_path / "sce_sys" / "snd0.at9";
+            } else{
+                game.snd0_path = game.path / "sce_sys" / "snd0.at9";
+            }
+            
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
             }
