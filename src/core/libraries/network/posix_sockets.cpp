@@ -8,6 +8,8 @@
 #include "net.h"
 #ifndef _WIN32
 #include <sys/stat.h>
+#else
+#include <mswsock.h>
 #endif
 #include "net_error.h"
 #include "sockets.h"
@@ -185,7 +187,25 @@ int PosixSocket::Listen(int backlog) {
 
 int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     std::scoped_lock lock{m_mutex};
-    return ConvertReturnErrorCode(sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags));
+#ifdef _WIN32
+    auto uuid = WSAID_WSASENDMSG;
+    LPFN_WSASENDMSG wsasendmsg = nullptr;
+    long ioctlBytesReturned = 0;
+    int ioctlRes = WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &uuid, sizeof(uuid),
+                            &wsasendmsg, sizeof(wsasendmsg), &ioctlBytesReturned, nullptr, nullptr);
+    if (ioctlRes != 0) {
+        return ConvertReturnErrorCode(ioctlRes);
+    }
+    long bytesReceived = 0;
+    int res = wsasendmsg(sock, reinterpret_cast<const LPWSAMSG>(msg), flags, &bytesReceived,
+                         nullptr, nullptr);
+    if (res == 0) {
+        res = bytesReceived;
+    }
+#else
+    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
+#endif
+    return ConvertReturnErrorCode(res);
 }
 
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
@@ -203,7 +223,24 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 
 int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     std::scoped_lock lock{receive_mutex};
+#ifdef _WIN32
+    auto uuid = WSAID_WSARECVMSG;
+    LPFN_WSARECVMSG wsarecvmsg = nullptr;
+    long ioctlBytesReturned = 0;
+    int ioctlRes = WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &uuid, sizeof(uuid),
+                            &wsarecvmsg, sizeof(wsarecvmsg), &ioctlBytesReturned, nullptr, nullptr);
+    if (ioctlRes != 0) {
+        return ConvertReturnErrorCode(ioctlRes);
+    }
+    long bytesReceived = 0;
+    int res =
+        wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), flags, &bytesReceived, nullptr, nullptr);
+    if (res == 0) {
+        res = bytesReceived;
+    }
+#else
     int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+#endif
     return ConvertReturnErrorCode(res);
 }
 
