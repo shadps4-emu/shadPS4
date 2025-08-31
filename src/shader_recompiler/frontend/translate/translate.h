@@ -149,6 +149,7 @@ public:
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
     void V_ADD_F32(const GcnInst& inst);
+    void V_ADD_F64(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);

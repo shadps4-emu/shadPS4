@@ -139,6 +139,9 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::BufferAtomicUMax64:
     case IR::Opcode::BufferAtomicUMin64:
         return IR::Type::U64;
+    case IR::Opcode::BufferAtomicFMax32:
+    case IR::Opcode::BufferAtomicFMin32:
+        return IR::Type::F32;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32:
         // Formatted buffer loads can use a variety of types.

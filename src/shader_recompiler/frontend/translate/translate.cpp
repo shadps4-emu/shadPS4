@@ -367,7 +367,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         const auto value_lo = ir.GetScalarReg(IR::ScalarReg(operand.code));
         const auto value_hi = ir.GetScalarReg(IR::ScalarReg(operand.code + 1));
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
@@ -553,7 +553,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
         // Read the V# of the attribute to figure out component number and type.
-        const auto buffer = info.ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
+        const auto buffer = attrib.GetSharp(info);
         const auto values =
             ir.CompositeConstruct(ir.GetAttribute(attr, 0), ir.GetAttribute(attr, 1),
                                   ir.GetAttribute(attr, 2), ir.GetAttribute(attr, 3));
