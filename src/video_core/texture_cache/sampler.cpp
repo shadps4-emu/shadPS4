@@ -19,7 +19,8 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         anisotropy_enable ? std::clamp(sampler.MaxAniso(), 1.0f, instance.MaxSamplerAnisotropy())
                           : 1.0f;
     auto border_color = LiverpoolToVK::BorderColor(sampler.border_color_type);
-    if (!instance.IsCustomBorderColorSupported()) {
+    if (border_color == vk::BorderColor::eFloatCustomEXT &&
+        !instance.IsCustomBorderColorSupported()) {
         LOG_WARNING(Render_Vulkan, "Custom border color is not supported, falling back to black");
         border_color = vk::BorderColor::eFloatOpaqueBlack;
     }
