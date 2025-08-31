@@ -299,13 +299,11 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             int timeout_us = *(const int*)optval;
 #ifdef _WIN32
             DWORD timeout = timeout_us / 1000;
-            val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
-            optlen = sizeof(timeout);
 #else
             timeval timeout{.tv_sec = timeout_us / 1000000, .tv_usec = timeout_us % 1000000};
+#endif
             val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
             optlen = sizeof(timeout);
-#endif
             return ConvertReturnErrorCode(setsockopt(sock, level, optname_nat, val.data(), optlen));
         }
         case ORBIS_NET_SO_ONESBCAST: {
