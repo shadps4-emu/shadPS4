@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -369,8 +369,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>400</width>
-                  <height>68</height>
+                  <width>414</width>
+                  <height>69</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -538,8 +538,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -987,8 +987,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1282,8 +1282,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1524,8 +1524,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1796,8 +1796,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1938,8 +1938,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
@@ -2164,6 +2164,13 @@
                <string>Experimental Features</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_3">
+               <item>
+                <widget class="QCheckBox" name="enableLoggingCheckBox">
+                 <property name="text">
+                  <string>Enable Logging</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QCheckBox" name="readbacksCheckBox">
                  <property name="text">
