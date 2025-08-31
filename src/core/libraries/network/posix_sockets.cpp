@@ -186,22 +186,21 @@ int PosixSocket::Listen(int backlog) {
 int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
-    static LPFN_WSASENDMSG wsasendmsg = nullptr;
-    if (!wsasendmsg) {
-        GUID guid = WSAID_WSASENDMSG;
-        DWORD bytes = 0;
-        if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
-                     sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
-            return ConvertReturnErrorCode(WSAGetLastError());
-        }
-    }
     DWORD bytesSent = 0;
+    LPFN_WSASENDMSG wsasendmsg = nullptr;
+    GUID guid = WSAID_WSASENDMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
+                 sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
+    }
 
     int res = wsasendmsg(sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), flags,
                          &bytesSent, nullptr, nullptr);
 
     if (res == SOCKET_ERROR) {
-        return ConvertReturnErrorCode(WSAGetLastError());
+        return ConvertReturnErrorCode(-1);
     }
     return static_cast<int>(bytesSent);
 #else
