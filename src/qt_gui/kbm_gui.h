@@ -51,7 +51,7 @@ private:
     void Cleanup();
 
     std::string RunningGameSerial;
-    QSet<QString> pressedKeys;
+    QMap<int, QString> pressedKeys;
     bool GameRunning;
     bool EnableMapping = false;
     bool MappingCompleted = false;

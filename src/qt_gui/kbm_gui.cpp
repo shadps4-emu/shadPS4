@@ -626,310 +626,336 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             }
 
             switch (keyEvent->key()) {
-            // alphanumeric
-            case Qt::Key_A:
-                pressedKeys.insert("a");
-                break;
-            case Qt::Key_B:
-                pressedKeys.insert("b");
-                break;
-            case Qt::Key_C:
-                pressedKeys.insert("c");
-                break;
-            case Qt::Key_D:
-                pressedKeys.insert("d");
-                break;
-            case Qt::Key_E:
-                pressedKeys.insert("e");
-                break;
-            case Qt::Key_F:
-                pressedKeys.insert("f");
-                break;
-            case Qt::Key_G:
-                pressedKeys.insert("g");
-                break;
-            case Qt::Key_H:
-                pressedKeys.insert("h");
-                break;
-            case Qt::Key_I:
-                pressedKeys.insert("i");
-                break;
-            case Qt::Key_J:
-                pressedKeys.insert("j");
-                break;
-            case Qt::Key_K:
-                pressedKeys.insert("k");
-                break;
-            case Qt::Key_L:
-                pressedKeys.insert("l");
-                break;
-            case Qt::Key_M:
-                pressedKeys.insert("m");
-                break;
-            case Qt::Key_N:
-                pressedKeys.insert("n");
-                break;
-            case Qt::Key_O:
-                pressedKeys.insert("o");
-                break;
-            case Qt::Key_P:
-                pressedKeys.insert("p");
-                break;
-            case Qt::Key_Q:
-                pressedKeys.insert("q");
-                break;
-            case Qt::Key_R:
-                pressedKeys.insert("r");
-                break;
-            case Qt::Key_S:
-                pressedKeys.insert("s");
-                break;
-            case Qt::Key_T:
-                pressedKeys.insert("t");
-                break;
-            case Qt::Key_U:
-                pressedKeys.insert("u");
-                break;
-            case Qt::Key_V:
-                pressedKeys.insert("v");
-                break;
-            case Qt::Key_W:
-                pressedKeys.insert("w");
-                break;
-            case Qt::Key_X:
-                pressedKeys.insert("x");
-                break;
-            case Qt::Key_Y:
-                pressedKeys.insert("y");
-                break;
-            case Qt::Key_Z:
-                pressedKeys.insert("z");
-                break;
-            case Qt::Key_0:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp0", "0"));
-                break;
-            case Qt::Key_1:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp1", "1"));
-                break;
-            case Qt::Key_2:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp2", "2"));
-                break;
-            case Qt::Key_3:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp3", "3"));
-                break;
-            case Qt::Key_4:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp4", "4"));
-                break;
-            case Qt::Key_5:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp5", "5"));
-                break;
-            case Qt::Key_6:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp6", "6"));
-                break;
-            case Qt::Key_7:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp7", "7"));
-                break;
-            case Qt::Key_8:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp8", "8"));
-                break;
-            case Qt::Key_9:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kp9", "9"));
-                break;
-
-            // symbols
-            case Qt::Key_QuoteLeft:
-                pressedKeys.insert("grave");
-                break;
-            case Qt::Key_AsciiTilde:
-                pressedKeys.insert("tilde");
-                break;
-            case Qt::Key_Exclam:
-                pressedKeys.insert("exclamation");
-                break;
-            case Qt::Key_At:
-                pressedKeys.insert("at");
-                break;
-            case Qt::Key_NumberSign:
-                pressedKeys.insert("hash");
-                break;
-            case Qt::Key_Dollar:
-                pressedKeys.insert("dollar");
-                break;
-            case Qt::Key_Percent:
-                pressedKeys.insert("percent");
-                break;
-            case Qt::Key_AsciiCircum:
-                pressedKeys.insert("caret");
-                break;
-            case Qt::Key_Ampersand:
-                pressedKeys.insert("ampersand");
-                break;
-            case Qt::Key_Asterisk:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpasterisk", "asterisk"));
-                break;
-            case Qt::Key_ParenLeft:
-                pressedKeys.insert("lparen");
-                break;
-            case Qt::Key_ParenRight:
-                pressedKeys.insert("rparen");
-                break;
-            case Qt::Key_Minus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpminus", "minus"));
-                break;
-            case Qt::Key_Underscore:
-                pressedKeys.insert("underscore");
-                break;
-            case Qt::Key_Equal:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpequals", "equals"));
-                break;
-            case Qt::Key_Plus:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpplus", "plus"));
-                break;
-            case Qt::Key_BracketLeft:
-                pressedKeys.insert("lbracket");
-                break;
-            case Qt::Key_BracketRight:
-                pressedKeys.insert("rbracket");
-                break;
-            case Qt::Key_BraceLeft:
-                pressedKeys.insert("lbrace");
-                break;
-            case Qt::Key_BraceRight:
-                pressedKeys.insert("rbrace");
-                break;
-            case Qt::Key_Backslash:
-                pressedKeys.insert("backslash");
-                break;
-            case Qt::Key_Bar:
-                pressedKeys.insert("pipe");
-                break;
-            case Qt::Key_Semicolon:
-                pressedKeys.insert("semicolon");
-                break;
-            case Qt::Key_Colon:
-                pressedKeys.insert("colon");
-                break;
-            case Qt::Key_Apostrophe:
-                pressedKeys.insert("apostrophe");
-                break;
-            case Qt::Key_QuoteDbl:
-                pressedKeys.insert("quote");
-                break;
-            case Qt::Key_Comma:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpcomma", "comma"));
-                break;
-            case Qt::Key_Less:
-                pressedKeys.insert("less");
-                break;
-            case Qt::Key_Period:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpperiod", "period"));
-                break;
-            case Qt::Key_Greater:
-                pressedKeys.insert("greater");
-                break;
-            case Qt::Key_Slash:
-                pressedKeys.insert(GetModifiedButton(Qt::KeypadModifier, "kpslash", "slash"));
-                break;
-            case Qt::Key_Question:
-                pressedKeys.insert("question");
-                break;
-
-            // special keys
-            case Qt::Key_Print:
-                pressedKeys.insert("printscreen");
-                break;
-            case Qt::Key_ScrollLock:
-                pressedKeys.insert("scrolllock");
-                break;
-            case Qt::Key_Pause:
-                pressedKeys.insert("pausebreak");
-                break;
-            case Qt::Key_Backspace:
-                pressedKeys.insert("backspace");
-                break;
-            case Qt::Key_Insert:
-                pressedKeys.insert("insert");
-                break;
-            case Qt::Key_Delete:
-                pressedKeys.insert("delete");
-                break;
-            case Qt::Key_Home:
-                pressedKeys.insert("home");
-                break;
-            case Qt::Key_End:
-                pressedKeys.insert("end");
-                break;
-            case Qt::Key_PageUp:
-                pressedKeys.insert("pgup");
-                break;
-            case Qt::Key_PageDown:
-                pressedKeys.insert("pgdown");
-                break;
-            case Qt::Key_Tab:
-                pressedKeys.insert("tab");
-                break;
-            case Qt::Key_CapsLock:
-                pressedKeys.insert("capslock");
-                break;
-            case Qt::Key_Return:
-                pressedKeys.insert("enter");
-                break;
-            case Qt::Key_Enter:
-                pressedKeys.insert(GetModifiedButton(Qt::ShiftModifier, "kpenter", "enter"));
-                break;
+            // modifiers
             case Qt::Key_Shift:
-                if (keyEvent->nativeScanCode() == LSHIFT_KEY) {
-                    pressedKeys.insert("lshift");
-                } else {
-                    pressedKeys.insert("rshift");
-                }
+                keyEvent->nativeScanCode() == LSHIFT_KEY ? pressedKeys.insert(1, "lshift")
+                                                         : pressedKeys.insert(2, "rshift");
                 break;
             case Qt::Key_Alt:
-                if (keyEvent->nativeScanCode() == LALT_KEY) {
-                    pressedKeys.insert("lalt");
-                } else {
-                    pressedKeys.insert("ralt");
-                }
+                keyEvent->nativeScanCode() == LALT_KEY ? pressedKeys.insert(3, "lalt")
+                                                       : pressedKeys.insert(4, "ralt");
                 break;
             case Qt::Key_Control:
-                if (keyEvent->nativeScanCode() == LCTRL_KEY) {
-                    pressedKeys.insert("lctrl");
-                } else {
-                    pressedKeys.insert("rctrl");
-                }
+                keyEvent->nativeScanCode() == LCTRL_KEY ? pressedKeys.insert(5, "lctrl")
+                                                        : pressedKeys.insert(6, "rctrl");
                 break;
             case Qt::Key_Meta:
 #ifdef _WIN32
-                pressedKeys.insert("lwin");
+                pressedKeys.insert(7, "lwin");
 #else
-                pressedKeys.insert("lmeta");
+                pressedKeys.insert(7, "lmeta");
 #endif
                 break;
+
+                // alphanumeric
+            case Qt::Key_A:
+                pressedKeys.insert(20, "a");
+                break;
+            case Qt::Key_B:
+                pressedKeys.insert(21, "b");
+                break;
+            case Qt::Key_C:
+                pressedKeys.insert(22, "c");
+                break;
+            case Qt::Key_D:
+                pressedKeys.insert(23, "d");
+                break;
+            case Qt::Key_E:
+                pressedKeys.insert(24, "e");
+                break;
+            case Qt::Key_F:
+                pressedKeys.insert(25, "f");
+                break;
+            case Qt::Key_G:
+                pressedKeys.insert(26, "g");
+                break;
+            case Qt::Key_H:
+                pressedKeys.insert(27, "h");
+                break;
+            case Qt::Key_I:
+                pressedKeys.insert(28, "i");
+                break;
+            case Qt::Key_J:
+                pressedKeys.insert(29, "j");
+                break;
+            case Qt::Key_K:
+                pressedKeys.insert(30, "k");
+                break;
+            case Qt::Key_L:
+                pressedKeys.insert(31, "l");
+                break;
+            case Qt::Key_M:
+                pressedKeys.insert(32, "m");
+                break;
+            case Qt::Key_N:
+                pressedKeys.insert(33, "n");
+                break;
+            case Qt::Key_O:
+                pressedKeys.insert(34, "o");
+                break;
+            case Qt::Key_P:
+                pressedKeys.insert(35, "p");
+                break;
+            case Qt::Key_Q:
+                pressedKeys.insert(36, "q");
+                break;
+            case Qt::Key_R:
+                pressedKeys.insert(37, "r");
+                break;
+            case Qt::Key_S:
+                pressedKeys.insert(38, "s");
+                break;
+            case Qt::Key_T:
+                pressedKeys.insert(39, "t");
+                break;
+            case Qt::Key_U:
+                pressedKeys.insert(40, "u");
+                break;
+            case Qt::Key_V:
+                pressedKeys.insert(41, "v");
+                break;
+            case Qt::Key_W:
+                pressedKeys.insert(42, "w");
+                break;
+            case Qt::Key_X:
+                pressedKeys.insert(43, "x");
+                break;
+            case Qt::Key_Y:
+                pressedKeys.insert(44, "y");
+                break;
+            case Qt::Key_Z:
+                pressedKeys.insert(45, "z");
+                break;
+            case Qt::Key_0:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(46, "kp0")
+                    : pressedKeys.insert(56, "0");
+                break;
+            case Qt::Key_1:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(47, "kp1")
+                    : pressedKeys.insert(57, "1");
+                break;
+            case Qt::Key_2:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(48, "kp2")
+                    : pressedKeys.insert(58, "2");
+                break;
+            case Qt::Key_3:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(49, "kp3")
+                    : pressedKeys.insert(59, "3");
+                break;
+            case Qt::Key_4:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(50, "kp4")
+                    : pressedKeys.insert(60, "4");
+                break;
+            case Qt::Key_5:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(51, "kp5")
+                    : pressedKeys.insert(61, "5");
+                break;
+            case Qt::Key_6:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(52, "kp6")
+                    : pressedKeys.insert(62, "6");
+                break;
+            case Qt::Key_7:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(53, "kp7")
+                    : pressedKeys.insert(63, "7");
+                break;
+            case Qt::Key_8:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(54, "kp8")
+                    : pressedKeys.insert(64, "8");
+                break;
+            case Qt::Key_9:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(55, "kp9")
+                    : pressedKeys.insert(65, "9");
+                break;
+
+                // symbols
+            case Qt::Key_Asterisk:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(66, "kpasterisk")
+                    : pressedKeys.insert(74, "asterisk");
+                break;
+            case Qt::Key_Minus:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(67, "kpminus")
+                    : pressedKeys.insert(75, "minus");
+                break;
+            case Qt::Key_Equal:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(68, "kpequals")
+                    : pressedKeys.insert(76, "equals");
+                break;
+            case Qt::Key_Plus:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(69, "kpplus")
+                    : pressedKeys.insert(77, "plus");
+                break;
+            case Qt::Key_Slash:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(70, "kpslash")
+                    : pressedKeys.insert(78, "slash");
+                break;
+            case Qt::Key_Comma:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(71, "kpcomma")
+                    : pressedKeys.insert(79, "comma");
+                break;
+            case Qt::Key_Period:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(72, "kpperiod")
+                    : pressedKeys.insert(80, "period");
+                break;
+            case Qt::Key_Enter:
+                QApplication::keyboardModifiers() & Qt::KeypadModifier
+                    ? pressedKeys.insert(73, "kpenter")
+                    : pressedKeys.insert(81, "enter");
+                break;
+            case Qt::Key_QuoteLeft:
+                pressedKeys.insert(82, "grave");
+                break;
+            case Qt::Key_AsciiTilde:
+                pressedKeys.insert(83, "tilde");
+                break;
+            case Qt::Key_Exclam:
+                pressedKeys.insert(84, "exclamation");
+                break;
+            case Qt::Key_At:
+                pressedKeys.insert(85, "at");
+                break;
+            case Qt::Key_NumberSign:
+                pressedKeys.insert(86, "hash");
+                break;
+            case Qt::Key_Dollar:
+                pressedKeys.insert(87, "dollar");
+                break;
+            case Qt::Key_Percent:
+                pressedKeys.insert(88, "percent");
+                break;
+            case Qt::Key_AsciiCircum:
+                pressedKeys.insert(89, "caret");
+                break;
+            case Qt::Key_Ampersand:
+                pressedKeys.insert(90, "ampersand");
+                break;
+            case Qt::Key_ParenLeft:
+                pressedKeys.insert(91, "lparen");
+                break;
+            case Qt::Key_ParenRight:
+                pressedKeys.insert(92, "rparen");
+                break;
+            case Qt::Key_BracketLeft:
+                pressedKeys.insert(93, "lbracket");
+                break;
+            case Qt::Key_BracketRight:
+                pressedKeys.insert(94, "rbracket");
+                break;
+            case Qt::Key_BraceLeft:
+                pressedKeys.insert(95, "lbrace");
+                break;
+            case Qt::Key_BraceRight:
+                pressedKeys.insert(96, "rbrace");
+                break;
+            case Qt::Key_Underscore:
+                pressedKeys.insert(97, "underscore");
+                break;
+            case Qt::Key_Backslash:
+                pressedKeys.insert(98, "backslash");
+                break;
+            case Qt::Key_Bar:
+                pressedKeys.insert(99, "pipe");
+                break;
+            case Qt::Key_Semicolon:
+                pressedKeys.insert(100, "semicolon");
+                break;
+            case Qt::Key_Colon:
+                pressedKeys.insert(101, "colon");
+                break;
+            case Qt::Key_Apostrophe:
+                pressedKeys.insert(102, "apostrophe");
+                break;
+            case Qt::Key_QuoteDbl:
+                pressedKeys.insert(103, "quote");
+                break;
+            case Qt::Key_Less:
+                pressedKeys.insert(104, "less");
+                break;
+            case Qt::Key_Greater:
+                pressedKeys.insert(105, "greater");
+                break;
+            case Qt::Key_Question:
+                pressedKeys.insert(106, "question");
+                break;
+
+                // special keys
+            case Qt::Key_Print:
+                pressedKeys.insert(107, "printscreen");
+                break;
+            case Qt::Key_ScrollLock:
+                pressedKeys.insert(108, "scrolllock");
+                break;
+            case Qt::Key_Pause:
+                pressedKeys.insert(109, "pausebreak");
+                break;
+            case Qt::Key_Backspace:
+                pressedKeys.insert(110, "backspace");
+                break;
+            case Qt::Key_Insert:
+                pressedKeys.insert(111, "insert");
+                break;
+            case Qt::Key_Delete:
+                pressedKeys.insert(112, "delete");
+                break;
+            case Qt::Key_Home:
+                pressedKeys.insert(113, "home");
+                break;
+            case Qt::Key_End:
+                pressedKeys.insert(114, "end");
+                break;
+            case Qt::Key_PageUp:
+                pressedKeys.insert(115, "pgup");
+                break;
+            case Qt::Key_PageDown:
+                pressedKeys.insert(116, "pgdown");
+                break;
+            case Qt::Key_Tab:
+                pressedKeys.insert(117, "tab");
+                break;
+            case Qt::Key_CapsLock:
+                pressedKeys.insert(118, "capslock");
+                break;
+            case Qt::Key_Return:
+                pressedKeys.insert(119, "enter");
+                break;
             case Qt::Key_Space:
-                pressedKeys.insert("space");
+                pressedKeys.insert(120, "space");
                 break;
             case Qt::Key_Up:
-                pressedKeys.insert("up");
+                pressedKeys.insert(121, "up");
                 break;
             case Qt::Key_Down:
-                pressedKeys.insert("down");
+                pressedKeys.insert(122, "down");
                 break;
             case Qt::Key_Left:
-                pressedKeys.insert("left");
+                pressedKeys.insert(123, "left");
                 break;
             case Qt::Key_Right:
-                pressedKeys.insert("right");
+                pressedKeys.insert(124, "right");
                 break;
 
-            // cancel mapping
+                // cancel mapping
             case Qt::Key_Escape:
-                pressedKeys.insert("unmapped");
+                SetMapping("unmapped");
                 break;
-
-            // default case
             default:
                 break;
-                // bottom text
             }
             return true;
         }
@@ -939,19 +965,19 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
             if (pressedKeys.size() < 3) {
                 switch (mouseEvent->button()) {
                 case Qt::LeftButton:
-                    pressedKeys.insert("leftbutton");
+                    pressedKeys.insert(125, "leftbutton");
                     break;
                 case Qt::RightButton:
-                    pressedKeys.insert("rightbutton");
+                    pressedKeys.insert(127, "rightbutton");
                     break;
                 case Qt::MiddleButton:
-                    pressedKeys.insert("middlebutton");
+                    pressedKeys.insert(126, "middlebutton");
                     break;
                 case Qt::XButton1:
-                    pressedKeys.insert("sidebuttonback");
+                    pressedKeys.insert(128, "sidebuttonback");
                     break;
                 case Qt::XButton2:
-                    pressedKeys.insert("sidebuttonforward");
+                    pressedKeys.insert(129, "sidebuttonforward");
                     break;
 
                     // default case
@@ -973,7 +999,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 if (wheelEvent->angleDelta().y() > 5) {
                     if (std::find(AxisList.begin(), AxisList.end(), MappingButton) ==
                         AxisList.end()) {
-                        pressedKeys.insert("mousewheelup");
+                        pressedKeys.insert(130, "mousewheelup");
                         if (QApplication::keyboardModifiers() == Qt::NoModifier)
                             emit PushKBMEvent();
                     } else {
@@ -984,7 +1010,7 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 } else if (wheelEvent->angleDelta().y() < -5) {
                     if (std::find(AxisList.begin(), AxisList.end(), MappingButton) ==
                         AxisList.end()) {
-                        pressedKeys.insert("mousewheeldown");
+                        pressedKeys.insert(131, "mousewheeldown");
                         if (QApplication::keyboardModifiers() == Qt::NoModifier)
                             emit PushKBMEvent();
                     } else {
@@ -997,8 +1023,9 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                     if (std::find(AxisList.begin(), AxisList.end(), MappingButton) ==
                         AxisList.end()) {
                         // QT changes scrolling to horizontal for all widgets with the alt modifier
-                        pressedKeys.insert(
-                            GetModifiedButton(Qt::AltModifier, "mousewheelup", "mousewheelright"));
+                        QApplication::keyboardModifiers() & Qt::AltModifier
+                            ? pressedKeys.insert(130, "mousewheelup")
+                            : pressedKeys.insert(133, "mousewheelright");
                         if (QApplication::keyboardModifiers() == Qt::NoModifier)
                             emit PushKBMEvent();
                     } else {
@@ -1009,8 +1036,9 @@ bool KBMSettings::eventFilter(QObject* obj, QEvent* event) {
                 } else if (wheelEvent->angleDelta().x() < -5) {
                     if (std::find(AxisList.begin(), AxisList.end(), MappingButton) ==
                         AxisList.end()) {
-                        pressedKeys.insert(
-                            GetModifiedButton(Qt::AltModifier, "mousewheeldown", "mousewheelleft"));
+                        QApplication::keyboardModifiers() & Qt::AltModifier
+                            ? pressedKeys.insert(131, "mousewheeldown")
+                            : pressedKeys.insert(132, "mousewheelleft");
                         if (QApplication::keyboardModifiers() == Qt::NoModifier)
                             emit PushKBMEvent();
                     } else {
