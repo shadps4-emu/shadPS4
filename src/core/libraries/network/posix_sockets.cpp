@@ -205,8 +205,8 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     return static_cast<int>(bytesSent);
 #else
     int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
-#endif
     return ConvertReturnErrorCode(res);
+#endif
 }
 
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
@@ -243,8 +243,8 @@ int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     return static_cast<int>(bytesReceived);
 #else
     int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
-#endif
     return ConvertReturnErrorCode(res);
+#endif
 }
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
