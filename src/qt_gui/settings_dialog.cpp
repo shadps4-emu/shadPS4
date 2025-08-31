@@ -458,7 +458,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         const toml::value data = toml::parse(userdir / "config.toml");
     } catch (std::exception& ex) {
-        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        fmt::print("Got exception trying to load config file. Exception: {}n", ex.what());
         return;
     }
 
@@ -778,7 +778,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "separateLogFilesCheckbox") {
         text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");
     } else if (elementName == "enableLoggingCheckBox") {
-        text = tr("Enable Logging:\\nEnables logging.\\Do not change this if you do not know what you're doing!\\When asking for help, make sure this setting is ENABLED."); }
+        text = tr("Enable Logging:\\nEnables logging.\\nDo not change this if you do not know what you're doing!\\nWhen asking for help, make sure this setting is ENABLED."); }
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
