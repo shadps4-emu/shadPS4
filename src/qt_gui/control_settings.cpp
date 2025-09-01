@@ -756,6 +756,8 @@ void ControlSettings::DisableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->setEnabled(false);
 }
 
 void ControlSettings::EnableMappingButtons() {
@@ -766,6 +768,8 @@ void ControlSettings::EnableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->setEnabled(true);
 }
 
 void ControlSettings::ConnectAxisInputs(QPushButton*& button) {

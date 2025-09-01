@@ -70,12 +70,16 @@ void hotkeys::DisableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->setEnabled(false);
 }
 
 void hotkeys::EnableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->setEnabled(true);
 }
 
 void hotkeys::SaveHotkeys(bool CloseOnSave) {
