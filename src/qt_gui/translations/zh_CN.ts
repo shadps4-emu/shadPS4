@@ -2188,11 +2188,11 @@
     </message>
     <message>
       <source>Enable Logging</source>
-      <translation type="unfinished">Enable Logging</translation>
+      <translation>启用日志记录</translation>
     </message>
     <message>
       <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
-      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+      <translation>启用日志记录：\n开启日志记录功能。\n若不了解相关操作，请勿修改此设置！\n寻求帮助时，请确保此项设置处于启用状态。</translation>
     </message>
   </context>
   <context>
