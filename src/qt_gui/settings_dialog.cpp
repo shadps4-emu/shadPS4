@@ -340,6 +340,21 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             }
         });
 
+        connect(ui->folderButton, &QPushButton::clicked, this, [this]() {
+            const auto dlc_folder_path = Config::getAddonInstallDir();
+            QString initial_path;
+            Common::FS::PathToQString(initial_path, dlc_folder_path);
+
+            QString dlc_folder_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Select the DLC folder"), initial_path);
+
+            auto file_path = Common::FS::PathFromQString(dlc_folder_path_string);
+            if (!file_path.empty()) {
+                Config::setAddonInstallDir(file_path);
+                ui->currentDLCFolder->setText(dlc_folder_path_string);
+            }
+        });
+
         connect(ui->PortableUserButton, &QPushButton::clicked, this, []() {
             QString userDir;
             Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
@@ -412,7 +427,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
 
         ui->saveDataGroupBox->installEventFilter(this);
         ui->currentSaveDataPath->installEventFilter(this);
+        ui->currentDLCFolder->installEventFilter(this);
         ui->browseButton->installEventFilter(this);
+        ui->folderButton->installEventFilter(this);
         ui->PortableUserFolderGroupBox->installEventFilter(this);
 
         // Debug
@@ -470,6 +487,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString save_data_path_string;
     Common::FS::PathToQString(save_data_path_string, save_data_path);
     ui->currentSaveDataPath->setText(save_data_path_string);
+
+    const auto dlc_folder_path = Config::getAddonInstallDir();
+    QString dlc_folder_path_string;
+    Common::FS::PathToQString(dlc_folder_path_string, dlc_folder_path);
+    ui->currentDLCFolder->setText(dlc_folder_path_string);
 
     ui->consoleLanguageComboBox->setCurrentIndex(
         std::distance(languageIndexes.begin(),
@@ -743,6 +765,13 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Remove:\\nRemove a folder from the list.");
     } else if (elementName == "PortableUserFolderGroupBox") {
         text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.");
+    }
+
+    // DLC Folder
+    if (elementName == "dlcFolderGroupBox" || elementName == "currentDLCFolder") {
+        text = tr("DLC Path:\\nThe folder where game DLC loaded from.");
+    } else if (elementName == "folderButton") {
+        text = tr("Browse:\\nBrowse for a folder to set as the DLC path.");
     }
 
     // Save Data
