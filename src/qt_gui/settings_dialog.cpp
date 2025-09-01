@@ -346,7 +346,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             Common::FS::PathToQString(initial_path, dlc_folder_path);
 
             QString dlc_folder_path_string =
-                QFileDialog::getExistingDirectory(this, tr("PLACEHOLDER"), initial_path);
+                QFileDialog::getExistingDirectory(this, tr("Select the DLC folder"), initial_path);
 
             auto file_path = Common::FS::PathFromQString(dlc_folder_path_string);
             if (!file_path.empty()) {
