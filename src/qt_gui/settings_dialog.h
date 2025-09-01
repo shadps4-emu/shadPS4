@@ -46,6 +46,8 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void setDefaultValues();
     void VolumeSliderChange(int value);
+    void LoadFsrSettings();
+    void SaveFsrSettings();
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 

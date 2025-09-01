@@ -259,7 +259,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 });
     }
 
-    // Gui TAB
+    // GUI TAB
     {
         connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
                 [this](int value) { emit BackgroundOpacityChanged(value); });
@@ -280,7 +280,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // User TAB
+    // USER TAB
     {
         connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
@@ -290,7 +290,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // Input TAB
+    // INPUT TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                 [this](s16 index) { OnCursorStateChanged(index); });
@@ -380,6 +380,12 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
     }
+
+    // GRAPHICS TAB
+    connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString RCASValue = QString::number(value / 1000.0, 'f', 3);
+        ui->RCASValue->setText(RCASValue);
+    });
 
     // Descriptions
     {
@@ -620,6 +626,8 @@ void SettingsDialog::LoadValuesFromConfig() {
         m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
     bgm_volume_backup = m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt();
     volume_slider_backup = m_gui_settings->GetValue(gui::gl_VolumeSlider).toInt();
+
+    LoadFsrSettings();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -919,6 +927,7 @@ void SettingsDialog::UpdateSettings() {
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
     Config::setVolumeSlider(ui->horizontalVolumeSlider->value());
+    SaveFsrSettings();
 }
 
 void SettingsDialog::SyncRealTimeWidgetstoConfig() {
@@ -978,4 +987,102 @@ void SettingsDialog::setDefaultValues() {
         m_gui_settings->SetValue(gui::gen_updateChannel, "Nightly");
     }
     m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
+
+    ui->FSRCheckBox->setChecked(true);
+    ui->RCASCheckBox->setChecked(true);
+    ui->RCASSlider->setValue(250);
+    SaveFsrSettings();
+}
+
+void SettingsDialog::SaveFsrSettings() {
+    std::filesystem::path DevSettingsFile =
+        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "imgui.ini";
+
+    std::ifstream file(DevSettingsFile);
+    std::string line;
+    std::vector<std::string> lines;
+    int lineCount = 0;
+
+    while (std::getline(file, line)) {
+        lineCount++;
+
+        if (line.contains("fsr_enabled")) {
+            std::string FSRVal = ui->FSRCheckBox->isChecked() ? "1" : "0";
+            line = "fsr_enabled=" + FSRVal;
+        }
+
+        if (line.contains("fsr_rcas_enabled")) {
+            std::string RCASVal = ui->RCASCheckBox->isChecked() ? "1" : "0";
+            line = "fsr_rcas_enabled=" + RCASVal;
+        }
+
+        if (line.contains("fsr_rcas_attenuation")) {
+            float RCASAtenVal = ui->RCASSlider->value() / 1000.0;
+            line = "fsr_rcas_attenuation=" + std::to_string(RCASAtenVal);
+        }
+
+        lines.push_back(line);
+    }
+    file.close();
+
+    std::ofstream output_file(DevSettingsFile);
+    for (auto const& line : lines) {
+        output_file << line << '\n';
+    }
+    output_file.close();
+}
+
+void SettingsDialog::LoadFsrSettings() {
+    std::filesystem::path DevSettingsFile =
+        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "imgui.ini";
+
+    // create DevSettingsFile if it does not exist, creating only with FSR settings works
+    if (!std::filesystem::exists(DevSettingsFile)) {
+        std::string_view default_FSR = R"([DevtoolsLayer][Options]
+fsr_enabled=1
+fsr_rcas_enabled=1
+fsr_rcas_attenuation=0.250000
+)";
+
+        std::ofstream default_FSR_stream(DevSettingsFile);
+        if (default_FSR_stream) {
+            default_FSR_stream << default_FSR;
+        }
+    }
+
+    std::fstream file(DevSettingsFile);
+    std::string line;
+    std::vector<std::string> lines;
+    int lineCount = 0;
+    int FSRVal;
+    int RCASVal;
+    float RCASAtenVal;
+
+    while (std::getline(file, line)) {
+        lineCount++;
+
+        if (line.contains("fsr_enabled")) {
+            std::string FSREnabledString(1, line.back());
+            FSRVal = std::stoi(FSREnabledString);
+        }
+
+        if (line.contains("fsr_rcas_enabled")) {
+            std::string RCASEnabledString(1, line.back());
+            RCASVal = std::stoi(RCASEnabledString);
+        }
+
+        if (line.contains("fsr_rcas_attenuation")) {
+            std::size_t equal_pos = line.find('=');
+            std::string RCASAtenString(line.substr(equal_pos + 1));
+            RCASAtenVal = std::stof(RCASAtenString);
+        }
+    }
+    file.close();
+
+    ui->FSRCheckBox->setChecked((FSRVal == 1 ? true : false));
+    ui->RCASCheckBox->setChecked((RCASVal == 1 ? true : false));
+    ui->RCASSlider->setValue(round(RCASAtenVal * 1000));
+
+    QString RCASValue = QString::number(RCASAtenVal, 'f', 3);
+    ui->RCASValue->setText(RCASValue);
 }
