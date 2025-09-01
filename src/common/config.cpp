@@ -96,6 +96,7 @@ static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isSeparateLogFilesEnabled = false;
 static bool isFpsColor = true;
+static bool logEnabled = true;
 
 // GUI
 static bool load_game_size = true;
@@ -138,6 +139,10 @@ void SetOverrideControllerColor(bool enable) {
 
 int* GetControllerCustomColor() {
     return controllerCustomColorRGB;
+}
+
+bool getLoggingEnabled() {
+    return logEnabled;
 }
 
 void SetControllerCustomColor(int r, int b, int g) {
@@ -313,6 +318,10 @@ bool fpsColor() {
     return isFpsColor;
 }
 
+bool isLoggingEnabled() {
+    return logEnabled;
+}
+
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -387,6 +396,10 @@ void setInternalScreenHeight(u32 height) {
 
 void setDebugDump(bool enable) {
     isDebugDump = enable;
+}
+
+void setLoggingEnabled(bool enable) {
+    logEnabled = enable;
 }
 
 void setCollectShaderForDebug(bool enable) {
@@ -738,6 +751,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
+        logEnabled = toml::find_or<bool>(debug, "logEnabled", logEnabled);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
@@ -893,6 +907,7 @@ void save(const std::filesystem::path& path) {
     data["Debug"]["CollectShader"] = isShaderDebug;
     data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
+    data["Debug"]["logEnabled"] = logEnabled;
     data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
@@ -1005,6 +1020,7 @@ void setDefaultValues() {
     isShaderDebug = false;
     isSeparateLogFilesEnabled = false;
     isFpsColor = true;
+    logEnabled = true;
 
     // GUI
     load_game_size = true;
