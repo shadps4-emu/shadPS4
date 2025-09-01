@@ -355,7 +355,8 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
 #endif
             val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
             optlen = sizeof(timeout);
-            return ConvertReturnErrorCode(setsockopt(sock, level, optname_nat, val.data(), optlen));
+            return ConvertReturnErrorCode(
+                setsockopt(sock, native_level, optname_nat, val.data(), optlen));
         }
         case ORBIS_NET_SO_ONESBCAST: {
 
@@ -365,7 +366,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             }
             memcpy(&sockopt_so_onesbcast, optval, optlen);
             return ConvertReturnErrorCode(
-                setsockopt(sock, level, SO_BROADCAST, (const char*)optval, optlen));
+                setsockopt(sock, native_level, SO_BROADCAST, (const char*)optval, optlen));
         }
         case ORBIS_NET_SO_TYPE:
         case ORBIS_NET_SO_ERROR: {
