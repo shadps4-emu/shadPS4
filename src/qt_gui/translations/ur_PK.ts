@@ -315,31 +315,31 @@
     </message>
     <message>
       <source>Update</source>
-      <translation type="unfinished">Update</translation>
+      <translation>اپ ڈیٹ</translation>
     </message>
     <message>
       <source>No</source>
-      <translation type="unfinished">No</translation>
+      <translation>نہیں</translation>
     </message>
     <message>
       <source>Hide Changelog</source>
-      <translation type="unfinished">Hide Changelog</translation>
+      <translation>تبدیلیوں کی فہرست چھپائیں</translation>
     </message>
     <message>
       <source>Changes</source>
-      <translation type="unfinished">Changes</translation>
+      <translation>تبدیلیاں</translation>
     </message>
     <message>
       <source>Network error occurred while trying to access the URL</source>
-      <translation type="unfinished">Network error occurred while trying to access the URL</translation>
+      <translation>URL تک رسائی کی کوشش کے دوران نیٹ ورک کی خرابی پیش آ گئی</translation>
     </message>
     <message>
       <source>Download Complete</source>
-      <translation type="unfinished">Download Complete</translation>
+      <translation>ڈاؤن لوڈ مکمل ہو گئی</translation>
     </message>
     <message>
       <source>The update has been downloaded, press OK to install.</source>
-      <translation type="unfinished">The update has been downloaded, press OK to install.</translation>
+      <translation>اپ ڈیٹ ڈاؤن لوڈ ہو گئی ہے، انسٹال کرنے کے لیے OK دبائیں۔</translation>
     </message>
     <message>
       <source>Failed to save the update file at</source>
@@ -347,7 +347,7 @@
     </message>
     <message>
       <source>Starting Update...</source>
-      <translation type="unfinished">Starting Update...</translation>
+      <translation>اپ ڈیٹ شروع ہو رہی ہے...</translation>
     </message>
     <message>
       <source>Failed to create the update script file</source>
@@ -362,11 +362,11 @@
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>کینسل کریں</translation>
     </message>
     <message>
       <source>Loading...</source>
-      <translation type="unfinished">Loading...</translation>
+      <translation>لوڈ ہو رہا ہے</translation>
     </message>
     <message>
       <source>Error</source>
@@ -386,7 +386,7 @@
     </message>
     <message>
       <source>Nothing</source>
-      <translation type="unfinished">Nothing</translation>
+      <translation>کچھ نہیں</translation>
     </message>
     <message>
       <source>Boots</source>
@@ -394,15 +394,15 @@
     </message>
     <message>
       <source>Menus</source>
-      <translation type="unfinished">Menus</translation>
+      <translation>مینوز</translation>
     </message>
     <message>
       <source>Ingame</source>
-      <translation type="unfinished">Ingame</translation>
+      <translation>گیم کے اندر</translation>
     </message>
     <message>
       <source>Playable</source>
-      <translation type="unfinished">Playable</translation>
+      <translation>کھیلنے کے قابل</translation>
     </message>
   </context>
   <context>
