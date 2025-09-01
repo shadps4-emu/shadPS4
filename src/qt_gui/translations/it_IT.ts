@@ -2188,11 +2188,11 @@
     </message>
     <message>
       <source>Enable Logging</source>
-      <translation type="unfinished">Enable Logging</translation>
+      <translation>Abilita Logging</translation>
     </message>
     <message>
       <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
-      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+      <translation>Abilita Logginge:\nAbilita il log.\nNon cambiarlo se non sai cosa stai facendo!\nQuando chiedi supporto, assicurati che questa impostazione sia abilitata.</translation>
     </message>
   </context>
   <context>
