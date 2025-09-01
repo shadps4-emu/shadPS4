@@ -19,7 +19,7 @@ public:
     QVector<GameInfo> m_games;
     QVector<GameInfo> m_games_backup;
 
-    static void SceUpdateChecker(std::string sceItem, std::filesystem::path& gameItem, 
+    static void SceUpdateChecker(std::string sceItem, std::filesystem::path& gameItem,
                                  std::filesystem::path& update_folder,
                                  std::filesystem::path& patch_folder) {
         if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
