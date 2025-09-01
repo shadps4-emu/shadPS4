@@ -1097,6 +1097,40 @@
                 </widget>
                </item>
                <item>
+                <widget class="QGroupBox" name="presentModeGroupBox">
+                 <property name="title">
+                  <string>Present Mode</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="presentModeLayout">
+                  <item>
+                   <widget class="QComboBox" name="presentModeComboBox">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <item>
+                     <property name="text">
+                      <string>Mailbox (Vsync)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Fifo (Vsync)</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Immediate (No Vsync)</string>
+                     </property>
+                    </item>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
                 <layout class="QHBoxLayout" name="windowSizeLayout">
                  <item>
                   <widget class="QGroupBox" name="windowSizeGroupBox">

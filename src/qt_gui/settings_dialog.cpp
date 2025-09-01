@@ -67,6 +67,7 @@ const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 2
 QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
 QMap<QString, QString> screenModeMap;
+QMap<QString, QString> presentModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 QMap<QString, QString> micMap;
 
@@ -93,6 +94,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     screenModeMap = {{tr("Fullscreen (Borderless)"), "Fullscreen (Borderless)"},
                      {tr("Windowed"), "Windowed"},
                      {tr("Fullscreen"), "Fullscreen"}};
+    presentModeMap = {{tr("Mailbox (Vsync)"), "Mailbox"},
+                      {tr("Fifo (Vsync)"), "Fifo"},
+                      {tr("Immediate (No Vsync)"), "Immediate"}};
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
@@ -540,6 +544,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString translatedText_FullscreenMode =
         screenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
     ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
+    QString translatedText_PresentMode =
+        presentModeMap.key(QString::fromStdString(Config::getPresentMode()));
+    ui->presentModeComboBox->setCurrentText(translatedText_PresentMode);
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
     QString translatedText_logType = logTypeMap.key(QString::fromStdString(Config::getLogType()));
@@ -834,6 +841,8 @@ void SettingsDialog::UpdateSettings() {
                             "Windowed");
     Config::setFullscreenMode(
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
+    Config::setPresentMode(
+        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
     Config::setBackgroundControllerInput(ui->backgroundControllerCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
