@@ -1845,33 +1845,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="saveDataGroupBox">
-          <property name="title">
-           <string>Save Data Path</string>
-          </property>
-          <layout class="QVBoxLayout" name="saveDataLayout">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <widget class="QLineEdit" name="currentSaveDataPath">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="browseButton">
-               <property name="text">
-                <string>Browse</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
          <widget class="QGroupBox" name="dlcFolderGroupBox_2">
           <property name="title">
            <string>DLC Folder</string>
@@ -1888,6 +1861,33 @@
              </item>
              <item>
               <widget class="QPushButton" name="folderButton">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="saveDataGroupBox">
+          <property name="title">
+           <string>Save Data Path</string>
+          </property>
+          <layout class="QVBoxLayout" name="saveDataLayout">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QLineEdit" name="currentSaveDataPath">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="browseButton">
                <property name="text">
                 <string>Browse</string>
                </property>
