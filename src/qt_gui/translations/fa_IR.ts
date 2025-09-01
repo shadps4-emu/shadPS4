@@ -1170,7 +1170,7 @@
     </message>
     <message>
       <source>Mouse Movement Parameters</source>
-      <translation/>
+      <translation type="unfinished">Mouse Movement Parameters</translation>
     </message>
     <message>
       <source>note: click Help Button/Special Keybindings for more information</source>
@@ -1792,7 +1792,7 @@
     </message>
     <message>
       <source>Title Music</source>
-      <translation/>
+      <translation type="unfinished">Title Music</translation>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
