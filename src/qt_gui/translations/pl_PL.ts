@@ -2186,6 +2186,14 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos;. Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation type="unfinished">Enable Logging</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
