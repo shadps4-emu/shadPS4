@@ -428,6 +428,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
         ui->separateLogFilesCheckbox->installEventFilter(this);
+        ui->enableLoggingCheckBox->installEventFilter(this);
     }
 }
 
@@ -547,6 +548,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
+    ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
     ui->readbackLinearImagesCheckBox->setChecked(
         toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->enableCompatibilityCheckBox->setChecked(
@@ -774,7 +776,9 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "readbackLinearImagesCheckBox") {
         text = tr("Enable Readback Linear Images:\\nEnables async downloading of GPU modified linear images.\\nMight fix issues in some games.");
     } else if (elementName == "separateLogFilesCheckbox") {
-        text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");}
+        text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");
+    } else if (elementName == "enableLoggingCheckBox") {
+        text = tr("Enable Logging:\\nEnables logging.\\nDo not change this if you do not know what you're doing!\\nWhen asking for help, make sure this setting is ENABLED."); }
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
@@ -816,6 +820,7 @@ void SettingsDialog::UpdateSettings() {
         Config::setSideTrophy("bottom");
     }
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
+    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString());

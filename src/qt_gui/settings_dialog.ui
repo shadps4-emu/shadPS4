@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>679</width>
+         <height>420</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -369,8 +369,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>400</width>
-                  <height>68</height>
+                  <width>149</width>
+                  <height>69</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -538,8 +538,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>626</width>
+         <height>370</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -987,8 +987,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>553</width>
+         <height>244</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1282,8 +1282,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>485</width>
+         <height>348</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1524,8 +1524,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>515</width>
+         <height>228</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1796,8 +1796,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>421</width>
+         <height>319</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1938,8 +1938,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>537</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
@@ -2013,6 +2013,20 @@
                <string>Logger</string>
               </property>
               <layout class="QVBoxLayout" name="loggerLayout">
+               <item>
+                <widget class="QCheckBox" name="enableLoggingCheckBox">
+                 <property name="text">
+                  <string>Enable Logging</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="separateLogFilesCheckbox">
+                 <property name="text">
+                  <string>Separate Log Files</string>
+                 </property>
+                </widget>
+               </item>
                <item>
                 <widget class="QWidget" name="LogTypeWidget" native="true">
                  <layout class="QVBoxLayout" name="LogTypeLayout">
@@ -2143,13 +2157,6 @@
               <widget class="QCheckBox" name="guestMarkersCheckBox">
                <property name="text">
                 <string>Guest Debug Markers</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="separateLogFilesCheckbox">
-               <property name="text">
-                <string>Separate Log Files</string>
                </property>
               </widget>
              </item>
