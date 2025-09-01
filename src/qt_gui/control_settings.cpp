@@ -757,7 +757,8 @@ void ControlSettings::DisableMappingButtons() {
         i->setEnabled(false);
     }
 
-    ui->buttonBox->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
 }
 
 void ControlSettings::EnableMappingButtons() {
@@ -769,7 +770,8 @@ void ControlSettings::EnableMappingButtons() {
         i->setEnabled(true);
     }
 
-    ui->buttonBox->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
 }
 
 void ControlSettings::ConnectAxisInputs(QPushButton*& button) {
