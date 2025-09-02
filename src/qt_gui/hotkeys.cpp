@@ -70,12 +70,18 @@ void hotkeys::DisableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
 }
 
 void hotkeys::EnableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
 }
 
 void hotkeys::SaveHotkeys(bool CloseOnSave) {
