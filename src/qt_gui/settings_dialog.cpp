@@ -526,9 +526,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
-    ui->FSRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "FsrEnabled", true));
-    ui->RCASCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "RcasEnabled", true));
-    ui->RCASSlider->setValue(toml::find_or<int>(data, "GPU", "RcasAttenuation", 500));
+    ui->FSRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "fsrEnabled", true));
+    ui->RCASCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "rcasEnabled", true));
+    ui->RCASSlider->setValue(toml::find_or<int>(data, "GPU", "rcasAttenuation", 500));
     ui->RCASValue->setText(QString::number(ui->RCASSlider->value() / 1000.0, 'f', 3));
 
     ui->playBGMCheckBox->setChecked(m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool());

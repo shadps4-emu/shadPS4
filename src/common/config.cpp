@@ -80,9 +80,9 @@ static u32 vblankDivider = 1;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
 static bool isHDRAllowed = false;
-static bool FsrEnabled = true;
-static bool RcasEnabled = true;
-static int RcasAttenuation = 250;
+static bool fsrEnabled = true;
+static bool rcasEnabled = true;
+static int rcasAttenuation = 250;
 
 // Vulkan
 static s32 gpuId = -1;
@@ -647,27 +647,27 @@ void setBackgroundControllerInput(bool enable) {
 }
 
 bool getFsrEnabled() {
-    return FsrEnabled;
+    return fsrEnabled;
 }
 
 void setFsrEnabled(bool enable) {
-    FsrEnabled = enable;
+    fsrEnabled = enable;
 }
 
 bool getRcasEnabled() {
-    return RcasEnabled;
+    return rcasEnabled;
 }
 
 void setRcasEnabled(bool enable) {
-    RcasEnabled = enable;
+    rcasEnabled = enable;
 }
 
 int getRcasAttenuation() {
-    return RcasAttenuation;
+    return rcasAttenuation;
 }
 
 void setRcasAttenuation(int value) {
-    RcasAttenuation = value;
+    rcasAttenuation = value;
 }
 
 void load(const std::filesystem::path& path) {
@@ -754,9 +754,9 @@ void load(const std::filesystem::path& path) {
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
-        FsrEnabled = toml::find_or<bool>(gpu, "FsrEnabled", FsrEnabled);
-        RcasEnabled = toml::find_or<bool>(gpu, "RcasEnabled", RcasEnabled);
-        RcasAttenuation = toml::find_or<int>(gpu, "RcasAttenuation", RcasAttenuation);
+        fsrEnabled = toml::find_or<bool>(gpu, "fsrEnabled", fsrEnabled);
+        rcasEnabled = toml::find_or<bool>(gpu, "rcasEnabled", rcasEnabled);
+        rcasAttenuation = toml::find_or<int>(gpu, "rcasAttenuation", rcasAttenuation);
     }
 
     if (data.contains("Vulkan")) {
@@ -925,9 +925,9 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["Fullscreen"] = isFullscreen;
     data["GPU"]["FullscreenMode"] = fullscreenMode;
     data["GPU"]["allowHDR"] = isHDRAllowed;
-    data["GPU"]["FsrEnabled"] = FsrEnabled;
-    data["GPU"]["RcasEnabled"] = RcasEnabled;
-    data["GPU"]["RcasAttenuation"] = RcasAttenuation;
+    data["GPU"]["fsrEnabled"] = fsrEnabled;
+    data["GPU"]["rcasEnabled"] = rcasEnabled;
+    data["GPU"]["rcasAttenuation"] = rcasAttenuation;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
@@ -1037,9 +1037,9 @@ void setDefaultValues() {
     isFullscreen = false;
     fullscreenMode = "Windowed";
     isHDRAllowed = false;
-    FsrEnabled = true;
-    RcasEnabled = true;
-    RcasAttenuation = 250;
+    fsrEnabled = true;
+    rcasEnabled = true;
+    rcasAttenuation = 250;
 
     // Vulkan
     gpuId = -1;
