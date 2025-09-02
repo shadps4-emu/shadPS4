@@ -47,8 +47,7 @@ public:
         game_update_path += "-UPDATE";
         std::filesystem::path game_patch_path = filePath;
         game_patch_path += "-patch";
-        SceUpdateChecker("param.sfo", param_sfo_path, game_update_path, game_patch_path,
-                         game.path);
+        SceUpdateChecker("param.sfo", param_sfo_path, game_update_path, game_patch_path, game.path);
 
         PSF psf;
         if (psf.Open(param_sfo_path)) {
