@@ -113,9 +113,9 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
     case Opcode::BUFFER_ATOMIC_FMIN:
-        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
-        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -399,6 +399,8 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
             return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::F32>) {
+            return ir.GetVectorReg<Shader::IR::F32>(vdata);
         } else if constexpr (std::is_same_v<T, IR::U64>) {
             return ir.PackUint2x32(
                 ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
@@ -449,7 +451,11 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     }();
 
     if (mubuf.glc) {
-        ir.SetVectorReg(vdata, IR::U32{original_val});
+        if constexpr (std::is_same_v<T, IR::U64>) {
+            UNREACHABLE();
+        } else {
+            ir.SetVectorReg(vdata, T{original_val});
+        }
     }
 }
 
