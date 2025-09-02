@@ -396,11 +396,20 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
         });
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
+        connect(ui->FSRCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::stateChanged, this, [this](int state)) {
+            presenter->GetFsrSettingsRef().use_rcas = state;
+        });
+#else
         connect(ui->FSRCheckBox, &QCheckBox::checkStateChanged, this,
                 [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().enable = state; });
 
         connect(ui->RCASCheckBox, &QCheckBox::checkStateChanged, this,
                 [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+#endif
     }
 
     // Descriptions
@@ -994,10 +1003,12 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
 
-    presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
-    presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
-    presenter->GetFsrSettingsRef().rcas_attenuation =
-        static_cast<float>(Config::getRcasAttenuation() / 1000.f);
+    if (GameRunning) {
+        presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
+        presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
+        presenter->GetFsrSettingsRef().rcas_attenuation =
+            static_cast<float>(Config::getRcasAttenuation() / 1000.f);
+    }
 }
 void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
