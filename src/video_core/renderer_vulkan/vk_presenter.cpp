@@ -129,10 +129,9 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         free_queue.push(&frame);
     }
 
-    GetFsrSettingsRef().enable = Config::getFsrEnabled();
-    GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
-    GetFsrSettingsRef().rcas_attenuation =
-        static_cast<float>(Config::getRcasAttenuation() / 1000.f);
+    fsr_settings.enable = Config::getFsrEnabled();
+    fsr_settings.use_rcas = Config::getRcasEnabled();
+    fsr_settings.rcas_attenuation = static_cast<float>(Config::getRcasAttenuation() / 1000.f);
 
     fsr_pass.Create(device, instance.GetAllocator(), num_images);
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
