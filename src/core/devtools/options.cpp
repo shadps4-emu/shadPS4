@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <imgui.h>
-#include "common/config.h"
 
 #include "video_core/renderer_vulkan/vk_presenter.h"
 

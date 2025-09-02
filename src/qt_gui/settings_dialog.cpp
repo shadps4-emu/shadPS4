@@ -29,6 +29,9 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 QStringList languageNames = {"Arabic",
                              "Czech",
@@ -78,8 +81,9 @@ static std::vector<QString> m_physical_devices;
 
 SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                               QWidget* parent)
-    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)) {
+                               bool isGameRunning, QWidget* parent)
+    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)),
+      GameRunning(isGameRunning) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
@@ -386,6 +390,18 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         QString RCASValue = QString::number(value / 1000.0, 'f', 3);
         ui->RCASValue->setText(RCASValue);
     });
+
+    if (GameRunning) {
+        connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+            presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
+        });
+
+        connect(ui->FSRCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+    }
 
     // Descriptions
     {
@@ -879,8 +895,8 @@ void SettingsDialog::UpdateSettings() {
     Config::setVblankDiv(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
-    Config::setFsrEnabled(ui->RCASCheckBox->isChecked());
-    Config::setRcasEnabled(ui->FSRCheckBox->isChecked());
+    Config::setFsrEnabled(ui->FSRCheckBox->isChecked());
+    Config::setRcasEnabled(ui->RCASCheckBox->isChecked());
     Config::setRcasAttenuation(ui->RCASSlider->value());
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
@@ -977,6 +993,11 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
+
+    presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
+    presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
+    presenter->GetFsrSettingsRef().rcas_attenuation =
+        static_cast<float>(Config::getRcasAttenuation() / 1000.f);
 }
 void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
