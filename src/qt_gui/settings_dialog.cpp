@@ -29,6 +29,9 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 QStringList languageNames = {"Arabic",
                              "Czech",
@@ -263,7 +266,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 });
     }
 
-    // Gui TAB
+    // GUI TAB
     {
         connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
                 [this](int value) { emit BackgroundOpacityChanged(value); });
@@ -284,7 +287,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // User TAB
+    // USER TAB
     {
         connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
@@ -294,7 +297,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // Input TAB
+    // INPUT TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                 [this](s16 index) { OnCursorStateChanged(index); });
@@ -383,6 +386,32 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                       Common::FS::GetUserPath(Common::FS::PathType::LogDir));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
+    }
+
+    // GRAPHICS TAB
+    connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString RCASValue = QString::number(value / 1000.0, 'f', 3);
+        ui->RCASValue->setText(RCASValue);
+    });
+
+    if (presenter) {
+        connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+            presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
+        });
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
+        connect(ui->FSRCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+#else
+        connect(ui->FSRCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+#endif
     }
 
     // Descriptions
@@ -525,6 +554,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
+    ui->FSRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "fsrEnabled", true));
+    ui->RCASCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "rcasEnabled", true));
+    ui->RCASSlider->setValue(toml::find_or<int>(data, "GPU", "rcasAttenuation", 500));
+    ui->RCASValue->setText(QString::number(ui->RCASSlider->value() / 1000.0, 'f', 3));
+
     ui->playBGMCheckBox->setChecked(m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool());
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
@@ -883,6 +917,9 @@ void SettingsDialog::UpdateSettings() {
     Config::setVblankDiv(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
+    Config::setFsrEnabled(ui->FSRCheckBox->isChecked());
+    Config::setRcasEnabled(ui->RCASCheckBox->isChecked());
+    Config::setRcasAttenuation(ui->RCASSlider->value());
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
@@ -977,6 +1014,13 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         }
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
+    }
+
+    if (presenter) {
+        presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
+        presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
+        presenter->GetFsrSettingsRef().rcas_attenuation =
+            static_cast<float>(Config::getRcasAttenuation() / 1000.f);
     }
 }
 void SettingsDialog::setDefaultValues() {

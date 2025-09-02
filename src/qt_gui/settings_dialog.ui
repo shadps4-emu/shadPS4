@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>5</number>
+      <number>2</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -452,8 +452,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>414</width>
-                  <height>69</height>
+                  <width>402</width>
+                  <height>68</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -538,8 +538,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -987,8 +987,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1272,6 +1272,75 @@
              <number>12</number>
             </property>
             <item>
+             <widget class="QGroupBox" name="FSRGroupBox">
+              <property name="title">
+               <string>FSR Settings</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_5">
+               <item>
+                <widget class="QCheckBox" name="FSRCheckBox">
+                 <property name="text">
+                  <string>Enable FSR</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="RCASCheckBox">
+                 <property name="text">
+                  <string>Enable RCAS (sharpening)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <item>
+                  <widget class="QLabel" name="RCASAtenLabel">
+                   <property name="font">
+                    <font>
+                     <pointsize>9</pointsize>
+                     <bold>false</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>RCAS Attenuation:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="RCASValue">
+                   <property name="font">
+                    <font>
+                     <pointsize>9</pointsize>
+                     <bold>false</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>0.250</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QSlider" name="RCASSlider">
+                 <property name="maximum">
+                  <number>3000</number>
+                 </property>
+                 <property name="value">
+                  <number>250</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Orientation::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
              <spacer name="AdvancedSpacer">
               <property name="orientation">
                <enum>Qt::Orientation::Vertical</enum>
@@ -1316,8 +1385,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1558,8 +1627,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1830,8 +1899,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -1999,8 +2068,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>537</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">

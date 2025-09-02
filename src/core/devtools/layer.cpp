@@ -104,6 +104,16 @@ void L::DrawMenuBar() {
                     EndDisabled();
                 }
                 EndDisabled();
+
+                if (Button("Save")) {
+                    Config::setFsrEnabled(fsr.enable);
+                    Config::setRcasEnabled(fsr.use_rcas);
+                    Config::setRcasAttenuation(static_cast<int>(fsr.rcas_attenuation * 1000));
+                    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
+                                 "config.toml");
+                    CloseCurrentPopup();
+                }
+
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
