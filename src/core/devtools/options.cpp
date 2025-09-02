@@ -31,11 +31,6 @@ void LoadOptionsConfig(const char* line) {
         Options.frame_dump_render_on_collapse = i != 0;
         return;
     }
-
-    presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
-    presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
-    presenter->GetFsrSettingsRef().rcas_attenuation =
-        static_cast<float>(Config::getRcasAttenuation() / 1000.f);
 }
 
 void SerializeOptionsConfig(ImGuiTextBuffer* buf) {
