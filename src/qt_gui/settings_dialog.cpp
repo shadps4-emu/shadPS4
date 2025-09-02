@@ -400,9 +400,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         connect(ui->FSRCheckBox, &QCheckBox::stateChanged, this,
                 [this](int state) { presenter->GetFsrSettingsRef().enable = state; });
 
-        connect(ui->RCASCheckBox, &QCheckBox::stateChanged, this, [this](int state)) {
-            presenter->GetFsrSettingsRef().use_rcas = state;
-        });
+        connect(ui->RCASCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().use_rcas = state; });
 #else
         connect(ui->FSRCheckBox, &QCheckBox::checkStateChanged, this,
                 [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().enable = state; });
