@@ -2196,39 +2196,39 @@
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>Modalità Presentazione</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
-      <translation type="unfinished">Mailbox (Vsync)</translation>
+      <translation>Mailbox (Vsync)</translation>
     </message>
     <message>
       <source>Fifo (Vsync)</source>
-      <translation type="unfinished">Fifo (Vsync)</translation>
+      <translation>Fifo (Vsync)</translation>
     </message>
     <message>
       <source>Immediate (No Vsync)</source>
-      <translation type="unfinished">Immediate (No Vsync)</translation>
+      <translation>Immediato (Vsync Disabilitato)</translation>
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation type="unfinished">DLC Folder</translation>
+      <translation>Cartella DLC</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
-      <translation type="unfinished">Select the DLC folder</translation>
+      <translation>Seleziona la cartella DLC</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>Modalità presentazione:\nConfigura come sarà presentato l'output video a schermo.\n\nMailbox: i frame si sincronizzano con la frequenza di aggiornamento dello schermo. I nuovi frame sostituiranno tutti i frame in sospeso. Riduce la latenza, ma può saltare frame se l'esecuzione del rendering è lenta.\nFifo: i frame si sincronizzano con la frequenza di aggiornamento del tuo schermo. I nuovi frame saranno accodati dietro i frame in sospeso. Assicura che tutti i fotogrammi siano presentati, ma potrebbe aumentare la latenza.\nImmediato: i fotogrammi sono immediatamente presentati sullo schermo quando sono pronti. Può causare tearing.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
-      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+      <translation>Percorso DLC:\nLa cartella da cui sono caricati i dati DLC.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+      <translation>Esplora:\nEsplora una cartella da impostare come percorso dati DLC.</translation>
     </message>
   </context>
   <context>
