@@ -23,7 +23,7 @@ class SettingsDialog : public QDialog {
 public:
     explicit SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                             std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                            bool isGameRunning, QWidget* parent = nullptr);
+                            QWidget* parent = nullptr);
     ~SettingsDialog();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -54,7 +54,6 @@ private:
     QString defaultTextEdit;
 
     int initialHeight;
-    bool GameRunning;
     bool is_saving = false;
     std::shared_ptr<gui_settings> m_gui_settings;
 };

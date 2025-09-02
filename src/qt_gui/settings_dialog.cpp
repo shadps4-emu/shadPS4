@@ -81,9 +81,8 @@ static std::vector<QString> m_physical_devices;
 
 SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                               bool isGameRunning, QWidget* parent)
-    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)),
-      GameRunning(isGameRunning) {
+                               QWidget* parent)
+    : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)) {
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
@@ -391,7 +390,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->RCASValue->setText(RCASValue);
     });
 
-    if (GameRunning) {
+    if (presenter) {
         connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
             presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
         });
@@ -1002,7 +1001,7 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         Config::setAllGameInstallDirs(settings_install_dirs_config);
     }
 
-    if (GameRunning) {
+    if (presenter) {
         presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
         presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
         presenter->GetFsrSettingsRef().rcas_attenuation =
