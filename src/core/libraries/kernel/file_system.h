@@ -14,7 +14,7 @@ namespace Libraries::Kernel {
 
 constexpr int ORBIS_MAX_PATH = 255;
 
-struct SceKernelIovec {
+struct OrbisKernelIovec {
     void* iov_base;
     std::size_t iov_len;
 };
@@ -65,10 +65,10 @@ constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
-s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, size_t nbytes);
-s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, size_t nbytes);
-s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, size_t nbytes, s64 offset);
-s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, size_t nbytes, s64 offset);
+s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
+s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
+s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
+s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset);
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

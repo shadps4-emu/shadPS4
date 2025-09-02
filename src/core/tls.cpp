@@ -18,6 +18,10 @@
 #elif !defined(ARCH_X86_64)
 #include <pthread.h>
 #endif
+#if defined(__linux__) && defined(ARCH_X86_64)
+#include <asm/prctl.h>
+#include <sys/prctl.h>
+#endif
 
 namespace Core {
 
@@ -156,13 +160,15 @@ Tcb* GetTcbBase() {
 // Other POSIX x86_64
 
 void SetTcbBase(void* image_address) {
-    asm volatile("wrgsbase %0" ::"r"(image_address) : "memory");
+    const int ret = syscall(SYS_arch_prctl, ARCH_SET_GS, (unsigned long)image_address);
+    ASSERT_MSG(ret == 0, "Failed to set GS base: errno {}", errno);
 }
 
 Tcb* GetTcbBase() {
-    Tcb* tcb;
-    asm volatile("rdgsbase %0" : "=r"(tcb)::"memory");
-    return tcb;
+    void* tcb = nullptr;
+    const int ret = syscall(SYS_arch_prctl, ARCH_GET_GS, &tcb);
+    ASSERT_MSG(ret == 0, "Failed to get GS base: errno {}", errno);
+    return static_cast<Tcb*>(tcb);
 }
 
 #else

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
@@ -24,17 +24,17 @@ s64 RandomDevice::write(const void* buf, size_t nbytes) {
     return 0;
 }
 
-size_t RandomDevice::writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+size_t RandomDevice::writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
 
-size_t RandomDevice::readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) {
+size_t RandomDevice::readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
 
-s64 RandomDevice::preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) {
+s64 RandomDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
     LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }

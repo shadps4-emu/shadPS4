@@ -26,6 +26,13 @@ static Interpolation GetInterpolation(IR::Attribute attribute) {
     }
 }
 
+static constexpr std::array DefaultValTable = {
+    std::array{0.0f, 0.0f, 0.0f, 0.0f},
+    std::array{0.0f, 0.0f, 0.0f, 1.0f},
+    std::array{1.0f, 1.0f, 1.0f, 0.0f},
+    std::array{1.0f, 1.0f, 1.0f, 1.0f},
+};
+
 void Translator::EmitVectorInterpolation(const GcnInst& inst) {
     switch (inst.opcode) {
         // VINTRP
@@ -46,8 +53,12 @@ void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
     if (!profile.needs_manual_interpolation) {
         return;
     }
-    // VDST = P10 * VSRC + P0
     const u32 attr_index = inst.control.vintrp.attr;
+    const auto& attr = runtime_info.fs_info.inputs[attr_index];
+    if (attr.IsDefault()) {
+        return;
+    }
+    // VDST = P10 * VSRC + P0
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
     const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 1);
@@ -61,7 +72,12 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
-    ASSERT(!attr.IsDefault() && !attr.is_flat);
+    if (attr.IsDefault()) {
+        SetDst(inst.dst[0],
+               ir.Imm32(DefaultValTable[attr.default_value][inst.control.vintrp.chan]));
+        return;
+    }
+    ASSERT(!attr.is_flat);
     if (!profile.needs_manual_interpolation) {
         interp = GetInterpolation(vgpr_to_interp[inst.src[0].code]);
         SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
@@ -81,7 +97,7 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
-    ASSERT(attr.is_flat);
+    ASSERT(attr.is_flat || inst.src[0].code == 2);
     if (profile.supports_amd_shader_explicit_vertex_parameter ||
         (profile.supports_fragment_shader_barycentric &&
          !profile.has_incomplete_fragment_shader_barycentric)) {
