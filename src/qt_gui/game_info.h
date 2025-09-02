@@ -19,13 +19,16 @@ public:
     QVector<GameInfo> m_games;
     QVector<GameInfo> m_games_backup;
 
-    static void SceUpdateChecker(std::string sceItem, std::filesystem::path& gameItem,
+    static void SceUpdateChecker(const std::string sceItem, std::filesystem::path& gameItem,
                                  std::filesystem::path& update_folder,
-                                 std::filesystem::path& patch_folder) {
+                                 std::filesystem::path& patch_folder,
+                                 std::filesystem::path& game_folder) {
         if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
             gameItem = update_folder / "sce_sys" / sceItem;
         } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
             gameItem = patch_folder / "sce_sys" / sceItem;
+        } else {
+            gameItem = game_folder / "sce_sys" / sceItem;
         }
     }
 
@@ -39,24 +42,25 @@ public:
     static GameInfo readGameInfo(const std::filesystem::path& filePath) {
         GameInfo game;
         game.path = filePath;
-        std::filesystem::path sce_folder_path = filePath / "sce_sys" / "param.sfo";
+        std::filesystem::path param_sfo_path;
         std::filesystem::path game_update_path = filePath;
         game_update_path += "-UPDATE";
         std::filesystem::path game_patch_path = filePath;
         game_patch_path += "-patch";
-        SceUpdateChecker("param.sfo", sce_folder_path, game_update_path, game_patch_path);
+        SceUpdateChecker("param.sfo", param_sfo_path, game_update_path, game_patch_path,
+                         game.path);
 
         PSF psf;
-        if (psf.Open(sce_folder_path)) {
-            game.icon_path = game.path / "sce_sys" / "icon0.png";
-            SceUpdateChecker("icon0.png", game.icon_path, game_update_path, game_patch_path);
+        if (psf.Open(param_sfo_path)) {
+            SceUpdateChecker("icon0.png", game.icon_path, game_update_path, game_patch_path,
+                             game.path);
             QString iconpath;
             Common::FS::PathToQString(iconpath, game.icon_path);
             game.icon = QImage(iconpath);
-            game.pic_path = game.path / "sce_sys" / "pic1.png";
-            SceUpdateChecker("pic1.png", game.pic_path, game_update_path, game_patch_path);
-            game.snd0_path = game.path / "sce_sys" / "snd0.at9";
-            SceUpdateChecker("snd0.at9", game.snd0_path, game_update_path, game_patch_path);
+            SceUpdateChecker("pic1.png", game.pic_path, game_update_path, game_patch_path,
+                             game.path);
+            SceUpdateChecker("snd0.at9", game.snd0_path, game_update_path, game_patch_path,
+                             game.path);
 
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 game.name = *title;
