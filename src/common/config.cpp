@@ -79,7 +79,11 @@ static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
+static std::string presentMode = "Mailbox";
 static bool isHDRAllowed = false;
+static bool fsrEnabled = true;
+static bool rcasEnabled = true;
+static int rcasAttenuation = 250;
 
 // Vulkan
 static s32 gpuId = -1;
@@ -192,6 +196,10 @@ bool getIsFullscreen() {
 
 std::string getFullscreenMode() {
     return fullscreenMode;
+}
+
+std::string getPresentMode() {
+    return presentMode;
 }
 
 bool getisTrophyPopupDisabled() {
@@ -466,6 +474,10 @@ void setFullscreenMode(std::string mode) {
     fullscreenMode = mode;
 }
 
+void setPresentMode(std::string mode) {
+    presentMode = mode;
+}
+
 void setisTrophyPopupDisabled(bool disable) {
     isTrophyPopupDisabled = disable;
 }
@@ -643,6 +655,30 @@ void setBackgroundControllerInput(bool enable) {
     backgroundControllerInput = enable;
 }
 
+bool getFsrEnabled() {
+    return fsrEnabled;
+}
+
+void setFsrEnabled(bool enable) {
+    fsrEnabled = enable;
+}
+
+bool getRcasEnabled() {
+    return rcasEnabled;
+}
+
+void setRcasEnabled(bool enable) {
+    rcasEnabled = enable;
+}
+
+int getRcasAttenuation() {
+    return rcasAttenuation;
+}
+
+void setRcasAttenuation(int value) {
+    rcasAttenuation = value;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -726,7 +762,11 @@ void load(const std::filesystem::path& path) {
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
+        presentMode = toml::find_or<std::string>(gpu, "presentMode", presentMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
+        fsrEnabled = toml::find_or<bool>(gpu, "fsrEnabled", fsrEnabled);
+        rcasEnabled = toml::find_or<bool>(gpu, "rcasEnabled", rcasEnabled);
+        rcasAttenuation = toml::find_or<int>(gpu, "rcasAttenuation", rcasAttenuation);
     }
 
     if (data.contains("Vulkan")) {
@@ -894,7 +934,11 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["vblankDivider"] = vblankDivider;
     data["GPU"]["Fullscreen"] = isFullscreen;
     data["GPU"]["FullscreenMode"] = fullscreenMode;
+    data["GPU"]["presentMode"] = presentMode;
     data["GPU"]["allowHDR"] = isHDRAllowed;
+    data["GPU"]["fsrEnabled"] = fsrEnabled;
+    data["GPU"]["rcasEnabled"] = rcasEnabled;
+    data["GPU"]["rcasAttenuation"] = rcasAttenuation;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
@@ -1003,7 +1047,11 @@ void setDefaultValues() {
     vblankDivider = 1;
     isFullscreen = false;
     fullscreenMode = "Windowed";
+    presentMode = "Mailbox";
     isHDRAllowed = false;
+    fsrEnabled = true;
+    rcasEnabled = true;
+    rcasAttenuation = 250;
 
     // Vulkan
     gpuId = -1;

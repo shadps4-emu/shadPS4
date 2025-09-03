@@ -162,12 +162,20 @@ void KBMSettings::DisableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(false);
 }
 
 void KBMSettings::EnableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(true);
 }
 
 void KBMSettings::SaveKBMConfig(bool close_on_save) {

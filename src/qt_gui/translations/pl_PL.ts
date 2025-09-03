@@ -447,7 +447,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation>Typowa konfiguracja</translation>
+      <translation>Wspólna konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -1118,7 +1118,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation>Typowa konfiguracja</translation>
+      <translation>Wspólna konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -1214,7 +1214,7 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation>Kopiuj z typowej konfiguracji</translation>
+      <translation>Kopiuj ze wspólnej konfiguracji</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1226,19 +1226,19 @@
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation>Wybrano typową konfigurację</translation>
+      <translation>Wybrano wspólną konfigurację</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>Przycisk ten kopiuje mapowanie z typowej konfiguracji do aktualnie wybranego profilu, i nie może być użyty, gdy aktualnie wybranym profilem jest typowa konfiguracja.</translation>
+      <translation>Przycisk ten kopiuje mapowanie ze wspólnej konfiguracji do aktualnie wybranego profilu. Nie może być użyty, gdy aktualnie wybranym profilem jest wspólna konfiguracja.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>Kopiuj z typowej konfiguracji</translation>
+      <translation>Kopiuj ze wspólnej konfiguracji</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation>Czy chcesz nadpisać istniejące mapowania mapowaniem z typowej konfiguracji?</translation>
+      <translation>Czy chcesz nadpisać istniejące mapowania mapowaniem ze wspólnej konfiguracji?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1692,7 +1692,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Włącz zgrywanie cieni</translation>
+      <translation>Włącz zgrywanie shaderów</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1744,7 +1744,7 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>Zbieraj cienie</translation>
+      <translation>Zbieraj shadery</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1988,7 +1988,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>Zbieranie cieni:\nPotrzebujesz tej opcji aby edytować cienie za pomocą menu debugowania (Ctrl + F10).</translation>
+      <translation>Zbieranie shaderów:\nPotrzebujesz tej opcji aby edytować shadery za pomocą menu debugowania (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
@@ -2132,7 +2132,7 @@
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation>Utwórz przenośny folder użytkownika ze zwykłego folderu użytkownika</translation>
+      <translation>Utwórz przenośny folder użytkownika ze folderu użytkownika udostępnianego</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
