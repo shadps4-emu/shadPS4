@@ -14,7 +14,8 @@ class LogPresetsDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, QWidget* parent = nullptr);
+    explicit LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings,
+                              QWidget* parent = nullptr);
     ~LogPresetsDialog() override = default;
 
 signals:
@@ -42,4 +43,3 @@ private:
     QPushButton* m_load_btn = nullptr;
     QPushButton* m_close_btn = nullptr;
 };
-

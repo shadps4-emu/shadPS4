@@ -3,13 +3,13 @@
 
 #include "log_presets_dialog.h"
 
+#include <algorithm>
 #include <QDialogButtonBox>
-#include <QHeaderView>
 #include <QHBoxLayout>
+#include <QHeaderView>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
-#include <algorithm>
 
 namespace {
 constexpr const char* kPresetsGroup = "logger_presets";
@@ -101,7 +101,8 @@ void LogPresetsDialog::reject() {
 }
 
 void LogPresetsDialog::LoadFromSettings() {
-    if (!m_gui_settings) return;
+    if (!m_gui_settings)
+        return;
     const auto var = m_gui_settings->GetValue(kPresetsGroup, kPresetsKey, QVariant());
     QList<QString> list;
     if (var.isValid()) {
@@ -111,7 +112,8 @@ void LogPresetsDialog::LoadFromSettings() {
 }
 
 void LogPresetsDialog::SaveToSettings() {
-    if (!m_gui_settings) return;
+    if (!m_gui_settings)
+        return;
     const auto list = SerializeTable();
     m_gui_settings->SetValue(kPresetsGroup, kPresetsKey, m_gui_settings->List2Var(list));
 }
@@ -159,11 +161,11 @@ void LogPresetsDialog::AddAfterSelection() {
 
 void LogPresetsDialog::RemoveSelected() {
     auto selected = m_table->selectionModel()->selectedRows();
-    if (selected.isEmpty()) return;
+    if (selected.isEmpty())
+        return;
     // Remove from bottom to top to keep indices valid
-    std::sort(selected.begin(), selected.end(), [](const QModelIndex& a, const QModelIndex& b) {
-        return a.row() > b.row();
-    });
+    std::sort(selected.begin(), selected.end(),
+              [](const QModelIndex& a, const QModelIndex& b) { return a.row() > b.row(); });
     for (const auto& idx : selected) {
         m_table->removeRow(idx.row());
     }
@@ -171,7 +173,8 @@ void LogPresetsDialog::RemoveSelected() {
 
 void LogPresetsDialog::LoadSelected() {
     const auto selected = m_table->selectionModel()->selectedRows();
-    if (selected.isEmpty()) return;
+    if (selected.isEmpty())
+        return;
     const int row = selected.first().row();
     const auto* item = m_table->item(row, 1);
     if (item) {
