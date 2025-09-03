@@ -2192,7 +2192,7 @@
     </message>
     <message>
       <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
-      <translation>Включить ведение логов:\nВключает ведение логов.\nНе меняйте это, если вы не знаете, что делаете!\nПри запросе помощи, убедитесь, что эта настройка включена.</translation>
+      <translation>Включить ведение логов:\nВключает ведение логов.\nНе меняйте это, если вы не знаете, что делаете!\nПри запросе помощи, убедитесь, что эта настройка ВКЛЮЧЕНА.</translation>
     </message>
     <message>
       <source>Present Mode</source>
