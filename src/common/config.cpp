@@ -849,8 +849,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
-        isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled",
-                                              is_game_specific);
+        isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
         isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
