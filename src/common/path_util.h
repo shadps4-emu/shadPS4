@@ -45,7 +45,7 @@ constexpr auto CHEATS_DIR = "cheats";
 constexpr auto PATCHES_DIR = "patches";
 constexpr auto METADATA_DIR = "game_data";
 constexpr auto CUSTOM_TROPHY = "custom_trophy";
-constexpr auto CUSTOM_CONFIGS = "configs";
+constexpr auto CUSTOM_CONFIGS = "custom_configs";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

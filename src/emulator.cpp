@@ -114,8 +114,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         }
     }
 
-    Config::GameSpecificConfig::load(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                     "configs" / (id + ".toml"));
+    Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
+                 true);
 
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
