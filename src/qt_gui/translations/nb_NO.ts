@@ -1210,7 +1210,7 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation>Hastighetsforskyvning (def 0.125):</translation>
+      <translation>Hastighetsforskyvning (def 0,125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
@@ -1218,11 +1218,11 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation>Dødsoneforskyvning (def 0.50):</translation>
+      <translation>Dødsoneforskyvning (def 0,50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation>Hastighetsmultiplikator (def 1.0):</translation>
+      <translation>Hastighetsmultiplikator (def 1,0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
