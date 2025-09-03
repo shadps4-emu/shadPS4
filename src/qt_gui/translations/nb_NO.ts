@@ -2196,59 +2196,59 @@
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>Presentasjonsmodus</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
-      <translation type="unfinished">Mailbox (Vsync)</translation>
+      <translation>«Mailbox» (Vsync)</translation>
     </message>
     <message>
       <source>Fifo (Vsync)</source>
-      <translation type="unfinished">Fifo (Vsync)</translation>
+      <translation>«FIFO» (Vsync)</translation>
     </message>
     <message>
       <source>Immediate (No Vsync)</source>
-      <translation type="unfinished">Immediate (No Vsync)</translation>
+      <translation>Umiddelbart (Ingen Vsync)</translation>
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation type="unfinished">DLC Folder</translation>
+      <translation>DLC-mappe</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
-      <translation type="unfinished">Select the DLC folder</translation>
+      <translation>Velg DLC-mappa</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>Presentasjonsmodus:\nSetter opp hvordan video-utdata skal presenteres til skjermen.\n\n«Mailbox»: Bildene synkroniseres med skjermens oppdateringsfrekvens. Nye bilder erstatter gamle bilder i køen. Reduserer ventetid men kan hoppe over bilder hvis de er forsinket.\n«FIFO»: Bildene synkroniseres med skjermens oppdateringsfrekvens. Nye bilder settes i kø bak gamle bilder. Dette sikrer at alle bildene vises men kan øke ventetid.\nUmiddelbart: Bildene vises til skjermen med en gang når de er klare. Kan forutsake bilderiving.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
-      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+      <translation>DLC-mappe:\nMappa hvor spill-DLC-ene lastes fra.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+      <translation>Bla gjennom:\nLet etter en mappe for å angi den som DLC-adressen.</translation>
     </message>
     <message>
       <source>FSR Settings</source>
-      <translation type="unfinished">FSR Settings</translation>
+      <translation>FSR-innstillinger</translation>
     </message>
     <message>
       <source>Enable FSR</source>
-      <translation type="unfinished">Enable FSR</translation>
+      <translation>Bruk FSR</translation>
     </message>
     <message>
       <source>Enable RCAS (sharpening)</source>
-      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+      <translation>Bruk RCAS (tydeliggjøring)</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>RCAS demping:</translation>
     </message>
     <message>
       <source>0.250</source>
-      <translation type="unfinished">0.250</translation>
+      <translation>0,250</translation>
     </message>
   </context>
   <context>
