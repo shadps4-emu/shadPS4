@@ -508,10 +508,10 @@
             </layout>
            </widget>
           </item>
-          <item row="2" column="3">
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
+          <item row="1" column="2">
+           <widget class="QGroupBox" name="GenAudioGroupBox">
+            <property name="title">
+             <string>Audio Device (general)</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_5">
              <item>
