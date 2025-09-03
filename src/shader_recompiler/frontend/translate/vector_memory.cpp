@@ -113,9 +113,9 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
     case Opcode::BUFFER_ATOMIC_FMIN:
-        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
-        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -202,7 +202,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                              const GcnInst& inst, u32 scalar_width, bool is_signed) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
+    const bool is_ring = mubuf.glc && mubuf.slc && info.l_stage != LogicalStage::Vertex &&
+                         info.l_stage != LogicalStage::Fragment;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
@@ -289,7 +290,10 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                               const GcnInst& inst, u32 scalar_width) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
+    const bool is_ring =
+        mubuf.glc && mubuf.slc && info.l_stage != LogicalStage::Fragment &&
+        info.stage !=
+            Stage::Vertex; // VS passes attributes down with EXPORT, VS HW stage is always present
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
     const IR::Value soffset{GetSrc(inst.src[3])};
@@ -395,6 +399,8 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
             return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::F32>) {
+            return ir.GetVectorReg<Shader::IR::F32>(vdata);
         } else if constexpr (std::is_same_v<T, IR::U64>) {
             return ir.PackUint2x32(
                 ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
@@ -445,7 +451,11 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     }();
 
     if (mubuf.glc) {
-        ir.SetVectorReg(vdata, IR::U32{original_val});
+        if constexpr (std::is_same_v<T, IR::U64>) {
+            UNREACHABLE();
+        } else {
+            ir.SetVectorReg(vdata, T{original_val});
+        }
     }
 }
 

@@ -5,6 +5,7 @@
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
+#include "ir_emitter.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -668,6 +669,10 @@ U32 IREmitter::BallotFindLsb(const Value& mask) {
     return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
+U1 IREmitter::GroupAny(const U1& bit) {
+    return Inst<U1>(Opcode::GroupAny, bit);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
@@ -1167,6 +1172,10 @@ F32 IREmitter::FPLdexp(const F32& value, const U32& exp) {
 
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
+}
+
+F32 IREmitter::FPPow(const F32& x, const F32& y) {
+    return Inst<F32>(Opcode::FPPow, x, y);
 }
 
 F32F64 IREmitter::FPRecip(const F32F64& value) {

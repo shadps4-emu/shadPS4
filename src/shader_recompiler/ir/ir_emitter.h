@@ -177,6 +177,7 @@ public:
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
     [[nodiscard]] Value Ballot(const U1& bit);
     [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
@@ -228,6 +229,7 @@ public:
     [[nodiscard]] F32 FPSin(const F32& value);
     [[nodiscard]] F32 FPExp2(const F32& value);
     [[nodiscard]] F32 FPLog2(const F32& value);
+    [[nodiscard]] F32 FPPow(const F32& x, const F32& y);
     [[nodiscard]] F32 FPLdexp(const F32& value, const U32& exp);
     [[nodiscard]] F32F64 FPRecip(const F32F64& value);
     [[nodiscard]] F32F64 FPRecipSqrt(const F32F64& value);

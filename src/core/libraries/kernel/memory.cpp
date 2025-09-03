@@ -570,9 +570,16 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
 }
 
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
-    LOG_INFO(Kernel_Vmm,
-             "called addr = {}, len = {}, prot = {}, flags = {}, fd = {}, phys_addr = {}",
-             fmt::ptr(addr), len, prot, flags, fd, phys_addr);
+    LOG_INFO(
+        Kernel_Vmm,
+        "called addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, fd = {}, phys_addr = {:#x}",
+        fmt::ptr(addr), len, prot, flags, fd, phys_addr);
+
+    if (len == 0) {
+        // If length is 0, mmap returns EINVAL.
+        ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        return reinterpret_cast<void*>(-1);
+    }
 
     void* addr_out;
     auto* memory = Core::Memory::Instance();

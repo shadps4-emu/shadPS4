@@ -183,6 +183,32 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
+int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{m_mutex};
+#ifdef _WIN32
+    DWORD bytesSent = 0;
+    LPFN_WSASENDMSG wsasendmsg = nullptr;
+    GUID guid = WSAID_WSASENDMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
+                 sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
+    }
+
+    int res = wsasendmsg(sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), flags,
+                         &bytesSent, nullptr, nullptr);
+
+    if (res == SOCKET_ERROR) {
+        return ConvertReturnErrorCode(-1);
+    }
+    return static_cast<int>(bytesSent);
+#else
+    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
+    return ConvertReturnErrorCode(res);
+#endif
+}
+
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
     std::scoped_lock lock{m_mutex};
@@ -194,6 +220,31 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     } else {
         return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
     }
+}
+
+int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{receive_mutex};
+#ifdef _WIN32
+    LPFN_WSARECVMSG wsarecvmsg = nullptr;
+    GUID guid = WSAID_WSARECVMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsarecvmsg,
+                 sizeof(wsarecvmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
+    }
+
+    DWORD bytesReceived = 0;
+    int res = wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), &bytesReceived, nullptr, nullptr);
+
+    if (res == SOCKET_ERROR) {
+        return ConvertReturnErrorCode(-1);
+    }
+    return static_cast<int>(bytesReceived);
+#else
+    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    return ConvertReturnErrorCode(res);
+#endif
 }
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
@@ -410,6 +461,18 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, sockopt_so_usesignature);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
                                   (char)0); // writes an empty string to the output buffer
+        case ORBIS_NET_SO_ERROR_EX: {
+            socklen_t optlen_temp = *optlen;
+            auto retval = ConvertReturnErrorCode(
+                getsockopt(sock, level, SO_ERROR, (char*)optval, &optlen_temp));
+            *optlen = optlen_temp;
+            if (retval < 0) {
+                s32 r = *Libraries::Kernel::__Error();
+                *Libraries::Kernel::__Error() = 0;
+                return r;
+            }
+            return retval;
+        }
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {

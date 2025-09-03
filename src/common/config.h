@@ -33,6 +33,8 @@ bool getIsFullscreen();
 void setIsFullscreen(bool enable);
 std::string getFullscreenMode();
 void setFullscreenMode(std::string mode);
+std::string getPresentMode();
+void setPresentMode(std::string mode);
 u32 getWindowWidth();
 u32 getWindowHeight();
 void setWindowWidth(u32 width);
@@ -115,6 +117,16 @@ bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use);
 std::string getDefaultControllerID();
 void setDefaultControllerID(std::string id);
+bool getBackgroundControllerInput();
+void setBackgroundControllerInput(bool enable);
+bool getLoggingEnabled();
+void setLoggingEnabled(bool enable);
+bool getFsrEnabled();
+void setFsrEnabled(bool enable);
+bool getRcasEnabled();
+void setRcasEnabled(bool enable);
+int getRcasAttenuation();
+void setRcasAttenuation(int value);
 
 // TODO
 bool GetLoadGameSizeEnabled();

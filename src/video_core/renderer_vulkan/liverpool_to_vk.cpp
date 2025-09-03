@@ -210,7 +210,7 @@ vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor) {
     case BlendFactor::OneMinusConstantAlpha:
         return vk::BlendFactor::eOneMinusConstantAlpha;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown blend factor: {}", static_cast<u32>(factor));
     }
 }
 
@@ -241,7 +241,7 @@ vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
     case BlendFunc::ReverseSubtract:
         return vk::BlendOp::eReverseSubtract;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown blend op: {}", static_cast<u32>(func));
     }
 }
 

@@ -16,39 +16,6 @@
 namespace Shader::Backend::SPIRV {
 namespace {
 
-Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
-    switch (output) {
-    case VsOutput::ClipDist0:
-    case VsOutput::ClipDist1:
-    case VsOutput::ClipDist2:
-    case VsOutput::ClipDist3:
-    case VsOutput::ClipDist4:
-    case VsOutput::ClipDist5:
-    case VsOutput::ClipDist6:
-    case VsOutput::ClipDist7: {
-        const u32 index = u32(output) - u32(VsOutput::ClipDist0);
-        const Id clip_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.clip_distances), "Clip distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
-    }
-    case VsOutput::CullDist0:
-    case VsOutput::CullDist1:
-    case VsOutput::CullDist2:
-    case VsOutput::CullDist3:
-    case VsOutput::CullDist4:
-    case VsOutput::CullDist5:
-    case VsOutput::CullDist6:
-    case VsOutput::CullDist7: {
-        const u32 index = u32(output) - u32(VsOutput::CullDist0);
-        const Id cull_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.cull_distances), "Cull distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
-    }
-    default:
-        UNREACHABLE_MSG("Vertex output {}", u32(output));
-    }
-}
-
 Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
     if (IR::IsParam(attr)) {
         const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
@@ -76,15 +43,14 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
         }
     }
     switch (attr) {
-    case IR::Attribute::Position0: {
+    case IR::Attribute::Position0:
         return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
-    }
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3: {
-        const u32 index = u32(attr) - u32(IR::Attribute::Position1);
-        return VsOutputAttrPointer(ctx, ctx.runtime_info.vs_info.outputs[index][element]);
-    }
+    case IR::Attribute::ClipDistance:
+        return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, ctx.ConstU32(element));
+    case IR::Attribute::CullDistance:
+        return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, ctx.ConstU32(element));
+    case IR::Attribute::RenderTargetId:
+        return ctx.output_layer;
     case IR::Attribute::Depth:
         return ctx.frag_depth;
     default:
@@ -105,11 +71,13 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     }
     switch (attr) {
     case IR::Attribute::Position0:
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3:
+    case IR::Attribute::ClipDistance:
+    case IR::Attribute::CullDistance:
     case IR::Attribute::Depth:
         return {ctx.F32[1], false};
+    case IR::Attribute::RenderTargetId:
+    case IR::Attribute::ViewportId:
+        return {ctx.S32[1], true};
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }
@@ -270,14 +238,10 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 }
 
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
-    if (attr == IR::Attribute::Position1) {
-        LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
-        return;
-    }
     const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    const auto component_type{OutputAttrComponentType(ctx, attr)};
-    if (component_type.second) {
-        ctx.OpStore(pointer, ctx.OpBitcast(component_type.first, value));
+    const auto [component_type, is_integer]{OutputAttrComponentType(ctx, attr)};
+    if (is_integer) {
+        ctx.OpStore(pointer, ctx.OpBitcast(component_type, value));
     } else {
         ctx.OpStore(pointer, value);
     }
