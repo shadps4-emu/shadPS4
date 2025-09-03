@@ -96,6 +96,9 @@ private:
     /// Selects the best available swapchain image format
     void FindPresentFormat();
 
+    /// Selects the best available present mode
+    void FindPresentMode();
+
     /// Sets the surface properties according to device capabilities
     void SetSurfaceProperties();
 
@@ -115,6 +118,7 @@ private:
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
     vk::Format view_format;
+    vk::PresentModeKHR present_mode;
     vk::Extent2D extent;
     vk::SurfaceTransformFlagBitsKHR transform;
     vk::CompositeAlphaFlagBitsKHR composite_alpha;
