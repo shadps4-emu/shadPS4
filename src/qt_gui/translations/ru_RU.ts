@@ -2196,19 +2196,19 @@
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>Режим представления</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
-      <translation type="unfinished">Mailbox (Vsync)</translation>
+      <translation>Mailbox (Vsync)</translation>
     </message>
     <message>
       <source>Fifo (Vsync)</source>
-      <translation type="unfinished">Fifo (Vsync)</translation>
+      <translation>Fifo (Vsync)</translation>
     </message>
     <message>
       <source>Immediate (No Vsync)</source>
-      <translation type="unfinished">Immediate (No Vsync)</translation>
+      <translation>Immediate (без Vsync)</translation>
     </message>
     <message>
       <source>DLC Folder</source>
@@ -2220,7 +2220,7 @@
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>Режим представления:\nНастраивает, как вывод видео будет предоставлен на экране.\n\nMailbox: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут заменять ожидающие кадры. Уменьшает задержку, но может пропустить кадры, если отстаёт.\nFifo: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут в очереди за ожидаемыми кадрами. Обеспечивает отображение всех кадров, но может увеличить задержку.\nImmediate: Кадры отображаются на экране сразу после готовности. Может приводить к разрывам.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
