@@ -2226,6 +2226,26 @@
         <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>FSR Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable FSR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable RCAS (sharpening)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RCAS Attenuation:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>0.250</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
