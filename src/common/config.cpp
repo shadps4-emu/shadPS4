@@ -58,6 +58,7 @@ static bool isMotionControlsEnabled = true;
 static bool useUnifiedInputConfig = true;
 static std::string micDevice = "Default Device";
 static std::string defaultControllerID = "";
+static bool backgroundControllerInput = false;
 
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
@@ -78,7 +79,11 @@ static bool shouldPatchShaders = false;
 static u32 vblankDivider = 1;
 static bool isFullscreen = false;
 static std::string fullscreenMode = "Windowed";
+static std::string presentMode = "Mailbox";
 static bool isHDRAllowed = false;
+static bool fsrEnabled = true;
+static bool rcasEnabled = true;
+static int rcasAttenuation = 250;
 
 // Vulkan
 static s32 gpuId = -1;
@@ -95,6 +100,7 @@ static bool isDebugDump = false;
 static bool isShaderDebug = false;
 static bool isSeparateLogFilesEnabled = false;
 static bool isFpsColor = true;
+static bool logEnabled = true;
 
 // GUI
 static bool load_game_size = true;
@@ -137,6 +143,10 @@ void SetOverrideControllerColor(bool enable) {
 
 int* GetControllerCustomColor() {
     return controllerCustomColorRGB;
+}
+
+bool getLoggingEnabled() {
+    return logEnabled;
 }
 
 void SetControllerCustomColor(int r, int b, int g) {
@@ -186,6 +196,10 @@ bool getIsFullscreen() {
 
 std::string getFullscreenMode() {
     return fullscreenMode;
+}
+
+std::string getPresentMode() {
+    return presentMode;
 }
 
 bool getisTrophyPopupDisabled() {
@@ -312,6 +326,10 @@ bool fpsColor() {
     return isFpsColor;
 }
 
+bool isLoggingEnabled() {
+    return logEnabled;
+}
+
 u32 vblankDiv() {
     return vblankDivider;
 }
@@ -388,6 +406,10 @@ void setDebugDump(bool enable) {
     isDebugDump = enable;
 }
 
+void setLoggingEnabled(bool enable) {
+    logEnabled = enable;
+}
+
 void setCollectShaderForDebug(bool enable) {
     isShaderDebug = enable;
 }
@@ -450,6 +472,10 @@ void setIsFullscreen(bool enable) {
 
 void setFullscreenMode(std::string mode) {
     fullscreenMode = mode;
+}
+
+void setPresentMode(std::string mode) {
+    presentMode = mode;
 }
 
 void setisTrophyPopupDisabled(bool disable) {
@@ -621,6 +647,38 @@ void setDefaultControllerID(std::string id) {
     defaultControllerID = id;
 }
 
+bool getBackgroundControllerInput() {
+    return backgroundControllerInput;
+}
+
+void setBackgroundControllerInput(bool enable) {
+    backgroundControllerInput = enable;
+}
+
+bool getFsrEnabled() {
+    return fsrEnabled;
+}
+
+void setFsrEnabled(bool enable) {
+    fsrEnabled = enable;
+}
+
+bool getRcasEnabled() {
+    return rcasEnabled;
+}
+
+void setRcasEnabled(bool enable) {
+    rcasEnabled = enable;
+}
+
+int getRcasAttenuation() {
+    return rcasAttenuation;
+}
+
+void setRcasAttenuation(int value) {
+    rcasAttenuation = value;
+}
+
 void load(const std::filesystem::path& path) {
     // If the configuration file does not exist, create it and return
     std::error_code error;
@@ -680,6 +738,8 @@ void load(const std::filesystem::path& path) {
         useUnifiedInputConfig =
             toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
         micDevice = toml::find_or<std::string>(input, "micDevice", micDevice);
+        backgroundControllerInput =
+            toml::find_or<bool>(input, "backgroundControllerInput", backgroundControllerInput);
     }
 
     if (data.contains("GPU")) {
@@ -702,7 +762,11 @@ void load(const std::filesystem::path& path) {
         vblankDivider = toml::find_or<int>(gpu, "vblankDivider", vblankDivider);
         isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", isFullscreen);
         fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", fullscreenMode);
+        presentMode = toml::find_or<std::string>(gpu, "presentMode", presentMode);
         isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", isHDRAllowed);
+        fsrEnabled = toml::find_or<bool>(gpu, "fsrEnabled", fsrEnabled);
+        rcasEnabled = toml::find_or<bool>(gpu, "rcasEnabled", rcasEnabled);
+        rcasAttenuation = toml::find_or<int>(gpu, "rcasAttenuation", rcasAttenuation);
     }
 
     if (data.contains("Vulkan")) {
@@ -727,6 +791,7 @@ void load(const std::filesystem::path& path) {
             toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", isSeparateLogFilesEnabled);
         isShaderDebug = toml::find_or<bool>(debug, "CollectShader", isShaderDebug);
         isFpsColor = toml::find_or<bool>(debug, "FPSColor", isFpsColor);
+        logEnabled = toml::find_or<bool>(debug, "logEnabled", logEnabled);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
@@ -773,7 +838,6 @@ void load(const std::filesystem::path& path) {
 
     // Run save after loading to generate any missing fields with default values.
     if (config_version != current_version) {
-        fmt::print("Outdated config detected, updating config file.\n");
         save(path);
     }
 }
@@ -855,6 +919,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
     data["Input"]["micDevice"] = micDevice;
+    data["Input"]["backgroundControllerInput"] = backgroundControllerInput;
     data["GPU"]["screenWidth"] = windowWidth;
     data["GPU"]["screenHeight"] = windowHeight;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth;
@@ -869,7 +934,11 @@ void save(const std::filesystem::path& path) {
     data["GPU"]["vblankDivider"] = vblankDivider;
     data["GPU"]["Fullscreen"] = isFullscreen;
     data["GPU"]["FullscreenMode"] = fullscreenMode;
+    data["GPU"]["presentMode"] = presentMode;
     data["GPU"]["allowHDR"] = isHDRAllowed;
+    data["GPU"]["fsrEnabled"] = fsrEnabled;
+    data["GPU"]["rcasEnabled"] = rcasEnabled;
+    data["GPU"]["rcasAttenuation"] = rcasAttenuation;
     data["Vulkan"]["gpuId"] = gpuId;
     data["Vulkan"]["validation"] = vkValidation;
     data["Vulkan"]["validation_sync"] = vkValidationSync;
@@ -882,6 +951,7 @@ void save(const std::filesystem::path& path) {
     data["Debug"]["CollectShader"] = isShaderDebug;
     data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
     data["Debug"]["FPSColor"] = isFpsColor;
+    data["Debug"]["logEnabled"] = logEnabled;
     data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
@@ -960,6 +1030,7 @@ void setDefaultValues() {
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
     micDevice = "Default Device";
+    backgroundControllerInput = false;
 
     // GPU
     windowWidth = 1280;
@@ -976,7 +1047,11 @@ void setDefaultValues() {
     vblankDivider = 1;
     isFullscreen = false;
     fullscreenMode = "Windowed";
+    presentMode = "Mailbox";
     isHDRAllowed = false;
+    fsrEnabled = true;
+    rcasEnabled = true;
+    rcasAttenuation = 250;
 
     // Vulkan
     gpuId = -1;
@@ -993,6 +1068,7 @@ void setDefaultValues() {
     isShaderDebug = false;
     isSeparateLogFilesEnabled = false;
     isFpsColor = true;
+    logEnabled = true;
 
     // GUI
     load_game_size = true;

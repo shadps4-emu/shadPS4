@@ -225,7 +225,18 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
 }
 
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    auto file = FDTable::Instance()->GetSocket(s);
+    if (!file) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), flags = {:#x}", s, file->m_guest_name, flags);
+    int returncode = file->socket->SendMessage(msg, flags);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
 
@@ -246,7 +257,19 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
 }
 
 s64 PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    auto file = FDTable::Instance()->GetSocket(s);
+    if (!file) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), flags = {:#x}", s, file->m_guest_name, flags);
+    int returncode = file->socket->ReceiveMessage(msg, flags);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
+              (u32)*Libraries::Kernel::__Error());
     return -1;
 }
 

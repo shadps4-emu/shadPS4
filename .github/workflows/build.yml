@@ -106,7 +106,7 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.1
+        version: 6.9.2
         host: windows
         target: desktop
         arch: win64_msvc2022_64
@@ -141,8 +141,10 @@ jobs:
     - name: Deploy and Package
       run: |
         mkdir upload
+        mkdir upload/qtplugins
         move build/shadPS4.exe upload
-        windeployqt --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
+        cp dist/qt.conf upload/qt.conf
+        windeployqt --plugindir upload/qtplugins --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --dir upload upload/shadPS4.exe
         Compress-Archive -Path upload/* -DestinationPath shadps4-win64-qt-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.zip
 
     - name: Upload Windows Qt artifact
@@ -218,15 +220,12 @@ jobs:
     - name: Setup Qt
       uses: jurplel/install-qt-action@v4
       with:
-        version: 6.9.1
+        version: 6.9.2
         host: mac
         target: desktop
         arch: clang_64
         archives: qtbase qttools
         modules: qtmultimedia
-
-    - name: Workaround Qt <=6.9.1 issue
-      run: sed -i '' '/target_link_libraries(WrapOpenGL::WrapOpenGL INTERFACE ${__opengl_agl_fw_path})/d' ${{env.QT_ROOT_DIR}}/lib/cmake/Qt6/FindWrapOpenGL.cmake
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 

@@ -160,6 +160,10 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         }
     }
 
+    if (info.stores.GetAny(IR::Attribute::RenderTargetId)) {
+        info.has_layer_output = true;
+    }
+
     // In case Flatbuf has not already been bound by IR and is needed
     // to query buffer sizes, bind it now.
     if (!profile.supports_robust_buffer_access && !info.uses_dma) {

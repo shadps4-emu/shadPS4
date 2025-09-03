@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -18,9 +18,9 @@ public:
 
     int ioctl(u64 cmd, Common::VaCtx* args) override;
     s64 write(const void* buf, size_t nbytes) override;
-    size_t readv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) override;
-    size_t writev(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt) override;
-    s64 preadv(const Libraries::Kernel::SceKernelIovec* iov, int iovcnt, u64 offset) override;
+    size_t readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
+    size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
+    s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override;
     s64 lseek(s64 offset, int whence) override;
     s64 read(void* buf, size_t nbytes) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* sb) override;

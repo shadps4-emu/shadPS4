@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,31 +12,125 @@ class SymbolsResolver;
 
 namespace Libraries::Hmd {
 
+enum OrbisHmdDeviceStatus : u32 {
+    ORBIS_HMD_DEVICE_STATUS_READY,
+    ORBIS_HMD_DEVICE_STATUS_NOT_READY,
+    ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED,
+    ORBIS_HMD_DEVICE_STATUS_NOT_READY_HMU_DISCONNECT,
+};
+
+struct OrbisHmdInitializeParam {
+    void* reserved0;
+    u8 reserved[8];
+};
+
+struct OrbisHmdOpenParam {
+    u8 reserve[32];
+};
+
+struct OrbisHmdFieldOfView {
+    float tan_out;
+    float tan_in;
+    float tan_top;
+    float tan_bottom;
+};
+
+struct OrbisHmdPanelResolution {
+    u32 width;
+    u32 height;
+};
+
+struct OrbisHmdFlipToDisplayLatency {
+    u16 refresh_rate_90hz;
+    u16 refresh_rate_120hz;
+};
+
+struct OrbisHmdDeviceInfo {
+    OrbisHmdPanelResolution panel_resolution;
+    OrbisHmdFlipToDisplayLatency flip_to_display_latency;
+};
+
+struct OrbisHmdDeviceInformation {
+    OrbisHmdDeviceStatus status;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    u8 reserve0[4];
+    OrbisHmdDeviceInfo device_info;
+    u8 hmu_mount;
+    u8 reserve1[7];
+};
+
+struct OrbisHmdEyeOffset {
+    float offset_x;
+    float offset_y;
+    float offset_z;
+    u8 reserve[20];
+};
+
+// Reprojection
 s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer();
+s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer();
+s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventEnd();
+s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventStart();
+s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfo();
+s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfoMultilayer();
+s32 PS4_SYSV_ABI sceHmdReprojectionFinalize();
+s32 PS4_SYSV_ABI sceHmdReprojectionFinalizeCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionInitialize();
+s32 PS4_SYSV_ABI sceHmdReprojectionInitializeCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffAlign();
+s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffSize();
+s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffAlign();
+s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffSize();
+s32 PS4_SYSV_ABI sceHmdReprojectionSetCallback();
+s32 PS4_SYSV_ABI sceHmdReprojectionSetDisplayBuffers();
+s32 PS4_SYSV_ABI sceHmdReprojectionSetOutputMinColor();
+s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventEnd();
+s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventStart();
+s32 PS4_SYSV_ABI sceHmdReprojectionStart();
+s32 PS4_SYSV_ABI sceHmdReprojectionStart2dVr();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartLiveCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer2();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNear();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNearWithOverlay();
+s32 PS4_SYSV_ABI sceHmdReprojectionStartWithOverlay();
+s32 PS4_SYSV_ABI sceHmdReprojectionStop();
+s32 PS4_SYSV_ABI sceHmdReprojectionStopCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionStopLiveCapture();
+s32 PS4_SYSV_ABI sceHmdReprojectionUnsetCallback();
+s32 PS4_SYSV_ABI sceHmdReprojectionUnsetDisplayBuffers();
+
+// Distortion
 s32 PS4_SYSV_ABI sceHmdDistortionGet2dVrCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetCompoundEyeCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWideNearCorrectionCommand();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemoryAlign();
 s32 PS4_SYSV_ABI sceHmdDistortionGetWorkMemorySize();
-s32 PS4_SYSV_ABI sceHmdDistortionInitialize();
+s32 PS4_SYSV_ABI sceHmdDistortionInitialize(void* reserved);
 s32 PS4_SYSV_ABI sceHmdDistortionSetOutputMinColor();
-s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0();
-s32 PS4_SYSV_ABI sceHmdClose();
-s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset();
-s32 PS4_SYSV_ABI sceHmdGet2dVrCommand();
-s32 PS4_SYSV_ABI sceHmdGetAssyError();
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformation();
-s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle();
-s32 PS4_SYSV_ABI sceHmdGetDistortionCorrectionCommand();
+s32 PS4_SYSV_ABI sceHmdDistortionTerminate();
 s32 PS4_SYSV_ABI sceHmdGetDistortionParams();
-s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemoryAlign();
-s32 PS4_SYSV_ABI sceHmdGetDistortionWorkMemorySize();
-s32 PS4_SYSV_ABI sceHmdGetFieldOfView();
-s32 PS4_SYSV_ABI sceHmdGetInertialSensorData();
-s32 PS4_SYSV_ABI sceHmdGetWideNearDistortionCorrectionCommand();
-s32 PS4_SYSV_ABI sceHmdInitialize();
-s32 PS4_SYSV_ABI sceHmdInitialize315();
+s32 PS4_SYSV_ABI Func_B26430EA74FC3DC0();
+s32 PS4_SYSV_ABI Func_B614F290B67FB59B();
+
+// libSceHmd
+s32 PS4_SYSV_ABI sceHmdClose(s32 handle);
+s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
+                                      OrbisHmdEyeOffset* right_offset);
+s32 PS4_SYSV_ABI sceHmdGetAssyError(void* data);
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info);
+s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info);
+
+s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_view);
+s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk);
+s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param);
+s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param);
+s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
+                            s32 index, OrbisHmdOpenParam* param);
+s32 PS4_SYSV_ABI sceHmdTerminate();
+
+// Internal
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioClose();
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioOpen();
 s32 PS4_SYSV_ABI sceHmdInternal3dAudioSendData();
@@ -76,7 +171,7 @@ s32 PS4_SYSV_ABI sceHmdInternalGetDefaultLedData();
 s32 PS4_SYSV_ABI sceHmdInternalGetDemoMode();
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformation();
 s32 PS4_SYSV_ABI sceHmdInternalGetDeviceInformationByHandle();
-s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus();
+s32 PS4_SYSV_ABI sceHmdInternalGetDeviceStatus(OrbisHmdDeviceStatus* status);
 s32 PS4_SYSV_ABI sceHmdInternalGetEyeStatus();
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuOpticalParam();
 s32 PS4_SYSV_ABI sceHmdInternalGetHmuPowerStatusForDebug();
@@ -146,44 +241,12 @@ s32 PS4_SYSV_ABI sceHmdInternalSetVRMode();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenGetFadeState();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetFadeAndSwitch();
 s32 PS4_SYSV_ABI sceHmdInternalSocialScreenSetOutput();
-s32 PS4_SYSV_ABI sceHmdOpen();
-s32 PS4_SYSV_ABI sceHmdReprojectionAddDisplayBuffer();
-s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventEnd();
-s32 PS4_SYSV_ABI sceHmdReprojectionClearUserEventStart();
-s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfo();
-s32 PS4_SYSV_ABI sceHmdReprojectionDebugGetLastInfoMultilayer();
-s32 PS4_SYSV_ABI sceHmdReprojectionFinalize();
-s32 PS4_SYSV_ABI sceHmdReprojectionFinalizeCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionInitialize();
-s32 PS4_SYSV_ABI sceHmdReprojectionInitializeCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffAlign();
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryGarlicBuffSize();
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffAlign();
-s32 PS4_SYSV_ABI sceHmdReprojectionQueryOnionBuffSize();
-s32 PS4_SYSV_ABI sceHmdReprojectionSetCallback();
-s32 PS4_SYSV_ABI sceHmdReprojectionSetDisplayBuffers();
-s32 PS4_SYSV_ABI sceHmdReprojectionSetOutputMinColor();
-s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventEnd();
-s32 PS4_SYSV_ABI sceHmdReprojectionSetUserEventStart();
-s32 PS4_SYSV_ABI sceHmdReprojectionStart();
-s32 PS4_SYSV_ABI sceHmdReprojectionStart2dVr();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartLiveCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartMultilayer2();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNear();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWideNearWithOverlay();
-s32 PS4_SYSV_ABI sceHmdReprojectionStartWithOverlay();
-s32 PS4_SYSV_ABI sceHmdReprojectionStop();
-s32 PS4_SYSV_ABI sceHmdReprojectionStopCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionStopLiveCapture();
-s32 PS4_SYSV_ABI sceHmdReprojectionUnsetCallback();
-s32 PS4_SYSV_ABI sceHmdReprojectionUnsetDisplayBuffers();
-s32 PS4_SYSV_ABI sceHmdTerminate();
+
 s32 PS4_SYSV_ABI Func_202D0D1A687FCD2F();
 s32 PS4_SYSV_ABI Func_358DBF818A3D8A12();
 s32 PS4_SYSV_ABI Func_5CCBADA76FE8F40E();
 s32 PS4_SYSV_ABI Func_63D403167DC08CF0();
-s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF();
+s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF(s32 handle, void* data, s32 unk);
 s32 PS4_SYSV_ABI Func_791560C32F4F6D68();
 s32 PS4_SYSV_ABI Func_7C955961EA85B6D3();
 s32 PS4_SYSV_ABI Func_9952277839236BA7();
@@ -194,10 +257,11 @@ s32 PS4_SYSV_ABI Func_A31F4DA8B3BD2E12();
 s32 PS4_SYSV_ABI Func_A92D7C23AC364993();
 s32 PS4_SYSV_ABI Func_ADCCC25CB876FDBE();
 s32 PS4_SYSV_ABI Func_B16652641FE69F0E();
-s32 PS4_SYSV_ABI Func_B614F290B67FB59B();
 s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49();
 s32 PS4_SYSV_ABI Func_FC193BD653F2AF2E();
 s32 PS4_SYSV_ABI Func_FF2E0E53015FE231();
 
+void RegisterDistortion(Core::Loader::SymbolsResolver* sym);
+void RegisterReprojection(Core::Loader::SymbolsResolver* sym);
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Hmd

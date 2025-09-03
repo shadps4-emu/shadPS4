@@ -177,7 +177,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
 
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
     const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
@@ -401,17 +401,17 @@ void ControlSettings::SetDefault() {
 }
 
 void ControlSettings::AddBoxItems() {
-    ui->ProfileComboBox->addItem("Common Config");
+    ui->ProfileComboBox->addItem(tr("Common Config"));
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
-    ui->ProfileComboBox->setCurrentText("Common Config");
-    ui->TitleLabel->setText("Common Config");
+    ui->ProfileComboBox->setCurrentText(tr("Common Config"));
+    ui->TitleLabel->setText(tr("Common Config"));
 }
 
 void ControlSettings::SetUIValuestoMappings() {
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
 
@@ -645,8 +645,8 @@ void ControlSettings::SetUIValuestoMappings() {
 }
 
 void ControlSettings::GetGameTitle() {
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        ui->TitleLabel->setText("Common Config");
+    if (ui->ProfileComboBox->currentText() == tr("Common Config")) {
+        ui->TitleLabel->setText(tr("Common Config"));
     } else {
         for (int i = 0; i < m_game_info->m_games.size(); i++) {
             if (m_game_info->m_games[i].serial ==
@@ -760,6 +760,10 @@ void ControlSettings::DisableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(false);
 }
 
 void ControlSettings::EnableMappingButtons() {
@@ -770,6 +774,10 @@ void ControlSettings::EnableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(true);
 }
 
 void ControlSettings::ConnectAxisInputs(QPushButton*& button) {
@@ -1024,7 +1032,9 @@ void ControlSettings::Cleanup() {
         SDL_QuitSubSystem(SDL_INIT_EVENTS);
         SDL_Quit();
     } else {
-        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        if (!Config::getBackgroundControllerInput()) {
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        }
         SDL_Event checkGamepad{};
         checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
         SDL_PushEvent(&checkGamepad);

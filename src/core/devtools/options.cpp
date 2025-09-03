@@ -30,26 +30,12 @@ void LoadOptionsConfig(const char* line) {
         Options.frame_dump_render_on_collapse = i != 0;
         return;
     }
-    if (sscanf(line, "fsr_enabled=%d", &i) == 1) {
-        presenter->GetFsrSettingsRef().enable = i != 0;
-        return;
-    }
-    if (sscanf(line, "fsr_rcas_enabled=%d", &i) == 1) {
-        presenter->GetFsrSettingsRef().use_rcas = i != 0;
-        return;
-    }
-    if (sscanf(line, "fsr_rcas_attenuation=%f", &f) == 1) {
-        presenter->GetFsrSettingsRef().rcas_attenuation = f;
-    }
 }
 
 void SerializeOptionsConfig(ImGuiTextBuffer* buf) {
     buf->appendf("disassembler_cli_isa=%s\n", Options.disassembler_cli_isa.c_str());
     buf->appendf("disassembler_cli_spv=%s\n", Options.disassembler_cli_spv.c_str());
     buf->appendf("frame_dump_render_on_collapse=%d\n", Options.frame_dump_render_on_collapse);
-    buf->appendf("fsr_enabled=%d\n", presenter->GetFsrSettingsRef().enable);
-    buf->appendf("fsr_rcas_enabled=%d\n", presenter->GetFsrSettingsRef().use_rcas);
-    buf->appendf("fsr_rcas_attenuation=%f\n", presenter->GetFsrSettingsRef().rcas_attenuation);
 }
 
 } // namespace Core::Devtools

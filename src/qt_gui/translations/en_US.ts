@@ -1987,10 +1987,6 @@
         <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
     </message>
     <message>
-        <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
-    </message>
-    <message>
         <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
         <translation>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
     </message>
@@ -2172,6 +2168,62 @@
     </message>
     <message>
         <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Background Controller Input</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Logging</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Present Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mailbox (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fifo (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Immediate (No Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select the DLC folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

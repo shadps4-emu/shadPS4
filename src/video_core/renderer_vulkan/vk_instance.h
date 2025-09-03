@@ -111,7 +111,7 @@ public:
 
     /// Returns true if VK_KHR_maintenance8 is supported
     bool IsMaintenance8Supported() const {
-        return maintenance_8 && driver_id != vk::DriverId::eMoltenvk;
+        return maintenance_8;
     }
 
     /// Returns true when VK_EXT_custom_border_color is supported
@@ -139,7 +139,7 @@ public:
         return depth_range_unrestricted;
     }
 
-    /// Returns true when the extendedDynamicState3ColorWriteMask feature of
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature o
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
         return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
@@ -460,8 +460,8 @@ private:
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
-    bool depth_range_unrestricted{};
     bool dynamic_state_3{};
+    bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
     bool list_restart{};

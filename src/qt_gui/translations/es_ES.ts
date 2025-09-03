@@ -1553,7 +1553,7 @@
     </message>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Personalizar Atajos</translation>
     </message>
   </context>
   <context>
@@ -1991,10 +1991,6 @@
       <translation>Recopilar Shaders:\nNecesitas esto habilitado para editar shaders con el menú de depuración (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnóstico de cuelgues:\nCrea un archivo .yaml con información sobre el estado de Vulkan en el momento del cuelgue.\nÚtil para depurar errores de tipo &apos;Dispositivo perdido&apos; . Con esto activado, deberías habilitar los marcadores de depuración de Host E Invitado.\nNo funciona en GPUs de Intel.\nNecesitas activar las Capas de Validación de Vulkan y el SDK de Vulkan para que funcione.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
       <translation>Habilitar Retrolectura:\nHabilita la lectura y escritura de memoria desde y hacia la GPU.\nNecesario para el correcto funcionamiento de algunos juegos.\nPuede afectar el rendimiento o causar inestabilidad.</translation>
     </message>
@@ -2178,6 +2174,18 @@
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
       <translation>ADVERTENCIA: Estas funciones son experimentales y no deben activarse a menos que se te haya indicado o que un juego lo requiera específicamente. Si tienes dudas, por favor consulta en el servidor de Discord de shadPS4.</translation>
     </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation type="unfinished">Enable Background Controller Input</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
@@ -2210,71 +2218,71 @@
     <name>hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Personalizar Atajos</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Atajos de Mando</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>Mostrar Contador de FPS</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>sin vincular</translation>
     </message>
     <message>
       <source>Stop Emulator</source>
-      <translation type="unfinished">Stop Emulator</translation>
+      <translation>Parar Emulador</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Alternar Pantalla Completa</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Alternar Pausa</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Atajos de teclado</translation>
     </message>
     <message>
       <source>Show Fps Counter: F10</source>
-      <translation type="unfinished">Show Fps Counter: F10</translation>
+      <translation>Mostrar Contador de Fps: F10</translation>
     </message>
     <message>
       <source>Stop Emulator: n/a</source>
-      <translation type="unfinished">Stop Emulator: n/a</translation>
+      <translation>Parar emulador: n/a</translation>
     </message>
     <message>
       <source>Toggle Fullscreen: F11</source>
-      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+      <translation>Alternar Pantalla Completa: F11</translation>
     </message>
     <message>
       <source>Toggle Pause: F9</source>
-      <translation type="unfinished">Toggle Pause: F9</translation>
+      <translation>Alternar Pausa: F9</translation>
     </message>
     <message>
       <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation type="unfinished">Tip: Up to three inputs can be assigned for each function</translation>
+      <translation>Consejo: Se pueden asignar hasta tres entradas para cada función</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Guardar</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Aplicar</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Cancelar</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>Presiona un botón</translation>
     </message>
   </context>
 </TS>

@@ -85,6 +85,9 @@ void Hotkeys::DisableMappingButtons() {
     for (auto& i : KBButtonsList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
 }
 
 void Hotkeys::EnableMappingButtons() {
@@ -95,6 +98,9 @@ void Hotkeys::EnableMappingButtons() {
     for (auto& i : KBButtonsList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
 }
 
 void Hotkeys::SetDefault() {
@@ -915,7 +921,9 @@ void Hotkeys::Cleanup() {
         SDL_QuitSubSystem(SDL_INIT_EVENTS);
         SDL_Quit();
     } else {
-        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        if (!Config::getBackgroundControllerInput()) {
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        }
     }
 }
 

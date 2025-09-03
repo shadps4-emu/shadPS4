@@ -23,13 +23,22 @@ struct VertexAttribute {
     u8 sgpr_base;     ///< SGPR that contains the pointer to the list of vertex V#
     u8 dword_offset;  ///< The dword offset of the V# that describes this attribute.
     u8 instance_data; ///< Indicates that the buffer will be accessed in instance rate
+    u8 inst_offset;   ///< Instruction offset applied on the formatted buffer loads
+    u8 data_format{}; ///< Data format override when typed buffer loads are used
+    u8 num_format{};  ///< Number format override when typed buffer loads are used
 
-    [[nodiscard]] InstanceIdType GetStepRate() const {
+    InstanceIdType GetStepRate() const {
         return static_cast<InstanceIdType>(instance_data);
     }
 
-    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Shader::Info& info) const noexcept {
-        return info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
+    constexpr AmdGpu::Buffer GetSharp(const Shader::Info& info) const noexcept {
+        auto buffer = info.ReadUdReg<AmdGpu::Buffer>(sgpr_base, dword_offset);
+        buffer.base_address += inst_offset;
+        if (data_format) {
+            buffer.data_format = data_format;
+            buffer.num_format = num_format;
+        }
+        return buffer;
     }
 
     bool operator==(const VertexAttribute& other) const {

@@ -75,6 +75,7 @@ enum class Class : u8 {
     Lib_NpScore,           ///< The LibSceNpScore implementation
     Lib_NpTrophy,          ///< The LibSceNpTrophy implementation
     Lib_NpWebApi,          ///< The LibSceWebApi implementation
+    Lib_NpProfileDialog,   ///< The LibSceNpProfileDialog implementation
     Lib_Screenshot,        ///< The LibSceScreenshot implementation
     Lib_LibCInternal,      ///< The LibCInternal implementation.
     Lib_AppContent,        ///< The LibSceAppContent implementation.
@@ -84,7 +85,7 @@ enum class Class : u8 {
     Lib_Jpeg,              ///< The LibSceJpeg implementation.
     Lib_PlayGo,            ///< The LibScePlayGo implementation.
     Lib_PlayGoDialog,      ///< The LibScePlayGoDialog implementation.
-    Lib_Random,            ///< The libSceRandom implementation.
+    Lib_Random,            ///< The LibSceRandom implementation.
     Lib_Usbd,              ///< The LibSceUsbd implementation.
     Lib_Ajm,               ///< The LibSceAjm implementation.
     Lib_ErrorDialog,       ///< The LibSceErrorDialog implementation.
@@ -106,10 +107,12 @@ enum class Class : u8 {
     Lib_NpParty,           ///< The LibSceNpParty implementation
     Lib_Zlib,              ///< The LibSceZlib implementation.
     Lib_Hmd,               ///< The LibSceHmd implementation.
+    Lib_HmdSetupDialog,    ///< The LibSceHmdSetupDialog implementation.
     Lib_SigninDialog,      ///< The LibSigninDialog implementation.
     Lib_Camera,            ///< The LibCamera implementation.
     Lib_CompanionHttpd,    ///< The LibCompanionHttpd implementation.
     Lib_CompanionUtil,     ///< The LibCompanionUtil implementation.
+    Lib_VrTracker,         ///< The LibSceVrTracker implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend
