@@ -7,8 +7,11 @@
 #include <QtConcurrent>
 
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "core/file_format/psf.h"
 #include "game_list_utils.h"
+
+namespace NativeFS = Common::FS::Native;
 
 class GameInfoClass : public QObject {
     Q_OBJECT

@@ -1,204 +1,56 @@
-// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <span>
 #include <vector>
 
-#include "common/alignment.h"
+#include <fcntl.h>
+
 #include "common/assert.h"
-#include "common/error.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/libraries/kernel/file_system.h"
 
-#ifdef _WIN32
-#include "common/ntapi.h"
-
-#include <io.h>
-#include <share.h>
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
-
-#ifdef _MSC_VER
-#define fileno _fileno
-#define fseeko _fseeki64
-#define ftello _ftelli64
-#endif
+#include "io_file.h"
+#include "native_fs.h"
 
 namespace Common::FS {
 
-namespace fs = std::filesystem;
-
-namespace {
-
-#ifdef _WIN32
-
-[[nodiscard]] constexpr const wchar_t* AccessModeToWStr(FileAccessMode mode, FileType type) {
-    switch (type) {
-    case FileType::BinaryFile:
-        switch (mode) {
-        case FileAccessMode::Read:
-            return L"rb";
-        case FileAccessMode::Write:
-            return L"wb";
-        case FileAccessMode::Append:
-            return L"ab";
-        case FileAccessMode::ReadWrite:
-            return L"r+b";
-        case FileAccessMode::ReadAppend:
-            return L"a+b";
-        }
-        break;
-    case FileType::TextFile:
-        switch (mode) {
-        case FileAccessMode::Read:
-            return L"r";
-        case FileAccessMode::Write:
-            return L"w";
-        case FileAccessMode::Append:
-            return L"a";
-        case FileAccessMode::ReadWrite:
-            return L"r+";
-        case FileAccessMode::ReadAppend:
-            return L"a+";
-        }
-        break;
-    }
-
-    return L"";
-}
-
-[[nodiscard]] constexpr int ToWindowsFileShareFlag(FileShareFlag flag) {
-    switch (flag) {
-    case FileShareFlag::ShareNone:
-    default:
-        return _SH_DENYRW;
-    case FileShareFlag::ShareReadOnly:
-        return _SH_DENYWR;
-    case FileShareFlag::ShareWriteOnly:
-        return _SH_DENYRD;
-    case FileShareFlag::ShareReadWrite:
-        return _SH_DENYNO;
-    }
-}
-
-#else
-
-[[nodiscard]] constexpr const char* AccessModeToStr(FileAccessMode mode, FileType type) {
-    switch (type) {
-    case FileType::BinaryFile:
-        switch (mode) {
-        case FileAccessMode::Read:
-            return "rb";
-        case FileAccessMode::Write:
-            return "wb";
-        case FileAccessMode::Append:
-            return "ab";
-        case FileAccessMode::ReadWrite:
-            return "r+b";
-        case FileAccessMode::ReadAppend:
-            return "a+b";
-        }
-        break;
-    case FileType::TextFile:
-        switch (mode) {
-        case FileAccessMode::Read:
-            return "r";
-        case FileAccessMode::Write:
-            return "w";
-        case FileAccessMode::Append:
-            return "a";
-        case FileAccessMode::ReadWrite:
-            return "r+";
-        case FileAccessMode::ReadAppend:
-            return "a+";
-        }
-        break;
-    }
-
-    return "";
-}
-
-#endif
-
-[[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
-    switch (origin) {
-    case SeekOrigin::SetOrigin:
-        return SEEK_SET;
-    case SeekOrigin::CurrentPosition:
-        return SEEK_CUR;
-    case SeekOrigin::End:
-        return SEEK_END;
-    default:
-        UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
-    }
-}
-
-} // Anonymous namespace
+namespace NativeFS = Common::FS::Native;
 
 IOFile::IOFile() = default;
-
-IOFile::IOFile(const std::string& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
-    Open(path, mode, type, flag);
-}
-
-IOFile::IOFile(std::string_view path, FileAccessMode mode, FileType type, FileShareFlag flag) {
-    Open(path, mode, type, flag);
-}
-
-IOFile::IOFile(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
-    Open(path, mode, type, flag);
-}
-
-IOFile::~IOFile() {
-    Close();
-}
 
 IOFile::IOFile(IOFile&& other) noexcept {
     std::swap(file_path, other.file_path);
     std::swap(file_access_mode, other.file_access_mode);
-    std::swap(file_type, other.file_type);
-    std::swap(file, other.file);
+    std::swap(file_descriptor, other.file_descriptor);
 }
 
 IOFile& IOFile::operator=(IOFile&& other) noexcept {
     std::swap(file_path, other.file_path);
     std::swap(file_access_mode, other.file_access_mode);
-    std::swap(file_type, other.file_type);
-    std::swap(file, other.file);
+    std::swap(file_descriptor, other.file_descriptor);
     return *this;
 }
 
-int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
-    Close();
+int IOFile::Open(const std::filesystem::path& path, FileAccessMode flags, bool truncate, int mode) {
+    return Open(path, AccessModeToPOSIX(flags, truncate), mode);
+}
 
+int IOFile::Open(const std::filesystem::path& path, int flags, int mode) {
     file_path = path;
-    file_access_mode = mode;
-    file_type = type;
+    file_access_mode = flags;
+    file_access_permissions = mode;
 
-    errno = 0;
-    int result = 0;
+    std::error_code ec{};
+    file_descriptor = NativeFS::Open(path, ec, file_access_mode, file_access_permissions);
 
-#ifdef _WIN32
-    if (flag != FileShareFlag::ShareNone) {
-        file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
-        result = errno;
-    } else {
-        result = _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
-    }
-#else
-    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
-    result = errno;
-#endif
-
-    if (!IsOpen()) {
-        const auto ec = std::error_code{result, std::generic_category()};
+    if (-1 == file_descriptor)
         LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, error_message={}",
                   PathToUTF8String(file_path), ec.message());
-    }
 
-    return result;
+    return ec.value();
 }
 
 void IOFile::Close() {
@@ -206,75 +58,118 @@ void IOFile::Close() {
         return;
     }
 
-    errno = 0;
-
-    const auto close_result = std::fclose(file) == 0;
-
-    if (!close_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
+    std::error_code ec{};
+    if (!NativeFS::Close(file_descriptor, ec)) {
         LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
     }
 
-    file = nullptr;
-
-#ifdef _WIN64
-    if (file_mapping && file_access_mode == FileAccessMode::ReadWrite) {
-        CloseHandle(std::bit_cast<HANDLE>(file_mapping));
-    }
-#endif
+    file_descriptor = -1;
 }
 
-void IOFile::Unlink() {
+void IOFile::Unlink() const {
     if (!IsOpen()) {
         return;
     }
 
-    // Mark the file for deletion
-    // TODO: Also remove the file path?
-#ifdef _WIN64
-    FILE_DISPOSITION_INFORMATION disposition;
-    IO_STATUS_BLOCK iosb;
+    std::error_code ec{};
+    if (NativeFS::Unlink(file_path, ec))
+        return;
 
-    const int fd = fileno(file);
-    HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-
-    disposition.DeleteFile = TRUE;
-    NtSetInformationFile(hfile, &iosb, &disposition, sizeof(disposition),
-                         FileDispositionInformation);
-#else
-    if (unlink(file_path.c_str()) != 0) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
-    }
-#endif
+    LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
+              PathToUTF8String(file_path), ec.message());
 }
 
-uintptr_t IOFile::GetFileMapping() {
-    if (file_mapping) {
-        return file_mapping;
-    }
-#ifdef _WIN64
-    const int fd = fileno(file);
-
-    HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
-    HANDLE mapping = nullptr;
-
-    if (file_access_mode == FileAccessMode::ReadWrite) {
-        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT, 0,
-                                     NULL, NULL, 0);
-    } else {
-        mapping = hfile;
+bool IOFile::Flush() const {
+    if (!IsOpen()) {
+        return false;
     }
 
-    file_mapping = std::bit_cast<uintptr_t>(mapping);
-    ASSERT_MSG(file_mapping, "{}", Common::GetLastErrorMsg());
-    return file_mapping;
-#else
-    file_mapping = fileno(file);
-    return file_mapping;
-#endif
+    std::error_code ec{};
+    if (NativeFS::Flush(file_descriptor, ec))
+        return true;
+
+    LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
+              PathToUTF8String(file_path), ec.message());
+
+    return false;
+}
+
+bool IOFile::Commit() const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    std::error_code ec{};
+    if (NativeFS::Commit(file_descriptor, ec))
+        return true;
+
+    LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
+              PathToUTF8String(file_path), ec.message());
+
+    return false;
+}
+
+bool IOFile::SetSize(u64 size) const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    std::error_code ec{};
+    if (NativeFS::SetSize(file_descriptor, ec, size))
+        return true;
+
+    LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
+              PathToUTF8String(file_path), size, ec.message());
+
+    return false;
+}
+
+u64 IOFile::GetSize() const {
+    if (!IsOpen()) {
+        return 0;
+    }
+
+    std::error_code ec{};
+    const u64 file_size = NativeFS::GetSize(file_descriptor, ec);
+    if (0 < file_size)
+        return file_size;
+
+    LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
+              PathToUTF8String(file_path), file_size, ec.message());
+
+    return file_size;
+}
+
+bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
+    if (!IsOpen()) {
+        return false;
+    }
+
+    std::error_code ec{};
+    if (NativeFS::Seek(file_descriptor, ec, offset, origin))
+        return true;
+
+    LOG_ERROR(Common_Filesystem,
+              "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
+              PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
+
+    return false;
+}
+
+s64 IOFile::Tell() const {
+    if (!IsOpen()) {
+        return 0;
+    }
+
+    std::error_code ec{};
+    if (s64 ret = NativeFS::Tell(file_descriptor, ec); -1 != ret)
+        return ret;
+
+    LOG_ERROR(Common_Filesystem, "Failed to tell file at path={}, ec_message={}",
+              PathToUTF8String(file_path), ec.message());
+
+    return -1;
 }
 
 std::string IOFile::ReadString(size_t length) const {
@@ -286,134 +181,68 @@ std::string IOFile::ReadString(size_t length) const {
     return std::string{string_buffer.data(), string_size};
 }
 
-bool IOFile::Flush() const {
-    if (!IsOpen()) {
-        return false;
+s64 IOFile::WriteString(std::span<const char> string) const {
+    return WriteSpan(string);
+}
+
+/**
+ * These two functions are final for Linux/macOS, but intermediate
+ * for Windows. Native calls are converted to POSIX, and then
+ * will be processed by Windows to its own flags and attributes.
+ * This simplifies calls a lot, leaving Linux as a main convention and forcing Windows to adapt
+ */
+
+int AccessModeToPOSIX(FileAccessMode mode, bool truncate) {
+    const int _truncate = truncate ? 1 : 0;
+    // recreating how stream would handle access modes
+    switch (mode) {
+    default:
+    case FileAccessMode::Read:
+        return O_RDONLY;
+    case FileAccessMode::Write:
+        return O_WRONLY | O_CREAT | (O_TRUNC * _truncate);
+    case FileAccessMode::Append:
+        return O_APPEND | O_CREAT;
+    case FileAccessMode::ReadExtended:
+        return O_RDWR;
+    case FileAccessMode::WriteExtended:
+        return O_RDWR | O_CREAT | (O_TRUNC * _truncate);
+    case FileAccessMode::AppendExtended:
+        return O_RDONLY | O_APPEND | O_CREAT;
     }
+    return O_RDONLY;
+}
 
-    errno = 0;
+int AccessModeOrbisToPOSIX(int mode) {
+    int out = O_RDONLY; // O_RDONLY = 0, so we can safely assume it as the default
 
-#ifdef _WIN32
-    const auto flush_result = std::fflush(file) == 0;
-#else
-    const auto flush_result = std::fflush(file) == 0;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_WRONLY)
+        out |= O_WRONLY;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_RDWR)
+        out |= O_RDWR;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_NONBLOCK) //< can ignore
+        out |= O_NONBLOCK;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_APPEND)
+        out |= O_APPEND;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_FSYNC) //< can ignore
+        out |= O_FSYNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_SYNC) ///< can ignore
+        out |= O_SYNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_CREAT)
+        out |= O_CREAT;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_TRUNC)
+        out |= O_TRUNC;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_EXCL)
+        out |= O_EXCL;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DSYNC) ///< can ignore
+        out |= O_DSYNC;
+#ifndef __APPLE__
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DIRECT) ///< can ignore
+        out |= O_DIRECT;
 #endif
-
-    if (!flush_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
-    }
-
-    return flush_result;
-}
-
-bool IOFile::Commit() const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto commit_result = std::fflush(file) == 0 && _commit(fileno(file)) == 0;
-#else
-    const auto commit_result = std::fflush(file) == 0 && fsync(fileno(file)) == 0;
-#endif
-
-    if (!commit_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
-    }
-
-    return commit_result;
-}
-
-bool IOFile::SetSize(u64 size) const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto set_size_result = _chsize_s(fileno(file), static_cast<s64>(size)) == 0;
-#else
-    const auto set_size_result = ftruncate(fileno(file), static_cast<s64>(size)) == 0;
-#endif
-
-    if (!set_size_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
-                  PathToUTF8String(file_path), size, ec.message());
-    }
-
-    return set_size_result;
-}
-
-u64 IOFile::GetSize() const {
-    if (!IsOpen()) {
-        return 0;
-    }
-
-    // Flush any unwritten buffered data into the file prior to retrieving the file size.
-    std::fflush(file);
-
-    std::error_code ec;
-
-    const auto file_size = fs::file_size(file_path, ec);
-
-    if (ec) {
-        LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
-        return 0;
-    }
-
-    return file_size;
-}
-
-bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-    const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
-
-    if (!seek_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem,
-                  "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
-                  PathToUTF8String(file_path), offset, static_cast<u32>(origin), ec.message());
-    }
-
-    return seek_result;
-}
-
-s64 IOFile::Tell() const {
-    if (!IsOpen()) {
-        return 0;
-    }
-
-    errno = 0;
-
-    return ftello(file);
-}
-
-u64 GetDirectorySize(const std::filesystem::path& path) {
-    if (!fs::exists(path)) {
-        return 0;
-    }
-
-    u64 total = 0;
-    for (const auto& entry : fs::recursive_directory_iterator(path)) {
-        if (fs::is_regular_file(entry.path())) {
-            total += fs::file_size(entry.path());
-        }
-    }
-    return total;
+    if (mode & Libraries::Kernel::ORBIS_KERNEL_O_DIRECTORY)
+        out |= O_DIRECTORY;
+    return out;
 }
 
 } // namespace Common::FS

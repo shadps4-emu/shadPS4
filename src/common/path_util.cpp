@@ -3,7 +3,9 @@
 
 #include <fstream>
 #include <unordered_map>
+
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/scope_exit.h"
 
@@ -32,6 +34,7 @@
 namespace Common::FS {
 
 namespace fs = std::filesystem;
+namespace NativeFS = Common::FS::Native;
 
 #ifdef __APPLE__
 using IsTranslocatedURLFunc = Boolean (*)(CFURLRef path, bool* isTranslocated,
@@ -97,7 +100,7 @@ static auto UserPaths = [] {
 
     // Try the portable user directory first.
     auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
-    if (!std::filesystem::exists(user_dir)) {
+    if (!NativeFS::Exists(user_dir)) {
         // If it doesn't exist, use the standard path for the platform instead.
         // NOTE: On Windows we currently just create the portable directory instead.
 #ifdef __APPLE__
@@ -120,7 +123,7 @@ static auto UserPaths = [] {
     std::unordered_map<PathType, fs::path> paths;
 
     const auto create_path = [&](PathType shad_path, const fs::path& new_path) {
-        std::filesystem::create_directory(new_path);
+        NativeFS::CreateDirectory(new_path);
         paths.insert_or_assign(shad_path, new_path);
     };
 
@@ -191,7 +194,7 @@ std::string GetUserPathString(PathType shad_path) {
 }
 
 void SetUserPath(PathType shad_path, const fs::path& new_path) {
-    if (!std::filesystem::is_directory(new_path)) {
+    if (!NativeFS::IsDirectory(new_path)) {
         LOG_ERROR(Common_Filesystem, "Filesystem object at new_path={} is not a directory",
                   PathToUTF8String(new_path));
         return;
@@ -207,9 +210,9 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
     }
 
     // Check if this is the game we're looking for
-    if (dir.filename() == game_id && fs::exists(dir / "sce_sys" / "param.sfo")) {
+    if (dir.filename() == game_id && NativeFS::Exists(dir / "sce_sys" / "param.sfo")) {
         auto eboot_path = dir / "eboot.bin";
-        if (fs::exists(eboot_path)) {
+        if (NativeFS::Exists(eboot_path)) {
             return eboot_path;
         }
     }

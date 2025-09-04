@@ -694,6 +694,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/native_fs.cpp
+           src/common/native_fs.h
            src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
@@ -740,6 +742,14 @@ set(COMMON src/common/logging/backend.cpp
            ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
 )
+
+if(WIN32)
+    set(NATIVE_FS_IMPL src/common/native_fs_win32.cpp
+    )
+else()
+    set(NATIVE_FS_IMPL src/common/native_fs_posix.cpp
+    )
+endif()
 
 if (ENABLE_DISCORD_RPC)
     list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
@@ -1069,7 +1079,7 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/cheats_patches.h
            src/qt_gui/compatibility_info.cpp
            src/qt_gui/compatibility_info.h
-	   src/qt_gui/control_settings.cpp	   
+           src/qt_gui/control_settings.cpp	   
            src/qt_gui/control_settings.h
            src/qt_gui/control_settings.ui
            src/qt_gui/kbm_gui.cpp	   
@@ -1125,6 +1135,7 @@ if (ENABLE_QT_GUI)
         ${INPUT}
         ${QT_GUI}
         ${COMMON}
+        ${NATIVE_FS_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
@@ -1137,6 +1148,7 @@ else()
         ${IMGUI}
         ${INPUT}
         ${COMMON}
+        ${NATIVE_FS_IMPL}
         ${CORE}
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}

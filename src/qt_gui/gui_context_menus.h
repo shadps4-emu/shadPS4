@@ -12,6 +12,7 @@
 #include <qt_gui/background_music_player.h>
 #include "cheats_patches.h"
 #include "common/config.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "common/scm_rev.h"
 #include "compatibility_info.h"
@@ -27,6 +28,8 @@
 #include <shobjidl.h>
 #include <wrl/client.h>
 #endif
+
+namespace NativeFS = Common::FS::Native;
 
 class GuiContextMenus : public QObject {
     Q_OBJECT
@@ -155,12 +158,12 @@ public:
             QString open_update_path;
             Common::FS::PathToQString(open_update_path, m_games[itemID].path);
             open_update_path += "-UPDATE";
-            if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+            if (NativeFS::Exists(Common::FS::PathFromQString(open_update_path))) {
                 QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
             } else {
                 Common::FS::PathToQString(open_update_path, m_games[itemID].path);
                 open_update_path += "-patch";
-                if (std::filesystem::exists(Common::FS::PathFromQString(open_update_path))) {
+                if (NativeFS::Exists(Common::FS::PathFromQString(open_update_path))) {
                     QDesktopServices::openUrl(QUrl::fromLocalFile(open_update_path));
                 } else {
                     QMessageBox::critical(nullptr, tr("Error"),
@@ -234,12 +237,12 @@ public:
             std::filesystem::path game_folder_path = m_games[itemID].path;
             std::filesystem::path game_update_path = game_folder_path;
             game_update_path += "-UPDATE";
-            if (std::filesystem::exists(game_update_path)) {
+            if (NativeFS::Exists(game_update_path)) {
                 game_folder_path = game_update_path;
             } else {
                 game_update_path = game_folder_path;
                 game_update_path += "-patch";
-                if (std::filesystem::exists(game_update_path)) {
+                if (NativeFS::Exists(game_update_path)) {
                     game_folder_path = game_update_path;
                 }
             }
@@ -346,12 +349,12 @@ public:
             Common::FS::PathToQString(gameTrpPath, m_games[itemID].path);
             auto game_update_path = Common::FS::PathFromQString(gameTrpPath);
             game_update_path += "-UPDATE";
-            if (std::filesystem::exists(game_update_path)) {
+            if (NativeFS::Exists(game_update_path)) {
                 Common::FS::PathToQString(gameTrpPath, game_update_path);
             } else {
                 game_update_path = Common::FS::PathFromQString(gameTrpPath);
                 game_update_path += "-patch";
-                if (std::filesystem::exists(game_update_path)) {
+                if (NativeFS::Exists(game_update_path)) {
                     Common::FS::PathToQString(gameTrpPath, game_update_path);
                 }
             }
@@ -366,12 +369,12 @@ public:
 
                 auto update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
                 update_path += "-UPDATE";
-                if (std::filesystem::exists(update_path)) {
+                if (NativeFS::Exists(update_path)) {
                     Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
                 } else {
                     update_path = Common::FS::PathFromQString(gameInfo.gameTrpPath);
                     update_path += "-patch";
-                    if (std::filesystem::exists(update_path)) {
+                    if (NativeFS::Exists(update_path)) {
                         Common::FS::PathToQString(gameInfo.gameTrpPath, update_path);
                     }
                 }
@@ -500,7 +503,7 @@ public:
             QString folder_path, game_update_path, dlc_path, save_data_path, trophy_data_path;
             Common::FS::PathToQString(folder_path, m_games[itemID].path);
             game_update_path = folder_path + "-UPDATE";
-            if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
+            if (!NativeFS::Exists(Common::FS::PathFromQString(game_update_path))) {
                 game_update_path = folder_path + "-patch";
             }
             Common::FS::PathToQString(
@@ -519,7 +522,7 @@ public:
                 BackgroundMusicPlayer::getInstance().stopMusic();
                 message_type = tr("Game");
             } else if (selected == deleteUpdate) {
-                if (!std::filesystem::exists(Common::FS::PathFromQString(game_update_path))) {
+                if (!NativeFS::Exists(Common::FS::PathFromQString(game_update_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no update to delete!")));
                     error = true;
@@ -528,7 +531,7 @@ public:
                     message_type = tr("Update");
                 }
             } else if (selected == deleteDLC) {
-                if (!std::filesystem::exists(Common::FS::PathFromQString(dlc_path))) {
+                if (!NativeFS::Exists(Common::FS::PathFromQString(dlc_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no DLC to delete!")));
                     error = true;
@@ -537,7 +540,7 @@ public:
                     message_type = tr("DLC");
                 }
             } else if (selected == deleteSaveData) {
-                if (!std::filesystem::exists(Common::FS::PathFromQString(save_data_path))) {
+                if (!NativeFS::Exists(Common::FS::PathFromQString(save_data_path))) {
                     QMessageBox::critical(nullptr, tr("Error"),
                                           QString(tr("This game has no save data to delete!")));
                     error = true;
@@ -546,7 +549,7 @@ public:
                     message_type = tr("Save Data");
                 }
             } else if (selected == deleteTrophy) {
-                if (!std::filesystem::exists(Common::FS::PathFromQString(trophy_data_path))) {
+                if (!NativeFS::Exists(Common::FS::PathFromQString(trophy_data_path))) {
                     QMessageBox::critical(
                         nullptr, tr("Error"),
                         QString(tr("This game has no saved trophies to delete!")));

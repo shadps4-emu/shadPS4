@@ -7,6 +7,7 @@
 
 #include "common/config.h"
 #include "common/memory_patcher.h"
+#include "common/native_fs.h"
 #include "core/file_sys/fs.h"
 #include "emulator.h"
 #include "game_install_dialog.h"
@@ -15,6 +16,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+namespace NativeFS = Common::FS::Native;
 
 // Custom message handler to ignore Qt logs
 void customMessageHandler(QtMsgType, const QMessageLogContext&, const QString&) {}
@@ -119,7 +122,7 @@ int main(int argc, char* argv[]) {
              std::string config_dir(argv[i]);
              std::filesystem::path config_path = std::filesystem::path(config_dir);
              std::error_code discard;
-             if (!std::filesystem::is_directory(config_path, discard)) {
+             if (!NativeFS::IsDirectory(config_path, discard)) {
                  std::cerr << "Error: Directory does not exist: " << config_path << "\n";
                  exit(1);
              }
@@ -186,7 +189,7 @@ int main(int argc, char* argv[]) {
         std::filesystem::path game_file_path(game_path);
 
         // Check if the provided path is a valid file
-        if (!std::filesystem::exists(game_file_path)) {
+        if (!NativeFS::Exists(game_file_path)) {
             // If not a file, treat it as a game ID and search in install directories recursively
             bool game_found = false;
             const int max_depth = 5;

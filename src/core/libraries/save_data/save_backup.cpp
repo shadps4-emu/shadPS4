@@ -24,6 +24,8 @@ namespace fs = std::filesystem;
 
 namespace Libraries::SaveData::Backup {
 
+namespace NativeFS = Common::FS::Native;
+
 static std::jthread g_backup_thread;
 static std::counting_semaphore g_backup_thread_semaphore{0};
 
@@ -38,7 +40,7 @@ static std::atomic g_backup_status = WorkerStatus::NotStarted;
 
 static void backup(const std::filesystem::path& dir_name) {
     std::unique_lock lk{g_backup_running_mutex};
-    if (!fs::exists(dir_name)) {
+    if (!NativeFS::Exists(dir_name)) {
         return;
     }
 
@@ -62,13 +64,13 @@ static void backup(const std::filesystem::path& dir_name) {
     int total_count = static_cast<int>(backup_files.size());
     int current_count = 0;
 
-    fs::create_directory(backup_dir_tmp);
+    NativeFS::CreateDirectory(backup_dir_tmp);
     for (const auto& file : backup_files) {
         fs::copy(file, backup_dir_tmp / file.filename(), fs::copy_options::recursive);
         current_count++;
         g_backup_progress = current_count * 100 / total_count;
     }
-    bool has_existing_backup = fs::exists(backup_dir);
+    bool has_existing_backup = NativeFS::Exists(backup_dir);
     if (has_existing_backup) {
         fs::rename(backup_dir, backup_dir_old);
     }
@@ -199,7 +201,7 @@ bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
 bool Restore(const std::filesystem::path& save_path) {
     LOG_INFO(Lib_SaveData, "Restoring backup for {}", fmt::UTF(save_path.u8string()));
     std::unique_lock lk{g_backup_running_mutex};
-    if (!fs::exists(save_path) || !fs::exists(save_path / backup_dir)) {
+    if (!NativeFS::Exists(save_path) || !NativeFS::Exists(save_path / backup_dir)) {
         return false;
     }
     for (const auto& entry : fs::directory_iterator(save_path)) {

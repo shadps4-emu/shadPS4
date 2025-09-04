@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
+#include "common/native_fs.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/file_sys/devices/console_device.h"
@@ -35,6 +36,8 @@
 #endif
 
 namespace D = Core::Devices;
+namespace NativeFS = Common::FS::Native;
+
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
 #define GET_DEVICE_FD(fd)                                                                          \
@@ -79,7 +82,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool rdwr = (flags & 0x3) == ORBIS_KERNEL_O_RDWR;
 
     if (!read && !write && !rdwr) {
-        // Start by checking for invalid flags.
+        // R, W or RW flag must be present with every call
         *__Error() = POSIX_EINVAL;
         return -1;
     }
@@ -94,10 +97,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
-
-    if (sync || direct || dsync || nonblock) {
-        LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
-    }
 
     std::string_view path{raw_path};
     u32 handle = h->CreateHandle();
@@ -118,64 +117,81 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool read_only = false;
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = std::filesystem::exists(file->m_host_name);
+    bool exists = NativeFS::Exists(file->m_host_name);
+    bool is_really_directory = exists ? NativeFS::IsDirectory(file->m_host_name) : false;
     s32 e = 0;
 
-    if (create) {
-        if (excl && exists) {
-            // Error if file exists
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EEXIST;
-            return -1;
+    // determine target file type first (file/directory)
+    if (exists && !create) {
+        if (is_really_directory || directory) {
+            // Directories can be opened even if the directory flag isn't set.
+            // In these cases, error behavior is identical to the directory code path.
+            directory = true;
+            file->type = Core::FileSys::FileType::Directory;
         }
-
-        if (!exists) {
-            if (read_only) {
-                // Can't create files in a read only directory
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EROFS;
-                return -1;
-            }
-            // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        }
-    } else if (!exists) {
-        // If we're not creating a file, and it doesn't exist, return ENOENT
-        h->DeleteHandle(handle);
-        *__Error() = POSIX_ENOENT;
-        return -1;
-    }
-
-    if (std::filesystem::is_directory(file->m_host_name) || directory) {
-        // Directories can be opened even if the directory flag isn't set.
-        // In these cases, error behavior is identical to the directory code path.
-        directory = true;
-    }
-
-    if (directory) {
-        if (!std::filesystem::is_directory(file->m_host_name)) {
+        if (!is_really_directory && directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
             *__Error() = POSIX_ENOTDIR;
             return -1;
         }
+    }
 
-        if (write || rdwr) {
-            // Cannot open directories with any type of write access
+    // handle creation of target entity
+    if (create) {
+        if (!exists && read_only) {
+            // Can't create files in a read only directory
             h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
+            *__Error() = POSIX_EROFS;
             return -1;
         }
-
-        if (truncate) {
-            // Cannot open directories with truncate
+        if (!exists && directory) {
+            // we can safely assume this will not return an error
+            NativeFS::Touch(file->m_host_name, mode);
             h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
+            *__Error() = POSIX_ENOTDIR;
             return -1;
         }
+        if (exists && excl) {
+            // File exists
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EEXIST;
+            return -1;
+        }
+    } else if (!exists) {
+        // We're not creating a file, and it doesn't exist
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
 
-        file->type = Core::FileSys::FileType::Directory;
+    // directories can't take *anything* related to writing
+    if (directory && (write || rdwr || truncate)) {
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_EISDIR;
+        return -1;
+    }
+
+    if (!directory) {
+        if (read_only && (write || rdwr || truncate)) {
+            // Can't open files with truncate flag in a read only directory
+            h->DeleteHandle(handle);
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        if (truncate && read) {
+            // This combination is "undefined" in POSIX
+            // Forcing behaviour implemented by PS4 (truncate and open for reading)
+            // Truncate here, will be opened later
+            Common::FS::IOFile{file->m_host_name, Common::FS::FileAccessMode::Write, true};
+            flags &= ~ORBIS_KERNEL_O_TRUNC;
+            truncate = false;
+        }
+    }
+
+    // handle opening
+    if (directory) {
         file->is_opened = true;
         if (file->m_guest_name.starts_with("/app0")) {
             // TODO: Properly identify type for paths like "/app0/.."
@@ -185,40 +201,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
-
-        if (truncate && read_only) {
-            // Can't open files with truncate flag in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (truncate) {
-            // Open the file as read-write so we can truncate regardless of flags.
-            // Since open starts by closing the file, this won't interfere with later open calls.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            if (e == 0) {
-                // If the file was opened successfully, reduce size to 0
-                file->f.SetSize(0);
-            }
-        }
-
-        if (read) {
-            // Read only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (read_only) {
-            // Can't open files with write/read-write access in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (append) {
-            // Append can be specified with rdwr or write, but we treat it as a separate mode.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-        } else if (write) {
-            // Write only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (rdwr) {
-            // Read and write
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-        }
+        e = file->f.Open(file->m_host_name, Common::FS::AccessModeOrbisToPOSIX(flags), mode);
     }
 
     if (e != 0) {
@@ -302,7 +285,12 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
         return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
     }
 
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    s64 write_ret = file->f.WriteRaw<u8>(buf, nbytes);
+    if (write_ret < 0) {
+        SetPosixErrno(errno);
+        return 1;
+    }
+    return write_ret;
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
@@ -506,7 +494,13 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
         // Socket functions handle errnos internally.
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
-    return ReadFile(file->f, buf, nbytes);
+
+    s64 readfile_ret = ReadFile(file->f, buf, nbytes);
+    if (readfile_ret < 0) {
+        SetPosixErrno(errno);
+        return -1;
+    }
+    return readfile_ret;
 }
 
 s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
@@ -533,7 +527,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     bool ro = false;
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
-    if (std::filesystem::exists(dir_name)) {
+    if (NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
@@ -545,12 +539,12 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
     std::error_code ec;
-    if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
+    if (dir_name.empty() || !NativeFS::CreateDirectory(dir_name, ec)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
 
-    if (!std::filesystem::exists(dir_name)) {
+    if (!NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -577,12 +571,12 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         return -1;
     }
 
-    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
+    if (dir_name.empty() || !NativeFS::IsDirectory(dir_name)) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
     }
 
-    if (!std::filesystem::exists(dir_name)) {
+    if (!NativeFS::Exists(dir_name)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -611,13 +605,13 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
-    const bool is_dir = std::filesystem::is_directory(path_name);
+    const bool is_dir = NativeFS::IsDirectory(path_name);
     const bool is_file = std::filesystem::is_regular_file(path_name);
     if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (std::filesystem::is_directory(path_name)) {
+    if (NativeFS::IsDirectory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -652,7 +646,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         }
     }
     const auto path_name = mnt->GetHostPath(guest_path);
-    if (!std::filesystem::exists(path_name)) {
+    if (!NativeFS::Exists(path_name)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -760,7 +754,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     bool ro = false;
     const auto src_path = mnt->GetHostPath(from, &ro);
-    if (!std::filesystem::exists(src_path)) {
+    if (!NativeFS::Exists(src_path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -773,8 +767,8 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const bool src_is_dir = std::filesystem::is_directory(src_path);
-    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
+    const bool src_is_dir = NativeFS::IsDirectory(src_path);
+    const bool dst_is_dir = NativeFS::IsDirectory(dst_path);
     if (src_is_dir && !dst_is_dir) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
@@ -792,18 +786,9 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
-    if (file) {
-        // We need to force ReadWrite if the file had Write access before
-        // Otherwise f.Open will clear the file contents.
-        auto access_mode = file->f.GetAccessMode() == Common::FS::FileAccessMode::Write
-                               ? Common::FS::FileAccessMode::ReadWrite
-                               : file->f.GetAccessMode();
-        file->f.Close();
-        std::filesystem::remove(src_path);
-        file->f.Open(dst_path, access_mode);
-    } else {
-        std::filesystem::remove(src_path);
-    }
+    if (file)
+        file->f.Open(dst_path, Common::FS::FileAccessMode::Write, false);
+    NativeFS::Remove(src_path);
 
     return ORBIS_OK;
 }
@@ -1066,7 +1051,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         return -1;
     }
 
-    if (std::filesystem::is_directory(host_path)) {
+    if (NativeFS::IsDirectory(host_path)) {
         *__Error() = POSIX_EPERM;
         return -1;
     }
@@ -1074,7 +1059,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
         // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
+        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadExtended);
         file.Unlink();
     } else {
         file->f.Unlink();
@@ -1310,7 +1295,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
             s32 native_fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<s32>(file->f.GetFileMapping());
+                    return static_cast<s32>(file->f.GetNativeFileDescriptor());
                 case Core::FileSys::FileType::Device:
                     return -1;
                 case Core::FileSys::FileType::Socket: {

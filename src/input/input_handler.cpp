@@ -21,11 +21,13 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/io_file.h"
+#include "common/native_fs.h"
 #include "common/path_util.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
 
 namespace Input {
+namespace NativeFS = Common::FS::Native;
 /*
 Project structure:
 n to m connection between inputs and outputs
@@ -752,7 +754,7 @@ std::vector<std::string> GetHotkeyInputs(Input::HotkeyPad hotkey) {
 
 void LoadHotkeyInputs() {
     const auto hotkey_file = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "hotkeys.ini";
-    if (!std::filesystem::exists(hotkey_file)) {
+    if (!NativeFS::Exists(hotkey_file)) {
         createHotkeyFile(hotkey_file);
     }
 
