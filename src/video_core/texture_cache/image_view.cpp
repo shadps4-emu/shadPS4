@@ -125,7 +125,8 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     };
     if (!IsViewTypeCompatible(info.type, image.info.type)) {
         LOG_ERROR(Render_Vulkan, "image view type {} is incompatible with image type {}",
-                  vk::to_string(image_view_ci.viewType), vk::to_string(image_view_ci.viewType));
+                  vk::to_string(image_view_ci.viewType),
+                  vk::to_string(ConvertImageViewType(image.info.type)));
     }
 
     auto [view_result, view] = instance.GetDevice().createImageViewUnique(image_view_ci);
