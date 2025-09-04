@@ -94,9 +94,9 @@ public:
             base_value = toml::get_optional<T>(v, key).value_or(base_value);
         }
     }
-    operator T() {
-        return base_value;
-    }
+    // operator T() {
+    //     return get();
+    // }
 };
 
 // General
@@ -106,16 +106,16 @@ static ConfigEntry<bool> isDevKit(false);
 static ConfigEntry<bool> isPSNSignedIn(false);
 static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
-static ConfigEntry<bool> enableDiscordRPC(false);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
 static ConfigEntry<string> userName("shadPS4");
 static ConfigEntry<string> chooseHomeTab("General");
 static ConfigEntry<bool> isShowSplash(false);
 static ConfigEntry<string> isSideTrophy("right");
-static ConfigEntry<bool> compatibilityData(false);
-static ConfigEntry<bool> checkCompatibilityOnStartup(false);
 static ConfigEntry<bool> isConnectedToNetwork(false);
+static bool enableDiscordRPC = false;
+static bool checkCompatibilityOnStartup = false;
+static bool compatibilityData = false;
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -198,7 +198,7 @@ bool GetUseUnifiedInputConfig() {
 }
 
 void SetUseUnifiedInputConfig(bool use) {
-    useUnifiedInputConfig = use;
+    useUnifiedInputConfig.base_value = use;
 }
 
 bool GetOverrideControllerColor() {
@@ -243,7 +243,7 @@ std::filesystem::path GetSaveDataPath() {
 }
 
 void setVolumeSlider(int volumeValue) {
-    volumeSlider = volumeValue;
+    volumeSlider.base_value = volumeValue;
 }
 
 void setLoadGameSizeEnabled(bool enable) {
@@ -427,23 +427,23 @@ bool getVkGuestMarkersEnabled() {
 }
 
 void setVkCrashDiagnosticEnabled(bool enable) {
-    vkCrashDiagnostic = enable;
+    vkCrashDiagnostic.base_value = enable;
 }
 
 void setVkHostMarkersEnabled(bool enable) {
-    vkHostMarkers = enable;
+    vkHostMarkers.base_value = enable;
 }
 
 void setVkGuestMarkersEnabled(bool enable) {
-    vkGuestMarkers = enable;
+    vkGuestMarkers.base_value = enable;
 }
 
 bool getCompatibilityEnabled() {
-    return compatibilityData.get();
+    return compatibilityData;
 }
 
 bool getCheckCompatibilityOnStartup() {
-    return checkCompatibilityOnStartup.get();
+    return checkCompatibilityOnStartup;
 }
 
 bool getIsConnectedToNetwork() {
@@ -451,103 +451,103 @@ bool getIsConnectedToNetwork() {
 }
 
 void setGpuId(s32 selectedGpuId) {
-    gpuId = selectedGpuId;
+    gpuId.base_value = selectedGpuId;
 }
 
 void setWindowWidth(u32 width) {
-    windowWidth = width;
+    windowWidth.base_value = width;
 }
 
 void setWindowHeight(u32 height) {
-    windowHeight = height;
+    windowHeight.base_value = height;
 }
 
 void setInternalScreenWidth(u32 width) {
-    internalScreenWidth = width;
+    internalScreenWidth.base_value = width;
 }
 
 void setInternalScreenHeight(u32 height) {
-    internalScreenHeight = height;
+    internalScreenHeight.base_value = height;
 }
 
 void setDebugDump(bool enable) {
-    isDebugDump = enable;
+    isDebugDump.base_value = enable;
 }
 
 void setLoggingEnabled(bool enable) {
-    logEnabled = enable;
+    logEnabled.base_value = enable;
 }
 
 void setCollectShaderForDebug(bool enable) {
-    isShaderDebug = enable;
+    isShaderDebug.base_value = enable;
 }
 
 void setShowSplash(bool enable) {
-    isShowSplash = enable;
+    isShowSplash.base_value = enable;
 }
 
 void setSideTrophy(string side) {
-    isSideTrophy = side;
+    isSideTrophy.base_value = side;
 }
 
 void setNullGpu(bool enable) {
-    isNullGpu = enable;
+    isNullGpu.base_value = enable;
 }
 
 void setAllowHDR(bool enable) {
-    isHDRAllowed = enable;
+    isHDRAllowed.base_value = enable;
 }
 
 void setCopyGPUCmdBuffers(bool enable) {
-    shouldCopyGPUBuffers = enable;
+    shouldCopyGPUBuffers.base_value = enable;
 }
 
 void setReadbacks(bool enable) {
-    readbacksEnabled = enable;
+    readbacksEnabled.base_value = enable;
 }
 
 void setReadbackLinearImages(bool enable) {
-    readbackLinearImagesEnabled = enable;
+    readbackLinearImagesEnabled.base_value = enable;
 }
 
 void setDirectMemoryAccess(bool enable) {
-    directMemoryAccessEnabled = enable;
+    directMemoryAccessEnabled.base_value = enable;
 }
 
 void setDumpShaders(bool enable) {
-    shouldDumpShaders = enable;
+    shouldDumpShaders.base_value = enable;
 }
 
 void setVkValidation(bool enable) {
-    vkValidation = enable;
+    vkValidation.base_value = enable;
 }
 
 void setVkSyncValidation(bool enable) {
-    vkValidationSync = enable;
+    vkValidationSync.base_value = enable;
 }
 
 void setRdocEnabled(bool enable) {
-    rdocEnable = enable;
+    rdocEnable.base_value = enable;
 }
 
 void setVblankDiv(u32 value) {
-    vblankDivider = value;
+    vblankDivider.base_value = value;
 }
 
 void setIsFullscreen(bool enable) {
-    isFullscreen = enable;
+    isFullscreen.base_value = enable;
 }
 
 void setFullscreenMode(string mode) {
-    fullscreenMode = mode;
+    fullscreenMode.base_value = mode;
 }
 
 void setPresentMode(std::string mode) {
-    presentMode = mode;
+    presentMode.base_value = mode;
 }
 
 void setisTrophyPopupDisabled(bool disable) {
-    isTrophyPopupDisabled = disable;
+    isTrophyPopupDisabled.base_value = disable;
 }
 
 void setEnableDiscordRPC(bool enable) {
@@ -555,59 +555,59 @@ void setEnableDiscordRPC(bool enable) {
 }
 
 void setCursorState(s16 newCursorState) {
-    cursorState = newCursorState;
+    cursorState.base_value = newCursorState;
 }
 
 void setCursorHideTimeout(int newcursorHideTimeout) {
-    cursorHideTimeout = newcursorHideTimeout;
+    cursorHideTimeout.base_value = newcursorHideTimeout;
 }
 
 void setMicDevice(string device) {
-    micDevice = device;
+    micDevice.base_value = device;
 }
 
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
-    trophyNotificationDuration = newTrophyNotificationDuration;
+    trophyNotificationDuration.base_value = newTrophyNotificationDuration;
 }
 
 void setLanguage(u32 language) {
-    m_language = language;
+    m_language.base_value = language;
 }
 
 void setNeoMode(bool enable) {
-    isNeo = enable;
+    isNeo.base_value = enable;
 }
 
 void setLogType(const string& type) {
-    logType = type;
+    logType.base_value = type;
 }
 
 void setLogFilter(const string& type) {
-    logFilter = type;
+    logFilter.base_value = type;
 }
 
 void setSeparateLogFilesEnabled(bool enabled) {
-    isSeparateLogFilesEnabled = enabled;
+    isSeparateLogFilesEnabled.base_value = enabled;
 }
 
 void setUserName(const string& type) {
-    userName = type;
+    userName.base_value = type;
 }
 
 void setChooseHomeTab(const string& type) {
-    chooseHomeTab = type;
+    chooseHomeTab.base_value = type;
 }
 
 void setUseSpecialPad(bool use) {
-    useSpecialPad = use;
+    useSpecialPad.base_value = use;
 }
 
 void setSpecialPadClass(int type) {
-    specialPadClass = type;
+    specialPadClass.base_value = type;
 }
 
 void setIsMotionControlsEnabled(bool use) {
-    isMotionControlsEnabled = use;
+    isMotionControlsEnabled.base_value = use;
 }
 
 void setCompatibilityEnabled(bool use) {
@@ -692,11 +692,11 @@ std::filesystem::path getAddonInstallDir() {
 }
 
 u32 GetLanguage() {
-    return m_language;
+    return m_language.get();
 }
 
 bool getSeparateLogFilesEnabled() {
-    return isSeparateLogFilesEnabled;
+    return isSeparateLogFilesEnabled.get();
 }
 
 bool getPSNSignedIn() {
@@ -704,7 +704,7 @@ bool getPSNSignedIn() {
 }
 
 void setPSNSignedIn(bool sign) {
-    isPSNSignedIn = sign;
+    isPSNSignedIn.base_value = sign;
 }
 
 string getDefaultControllerID() {
@@ -712,39 +712,39 @@ string getDefaultControllerID() {
 }
 
 void setDefaultControllerID(string id) {
-    defaultControllerID = id;
+    defaultControllerID.base_value = id;
 }
 
 bool getBackgroundControllerInput() {
-    return backgroundControllerInput;
+    return backgroundControllerInput.get();
 }
 
 void setBackgroundControllerInput(bool enable) {
-    backgroundControllerInput = enable;
+    backgroundControllerInput.base_value = enable;
 }
 
 bool getFsrEnabled() {
-    return fsrEnabled;
+    return fsrEnabled.get();
 }
 
 void setFsrEnabled(bool enable) {
-    fsrEnabled = enable;
+    fsrEnabled.base_value = enable;
 }
 
 bool getRcasEnabled() {
-    return rcasEnabled;
+    return rcasEnabled.get();
 }
 
 void setRcasEnabled(bool enable) {
-    rcasEnabled = enable;
+    rcasEnabled.base_value = enable;
 }
 
 int getRcasAttenuation() {
-    return rcasAttenuation;
+    return rcasAttenuation.get();
 }
 
 void setRcasAttenuation(int value) {
-    rcasAttenuation = value;
+    rcasAttenuation.base_value = value;
 }
 
 void load(const std::filesystem::path& path, bool is_game_specific) {
@@ -779,15 +779,15 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
         trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
                                                is_game_specific);
-        enableDiscordRPC.setFromToml(general, "enableDiscordRPC", is_game_specific);
+        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
         logFilter.setFromToml(general, "logFilter", is_game_specific);
         logType.setFromToml(general, "logType", is_game_specific);
         userName.setFromToml(general, "userName", is_game_specific);
         isShowSplash.setFromToml(general, "showSplash", is_game_specific);
         isSideTrophy.setFromToml(general, "sideTrophy", is_game_specific);
-        compatibilityData.setFromToml(general, "compatibilityEnabled", is_game_specific);
-        checkCompatibilityOnStartup.setFromToml(general, "checkCompatibilityOnStartup",
-                                                is_game_specific);
+        compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", compatibilityData);
+        checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
+                                                          checkCompatibilityOnStartup);
 
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
@@ -889,7 +889,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
-        m_language = toml::find_or<int>(settings, "consoleLanguage", m_language);
+        m_language.setFromToml(settings, "consoleLanguage", is_game_specific);
     }
 
     if (data.contains("Keys")) {
@@ -957,62 +957,62 @@ void save(const std::filesystem::path& path) {
     }
 
     data["General"]["volumeSlider"] = volumeSlider.base_value;
-    data["General"]["isPS4Pro"] = isNeo;
-    data["General"]["isDevKit"] = isDevKit;
-    data["General"]["isPSNSignedIn"] = isPSNSignedIn;
-    data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
-    data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
+    data["General"]["isPS4Pro"] = isNeo.base_value;
+    data["General"]["isDevKit"] = isDevKit.base_value;
+    data["General"]["isPSNSignedIn"] = isPSNSignedIn.base_value;
+    data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled.base_value;
+    data["General"]["trophyNotificationDuration"] = trophyNotificationDuration.base_value;
+    data["General"]["logFilter"] = logFilter.base_value;
+    data["General"]["logType"] = logType.base_value;
+    data["General"]["userName"] = userName.base_value;
+    data["General"]["chooseHomeTab"] = chooseHomeTab.base_value;
+    data["General"]["showSplash"] = isShowSplash.base_value;
+    data["General"]["sideTrophy"] = isSideTrophy.base_value;
+    data["General"]["isConnectedToNetwork"] = isConnectedToNetwork.base_value;
+    data["General"]["defaultControllerID"] = defaultControllerID.base_value;
     data["General"]["enableDiscordRPC"] = enableDiscordRPC;
-    data["General"]["logFilter"] = logFilter;
-    data["General"]["logType"] = logType;
-    data["General"]["userName"] = userName;
-    data["General"]["chooseHomeTab"] = chooseHomeTab;
-    data["General"]["showSplash"] = isShowSplash;
-    data["General"]["sideTrophy"] = isSideTrophy;
     data["General"]["compatibilityEnabled"] = compatibilityData;
     data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-    data["General"]["isConnectedToNetwork"] = isConnectedToNetwork;
-    data["General"]["defaultControllerID"] = defaultControllerID;
     data["Input"]["cursorState"] = cursorState.base_value;
     data["Input"]["cursorHideTimeout"] = cursorHideTimeout.base_value;
-    data["Input"]["useSpecialPad"] = useSpecialPad;
+    data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
     data["Input"]["specialPadClass"] = specialPadClass.base_value;
-    data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
-    data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
-    data["Input"]["micDevice"] = micDevice;
-    data["Input"]["backgroundControllerInput"] = backgroundControllerInput;
+    data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled.base_value;
+    data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
+    data["Input"]["micDevice"] = micDevice.base_value;
+    data["Input"]["backgroundControllerInput"] = backgroundControllerInput.base_value;
     data["GPU"]["screenWidth"] = windowWidth.base_value;
     data["GPU"]["screenHeight"] = windowHeight.base_value;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
     data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
-    data["GPU"]["nullGpu"] = isNullGpu;
-    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
-    data["GPU"]["readbacks"] = readbacksEnabled;
-    data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled;
-    data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
-    data["GPU"]["dumpShaders"] = shouldDumpShaders;
-    data["GPU"]["patchShaders"] = shouldPatchShaders;
+    data["GPU"]["nullGpu"] = isNullGpu.base_value;
+    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers.base_value;
+    data["GPU"]["readbacks"] = readbacksEnabled.base_value;
+    data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled.base_value;
+    data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled.base_value;
+    data["GPU"]["dumpShaders"] = shouldDumpShaders.base_value;
+    data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
     data["GPU"]["vblankDivider"] = vblankDivider.base_value;
-    data["GPU"]["Fullscreen"] = isFullscreen;
-    data["GPU"]["FullscreenMode"] = fullscreenMode;
-    data["GPU"]["presentMode"] = presentMode;
-    data["GPU"]["allowHDR"] = isHDRAllowed;
-    data["GPU"]["fsrEnabled"] = fsrEnabled;
-    data["GPU"]["rcasEnabled"] = rcasEnabled;
+    data["GPU"]["Fullscreen"] = isFullscreen.base_value;
+    data["GPU"]["FullscreenMode"] = fullscreenMode.base_value;
+    data["GPU"]["presentMode"] = presentMode.base_value;
+    data["GPU"]["allowHDR"] = isHDRAllowed.base_value;
+    data["GPU"]["fsrEnabled"] = fsrEnabled.base_value;
+    data["GPU"]["rcasEnabled"] = rcasEnabled.base_value;
     data["GPU"]["rcasAttenuation"] = rcasAttenuation.base_value;
     data["Vulkan"]["gpuId"] = gpuId.base_value;
-    data["Vulkan"]["validation"] = vkValidation;
-    data["Vulkan"]["validation_sync"] = vkValidationSync;
-    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
-    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
-    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
-    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
-    data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Debug"]["DebugDump"] = isDebugDump;
-    data["Debug"]["CollectShader"] = isShaderDebug;
-    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
-    data["Debug"]["FPSColor"] = isFpsColor;
-    data["Debug"]["logEnabled"] = logEnabled;
+    data["Vulkan"]["validation"] = vkValidation.base_value;
+    data["Vulkan"]["validation_sync"] = vkValidationSync.base_value;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
+    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic.base_value;
+    data["Vulkan"]["hostMarkers"] = vkHostMarkers.base_value;
+    data["Vulkan"]["guestMarkers"] = vkGuestMarkers.base_value;
+    data["Vulkan"]["rdocEnable"] = rdocEnable.base_value;
+    data["Debug"]["DebugDump"] = isDebugDump.base_value;
+    data["Debug"]["CollectShader"] = isShaderDebug.base_value;
+    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled.base_value;
+    data["Debug"]["FPSColor"] = isFpsColor.base_value;
+    data["Debug"]["logEnabled"] = logEnabled.base_value;
     data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
@@ -1225,7 +1225,7 @@ analog_deadzone = rightjoystick, 2, 127
 override_controller_color = false, 0, 0, 255
 )";
 }
-std::filesystem::path GetFoolproofKbmConfigFile(const string& game_id) {
+std::filesystem::path GetFoolproofInputConfigFile(const string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
