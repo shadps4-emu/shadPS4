@@ -212,7 +212,7 @@ int socketpair(int family, int type, int protocol, net_socket fd[2]) {
 
     listener = socket(AF_INET, SOCK_STREAM, 0);
     if (listener == INVALID_SOCKET)
-        goto fail;
+        goto fail1;
 
     ZeroMemory(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -220,36 +220,35 @@ int socketpair(int family, int type, int protocol, net_socket fd[2]) {
     addr.sin_port = 0;
 
     if (bind(listener, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
-        goto fail;
+        goto fail1;
     if (listen(listener, 1) == SOCKET_ERROR)
-        goto fail;
+        goto fail1;
 
     if (getsockname(listener, (sockaddr*)&addr, &addrlen) == SOCKET_ERROR)
-        goto fail;
+        goto fail1;
 
     sock1 = socket(AF_INET, SOCK_STREAM, 0);
     if (sock1 == INVALID_SOCKET)
-        goto fail;
+        goto fail2;
 
     if (connect(sock1, (sockaddr*)&addr, addrlen) == SOCKET_ERROR)
-        goto fail;
+        goto fail2;
 
     sock2 = accept(listener, nullptr, nullptr);
     if (sock2 == INVALID_SOCKET)
-        goto fail;
+        goto fail3;
 
     closesocket(listener);
     fd[0] = sock1;
     fd[1] = sock2;
     return 0;
 
-fail:
-    if (listener != INVALID_SOCKET)
-        closesocket(listener);
-    if (sock1 != INVALID_SOCKET)
-        closesocket(sock1);
-    if (sock2 != INVALID_SOCKET)
-        closesocket(sock2);
+fail3:
+    closesocket(sock2);
+fail2:
+    closesocket(sock1);
+fail1:
+    closesocket(listener);
     return -1;
 }
 #endif
