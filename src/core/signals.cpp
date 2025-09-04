@@ -76,8 +76,10 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     auto* code_address = Common::GetRip(raw_context);
 
     switch (sig) {
-    case SIGSEGV:
-    case SIGBUS: {
+    case SIGBUS:
+        LOG_ERROR(Debug, "SIGBUS in thread '{}' at code address {}", GetThreadName(),
+                  fmt::ptr(code_address));
+    case SIGSEGV: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             UNREACHABLE_MSG(
