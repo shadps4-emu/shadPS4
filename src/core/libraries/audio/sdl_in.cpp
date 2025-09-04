@@ -48,23 +48,27 @@ int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint3
             std::string micDevStr = Config::getMicDevice();
             uint32_t devId;
 
+            bool nullDevice = false;
             if (micDevStr == "None") {
-                return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
+                nullDevice = true;
             } else if (micDevStr == "Default Device") {
                 devId = SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
             } else {
                 try {
                     devId = static_cast<uint32_t>(std::stoul(micDevStr));
                 } catch (const std::exception& e) {
-                    return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
+                    nullDevice = true;
                 }
             }
 
-            port.stream = SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
+            port.stream =
+                nullDevice ? nullptr : SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
 
             if (!port.stream) {
-                port.isOpen = false;
-                return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
+                // if stream is null, either due to configuration disabling the input,
+                // or no input devices present in the system, still return a valid id
+                // as some games require that (e.g. L.A. Noire)
+                return id + 1;
             }
 
             if (SDL_ResumeAudioStreamDevice(port.stream) == false) {
