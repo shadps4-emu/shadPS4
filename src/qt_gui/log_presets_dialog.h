@@ -7,6 +7,7 @@
 #include <QPointer>
 class QTableWidget;
 class QPushButton;
+class QTableWidgetItem;
 
 #include "gui_settings.h"
 
@@ -31,6 +32,10 @@ private:
     void AddAfterSelection();
     void RemoveSelected();
     void LoadSelected();
+    void UpdateHeaderCheckState();
+    void SetAllCheckStates(Qt::CheckState state);
+    QList<int> GetCheckedRows() const;
+    void UpdateLoadButtonEnabled();
 
     QList<QString> SerializeTable() const;
     void PopulateFromList(const QList<QString>& list);
@@ -42,4 +47,5 @@ private:
     QPushButton* m_remove_btn = nullptr;
     QPushButton* m_load_btn = nullptr;
     QPushButton* m_close_btn = nullptr;
+    bool m_updating_checks = false;
 };
