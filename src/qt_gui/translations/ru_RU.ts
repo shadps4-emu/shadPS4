@@ -2186,6 +2186,70 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Диагностика сбоев:\nСоздает .yaml-файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Включить ведение логов</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Включить ведение логов:\nВключает ведение логов.\nНе меняйте это, если вы не знаете, что делаете!\nПри запросе помощи, убедитесь, что эта настройка ВКЛЮЧЕНА.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Режим представления</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediate (без Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Папка DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Выберите папку DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Режим представления:\nНастраивает, как вывод видео будет предоставлен на экране.\n\nMailbox: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут заменять ожидающие кадры. Уменьшает задержку, но может пропустить кадры, если отстаёт.\nFifo: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут в очереди за ожидаемыми кадрами. Обеспечивает отображение всех кадров, но может увеличить задержку.\nImmediate: Кадры отображаются на экране сразу после готовности. Может приводить к разрывам.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Путь к DLC:\nПапка, из которой загружаются DLC для игры.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Обзор:\nНайдите папку, которую можно указать в качестве пути для DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation type="unfinished">FSR Settings</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation type="unfinished">Enable FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation type="unfinished">RCAS Attenuation:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation type="unfinished">0.250</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>

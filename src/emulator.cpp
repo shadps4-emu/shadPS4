@@ -114,6 +114,9 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         }
     }
 
+    Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
+                 true);
+
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
         Common::Log::Initialize(id + ".log");
