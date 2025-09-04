@@ -9,6 +9,7 @@
 #include <iphlpapi.h>
 #include <mstcpip.h>
 #include <winsock2.h>
+#include <afunix.h>
 typedef SOCKET net_socket;
 typedef int socklen_t;
 #ifndef LPFN_WSASENDMSG
