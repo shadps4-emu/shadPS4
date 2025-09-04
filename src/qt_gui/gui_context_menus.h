@@ -17,6 +17,7 @@
 #include "compatibility_info.h"
 #include "game_info.h"
 #include "gui_settings.h"
+#include "settings_dialog.h"
 #include "trophy_viewer.h"
 
 #ifdef Q_OS_WIN
@@ -76,12 +77,14 @@ public:
         } else {
             toggleFavorite = new QAction(tr("Add to Favorites"), widget);
         }
+        QAction gameConfig(tr("Configure game-specific settings"), widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
         menu.addAction(toggleFavorite);
+        menu.addAction(&gameConfig);
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
@@ -385,6 +388,11 @@ public:
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
                     [trophyViewer]() { trophyViewer->deleteLater(); });
+        }
+
+        if (selected == &gameConfig) {
+            auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, widget);
+            settingsDialog->exec();
         }
 
         if (selected == &createShortcut) {
