@@ -16,7 +16,7 @@ struct GameInstallDir {
 
 enum HideCursorState : int { Never, Idle, Always };
 
-void load(const std::filesystem::path& path);
+void load(const std::filesystem::path& path, bool is_game_specific = false);
 void save(const std::filesystem::path& path);
 
 int getVolumeSlider();
