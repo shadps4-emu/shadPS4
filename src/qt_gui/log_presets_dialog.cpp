@@ -6,15 +6,15 @@
 #include <algorithm>
 #include <QHBoxLayout>
 #include <QHeaderView>
-#include <QPushButton>
-#include <QTableWidget>
-#include <QSignalBlocker>
 #include <QItemSelection>
 #include <QItemSelectionModel>
-#include <QSet>
 #include <QPainter>
+#include <QPushButton>
+#include <QSet>
+#include <QSignalBlocker>
 #include <QStyle>
 #include <QStyleOptionButton>
+#include <QTableWidget>
 #include <QVBoxLayout>
 
 namespace {
@@ -45,11 +45,14 @@ public:
     }
 
     void setCheckState(Qt::CheckState state) {
-        if (m_state == state) return;
+        if (m_state == state)
+            return;
         m_state = state;
         updateSection(0);
     }
-    Qt::CheckState checkState() const { return m_state; }
+    Qt::CheckState checkState() const {
+        return m_state;
+    }
 
 protected:
     void paintSection(QPainter* painter, const QRect& rect, int logicalIndex) const override {
@@ -60,9 +63,16 @@ protected:
         QStyleOptionButton opt;
         opt.state = QStyle::State_Enabled;
         switch (m_state) {
-            case Qt::Checked: opt.state |= QStyle::State_On; break;
-            case Qt::PartiallyChecked: opt.state |= QStyle::State_NoChange; break;
-            case Qt::Unchecked: default: opt.state |= QStyle::State_Off; break;
+        case Qt::Checked:
+            opt.state |= QStyle::State_On;
+            break;
+        case Qt::PartiallyChecked:
+            opt.state |= QStyle::State_NoChange;
+            break;
+        case Qt::Unchecked:
+        default:
+            opt.state |= QStyle::State_Off;
+            break;
         }
         const QRect indicator = style()->subElementRect(QStyle::SE_CheckBoxIndicator, &opt, this);
         opt.rect = QStyle::alignedRect(layoutDirection(), Qt::AlignCenter, indicator.size(), rect);
@@ -97,11 +107,8 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
                              QAbstractItemView::EditTrigger::SelectedClicked |
                              QAbstractItemView::EditTrigger::EditKeyPressed);
 
-    
-
-    connect(m_table, &QTableWidget::cellDoubleClicked, this, [this](int /*row*/, int /*col*/) {
-        LoadSelected();
-    });
+    connect(m_table, &QTableWidget::cellDoubleClicked, this,
+            [this](int /*row*/, int /*col*/) { LoadSelected(); });
 
     connect(m_table, &QTableWidget::itemChanged, this, [this](QTableWidgetItem* item) {
         if (m_updating_checks)
@@ -112,7 +119,8 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
             auto* sm = m_table->selectionModel();
             const auto idx = m_table->model()->index(row, 0);
             const bool check = (item->checkState() == Qt::Checked);
-            sm->select(idx, (check ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) | QItemSelectionModel::Rows);
+            sm->select(idx, (check ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) |
+                                QItemSelectionModel::Rows);
             m_updating_checks = false;
             UpdateHeaderCheckState();
             UpdateLoadButtonEnabled();
@@ -121,24 +129,29 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
 
     connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             [this](const QItemSelection& selected, const QItemSelection& deselected) {
-                if (m_updating_checks) return;
+                if (m_updating_checks)
+                    return;
                 m_updating_checks = true;
                 QSet<int> selRows;
-                for (const auto& idx : selected.indexes()) selRows.insert(idx.row());
+                for (const auto& idx : selected.indexes())
+                    selRows.insert(idx.row());
                 QSet<int> deselRows;
-                for (const auto& idx : deselected.indexes()) deselRows.insert(idx.row());
+                for (const auto& idx : deselected.indexes())
+                    deselRows.insert(idx.row());
                 for (int r : selRows) {
                     auto* it = m_table->item(r, 0);
                     if (!it) {
                         it = new QTableWidgetItem();
-                        it->setFlags((QTableWidgetItem().flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
+                        it->setFlags((QTableWidgetItem().flags() | Qt::ItemIsUserCheckable) &
+                                     ~Qt::ItemIsEditable);
                         m_table->setItem(r, 0, it);
                     }
                     it->setCheckState(Qt::Checked);
                 }
                 for (int r : deselRows) {
                     auto* it = m_table->item(r, 0);
-                    if (it) it->setCheckState(Qt::Unchecked);
+                    if (it)
+                        it->setCheckState(Qt::Unchecked);
                 }
                 m_updating_checks = false;
                 UpdateHeaderCheckState();
@@ -290,11 +303,14 @@ void LogPresetsDialog::RemoveSelected() {
     QList<int> to_remove = GetCheckedRows();
     if (to_remove.isEmpty()) {
         const auto selected = m_table->selectionModel()->selectedRows();
-        for (const auto& idx : selected) to_remove.push_back(idx.row());
+        for (const auto& idx : selected)
+            to_remove.push_back(idx.row());
     }
-    if (to_remove.isEmpty()) return;
+    if (to_remove.isEmpty())
+        return;
     std::sort(to_remove.begin(), to_remove.end(), [](int a, int b) { return a > b; });
-    for (int row : to_remove) m_table->removeRow(row);
+    for (int row : to_remove)
+        m_table->removeRow(row);
     UpdateHeaderCheckState();
     UpdateLoadButtonEnabled();
 }
@@ -303,7 +319,8 @@ void LogPresetsDialog::LoadSelected() {
     QList<int> rows = GetCheckedRows();
     if (rows.isEmpty()) {
         const auto selected = m_table->selectionModel()->selectedRows();
-        if (selected.isEmpty()) return;
+        if (selected.isEmpty())
+            return;
         rows.push_back(selected.first().row());
     }
     const int row = rows.first();
@@ -313,7 +330,6 @@ void LogPresetsDialog::LoadSelected() {
         accept();
     }
 }
-
 
 void LogPresetsDialog::UpdateHeaderCheckState() {
     auto* cbh = static_cast<CheckBoxHeader*>(m_table->horizontalHeader());
@@ -325,9 +341,12 @@ void LogPresetsDialog::UpdateHeaderCheckState() {
     int checked = 0;
     for (int r = 0; r < rows; ++r) {
         auto* it = m_table->item(r, 0);
-        if (it && it->checkState() == Qt::Checked) ++checked;
+        if (it && it->checkState() == Qt::Checked)
+            ++checked;
     }
-    const auto state = (checked == 0) ? Qt::Unchecked : (checked == rows) ? Qt::Checked : Qt::PartiallyChecked;
+    const auto state = (checked == 0)      ? Qt::Unchecked
+                       : (checked == rows) ? Qt::Checked
+                                           : Qt::PartiallyChecked;
     cbh->setCheckState(state);
 }
 
@@ -340,12 +359,15 @@ void LogPresetsDialog::SetAllCheckStates(Qt::CheckState state) {
         auto* it = m_table->item(r, 0);
         if (!it) {
             it = new QTableWidgetItem();
-            it->setFlags((QTableWidgetItem().flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsEditable);
+            it->setFlags((QTableWidgetItem().flags() | Qt::ItemIsUserCheckable) &
+                         ~Qt::ItemIsEditable);
             m_table->setItem(r, 0, it);
         }
         it->setCheckState(state);
         const auto idx = m_table->model()->index(r, 0);
-        sm->select(idx, ((state == Qt::Checked) ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) | QItemSelectionModel::Rows);
+        sm->select(idx, ((state == Qt::Checked) ? QItemSelectionModel::Select
+                                                : QItemSelectionModel::Deselect) |
+                            QItemSelectionModel::Rows);
     }
     m_updating_checks = false;
 }
@@ -355,13 +377,15 @@ QList<int> LogPresetsDialog::GetCheckedRows() const {
     const int count = m_table->rowCount();
     for (int r = 0; r < count; ++r) {
         const auto* it = m_table->item(r, 0);
-        if (it && it->checkState() == Qt::Checked) rows.push_back(r);
+        if (it && it->checkState() == Qt::Checked)
+            rows.push_back(r);
     }
     return rows;
 }
 
 void LogPresetsDialog::UpdateLoadButtonEnabled() {
-    if (!m_table || !m_table->selectionModel()) return;
+    if (!m_table || !m_table->selectionModel())
+        return;
     const int count = m_table->selectionModel()->selectedRows().size();
 
     if (m_load_btn) {
