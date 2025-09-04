@@ -112,6 +112,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.hs_info.num_input_control_points = regs.ls_hs_config.hs_input_control_points.Value();
         info.hs_info.num_threads = regs.ls_hs_config.hs_output_control_points.Value();
         info.hs_info.tess_type = regs.tess_config.type;
+        info.hs_info.offchip_lds_enable = regs.hs_program.settings.rsrc2_hs.oc_lds_en.Value();
 
         // We need to initialize most hs_info fields after finding the V# with tess constants
         break;
