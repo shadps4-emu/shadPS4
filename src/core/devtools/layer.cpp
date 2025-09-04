@@ -373,8 +373,6 @@ void L::Draw() {
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
             DebugState.IsShowingDebugMenuBar() ^= true;
-        } else {
-            show_simple_fps = !show_simple_fps;
         }
         visibility_toggled = true;
     }
@@ -384,22 +382,13 @@ void L::Draw() {
             if (!DebugState.ShouldPauseInSubmit()) {
                 DebugState.RequestFrameDump(dump_frame_count);
             }
-        } else {
-            if (DebugState.IsGuestThreadsPaused()) {
-                DebugState.ResumeGuestThreads();
-                SDL_Log("Game resumed from Keyboard");
-            } else {
-                DebugState.PauseGuestThreads();
-                SDL_Log("Game paused from Keyboard");
-            }
-            visibility_toggled = true;
         }
     }
 
     if (DebugState.IsGuestThreadsPaused()) {
         ImVec2 pos = ImVec2(10, 10);
         ImU32 color = IM_COL32(255, 255, 255, 255);
-        ImGui::GetForegroundDrawList()->AddText(pos, color, "Game Paused Press F9 to Resume");
+        ImGui::GetForegroundDrawList()->AddText(pos, color, "Emulation Paused");
     }
 
     if (show_simple_fps) {

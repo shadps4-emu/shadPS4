@@ -9,7 +9,6 @@
 #include "common/path_util.h"
 #include "control_settings.h"
 #include "input/input_handler.h"
-#include "sdl_window.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
@@ -181,7 +180,7 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
 
     int lineCount = 0;
     std::string line;
@@ -207,6 +206,11 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
+
+        if (output_string.contains("hotkey")) {
+            lines.push_back(line);
+            continue;
+        }
 
         bool controllerInputdetected = false;
         for (std::string input : ControllerInputs) {
@@ -411,7 +415,7 @@ void ControlSettings::SetUIValuestoMappings() {
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
 
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
     std::ifstream file(config_file);
 
     bool CrossExists = false, CircleExists = false, SquareExists = false, TriangleExists = false,

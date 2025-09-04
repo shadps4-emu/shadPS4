@@ -114,11 +114,9 @@ HelpDialog::HelpDialog(bool* open_flag, QWidget* parent) : QDialog(parent) {
 // Helper functions that store the text contents for each tab inb the HelpDialog menu
 QString HelpDialog::quickstart() {
     return R"(
-The keyboard and controller remapping backend, GUI, and documentation have been written by kalaposfos.
-
 In this section, you will find information about the project and its features, as well as help setting up your ideal setup.
 To view the config file's syntax, check out the Syntax tab, for keybind names, visit Normal Keybinds and Special Bindings, and if you are here to view emulator-wide keybinds, you can find it in the FAQ section.
-This project began because I disliked the original, unchangeable keybinds. Rather than waiting for someone else to do it, I implemented this myself. From the default keybinds, you can clearly tell this was a project built for Bloodborne, but obviously, you can make adjustments however you like.)";
+)";
 }
 
 QString HelpDialog::syntax() {
@@ -157,6 +155,8 @@ Keyboard:
         'a', 'b', ..., 'z'
     Numbers:
         '0', '1', ..., '9'
+    F keys:
+        'f1', 'f2', ..., 'f12'
     Keypad:
         'kp0', 'kp1', ..., 'kp9',
         'kpperiod', 'kpcomma', 'kpslash', 'kpasterisk', 'kpminus', 'kpplus', 'kpequals', 'kpenter'
@@ -186,7 +186,7 @@ Controller:
             'triangle', 'circle', 'cross', 'square', 'l1', 'l3',
             'options', touchpad', 'up', 'down', 'left', 'right'
         Input-only:
-             'lpaddle_low', 'lpaddle_high'
+             'lpaddle_low', 'lpaddle_high', 'back' = 'share' (Xbox and PS4 names)
         Output-only:
             'touchpad_left', 'touchpad_center', 'touchpad_right'
     Axes if you bind them to a button input:
@@ -196,9 +196,6 @@ Controller:
     Axes if you bind them to another axis input:
         'axis_left_x', 'axis_left_y', 'axis_right_x', 'axis_right_y',
         'l2'
-
-Invalid Inputs:
-    'F1-F12' are reserved for emulator-wide keybinds, and cannot be bound to controller inputs.
     
 Symbols (expanded):
     ` 'grave'
@@ -235,7 +232,13 @@ Symbols (expanded):
 QString HelpDialog::special() {
     return R"(
 There are some extra bindings you can put in the config file that don't correspond to a controller input but something else.
-You can find these here, with detailed comments, examples, and suggestions for most of them.
+You can find these here, with comments, examples, and suggestions for most of them.
+
+Emulator hotkeys:
+    These are regarded as normal bindings, but they are put in a special config named global.ini by default, which is a config that is always loaded alongside the main config (If you want to, you can use this to set some common bindings that'll be in effect for every game, then put only the game specific bindings in their respective files). This doesn't mean you can't add them to the normal configs, you can absolutely make game specific emulator hokeys as well.
+    'hotkey_pause', 'hotkey_fullscreen', 'hotkey_show_fps',
+    'hotkey_quit', 'hotkey_reload_inputs', 'hotkey_toggle_mouse_to_joystick',
+    'hotkey_toggle_mouse_to_gyro', 'hotkey_renderdoc_capture'
 
 'leftjoystick_halfmode' and 'rightjoystick_halfmode' = <key>;
     These are a pair of input modifiers that change the way keyboard button-bound axes work. By default, those push the joystick to the max in their respective direction, but if their respective 'joystick_halfmode' modifier value is true, they only push it... halfway. With this, you can change from run to walk in games like Bloodborne.
@@ -272,7 +275,7 @@ You can find these here, with detailed comments, examples, and suggestions for m
 QString HelpDialog::faq() {
     return R"(
 Q: What are the emulator-wide keybinds?
-A:
+A: By default, they're the following:
 -F12: Triggers Renderdoc capture
 -F11: Toggles fullscreen
 -F10: Toggles FPS counter
@@ -281,6 +284,7 @@ A:
 -F8: Reparses the config file while in-game
 -F7: Toggles mouse capture and mouse input
 -F6: Toggles mouse-to-gyro emulation
+More info on these can be found in the Special keybinds tab.
 
 Q: How do I switch between mouse and controller joystick input? Why is it even required?
 A: Pressing F7 toggles between mouse and controller joystick input. It is required because the program polls the mouse input, which means it checks mouse movement every frame. If it didn't move, the code would manually set the emulator's virtual controller to 0 (to the center), even if other input devices would update it.
