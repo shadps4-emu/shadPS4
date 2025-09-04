@@ -121,6 +121,8 @@ inline auto MakeInstPattern(Args&&... args) {
     MakeInstPattern<IR::Opcode::SetTcsGenericAttribute>(__VA_ARGS__)
 #define M_COMPOSITECONSTRUCTU32X2(...)                                                             \
     MakeInstPattern<IR::Opcode::CompositeConstructU32x2>(__VA_ARGS__)
+#define M_COMPOSITECONSTRUCTU32X3(...)                                                             \
+    MakeInstPattern<IR::Opcode::CompositeConstructU32x3>(__VA_ARGS__)
 #define M_COMPOSITECONSTRUCTU32X4(...)                                                             \
     MakeInstPattern<IR::Opcode::CompositeConstructU32x4>(__VA_ARGS__)
 
