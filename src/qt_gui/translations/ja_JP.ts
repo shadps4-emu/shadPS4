@@ -1012,7 +1012,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>このゲームのログファイルが見つかりませんでした！</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -1024,7 +1024,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>このゲームには削除できるトロフィーが保存されていません！</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -1040,11 +1040,11 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>お気に入りから削除</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
-      <translation type="unfinished">Add to Favorites</translation>
+      <translation>お気に入りへ追加</translation>
     </message>
   </context>
   <context>
@@ -1956,7 +1956,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>HDRを有効にする：\n対応ゲームでHDRを有効にします。\nお使いのモニターはBT2020 PQカラースペースとRGB10A2スワップチェーン形式に対応している必要があります。</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1988,7 +1988,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
+      <translation>シェーダーを収集する:\nデバッグメニュー(Ctrl + F10)でシェーダーを編集するには、これを有効にする必要があります。</translation>
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
@@ -2012,7 +2012,7 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>セーブデータパス:\nゲームのセーブデータを保存するフォルダです。</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -2036,7 +2036,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>セーブデータパス</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -2096,11 +2096,11 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>ログファイルを分離する</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>ログファイルを分離:\nゲームごとに別のログファイルに書き込みます。</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
@@ -2128,7 +2128,7 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>ポータブルユーザーフォルダー</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
@@ -2318,15 +2318,15 @@
     </message>
     <message>
       <source>Stop Emulator: n/a</source>
-      <translation type="unfinished">Stop Emulator: n/a</translation>
+      <translation>エミュレータを停止: なし</translation>
     </message>
     <message>
       <source>Toggle Fullscreen: F11</source>
-      <translation type="unfinished">Toggle Fullscreen: F11</translation>
+      <translation>全画面表示の切り替え: F11</translation>
     </message>
     <message>
       <source>Toggle Pause: F9</source>
-      <translation type="unfinished">Toggle Pause: F9</translation>
+      <translation>一時停止 / 再開: F9</translation>
     </message>
     <message>
       <source>Tip: Up to three inputs can be assigned for each function</source>
