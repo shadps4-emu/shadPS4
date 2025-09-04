@@ -4,6 +4,7 @@
 #include "log_presets_dialog.h"
 
 #include <algorithm>
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QItemSelection>
@@ -11,10 +12,9 @@
 #include <QPushButton>
 #include <QSet>
 #include <QSignalBlocker>
-#include <QTableWidget>
 #include <QStyleOptionViewItem>
+#include <QTableWidget>
 #include <QVBoxLayout>
-#include <QCheckBox>
 
 namespace {
 constexpr const char* kPresetsGroup = "logger_presets";
@@ -35,7 +35,6 @@ inline void SplitEntry(const QString& entry, QString& comment, QString& filter) 
     }
 }
 } // namespace
-
 
 LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
     : QDialog(parent), m_gui_settings(std::move(gui_settings)) {
@@ -391,21 +390,25 @@ void LogPresetsDialog::PositionHeaderCheckbox() {
         // Use a representative cell rect width (section width) and a typical row height
         const int cell_h = m_table->rowHeight(0) > 0 ? m_table->rowHeight(0) : sz.height();
         opt.rect = QRect(0, 0, w, cell_h);
-        const QRect ind = m_table->style()->subElementRect(QStyle::SE_ItemViewItemCheckIndicator, &opt, m_table);
+        const QRect ind =
+            m_table->style()->subElementRect(QStyle::SE_ItemViewItemCheckIndicator, &opt, m_table);
         left_in_section = ind.left();
         // Guard against styles that return empty rects
         if (ind.isEmpty()) {
-            left_in_section = m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
+            left_in_section =
+                m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
         }
     } else {
-        left_in_section = m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
+        left_in_section =
+            m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
     }
 
     int cx = x + left_in_section;
     // Center vertically in header
     const int cy = (h - sz.height()) / 2;
     // Ensure checkbox fully visible within the section bounds
-    if (cx + sz.width() > x + w) cx = x + std::max(0, w - sz.width());
+    if (cx + sz.width() > x + w)
+        cx = x + std::max(0, w - sz.width());
     m_header_checkbox->setGeometry(QRect(QPoint(cx, cy), sz));
     m_header_checkbox->show();
 }
