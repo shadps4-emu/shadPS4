@@ -195,6 +195,61 @@ int PS4_SYSV_ABI sys_socket(int family, int type, int protocol) {
 
 #ifdef _WIN32
 int socketpair(int family, int type, int protocol, net_socket fd[2]) {
+    if (family != AF_UNIX && family != AF_INET) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EPROTONOSUPPORT;
+        return -1;
+    }
+    if (type != SOCK_STREAM) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EPROTONOSUPPORT;
+        return -1;
+    }
+
+    SOCKET listener = INVALID_SOCKET;
+    SOCKET sock1 = INVALID_SOCKET;
+    SOCKET sock2 = INVALID_SOCKET;
+    sockaddr_in addr{};
+    int addrlen = sizeof(addr);
+
+    listener = socket(AF_INET, SOCK_STREAM, 0);
+    if (listener == INVALID_SOCKET)
+        goto fail;
+
+    ZeroMemory(&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = 0;
+
+    if (bind(listener, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+        goto fail;
+    if (listen(listener, 1) == SOCKET_ERROR)
+        goto fail;
+
+    if (getsockname(listener, (sockaddr*)&addr, &addrlen) == SOCKET_ERROR)
+        goto fail;
+
+    sock1 = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock1 == INVALID_SOCKET)
+        goto fail;
+
+    if (connect(sock1, (sockaddr*)&addr, addrlen) == SOCKET_ERROR)
+        goto fail;
+
+    sock2 = accept(listener, nullptr, nullptr);
+    if (sock2 == INVALID_SOCKET)
+        goto fail;
+
+    closesocket(listener);
+    fd[0] = sock1;
+    fd[1] = sock2;
+    return 0;
+
+fail:
+    if (listener != INVALID_SOCKET)
+        closesocket(listener);
+    if (sock1 != INVALID_SOCKET)
+        closesocket(sock1);
+    if (sock2 != INVALID_SOCKET)
+        closesocket(sock2);
     return -1;
 }
 #endif

@@ -6,10 +6,10 @@
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
+#include <afunix.h>
 #include <iphlpapi.h>
 #include <mstcpip.h>
 #include <winsock2.h>
-#include <afunix.h>
 typedef SOCKET net_socket;
 typedef int socklen_t;
 #ifndef LPFN_WSASENDMSG
