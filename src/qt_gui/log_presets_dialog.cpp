@@ -8,14 +8,13 @@
 #include <QHeaderView>
 #include <QItemSelection>
 #include <QItemSelectionModel>
-#include <QPainter>
 #include <QPushButton>
 #include <QSet>
 #include <QSignalBlocker>
-#include <QStyle>
-#include <QStyleOptionButton>
 #include <QTableWidget>
+#include <QStyleOptionViewItem>
 #include <QVBoxLayout>
+#include <QCheckBox>
 
 namespace {
 constexpr const char* kPresetsGroup = "logger_presets";
@@ -37,51 +36,6 @@ inline void SplitEntry(const QString& entry, QString& comment, QString& filter) 
 }
 } // namespace
 
-class CheckBoxHeader : public QHeaderView {
-public:
-    explicit CheckBoxHeader(Qt::Orientation orientation, QWidget* parent = nullptr)
-        : QHeaderView(orientation, parent) {
-        setSectionsClickable(true);
-    }
-
-    void setCheckState(Qt::CheckState state) {
-        if (m_state == state)
-            return;
-        m_state = state;
-        updateSection(0);
-    }
-    Qt::CheckState checkState() const {
-        return m_state;
-    }
-
-protected:
-    void paintSection(QPainter* painter, const QRect& rect, int logicalIndex) const override {
-        QHeaderView::paintSection(painter, rect, logicalIndex);
-        if (logicalIndex != 0)
-            return;
-
-        QStyleOptionButton opt;
-        opt.state = QStyle::State_Enabled;
-        switch (m_state) {
-        case Qt::Checked:
-            opt.state |= QStyle::State_On;
-            break;
-        case Qt::PartiallyChecked:
-            opt.state |= QStyle::State_NoChange;
-            break;
-        case Qt::Unchecked:
-        default:
-            opt.state |= QStyle::State_Off;
-            break;
-        }
-        const QRect indicator = style()->subElementRect(QStyle::SE_CheckBoxIndicator, &opt, this);
-        opt.rect = QStyle::alignedRect(layoutDirection(), Qt::AlignCenter, indicator.size(), rect);
-        style()->drawControl(QStyle::CE_CheckBox, &opt, painter, this);
-    }
-
-private:
-    Qt::CheckState m_state = Qt::Unchecked;
-};
 
 LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, QWidget* parent)
     : QDialog(parent), m_gui_settings(std::move(gui_settings)) {
@@ -92,8 +46,8 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
 
     m_table = new QTableWidget(this);
     m_table->setColumnCount(3);
-    auto* cbh = new CheckBoxHeader(Qt::Horizontal, m_table);
-    m_table->setHorizontalHeader(cbh);
+    m_table->horizontalHeader()->setSectionsClickable(true);
+    m_table->horizontalHeader()->setHighlightSections(false);
     QStringList headers;
     headers << QString() << tr("Comment") << tr("Filter");
     m_table->setHorizontalHeaderLabels(headers);
@@ -159,13 +113,29 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
             });
 
     connect(m_table->horizontalHeader(), &QHeaderView::sectionClicked, this, [this](int section) {
-        auto* cbh2 = static_cast<CheckBoxHeader*>(m_table->horizontalHeader());
         if (section != 0)
             return;
-        const auto state = cbh2->checkState();
-        const auto next = (state == Qt::Checked) ? Qt::Unchecked : Qt::Checked;
-        cbh2->setCheckState(next);
+        const auto next = (m_header_checkbox && m_header_checkbox->checkState() == Qt::Checked)
+                              ? Qt::Unchecked
+                              : Qt::Checked;
+        if (m_header_checkbox)
+            m_header_checkbox->setCheckState(next);
         SetAllCheckStates(next);
+        UpdateHeaderCheckState();
+        UpdateLoadButtonEnabled();
+    });
+
+    m_header_checkbox = new QCheckBox(m_table->horizontalHeader());
+    m_header_checkbox->setTristate(true);
+    m_header_checkbox->setText(QString());
+    m_header_checkbox->setFocusPolicy(Qt::NoFocus);
+    PositionHeaderCheckbox();
+    QObject::connect(m_table->horizontalHeader(), &QHeaderView::geometriesChanged, this,
+                     [this]() { PositionHeaderCheckbox(); });
+    QObject::connect(m_table->horizontalHeader(), &QHeaderView::sectionResized, this,
+                     [this](int, int, int) { PositionHeaderCheckbox(); });
+    QObject::connect(m_header_checkbox, &QCheckBox::clicked, this, [this](bool checked) {
+        SetAllCheckStates(checked ? Qt::Checked : Qt::Unchecked);
         UpdateHeaderCheckState();
         UpdateLoadButtonEnabled();
     });
@@ -332,10 +302,10 @@ void LogPresetsDialog::LoadSelected() {
 }
 
 void LogPresetsDialog::UpdateHeaderCheckState() {
-    auto* cbh = static_cast<CheckBoxHeader*>(m_table->horizontalHeader());
     const int rows = m_table->rowCount();
     if (rows == 0) {
-        cbh->setCheckState(Qt::Unchecked);
+        if (m_header_checkbox)
+            m_header_checkbox->setCheckState(Qt::Unchecked);
         return;
     }
     int checked = 0;
@@ -347,7 +317,8 @@ void LogPresetsDialog::UpdateHeaderCheckState() {
     const auto state = (checked == 0)      ? Qt::Unchecked
                        : (checked == rows) ? Qt::Checked
                                            : Qt::PartiallyChecked;
-    cbh->setCheckState(state);
+    if (m_header_checkbox)
+        m_header_checkbox->setCheckState(state);
 }
 
 void LogPresetsDialog::SetAllCheckStates(Qt::CheckState state) {
@@ -399,4 +370,42 @@ void LogPresetsDialog::UpdateLoadButtonEnabled() {
         m_remove_btn->setVisible(showRemove);
         m_remove_btn->setEnabled(showRemove);
     }
+}
+
+void LogPresetsDialog::PositionHeaderCheckbox() {
+    if (!m_header_checkbox)
+        return;
+    auto* hdr = m_table->horizontalHeader();
+    const int section = 0;
+    const int x = hdr->sectionViewportPosition(section);
+    const int w = hdr->sectionSize(section);
+    const int h = hdr->height();
+    const QSize sz = m_header_checkbox->sizeHint();
+
+    // Try to align horizontally with cell checkbox indicator for this column
+    int left_in_section = 0;
+    if (m_table->model()->rowCount() > 0) {
+        QStyleOptionViewItem opt;
+        opt.initFrom(m_table);
+        opt.features = QStyleOptionViewItem::HasCheckIndicator;
+        // Use a representative cell rect width (section width) and a typical row height
+        const int cell_h = m_table->rowHeight(0) > 0 ? m_table->rowHeight(0) : sz.height();
+        opt.rect = QRect(0, 0, w, cell_h);
+        const QRect ind = m_table->style()->subElementRect(QStyle::SE_ItemViewItemCheckIndicator, &opt, m_table);
+        left_in_section = ind.left();
+        // Guard against styles that return empty rects
+        if (ind.isEmpty()) {
+            left_in_section = m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
+        }
+    } else {
+        left_in_section = m_table->style()->pixelMetric(QStyle::PM_FocusFrameHMargin, nullptr, m_table);
+    }
+
+    int cx = x + left_in_section;
+    // Center vertically in header
+    const int cy = (h - sz.height()) / 2;
+    // Ensure checkbox fully visible within the section bounds
+    if (cx + sz.width() > x + w) cx = x + std::max(0, w - sz.width());
+    m_header_checkbox->setGeometry(QRect(QPoint(cx, cy), sz));
+    m_header_checkbox->show();
 }

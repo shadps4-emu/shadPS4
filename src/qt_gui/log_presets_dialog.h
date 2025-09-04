@@ -8,6 +8,7 @@
 class QTableWidget;
 class QPushButton;
 class QTableWidgetItem;
+class QCheckBox;
 
 #include "gui_settings.h"
 
@@ -36,6 +37,7 @@ private:
     void SetAllCheckStates(Qt::CheckState state);
     QList<int> GetCheckedRows() const;
     void UpdateLoadButtonEnabled();
+    void PositionHeaderCheckbox();
 
     QList<QString> SerializeTable() const;
     void PopulateFromList(const QList<QString>& list);
@@ -43,6 +45,7 @@ private:
 private:
     std::shared_ptr<gui_settings> m_gui_settings;
     QTableWidget* m_table = nullptr;
+    QCheckBox* m_header_checkbox = nullptr;
     QPushButton* m_add_btn = nullptr;
     QPushButton* m_remove_btn = nullptr;
     QPushButton* m_load_btn = nullptr;
