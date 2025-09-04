@@ -2186,6 +2186,70 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Habilita el registre</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Habilita el registre:\nHabilita el registre.\nNo canviïs aquesta opció si no saps que estàs fent!\nSi demanes ajuda, assegura't que aquesta opció està ACTIVADA.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Mode presentació</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Bústia de correu (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediat (Sense sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Selecciona la carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Mode Presentació:\nConfigura com es presenta la sortida de vídeo a la teva pantalla.\n\nBústia de correu: Sincronitza els fotogrames amb la taxa de refresc de la teva pantalla. Els nous fotogrames reemplacen qualsevol fotograma pendent. Redueix la latència però pot provocar salts de fotogrames si es queden enrere.\nFifo: Els fotogrames es sincronitzen amb la taxa de refresc de la teva pantalla. Els nous fotogrames es posaran en cua darrere els fotogrames pendents. Assegura mostrar tots els fotogrames però augmenta la latència.\nImmediat: Els fotogrames es presenten immediatament a la teva pantalla quan estan disponibles. Pot provocar errors gràfics.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Ruta DLC:\nLa carpeta des d'on es carrega el contingut DLC.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Navegador:\nCerca una carpeta per establir com a ruta DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>Configuració FSR</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Activa el FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Activa RCAS (esmolat)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>Afeblir RCAS:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation>0,250</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
