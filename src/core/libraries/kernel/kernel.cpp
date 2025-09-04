@@ -284,6 +284,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("TUuiYS2kE8s", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_shutdown);
     LIB_FUNCTION("TU-d9PfIHPM", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
     LIB_FUNCTION("MZb0GKT3mo8", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socketpair);
+    LIB_FUNCTION("MZb0GKT3mo8", "libkernel_ps2emu", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_socketpair);
     LIB_FUNCTION("K1S8oc61xiM", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_htonl);
     LIB_FUNCTION("jogUIsOV3-U", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_htons);
     LIB_FUNCTION("fZOeZIOEmLw", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_send);
