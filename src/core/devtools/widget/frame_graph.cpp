@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "frame_graph.h"
@@ -13,7 +13,6 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
-constexpr float TARGET_FPS = 60.0f;
 constexpr float BAR_WIDTH_MULT = 1.4f;
 constexpr float BAR_HEIGHT_MULT = 1.25f;
 constexpr float FRAME_GRAPH_PADDING_Y = 3.0f;
@@ -30,7 +29,7 @@ void FrameGraph::DrawFrameGraph() {
         return;
     }
 
-    float target_dt = 1.0f / (TARGET_FPS * (float)Config::vblankDiv());
+    float target_dt = 1.0f / (float)Config::vblankFreq();
     float cur_pos_x = pos.x + full_width;
     pos.y += FRAME_GRAPH_PADDING_Y;
     const float final_pos_y = pos.y + FRAME_GRAPH_HEIGHT;
