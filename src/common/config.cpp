@@ -856,7 +856,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("Audio")) {
         const toml::value& audio = data.at("Audio");
 
-        micDevice.setFromToml(input, "micDevice", is_game_specific);
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
         mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
             toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
