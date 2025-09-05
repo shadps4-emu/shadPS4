@@ -11,8 +11,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>960</width>
-    <height>822</height>
+    <width>970</width>
+    <height>750</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>6</number>
+      <number>2</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -452,8 +452,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>404</width>
-                  <height>69</height>
+                  <width>402</width>
+                  <height>68</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -538,8 +538,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -987,8 +987,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1245,54 +1245,6 @@
                  </property>
                 </widget>
                </item>
-               <item>
-                <widget class="QGroupBox" name="fpsGroupBox">
-                 <property name="title">
-                  <string>FPS Limit</string>
-                 </property>
-                 <layout class="QVBoxLayout" name="verticalLayout_6">
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_8">
-                    <item>
-                     <widget class="QLineEdit" name="fpsText">
-                      <property name="maximumSize">
-                       <size>
-                        <width>60</width>
-                        <height>60</height>
-                       </size>
-                      </property>
-                      <property name="text">
-                       <string>60FPS</string>
-                      </property>
-                      <property name="alignment">
-                       <set>Qt::AlignmentFlag::AlignCenter</set>
-                      </property>
-                      <property name="readOnly">
-                       <bool>true</bool>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QSlider" name="fpsSlider">
-                      <property name="minimum">
-                       <number>30</number>
-                      </property>
-                      <property name="maximum">
-                       <number>500</number>
-                      </property>
-                      <property name="sliderPosition">
-                       <number>60</number>
-                      </property>
-                      <property name="orientation">
-                       <enum>Qt::Orientation::Horizontal</enum>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
@@ -1433,8 +1385,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1675,8 +1627,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1947,8 +1899,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -2116,8 +2068,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>934</width>
-         <height>559</height>
+         <width>946</width>
+         <height>536</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
