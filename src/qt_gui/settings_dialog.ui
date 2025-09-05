@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+<!-- SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
      SPDX-License-Identifier: GPL-2.0-or-later -->
 <ui version="4.0">
  <class>SettingsDialog</class>
@@ -73,8 +73,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -452,8 +452,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>402</width>
-                  <height>68</height>
+                  <width>414</width>
+                  <height>69</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -538,8 +538,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
@@ -987,8 +987,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1205,13 +1205,19 @@
                  <item>
                   <widget class="QGroupBox" name="heightDivider">
                    <property name="title">
-                    <string>Vblank Divider</string>
+                    <string>Vblank Frequency</string>
                    </property>
                    <layout class="QVBoxLayout" name="vblankLayout">
                     <item>
                      <widget class="QSpinBox" name="vblankSpinBox">
                       <property name="frame">
                        <bool>true</bool>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+                      </property>
+                      <property name="specialValueText">
+                       <string/>
                       </property>
                       <property name="accelerated">
                        <bool>true</bool>
@@ -1222,6 +1228,9 @@
                       <property name="keyboardTracking">
                        <bool>false</bool>
                       </property>
+                      <property name="suffix">
+                       <string>Hz</string>
+                      </property>
                       <property name="minimum">
                        <number>1</number>
                       </property>
@@ -1229,7 +1238,7 @@
                        <number>9999</number>
                       </property>
                       <property name="value">
-                       <number>1</number>
+                       <number>60</number>
                       </property>
                      </widget>
                     </item>
@@ -1385,8 +1394,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1627,8 +1636,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1899,8 +1908,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>944</width>
+         <height>487</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -2068,8 +2077,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>536</height>
+         <width>927</width>
+         <height>524</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
