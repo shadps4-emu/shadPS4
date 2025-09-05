@@ -1046,17 +1046,26 @@
                  <string>Color Adjustment</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_18">
+                 <property name="leftMargin">
+                  <number>6</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>6</number>
+                 </property>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_9">
+                   <property name="spacing">
+                    <number>6</number>
+                   </property>
                    <item>
-                    <widget class="QLabel" name="RLabel">
+                    <widget class="QLabel" name="RLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">R: 000</string>
+                      <string>RED</string>
                      </property>
                     </widget>
                    </item>
@@ -1076,19 +1085,32 @@
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QLabel" name="RLabel">
+                     <property name="maximumSize">
+                      <size>
+                       <width>20</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">000</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_10">
                    <item>
-                    <widget class="QLabel" name="GLabel">
+                    <widget class="QLabel" name="GLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">G: 000</string>
+                      <string>GREEN</string>
                      </property>
                     </widget>
                    </item>
@@ -1108,19 +1130,32 @@
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QLabel" name="GLabel">
+                     <property name="maximumSize">
+                      <size>
+                       <width>20</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">000</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_11">
                    <item>
-                    <widget class="QLabel" name="BLabel">
+                    <widget class="QLabel" name="BLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">B: 255</string>
+                      <string>BLUE</string>
                      </property>
                     </widget>
                    </item>
@@ -1140,6 +1175,19 @@
                      </property>
                      <property name="orientation">
                       <enum>Qt::Orientation::Horizontal</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="BLabel">
+                     <property name="maximumSize">
+                      <size>
+                       <width>20</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">255</string>
                      </property>
                     </widget>
                    </item>
