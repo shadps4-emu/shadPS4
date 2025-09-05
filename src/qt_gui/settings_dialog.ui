@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>7</number>
+      <number>6</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -2075,7 +2075,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>361</height>
+         <height>299</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -2102,65 +2102,61 @@
               </property>
               <layout class="QVBoxLayout" name="loggerLayout">
                <item>
-                <widget class="QCheckBox" name="enableLoggingCheckBox">
-                 <property name="text">
-                  <string>Enable Logging</string>
+                <layout class="QHBoxLayout" name="horizontalLayout_12">
+                 <property name="topMargin">
+                  <number>0</number>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="separateLogFilesCheckbox">
-                 <property name="text">
-                  <string>Separate Log Files</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QWidget" name="LogTypeWidget" native="true">
-                 <layout class="QVBoxLayout" name="LogTypeLayout">
-                  <property name="leftMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <widget class="QGroupBox" name="logTypeGroupBox">
-                    <property name="maximumSize">
-                     <size>
-                      <width>250</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="title">
-                     <string>Log Type</string>
-                    </property>
-                    <layout class="QVBoxLayout" name="logTypeBoxLayout">
-                     <item>
-                      <widget class="QComboBox" name="logTypeComboBox">
-                       <item>
-                        <property name="text">
-                         <string>async</string>
-                        </property>
-                       </item>
-                       <item>
-                        <property name="text">
-                         <string>sync</string>
-                        </property>
-                       </item>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_7">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="enableLoggingCheckBox">
+                     <property name="text">
+                      <string>Enable Logging</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="separateLogFilesCheckbox">
+                     <property name="text">
+                      <string>Separate Log Files</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QGroupBox" name="logTypeGroupBox">
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="title">
+                    <string>Log Type</string>
+                   </property>
+                   <layout class="QVBoxLayout" name="logTypeBoxLayout">
+                    <item>
+                     <widget class="QComboBox" name="logTypeComboBox">
+                      <item>
+                       <property name="text">
+                        <string>async</string>
+                       </property>
+                      </item>
+                      <item>
+                       <property name="text">
+                        <string>sync</string>
+                       </property>
+                      </item>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <layout class="QVBoxLayout" name="vLayoutLogFilter">

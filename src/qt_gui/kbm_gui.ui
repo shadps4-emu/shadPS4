@@ -1375,14 +1375,14 @@
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_9">
                    <item>
-                    <widget class="QLabel" name="DeadzoneOffsetLabel">
+                    <widget class="QLabel" name="DeadzoneOffsetLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">Deadzone Offset (def 0.50): 0.50</string>
+                      <string>Deadzone Offset (def 0.50):</string>
                      </property>
                     </widget>
                    </item>
@@ -1408,19 +1408,38 @@
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QLabel" name="DeadzoneOffsetLabel">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">0.50</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_10">
                    <item>
-                    <widget class="QLabel" name="SpeedMultiplierLabel">
+                    <widget class="QLabel" name="SpeedMultiplierLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">Speed Multiplier (def 1.0): 1.0</string>
+                      <string>Speed Multiplier (def 1.0):</string>
                      </property>
                     </widget>
                    </item>
@@ -1452,19 +1471,38 @@
                      </property>
                     </widget>
                    </item>
+                   <item>
+                    <widget class="QLabel" name="SpeedMultiplierLabel">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">1.0</string>
+                     </property>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                  <item>
                   <layout class="QHBoxLayout" name="horizontalLayout_11">
                    <item>
-                    <widget class="QLabel" name="SpeedOffsetLabel">
+                    <widget class="QLabel" name="SpeedOffsetLabel_text">
                      <property name="font">
                       <font>
                        <bold>false</bold>
                       </font>
                      </property>
                      <property name="text">
-                      <string notr="true">Speed Offset (def 0.125): 0.125</string>
+                      <string>Speed Offset (def 0.125):</string>
                      </property>
                     </widget>
                    </item>
@@ -1490,6 +1528,19 @@
                      </property>
                      <property name="orientation">
                       <enum>Qt::Orientation::Horizontal</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="SpeedOffsetLabel">
+                     <property name="maximumSize">
+                      <size>
+                       <width>30</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string notr="true">0.125</string>
                      </property>
                     </widget>
                    </item>
