@@ -2232,23 +2232,23 @@
     </message>
     <message>
       <source>FSR Settings</source>
-      <translation type="unfinished">FSR Settings</translation>
+      <translation>Настройки FSR</translation>
     </message>
     <message>
       <source>Enable FSR</source>
-      <translation type="unfinished">Enable FSR</translation>
+      <translation>Включить FSR</translation>
     </message>
     <message>
       <source>Enable RCAS (sharpening)</source>
-      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+      <translation>Включить RCAS (резкость)</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>Затухание RCAS:</translation>
     </message>
     <message>
       <source>0.250</source>
-      <translation type="unfinished">0.250</translation>
+      <translation>0.250</translation>
     </message>
   </context>
   <context>
