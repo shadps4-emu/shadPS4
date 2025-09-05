@@ -823,22 +823,19 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
-        cursorState = toml::find_or<int>(input, "cursorState", cursorState);
-        cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", cursorHideTimeout);
-        useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", useSpecialPad);
-        specialPadClass = toml::find_or<int>(input, "specialPadClass", specialPadClass);
-        isMotionControlsEnabled =
-            toml::find_or<bool>(input, "isMotionControlsEnabled", isMotionControlsEnabled);
-        useUnifiedInputConfig =
-            toml::find_or<bool>(input, "useUnifiedInputConfig", useUnifiedInputConfig);
-        backgroundControllerInput =
-            toml::find_or<bool>(input, "backgroundControllerInput", backgroundControllerInput);
+        cursorState.setFromToml(input, "cursorState", is_game_specific);
+        cursorHideTimeout.setFromToml(input, "cursorHideTimeout", is_game_specific);
+        useSpecialPad.setFromToml(input, "useSpecialPad", is_game_specific);
+        specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
+        isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
+        useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
+        backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
     }
 
     if (data.contains("Audio")) {
         const toml::value& audio = data.at("Audio");
 
-        micDevice = toml::find_or<std::string>(audio, "micDevice", micDevice);
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
         mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
         padSpkOutputDevice =
             toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
