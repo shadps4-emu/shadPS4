@@ -46,6 +46,7 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void setDefaultValues();
     void VolumeSliderChange(int value);
+    void FPSChange(int value);
 
     std::unique_ptr<Ui::SettingsDialog> ui;
 
