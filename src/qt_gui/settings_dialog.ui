@@ -2217,6 +2217,13 @@
                       <item>
                        <widget class="QLineEdit" name="logFilterLineEdit"/>
                       </item>
+                      <item>
+                       <widget class="QPushButton" name="logPresetsButton">
+                        <property name="text">
+                         <string>Load Presets...</string>
+                        </property>
+                       </widget>
+                      </item>
                      </layout>
                     </widget>
                    </item>

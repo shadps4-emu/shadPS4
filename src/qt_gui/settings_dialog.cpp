@@ -26,6 +26,7 @@
 #include "background_music_player.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
+#include "log_presets_dialog.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -385,6 +386,14 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             Common::FS::PathToQString(userPath,
                                       Common::FS::GetUserPath(Common::FS::PathType::LogDir));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
+        });
+
+        // Log presets popup button
+        connect(ui->logPresetsButton, &QPushButton::clicked, this, [this]() {
+            auto dlg = new LogPresetsDialog(m_gui_settings, this);
+            connect(dlg, &LogPresetsDialog::PresetChosen, this,
+                    [this](const QString& filter) { ui->logFilterLineEdit->setText(filter); });
+            dlg->exec();
         });
     }
 
