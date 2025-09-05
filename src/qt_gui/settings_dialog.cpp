@@ -827,6 +827,8 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Enable Shaders Dumping:\\nFor the sake of technical debugging, saves the games shaders to a folder as they render.");
     } else if (elementName == "nullGpuCheckBox") {
         text = tr("Enable Null GPU:\\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.");
+    }  else if (elementName == "fpsGroupBox") {
+        text = tr("FPS Limiter:\\nSets the maxiumum FPS that a game can run at.\\nSome games may require you to increase the Vblank divider.\\nChanging this might cause some games to operate at unintended speeds.\\nLeave at 60 if unsure.");
     }
 
     // Path
