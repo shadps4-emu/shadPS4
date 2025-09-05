@@ -253,6 +253,9 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
 
 int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
     LOG_DEBUG(Kernel_Event, "called");
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     ef->Clear(bitPattern);
     return ORBIS_OK;
 }
@@ -260,6 +263,9 @@ int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern
 int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPattern,
                                           int* pNumWaitThreads) {
     LOG_DEBUG(Kernel_Event, "called");
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     ef->Cancel(setPattern, pNumWaitThreads);
     return ORBIS_OK;
 }
