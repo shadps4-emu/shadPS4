@@ -1013,7 +1013,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled.base_value;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
     data["Input"]["backgroundControllerInput"] = backgroundControllerInput.base_value;
-    data["Audio"]["micDevice"] = micDevice.base_value;  
+    data["Audio"]["micDevice"] = micDevice.base_value;
     data["Audio"]["mainOutputDevice"] = mainOutputDevice;
     data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth.base_value;
