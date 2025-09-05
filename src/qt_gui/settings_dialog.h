@@ -54,7 +54,6 @@ private:
     QString defaultTextEdit;
 
     int initialHeight;
-
     bool is_saving = false;
     bool is_game_running = false;
     std::shared_ptr<gui_settings> m_gui_settings;

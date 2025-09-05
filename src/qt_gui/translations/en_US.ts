@@ -1069,6 +1069,91 @@
     </message>
 </context>
 <context>
+    <name>Hotkeys</name>
+    <message>
+        <source>Customize Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Controller Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show FPS Counter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>unmapped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Quit Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reload Button Mappings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Fullscreen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Pause</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keyboard Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Renderdoc Capture (for debugging only)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Mouse to Joystick Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Mouse to Gyro Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+        <source>Restore Defaults</source>
+        <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Waiting for inputs</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>KBMSettings</name>
     <message>
         <source>Configure Controls</source>
@@ -2190,6 +2275,62 @@
         <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Present Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mailbox (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fifo (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Immediate (No Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select the DLC folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FSR Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable FSR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable RCAS (sharpening)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RCAS Attenuation:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>0.250</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>TrophyViewer</name>
@@ -2215,77 +2356,6 @@
     </message>
     <message>
         <source>Show Hidden Trophies</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>hotkeys</name>
-    <message>
-        <source>Customize Hotkeys</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Controller Hotkeys</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Show FPS Counter</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>unmapped</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Stop Emulator</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle Fullscreen</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle Pause</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Keyboard Hotkeys</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Show Fps Counter: F10</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Stop Emulator: n/a</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle Fullscreen: F11</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Toggle Pause: F9</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Tip: Up to three inputs can be assigned for each function</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation type="unfinished">Save</translation>
-    </message>
-    <message>
-        <source>Apply</source>
-        <translation type="unfinished">Apply</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="unfinished">Cancel</translation>
-    </message>
-    <message>
-        <source>Press a button</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

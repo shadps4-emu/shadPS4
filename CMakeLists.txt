@@ -926,6 +926,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
+                      src/shader_recompiler/ir/operand_helper.h
                       src/shader_recompiler/ir/patch.cpp
                       src/shader_recompiler/ir/patch.h
                       src/shader_recompiler/ir/position.h
@@ -1097,6 +1098,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/kbm_help_dialog.h
            src/qt_gui/main_window_themes.cpp
            src/qt_gui/main_window_themes.h
+           src/qt_gui/log_presets_dialog.cpp
+           src/qt_gui/log_presets_dialog.h
            src/qt_gui/settings_dialog.cpp
            src/qt_gui/settings_dialog.h
            src/qt_gui/settings_dialog.ui

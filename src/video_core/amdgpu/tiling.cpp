@@ -216,7 +216,7 @@ u32 GetSampleSplit(TileMode tile_mode) {
     }
 }
 
-u32 GetTileSplit(TileMode tile_mode) {
+u32 GetTileSplitHw(TileMode tile_mode) {
     switch (tile_mode) {
     case TileMode::Depth2DThin64:
     case TileMode::Depth1DThin:
@@ -528,6 +528,18 @@ u32 GetPipeCount(PipeConfig pipe_cfg) {
     }
 }
 
+u32 CalculateTileSplit(TileMode tile_mode, ArrayMode array_mode, MicroTileMode micro_tile_mode,
+                       u32 bpp) {
+    const u32 sample_split = GetSampleSplit(tile_mode);
+    const u32 tile_split_hw = GetTileSplitHw(tile_mode);
+    const u32 tile_thickness = GetMicroTileThickness(array_mode);
+    const u32 tile_bytes_1x = (bpp * MICROTILE_SIZE * MICROTILE_SIZE * tile_thickness + 7) / 8;
+    const u32 color_tile_split = std::max(256U, sample_split * tile_bytes_1x);
+    const u32 tile_split =
+        micro_tile_mode == MicroTileMode::Depth ? tile_split_hw : color_tile_split;
+    return std::min(DRAM_ROW_SIZE, tile_split);
+}
+
 MacroTileMode CalculateMacrotileMode(TileMode tile_mode, u32 bpp, u32 num_samples) {
     ASSERT_MSG(std::has_single_bit(num_samples) && num_samples <= 16, "Invalid sample count {}",
                num_samples);
@@ -537,15 +549,9 @@ MacroTileMode CalculateMacrotileMode(TileMode tile_mode, u32 bpp, u32 num_sample
     ASSERT_MSG(IsMacroTiled(array_mode), "Tile mode not macro tiled");
 
     const MicroTileMode micro_tile_mode = GetMicroTileMode(tile_mode);
-    const u32 sample_split = GetSampleSplit(tile_mode);
-    const u32 tile_split_hw = GetTileSplit(tile_mode);
-
     const u32 tile_thickness = GetMicroTileThickness(array_mode);
     const u32 tile_bytes_1x = bpp * MICROTILE_SIZE * MICROTILE_SIZE * tile_thickness / 8;
-    const u32 color_tile_split = std::max(256U, sample_split * tile_bytes_1x);
-    const u32 tile_split =
-        micro_tile_mode == MicroTileMode::Depth ? tile_split_hw : color_tile_split;
-    const u32 tilesplic = std::min(DRAM_ROW_SIZE, tile_split);
+    const u32 tilesplic = CalculateTileSplit(tile_mode, array_mode, micro_tile_mode, bpp);
     const u32 tile_bytes = std::min(tilesplic, num_samples * tile_bytes_1x);
     const u32 mtm_idx = std::bit_width(tile_bytes / 64) - 1;
     return IsPrt(array_mode) ? MacroTileMode(mtm_idx + 8) : MacroTileMode(mtm_idx);
