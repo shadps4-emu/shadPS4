@@ -341,7 +341,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
+    constexpr auto ModulesToLoad = std::to_array<SysModules>(
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
@@ -350,7 +350,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", nullptr},
          {"libSceFontFt.sprx", nullptr},
-         {"libSceFreeTypeOt.sprx", nullptr}}};
+         {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
