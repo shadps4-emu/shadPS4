@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -14,6 +14,7 @@
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
+static bool isFpsLimited = false;
 
 namespace Libraries::VideoOut {
 
@@ -269,13 +270,18 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
-    const auto vblank_period = VblankPeriod / Config::vblankDiv();
+    int fps_cap_value;
+    if ((Config::vblankDiv() * 60) <= Config::getFpsLimit()) {
+        fps_cap_value = 16666667 / Config::vblankDiv();
+    } else {
+        fps_cap_value = 1000000000 / Config::getFpsLimit();
+        isFpsLimited = true;
+    }
+    const std::chrono::nanoseconds FpsCap{fps_cap_value};
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
-    Common::SetCurrentThreadRealtime(vblank_period);
-
-    Common::AccurateTimer timer{vblank_period};
+    Common::SetCurrentThreadRealtime(FpsCap);
+    Common::AccurateTimer timer{FpsCap};
 
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
@@ -298,20 +304,36 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
 
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
-        if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
+
+        auto drawFrame = [&]() {
+            if (!main_port.is_open) {
+                DrawBlankFrame();
+            } else if (ImGui::Core::MustKeepDrawing()) {
+                DrawLastFrame();
+            }
+        };
+
+        auto endFrame = [&](const auto request) {
+            Flip(request);
+            FRAME_END;
+        };
+
+        auto setFramerateCap = [&](bool limitCheck) {
             const auto request = receive_request();
             if (!request) {
-                if (timer.GetTotalWait().count() < 0) { // Dont draw too fast
-                    if (!main_port.is_open) {
-                        DrawBlankFrame();
-                    } else if (ImGui::Core::MustKeepDrawing()) {
-                        DrawLastFrame();
-                    }
+                if (limitCheck) {
+                    drawFrame();
                 }
             } else {
-                Flip(request);
-                FRAME_END;
+                endFrame(request);
             }
+        };
+
+        if (isFpsLimited) {
+            setFramerateCap(true);
+        } else if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
+            bool timeForFrame = timer.GetTotalWait().count() < 0;
+            setFramerateCap(timeForFrame);
         }
 
         {
