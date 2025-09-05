@@ -447,7 +447,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation>Typowa konfiguracja</translation>
+      <translation>Wspólna konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -1118,7 +1118,7 @@
     </message>
     <message>
       <source>Common Config</source>
-      <translation>Typowa konfiguracja</translation>
+      <translation>Wspólna konfiguracja</translation>
     </message>
     <message>
       <source>Use per-game configs</source>
@@ -1214,7 +1214,7 @@
     </message>
     <message>
       <source>Copy from Common Config</source>
-      <translation>Kopiuj z typowej konfiguracji</translation>
+      <translation>Kopiuj ze wspólnej konfiguracji</translation>
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
@@ -1226,19 +1226,19 @@
     </message>
     <message>
       <source>Common Config Selected</source>
-      <translation>Wybrano typową konfigurację</translation>
+      <translation>Wybrano wspólną konfigurację</translation>
     </message>
     <message>
       <source>This button copies mappings from the Common Config to the currently selected profile, and cannot be used when the currently selected profile is the Common Config.</source>
-      <translation>Przycisk ten kopiuje mapowanie z typowej konfiguracji do aktualnie wybranego profilu, i nie może być użyty, gdy aktualnie wybranym profilem jest typowa konfiguracja.</translation>
+      <translation>Przycisk ten kopiuje mapowanie ze wspólnej konfiguracji do aktualnie wybranego profilu. Nie może być użyty, gdy aktualnie wybranym profilem jest wspólna konfiguracja.</translation>
     </message>
     <message>
       <source>Copy values from Common Config</source>
-      <translation>Kopiuj z typowej konfiguracji</translation>
+      <translation>Kopiuj ze wspólnej konfiguracji</translation>
     </message>
     <message>
       <source>Do you want to overwrite existing mappings with the mappings from the Common Config?</source>
-      <translation>Czy chcesz nadpisać istniejące mapowania mapowaniem z typowej konfiguracji?</translation>
+      <translation>Czy chcesz nadpisać istniejące mapowania mapowaniem ze wspólnej konfiguracji?</translation>
     </message>
     <message>
       <source>Unable to Save</source>
@@ -1692,7 +1692,7 @@
     </message>
     <message>
       <source>Enable Shaders Dumping</source>
-      <translation>Włącz zgrywanie cieni</translation>
+      <translation>Włącz zgrywanie shaderów</translation>
     </message>
     <message>
       <source>Enable NULL GPU</source>
@@ -1744,7 +1744,7 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>Zbieraj cienie</translation>
+      <translation>Zbieraj shadery</translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1988,7 +1988,7 @@
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation>Zbieranie cieni:\nPotrzebujesz tej opcji aby edytować cienie za pomocą menu debugowania (Ctrl + F10).</translation>
+      <translation>Zbieranie shaderów:\nPotrzebujesz tej opcji aby edytować shadery za pomocą menu debugowania (Ctrl + F10).</translation>
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
@@ -2132,7 +2132,7 @@
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
-      <translation>Utwórz przenośny folder użytkownika ze zwykłego folderu użytkownika</translation>
+      <translation>Utwórz przenośny folder użytkownika ze folderu użytkownika udostępnianego</translation>
     </message>
     <message>
       <source>Portable user folder:\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.</source>
@@ -2185,6 +2185,70 @@
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos;. Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation type="unfinished">Enable Logging</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation type="unfinished">Present Mode</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation type="unfinished">Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation type="unfinished">Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation type="unfinished">Immediate (No Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation type="unfinished">DLC Folder</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation type="unfinished">Select the DLC folder</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation type="unfinished">FSR Settings</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation type="unfinished">Enable FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation type="unfinished">RCAS Attenuation:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation type="unfinished">0.250</translation>
     </message>
   </context>
   <context>

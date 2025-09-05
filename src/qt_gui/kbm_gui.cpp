@@ -162,12 +162,20 @@ void KBMSettings::DisableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(false);
 }
 
 void KBMSettings::EnableMappingButtons() {
     for (const auto& i : ButtonsList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(true);
 }
 
 void KBMSettings::SaveKBMConfig(bool close_on_save) {
@@ -246,7 +254,7 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
     lines.push_back(output_string + " = " + input_string);
 
     lines.push_back("");
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
     std::fstream file(config_file);
     int lineCount = 0;
     std::string line;
@@ -285,7 +293,7 @@ void KBMSettings::SaveKBMConfig(bool close_on_save) {
         }
 
         if (controllerInputdetected || output_string == "analog_deadzone" ||
-            output_string == "override_controller_color") {
+            output_string == "override_controller_color" || output_string.contains("hotkey")) {
             lines.push_back(line);
         }
     }
@@ -388,7 +396,7 @@ void KBMSettings::SetDefault() {
 }
 
 void KBMSettings::SetUIValuestoMappings(std::string config_id) {
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
     std::ifstream file(config_file);
 
     int lineCount = 0;

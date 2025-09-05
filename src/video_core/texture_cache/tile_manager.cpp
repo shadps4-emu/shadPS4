@@ -105,11 +105,12 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
     }
 
     const auto device = instance.GetDevice();
+    const auto micro_tile_mode = AmdGpu::GetMicroTileMode(info.tile_mode);
     std::vector<std::string> defines = {
         fmt::format("BITS_PER_PIXEL={}", info.num_bits),
         fmt::format("NUM_SAMPLES={}", info.num_samples),
         fmt::format("ARRAY_MODE={}", u32(info.array_mode)),
-        fmt::format("MICRO_TILE_MODE={}", u32(AmdGpu::GetMicroTileMode(info.tile_mode))),
+        fmt::format("MICRO_TILE_MODE={}", u32(micro_tile_mode)),
         fmt::format("MICRO_TILE_THICKNESS={}", AmdGpu::GetMicroTileThickness(info.array_mode)),
     };
     if (AmdGpu::IsMacroTiled(info.array_mode)) {
@@ -122,8 +123,9 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         defines.emplace_back(fmt::format("BANK_HEIGHT={}", AmdGpu::GetBankHeight(macro_tile_mode)));
         defines.emplace_back(fmt::format("NUM_BANKS={}", num_banks));
         defines.emplace_back(fmt::format("NUM_BANK_BITS={}", std::bit_width(num_banks) - 1));
-        defines.emplace_back(
-            fmt::format("TILE_SPLIT_BYTES={}", AmdGpu::GetTileSplit(info.tile_mode)));
+        defines.emplace_back(fmt::format(
+            "TILE_SPLIT_BYTES={}", AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode,
+                                                              micro_tile_mode, info.num_bits)));
         defines.emplace_back(
             fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
     }

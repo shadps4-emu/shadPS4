@@ -191,7 +191,7 @@ public:
             }
         }
 
-        if (!filter.CheckMessage(log_class, log_level)) {
+        if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
             return;
         }
 

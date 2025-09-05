@@ -137,6 +137,7 @@ static auto UserPaths = [] {
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
     create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
+    create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
 
     std::ofstream notice_file(user_dir / CUSTOM_TROPHY / "Notice.txt");
     if (notice_file.is_open()) {

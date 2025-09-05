@@ -7,9 +7,29 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
 #include <iphlpapi.h>
+#include <mstcpip.h>
 #include <winsock2.h>
 typedef SOCKET net_socket;
 typedef int socklen_t;
+#ifndef LPFN_WSASENDMSG
+typedef INT(PASCAL* LPFN_WSASENDMSG)(SOCKET s, LPWSAMSG lpMsg, DWORD dwFlags,
+                                     LPDWORD lpNumberOfBytesSent, LPWSAOVERLAPPED lpOverlapped,
+                                     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+#endif
+#ifndef WSAID_WSASENDMSG
+static const GUID WSAID_WSASENDMSG = {
+    0xa441e712, 0x754f, 0x43ca, {0x84, 0xa7, 0x0d, 0xee, 0x44, 0xcf, 0x60, 0x6d}};
+#endif
+#ifndef LPFN_WSARECVMSG
+typedef INT(PASCAL* LPFN_WSARECVMSG)(SOCKET s, LPWSAMSG lpMsg, LPDWORD lpdwNumberOfBytesRecvd,
+                                     LPWSAOVERLAPPED lpOverlapped,
+                                     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+#endif
+
+#ifndef WSAID_WSARECVMSG
+static const GUID WSAID_WSARECVMSG = {
+    0xf689d7c8, 0x6f1f, 0x436b, {0x8a, 0x53, 0xe5, 0x4f, 0xe3, 0x51, 0xc3, 0x22}};
+#endif
 #else
 #include <cerrno>
 #include <arpa/inet.h>
@@ -49,9 +69,11 @@ struct Socket {
     virtual int GetSocketOptions(int level, int optname, void* optval, u32* optlen) = 0;
     virtual int Bind(const OrbisNetSockaddr* addr, u32 addrlen) = 0;
     virtual int Listen(int backlog) = 0;
+    virtual int SendMessage(const OrbisNetMsghdr* msg, int flags) = 0;
     virtual int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                            u32 tolen) = 0;
     virtual SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) = 0;
+    virtual int ReceiveMessage(OrbisNetMsghdr* msg, int flags) = 0;
     virtual int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
@@ -86,8 +108,10 @@ struct PosixSocket : public Socket {
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
     int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
     int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
@@ -109,8 +133,10 @@ struct P2PSocket : public Socket {
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
     int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
     int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;

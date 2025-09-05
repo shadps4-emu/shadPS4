@@ -133,3 +133,8 @@ SPDX-License-Identifier = "MIT"
 path = "src/video_core/host_shaders/fsr/*"
 SPDX-FileCopyrightText = "Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved."
 SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "dist/qt.conf"
+SPDX-FileCopyrightText = "shadPS4 Emulator Project"
+SPDX-License-Identifier = "GPL-2.0-or-later"
