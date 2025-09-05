@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>7</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -452,8 +452,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>402</width>
-                  <height>68</height>
+                  <width>400</width>
+                  <height>60</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -472,7 +472,7 @@
                     </size>
                    </property>
                    <property name="text">
-                    <string>100%</string>
+                    <string notr="true">100%</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -539,8 +539,14 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <layout class="QVBoxLayout" name="guiTabVLayout" stretch="0">
         <item>
@@ -988,7 +994,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1315,7 +1321,7 @@
                     </font>
                    </property>
                    <property name="text">
-                    <string>0.250</string>
+                    <string notr="true">0.250</string>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -1386,7 +1392,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1628,7 +1634,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1900,7 +1906,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>486</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -2056,85 +2062,37 @@
        </layout>
       </widget>
      </widget>
-     <widget class="QScrollArea" name="debugTab">
+     <widget class="QScrollArea" name="logTab">
       <property name="widgetResizable">
        <bool>true</bool>
       </property>
       <attribute name="title">
-       <string>Debug</string>
+       <string>Log</string>
       </attribute>
-      <widget class="QWidget" name="debugTabContents">
+      <widget class="QWidget" name="logTabContents">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>536</height>
+         <height>361</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <layout class="QVBoxLayout" name="logTabVLayout" stretch="0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <layout class="QHBoxLayout" name="horizontalLayout_log">
           <property name="leftMargin">
            <number>0</number>
           </property>
           <property name="topMargin">
            <number>0</number>
           </property>
-          <item>
-           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="0">
-            <item>
-             <widget class="QGroupBox" name="debugTabGroupBox">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="title">
-               <string>General</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-              </property>
-              <layout class="QVBoxLayout" name="debugTabLayout">
-               <item>
-                <widget class="QCheckBox" name="dumpShadersCheckBox">
-                 <property name="text">
-                  <string>Enable Shaders Dumping</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="debugDump">
-                 <property name="text">
-                  <string>Enable Debug Dumping</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="vkValidationCheckBox">
-                 <property name="text">
-                  <string>Enable Vulkan Validation Layers</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="vkSyncValidationCheckBox">
-                 <property name="text">
-                  <string>Enable Vulkan Synchronization Validation</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="rdocCheckBox">
-                 <property name="text">
-                  <string>Enable RenderDoc Debugging</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
           <item>
            <layout class="QVBoxLayout" name="loggerTabLayoutRight">
             <item>
@@ -2174,6 +2132,12 @@
                   </property>
                   <item>
                    <widget class="QGroupBox" name="logTypeGroupBox">
+                    <property name="maximumSize">
+                     <size>
+                      <width>250</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
                     <property name="title">
                      <string>Log Type</string>
                     </property>
@@ -2245,61 +2209,183 @@
           </item>
          </layout>
         </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QScrollArea" name="debugTab">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <attribute name="title">
+       <string>Debug</string>
+      </attribute>
+      <widget class="QWidget" name="debugTabContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>946</width>
+         <height>382</height>
+        </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
           <item>
-           <widget class="QGroupBox" name="advancedGroupBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="title">
-             <string>Advanced</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-            </property>
-            <layout class="QVBoxLayout" name="advancedLayout">
-             <item>
-              <widget class="QCheckBox" name="collectShaderCheckBox">
-               <property name="text">
-                <string>Collect Shaders</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
-               <property name="text">
-                <string>Enable Crash Diagnostics</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
-               <property name="text">
-                <string>Copy GPU Buffers</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="hostMarkersCheckBox">
-               <property name="text">
-                <string>Host Debug Markers</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="guestMarkersCheckBox">
-               <property name="text">
-                <string>Guest Debug Markers</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
+           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="0">
+            <item>
+             <widget class="QGroupBox" name="debugTabGroupBox">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>11</pointsize>
+                <bold>false</bold>
+                <stylestrategy>PreferDefault</stylestrategy>
+               </font>
+              </property>
+              <property name="title">
+               <string>General</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+              </property>
+              <layout class="QVBoxLayout" name="debugTabLayout">
+               <item>
+                <widget class="QCheckBox" name="dumpShadersCheckBox">
+                 <property name="text">
+                  <string>Enable Shaders Dumping</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="debugDump">
+                 <property name="text">
+                  <string>Enable Debug Dumping</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="vkValidationCheckBox">
+                 <property name="text">
+                  <string>Enable Vulkan Validation Layers</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="vkSyncValidationCheckBox">
+                 <property name="text">
+                  <string>Enable Vulkan Synchronization Validation</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="rdocCheckBox">
+                 <property name="text">
+                  <string>Enable RenderDoc Debugging</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QGroupBox" name="advancedGroupBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="layoutDirection">
+               <enum>Qt::LayoutDirection::LeftToRight</enum>
+              </property>
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="title">
+               <string>Advanced</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+              </property>
+              <layout class="QVBoxLayout" name="advancedLayout">
+               <property name="spacing">
+                <number>6</number>
+               </property>
+               <property name="leftMargin">
+                <number>9</number>
+               </property>
+               <item>
+                <widget class="QCheckBox" name="collectShaderCheckBox">
+                 <property name="text">
+                  <string>Collect Shaders</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="crashDiagnosticsCheckBox">
+                 <property name="text">
+                  <string>Enable Crash Diagnostics</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="copyGPUBuffersCheckBox">
+                 <property name="text">
+                  <string>Copy GPU Buffers</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="hostMarkersCheckBox">
+                 <property name="text">
+                  <string>Host Debug Markers</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="guestMarkersCheckBox">
+                 <property name="text">
+                  <string>Guest Debug Markers</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
@@ -2309,39 +2395,74 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_3">
                <item>
-                <widget class="QCheckBox" name="readbacksCheckBox">
-                 <property name="text">
-                  <string>Enable Readbacks</string>
+                <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <property name="topMargin">
+                  <number>0</number>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
-                 <property name="text">
-                  <string>Enable Readback Linear Images</string>
-                 </property>
-                </widget>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout_6">
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="readbacksCheckBox">
+                     <property name="text">
+                      <string>Enable Readbacks</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
+                     <property name="text">
+                      <string>Enable Readback Linear Images</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="ExperimentalLabel">
+                   <property name="sizeIncrement">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="baseSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="font">
+                    <font>
+                     <pointsize>11</pointsize>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</string>
+                   </property>
+                   <property name="scaledContents">
+                    <bool>false</bool>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <property name="indent">
+                    <number>-1</number>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="ExperimentalLabel">
-              <property name="font">
-               <font>
-                <pointsize>11</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
              </widget>
             </item>
            </layout>

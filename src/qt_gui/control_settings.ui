@@ -123,6 +123,9 @@
                   <property name="title">
                    <string>Up</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_4">
                    <item>
                     <widget class="QPushButton" name="DpadUpButton">
@@ -143,6 +146,9 @@
                 <widget class="QGroupBox" name="gb_dpad_left">
                  <property name="title">
                   <string>Left</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_dpad_left_layout">
                   <property name="leftMargin">
@@ -171,6 +177,9 @@
                 <widget class="QGroupBox" name="gb_dpad_right">
                  <property name="title">
                   <string>Right</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_dpad_right_layout">
                   <property name="leftMargin">
@@ -229,6 +238,9 @@
                   <property name="title">
                    <string>Down</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_3">
                    <item>
                     <widget class="QPushButton" name="DpadDownButton">
@@ -261,7 +273,10 @@
                 </sizepolicy>
                </property>
                <property name="title">
-                <string>L1</string>
+                <string notr="true">L1</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
                <layout class="QVBoxLayout" name="gb_l1_layout">
                 <property name="leftMargin">
@@ -289,7 +304,10 @@
              <item>
               <widget class="QGroupBox" name="gb_l2">
                <property name="title">
-                <string>L2</string>
+                <string notr="true">L2</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
                <layout class="QVBoxLayout" name="gb_l2_layout">
                 <property name="leftMargin">
@@ -448,6 +466,9 @@
                   <property name="title">
                    <string>Up</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_10">
                    <item>
                     <widget class="QPushButton" name="LStickUpButton">
@@ -468,6 +489,9 @@
                 <widget class="QGroupBox" name="gb_left_stick_left">
                  <property name="title">
                   <string>Left</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_left_stick_left_layout">
                   <property name="leftMargin">
@@ -502,6 +526,9 @@
                  </property>
                  <property name="title">
                   <string>Right</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_left_stick_right_layout">
                   <property name="leftMargin">
@@ -559,6 +586,9 @@
                   </property>
                   <property name="title">
                    <string>Down</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_8">
                    <item>
@@ -840,7 +870,10 @@
                  </sizepolicy>
                 </property>
                 <property name="title">
-                 <string>L3</string>
+                 <string notr="true">L3</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                 <layout class="QVBoxLayout" name="gb_l3_layout">
                  <property name="leftMargin">
@@ -869,6 +902,9 @@
                <widget class="QGroupBox" name="gb_start">
                 <property name="title">
                  <string>Options</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                 <layout class="QVBoxLayout" name="gb_start_layout">
                  <property name="leftMargin">
@@ -902,7 +938,10 @@
                  </sizepolicy>
                 </property>
                 <property name="title">
-                 <string>R3</string>
+                 <string notr="true">R3</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                 <layout class="QVBoxLayout" name="gb_r3_layout">
                  <property name="leftMargin">
@@ -936,6 +975,9 @@
                 <property name="title">
                  <string>Touchpad Left</string>
                 </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
+                </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <item>
                   <widget class="QPushButton" name="TouchpadLeftButton">
@@ -952,6 +994,9 @@
                 <property name="title">
                  <string>Touchpad Center</string>
                 </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
+                </property>
                 <layout class="QVBoxLayout" name="verticalLayout_11">
                  <item>
                   <widget class="QPushButton" name="TouchpadCenterButton">
@@ -967,6 +1012,9 @@
                <widget class="QGroupBox" name="gb_touchright">
                 <property name="title">
                  <string>Touchpad Right</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_12">
                  <item>
@@ -1213,6 +1261,9 @@
                   <property name="title">
                    <string>Triangle</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_3">
                    <item>
                     <widget class="QPushButton" name="TriangleButton">
@@ -1233,6 +1284,9 @@
                 <widget class="QGroupBox" name="gb_square">
                  <property name="title">
                   <string>Square</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_square_layout">
                   <property name="leftMargin">
@@ -1261,6 +1315,9 @@
                 <widget class="QGroupBox" name="gb_circle">
                  <property name="title">
                   <string>Circle</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_circle_layout">
                   <property name="leftMargin">
@@ -1319,6 +1376,9 @@
                   <property name="title">
                    <string>Cross</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_5">
                    <item>
                     <widget class="QPushButton" name="CrossButton">
@@ -1351,7 +1411,10 @@
                 </sizepolicy>
                </property>
                <property name="title">
-                <string>R1</string>
+                <string notr="true">R1</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
                <layout class="QVBoxLayout" name="gb_r1_layout">
                 <property name="leftMargin">
@@ -1379,7 +1442,10 @@
              <item>
               <widget class="QGroupBox" name="gb_r2">
                <property name="title">
-                <string>R2</string>
+                <string notr="true">R2</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
                <layout class="QVBoxLayout" name="gb_r2_layout">
                 <property name="leftMargin">
@@ -1541,6 +1607,9 @@
                   <property name="title">
                    <string>Up</string>
                   </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
+                  </property>
                   <layout class="QVBoxLayout" name="verticalLayout_7">
                    <item>
                     <widget class="QPushButton" name="RStickUpButton">
@@ -1561,6 +1630,9 @@
                 <widget class="QGroupBox" name="gb_right_stick_left">
                  <property name="title">
                   <string>Left</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_right_stick_left_layout">
                   <property name="leftMargin">
@@ -1589,6 +1661,9 @@
                 <widget class="QGroupBox" name="gb_right_stick_right">
                  <property name="title">
                   <string>Right</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignmentFlag::AlignCenter</set>
                  </property>
                  <layout class="QVBoxLayout" name="gb_right_stick_right_layout">
                   <property name="leftMargin">
@@ -1646,6 +1721,9 @@
                   </property>
                   <property name="title">
                    <string>Down</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignCenter</set>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_6">
                    <item>
