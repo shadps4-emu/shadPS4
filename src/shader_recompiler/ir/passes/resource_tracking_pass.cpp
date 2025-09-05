@@ -6,6 +6,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "video_core/amdgpu/resource.h"
@@ -740,22 +741,25 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
                                  : buffer.GetDataFmt();
     const u32 shift = BufferAddressShift(inst, data_format);
     const u32 mask = (1 << shift) - 1;
+    const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
 
     // If address calculation is of the form "index * const_stride + offset" with offset constant
     // and both const_stride and offset are divisible with the element size, apply shift directly.
-    if (inst_info.index_enable && !inst_info.offset_enable && !buffer.swizzle_enable &&
-        !buffer.add_tid_enable && (stride & mask) == 0 && (inst_offset & mask) == 0) {
-        // buffer_offset = index * (const_stride >> shift) + (inst_offset >> shift)
-        const IR::U32 index = IR::U32{inst.Arg(1)};
-        return ir.IAdd(ir.IMul(index, ir.Imm32(stride >> shift)), ir.Imm32(inst_offset >> shift));
+    if (inst_info.index_enable && !inst_info.voffset_enable && soffset.IsImmediate() &&
+        !buffer.swizzle_enable && !buffer.add_tid_enable && (stride & mask) == 0) {
+        const u32 total_offset = soffset.U32() + inst_offset;
+        if ((total_offset & mask) == 0) {
+            // buffer_offset = index * (const_stride >> shift) + (offset >> shift)
+            const IR::U32 index = IR::GetBufferIndexArg(&inst);
+            return ir.IAdd(ir.IMul(index, ir.Imm32(stride >> shift)),
+                           ir.Imm32(total_offset >> shift));
+        }
     }
 
     // index = (inst_idxen ? vgpr_index : 0) + (const_add_tid_enable ? thread_id[5:0] : 0)
     IR::U32 index = ir.Imm32(0U);
     if (inst_info.index_enable) {
-        const IR::U32 vgpr_index{inst_info.offset_enable
-                                     ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
-                                     : IR::U32{inst.Arg(1)}};
+        const IR::U32 vgpr_index = IR::GetBufferIndexArg(&inst);
         index = ir.IAdd(index, vgpr_index);
     }
     if (buffer.add_tid_enable) {
@@ -766,11 +770,10 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     }
     // offset = (inst_offen ? vgpr_offset : 0) + inst_offset
     IR::U32 offset = ir.Imm32(inst_offset);
-    if (inst_info.offset_enable) {
-        const IR::U32 vgpr_offset = inst_info.index_enable
-                                        ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
-                                        : IR::U32{inst.Arg(1)};
-        offset = ir.IAdd(offset, vgpr_offset);
+    offset = ir.IAdd(offset, soffset);
+    if (inst_info.voffset_enable) {
+        const IR::U32 voffset = IR::GetBufferVOffsetArg(&inst);
+        offset = ir.IAdd(offset, voffset);
     }
     const IR::U32 const_stride = ir.Imm32(stride);
     IR::U32 buffer_offset;
@@ -815,7 +818,8 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
+    inst.SetArg(IR::LoadBufferArgs::Address,
+                CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
 
 IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR::Value& x,

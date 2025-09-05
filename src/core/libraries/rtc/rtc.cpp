@@ -748,10 +748,10 @@ int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDate
 
     std::string dateTimeString = std::string(pszDateTime);
 
-    char formatKey = dateTimeString[22];
+    char formatKey = dateTimeString[19];
     OrbisRtcDateTime dateTime;
 
-    if (formatKey == 'Z' || formatKey == '-' || formatKey == '+') {
+    if (formatKey == 'Z' || formatKey == '-' || formatKey == '+' || formatKey == '.') {
         // RFC3339
         sceRtcParseRFC3339(pTickUtc, pszDateTime);
     } else if (formatKey == ':') {

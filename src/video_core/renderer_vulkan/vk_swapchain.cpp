@@ -21,6 +21,7 @@ static constexpr vk::SurfaceFormatKHR SURFACE_FORMAT_HDR = {
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window_)
     : instance{instance_}, window{window_}, surface{CreateSurface(instance.GetInstance(), window)} {
     FindPresentFormat();
+    FindPresentMode();
 
     Create(window.GetWidth(), window.GetHeight());
     ImGui::Core::Initialize(instance, window, image_count, surface_format.format);
@@ -45,20 +46,6 @@ void Swapchain::Create(u32 width_, u32 height_) {
         instance.GetPresentQueueFamilyIndex(),
     };
 
-    const auto [modes_result, modes] =
-        instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
-    const auto find_mode = [&modes_result, &modes](vk::PresentModeKHR requested) {
-        if (modes_result != vk::Result::eSuccess) {
-            return false;
-        }
-        const auto it =
-            std::find_if(modes.begin(), modes.end(),
-                         [&requested](vk::PresentModeKHR mode) { return mode == requested; });
-
-        return it != modes.cend();
-    };
-    const bool has_mailbox = find_mode(vk::PresentModeKHR::eMailbox);
-
     const bool exclusive = queue_family_indices[0] == queue_family_indices[1];
     const u32 queue_family_indices_count = exclusive ? 1u : 2u;
     const vk::SharingMode sharing_mode =
@@ -78,7 +65,7 @@ void Swapchain::Create(u32 width_, u32 height_) {
         .pQueueFamilyIndices = queue_family_indices.data(),
         .preTransform = transform,
         .compositeAlpha = composite_alpha,
-        .presentMode = has_mailbox ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate,
+        .presentMode = present_mode,
         .clipped = true,
         .oldSwapchain = nullptr,
     };
@@ -200,6 +187,38 @@ void Swapchain::FindPresentFormat() {
     }
 
     UNREACHABLE_MSG("Unable to find required swapchain format!");
+}
+
+void Swapchain::FindPresentMode() {
+    const auto [modes_result, modes] =
+        instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
+    if (modes_result != vk::Result::eSuccess) {
+        LOG_ERROR(Render, "Failed to query available present modes, falling back to Fifo as "
+                          "guaranteed supported option.");
+        present_mode = vk::PresentModeKHR::eFifo;
+        return;
+    }
+
+    const auto requested_mode = Config::getPresentMode();
+    if (requested_mode == "Mailbox") {
+        present_mode = vk::PresentModeKHR::eMailbox;
+    } else if (requested_mode == "Fifo") {
+        present_mode = vk::PresentModeKHR::eFifo;
+    } else if (requested_mode == "Immediate") {
+        present_mode = vk::PresentModeKHR::eImmediate;
+    } else {
+        LOG_ERROR(Render_Vulkan, "Unknown present mode {}, defaulting to Mailbox.",
+                  Config::getPresentMode());
+        present_mode = vk::PresentModeKHR::eMailbox;
+    }
+
+    if (std::ranges::find(modes, present_mode) == modes.cend()) {
+        // FIFO is guaranteed to be supported by the Vulkan spec.
+        constexpr auto fallback = vk::PresentModeKHR::eFifo;
+        LOG_WARNING(Render, "Requested present mode {} is not supported, falling back to {}.",
+                    vk::to_string(present_mode), vk::to_string(fallback));
+        present_mode = fallback;
+    }
 }
 
 void Swapchain::SetSurfaceProperties() {

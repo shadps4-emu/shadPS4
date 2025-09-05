@@ -25,7 +25,7 @@ Once you are within the installer:
 
 Beware, this requires you to create a Qt account. If you do not want to do this, please follow the MSYS2/MinGW compilation method instead.
 
-1. Under the current, non beta version of Qt (at the time of writing 6.9.2), select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
+1. Under the current, non beta version of Qt, select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
    If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `MSVC 2022 ARM64` instead.
 
    Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
@@ -51,13 +51,8 @@ Go through the Git for Windows installation as normal
 ### Compiling with Visual Studio GUI
 
 1. Open up Visual Studio, select `Open a local folder` and select the folder with the shadPS4 source code. The folder should contain `CMakeLists.txt`
-2. Change x64-Clang-Debug to x64-Clang-Release if you want a regular, non-debug build.
-3. If you want to build shadPS4 with the Qt Gui:
-   1. Click x64-Clang-Release and select "Manage Configurations"
-   2. Look for "CMake command arguments" and add to the text field  
-    `-DENABLE_QT_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.9.2\msvc2022_64`  
-    (Change Qt path if you've installed it to non-default path)
-   3. Press CTRL+S to save and wait a moment for CMake generation
+2. Change Clang x64 Debug to Clang x64 Release if you want a regular, non-debug build.
+3. If you want to build shadPS4 with the Qt Gui, simply select Clang x64 Release with Qt instead.
 4. Change the project to build to shadps4.exe
 5. Build -> Build All
 

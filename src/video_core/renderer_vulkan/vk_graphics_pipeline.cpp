@@ -385,7 +385,7 @@ void GraphicsPipeline::GetVertexInputs(
     const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
     for (const auto& attrib : fetch_shader->attributes) {
         const auto step_rate = attrib.GetStepRate();
-        const auto& buffer = attrib.GetSharp(vs_info);
+        const auto buffer = attrib.GetSharp(vs_info);
         attributes.push_back(Attribute{
             .location = attrib.semantic,
             .binding = attrib.semantic,

@@ -16,7 +16,7 @@ struct GameInstallDir {
 
 enum HideCursorState : int { Never, Idle, Always };
 
-void load(const std::filesystem::path& path);
+void load(const std::filesystem::path& path, bool is_game_specific = false);
 void save(const std::filesystem::path& path);
 
 int getVolumeSlider();
@@ -27,6 +27,8 @@ bool getIsFullscreen();
 void setIsFullscreen(bool enable);
 std::string getFullscreenMode();
 void setFullscreenMode(std::string mode);
+std::string getPresentMode();
+void setPresentMode(std::string mode);
 u32 getWindowWidth();
 u32 getWindowHeight();
 void setWindowWidth(u32 width);
@@ -111,6 +113,14 @@ std::string getDefaultControllerID();
 void setDefaultControllerID(std::string id);
 bool getBackgroundControllerInput();
 void setBackgroundControllerInput(bool enable);
+bool getLoggingEnabled();
+void setLoggingEnabled(bool enable);
+bool getFsrEnabled();
+void setFsrEnabled(bool enable);
+bool getRcasEnabled();
+void setRcasEnabled(bool enable);
+int getRcasAttenuation();
+void setRcasAttenuation(int value);
 
 // TODO
 bool GetLoadGameSizeEnabled();
@@ -146,7 +156,7 @@ std::filesystem::path getAddonInstallDir();
 
 void setDefaultValues();
 
-// todo: name and function location pending
-std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id = "");
+constexpr std::string_view GetDefaultGlobalConfig();
+std::filesystem::path GetFoolproofInputConfigFile(const std::string& game_id = "");
 
 }; // namespace Config

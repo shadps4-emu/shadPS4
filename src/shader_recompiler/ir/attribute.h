@@ -85,6 +85,8 @@ enum class Attribute : u64 {
     TessellationEvaluationPointU = 88,
     TessellationEvaluationPointV = 89,
     PackedHullInvocationInfo = 90, // contains patch id within the VGT and invocation ID
+    OffChipLdsBase = 91,
+    TessFactorsBufferBase = 92,
     Max,
 };
 

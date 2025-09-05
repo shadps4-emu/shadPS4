@@ -352,7 +352,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     Input::ControllerOutput::SetControllerOutputController(controller);
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    Input::LoadHotkeyInputs();
 
     if (Config::getBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -432,6 +431,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+    case SDL_EVENT_QUIT_DIALOG:
+        Overlay::ToggleQuitWindow();
+        break;
     case SDL_EVENT_TOGGLE_FULLSCREEN: {
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
             SDL_SetWindowFullscreen(window, 0);
@@ -441,18 +443,33 @@ void WindowSDL::WaitEvent() {
         break;
     }
     case SDL_EVENT_TOGGLE_PAUSE:
-        SDL_Log("Received SDL_EVENT_TOGGLE_PAUSE");
-
         if (DebugState.IsGuestThreadsPaused()) {
-            SDL_Log("Game Resumed");
+            LOG_INFO(Frontend, "Game Resumed");
             DebugState.ResumeGuestThreads();
         } else {
-            SDL_Log("Game Paused");
+            LOG_INFO(Frontend, "Game Paused");
             DebugState.PauseGuestThreads();
         }
         break;
     case SDL_EVENT_CHANGE_CONTROLLER:
         controller->GetEngine()->Init();
+        break;
+    case SDL_EVENT_TOGGLE_SIMPLE_FPS:
+        Overlay::ToggleSimpleFps();
+        break;
+    case SDL_EVENT_RELOAD_INPUTS:
+        Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+        break;
+    case SDL_EVENT_MOUSE_TO_JOYSTICK:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+        break;
+    case SDL_EVENT_MOUSE_TO_GYRO:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
+        break;
+    case SDL_EVENT_RDOC_CAPTURE:
+        VideoCore::TriggerCapture();
         break;
     default:
         break;
@@ -505,40 +522,6 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
                             event->type == SDL_EVENT_MOUSE_WHEEL;
     Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
 
-    // Handle window controls outside of the input maps
-    if (event->type == SDL_EVENT_KEY_DOWN) {
-        u32 input_id = input_event.input.sdl_id;
-        // Reparse kbm inputs
-        if (input_id == SDLK_F8) {
-            Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-            return;
-        }
-        // Toggle mouse capture and joystick input emulation
-        else if (input_id == SDLK_F7) {
-            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
-            return;
-        }
-        // Toggle mouse capture and gyro input emulation
-        else if (input_id == SDLK_F6) {
-            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
-            return;
-        }
-        // Toggle fullscreen
-        else if (input_id == SDLK_F11) {
-            SDL_WindowFlags flag = SDL_GetWindowFlags(window);
-            bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
-            SDL_SetWindowFullscreen(window, !is_fullscreen);
-            return;
-        }
-        // Trigger rdoc capture
-        else if (input_id == SDLK_F12) {
-            VideoCore::TriggerCapture();
-            return;
-        }
-    }
-
     // if it's a wheel event, make a timer that turns it off after a set time
     if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         const SDL_Event* copy = new SDL_Event(*event);
@@ -571,53 +554,8 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     bool inputs_changed = Input::UpdatePressedKeys(input_event);
 
     if (inputs_changed) {
-        // process hotkeys
-        if (event->type == SDL_EVENT_GAMEPAD_BUTTON_UP) {
-            process_hotkeys = true;
-        } else if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
-            if (event->gbutton.timestamp)
-                CheckHotkeys();
-        } else if (event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION) {
-            if (event->gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ||
-                event->gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
-                if (event->gaxis.value < 5000) {
-                    process_hotkeys = true;
-                } else if (event->gaxis.value > 16000) {
-                    CheckHotkeys();
-                }
-            }
-        }
-
         // update bindings
         Input::ActivateOutputsFromInputs();
-    }
-}
-
-void WindowSDL::CheckHotkeys() {
-    if (Input::HotkeyInputsPressed(Input::GetHotkeyInputs(Input::HotkeyPad::FullscreenPad))) {
-        SDL_Event event;
-        SDL_memset(&event, 0, sizeof(event));
-        event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
-        SDL_PushEvent(&event);
-        process_hotkeys = false;
-    }
-
-    if (Input::HotkeyInputsPressed(Input::GetHotkeyInputs(Input::HotkeyPad::PausePad))) {
-        SDL_Event event;
-        SDL_memset(&event, 0, sizeof(event));
-        event.type = SDL_EVENT_TOGGLE_PAUSE;
-        SDL_PushEvent(&event);
-        process_hotkeys = false;
-    }
-
-    if (Input::HotkeyInputsPressed(Input::GetHotkeyInputs(Input::HotkeyPad::SimpleFpsPad))) {
-        Overlay::ToggleSimpleFps();
-        process_hotkeys = false;
-    }
-
-    if (Input::HotkeyInputsPressed(Input::GetHotkeyInputs(Input::HotkeyPad::QuitPad))) {
-        Overlay::ToggleQuitWindow();
-        process_hotkeys = false;
     }
 }
 

@@ -9,6 +9,7 @@
 #include "core/memory.h"
 #include "imgui_impl_sdl3.h"
 #include "input/controller.h"
+#include "input/input_handler.h"
 #include "sdl_window.h"
 
 // SDL
