@@ -129,6 +129,7 @@ static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
 
 // GPU
+static ConfigEntry<u32> fpsLimit = 60;
 static ConfigEntry<u32> windowWidth(1280);
 static ConfigEntry<u32> windowHeight(720);
 static ConfigEntry<u32> internalScreenWidth(1280);
@@ -186,6 +187,10 @@ static string config_version = Common::g_scm_rev;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 
+u32 getFpsLimit() {
+    return fpsLimit.get();
+}
+
 int getVolumeSlider() {
     return volumeSlider.get();
 }
@@ -240,6 +245,10 @@ std::filesystem::path GetSaveDataPath() {
         return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata";
     }
     return save_data_path;
+}
+
+void setFpsLimit(u32 fpsValue) {
+    fpsLimit.base_value = fpsValue;
 }
 
 void setVolumeSlider(int volumeValue) {
@@ -810,6 +819,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
+        fpsLimit.setFromToml(gpu, "fpsLimit", is_game_specific);
         windowWidth.setFromToml(gpu, "screenWidth", is_game_specific);
         windowHeight.setFromToml(gpu, "screenHeight", is_game_specific);
         internalScreenWidth.setFromToml(gpu, "internalScreenWidth", is_game_specific);
@@ -981,6 +991,7 @@ void save(const std::filesystem::path& path) {
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
     data["Input"]["micDevice"] = micDevice.base_value;
     data["Input"]["backgroundControllerInput"] = backgroundControllerInput.base_value;
+    data["GPU"]["fpsLimit"] = fpsLimit.base_value;
     data["GPU"]["screenWidth"] = windowWidth.base_value;
     data["GPU"]["screenHeight"] = windowHeight.base_value;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
@@ -1092,6 +1103,7 @@ void setDefaultValues() {
     backgroundControllerInput = false;
 
     // GPU
+    fpsLimit = 60;
     windowWidth = 1280;
     windowHeight = 720;
     internalScreenWidth = 1280;
