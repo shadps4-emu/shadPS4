@@ -78,6 +78,7 @@ QMap<QString, QString> micMap;
 int backgroundImageOpacitySlider_backup;
 int bgm_volume_backup;
 int volume_slider_backup;
+int fps_backup;
 
 static std::vector<QString> m_physical_devices;
 
@@ -182,6 +183,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
                     ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
                     emit BackgroundOpacityChanged(backgroundImageOpacitySlider_backup);
+                    ui->fpsSlider->setValue(fps_backup);
+                    Config::setFpsLimit(fps_backup);
                     ui->horizontalVolumeSlider->setValue(volume_slider_backup);
                     Config::setVolumeSlider(volume_slider_backup);
                     ui->BGMVolumeSlider->setValue(bgm_volume_backup);
@@ -403,6 +406,11 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->RCASValue->setText(RCASValue);
     });
 
+    connect(ui->fpsSlider, &QSlider::valueChanged, this, [this](int value) {
+        FPSChange(value);
+        Config::setFpsLimit(value);
+    });
+
     if (presenter) {
         connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
             presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
@@ -500,6 +508,8 @@ void SettingsDialog::closeEvent(QCloseEvent* event) {
         Config::setVolumeSlider(volume_slider_backup);
         ui->BGMVolumeSlider->setValue(bgm_volume_backup);
         BackgroundMusicPlayer::getInstance().setVolume(bgm_volume_backup);
+        ui->fpsSlider->setValue(fps_backup);
+        Config::setFpsLimit(fps_backup);
     }
     QDialog::closeEvent(event);
 }
@@ -583,6 +593,8 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->BGMVolumeSlider->setValue(m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt());
     ui->horizontalVolumeSlider->setValue(m_gui_settings->GetValue(gui::gl_VolumeSlider).toInt());
     ui->volumeText->setText(QString::number(ui->horizontalVolumeSlider->sliderPosition()) + "%");
+    ui->fpsSlider->setValue(m_gui_settings->GetValue(gui::gl_FpsSlider).toInt());
+    ui->fpsText->setText(QString::number(ui->fpsSlider->sliderPosition()) + "FPS");
     ui->discordRPCCheckbox->setChecked(
         toml::find_or<bool>(data, "General", "enableDiscordRPC", true));
     QString translatedText_FullscreenMode =
@@ -671,6 +683,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         m_gui_settings->GetValue(gui::gl_backgroundImageOpacity).toInt();
     bgm_volume_backup = m_gui_settings->GetValue(gui::gl_backgroundMusicVolume).toInt();
     volume_slider_backup = m_gui_settings->GetValue(gui::gl_VolumeSlider).toInt();
+    fps_backup = m_gui_settings->GetValue(gui::gl_FpsSlider).toInt();
 }
 
 void SettingsDialog::InitializeEmulatorLanguages() {
@@ -731,6 +744,10 @@ void SettingsDialog::OnCursorStateChanged(s16 index) {
 
 void SettingsDialog::VolumeSliderChange(int value) {
     ui->volumeText->setText(QString::number(ui->horizontalVolumeSlider->sliderPosition()) + "%");
+}
+
+void SettingsDialog::FPSChange(int value) {
+    ui->fpsText->setText(QString::number(ui->fpsSlider->sliderPosition()) + "FPS");
 }
 
 int SettingsDialog::exec() {
@@ -918,6 +935,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setCursorHideTimeout(ui->idleTimeoutSpinBox->value());
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1);
     m_gui_settings->SetValue(gui::gl_VolumeSlider, ui->horizontalVolumeSlider->value());
+    m_gui_settings->SetValue(gui::gl_FpsSlider, ui->fpsSlider->value());
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, ui->BGMVolumeSlider->value());
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
@@ -980,6 +998,7 @@ void SettingsDialog::UpdateSettings() {
 
     BackgroundMusicPlayer::getInstance().setVolume(ui->BGMVolumeSlider->value());
     Config::setVolumeSlider(ui->horizontalVolumeSlider->value());
+    Config::setFpsLimit(ui->fpsSlider->value());
 }
 
 void SettingsDialog::SyncRealTimeWidgetstoConfig() {
@@ -1038,6 +1057,7 @@ void SettingsDialog::setDefaultValues() {
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
     m_gui_settings->SetValue(gui::gl_backgroundMusicVolume, 50);
     m_gui_settings->SetValue(gui::gl_VolumeSlider, 100);
+    m_gui_settings->SetValue(gui::gl_FpsSlider, 60);
     m_gui_settings->SetValue(gui::gen_checkForUpdates, false);
     m_gui_settings->SetValue(gui::gen_showChangeLog, false);
     if (Common::g_is_release) {
