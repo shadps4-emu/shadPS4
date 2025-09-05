@@ -391,8 +391,9 @@ public:
         }
 
         if (selected == &gameConfig) {
-            auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, widget);
-            settingsDialog->exec();
+            auto settingsWindow = new SettingsDialog(m_gui_settings, m_compat_info, widget, true,
+                                                     serialStr.toStdString());
+            settingsWindow->exec();
         }
 
         if (selected == &createShortcut) {
