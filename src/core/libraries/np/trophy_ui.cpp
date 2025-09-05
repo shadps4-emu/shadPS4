@@ -17,13 +17,13 @@
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "core/libraries/np/trophy_ui.h"
 #include "imgui/imgui_std.h"
-#include "trophy_ui.h"
 
 CMRC_DECLARE(res);
 namespace fs = std::filesystem;
 using namespace ImGui;
-namespace Libraries::NpTrophy {
+namespace Libraries::Np::NpTrophy {
 
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
@@ -326,4 +326,4 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
     }
 }
 
-} // namespace Libraries::NpTrophy
+} // namespace Libraries::Np::NpTrophy

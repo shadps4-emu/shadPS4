@@ -4,9 +4,9 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_auth/np_auth.h"
+#include "core/libraries/np/np_auth.h"
 
-namespace Libraries::NpAuth {
+namespace Libraries::Np::NpAuth {
 
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
@@ -96,4 +96,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("SK-S7daqJSE", "libSceNpAuth", 1, "libSceNpAuth", 1, 1, sceNpAuthWaitAsync);
 };
 
-} // namespace Libraries::NpAuth
+} // namespace Libraries::Np::NpAuth

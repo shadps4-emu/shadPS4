@@ -5,5 +5,4 @@
 
 #include "core/libraries/error_codes.h"
 
-constexpr int ORBIS_NP_ERROR_INVALID_ARGUMENT = 0x80550003;
-constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
+constexpr int ORBIS_NP_UTIL_ERROR_NOT_MATCH = 0x80550609;

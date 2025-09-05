@@ -5,5 +5,6 @@
 
 #include "core/libraries/error_codes.h"
 
+// For error codes shared between multiple Np libraries.
 constexpr int ORBIS_NP_ERROR_INVALID_ARGUMENT = 0x80550003;
-constexpr int ORBIS_NP_UTIL_ERROR_NOT_MATCH = 0x80550609;
+constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;

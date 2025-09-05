@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#include "common/types.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_types.h"
+#include "core/libraries/system/userservice.h"
+
+namespace Core::Loader {
+class SymbolsResolver;
+}
+
+namespace Libraries::Np::NpManager {
+
+using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
+                                                               void* userdata);
+
+struct OrbisNpCountryCode {
+    char country_code[2];
+    char end;
+    char pad;
+};
+
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
+} // namespace Libraries::Np::NpManager

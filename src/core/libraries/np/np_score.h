@@ -9,7 +9,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpScore {
+namespace Libraries::Np::NpScore {
 
 int PS4_SYSV_ABI sceNpScoreAbortRequest();
 int PS4_SYSV_ABI sceNpScoreCensorComment();
@@ -64,4 +64,4 @@ int PS4_SYSV_ABI sceNpScoreSetTimeout();
 int PS4_SYSV_ABI sceNpScoreWaitAsync();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpScore
+} // namespace Libraries::Np::NpScore

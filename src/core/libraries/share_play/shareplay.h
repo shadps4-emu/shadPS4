@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <core/libraries/np_manager/np_manager.h>
+#include "core/libraries/np/np_types.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -19,8 +19,8 @@ constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_CONNECTED = 0x02;
 struct OrbisSharePlayConnectionInfo {
     int status;
     int mode;
-    Libraries::NpManager::OrbisNpOnlineId hostOnlineId;
-    Libraries::NpManager::OrbisNpOnlineId visitorOnlineId;
+    Libraries::Np::OrbisNpOnlineId hostOnlineId;
+    Libraries::Np::OrbisNpOnlineId visitorOnlineId;
     s32 hostUserId;
     s32 visitorUserId;
 };

@@ -35,7 +35,7 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
-#include "core/libraries/np_trophy/np_trophy.h"
+#include "core/libraries/np/np_trophy.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
@@ -196,7 +196,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     // Initialize patcher and trophies
     if (!id.empty()) {
         MemoryPatcher::g_game_serial = id;
-        Libraries::NpTrophy::game_serial = id;
+        Libraries::Np::NpTrophy::game_serial = id;
 
         const auto trophyDir =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";

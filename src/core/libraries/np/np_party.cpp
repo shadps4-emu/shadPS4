@@ -4,10 +4,11 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_party/np_party.h"
-#include "core/libraries/np_party/np_party_error.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_party.h"
+#include "core/libraries/np/np_party_error.h"
 
-namespace Libraries::NpParty {
+namespace Libraries::Np::NpParty {
 
 s32 PS4_SYSV_ABI sceNpPartyCheckCallback() {
     LOG_ERROR(Lib_NpParty, "(STUBBED) called");
@@ -194,4 +195,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpPartyShowInvitationList);
 };
 
-} // namespace Libraries::NpParty
+} // namespace Libraries::Np::NpParty

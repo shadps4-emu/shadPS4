@@ -9,7 +9,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpWebApi {
+namespace Libraries::Np::NpWebApi {
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext();
 s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter();
@@ -113,4 +113,4 @@ s32 PS4_SYSV_ABI Func_E789F980D907B653();
 s32 PS4_SYSV_ABI Func_F9A32E8685627436();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpWebApi
+} // namespace Libraries::Np::NpWebApi

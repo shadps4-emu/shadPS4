@@ -4,9 +4,9 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "np_score.h"
+#include "core/libraries/np/np_score.h"
 
-namespace Libraries::NpScore {
+namespace Libraries::Np::NpScore {
 
 int PS4_SYSV_ABI sceNpScoreAbortRequest() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
@@ -380,4 +380,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpScoreGetRankingByRangeAsync);
 };
 
-} // namespace Libraries::NpScore
+} // namespace Libraries::Np::NpScore
