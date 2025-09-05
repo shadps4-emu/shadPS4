@@ -13,6 +13,7 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
+constexpr float TARGET_FPS = 60.0f;
 constexpr float BAR_WIDTH_MULT = 1.4f;
 constexpr float BAR_HEIGHT_MULT = 1.25f;
 constexpr float FRAME_GRAPH_PADDING_Y = 3.0f;
@@ -30,8 +31,8 @@ void FrameGraph::DrawFrameGraph() {
     }
 
     float target_formula;
-    if ((Config::vblankDiv() * 60) < Config::getFpsLimit()) {
-        target_formula = 60.0f * (float)Config::vblankDiv();
+    if ((Config::vblankDiv() * TARGET_FPS) < Config::getFpsLimit()) {
+        target_formula = TARGET_FPS * (float)Config::vblankDiv();
     } else {
         target_formula = (float)Config::getFpsLimit();
     }
