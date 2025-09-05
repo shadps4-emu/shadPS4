@@ -269,8 +269,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::nanoseconds VblankPeriod{1000000000};
-    const auto vblank_period = VblankPeriod / Config::vblankFreq();
+    const std::chrono::nanoseconds vblank_period(1000000000 / Config::vblankFreq());
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);
