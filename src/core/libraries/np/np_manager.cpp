@@ -13,24 +13,45 @@ namespace Libraries::Np::NpManager {
 
 static bool g_signed_in = false;
 static s32 g_active_requests = 0;
+static std::vector<OrbisNpRequestState> g_requests;
 
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
-    LOG_ERROR(Lib_NpManager, "(DUMMY) called");
+    LOG_DEBUG(Lib_NpManager, "called");
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
-    s32 request_id = ++g_active_requests + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET;
-    return request_id;
+
+    s32 req_index = 0;
+    while (req_index < g_requests.size()) {
+        // Find first nonexistant request
+        if (g_requests[req_index] == OrbisNpRequestState::None) {
+            // There is no request at this index, set the index to ready then break.
+            g_requests[req_index] = OrbisNpRequestState::Ready;
+            break;
+        }
+        req_index++;
+    }
+
+    if (req_index == g_requests.size()) {
+        // There are no requests to replace.
+        g_requests.emplace_back(OrbisNpRequestState::Ready);
+    }
+
+    // Offset by one, first returned ID is 0x20000001
+    g_active_requests++;
+    return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
 }
 
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
-    LOG_ERROR(Lib_NpManager, "(DUMMY) called req_id = {:#x}", req_id);
-    if (req_id <= ORBIS_NP_MANAGER_REQUEST_ID_OFFSET ||
-        req_id > ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + ORBIS_NP_MANAGER_REQUEST_LIMIT) {
-        // request id is outside the possible boundaries.
+    LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
-    --g_active_requests;
+
+    g_active_requests--;
+    g_requests[req_index] = OrbisNpRequestState::None;
     return ORBIS_OK;
 }
 

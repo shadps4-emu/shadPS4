@@ -20,6 +20,12 @@ constexpr s32 ORBIS_NP_MANAGER_REQUEST_ID_OFFSET = 0x20000000;
 using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
                                                                void* userdata);
 
+enum class OrbisNpRequestState {
+    None = 0,
+    Ready = 1,
+    Complete = 2,
+};
+
 struct OrbisNpCountryCode {
     char country_code[2];
     char end;
