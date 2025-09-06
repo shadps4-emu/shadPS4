@@ -154,23 +154,29 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
 BufferCache::~BufferCache() = default;
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool download) {
     if (!IsRegionRegistered(device_addr, size)) {
         return;
     }
-    memory_tracker->InvalidateRegion(
-        device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
+    if (download) {
+        memory_tracker->InvalidateRegion(
+            device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
+    } else {
+        memory_tracker->InvalidateRegion(device_addr, size);
+        gpu_modified_ranges.Subtract(device_addr, size);
+    }
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
+        if (DownloadBufferMemory(buffer, device_addr, size, is_write)) {
+            scheduler.Finish();
+        }
     });
 }
 
-template <bool async>
-void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     memory_tracker->ForEachDownloadRange<false>(
@@ -193,7 +199,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
             gpu_modified_ranges.Subtract(device_addr_out, range_size);
         });
     if (total_size_bytes == 0) {
-        return;
+        return false;
     }
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
     for (auto& copy : copies) {
@@ -203,11 +209,12 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     download_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    const auto write_data = [&]() {
+    cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), copies);
+    scheduler.DeferOperation([this, buf_addr = buffer.CpuAddr(), copies = std::move(copies),
+                              download, offset, device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
-            const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
+            const VAddr copy_device_addr = buf_addr + copy.srcOffset;
             const u64 dst_offset = copy.dstOffset - offset;
             memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
@@ -216,13 +223,61 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         if (is_write) {
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
         }
+    });
+
+    return true;
+}
+
+void BufferCache::ReadEdgeImagePages(const Image& image) {
+    // May happen that after downloading the image and invalidating region,
+    // that there were GPU modified ranges that are lost due to CPU reuploading.
+    // This doesn't change tracker state and it is spected to call DownloadImageMemory after this.
+    const VAddr image_addr = image.info.guest_address;
+    const u64 image_size = image.info.guest_size;
+    const VAddr image_end = image_addr + image_size;
+    const VAddr page_start = PageManager::GetPageAddr(image_addr);
+    const VAddr page_end = PageManager::GetNextPageAddr(image_end - 1);
+    boost::container::small_vector<vk::BufferCopy, 2> copies;
+    u64 total_size_bytes = 0;
+    const auto [buffer, offset] = ObtainBufferForImage(image_addr, image_size);
+    const auto add_download = [&](VAddr start, VAddr end) {
+        const u64 new_offset = start - buffer->CpuAddr();
+        const u64 new_size = end - start;
+        copies.push_back(vk::BufferCopy{
+            .srcOffset = new_offset,
+            .dstOffset = total_size_bytes,
+            .size = new_size,
+        });
+        // Align up to avoid cache conflicts
+        constexpr u64 align = 64ULL;
+        constexpr u64 mask = ~(align - 1ULL);
+        total_size_bytes += (new_size + align - 1) & mask;
     };
-    if constexpr (async) {
-        scheduler.DeferOperation(write_data);
-    } else {
-        scheduler.Finish();
-        write_data();
+    gpu_modified_ranges.ForEachInRange(page_start, image_addr - page_start, add_download);
+    gpu_modified_ranges.ForEachInRange(image_end, page_end - image_end, add_download);
+    gpu_modified_ranges.Subtract(page_start, page_end - page_start);
+    if (total_size_bytes == 0) {
+        return;
     }
+    const auto [download, download_offset] = download_buffer.Map(total_size_bytes);
+    for (auto& copy : copies) {
+        // Modify copies to have the staging offset in mind
+        copy.dstOffset += download_offset;
+    }
+    download_buffer.Commit();
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyBuffer(buffer->Handle(), download_buffer.Handle(), copies);
+    scheduler.DeferOperation([this, buf_addr = buffer->CpuAddr(), copies = std::move(copies),
+                              download, download_offset, image_addr, image_size]() {
+        auto* memory = Core::Memory::Instance();
+        for (const auto& copy : copies) {
+            const VAddr copy_device_addr = buf_addr + copy.srcOffset;
+            const u64 dst_offset = copy.dstOffset - download_offset;
+            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+                                    copy.size);
+        }
+    });
 }
 
 void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
@@ -862,6 +917,7 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     size_t total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
     vk::Buffer src_buffer = VK_NULL_HANDLE;
+    TouchBuffer(buffer);
     memory_tracker->ForEachUploadRange(
         device_addr, size, is_written,
         [&](u64 device_addr_out, u64 range_size) {
@@ -904,7 +960,6 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
             .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers = &post_barrier,
         });
-        TouchBuffer(buffer);
     }
     if (is_texel_buffer) {
         return SynchronizeBufferFromImage(buffer, device_addr, size);
@@ -1210,8 +1265,7 @@ void BufferCache::RunGarbageCollector() {
         }
         --max_deletions;
         Buffer& buffer = slot_buffers[buffer_id];
-        // InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
-        DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
+        DownloadBufferMemory(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
     };
 }
