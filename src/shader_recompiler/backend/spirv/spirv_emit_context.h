@@ -245,7 +245,9 @@ public:
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id output_point_size{};
     Id output_layer{};
+    Id output_viewport_index{};
     Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
