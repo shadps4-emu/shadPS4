@@ -989,7 +989,7 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
     Config::setWindowWidth(ui->widthSpinBox->value(), game_specific);
     Config::setWindowHeight(ui->heightSpinBox->value(), game_specific);
-    Config::setVblankDiv(ui->vblankSpinBox->value(), game_specific);
+    Config::setVblankFreq(ui->vblankSpinBox->value(), game_specific);
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked(), game_specific);
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked(), game_specific);
     Config::setFsrEnabled(ui->FSRCheckBox->isChecked(), game_specific);
