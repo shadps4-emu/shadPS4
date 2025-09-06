@@ -1078,15 +1078,15 @@
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Snabbtangenter för kontroller</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>Visa bildfrekvensräknare</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>omappad</translation>
     </message>
     <message>
       <source>Quit Emulation</source>
@@ -1094,7 +1094,7 @@
     </message>
     <message>
       <source>Reload Button Mappings</source>
-      <translation type="unfinished">Reload Button Mappings</translation>
+      <translation>Uppdatera knappmappningar</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
@@ -1106,23 +1106,23 @@
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Tangentbordsgenvägar</translation>
     </message>
     <message>
       <source>Renderdoc Capture (for debugging only)</source>
-      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+      <translation>Renderdoc-fångst (endast för felsökning)</translation>
     </message>
     <message>
       <source>Toggle Mouse to Joystick Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+      <translation>Växla mus- till styrspaksemulering</translation>
     </message>
     <message>
       <source>Toggle Mouse to Gyro Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+      <translation>Växla mus- till gyroemulering</translation>
     </message>
     <message>
       <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
-      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+      <translation>Tips: Upp till tre samtidiga inmatningar kan tilldelas för varje snabbtangent</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1148,7 +1148,7 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbletter av inmatningar mappas till följande knappar:
 
 %1</translation>
     </message>
