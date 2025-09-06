@@ -108,6 +108,59 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
+                                         OrbisNpLanguageCode* language) {
+    if (online_id == nullptr || language == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
+                                          Libraries::UserService::OrbisUserServiceUserId user_id,
+                                          OrbisNpLanguageCode* language) {
+    if (language == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
@@ -178,34 +231,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
     date_of_birth->day = 1;
     date_of_birth->month = 1;
     date_of_birth->year = 2000;
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpGetAccountLanguage(OrbisNpOnlineId* online_id,
-                                         OrbisNpLanguageCode* language) {
-    if (online_id == nullptr || language == nullptr) {
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-    if (!g_signed_in) {
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(Libraries::UserService::OrbisUserServiceUserId user_id,
-                                          OrbisNpLanguageCode* language) {
-    if (language == nullptr) {
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-    if (!g_signed_in) {
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
     return ORBIS_OK;
 }
 

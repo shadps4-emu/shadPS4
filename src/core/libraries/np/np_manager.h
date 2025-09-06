@@ -31,6 +31,12 @@ enum class OrbisNpGamePresenseStatus {
     Online = 1,
 };
 
+enum class OrbisNpReachabilityState {
+    Unavailable = 0,
+    Available = 1,
+    Reachable = 2,
+};
+
 struct OrbisNpCountryCode {
     char country_code[2];
     char end;
