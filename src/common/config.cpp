@@ -99,6 +99,11 @@ public:
     // }
 };
 
+// TODO: Fix:
+//     Audio - mainOutputDevice
+//     Audio - padSpkOutputDevice
+//     Debug - ConfigVersion
+//     Keys - TropheyKey
 // General
 static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<bool> isNeo(false);
@@ -124,9 +129,13 @@ static ConfigEntry<bool> useSpecialPad(false);
 static ConfigEntry<int> specialPadClass(1);
 static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
-static ConfigEntry<string> micDevice("Default Device");
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
+
+// Audio
+static ConfigEntry<string> micDevice("Default Device");
+static std::string mainOutputDevice = "Default Device";
+static std::string padSpkOutputDevice = "Default Device";
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -288,6 +297,14 @@ int getCursorHideTimeout() {
 
 string getMicDevice() {
     return micDevice.get();
+}
+
+std::string getMainOutputDevice() {
+    return mainOutputDevice;
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice;
 }
 
 double getTrophyNotificationDuration() {
@@ -566,6 +583,14 @@ void setMicDevice(string device) {
     micDevice.base_value = device;
 }
 
+void setMainOutputDevice(std::string device) {
+    mainOutputDevice = device;
+}
+
+void setPadSpkOutputDevice(std::string device) {
+    padSpkOutputDevice = device;
+}
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration.base_value = newTrophyNotificationDuration;
 }
@@ -803,8 +828,16 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        micDevice.setFromToml(input, "micDevice", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+    }
+
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
+        mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("GPU")) {
@@ -979,8 +1012,10 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass.base_value;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled.base_value;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-    data["Input"]["micDevice"] = micDevice.base_value;
     data["Input"]["backgroundControllerInput"] = backgroundControllerInput.base_value;
+    data["Audio"]["micDevice"] = micDevice.base_value;
+    data["Audio"]["mainOutputDevice"] = mainOutputDevice;
+    data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
     data["GPU"]["screenWidth"] = windowWidth.base_value;
     data["GPU"]["screenHeight"] = windowHeight.base_value;
     data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
@@ -1088,8 +1123,12 @@ void setDefaultValues() {
     controllerCustomColorRGB[0] = 0;
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
-    micDevice = "Default Device";
     backgroundControllerInput = false;
+
+    // Audio
+    micDevice = "Default Device";
+    mainOutputDevice = "Default Device";
+    padSpkOutputDevice = "Default Device";
 
     // GPU
     windowWidth = 1280;
