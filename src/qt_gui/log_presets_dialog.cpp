@@ -142,8 +142,8 @@ LogPresetsDialog::LogPresetsDialog(std::shared_ptr<gui_settings> gui_settings, Q
     root->addWidget(m_table);
 
     auto* buttons_layout = new QHBoxLayout();
-    m_add_btn = new QPushButton(tr("+"), this);
-    m_remove_btn = new QPushButton(tr("-"), this);
+    m_add_btn = new QPushButton("+", this);
+    m_remove_btn = new QPushButton("-", this);
     m_load_btn = new QPushButton(tr("Load"), this);
     m_close_btn = new QPushButton(tr("Close"), this);
 
