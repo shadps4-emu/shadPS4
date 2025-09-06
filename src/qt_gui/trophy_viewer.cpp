@@ -7,6 +7,7 @@
 #include <QGuiApplication>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScreen>
 #include <cmrc/cmrc.hpp>
 #include <common/config.h>
@@ -21,6 +22,13 @@ CMRC_DECLARE(res);
 
 // true: European format; false: American format
 bool useEuropeanDateFormat = true;
+
+void TrophyViewer::resizeEvent(QResizeEvent* event) {
+    if (!programmaticResize_) {
+        userResizedWindow_ = true;
+    }
+    QMainWindow::resizeEvent(event);
+}
 
 void TrophyViewer::updateTrophyInfo() {
     int total = 0;
@@ -476,8 +484,17 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     this->setCentralWidget(tabWidget);
 
     if (!this->isMaximized() && !this->isFullScreen()) {
-        QSize screenSize = QGuiApplication::primaryScreen()->availableGeometry().size();
-        this->resize(screenSize.width() * 0.8, screenSize.height() * 0.8);
+        if (!userResizedWindow_ && !initialSizeApplied_) {
+            QScreen* screen = QGuiApplication::primaryScreen();
+            QSize screenSize(1024, 768);
+            if (screen) {
+                screenSize = screen->availableGeometry().size();
+            }
+            programmaticResize_ = true;
+            this->resize(screenSize.width() * 0.8, screenSize.height() * 0.8);
+            programmaticResize_ = false;
+            initialSizeApplied_ = true;
+        }
     }
 }
 
