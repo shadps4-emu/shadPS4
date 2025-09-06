@@ -13,6 +13,8 @@ int SDLAudioIn::AudioInit() {
 int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint32_t format) {
     std::scoped_lock lock{m_mutex};
 
+    static bool dummyDeviceOpened = false;
+
     for (int id = 0; id < static_cast<int>(portsIn.size()); ++id) {
         auto& port = portsIn[id];
         if (!port.isOpen) {
@@ -48,7 +50,7 @@ int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint3
             std::string micDevStr = Config::getMicDevice();
             uint32_t devId;
 
-            if (micDevStr == "None") {
+            if (micDevStr == "None" && dummyDeviceOpened) {
                 return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
             } else if (micDevStr == "Default Device") {
                 devId = SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
@@ -63,6 +65,10 @@ int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint3
             port.stream = SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
 
             if (!port.stream) {
+                if (!dummyDeviceOpened) {
+                    dummyDeviceOpened = true;
+                    return id + 1;
+                }
                 port.isOpen = false;
                 return ORBIS_AUDIO_IN_ERROR_INVALID_PORT;
             }
