@@ -123,7 +123,6 @@ s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
 
 s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
                                         OrbisNpCountryCode* country_code) {
-    LOG_DEBUG(Lib_NpManager, "called");
     if (online_id == nullptr || country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -138,7 +137,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
 
 s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          OrbisNpCountryCode* country_code) {
-    LOG_DEBUG(Lib_NpManager, "called, user_id = {}", user_id);
     if (country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -153,7 +151,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
 
 s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
                                             OrbisNpDate* date_of_birth) {
-    LOG_DEBUG(Lib_NpManager, "called");
     if (online_id == nullptr || date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -170,7 +167,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
 
 s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              OrbisNpDate* date_of_birth) {
-    LOG_DEBUG(Lib_NpManager, "called, user_id = {}", user_id);
     if (date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -187,7 +183,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
 
 s32 PS4_SYSV_ABI sceNpGetAccountLanguage(OrbisNpOnlineId* online_id,
                                          OrbisNpLanguageCode* language) {
-    LOG_DEBUG(Lib_NpManager, "called");
     if (online_id == nullptr || language == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -202,7 +197,6 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(OrbisNpOnlineId* online_id,
 
 s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                           OrbisNpLanguageCode* language) {
-    LOG_DEBUG(Lib_NpManager, "called, user_id = {}", user_id);
     if (language == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -212,6 +206,28 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(Libraries::UserService::OrbisUserServi
 
     std::memset(language, 0, sizeof(OrbisNpLanguageCode));
     LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetGamePresenceStatus(OrbisNpOnlineId* online_id,
+                                            OrbisNpGamePresenseStatus* game_status) {
+    if (online_id == nullptr || game_status == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    *game_status =
+        g_signed_in ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetGamePresenceStatusA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                             OrbisNpGamePresenseStatus* game_status) {
+    if (game_status == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    *game_status =
+        g_signed_in ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
     return ORBIS_OK;
 }
 
@@ -339,6 +355,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetAccountDateOfBirth);
     LIB_FUNCTION("q3M7XzBKC3s", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountDateOfBirthA);
+    LIB_FUNCTION("IPb1hd1wAGc", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetGamePresenceStatus);
+    LIB_FUNCTION("oPO9U42YpgI", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetGamePresenceStatusA);
 
     LIB_FUNCTION("a8R9-75u4iM", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountId);
     LIB_FUNCTION("rbknaUjpqWo", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountIdA);
@@ -364,6 +384,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetAccountCountry);
     LIB_FUNCTION("8VBTeRf1ZwI", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountDateOfBirth);
+    LIB_FUNCTION("IPb1hd1wAGc", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetGamePresenceStatus);
 };
 
 } // namespace Libraries::Np::NpManager

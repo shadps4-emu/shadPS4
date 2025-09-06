@@ -26,6 +26,11 @@ enum class OrbisNpRequestState {
     Complete = 2,
 };
 
+enum class OrbisNpGamePresenseStatus {
+    Offline = 0,
+    Online = 1,
+};
+
 struct OrbisNpCountryCode {
     char country_code[2];
     char end;
