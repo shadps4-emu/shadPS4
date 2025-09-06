@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <vector>
@@ -571,7 +571,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->graphicsAdapterBox->setCurrentIndex(toml::find_or<int>(data, "Vulkan", "gpuId", -1) + 1);
     ui->widthSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenWidth", 1280));
     ui->heightSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenHeight", 720));
-    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
+    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankFrequency", 60));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
@@ -817,7 +817,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "windowSizeGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
-        text = tr("Vblank Divider:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
+        text = tr("Vblank Frequency:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
     } else if (elementName == "dumpShadersCheckBox") {
         text = tr("Enable Shaders Dumping:\\nFor the sake of technical debugging, saves the games shaders to a folder as they render.");
     } else if (elementName == "nullGpuCheckBox") {
@@ -947,7 +947,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setWindowWidth(ui->widthSpinBox->value());
     Config::setWindowHeight(ui->heightSpinBox->value());
-    Config::setVblankDiv(ui->vblankSpinBox->value());
+    Config::setVblankFreq(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
     Config::setFsrEnabled(ui->FSRCheckBox->isChecked());
