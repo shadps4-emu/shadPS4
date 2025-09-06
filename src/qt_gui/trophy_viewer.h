@@ -50,6 +50,9 @@ private slots:
 private:
     void PopulateTrophyWidget(QString title);
     void SetTableItem(QTableWidget* parent, int row, int column, QString str);
+    bool userResizedWindow_ = false;
+    bool programmaticResize_ = false;
+    bool initialSizeApplied_ = false;
 
     QTabWidget* tabWidget = nullptr;
     QStringList headers;
@@ -80,4 +83,7 @@ private:
         return "Unknown";
     }
     std::shared_ptr<gui_settings> m_gui_settings;
+
+protected:
+    void resizeEvent(QResizeEvent* event) override;
 };

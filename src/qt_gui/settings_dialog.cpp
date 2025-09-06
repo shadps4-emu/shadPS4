@@ -107,7 +107,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
-                        {tr("Debug"), "Debug"}};
+                        {tr("Log"), "Log"},           {tr("Debug"), "Debug"}};
     micMap = {{tr("None"), "None"}, {tr("Default Device"), "Default Device"}};
 
     if (m_physical_devices.empty()) {
@@ -661,7 +661,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->chooseHomeTabComboBox->setCurrentText(translatedText);
 
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
-                            tr("Input"),   tr("Paths"), tr("Debug")};
+                            tr("Input"),   tr("Paths"), tr("Log"),      tr("Debug")};
     int indexTab = tabNames.indexOf(translatedText);
     if (indexTab == -1)
         indexTab = 0;
