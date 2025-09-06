@@ -9,8 +9,6 @@
 // For structs and constants shared between multiple Np libraries.
 namespace Libraries::Np {
 
-enum class OrbisNpState : u32 { Unknown = 0, SignedOut, SignedIn };
-
 constexpr s32 ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {
