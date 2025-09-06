@@ -342,11 +342,11 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr auto ModulesToLoad = std::to_array<SysModules>(
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
-         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", nullptr},
          {"libSceFontFt.sprx", nullptr},
