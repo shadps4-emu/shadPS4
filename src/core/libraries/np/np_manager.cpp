@@ -11,7 +11,7 @@
 
 namespace Libraries::Np::NpManager {
 
-static bool g_signed_in = Config::getPSNSignedIn();
+static bool g_signed_in = false;
 
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
     LOG_ERROR(Lib_NpManager, "(DUMMY) called");
@@ -156,6 +156,8 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpT
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    g_signed_in = Config::getPSNSignedIn();
+
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpCreateRequest);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
