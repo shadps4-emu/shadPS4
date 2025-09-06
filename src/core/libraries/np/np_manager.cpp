@@ -311,6 +311,17 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                             OrbisNpReachabilityState* state) {
+    if (state == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    *state =
+        g_signed_in ? OrbisNpReachabilityState::Reachable : OrbisNpReachabilityState::Unavailable;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId user_id,
                                OrbisNpState* state) {
     if (state == nullptr) {
@@ -367,11 +378,11 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpCheckNpAvailabilityA);
     LIB_FUNCTION("KfGZg2y73oM", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpCheckNpReachability);
-    LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
     LIB_FUNCTION("KZ1Mj9yEGYc", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountLanguage);
     LIB_FUNCTION("TPMbgIxvog0", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountLanguageA);
+    LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountry);
     LIB_FUNCTION("JT+t00a3TxA", "libSceNpManager", 1, "libSceNpManager", 1, 1,
@@ -384,6 +395,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetGamePresenceStatus);
     LIB_FUNCTION("oPO9U42YpgI", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetGamePresenceStatusA);
+    LIB_FUNCTION("e-ZuhGEoeC4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetNpReachabilityState);
 
     LIB_FUNCTION("a8R9-75u4iM", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountId);
     LIB_FUNCTION("rbknaUjpqWo", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountIdA);
