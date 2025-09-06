@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/assert.h"
 #include "common/types.h"
 #include "netctl.h"
 
@@ -45,8 +46,28 @@ enum OrbisNetProtocol : u32 {
     ORBIS_NET_SOL_SOCKET = 0xFFFF
 };
 
-enum OrbisNetSocketOption : u32 {
-    /* IP */
+constexpr std::string_view NameOf(OrbisNetProtocol p) {
+    switch (p) {
+    case ORBIS_NET_IPPROTO_IP:
+        return "ORBIS_NET_IPPROTO_IP";
+    case ORBIS_NET_IPPROTO_ICMP:
+        return "ORBIS_NET_IPPROTO_ICMP";
+    case ORBIS_NET_IPPROTO_IGMP:
+        return "ORBIS_NET_IPPROTO_IGMP";
+    case ORBIS_NET_IPPROTO_TCP:
+        return "ORBIS_NET_IPPROTO_TCP";
+    case ORBIS_NET_IPPROTO_UDP:
+        return "ORBIS_NET_IPPROTO_UDP";
+    case ORBIS_NET_IPPROTO_IPV6:
+        return "ORBIS_NET_IPPROTO_IPV6";
+    case ORBIS_NET_SOL_SOCKET:
+        return "ORBIS_NET_SOL_SOCKET";
+    default:
+        UNREACHABLE_MSG("{}", (u32)p);
+    }
+}
+
+enum OrbisNetSocketIpOption : u32 {
     ORBIS_NET_IP_HDRINCL = 2,
     ORBIS_NET_IP_TOS = 3,
     ORBIS_NET_IP_TTL = 4,
@@ -57,11 +78,15 @@ enum OrbisNetSocketOption : u32 {
     ORBIS_NET_IP_DROP_MEMBERSHIP = 13,
     ORBIS_NET_IP_TTLCHK = 23,
     ORBIS_NET_IP_MAXTTL = 24,
-    /* TCP */
+};
+
+enum OrbisNetSocketTcpOption : u32 {
     ORBIS_NET_TCP_NODELAY = 1,
     ORBIS_NET_TCP_MAXSEG = 2,
     ORBIS_NET_TCP_MSS_TO_ADVERTISE = 3,
-    /* SOCKET */
+};
+
+enum OrbisNetSocketSoOption : u32 {
     ORBIS_NET_SO_REUSEADDR = 0x00000004,
     ORBIS_NET_SO_KEEPALIVE = 0x00000008,
     ORBIS_NET_SO_BROADCAST = 0x00000020,
@@ -84,6 +109,55 @@ enum OrbisNetSocketOption : u32 {
     ORBIS_NET_SO_NAME = 0x1202,
     ORBIS_NET_SO_PRIORITY = 0x1203
 };
+
+constexpr std::string_view NameOf(OrbisNetSocketSoOption o) {
+    switch (o) {
+    case ORBIS_NET_SO_REUSEADDR:
+        return "ORBIS_NET_SO_REUSEADDR";
+    case ORBIS_NET_SO_KEEPALIVE:
+        return "ORBIS_NET_SO_KEEPALIVE";
+    case ORBIS_NET_SO_BROADCAST:
+        return "ORBIS_NET_SO_BROADCAST";
+    case ORBIS_NET_SO_LINGER:
+        return "ORBIS_NET_SO_LINGER";
+    case ORBIS_NET_SO_REUSEPORT:
+        return "ORBIS_NET_SO_REUSEPORT";
+    case ORBIS_NET_SO_ONESBCAST:
+        return "ORBIS_NET_SO_ONESBCAST";
+    case ORBIS_NET_SO_USECRYPTO:
+        return "ORBIS_NET_SO_USECRYPTO";
+    case ORBIS_NET_SO_USESIGNATURE:
+        return "ORBIS_NET_SO_USESIGNATURE";
+    case ORBIS_NET_SO_SNDBUF:
+        return "ORBIS_NET_SO_SNDBUF";
+    case ORBIS_NET_SO_RCVBUF:
+        return "ORBIS_NET_SO_RCVBUF";
+    case ORBIS_NET_SO_ERROR:
+        return "ORBIS_NET_SO_ERROR";
+    case ORBIS_NET_SO_TYPE:
+        return "ORBIS_NET_SO_TYPE";
+    case ORBIS_NET_SO_SNDTIMEO:
+        return "ORBIS_NET_SO_SNDTIMEO";
+    case ORBIS_NET_SO_RCVTIMEO:
+        return "ORBIS_NET_SO_RCVTIMEO";
+    case ORBIS_NET_SO_ERROR_EX:
+        return "ORBIS_NET_SO_ERROR_EX";
+    case ORBIS_NET_SO_ACCEPTTIMEO:
+        return "ORBIS_NET_SO_ACCEPTTIMEO";
+    case ORBIS_NET_SO_CONNECTTIMEO:
+        return "ORBIS_NET_SO_CONNECTTIMEO";
+    case ORBIS_NET_SO_NBIO:
+        return "ORBIS_NET_SO_NBIO";
+    case ORBIS_NET_SO_POLICY:
+        return "ORBIS_NET_SO_POLICY";
+    case ORBIS_NET_SO_NAME:
+        return "ORBIS_NET_SO_NAME";
+    case ORBIS_NET_SO_PRIORITY:
+        return "ORBIS_NET_SO_PRIORITY";
+    default:
+        UNREACHABLE_MSG("{}", (u32)o);
+    }
+}
 
 enum OrbisNetEpollFlag : u32 {
     ORBIS_NET_EPOLL_CTL_ADD = 1,
@@ -285,10 +359,12 @@ int PS4_SYSV_ABI sceNetDumpRead();
 int PS4_SYSV_ABI sceNetDuplicateIpStart();
 int PS4_SYSV_ABI sceNetDuplicateIpStop();
 int PS4_SYSV_ABI sceNetEpollAbort();
-int PS4_SYSV_ABI sceNetEpollControl();
-int PS4_SYSV_ABI sceNetEpollCreate();
-int PS4_SYSV_ABI sceNetEpollDestroy();
-int PS4_SYSV_ABI sceNetEpollWait();
+int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
+                                    OrbisNetEpollEvent* event);
+int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags);
+int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid);
+int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
+                                 int timeout);
 int* PS4_SYSV_ABI sceNetErrnoLoc();
 int PS4_SYSV_ABI sceNetEtherNtostr();
 int PS4_SYSV_ABI sceNetEtherStrton();
