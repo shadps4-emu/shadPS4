@@ -12,15 +12,25 @@
 namespace Libraries::Np::NpManager {
 
 static bool g_signed_in = false;
+static s32 g_active_requests = 0;
 
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
     LOG_ERROR(Lib_NpManager, "(DUMMY) called");
-    static s32 id = 0;
-    return ++id;
+    if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
+        return ORBIS_NP_ERROR_REQUEST_MAX;
+    }
+    s32 request_id = ++g_active_requests + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET;
+    return request_id;
 }
 
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
-    LOG_ERROR(Lib_NpManager, "(DUMMY) called req_id = {}", req_id);
+    LOG_ERROR(Lib_NpManager, "(DUMMY) called req_id = {:#x}", req_id);
+    if (req_id <= ORBIS_NP_MANAGER_REQUEST_ID_OFFSET ||
+        req_id > ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + ORBIS_NP_MANAGER_REQUEST_LIMIT) {
+        // request id is outside the possible boundaries.
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+    --g_active_requests;
     return ORBIS_OK;
 }
 
