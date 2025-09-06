@@ -42,6 +42,72 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
     return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
 }
 
+s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id) {
+    if (online_id == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
+                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
+                                          Libraries::UserService::OrbisUserServiceUserId user_id) {
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
@@ -58,15 +124,15 @@ s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
 s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
                                         OrbisNpCountryCode* country_code) {
     LOG_DEBUG(Lib_NpManager, "called");
-    if (country_code == nullptr) {
+    if (online_id == nullptr || country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    ::memset(country_code, 0, sizeof(OrbisNpCountryCode));
+    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
     // TODO: get NP country code from config
-    ::memcpy(country_code->country_code, "us", 2);
+    std::memcpy(country_code->country_code, "us", 2);
     return ORBIS_OK;
 }
 
@@ -79,9 +145,43 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    ::memset(country_code, 0, sizeof(OrbisNpCountryCode));
+    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
     // TODO: get NP country code from config
-    ::memcpy(country_code->country_code, "us", 2);
+    std::memcpy(country_code->country_code, "us", 2);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
+                                            OrbisNpDate* date_of_birth) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (online_id == nullptr || date_of_birth == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    // TODO: maybe add to config?
+    date_of_birth->day = 1;
+    date_of_birth->month = 1;
+    date_of_birth->year = 2000;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                             OrbisNpDate* date_of_birth) {
+    LOG_DEBUG(Lib_NpManager, "called, user_id = {}", user_id);
+    if (date_of_birth == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    // TODO: maybe add to config?
+    date_of_birth->day = 1;
+    date_of_birth->month = 1;
+    date_of_birth->year = 2000;
     return ORBIS_OK;
 }
 
@@ -190,15 +290,22 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     g_signed_in = Config::getPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpCreateRequest);
+    LIB_FUNCTION("2rsFmlGWleQ", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpCheckNpAvailability);
+    LIB_FUNCTION("8Z2Jc5GvGDI", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpCheckNpAvailabilityA);
+    LIB_FUNCTION("KfGZg2y73oM", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpCheckNpReachability);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
-    LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
-                 sceNpGetAccountCountry);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountry);
     LIB_FUNCTION("JT+t00a3TxA", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountryA);
-    LIB_FUNCTION("a8R9-75u4iM", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
-                 sceNpGetAccountId);
+    LIB_FUNCTION("8VBTeRf1ZwI", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountDateOfBirth);
+    LIB_FUNCTION("q3M7XzBKC3s", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountDateOfBirthA);
+
     LIB_FUNCTION("a8R9-75u4iM", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountId);
     LIB_FUNCTION("rbknaUjpqWo", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetAccountIdA);
     LIB_FUNCTION("p-o74CnoNzY", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpGetNpId);
@@ -212,6 +319,15 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpCheckCallbackForLib);
     LIB_FUNCTION("0c7HbXRKUt4", "libSceNpManagerForToolkit", 1, "libSceNpManager", 1, 1,
                  sceNpRegisterStateCallbackForToolkit);
+
+    LIB_FUNCTION("2rsFmlGWleQ", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpCheckNpAvailability);
+    LIB_FUNCTION("a8R9-75u4iM", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountId);
+    LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountCountry);
+    LIB_FUNCTION("8VBTeRf1ZwI", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountDateOfBirth);
 };
 
 } // namespace Libraries::Np::NpManager

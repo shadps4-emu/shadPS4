@@ -32,5 +32,11 @@ struct OrbisNpCountryCode {
     char pad;
 };
 
+struct OrbisNpDate {
+    u16 year;
+    u8 month;
+    u8 day;
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
