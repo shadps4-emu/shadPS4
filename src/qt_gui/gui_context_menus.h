@@ -77,7 +77,9 @@ public:
         } else {
             toggleFavorite = new QAction(tr("Add to Favorites"), widget);
         }
-        QAction gameConfig(tr("Configure game-specific settings"), widget);
+
+        QAction gameConfigConfigure(tr("Configure game-specific settings"), widget);
+        QAction gameConfigCreate(tr("Create game-specific settings from global settings"), widget);
         QAction gameConfigDelete(tr("Delete game-specific settings"), widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
@@ -85,10 +87,18 @@ public:
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
         menu.addAction(toggleFavorite);
-        menu.addAction(&gameConfig);
+
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_games[itemID].serial + ".toml"))) {
+            menu.addAction(&gameConfigConfigure);
+        } else {
+            menu.addAction(&gameConfigCreate);
+        }
+
         if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
                                     (m_games[itemID].serial + ".toml")))
             menu.addAction(&gameConfigDelete);
+
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
@@ -394,7 +404,7 @@ public:
                     [trophyViewer]() { trophyViewer->deleteLater(); });
         }
 
-        if (selected == &gameConfig) {
+        if (selected == &gameConfigConfigure || selected == &gameConfigCreate) {
             auto settingsWindow = new SettingsDialog(m_gui_settings, m_compat_info, widget, true,
                                                      serialStr.toStdString());
             settingsWindow->exec();
