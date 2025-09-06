@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "core/libraries/np/np_types.h"
 #include "common/types.h"
+#include "core/libraries/np/np_types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;

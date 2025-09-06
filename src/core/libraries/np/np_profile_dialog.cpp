@@ -69,4 +69,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpProfileDialogUpdateStatus);
 };
 
-} // namespace Libraries::NpProfileDialog
+} // namespace Libraries::Np::NpProfileDialog
