@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Snabbtangenter för kontroller</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Visa bildfrekvensräknare</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>omappad</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Avsluta emulering</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Uppdatera knappmappningar</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Växla helskärm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Växla paus</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Tangentbordsgenvägar</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Renderdoc-fångst (endast för felsökning)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Växla mus- till styrspaksemulering</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Växla mus- till gyroemulering</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Tips: Upp till tre samtidiga inmatningar kan tilldelas för varje snabbtangent</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbletter av inmatningar mappas till följande knappar:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Väntar på inmatningar</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -2276,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Visa dolda troféer</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Anpassa snabbtangenter</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Snabbtangenter för kontroller</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Visa FPS-räknare</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>inte mappad</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Stoppa emulator</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Växla helskärm</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Växla paus</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Snabbtangenter för tangentbord</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Visa FPS-räknare: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Stoppa emulator: inte tillgänglig</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Växla helskärm: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Växla paus: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Tips: Upp till tre inmatningar kan tilldelas för varje funktion</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Spara</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Tillämpa</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Avbryt</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Tryck en knapp</translation>
     </message>
   </context>
 </TS>

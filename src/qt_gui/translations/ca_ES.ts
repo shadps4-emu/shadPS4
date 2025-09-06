@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Dreceres del controlador</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostra el comptador de fotogrames per segon</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sense assignar</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Tanca l'emulació</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Recarrega les assignacions de botons</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Commuta pantalla completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Commuta la pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Captura Renderdoc (per motius de depuració)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Alterna el ratolí com a emulador del joystick</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Alterna el ratolí com a emulador de giroscopi</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Ajuda: Fins a 3 entrades simultànies poden ser assignades per cada drecera de teclat</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Desa</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancel·lar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaura els valors per defecte</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No s'ha pogut desar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No es pot assignar una entrada més d'una vegada. S'han assignat de manera duplicada pels següents botons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Esperant per alguna entrada</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -2276,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Mostra els trofeus ocults</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Personalitza les dreceres de teclat</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Dreceres del controlador</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Mostra el comptador de fps</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>sense assignar</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Atura l'emulador</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Commuta pantalla completa</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Commuta la pausa</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Dreceres de teclat</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Mostra el comptador de fps: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Atura l'emulador: n/a</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Commuta pantalla completa: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Commuta la pausa: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Truc: Fins a tres botons poden ser assignats a cada funció</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Desa</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Aplica</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Cancel·la</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Clica un botó</translation>
     </message>
   </context>
 </TS>

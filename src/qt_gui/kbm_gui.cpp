@@ -133,20 +133,17 @@ tr("Do you want to overwrite existing mappings with the mappings from the Common
 
     connect(ui->DeadzoneOffsetSlider, &QSlider::valueChanged, this, [this](int value) {
         QString DOSValue = QString::number(value / 100.0, 'f', 2);
-        QString DOSString = tr("Deadzone Offset (def 0.50):") + " " + DOSValue;
-        ui->DeadzoneOffsetLabel->setText(DOSString);
+        ui->DeadzoneOffsetLabel->setText(DOSValue);
     });
 
     connect(ui->SpeedMultiplierSlider, &QSlider::valueChanged, this, [this](int value) {
         QString SMSValue = QString::number(value / 10.0, 'f', 1);
-        QString SMSString = tr("Speed Multiplier (def 1.0):") + " " + SMSValue;
-        ui->SpeedMultiplierLabel->setText(SMSString);
+        ui->SpeedMultiplierLabel->setText(SMSValue);
     });
 
     connect(ui->SpeedOffsetSlider, &QSlider::valueChanged, this, [this](int value) {
         QString SOSValue = QString::number(value / 1000.0, 'f', 3);
-        QString SOSString = tr("Speed Offset (def 0.125):") + " " + SOSValue;
-        ui->SpeedOffsetLabel->setText(SOSString);
+        ui->SpeedOffsetLabel->setText(SOSValue);
     });
 
     connect(this, &KBMSettings::PushKBMEvent, this, [this]() { CheckMapping(MappingButton); });
@@ -491,8 +488,7 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
                     int DOffsetInt = static_cast<int>(DOffsetValue);
                     ui->DeadzoneOffsetSlider->setValue(DOffsetInt);
                     QString LabelValue = QString::number(DOffsetInt / 100.0, 'f', 2);
-                    QString LabelString = tr("Deadzone Offset (def 0.50):") + " " + LabelValue;
-                    ui->DeadzoneOffsetLabel->setText(LabelString);
+                    ui->DeadzoneOffsetLabel->setText(LabelValue);
 
                     std::string SMSOstring = line.substr(comma_pos + 1);
                     std::size_t comma_pos2 = SMSOstring.find(',');
@@ -502,16 +498,14 @@ void KBMSettings::SetUIValuestoMappings(std::string config_id) {
                         int SpeedMultInt = static_cast<int>(SpeedMultValue);
                         ui->SpeedMultiplierSlider->setValue(SpeedMultInt);
                         LabelValue = QString::number(SpeedMultInt / 10.0, 'f', 1);
-                        LabelString = tr("Speed Multiplier (def 1.0):") + " " + LabelValue;
-                        ui->SpeedMultiplierLabel->setText(LabelString);
+                        ui->SpeedMultiplierLabel->setText(LabelValue);
 
                         std::string SOstring = SMSOstring.substr(comma_pos2 + 1);
                         float SOffsetValue = std::stof(SOstring) * 1000.0;
                         int SOffsetInt = static_cast<int>(SOffsetValue);
                         ui->SpeedOffsetSlider->setValue(SOffsetInt);
                         LabelValue = QString::number(SOffsetInt / 1000.0, 'f', 3);
-                        LabelString = tr("Speed Offset (def 0.125):") + " " + LabelValue;
-                        ui->SpeedOffsetLabel->setText(LabelString);
+                        ui->SpeedOffsetLabel->setText(LabelValue);
                     }
                 }
             }

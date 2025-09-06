@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Горячие клавиши контроллера</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Показать счетчик FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Завершить эмуляцию</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Перезагрузить назначения кнопок</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Переключить полноэкранный режим</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Переключить паузу</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Горячие клавиши клавиатуры</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Захват Renderdoc (только для отладки)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Переключить мышь в эмуляцию джойстика</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Переключить мышь в эмуляцию гироскопа</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Подсказка: для каждой горячей клавиши может быть назначено до трёх одновремённых вводов</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>По умолчанию</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Не удаётся сохранить</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Ожидание ввода</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -2276,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Показать скрытые трофеи</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Настроить горячие клавиши</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Горячие клавиши контроллера</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Показать счетчик FPS</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>не назначено</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Остановить эмулятор</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Полноэкранный режим</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Пауза</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Горячие клавиши клавиатуры</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Показать счетчик FPS: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Остановить эмулятор: н/н</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Полноэкранный режим: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Пауза: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Подсказка: для каждой функции может быть назначено до трёх вводов</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Сохранить</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Применить</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Отмена</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Нажмите кнопку</translation>
     </message>
   </context>
 </TS>

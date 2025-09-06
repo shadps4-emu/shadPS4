@@ -17,9 +17,8 @@ Note: **ARM64 is not supported!** As of writing, it will not build nor run. The 
 Once you are within the installer:
 
 1. Select `Desktop development with C++`
-2. Go to "Individual Components" tab
-3. Search and select `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
-4. Continue the installation
+2. Go to "Individual Components" tab then search and select both `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
+3. Continue the installation
 
 ### (Prerequisite) Download [**Qt**](https://doc.qt.io/qt-6/get-and-install-qt.html)
 
@@ -35,7 +34,7 @@ Beware, this requires you to create a Qt account. If you do not want to do this,
 Once you are finished, you will have to configure Qt within Visual Studio:
 
 1. Tools -> Options -> Qt -> Versions
-2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.9.2\msvc2022_64`
+2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\<QtVersion>\msvc2022_64`
 3. Enable the default checkmark on the new version you just created.
 
 ### (Prerequisite) Download [**Git for Windows**](https://git-scm.com/download/win)
@@ -59,7 +58,7 @@ Go through the Git for Windows installation as normal
 Your shadps4.exe will be in `C:\path\to\source\Build\x64-Clang-Release\`
 
 To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
-`C:\Qt\6.9.2\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
+`C:\Qt\<QtVersion>\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
 (Change Qt path if you've installed it to non-default path)
 
 ## Option 2: MSYS2/MinGW
