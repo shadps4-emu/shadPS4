@@ -185,6 +185,36 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpGetAccountLanguage(OrbisNpOnlineId* online_id,
+                                         OrbisNpLanguageCode* language) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (online_id == nullptr || language == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                          OrbisNpLanguageCode* language) {
+    LOG_DEBUG(Lib_NpManager, "called, user_id = {}", user_id);
+    if (language == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) {
     LOG_DEBUG(Lib_NpManager, "called");
     if (online_id == nullptr || account_id == nullptr) {
@@ -297,6 +327,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("KfGZg2y73oM", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpCheckNpReachability);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
+    LIB_FUNCTION("KZ1Mj9yEGYc", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountLanguage);
+    LIB_FUNCTION("TPMbgIxvog0", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountLanguageA);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountry);
     LIB_FUNCTION("JT+t00a3TxA", "libSceNpManager", 1, "libSceNpManager", 1, 1,
@@ -324,6 +358,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpCheckNpAvailability);
     LIB_FUNCTION("a8R9-75u4iM", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountId);
+    LIB_FUNCTION("KZ1Mj9yEGYc", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetAccountLanguage);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountry);
     LIB_FUNCTION("8VBTeRf1ZwI", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,

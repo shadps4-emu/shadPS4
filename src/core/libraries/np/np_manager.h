@@ -38,5 +38,10 @@ struct OrbisNpDate {
     u8 day;
 };
 
+struct OrbisNpLanguageCode {
+    char code[6];
+    char padding[10];
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
