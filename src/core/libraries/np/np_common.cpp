@@ -97,6 +97,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpCmpNpIdInOrder);
     LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommonCompat", 1, "libSceNpCommon", 1, 1,
                  sceNpCmpOnlineId);
+    LIB_FUNCTION("i8UmXTSq7N4", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCmpNpId);
+    LIB_FUNCTION("TcwEFnakiSc", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCmpNpIdInOrder);
+    LIB_FUNCTION("dj+O5aD2a0Q", "libSceNpCommon", 1, "libSceNpCommon", 1, 1, sceNpCmpOnlineId);
 };
 
 } // namespace Libraries::Np::NpCommon
