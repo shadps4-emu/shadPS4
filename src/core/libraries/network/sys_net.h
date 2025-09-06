@@ -20,11 +20,14 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
 int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how);
 int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protocol);
 int PS4_SYSV_ABI sys_socket(int family, int type, int protocol);
+int PS4_SYSV_ABI sys_socketpair(int family, int type, int protocol, int sv[2]);
 int PS4_SYSV_ABI sys_netabort(OrbisNetId s, int flags);
 int PS4_SYSV_ABI sys_socketclose(OrbisNetId s);
+int PS4_SYSV_ABI sys_send(OrbisNetId s, const void* buf, u64 len, int flags);
 int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
                             const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sys_sendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, int flags);
+s64 PS4_SYSV_ABI sys_recv(OrbisNetId s, void* buf, u64 len, int flags);
 s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, OrbisNetSockaddr* addr,
                               u32* paddrlen);
 s64 PS4_SYSV_ABI sys_recvmsg(OrbisNetId s, OrbisNetMsghdr* msg, int flags);
