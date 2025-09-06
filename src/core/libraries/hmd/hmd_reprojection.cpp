@@ -176,63 +176,44 @@ s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
 }
 
 void RegisterReprojection(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd",
                  sceHmdReprojectionStartMultilayer);
-    LIB_FUNCTION("NTIbBpSH9ik", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionAddDisplayBuffer);
-    LIB_FUNCTION("94+Ggm38KCg", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionClearUserEventEnd);
-    LIB_FUNCTION("mdyFbaJj66M", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionClearUserEventStart);
-    LIB_FUNCTION("MdV0akauNow", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionDebugGetLastInfo);
-    LIB_FUNCTION("ymiwVjPB5+k", "libSceHmd", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("NTIbBpSH9ik", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionAddDisplayBuffer);
+    LIB_FUNCTION("94+Ggm38KCg", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionClearUserEventEnd);
+    LIB_FUNCTION("mdyFbaJj66M", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionClearUserEventStart);
+    LIB_FUNCTION("MdV0akauNow", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionDebugGetLastInfo);
+    LIB_FUNCTION("ymiwVjPB5+k", "libSceHmd", 1, "libSceHmd",
                  sceHmdReprojectionDebugGetLastInfoMultilayer);
-    LIB_FUNCTION("ZrV5YIqD09I", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionFinalize);
-    LIB_FUNCTION("utHD2Ab-Ixo", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionFinalizeCapture);
-    LIB_FUNCTION("OuygGEWkins", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionInitialize);
-    LIB_FUNCTION("BTrQnC6fcAk", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionInitializeCapture);
-    LIB_FUNCTION("TkcANcGM0s8", "libSceHmd", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("ZrV5YIqD09I", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionFinalize);
+    LIB_FUNCTION("utHD2Ab-Ixo", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionFinalizeCapture);
+    LIB_FUNCTION("OuygGEWkins", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionInitialize);
+    LIB_FUNCTION("BTrQnC6fcAk", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionInitializeCapture);
+    LIB_FUNCTION("TkcANcGM0s8", "libSceHmd", 1, "libSceHmd",
                  sceHmdReprojectionQueryGarlicBuffAlign);
-    LIB_FUNCTION("z0KtN1vqF2E", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryGarlicBuffSize);
-    LIB_FUNCTION("IWybWbR-xvA", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryOnionBuffAlign);
-    LIB_FUNCTION("kLUAkN6a1e8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionQueryOnionBuffSize);
-    LIB_FUNCTION("6CRWGc-evO4", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionSetCallback);
-    LIB_FUNCTION("E+dPfjeQLHI", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetDisplayBuffers);
-    LIB_FUNCTION("LjdLRysHU6Y", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetOutputMinColor);
-    LIB_FUNCTION("knyIhlkpLgE", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetUserEventEnd);
-    LIB_FUNCTION("7as0CjXW1B8", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionSetUserEventStart);
-    LIB_FUNCTION("dntZTJ7meIU", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStart);
-    LIB_FUNCTION("q3e8+nEguyE", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStart2dVr);
-    LIB_FUNCTION("RrvyU1pjb9A", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStartCapture);
-    LIB_FUNCTION("XZ5QUzb4ae0", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartLiveCapture);
-    LIB_FUNCTION("8gH1aLgty5I", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartMultilayer);
-    LIB_FUNCTION("gqAG7JYeE7A", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartMultilayer2);
-    LIB_FUNCTION("3JyuejcNhC0", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStartWideNear);
-    LIB_FUNCTION("mKa8scOc4-k", "libSceHmd", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("z0KtN1vqF2E", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionQueryGarlicBuffSize);
+    LIB_FUNCTION("IWybWbR-xvA", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionQueryOnionBuffAlign);
+    LIB_FUNCTION("kLUAkN6a1e8", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionQueryOnionBuffSize);
+    LIB_FUNCTION("6CRWGc-evO4", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionSetCallback);
+    LIB_FUNCTION("E+dPfjeQLHI", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionSetDisplayBuffers);
+    LIB_FUNCTION("LjdLRysHU6Y", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionSetOutputMinColor);
+    LIB_FUNCTION("knyIhlkpLgE", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionSetUserEventEnd);
+    LIB_FUNCTION("7as0CjXW1B8", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionSetUserEventStart);
+    LIB_FUNCTION("dntZTJ7meIU", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStart);
+    LIB_FUNCTION("q3e8+nEguyE", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStart2dVr);
+    LIB_FUNCTION("RrvyU1pjb9A", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartCapture);
+    LIB_FUNCTION("XZ5QUzb4ae0", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartLiveCapture);
+    LIB_FUNCTION("8gH1aLgty5I", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartMultilayer);
+    LIB_FUNCTION("gqAG7JYeE7A", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartMultilayer2);
+    LIB_FUNCTION("3JyuejcNhC0", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartWideNear);
+    LIB_FUNCTION("mKa8scOc4-k", "libSceHmd", 1, "libSceHmd",
                  sceHmdReprojectionStartWideNearWithOverlay);
-    LIB_FUNCTION("kcldQ7zLYQQ", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStartWithOverlay);
-    LIB_FUNCTION("vzMEkwBQciM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStop);
-    LIB_FUNCTION("F7Sndm5teWw", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionStopCapture);
-    LIB_FUNCTION("PAa6cUL5bR4", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionStopLiveCapture);
-    LIB_FUNCTION("0wnZViigP9o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdReprojectionUnsetCallback);
-    LIB_FUNCTION("iGNNpDDjcwo", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdReprojectionUnsetDisplayBuffers);
-    LIB_FUNCTION("oxoDINgOrZk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_A31A0320D80EAD99);
-    LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B9A6FA0735EC7E49);
+    LIB_FUNCTION("kcldQ7zLYQQ", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStartWithOverlay);
+    LIB_FUNCTION("vzMEkwBQciM", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStop);
+    LIB_FUNCTION("F7Sndm5teWw", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStopCapture);
+    LIB_FUNCTION("PAa6cUL5bR4", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionStopLiveCapture);
+    LIB_FUNCTION("0wnZViigP9o", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionUnsetCallback);
+    LIB_FUNCTION("iGNNpDDjcwo", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionUnsetDisplayBuffers);
+    LIB_FUNCTION("oxoDINgOrZk", "libSceHmd", 1, "libSceHmd", Func_A31A0320D80EAD99);
+    LIB_FUNCTION("uab6BzXsfkk", "libSceHmd", 1, "libSceHmd", Func_B9A6FA0735EC7E49);
 }
 } // namespace Libraries::Hmd

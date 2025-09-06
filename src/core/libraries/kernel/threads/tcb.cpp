@@ -91,7 +91,7 @@ void* PS4_SYSV_ABI __tls_get_addr(TlsIndex* index) {
 }
 
 void RegisterRtld(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", 1, 1, __tls_get_addr);
+    LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", __tls_get_addr);
 }
 
 } // namespace Libraries::Kernel

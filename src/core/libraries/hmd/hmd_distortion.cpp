@@ -75,33 +75,29 @@ s32 PS4_SYSV_ABI Func_B614F290B67FB59B() {
 }
 
 void RegisterDistortion(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGet2dVrCommand);
-    LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdDistortionGet2dVrCommand);
-    LIB_FUNCTION("ER2ar8yUmbk", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGet2dVrCommand);
+    LIB_FUNCTION("ER2ar8yUmbk", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGetCompoundEyeCorrectionCommand);
-    LIB_FUNCTION("HT8qWOTOGmo", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("HT8qWOTOGmo", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGetCorrectionCommand);
-    LIB_FUNCTION("grCYks4m8Jw", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetCorrectionCommand);
-    LIB_FUNCTION("Vkkhy8RFIuk", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("grCYks4m8Jw", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGetCorrectionCommand);
+    LIB_FUNCTION("Vkkhy8RFIuk", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGetWideNearCorrectionCommand);
-    LIB_FUNCTION("goi5ASvH-V8", "libSceHmd", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("goi5ASvH-V8", "libSceHmd", 1, "libSceHmd",
                  sceHmdDistortionGetWideNearCorrectionCommand);
-    LIB_FUNCTION("1cS7W5J-v3k", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("1cS7W5J-v3k", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGetWorkMemoryAlign);
-    LIB_FUNCTION("8Ick-e6cDVY", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetWorkMemoryAlign);
-    LIB_FUNCTION("36xDKk+Hw7o", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("8Ick-e6cDVY", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGetWorkMemoryAlign);
+    LIB_FUNCTION("36xDKk+Hw7o", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGetWorkMemorySize);
-    LIB_FUNCTION("D5JfdpJKvXk", "libSceHmd", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionGetWorkMemorySize);
-    LIB_FUNCTION("ao8NZ+FRYJE", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
-                 sceHmdDistortionInitialize);
-    LIB_FUNCTION("8A4T5ahi790", "libSceHmdDistortion", 1, "libSceHmd", 1, 1,
+    LIB_FUNCTION("D5JfdpJKvXk", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGetWorkMemorySize);
+    LIB_FUNCTION("ao8NZ+FRYJE", "libSceHmdDistortion", 1, "libSceHmd", sceHmdDistortionInitialize);
+    LIB_FUNCTION("8A4T5ahi790", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionSetOutputMinColor);
-    LIB_FUNCTION("mP2ZcYmDg-o", "libSceHmd", 1, "libSceHmd", 1, 1, sceHmdGetDistortionParams);
-    LIB_FUNCTION("smQw6nT8PcA", "libSceHmdDistortion", 1, "libSceHmd", 1, 1, Func_B26430EA74FC3DC0);
-    LIB_FUNCTION("thTykLZ-tZs", "libSceHmd", 1, "libSceHmd", 1, 1, Func_B614F290B67FB59B);
+    LIB_FUNCTION("mP2ZcYmDg-o", "libSceHmd", 1, "libSceHmd", sceHmdGetDistortionParams);
+    LIB_FUNCTION("smQw6nT8PcA", "libSceHmdDistortion", 1, "libSceHmd", Func_B26430EA74FC3DC0);
+    LIB_FUNCTION("thTykLZ-tZs", "libSceHmd", 1, "libSceHmd", Func_B614F290B67FB59B);
 }
 } // namespace Libraries::Hmd

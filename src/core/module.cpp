@@ -437,8 +437,6 @@ void Module::LoadSymbols() {
             sym_r.library = library->name;
             sym_r.library_version = library->version;
             sym_r.module = module->name;
-            sym_r.module_version_major = module->version_major;
-            sym_r.module_version_minor = module->version_minor;
             switch (type) {
             case STT_NOTYPE:
                 sym_r.type = Loader::SymbolType::NoType;
