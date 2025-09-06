@@ -161,6 +161,63 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online_id, s8* age,
+                                             OrbisNpParentalControlInfo* info) {
+    if (online_id == nullptr || age == nullptr || info == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    // TODO: Add to config?
+    *age = 13;
+    std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServiceUserId user_id,
+                             s8* age, OrbisNpParentalControlInfo* info) {
+    if (age == nullptr || info == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    // TODO: Add to config?
+    *age = 13;
+    std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
@@ -382,6 +439,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetAccountLanguage);
     LIB_FUNCTION("TPMbgIxvog0", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountLanguageA);
+    LIB_FUNCTION("ilwLM4zOmu4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetParentalControlInfo);
+    LIB_FUNCTION("m9L3O6yst-U", "libSceNpManager", 1, "libSceNpManager", 1, 1,
+                 sceNpGetParentalControlInfoA);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", 1, 1, sceNpDeleteRequest);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", 1, 1,
                  sceNpGetAccountCountry);
@@ -424,6 +485,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetAccountDateOfBirth);
     LIB_FUNCTION("IPb1hd1wAGc", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
                  sceNpGetGamePresenceStatus);
+    LIB_FUNCTION("ilwLM4zOmu4", "libSceNpManagerCompat", 1, "libSceNpManager", 1, 1,
+                 sceNpGetParentalControlInfo);
 };
 
 } // namespace Libraries::Np::NpManager

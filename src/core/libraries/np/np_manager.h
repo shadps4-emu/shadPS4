@@ -54,5 +54,11 @@ struct OrbisNpLanguageCode {
     char padding[10];
 };
 
+struct OrbisNpParentalControlInfo {
+    bool content_restriction;
+    bool chat_restriction;
+    bool user_generated_content_restriction;
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
