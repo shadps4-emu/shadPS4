@@ -411,8 +411,13 @@ public:
         }
 
         if (selected == &gameConfigDelete) {
-            std::filesystem::remove(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                    (m_games[itemID].serial + ".toml"));
+            if (QMessageBox::Yes == QMessageBox::question(widget, tr("Confirm Deletion"),
+                                                          tr("Delete Game-specific settings?"),
+                                                          QMessageBox::Yes | QMessageBox::No)) {
+                std::filesystem::remove(
+                    Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                    (m_games[itemID].serial + ".toml"));
+            }
         }
 
         if (selected == &createShortcut) {
