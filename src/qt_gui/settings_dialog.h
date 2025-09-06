@@ -23,7 +23,8 @@ class SettingsDialog : public QDialog {
 public:
     explicit SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                             std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                            QWidget* parent = nullptr);
+                            QWidget* parent = nullptr, bool is_game_specific = false,
+                            std::string gsc_serial = "");
     ~SettingsDialog();
 
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -38,7 +39,7 @@ signals:
 
 private:
     void LoadValuesFromConfig();
-    void UpdateSettings();
+    void UpdateSettings(bool game_specific = false);
     void SyncRealTimeWidgetstoConfig();
     void InitializeEmulatorLanguages();
     void OnLanguageChanged(int index);
@@ -55,5 +56,8 @@ private:
 
     int initialHeight;
     bool is_saving = false;
+    bool game_specific;
+    std::string gs_serial;
+
     std::shared_ptr<gui_settings> m_gui_settings;
 };
