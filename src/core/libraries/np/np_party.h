@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -9,7 +9,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpParty {
+namespace Libraries::Np::NpParty {
 
 enum class OrbisNpPartyState : u16 {
     NotInParty = 2,
@@ -42,8 +42,6 @@ s32 PS4_SYSV_ABI sceNpPartyShowInvitationList();
 s32 PS4_SYSV_ABI sceNpPartyShowInvitationListA();
 s32 PS4_SYSV_ABI sceNpPartyTerminate();
 s32 PS4_SYSV_ABI sceNpPartyUnregisterPrivateHandler();
-s32 PS4_SYSV_ABI module_start();
-s32 PS4_SYSV_ABI module_stop();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpParty
+} // namespace Libraries::Np::NpParty

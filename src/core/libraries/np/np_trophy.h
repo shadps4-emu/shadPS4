@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -10,7 +10,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpTrophy {
+namespace Libraries::Np::NpTrophy {
 
 extern std::string game_serial;
 
@@ -226,4 +226,4 @@ int PS4_SYSV_ABI Func_F8EF6F5350A91990();
 int PS4_SYSV_ABI Func_FA7A2DD770447552();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpTrophy
+} // namespace Libraries::Np::NpTrophy

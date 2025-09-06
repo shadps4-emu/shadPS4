@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
@@ -8,11 +8,12 @@
 #include "common/path_util.h"
 #include "common/slot_vector.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_trophy/np_trophy.h"
-#include "core/libraries/np_trophy/np_trophy_error.h"
-#include "core/libraries/np_trophy/trophy_ui.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_trophy.h"
+#include "core/libraries/np/np_trophy_error.h"
+#include "core/libraries/np/trophy_ui.h"
 
-namespace Libraries::NpTrophy {
+namespace Libraries::Np::NpTrophy {
 
 std::string game_serial;
 
@@ -1196,4 +1197,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+not13BEdVI", "libSceNpTrophy", 1, "libSceNpTrophy", 1, 1, Func_FA7A2DD770447552);
 };
 
-} // namespace Libraries::NpTrophy
+} // namespace Libraries::Np::NpTrophy

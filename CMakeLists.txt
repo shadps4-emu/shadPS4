@@ -577,26 +577,25 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec_impl.h
 )
 
-set(NP_LIBS src/core/libraries/np_common/np_common.cpp
-            src/core/libraries/np_common/np_common.h
-            src/core/libraries/np_manager/np_manager.cpp
-            src/core/libraries/np_manager/np_manager.h
-            src/core/libraries/np_score/np_score.cpp
-            src/core/libraries/np_score/np_score.h
-            src/core/libraries/np_trophy/np_trophy.cpp
-            src/core/libraries/np_trophy/np_trophy.h
-            src/core/libraries/np_trophy/trophy_ui.cpp
-            src/core/libraries/np_trophy/trophy_ui.h
-            src/core/libraries/np_trophy/np_trophy_error.h
-            src/core/libraries/np_web_api/np_web_api.cpp
-            src/core/libraries/np_web_api/np_web_api.h
-            src/core/libraries/np_party/np_party.cpp
-            src/core/libraries/np_party/np_party.h
-            src/core/libraries/np_party/np_party_error.h
-            src/core/libraries/np_auth/np_auth.cpp
-            src/core/libraries/np_auth/np_auth.h
-            src/core/libraries/np_profiledialog/np_profiledialog.cpp
-            src/core/libraries/np_profiledialog/np_profiledialog.h
+set(NP_LIBS src/core/libraries/np/np_error.h
+            src/core/libraries/np/np_common.cpp
+            src/core/libraries/np/np_common.h
+            src/core/libraries/np/np_manager.cpp
+            src/core/libraries/np/np_manager.h
+            src/core/libraries/np/np_score.cpp
+            src/core/libraries/np/np_score.h
+            src/core/libraries/np/np_trophy.cpp
+            src/core/libraries/np/np_trophy.h
+            src/core/libraries/np/trophy_ui.cpp
+            src/core/libraries/np/trophy_ui.h
+            src/core/libraries/np/np_web_api.cpp
+            src/core/libraries/np/np_web_api.h
+            src/core/libraries/np/np_party.cpp
+            src/core/libraries/np/np_party.h
+            src/core/libraries/np/np_auth.cpp
+            src/core/libraries/np/np_auth.h
+            src/core/libraries/np/np_profile_dialog.cpp
+            src/core/libraries/np/np_profile_dialog.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
