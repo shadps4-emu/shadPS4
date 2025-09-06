@@ -11,7 +11,7 @@
 
 namespace Libraries::Np::NpManager {
 
-#define SIGNEDIN_STATUS (Config::getPSNSignedIn() ? ORBIS_OK : ORBIS_NP_ERROR_SIGNED_OUT)
+static bool g_signed_in = Config::getPSNSignedIn();
 
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
     LOG_ERROR(Lib_NpManager, "(DUMMY) called");
@@ -30,10 +30,13 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
     if (country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     ::memset(country_code, 0, sizeof(OrbisNpCountryCode));
     // TODO: get NP country code from config
     ::memcpy(country_code->country_code, "us", 2);
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServiceUserId user_id,
@@ -42,10 +45,13 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
     if (country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     ::memset(country_code, 0, sizeof(OrbisNpCountryCode));
     // TODO: get NP country code from config
     ::memcpy(country_code->country_code, "us", 2);
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) {
@@ -53,8 +59,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) 
     if (online_id == nullptr || account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        *account_id = 0;
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     *account_id = 0xFEEDFACE;
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUserId user_id,
@@ -63,8 +73,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUser
     if (account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        *account_id = 0;
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     *account_id = 0xFEEDFACE;
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
@@ -73,9 +87,12 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     memset(np_id, 0, sizeof(OrbisNpId));
     strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
@@ -84,9 +101,12 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
     strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
-    return SIGNEDIN_STATUS;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId user_id,
@@ -94,8 +114,8 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *state = Config::getPSNSignedIn() ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
-    LOG_DEBUG(Lib_NpManager, "Signed {}", Config::getPSNSignedIn() ? "in" : "out");
+    *state = g_signed_in ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
+    LOG_DEBUG(Lib_NpManager, "Signed {}", g_signed_in ? "in" : "out");
     return ORBIS_OK;
 }
 
@@ -105,7 +125,7 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *has_signed_up = false;
+    *has_signed_up = g_signed_in ? true : false;
     return ORBIS_OK;
 }
 
