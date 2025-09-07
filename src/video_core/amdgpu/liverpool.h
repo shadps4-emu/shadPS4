@@ -1666,6 +1666,7 @@ private:
     u32 num_mapped_queues{1u}; // GFX is always available
 
     VAddr indirect_args_addr{};
+    u32 num_counter_pairs{};
 
     struct ConstantEngine {
         void Reset() {
