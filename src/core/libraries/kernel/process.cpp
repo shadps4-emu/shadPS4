@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
@@ -12,18 +12,22 @@
 
 namespace Libraries::Kernel {
 
-int PS4_SYSV_ABI sceKernelIsNeoMode() {
+s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
+    return 1;
+}
+
+s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
     return Config::isNeoModeConsole() &&
            Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
 }
 
-int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver) {
-    int version = Common::ElfInfo::Instance().RawFirmwareVer();
+s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
+    s32 version = Common::ElfInfo::Instance().RawFirmwareVer();
     *ver = version;
     return (version >= 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
 }
 
-int PS4_SYSV_ABI sceKernelGetCpumode() {
+s32 PS4_SYSV_ABI sceKernelGetCpumode() {
     return 0;
 }
 
@@ -33,7 +37,7 @@ void* PS4_SYSV_ABI sceKernelGetProcParam() {
 }
 
 s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
-                                          u32 flags, const void* pOpt, int* pRes) {
+                                          u32 flags, const void* pOpt, s32* pRes) {
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
     ASSERT(flags == 0);
 
@@ -201,6 +205,7 @@ s32 PS4_SYSV_ABI exit(s32 status) {
 }
 
 void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("xeu-pV8wkKs", "libkernel", 1, "libkernel", 1, 1, sceKernelIsInSandbox);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", 1, 1, sceKernelIsNeoMode);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", 1, 1, sceKernelGetCpumode);
