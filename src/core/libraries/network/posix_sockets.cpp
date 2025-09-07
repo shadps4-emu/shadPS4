@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vector>
 #include <common/assert.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
@@ -332,16 +333,41 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_REUSEADDR);
             CASE_SETSOCKOPT(SO_KEEPALIVE);
             CASE_SETSOCKOPT(SO_BROADCAST);
-            // CASE_SETSOCKOPT(SO_LINGER);
             CASE_SETSOCKOPT(SO_SNDBUF);
             CASE_SETSOCKOPT(SO_RCVBUF);
-            CASE_SETSOCKOPT(SO_SNDTIMEO);
-            CASE_SETSOCKOPT(SO_RCVTIMEO);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
-            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_SNDTIMEO:
+        case ORBIS_NET_SO_RCVTIMEO: {
+            if (optlen != sizeof(int)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
+                return -1;
+            }
+            std::vector<char> val;
+            const auto optname_nat = (optname == ORBIS_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
+            int timeout_us = *(const int*)optval;
+#ifdef _WIN32
+            DWORD timeout = timeout_us / 1000;
+#else
+            timeval timeout{.tv_sec = timeout_us / 1000000, .tv_usec = timeout_us % 1000000};
+#endif
+            val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
+            optlen = sizeof(timeout);
+            return ConvertReturnErrorCode(
+                setsockopt(sock, native_level, optname_nat, val.data(), optlen));
+        }
+        case ORBIS_NET_SO_ONESBCAST: {
+
+            if (optlen != sizeof(sockopt_so_onesbcast)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
+                return -1;
+            }
+            memcpy(&sockopt_so_onesbcast, optval, optlen);
+            return ConvertReturnErrorCode(
+                setsockopt(sock, native_level, SO_BROADCAST, (const char*)optval, optlen));
+        }
         case ORBIS_NET_SO_TYPE:
         case ORBIS_NET_SO_ERROR: {
             *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
