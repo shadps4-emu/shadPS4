@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
@@ -113,10 +114,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                     break;
                 }
 
-                const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = shl_inst->Arg(0).Resolve().U32() >> 2;
-                const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
-                const auto bucket = offset.Resolve().U32() / 256u;
+                const auto vertex_id = (info.index_enable ? IR::GetBufferIndexArg(&inst)
+                                                          : IR::GetBufferVOffsetArg(&inst))
+                                           .U32() >>
+                                       2;
+                const auto soffset = IR::GetBufferSOffsetArg(&inst);
+                const auto bucket = soffset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
                                                : IR::Attribute::Param0 + (bucket / 4 - 1);
                 const auto comp = bucket % 4;

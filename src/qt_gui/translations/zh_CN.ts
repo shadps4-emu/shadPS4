@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation type="unfinished">Quit Emulation</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -2186,6 +2273,70 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层和 Vulkan SDK 才能使用此功能。</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>启用日志记录</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>启用日志记录：\n开启日志记录功能。\n若不了解相关操作，请勿修改此设置！\n寻求帮助时，请确保此项设置处于启用状态。</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>呈现模式</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>信箱（垂直同步）</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>先进先出（垂直同步）</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>即时（关闭垂直同步）</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>DLC 文件夹</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>选择 DLC 文件夹</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>呈现模式：\n配置视频输出到屏幕的显示方式。\n\n信箱模式：帧画面与屏幕刷新率同步。新帧将替换所有待处理帧，可降低延迟但落后时可能跳帧。\n先进先出：帧画面与屏幕刷新率同步。新帧将排列在待处理帧之后，确保所有帧都被呈现但可能增加延迟。\n即时模式：帧画面准备就绪后立即显示于屏幕，可能导致画面撕裂。</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>DLC 路径：\n游戏DLC 加载的文件夹。</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>FSR设置</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>启用 FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>启用 RCAS(锐化)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>RCAS范围：</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation>0.250</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
@@ -2212,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>显示隐藏奖杯</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>自定义快捷键</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>控制器快捷键</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>显示FPS计数器</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>未映射</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>停止模拟器</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>全屏显示切换</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>切换暂停</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>键盘快捷键</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>显示FPS 计数器：F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>停止模拟器： 不可用</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>切换全屏： F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>切换暂停：F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>提示：最多可以为每个功能分配三个输入</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>保存</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>应用</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>取消</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>请按一个按键</translation>
     </message>
   </context>
 </TS>

@@ -94,7 +94,7 @@ std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
     if (slot_id > 0) {
         dir += std::to_string(slot_id);
     }
-    return SaveInstance::MakeDirSavePath(user_id, Common::ElfInfo::Instance().GameSerial(), dir);
+    return SaveInstance::MakeDirSavePath(user_id, game_serial, dir);
 }
 
 size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial,

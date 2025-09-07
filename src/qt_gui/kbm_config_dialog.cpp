@@ -85,7 +85,7 @@ EditorDialog::EditorDialog(QWidget* parent) : QDialog(parent) {
 
 void EditorDialog::loadFile(QString game) {
 
-    const auto config_file = Config::GetFoolproofKbmConfigFile(game.toStdString());
+    const auto config_file = Config::GetFoolproofInputConfigFile(game.toStdString());
     QFile file(config_file);
 
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -100,7 +100,7 @@ void EditorDialog::loadFile(QString game) {
 
 void EditorDialog::saveFile(QString game) {
 
-    const auto config_file = Config::GetFoolproofKbmConfigFile(game.toStdString());
+    const auto config_file = Config::GetFoolproofInputConfigFile(game.toStdString());
     QFile file(config_file);
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -195,10 +195,10 @@ void EditorDialog::onResetToDefaultClicked() {
 
     if (reply == QMessageBox::Yes) {
         if (default_default) {
-            const auto default_file = Config::GetFoolproofKbmConfigFile("default");
+            const auto default_file = Config::GetFoolproofInputConfigFile("default");
             std::filesystem::remove(default_file);
         }
-        const auto config_file = Config::GetFoolproofKbmConfigFile("default");
+        const auto config_file = Config::GetFoolproofInputConfigFile("default");
         QFile file(config_file);
 
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {

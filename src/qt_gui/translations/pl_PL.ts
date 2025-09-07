@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation type="unfinished">Quit Emulation</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -2186,6 +2273,70 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Diagnostyka awarii:\nTworzy plik .yaml z informacjami o stanie Vulkan w momencie awarii.\nPrzydatne do debugowania błędów &apos;DEVICE LOST&apos;. Jeśli ta opcja jest włączona, powinieneś włączyć "Znaczniki błędów gospodarza" oraz "Znaczniki błędów gościa".\nOpcja "Włącz warstwy walidacji Vulkan" i Vulkan SDK jest wymagana do działania.</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation type="unfinished">Enable Logging</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation type="unfinished">Present Mode</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation type="unfinished">Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation type="unfinished">Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation type="unfinished">Immediate (No Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation type="unfinished">DLC Folder</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation type="unfinished">Select the DLC folder</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation type="unfinished">FSR Settings</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation type="unfinished">Enable FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation type="unfinished">RCAS Attenuation:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation type="unfinished">0.250</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
@@ -2212,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Pokaż ukryte trofea</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Dostosuj skróty klawiszowe</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Skróty kontrolera</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Pokaż licznik klatek</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>nieprzypisane</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Zatrzymaj emulator</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Przełącz tryb pełnoekranowy</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Przełącz pauzę</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Skróty klawiatury</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Pokaż licznik klatek: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Zatrzymaj emulator: n/a</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Przełącz tryb pełnoekranowy: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Przełącz pauzę: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Porada: Dla każdej funkcji mogą zostać przypisane maksymalnie 3 wejścia</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Zapisz</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Zastosuj</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Anuluj</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Naciśnij przycisk</translation>
     </message>
   </context>
 </TS>

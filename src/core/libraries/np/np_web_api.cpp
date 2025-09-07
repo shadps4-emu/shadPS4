@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_web_api/np_web_api.h"
+#include "core/libraries/np/np_web_api.h"
 
-namespace Libraries::NpWebApi {
+namespace Libraries::Np::NpWebApi {
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext() {
     LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
@@ -689,4 +689,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+aMuhoVidDY", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_F9A32E8685627436);
 };
 
-} // namespace Libraries::NpWebApi
+} // namespace Libraries::Np::NpWebApi

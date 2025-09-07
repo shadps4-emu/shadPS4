@@ -1071,6 +1071,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Tilpass hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Kontroller hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Vis FPS-teller</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>Ikke tildelt</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Avslutt emulering</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Last knappeoppsett på nytt</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Slå av/på fullskjerm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Sett av/på pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Tastatur hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>RenderDoc opptak (kun for feilsøking)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Slå av/på mus til styrespak emulering</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Slå av/på mus til gyro emulering</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Tips: Opptil tre inndata kan tildeles hver funksjon.</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Klarte ikke lagre</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Venter på inndata</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1210,7 +1297,7 @@
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
-      <translation>Hastighetsforskyvning (def 0.125):</translation>
+      <translation>Hastighetsforskyvning (def 0,125):</translation>
     </message>
     <message>
       <source>Copy from Common Config</source>
@@ -1218,11 +1305,11 @@
     </message>
     <message>
       <source>Deadzone Offset (def 0.50):</source>
-      <translation>Dødsoneforskyvning (def 0.50):</translation>
+      <translation>Dødsoneforskyvning (def 0,50):</translation>
     </message>
     <message>
       <source>Speed Multiplier (def 1.0):</source>
-      <translation>Hastighetsmultiplikator (def 1.0):</translation>
+      <translation>Hastighetsmultiplikator (def 1,0):</translation>
     </message>
     <message>
       <source>Common Config Selected</source>
@@ -2186,6 +2273,70 @@
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
       <translation>Krasjdiagnostikk:\nOppretter en .yaml-fil med informasjon om Vulkan-tilstanden ved krasj.\nNyttig for feilsøking &apos;Device lost&apos; feil. Hvis dette brukes, burde du aktivere vert OG gjestefeilsøkingsmarkører.\nDu trenger Vulkan Validation Layers og Vulkan SDK for at dette skal fungere.</translation>
     </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Bruk loggføring</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Bruk loggføring:\nTar i bruk loggføring.\nIkke endre dette hvis du ikke vet hva du gjør!\nNår du spør om hjelp vær sikker på at denne innstillingen er «påslått».</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Presentasjonsmodus</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>«Mailbox» (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>«FIFO» (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Umiddelbart (Ingen Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>DLC-mappe</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Velg DLC-mappa</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Presentasjonsmodus:\nSetter opp hvordan video-utdata skal presenteres til skjermen.\n\n«Mailbox»: Bildene synkroniseres med skjermens oppdateringsfrekvens. Nye bilder erstatter gamle bilder i køen. Reduserer ventetid men kan hoppe over bilder hvis de er forsinket.\n«FIFO»: Bildene synkroniseres med skjermens oppdateringsfrekvens. Nye bilder settes i kø bak gamle bilder. Dette sikrer at alle bildene vises men kan øke ventetid.\nUmiddelbart: Bildene vises til skjermen med en gang når de er klare. Kan forutsake bilderiving.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>DLC-mappe:\nMappa hvor spill-DLC-ene lastes fra.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Bla gjennom:\nLet etter en mappe for å angi den som DLC-adressen.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>FSR-innstillinger</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Bruk FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Bruk RCAS (tydeliggjøring)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>RCAS demping:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation>0,250</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
@@ -2212,77 +2363,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Vis skjulte trofeer</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Tilpass hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Kontroller hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Vis FPS-teller</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>Ikke tildelt</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Stopp emulator</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Slå av/på fullskjerm</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Sett av/på pause</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Tastatur hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Vis FPS-teller: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Stopp emulator: Ikke tilgjengelig</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Slå av/på fullskjerm: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Sett av/på pause: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Tips: Opptil tre inndata kan tildeles hver funksjon.</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Lagre</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Bruk</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Avbryt</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Trykk på en knapp</translation>
     </message>
   </context>
 </TS>

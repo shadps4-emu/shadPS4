@@ -555,8 +555,16 @@ void EmitContext::DefineVertexBlock() {
         cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
                                         initializer);
     }
-    if (info.stores.GetAny(IR::Attribute::RenderTargetId)) {
+    if (info.stores.GetAny(IR::Attribute::PointSize)) {
+        output_point_size =
+            DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
         output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+        output_viewport_index =
+            DefineVariable(S32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
     }
 }
 
@@ -658,8 +666,10 @@ void EmitContext::DefineOutputs() {
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
-        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,
-                   "Dual source blending enabled, there must be exactly two MRT exports");
+        // Dual source blending allows at most 2 render targets, one for each source.
+        // Fewer targets are allowed but the missing blending source values will be undefined.
+        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
+                   "Dual source blending enabled, there must be at most two MRT exports");
         break;
     }
     case LogicalStage::Geometry: {

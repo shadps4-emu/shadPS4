@@ -4,10 +4,14 @@
 #include <fstream>
 #include <QCheckBox>
 #include <QDockWidget>
+#include <QGuiApplication>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QResizeEvent>
+#include <QScreen>
 #include <cmrc/cmrc.hpp>
 #include <common/config.h>
+
 #include "common/path_util.h"
 #include "main_window_themes.h"
 #include "trophy_viewer.h"
@@ -18,6 +22,13 @@ CMRC_DECLARE(res);
 
 // true: European format; false: American format
 bool useEuropeanDateFormat = true;
+
+void TrophyViewer::resizeEvent(QResizeEvent* event) {
+    if (!programmaticResize_) {
+        userResizedWindow_ = true;
+    }
+    QMainWindow::resizeEvent(event);
+}
 
 void TrophyViewer::updateTrophyInfo() {
     int total = 0;
@@ -287,6 +298,13 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
     if (dirList.isEmpty())
         return;
 
+    // Clears previous tabs (if any)
+    while (tabWidget->count() > 0) {
+        QWidget* widget = tabWidget->widget(0);
+        tabWidget->removeTab(0);
+        delete widget;
+    }
+
     for (const QFileInfo& dirInfo : dirList) {
         QString tabName = dirInfo.fileName();
         QString trpDir = trophyDirQt + "/" + tabName;
@@ -374,10 +392,11 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
         tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
         tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
         tableWidget->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-        tableWidget->horizontalHeader()->setStretchLastSection(true);
+        tableWidget->horizontalHeader()->setStretchLastSection(false);
         tableWidget->verticalHeader()->setVisible(false);
-        tableWidget->setRowCount(icons.size());
+        tableWidget->setRowCount(static_cast<int>(icons.size()));
         tableWidget->setSortingEnabled(true);
+        tableWidget->setWordWrap(true);
 
         for (int row = 0; auto& icon : icons) {
             QTableWidgetItem* item = new QTableWidgetItem();
@@ -433,29 +452,50 @@ void TrophyViewer::PopulateTrophyWidget(QString title) {
                 SetTableItem(tableWidget, row, 7, trpHidden[row]);
                 SetTableItem(tableWidget, row, 8, trpPid[row]);
             }
+
             tableWidget->verticalHeader()->resizeSection(row, icon.height());
             row++;
         }
-        tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-        int width = 16;
-        for (int i = 0; i < 9; i++) {
-            width += tableWidget->horizontalHeader()->sectionSize(i);
+
+        auto header = tableWidget->horizontalHeader();
+        header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(3, QHeaderView::Stretch);
+        header->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(6, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(7, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(8, QHeaderView::ResizeToContents);
+
+        tableWidget->resizeColumnsToContents();
+        tableWidget->resizeRowsToContents();
+
+        const int hardMinDesc = 300;
+        int currentDesc = tableWidget->columnWidth(3);
+        if (currentDesc < hardMinDesc) {
+            tableWidget->setColumnWidth(3, hardMinDesc);
         }
-        tableWidget->resize(width, 720);
+
         tabWidget->addTab(tableWidget,
                           tabName.insert(6, " ").replace(0, 1, tabName.at(0).toUpper()));
-
-        if (!this->isMaximized()) {
-            this->resize(width + 400, 720);
-            QSize mainWindowSize = QApplication::activeWindow()->size();
-            this->resize(mainWindowSize.width() * 0.8, mainWindowSize.height() * 0.8);
-        }
-        this->show();
-
-        tableWidget->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Fixed);
-        tableWidget->setColumnWidth(3, 500);
     }
+
     this->setCentralWidget(tabWidget);
+
+    if (!this->isMaximized() && !this->isFullScreen()) {
+        if (!userResizedWindow_ && !initialSizeApplied_) {
+            QScreen* screen = QGuiApplication::primaryScreen();
+            QSize screenSize(1024, 768);
+            if (screen) {
+                screenSize = screen->availableGeometry().size();
+            }
+            programmaticResize_ = true;
+            this->resize(screenSize.width() * 0.8, screenSize.height() * 0.8);
+            programmaticResize_ = false;
+            initialSizeApplied_ = true;
+        }
+    }
 }
 
 void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QString str) {
@@ -463,7 +503,10 @@ void TrophyViewer::SetTableItem(QTableWidget* parent, int row, int column, QStri
 
     if (column != 1 && column != 2 && column != 3)
         item->setTextAlignment(Qt::AlignCenter);
-    item->setFont(QFont("Arial", 12, QFont::Bold));
+    QFont f = parent->font();
+    f.setPointSize(12);
+    f.setBold(true);
+    item->setFont(f);
 
     Theme theme = static_cast<Theme>(m_gui_settings->GetValue(gui::gen_theme).toInt());
 

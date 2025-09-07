@@ -54,12 +54,12 @@ struct ExportRuntimeInfo {
 
 enum class Output : u8 {
     None,
-    PointSprite,
+    PointSize,
     EdgeFlag,
     KillFlag,
     GsCutFlag,
-    GsMrtIndex,
-    GsVpIndex,
+    RenderTargetIndex,
+    ViewportIndex,
     CullDist0,
     CullDist1,
     CullDist2,
@@ -114,6 +114,7 @@ struct HullRuntimeInfo {
     u32 num_input_control_points;
     u32 num_threads;
     AmdGpu::TessellationType tess_type;
+    bool offchip_lds_enable;
 
     // from tess constants buffer
     u32 ls_stride;

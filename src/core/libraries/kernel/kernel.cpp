@@ -277,16 +277,26 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_connect);
     LIB_FUNCTION("pG70GT5yRo4", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socketex);
     LIB_FUNCTION("KuOmgKoqCdY", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_bind);
+    LIB_FUNCTION("6O8EwYOgH9Y", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_getsockopt);
+    LIB_FUNCTION("fFxGkxF2bVo", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_setsockopt);
     LIB_FUNCTION("pxnCmagrtao", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_listen);
     LIB_FUNCTION("3e+4Iv7IJ8U", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_accept);
+    LIB_FUNCTION("TUuiYS2kE8s", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_shutdown);
     LIB_FUNCTION("TU-d9PfIHPM", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
+    LIB_FUNCTION("MZb0GKT3mo8", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_socketpair);
+    LIB_FUNCTION("MZb0GKT3mo8", "libkernel_ps2emu", 1, "libkernel", 1, 1,
+                 Libraries::Net::sys_socketpair);
     LIB_FUNCTION("K1S8oc61xiM", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_htonl);
     LIB_FUNCTION("jogUIsOV3-U", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_htons);
+    LIB_FUNCTION("fZOeZIOEmLw", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_send);
     LIB_FUNCTION("oBr313PppNE", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
+    LIB_FUNCTION("Ez8xjo9UF4E", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_recv);
     LIB_FUNCTION("lUk6wrGXyMw", "libkernel", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
 
     LIB_FUNCTION("TU-d9PfIHPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_socket);
+    LIB_FUNCTION("fZOeZIOEmLw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_send);
     LIB_FUNCTION("oBr313PppNE", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_sendto);
+    LIB_FUNCTION("Ez8xjo9UF4E", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recv);
     LIB_FUNCTION("lUk6wrGXyMw", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvfrom);
     LIB_FUNCTION("hI7oVeOluPM", "libScePosix", 1, "libkernel", 1, 1, Libraries::Net::sys_recvmsg);
     LIB_FUNCTION("TXFFFiNldU8", "libScePosix", 1, "libkernel", 1, 1,
