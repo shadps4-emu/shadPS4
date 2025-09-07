@@ -60,8 +60,8 @@ enum class Attribute : u64 {
     // System values
     ClipDistance = 64,
     CullDistance = 65,
-    RenderTargetId = 66,
-    ViewportId = 67,
+    RenderTargetIndex = 66,
+    ViewportIndex = 67,
     VertexId = 68,
     PrimitiveId = 69,
     InstanceId = 70,
@@ -87,6 +87,7 @@ enum class Attribute : u64 {
     PackedHullInvocationInfo = 90, // contains patch id within the VGT and invocation ID
     OffChipLdsBase = 91,
     TessFactorsBufferBase = 92,
+    PointSize = 93,
     Max,
 };
 

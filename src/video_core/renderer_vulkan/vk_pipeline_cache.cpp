@@ -42,14 +42,15 @@ static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs,
 
     if (ctl.vs_out_misc_enable) {
         auto& misc_vec = outputs[num_outputs++];
-        misc_vec[0] = ctl.use_vtx_point_size ? Output::PointSprite : Output::None;
+        misc_vec[0] = ctl.use_vtx_point_size ? Output::PointSize : Output::None;
         misc_vec[1] = ctl.use_vtx_edge_flag
                           ? Output::EdgeFlag
                           : (ctl.use_vtx_gs_cut_flag ? Output::GsCutFlag : Output::None);
-        misc_vec[2] = ctl.use_vtx_kill_flag
-                          ? Output::KillFlag
-                          : (ctl.use_vtx_render_target_idx ? Output::GsMrtIndex : Output::None);
-        misc_vec[3] = ctl.use_vtx_viewport_idx ? Output::GsVpIndex : Output::None;
+        misc_vec[2] =
+            ctl.use_vtx_kill_flag
+                ? Output::KillFlag
+                : (ctl.use_vtx_render_target_idx ? Output::RenderTargetIndex : Output::None);
+        misc_vec[3] = ctl.use_vtx_viewport_idx ? Output::ViewportIndex : Output::None;
     }
 
     if (ctl.vs_out_ccdist0_enable) {
