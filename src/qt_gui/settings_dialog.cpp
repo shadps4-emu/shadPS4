@@ -95,6 +95,8 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
 
     if (game_specific) {
         ui->tabWidgetSettings->setTabVisible(5, false);
+        ui->chooseHomeTabComboBox->removeItem(5);
+
         ui->label_Trophy->setVisible(false);
         ui->trophyKeyLineEdit->setVisible(false);
         ui->CompatgroupBox->setVisible(false);
