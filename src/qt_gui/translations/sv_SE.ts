@@ -2274,7 +2274,7 @@
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation>DLC-mapp</translation>
+      <translation>Mapp för nedladdningsbart innehåll (DLC)</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
