@@ -2342,15 +2342,15 @@
     </message>
     <message>
       <source>Vblank Frequency</source>
-      <translation type="unfinished">Vblank Frequency</translation>
+      <translation>Frequenza Vblank</translation>
     </message>
     <message>
       <source>Hz</source>
-      <translation type="unfinished">Hz</translation>
+      <translation>Hz</translation>
     </message>
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>Frequenza Vblank:\nIl frame rate con cui l&apos; emulatore si aggiorna viene moltiplicato per questo numero. Cambiare questa impostazione potrebbe avere effetti avversi, come aumento della velocità del gioco o malfunzionamento di funzionalità critiche del gioco che non prevede questa modifica!</translation>
     </message>
   </context>
   <context>
