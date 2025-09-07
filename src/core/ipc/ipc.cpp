@@ -118,23 +118,19 @@ void IPC::InputLoop() {
             MemoryPatcher::AddPatchToQueue(entry);
         } else if (cmd == "PAUSE") {
             DebugState.PauseGuestThreads();
-        }
-        else if (cmd == "RESUME") {
+        } else if (cmd == "RESUME") {
             DebugState.ResumeGuestThreads();
-        }
-        else if (cmd == "STOP") {
+        } else if (cmd == "STOP") {
             SDL_Event event;
             SDL_memset(&event, 0, sizeof(event));
             event.type = SDL_EVENT_QUIT;
             SDL_PushEvent(&event);
-        }
-        else if (cmd == "TOGGLE_FULLSCREEN") {
+        } else if (cmd == "TOGGLE_FULLSCREEN") {
             SDL_Event event;
             SDL_memset(&event, 0, sizeof(event));
             event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
             SDL_PushEvent(&event);
-        }
-        else {
+        } else {
             std::cerr << ";UNKNOWN CMD: " << cmd << std::endl;
         }
     }
