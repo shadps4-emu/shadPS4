@@ -129,11 +129,12 @@ void Translator::EmitExport(const GcnInst& inst) {
         return ExportRenderTarget(inst);
     }
 
-    ASSERT_MSG(!exp.compr, "Compressed exports only supported for render targets");
     if (attrib == IR::Attribute::Depth && exp.en != 0 && exp.en != 1) {
         LOG_WARNING(Render_Vulkan, "Unsupported depth export");
         return;
     }
+
+    ASSERT_MSG(!exp.compr, "Compressed exports only supported for render targets");
 
     u32 mask = exp.en;
     for (u32 i = 0; i < 4; i++, mask >>= 1) {
