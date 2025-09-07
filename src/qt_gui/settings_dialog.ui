@@ -632,6 +632,11 @@
                     </item>
                     <item>
                      <property name="text">
+                      <string>Log</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
                       <string>Debug</string>
                      </property>
                     </item>
