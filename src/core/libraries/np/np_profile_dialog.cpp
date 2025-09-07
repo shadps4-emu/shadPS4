@@ -4,9 +4,9 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np_profiledialog/np_profiledialog.h"
+#include "core/libraries/np/np_profile_dialog.h"
 
-namespace Libraries::NpProfileDialog {
+namespace Libraries::Np::NpProfileDialog {
 
 s32 PS4_SYSV_ABI sceNpProfileDialogOpen() {
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
@@ -69,4 +69,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpProfileDialogUpdateStatus);
 };
 
-} // namespace Libraries::NpProfileDialog
+} // namespace Libraries::Np::NpProfileDialog

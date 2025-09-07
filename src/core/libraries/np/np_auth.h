@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -9,7 +9,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpAuth {
+namespace Libraries::Np::NpAuth {
 
 s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode();
 s32 PS4_SYSV_ABI sceNpAuthGetIdToken();
@@ -26,4 +26,4 @@ s32 PS4_SYSV_ABI sceNpAuthSetTimeout();
 s32 PS4_SYSV_ABI sceNpAuthWaitAsync();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpAuth
+} // namespace Libraries::Np::NpAuth
