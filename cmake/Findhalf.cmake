@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 find_path(half_INCLUDE_DIR NAMES half.hpp PATH_SUFFIXES half)

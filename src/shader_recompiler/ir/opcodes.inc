@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 //     opcode name,                                         return type,    arg1 type,      arg2 type,      arg3 type,      arg4 type,      arg4 type,      ...
