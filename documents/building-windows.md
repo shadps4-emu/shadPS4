@@ -17,15 +17,14 @@ Note: **ARM64 is not supported!** As of writing, it will not build nor run. The 
 Once you are within the installer:
 
 1. Select `Desktop development with C++`
-2. Go to "Individual Components" tab
-3. Search and select `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
-4. Continue the installation
+2. Go to "Individual Components" tab then search and select both `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
+3. Continue the installation
 
 ### (Prerequisite) Download [**Qt**](https://doc.qt.io/qt-6/get-and-install-qt.html)
 
 Beware, this requires you to create a Qt account. If you do not want to do this, please follow the MSYS2/MinGW compilation method instead.
 
-1. Under the current, non beta version of Qt (at the time of writing 6.9.2), select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
+1. Under the current, non beta version of Qt, select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
    If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `MSVC 2022 ARM64` instead.
 
    Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
@@ -35,7 +34,7 @@ Beware, this requires you to create a Qt account. If you do not want to do this,
 Once you are finished, you will have to configure Qt within Visual Studio:
 
 1. Tools -> Options -> Qt -> Versions
-2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\6.9.2\msvc2022_64`
+2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\<QtVersion>\msvc2022_64`
 3. Enable the default checkmark on the new version you just created.
 
 ### (Prerequisite) Download [**Git for Windows**](https://git-scm.com/download/win)
@@ -51,20 +50,15 @@ Go through the Git for Windows installation as normal
 ### Compiling with Visual Studio GUI
 
 1. Open up Visual Studio, select `Open a local folder` and select the folder with the shadPS4 source code. The folder should contain `CMakeLists.txt`
-2. Change x64-Clang-Debug to x64-Clang-Release if you want a regular, non-debug build.
-3. If you want to build shadPS4 with the Qt Gui:
-   1. Click x64-Clang-Release and select "Manage Configurations"
-   2. Look for "CMake command arguments" and add to the text field  
-    `-DENABLE_QT_GUI=ON -DCMAKE_PREFIX_PATH=C:\Qt\6.9.2\msvc2022_64`  
-    (Change Qt path if you've installed it to non-default path)
-   3. Press CTRL+S to save and wait a moment for CMake generation
+2. Change Clang x64 Debug to Clang x64 Release if you want a regular, non-debug build.
+3. If you want to build shadPS4 with the Qt Gui, simply select Clang x64 Release with Qt instead.
 4. Change the project to build to shadps4.exe
 5. Build -> Build All
 
 Your shadps4.exe will be in `C:\path\to\source\Build\x64-Clang-Release\`
 
 To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
-`C:\Qt\6.9.2\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
+`C:\Qt\<QtVersion>\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
 (Change Qt path if you've installed it to non-default path)
 
 ## Option 2: MSYS2/MinGW

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <vector>
@@ -26,6 +26,7 @@
 #include "background_music_player.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
+#include "log_presets_dialog.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -87,6 +88,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
+    // Add a small clear "x" button inside the Log Filter input
+    ui->logFilterLineEdit->setClearButtonEnabled(true);
+
     initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
@@ -103,7 +107,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
-                        {tr("Debug"), "Debug"}};
+                        {tr("Log"), "Log"},           {tr("Debug"), "Debug"}};
     micMap = {{tr("None"), "None"}, {tr("Default Device"), "Default Device"}};
 
     if (m_physical_devices.empty()) {
@@ -386,6 +390,14 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                       Common::FS::GetUserPath(Common::FS::PathType::LogDir));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
+
+        // Log presets popup button
+        connect(ui->logPresetsButton, &QPushButton::clicked, this, [this]() {
+            auto dlg = new LogPresetsDialog(m_gui_settings, this);
+            connect(dlg, &LogPresetsDialog::PresetChosen, this,
+                    [this](const QString& filter) { ui->logFilterLineEdit->setText(filter); });
+            dlg->exec();
+        });
     }
 
     // GRAPHICS TAB
@@ -421,50 +433,60 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->emulatorLanguageGroupBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
-        ui->userName->installEventFilter(this);
-        ui->label_Trophy->installEventFilter(this);
-        ui->trophyKeyLineEdit->installEventFilter(this);
-        ui->logTypeGroupBox->installEventFilter(this);
-        ui->logFilter->installEventFilter(this);
+        ui->volumeSliderElement->installEventFilter(this);
 #ifdef ENABLE_UPDATER
         ui->updaterGroupBox->installEventFilter(this);
 #endif
+
+        // GUI
         ui->GUIBackgroundImageGroupBox->installEventFilter(this);
         ui->GUIMusicGroupBox->installEventFilter(this);
-        ui->disableTrophycheckBox->installEventFilter(this);
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
 
         // User
+        ui->userName->installEventFilter(this);
+        ui->disableTrophycheckBox->installEventFilter(this);
         ui->OpenCustomTrophyLocationButton->installEventFilter(this);
+        ui->label_Trophy->installEventFilter(this);
+        ui->trophyKeyLineEdit->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
         ui->backgroundControllerCheckBox->installEventFilter(this);
+        ui->motionControlsCheckBox->installEventFilter(this);
+        ui->micComboBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
         ui->windowSizeGroupBox->installEventFilter(this);
         ui->presentModeGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
-        ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
         ui->enableHDRCheckBox->installEventFilter(this);
+        ui->chooseHomeTabGroupBox->installEventFilter(this);
+        ui->gameSizeCheckBox->installEventFilter(this);
 
         // Paths
         ui->gameFoldersGroupBox->installEventFilter(this);
         ui->gameFoldersListWidget->installEventFilter(this);
         ui->addFolderButton->installEventFilter(this);
         ui->removeFolderButton->installEventFilter(this);
-
         ui->saveDataGroupBox->installEventFilter(this);
         ui->currentSaveDataPath->installEventFilter(this);
         ui->currentDLCFolder->installEventFilter(this);
         ui->browseButton->installEventFilter(this);
         ui->folderButton->installEventFilter(this);
         ui->PortableUserFolderGroupBox->installEventFilter(this);
+
+        // Log
+        ui->logTypeGroupBox->installEventFilter(this);
+        ui->logFilter->installEventFilter(this);
+        ui->enableLoggingCheckBox->installEventFilter(this);
+        ui->separateLogFilesCheckbox->installEventFilter(this);
+        ui->OpenLogLocationButton->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -478,8 +500,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
-        ui->separateLogFilesCheckbox->installEventFilter(this);
-        ui->enableLoggingCheckBox->installEventFilter(this);
+        ui->dumpShadersCheckBox->installEventFilter(this);
     }
 }
 
@@ -550,7 +571,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->graphicsAdapterBox->setCurrentIndex(toml::find_or<int>(data, "Vulkan", "gpuId", -1) + 1);
     ui->widthSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenWidth", 1280));
     ui->heightSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenHeight", 720));
-    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
+    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankFrequency", 60));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
@@ -640,7 +661,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->chooseHomeTabComboBox->setCurrentText(translatedText);
 
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
-                            tr("Input"),   tr("Paths"), tr("Debug")};
+                            tr("Input"),   tr("Paths"), tr("Log"),      tr("Debug")};
     int indexTab = tabNames.indexOf(translatedText);
     if (indexTab == -1)
         indexTab = 0;
@@ -796,7 +817,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "windowSizeGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
-        text = tr("Vblank Divider:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
+        text = tr("Vblank Frequency:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
     } else if (elementName == "dumpShadersCheckBox") {
         text = tr("Enable Shaders Dumping:\\nFor the sake of technical debugging, saves the games shaders to a folder as they render.");
     } else if (elementName == "nullGpuCheckBox") {
@@ -854,7 +875,19 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "separateLogFilesCheckbox") {
         text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");
     } else if (elementName == "enableLoggingCheckBox") {
-        text = tr("Enable Logging:\\nEnables logging.\\nDo not change this if you do not know what you're doing!\\nWhen asking for help, make sure this setting is ENABLED."); }
+        text = tr("Enable Logging:\\nEnables logging.\\nDo not change this if you do not know what you're doing!\\nWhen asking for help, make sure this setting is ENABLED.");
+    } else if (elementName == "OpenLogLocationButton") {
+        text = tr("Open Log Location:\\nOpen the folder where the log file is saved.");
+    } else if (elementName == "micComboBox") {
+        text = tr("Microphone:\\nNone: Does not use the microphone.\\nDefault Device: Will use the default device defined in the system.\\nOr manually choose the microphone to be used from the list.");
+    } else if (elementName == "volumeSliderElement") {
+        text = tr("Volume:\\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.");
+    } else if (elementName == "chooseHomeTabGroupBox") {
+        text = tr("Default tab when opening settings:\\nChoose which tab will open, the default is General.");
+    } else if (elementName == "gameSizeCheckBox") {
+        text = tr("Show Game Size In List:\\nThere is the size of the game in the list.");
+    } else if (elementName == "motionControlsCheckBox") {
+        text = tr("Enable Motion Controls:\\nWhen enabled it will use the controller's motion control if supported."); }
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
@@ -914,7 +947,7 @@ void SettingsDialog::UpdateSettings() {
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setWindowWidth(ui->widthSpinBox->value());
     Config::setWindowHeight(ui->heightSpinBox->value());
-    Config::setVblankDiv(ui->vblankSpinBox->value());
+    Config::setVblankFreq(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
     Config::setFsrEnabled(ui->FSRCheckBox->isChecked());
