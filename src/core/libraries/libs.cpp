@@ -88,7 +88,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NetCtl::RegisterLib(sym);
     Libraries::SaveData::RegisterLib(sym);
     Libraries::SaveData::Dialog::RegisterLib(sym);
-    Libraries::Ssl::RegisterLib(sym);
     Libraries::Ssl2::RegisterLib(sym);
     Libraries::SysModule::RegisterLib(sym);
     Libraries::Posix::RegisterLib(sym);
@@ -139,6 +138,9 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rtc::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
+
+    // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
+    // Libraries::Ssl::RegisterLib(sym);
 }
 
 } // namespace Libraries
