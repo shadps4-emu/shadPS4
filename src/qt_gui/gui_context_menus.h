@@ -67,6 +67,24 @@ public:
 
         menu.addMenu(openFolderMenu);
 
+        QMenu* gameConfigMenu = new QMenu(tr("Game-specific Settings..."), widget);
+        QAction gameConfigConfigure(tr("Configure game-specific settings"), widget);
+        QAction gameConfigCreate(tr("Create game-specific settings from global settings"), widget);
+        QAction gameConfigDelete(tr("Delete game-specific settings"), widget);
+
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_games[itemID].serial + ".toml"))) {
+            gameConfigMenu->addAction(&gameConfigConfigure);
+        } else {
+            gameConfigMenu->addAction(&gameConfigCreate);
+        }
+
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_games[itemID].serial + ".toml")))
+            gameConfigMenu->addAction(&gameConfigDelete);
+
+        menu.addMenu(gameConfigMenu);
+
         QString serialStr = QString::fromStdString(m_games[itemID].serial);
         QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
         bool isFavorite = list.contains(serialStr);
@@ -78,27 +96,12 @@ public:
             toggleFavorite = new QAction(tr("Add to Favorites"), widget);
         }
 
-        QAction gameConfigConfigure(tr("Configure game-specific settings"), widget);
-        QAction gameConfigCreate(tr("Create game-specific settings from global settings"), widget);
-        QAction gameConfigDelete(tr("Delete game-specific settings"), widget);
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
         QAction openTrophyViewer(tr("Trophy Viewer"), widget);
 
         menu.addAction(toggleFavorite);
-
-        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                    (m_games[itemID].serial + ".toml"))) {
-            menu.addAction(&gameConfigConfigure);
-        } else {
-            menu.addAction(&gameConfigCreate);
-        }
-
-        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                    (m_games[itemID].serial + ".toml")))
-            menu.addAction(&gameConfigDelete);
-
         menu.addAction(&createShortcut);
         menu.addAction(&openCheats);
         menu.addAction(&openSfoViewer);
