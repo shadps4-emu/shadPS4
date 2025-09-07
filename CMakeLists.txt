@@ -1224,7 +1224,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore)
+    target_link_libraries(shadps4 PRIVATE mincore wepoll)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
