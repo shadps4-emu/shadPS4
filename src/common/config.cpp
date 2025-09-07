@@ -98,9 +98,14 @@ public:
         is_game_specific ? game_specific_value = value : base_value = value;
     }
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
-                      bool is_game_specific = false) {
-        is_game_specific ? data[header][key] = game_specific_value.value_or(base_value)
-                         : data[header][key] = base_value;
+                      bool is_game_specific = false, bool reset_gs_values = false) {
+
+        if (is_game_specific && reset_gs_values) {
+            data[header][key] = base_value;
+        } else {
+            is_game_specific ? data[header][key] = game_specific_value.value_or(base_value)
+                             : data[header][key] = base_value;
+        }
     }
     // operator T() {
     //     return get();
@@ -759,7 +764,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
     if (!std::filesystem::exists(path, error)) {
-        save(path, is_game_specific);
+        save(path, is_game_specific, true);
     }
 
     toml::value data;
@@ -939,7 +944,7 @@ void sortTomlSections(toml::ordered_value& data) {
     data = ordered_data;
 }
 
-void save(const std::filesystem::path& path, bool is_game_specific) {
+void save(const std::filesystem::path& path, bool is_game_specific, bool reset_gs_values) {
     toml::ordered_value data;
 
     std::error_code error;
@@ -962,56 +967,62 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     }
 
     // Entries saved by the game-specific settings GUI
-    volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
-    isTrophyPopupDisabled.setTomlValue(data, "General", "isTrophyPopupDisabled", is_game_specific);
+    volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific, reset_gs_values);
+    isTrophyPopupDisabled.setTomlValue(data, "General", "isTrophyPopupDisabled", is_game_specific,
+                                       reset_gs_values);
     trophyNotificationDuration.setTomlValue(data, "General", "trophyNotificationDuration",
-                                            is_game_specific);
-    logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
-    logType.setTomlValue(data, "General", "logType", is_game_specific);
-    userName.setTomlValue(data, "General", "userName", is_game_specific);
-    chooseHomeTab.setTomlValue(data, "General", "chooseHomeTab", is_game_specific);
-    isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
-    isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
+                                            is_game_specific, reset_gs_values);
+    logFilter.setTomlValue(data, "General", "logFilter", is_game_specific, reset_gs_values);
+    logType.setTomlValue(data, "General", "logType", is_game_specific, reset_gs_values);
+    userName.setTomlValue(data, "General", "userName", is_game_specific, reset_gs_values);
+    chooseHomeTab.setTomlValue(data, "General", "chooseHomeTab", is_game_specific, reset_gs_values);
+    isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific, reset_gs_values);
+    isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific, reset_gs_values);
 
-    cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
-    cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
-    isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
-                                         is_game_specific);
+    cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific, reset_gs_values);
+    cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific,
+                                   reset_gs_values);
+    isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled", is_game_specific,
+                                         reset_gs_values);
     micDevice.setTomlValue(data, "Input", "micDevice", is_game_specific);
     backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
-                                           is_game_specific);
+                                           is_game_specific, reset_gs_values);
 
-    windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
-    windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
-    isNullGpu.setTomlValue(data, "GPU", "nullGpu", is_game_specific);
-    shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific);
-    readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific);
-    readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
-    shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
-    vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    isFullscreen.setTomlValue(data, "GPU", "Fullscreen", is_game_specific);
-    fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific);
-    presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific);
-    isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
-    fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
-    rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
-    rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific);
+    windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific, reset_gs_values);
+    windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific, reset_gs_values);
+    isNullGpu.setTomlValue(data, "GPU", "nullGpu", is_game_specific, reset_gs_values);
+    shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific,
+                                      reset_gs_values);
+    readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific, reset_gs_values);
+    readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific,
+                                             reset_gs_values);
+    shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific, reset_gs_values);
+    vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific, reset_gs_values);
+    isFullscreen.setTomlValue(data, "GPU", "Fullscreen", is_game_specific, reset_gs_values);
+    fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific, reset_gs_values);
+    presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific, reset_gs_values);
+    isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific, reset_gs_values);
+    fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific, reset_gs_values);
+    rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific, reset_gs_values);
+    rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific, reset_gs_values);
 
-    gpuId.setTomlValue(data, "Vulkan", "gpuId", is_game_specific);
-    vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific);
-    vkValidationSync.setTomlValue(data, "Vulkan", "validation_sync", is_game_specific);
-    vkCrashDiagnostic.setTomlValue(data, "Vulkan", "crashDiagnostic", is_game_specific);
-    vkHostMarkers.setTomlValue(data, "Vulkan", "hostMarkers", is_game_specific);
-    vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific);
-    rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
+    gpuId.setTomlValue(data, "Vulkan", "gpuId", is_game_specific, reset_gs_values);
+    vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific, reset_gs_values);
+    vkValidationSync.setTomlValue(data, "Vulkan", "validation_sync", is_game_specific,
+                                  reset_gs_values);
+    vkCrashDiagnostic.setTomlValue(data, "Vulkan", "crashDiagnostic", is_game_specific,
+                                   reset_gs_values);
+    vkHostMarkers.setTomlValue(data, "Vulkan", "hostMarkers", is_game_specific, reset_gs_values);
+    vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific, reset_gs_values);
+    rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific, reset_gs_values);
 
-    isDebugDump.setTomlValue(data, "Debug", "DebugDump", is_game_specific);
-    isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
+    isDebugDump.setTomlValue(data, "Debug", "DebugDump", is_game_specific, reset_gs_values);
+    isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific, reset_gs_values);
     isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
-                                           is_game_specific);
-    logEnabled.setTomlValue(data, "Debug", "logEnable", is_game_specific);
+                                           is_game_specific, reset_gs_values);
+    logEnabled.setTomlValue(data, "Debug", "logEnable", is_game_specific, reset_gs_values);
 
-    m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
+    m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific, reset_gs_values);
 
     // All other entries
     if (!is_game_specific) {
