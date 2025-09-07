@@ -1756,10 +1756,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Grafikgerät</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank-Teiler</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Erweitert</translation>
     </message>
@@ -2014,10 +2010,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Auflösung:\nLegt die Größe des Emulator-Fensters während der Wiedergabe fest, die während der Wiedergabe geändert werden kann.\nDies unterscheidet sich von der tatsächlichen Spielauflösung.</translation>
-    </message>
-    <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Framerate-Teiler:\nMultipliziert die Bildrate, mit der der Emulator aktualisiert wird, mit diesem Wert. Dies kann sich negativ auswirken, wie z.B. beschleunigtes Gameplay oder Funktionsstörungen!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
@@ -2350,6 +2342,18 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     <message>
       <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
       <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation type="unfinished">Vblank Frequency</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation type="unfinished">Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
   </context>
   <context>
