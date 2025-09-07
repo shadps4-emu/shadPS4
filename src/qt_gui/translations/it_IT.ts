@@ -1757,10 +1757,6 @@
       <translation>Scheda Grafica</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Divisore Vblank</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Avanzate</translation>
     </message>
@@ -2015,10 +2011,6 @@
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
       <translation>Larghezza/Altezza:\nImposta la dimensione della finestra dell&apos;emulatore all&apos;avvio, che può essere ridimensionata durante il gioco.\nQuesto è diverso dalla risoluzione in gioco.</translation>
-    </message>
-    <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Divisore Vblank:\nIl frame rate con cui l&apos;emulatore si aggiorna viene moltiplicato per questo numero. Cambiare questo potrebbe avere effetti avversi, come aumentare la velocità del gioco o rompere funzionalità critiche del gioco che non si aspettano questa modifica!</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
@@ -2347,6 +2339,18 @@
     <message>
       <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
       <translation>Abilita Motion Control:\nQuando abilitato utilizzerà il Motion Control del controller se supportato dal gioco.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation type="unfinished">Vblank Frequency</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation type="unfinished">Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
   </context>
   <context>
