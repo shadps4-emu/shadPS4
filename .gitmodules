@@ -117,3 +117,4 @@
 	path = externals/ext-wepoll
 	url = https://github.com/shadps4-emu/ext-wepoll.git
 	shallow = true
+    branch = dist
