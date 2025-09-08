@@ -2349,8 +2349,8 @@
       <translation>Hz</translation>
     </message>
     <message>
-      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank-frekvens:\nDen bildfrekvens som emulatorn uppdateras med multipliceras med detta tal. Att ändra detta kan ha negativa effekter, såsom att öka spelhastigheten eller förstöra viktiga spelfunktioner som inte är anpassade för denna förändring!</translation>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
   </context>
   <context>
