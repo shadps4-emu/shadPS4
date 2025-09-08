@@ -415,6 +415,13 @@ struct PM4CmdEventWrite {
         BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
     };
     u32 address[];
+
+    template <typename T>
+    T Address() const {
+        ASSERT(event_index.Value() >= EventIndex::ZpassDone &&
+               event_index.Value() <= EventIndex::SampleStreamoutStatSx);
+        return std::bit_cast<T>((u64(address[1]) << 32u) | u64(address[0]));
+    }
 };
 
 struct PM4CmdEventWriteEop {
