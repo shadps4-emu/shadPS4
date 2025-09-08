@@ -103,8 +103,8 @@ void setSpecialPadClass(int type);
 int getSpecialPadClass();
 bool getPSNSignedIn();
 void setPSNSignedIn(bool sign, bool game_specific = false);
-bool patchShaders();            // no set
-bool fpsColor();                // no set
+bool patchShaders(); // no set
+bool fpsColor();     // no set
 bool isNeoModeConsole();
 void setNeoMode(bool enable, bool game_specific = false);
 bool isDevKitConsole();
