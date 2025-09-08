@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <vector>
@@ -27,10 +27,14 @@
 #include "background_music_player.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
+#include "log_presets_dialog.h"
 #include "sdl_event_wrapper.h"
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 QStringList languageNames = {"Arabic",
                              "Czech",
@@ -69,6 +73,7 @@ const QVector<int> languageIndexes = {21, 23, 14, 6, 18, 1, 12, 22, 2, 4,  25, 2
 QMap<QString, QString> channelMap;
 QMap<QString, QString> logTypeMap;
 QMap<QString, QString> screenModeMap;
+QMap<QString, QString> presentModeMap;
 QMap<QString, QString> chooseHomeTabMap;
 QMap<QString, QString> micMap;
 
@@ -86,6 +91,9 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
 
+    // Add a small clear "x" button inside the Log Filter input
+    ui->logFilterLineEdit->setClearButtonEnabled(true);
+
     initialHeight = this->height();
     const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
 
@@ -96,10 +104,13 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     screenModeMap = {{tr("Fullscreen (Borderless)"), "Fullscreen (Borderless)"},
                      {tr("Windowed"), "Windowed"},
                      {tr("Fullscreen"), "Fullscreen"}};
+    presentModeMap = {{tr("Mailbox (Vsync)"), "Mailbox"},
+                      {tr("Fifo (Vsync)"), "Fifo"},
+                      {tr("Immediate (No Vsync)"), "Immediate"}};
     chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
                         {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
                         {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
-                        {tr("Debug"), "Debug"}};
+                        {tr("Log"), "Log"},           {tr("Debug"), "Debug"}};
     micMap = {{tr("None"), "None"}, {tr("Default Device"), "Default Device"}};
 
     if (m_physical_devices.empty()) {
@@ -263,7 +274,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                 });
     }
 
-    // Gui TAB
+    // GUI TAB
     {
         connect(ui->backgroundImageOpacitySlider, &QSlider::valueChanged, this,
                 [this](int value) { emit BackgroundOpacityChanged(value); });
@@ -284,7 +295,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // User TAB
+    // USER TAB
     {
         connect(ui->OpenCustomTrophyLocationButton, &QPushButton::clicked, this, []() {
             QString userPath;
@@ -294,7 +305,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         });
     }
 
-    // Input TAB
+    // INPUT TAB
     {
         connect(ui->hideCursorComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
                 [this](s16 index) { OnCursorStateChanged(index); });
@@ -344,6 +355,21 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
             }
         });
 
+        connect(ui->folderButton, &QPushButton::clicked, this, [this]() {
+            const auto dlc_folder_path = Config::getAddonInstallDir();
+            QString initial_path;
+            Common::FS::PathToQString(initial_path, dlc_folder_path);
+
+            QString dlc_folder_path_string =
+                QFileDialog::getExistingDirectory(this, tr("Select the DLC folder"), initial_path);
+
+            auto file_path = Common::FS::PathFromQString(dlc_folder_path_string);
+            if (!file_path.empty()) {
+                Config::setAddonInstallDir(file_path);
+                ui->currentDLCFolder->setText(dlc_folder_path_string);
+            }
+        });
+
         connect(ui->PortableUserButton, &QPushButton::clicked, this, []() {
             QString userDir;
             Common::FS::PathToQString(userDir, std::filesystem::current_path() / "user");
@@ -368,6 +394,40 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                       Common::FS::GetUserPath(Common::FS::PathType::LogDir));
             QDesktopServices::openUrl(QUrl::fromLocalFile(userPath));
         });
+
+        // Log presets popup button
+        connect(ui->logPresetsButton, &QPushButton::clicked, this, [this]() {
+            auto dlg = new LogPresetsDialog(m_gui_settings, this);
+            connect(dlg, &LogPresetsDialog::PresetChosen, this,
+                    [this](const QString& filter) { ui->logFilterLineEdit->setText(filter); });
+            dlg->exec();
+        });
+    }
+
+    // GRAPHICS TAB
+    connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+        QString RCASValue = QString::number(value / 1000.0, 'f', 3);
+        ui->RCASValue->setText(RCASValue);
+    });
+
+    if (presenter) {
+        connect(ui->RCASSlider, &QSlider::valueChanged, this, [this](int value) {
+            presenter->GetFsrSettingsRef().rcas_attenuation = static_cast<float>(value / 1000.0f);
+        });
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
+        connect(ui->FSRCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::stateChanged, this,
+                [this](int state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+#else
+        connect(ui->FSRCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().enable = state; });
+
+        connect(ui->RCASCheckBox, &QCheckBox::checkStateChanged, this,
+                [this](Qt::CheckState state) { presenter->GetFsrSettingsRef().use_rcas = state; });
+#endif
     }
 
     // Descriptions
@@ -377,46 +437,60 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->emulatorLanguageGroupBox->installEventFilter(this);
         ui->showSplashCheckBox->installEventFilter(this);
         ui->discordRPCCheckbox->installEventFilter(this);
-        ui->userName->installEventFilter(this);
-        ui->label_Trophy->installEventFilter(this);
-        ui->trophyKeyLineEdit->installEventFilter(this);
-        ui->logTypeGroupBox->installEventFilter(this);
-        ui->logFilter->installEventFilter(this);
+        ui->volumeSliderElement->installEventFilter(this);
 #ifdef ENABLE_UPDATER
         ui->updaterGroupBox->installEventFilter(this);
 #endif
+
+        // GUI
         ui->GUIBackgroundImageGroupBox->installEventFilter(this);
         ui->GUIMusicGroupBox->installEventFilter(this);
-        ui->disableTrophycheckBox->installEventFilter(this);
         ui->enableCompatibilityCheckBox->installEventFilter(this);
         ui->checkCompatibilityOnStartupCheckBox->installEventFilter(this);
         ui->updateCompatibilityButton->installEventFilter(this);
 
         // User
+        ui->userName->installEventFilter(this);
+        ui->disableTrophycheckBox->installEventFilter(this);
         ui->OpenCustomTrophyLocationButton->installEventFilter(this);
+        ui->label_Trophy->installEventFilter(this);
+        ui->trophyKeyLineEdit->installEventFilter(this);
 
         // Input
         ui->hideCursorGroupBox->installEventFilter(this);
         ui->idleTimeoutGroupBox->installEventFilter(this);
+        ui->backgroundControllerCheckBox->installEventFilter(this);
+        ui->motionControlsCheckBox->installEventFilter(this);
+        ui->micComboBox->installEventFilter(this);
 
         // Graphics
         ui->graphicsAdapterGroupBox->installEventFilter(this);
         ui->windowSizeGroupBox->installEventFilter(this);
+        ui->presentModeGroupBox->installEventFilter(this);
         ui->heightDivider->installEventFilter(this);
-        ui->dumpShadersCheckBox->installEventFilter(this);
         ui->nullGpuCheckBox->installEventFilter(this);
         ui->enableHDRCheckBox->installEventFilter(this);
+        ui->chooseHomeTabGroupBox->installEventFilter(this);
+        ui->gameSizeCheckBox->installEventFilter(this);
 
         // Paths
         ui->gameFoldersGroupBox->installEventFilter(this);
         ui->gameFoldersListWidget->installEventFilter(this);
         ui->addFolderButton->installEventFilter(this);
         ui->removeFolderButton->installEventFilter(this);
-
         ui->saveDataGroupBox->installEventFilter(this);
         ui->currentSaveDataPath->installEventFilter(this);
+        ui->currentDLCFolder->installEventFilter(this);
         ui->browseButton->installEventFilter(this);
+        ui->folderButton->installEventFilter(this);
         ui->PortableUserFolderGroupBox->installEventFilter(this);
+
+        // Log
+        ui->logTypeGroupBox->installEventFilter(this);
+        ui->logFilter->installEventFilter(this);
+        ui->enableLoggingCheckBox->installEventFilter(this);
+        ui->separateLogFilesCheckbox->installEventFilter(this);
+        ui->OpenLogLocationButton->installEventFilter(this);
 
         // Debug
         ui->debugDump->installEventFilter(this);
@@ -430,6 +504,7 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->copyGPUBuffersCheckBox->installEventFilter(this);
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
+        ui->dumpShadersCheckBox->installEventFilter(this);
     }
 
     SdlEventWrapper::Wrapper::wrapperActive = true;
@@ -494,6 +569,11 @@ void SettingsDialog::LoadValuesFromConfig() {
     Common::FS::PathToQString(save_data_path_string, save_data_path);
     ui->currentSaveDataPath->setText(save_data_path_string);
 
+    const auto dlc_folder_path = Config::getAddonInstallDir();
+    QString dlc_folder_path_string;
+    Common::FS::PathToQString(dlc_folder_path_string, dlc_folder_path);
+    ui->currentDLCFolder->setText(dlc_folder_path_string);
+
     ui->consoleLanguageComboBox->setCurrentIndex(
         std::distance(languageIndexes.begin(),
                       std::find(languageIndexes.begin(), languageIndexes.end(),
@@ -517,10 +597,15 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->graphicsAdapterBox->setCurrentIndex(toml::find_or<int>(data, "Vulkan", "gpuId", -1) + 1);
     ui->widthSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenWidth", 1280));
     ui->heightSpinBox->setValue(toml::find_or<int>(data, "GPU", "screenHeight", 720));
-    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankDivider", 1));
+    ui->vblankSpinBox->setValue(toml::find_or<int>(data, "GPU", "vblankFrequency", 60));
     ui->dumpShadersCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "dumpShaders", false));
     ui->nullGpuCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "nullGpu", false));
     ui->enableHDRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "allowHDR", false));
+    ui->FSRCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "fsrEnabled", true));
+    ui->RCASCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "rcasEnabled", true));
+    ui->RCASSlider->setValue(toml::find_or<int>(data, "GPU", "rcasAttenuation", 500));
+    ui->RCASValue->setText(QString::number(ui->RCASSlider->value() / 1000.0, 'f', 3));
+
     ui->playBGMCheckBox->setChecked(m_gui_settings->GetValue(gui::gl_playBackgroundMusic).toBool());
     ui->disableTrophycheckBox->setChecked(
         toml::find_or<bool>(data, "General", "isTrophyPopupDisabled", false));
@@ -541,6 +626,9 @@ void SettingsDialog::LoadValuesFromConfig() {
     QString translatedText_FullscreenMode =
         screenModeMap.key(QString::fromStdString(Config::getFullscreenMode()));
     ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
+    QString translatedText_PresentMode =
+        presentModeMap.key(QString::fromStdString(Config::getPresentMode()));
+    ui->presentModeComboBox->setCurrentText(translatedText_PresentMode);
     ui->gameSizeCheckBox->setChecked(toml::find_or<bool>(data, "GUI", "loadGameSizeEnabled", true));
     ui->showSplashCheckBox->setChecked(toml::find_or<bool>(data, "General", "showSplash", false));
     QString translatedText_logType = logTypeMap.key(QString::fromStdString(Config::getLogType()));
@@ -571,6 +659,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
+    ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
     ui->readbackLinearImagesCheckBox->setChecked(
         toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->enableCompatibilityCheckBox->setChecked(
@@ -602,7 +691,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->chooseHomeTabComboBox->setCurrentText(translatedText);
 
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
-                            tr("Input"),   tr("Paths"), tr("Debug")};
+                            tr("Input"),   tr("Paths"), tr("Log"),      tr("Debug")};
     int indexTab = tabNames.indexOf(translatedText);
     if (indexTab == -1)
         indexTab = 0;
@@ -610,6 +699,8 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     ui->motionControlsCheckBox->setChecked(
         toml::find_or<bool>(data, "Input", "isMotionControlsEnabled", true));
+    ui->backgroundControllerCheckBox->setChecked(
+        toml::find_or<bool>(data, "Input", "backgroundControllerInput", false));
 
     ui->removeFolderButton->setEnabled(!ui->gameFoldersListWidget->selectedItems().isEmpty());
     SyncRealTimeWidgetstoConfig();
@@ -741,15 +832,22 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Hide Cursor:\\nChoose when the cursor will disappear:\\nNever: You will always see the mouse.\\nidle: Set a time for it to disappear after being idle.\\nAlways: you will never see the mouse.");
     } else if (elementName == "idleTimeoutGroupBox") {
         text = tr("Hide Idle Cursor Timeout:\\nThe duration (seconds) after which the cursor that has been idle hides itself.");
+    } else if (elementName == "backgroundControllerCheckBox") {
+        text = tr("Enable Controller Background Input:\\nAllow shadPS4 to detect controller inputs when the game window is not in focus.");
     }
 
     // Graphics
     if (elementName == "graphicsAdapterGroupBox") {
         text = tr("Graphics Device:\\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\\nor select \"Auto Select\" to automatically determine it.");
+    } else if (elementName == "presentModeGroupBox") {
+        text = tr("Present Mode:\\nConfigures how video output will be presented to your screen.\\n\\n"
+                  "Mailbox: Frames synchronize with your screen's refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\\n"
+                  "Fifo: Frames synchronize with your screen's refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\\n"
+                  "Immediate: Frames immediately present to your screen when ready. May result in tearing.");
     } else if (elementName == "windowSizeGroupBox") {
         text = tr("Width/Height:\\nSets the size of the emulator window at launch, which can be resized during gameplay.\\nThis is different from the in-game resolution.");
     } else if (elementName == "heightDivider") {
-        text = tr("Vblank Divider:\\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
+        text = tr("Vblank Frequency:\\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!");
     } else if (elementName == "dumpShadersCheckBox") {
         text = tr("Enable Shaders Dumping:\\nFor the sake of technical debugging, saves the games shaders to a folder as they render.");
     } else if (elementName == "nullGpuCheckBox") {
@@ -765,6 +863,13 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
         text = tr("Remove:\\nRemove a folder from the list.");
     } else if (elementName == "PortableUserFolderGroupBox") {
         text = tr("Portable user folder:\\nStores shadPS4 settings and data that will be applied only to the shadPS4 build located in the current folder. Restart the app after creating the portable user folder to begin using it.");
+    }
+
+    // DLC Folder
+    if (elementName == "dlcFolderGroupBox" || elementName == "currentDLCFolder") {
+        text = tr("DLC Path:\\nThe folder where game DLC loaded from.");
+    } else if (elementName == "folderButton") {
+        text = tr("Browse:\\nBrowse for a folder to set as the DLC path.");
     }
 
     // Save Data
@@ -784,7 +889,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "rdocCheckBox") {
         text = tr("Enable RenderDoc Debugging:\\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.");
     } else if (elementName == "crashDiagnosticsCheckBox") {
-        text = tr("Crash Diagnostics:\\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\\nDoes not work on Intel GPUs.\\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.");
+        text = tr("Crash Diagnostics:\\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\\nUseful for debugging 'Device lost' errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.");
     } else if (elementName == "guestMarkersCheckBox") {
         text = tr("Guest Debug Markers:\\nInserts any debug markers the game itself has added to the command buffer.\\nIf you have this enabled, you should enable Crash Diagnostics.\\nUseful for programs like RenderDoc.");
     } else if (elementName == "hostMarkersCheckBox") {
@@ -798,7 +903,21 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "readbackLinearImagesCheckBox") {
         text = tr("Enable Readback Linear Images:\\nEnables async downloading of GPU modified linear images.\\nMight fix issues in some games.");
     } else if (elementName == "separateLogFilesCheckbox") {
-        text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");}
+        text = tr("Separate Log Files:\\nWrites a separate logfile for each game.");
+    } else if (elementName == "enableLoggingCheckBox") {
+        text = tr("Enable Logging:\\nEnables logging.\\nDo not change this if you do not know what you're doing!\\nWhen asking for help, make sure this setting is ENABLED.");
+    } else if (elementName == "OpenLogLocationButton") {
+        text = tr("Open Log Location:\\nOpen the folder where the log file is saved.");
+    } else if (elementName == "micComboBox") {
+        text = tr("Microphone:\\nNone: Does not use the microphone.\\nDefault Device: Will use the default device defined in the system.\\nOr manually choose the microphone to be used from the list.");
+    } else if (elementName == "volumeSliderElement") {
+        text = tr("Volume:\\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.");
+    } else if (elementName == "chooseHomeTabGroupBox") {
+        text = tr("Default tab when opening settings:\\nChoose which tab will open, the default is General.");
+    } else if (elementName == "gameSizeCheckBox") {
+        text = tr("Show Game Size In List:\\nThere is the size of the game in the list.");
+    } else if (elementName == "motionControlsCheckBox") {
+        text = tr("Enable Motion Controls:\\nWhen enabled it will use the controller's motion control if supported."); }
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
@@ -825,7 +944,10 @@ void SettingsDialog::UpdateSettings() {
                             "Windowed");
     Config::setFullscreenMode(
         screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString());
+    Config::setPresentMode(
+        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString());
     Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked());
+    Config::setBackgroundControllerInput(ui->backgroundControllerCheckBox->isChecked());
     Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked());
     Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value());
 
@@ -839,6 +961,7 @@ void SettingsDialog::UpdateSettings() {
         Config::setSideTrophy("bottom");
     }
     m_gui_settings->SetValue(gui::gl_playBackgroundMusic, ui->playBGMCheckBox->isChecked());
+    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked());
     Config::setAllowHDR(ui->enableHDRCheckBox->isChecked());
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString());
     Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString());
@@ -854,9 +977,12 @@ void SettingsDialog::UpdateSettings() {
     Config::setEnableDiscordRPC(ui->discordRPCCheckbox->isChecked());
     Config::setWindowWidth(ui->widthSpinBox->value());
     Config::setWindowHeight(ui->heightSpinBox->value());
-    Config::setVblankDiv(ui->vblankSpinBox->value());
+    Config::setVblankFreq(ui->vblankSpinBox->value());
     Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked());
     Config::setNullGpu(ui->nullGpuCheckBox->isChecked());
+    Config::setFsrEnabled(ui->FSRCheckBox->isChecked());
+    Config::setRcasEnabled(ui->RCASCheckBox->isChecked());
+    Config::setRcasAttenuation(ui->RCASSlider->value());
     Config::setLoadGameSizeEnabled(ui->gameSizeCheckBox->isChecked());
     Config::setShowSplash(ui->showSplashCheckBox->isChecked());
     Config::setDebugDump(ui->debugDump->isChecked());
@@ -953,6 +1079,13 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         }
 
         Config::setAllGameInstallDirs(settings_install_dirs_config);
+    }
+
+    if (presenter) {
+        presenter->GetFsrSettingsRef().enable = Config::getFsrEnabled();
+        presenter->GetFsrSettingsRef().use_rcas = Config::getRcasEnabled();
+        presenter->GetFsrSettingsRef().rcas_attenuation =
+            static_cast<float>(Config::getRcasAttenuation() / 1000.f);
     }
 }
 void SettingsDialog::setDefaultValues() {

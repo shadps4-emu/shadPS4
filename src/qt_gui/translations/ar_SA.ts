@@ -15,7 +15,7 @@
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
-      <translation>لا تستخدم هذا البرنامج لتشغيل الألعاب بطريقة غير قانونية.</translation>
+      <translation>لا يجب استخدام هذا المحاكي لتشغيل ألعاب لم يتم الحصول عليها بطريقة قانونية.</translation>
     </message>
   </context>
   <context>
@@ -26,7 +26,7 @@
     </message>
     <message>
       <source>Cheats/Patches are experimental.\nUse with caution.\n\nDownload cheats individually by selecting the repository and clicking the download button.\nIn the Patches tab, you can download all patches at once, choose which ones you want to use, and save your selection.\n\nSince we do not develop the Cheats/Patches,\nplease report issues to the cheat author.\n\nCreated a new cheat? Visit:\n</source>
-      <translation>الشفرات والإصلاحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الشفرات بشكل فردي عن طريق اختيار المستودع والضغط على تنزيل.\nفي علامة تبويب الإصلاحات، يمكنك تنزيل جميع الإصلاحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الشفرات والإصلاحات ،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الشفرات.\n\nهل قمت بإنشاء شفرة جديد؟ قم بزيارة:\n</translation>
+      <translation>الشفرات والإصلاحات هي ميزات تجريبية.\nاستخدمها بحذر.\n\nقم بتنزيل الشفرات بشكل فردي عن طريق اختيار المستودع والضغط على تنزيل.\nفي علامة تبويب الإصلاحات، يمكنك تنزيل جميع الإصلاحات دفعة واحدة، واختيار ما تريد استخدامه، وحفظ اختياراتك.\n\nنظرًا لأننا لا نقوم بتطوير الشفرات والإصلاحات ،\nيرجى الإبلاغ عن أي مشاكل إلى مؤلف الشفرات.\n\nهل قمت بإنشاء شفرة جديدة؟ قم بزيارة:\n</translation>
     </message>
     <message>
       <source>No Image Available</source>
@@ -46,7 +46,7 @@
     </message>
     <message>
       <source>Select Cheat File:</source>
-      <translation>حدد مِلَفّ الشفرات:</translation>
+      <translation>حدد ملَفّ الشفرات:</translation>
     </message>
     <message>
       <source>Repository:</source>
@@ -62,7 +62,7 @@
     </message>
     <message>
       <source>No files selected.</source>
-      <translation>لم يتم اختيار أي ملفات.</translation>
+      <translation>لم يتم تحديد أي ملفات.</translation>
     </message>
     <message>
       <source>You can delete the cheats you don&apos;t want after downloading them.</source>
@@ -138,7 +138,7 @@
     </message>
     <message>
       <source>File Exists</source>
-      <translation>المِلَف موجود مسبقًا</translation>
+      <translation>الملف موجود مسبقًا</translation>
     </message>
     <message>
       <source>File already exists. Do you want to replace it?</source>
@@ -527,71 +527,127 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>بدون تعيين</translation>
     </message>
     <message>
       <source>L1</source>
-      <translation type="unfinished">L1</translation>
+      <translation>L1</translation>
     </message>
     <message>
       <source>R1</source>
-      <translation type="unfinished">R1</translation>
+      <translation>R1</translation>
     </message>
     <message>
       <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>L2</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
+      <translation>الخيارات</translation>
     </message>
     <message>
       <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>لوحة اللمس - يسار</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>لوحة اللمس - الوَسَط</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>لوحة اللمس - الأيمن</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>مثلث</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>مربع</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>دائرة</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>اكس</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>لا يمكن استخدام نفس الزر لأكثر من وظيفة تم تكرار التعيين في الأزرار التالية:
 
 %1</translation>
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>اضغط زر</translation>
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation>حرّك عصا التحكّم</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 + L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>يد التحكم النشطة</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>معرّف يد التحكم</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>يد التحكم الافتراضية</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>لم يتم اختيار افتراضي</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>غير متاح</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>تعيين يد التحكم النشطة كافتراضية</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>إزالة يد التحكم الافتراضية</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 + R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>المعرّف:</translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>تم اختيار يد التحكم الافتراضية</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>تم تعيين يد التحكم النشطة كافتراضية</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>تم إزالة يد التحكم الافتراضية</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>تمت إزالة إعداد اليد الافتراضية</translation>
     </message>
   </context>
   <context>
@@ -778,7 +834,7 @@
     </message>
     <message>
       <source>Favorite</source>
-      <translation type="unfinished">Favorite</translation>
+      <translation>المفضلة</translation>
     </message>
   </context>
   <context>
@@ -856,7 +912,7 @@
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>نسخ حجم</translation>
+      <translation>حجم النسخة</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -984,11 +1040,11 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>إزالة من المفضلة</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
-      <translation type="unfinished">Add to Favorites</translation>
+      <translation>إضافة إلى المفضلة</translation>
     </message>
   </context>
   <context>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>تعيين الأزرار</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation type="unfinished">Quit Emulation</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
     </message>
   </context>
   <context>
@@ -1220,21 +1363,21 @@
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>لا يمكن استخدام نفس الزر لأكثر من وظيفة. تم تكرار التعيين في الأزرار التالية:
 
 %1</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>لوحة اللمس - يسار</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>لوحة اللمس - الوَسَط</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>لوحة اللمس - الأيمن</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1638,10 @@
       <source>Show Labels Under Icons</source>
       <translation>إظهار التسميات تحت الأيقونات</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1588,15 +1735,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>الميكروفون</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>لا شيء</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>الجهاز الافتراضي</translation>
     </message>
     <message>
       <source>s</source>
@@ -1664,7 +1811,7 @@
     </message>
     <message>
       <source>Enable Debug Dumping</source>
-      <translation>تمكين تصدير بيانات التصحيح</translation>
+      <translation>تمكين تصدير بيانات التصحيح </translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers</source>
@@ -1672,7 +1819,7 @@
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation</source>
-      <translation>تمكين التحقق من تزامن Vulkan</translation>
+      <translation>تمكين التحقق من تزامن فولكن</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging</source>
@@ -1684,7 +1831,7 @@
     </message>
     <message>
       <source>Collect Shaders</source>
-      <translation>جمع الشيدرات</translation>
+      <translation>جمع الشيدرات </translation>
     </message>
     <message>
       <source>Copy GPU Buffers</source>
@@ -1700,11 +1847,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>تمكين إعادة القراءة</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>تمكين استرجاع الصور الخطية</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1893,7 +2040,7 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>تمكين GPU فارغ:\nلأغراض تصحيح الأخطاء التقنية، يتم تعطيل عرض اللعبة كما لو لم يكن هناك كرت شاشة.</translation>
+      <translation>تمكين GPU فارغ:\nيُستخدم لأغراض تصحيح الأخطاء التقنية، ويعطّل عرض اللعبة كما لو لم تكن هناك بطاقة رسومية.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -1901,7 +2048,7 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
-      <translation>مجلدات اللعبة:\nقائمة المجلدات التي يتم فحصها للبحث عن الألعاب المثبتة.</translation>
+      <translation>مجلدات اللعبة:\nالمجلدات التي يتم فحصها تلقائيًا للعثور على الألعاب المثبّتة</translation>
     </message>
     <message>
       <source>Add:\nAdd a folder to the list.</source>
@@ -1932,16 +2079,12 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
       <translation>تجميع برامج التظليل:\n يجب أن تقوم بتشغيل هذا لتعديل برامج التظليل باستخدام قائمة تصحيح الأخطاء (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>تشخيص الأعطال:\nيقوم بإنشاء ملف بصيغة .yaml يحتوي على معلومات عن حالة Vulkan في وقت حدوث العطل.\nمفيد لتصحيح أخطاء &apos;فصل الجهاز&apos;. إذا قمت بتشغيل هذا من الأفضل أن تقوم بتشغيل "استضافة علامات تصحيح الأخطاء" و "ضيف علامات تصحيح الأخطاء".\nلا يعمل على وحدة معالجة رسوم إنتل.\nتحتاج لتشغيل التحقق من طبقات Vulkan و مجموعة تطوير البرامج الخاصة بـVulkan من أجل أن يعمل هذا.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>تمكين إعادة القراءة:\nفعّل استرجاع وكتابة بيانات الذاكرة الرسومية (GPU).\nمطلوب لتشغيل بعض الألعاب بشكل صحيح.\nقد يسبب مشكلة في الأداء أو الاستقرار.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>تمكين استرجاع الصور الخطية:\nيتيح تحميل الصور الخطية المعدّلة من GPU بشكل غير متزامن.\nقد يساعد في حل المشاكل الرسومية في بعض الألعاب.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2109,22 +2252,99 @@ Nightly: نُسخ تحتوي على أحدث الميزات، لكنها أقل 
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>الميزات التجريبية</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>⚠️ تحذير: هذه الميزات تجريبية ويُفضّل عدم تفعيلها إلا إذا طُلب منك، أو إذا كانت مطلوبة لتشغيل لُعْبَة معينة.
+إذا كان لديك أي استفسار، يُرجى السؤال في مجتمع Discord الخاص بـمحاكي الظل PS4.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation type="unfinished">Enable Background Controller Input</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation type="unfinished">Enable Logging</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation type="unfinished">Present Mode</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation type="unfinished">Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation type="unfinished">Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation type="unfinished">Immediate (No Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation type="unfinished">DLC Folder</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation type="unfinished">Select the DLC folder</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation type="unfinished">FSR Settings</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation type="unfinished">Enable FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation type="unfinished">RCAS Attenuation:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation type="unfinished">0.250</translation>
     </message>
   </context>
   <context>
     <name>TrophyViewer</name>
     <message>
       <source>Trophy Viewer</source>
-      <translation>عارض التروفي</translation>
+      <translation>عارض الكؤوس</translation>
     </message>
     <message>
       <source>Select Game:</source>

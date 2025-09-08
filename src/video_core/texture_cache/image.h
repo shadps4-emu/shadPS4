@@ -103,12 +103,17 @@ struct Image {
                  std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
-    void CopyImage(const Image& src_image);
+    void CopyImage(Image& src_image);
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
     bool IsTracked() {
         return track_addr != 0 && track_addr_end != 0;
+    }
+
+    bool SafeToDownload() const {
+        return True(flags & ImageFlagBits::GpuModified) &&
+               False(flags & (ImageFlagBits::GpuDirty | ImageFlagBits::CpuDirty));
     }
 
     const Vulkan::Instance* instance;
@@ -122,6 +127,7 @@ struct Image {
     std::vector<ImageViewInfo> image_view_infos;
     std::vector<ImageViewId> image_view_ids;
     ImageId depth_id{};
+    u64 lru_id{};
 
     // Resource state tracking
     struct {

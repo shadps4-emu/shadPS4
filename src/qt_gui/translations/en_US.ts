@@ -454,14 +454,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>L3</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R3</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Face Buttons</source>
         <translation type="unfinished"></translation>
     </message>
@@ -479,18 +471,6 @@
     </message>
     <message>
         <source>Color Adjustment</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>G:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>B:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -530,23 +510,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>L1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>L2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Options</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -589,6 +553,74 @@
     </message>
     <message>
         <source>Move analog stick</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>L1 and L2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Active Gamepad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Gamepad ID</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default Gamepad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No default selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>n/a</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set Active Gamepad as Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove Default Gamepad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R1 and R2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>ID: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default Controller Selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Active controller set as default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default Controller Removed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default controller setting removed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RED</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>GREEN</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>BLUE</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1013,6 +1045,91 @@
     </message>
 </context>
 <context>
+    <name>Hotkeys</name>
+    <message>
+        <source>Customize Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Controller Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show FPS Counter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>unmapped</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Quit Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reload Button Mappings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Fullscreen</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Pause</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Keyboard Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Renderdoc Capture (for debugging only)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Mouse to Joystick Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Toggle Mouse to Gyro Emulation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+        <source>Restore Defaults</source>
+        <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+        <source>Unable to Save</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Waiting for inputs</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>KBMSettings</name>
     <message>
         <source>Configure Controls</source>
@@ -1067,14 +1184,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>L1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>L2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Text Editor</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1083,27 +1192,11 @@
         <translation type="unfinished">Help</translation>
     </message>
     <message>
-        <source>R1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>L3</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Mouse to Joystick</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>*press F7 ingame to activate</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>R3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1231,6 +1324,41 @@
     <message>
         <source>Touchpad Right</source>
         <translation type="unfinished">Touchpad Right</translation>
+    </message>
+</context>
+<context>
+    <name>LogPresetsDialog</name>
+    <message>
+        <source>Log Filter Presets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Comment</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Load</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation type="unfinished">Close</translation>
+    </message>
+    <message>
+        <source>Add a new preset after the selected row</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove selected presets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Load the selected preset</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1491,6 +1619,10 @@
         <source>Show Labels Under Icons</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Customize Hotkeys</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>
@@ -1617,10 +1749,6 @@
     <message>
         <source>Graphics Device</source>
         <translation>Graphics Device</translation>
-    </message>
-    <message>
-        <source>Vblank Divider</source>
-        <translation>Vblank Divider</translation>
     </message>
     <message>
         <source>Advanced</source>
@@ -1879,10 +2007,6 @@
         <translation>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</translation>
     </message>
     <message>
-        <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-        <translation>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
-    </message>
-    <message>
         <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
         <translation>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</translation>
     </message>
@@ -1925,10 +2049,6 @@
     <message>
         <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
         <translation>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
-    </message>
-    <message>
-        <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-        <translation>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
     </message>
     <message>
         <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
@@ -2103,15 +2223,127 @@
         <translation type="unfinished"> * Unsupported Vulkan Version</translation>
     </message>
     <message>
-        <source>100%</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Experimental Features</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Background Controller Input</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Logging</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Present Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mailbox (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fifo (Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Immediate (No Vsync)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select the DLC folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>FSR Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable FSR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable RCAS (sharpening)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RCAS Attenuation:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Load Presets...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Vblank Frequency</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hz</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

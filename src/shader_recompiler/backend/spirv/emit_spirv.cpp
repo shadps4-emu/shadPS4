@@ -309,6 +309,17 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
     }
+    if (stage == LogicalStage::Vertex || stage == LogicalStage::TessellationControl ||
+        stage == LogicalStage::TessellationEval) {
+        if (info.has_layer_output) {
+            ctx.AddCapability(spv::Capability::ShaderLayer);
+        }
+        if (info.has_viewport_index_output) {
+            ctx.AddCapability(spv::Capability::ShaderViewportIndex);
+        }
+    } else if (stage == LogicalStage::Geometry && info.has_viewport_index_output) {
+        ctx.AddCapability(spv::Capability::MultiViewport);
+    }
     if (info.uses_dma) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");

@@ -82,7 +82,7 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     ++vma;
 
     // Keep adding to the size while there is contigious virtual address space.
-    while (!vma->second.IsFree() && clamped_size < size) {
+    while (vma->second.IsMapped() && clamped_size < size) {
         clamped_size += vma->second.size;
         ++vma;
     }
@@ -573,6 +573,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
 s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
     u64 unmapped_bytes = 0;
+    virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
+    size = Common::AlignUp(size, 16_KB);
     do {
         auto it = FindVMA(virtual_addr + unmapped_bytes);
         auto& vma_base = it->second;

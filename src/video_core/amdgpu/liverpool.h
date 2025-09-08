@@ -22,7 +22,7 @@
 #include "common/unique_function.h"
 #include "shader_recompiler/params.h"
 #include "video_core/amdgpu/pixel_format.h"
-#include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/tiling.h"
 #include "video_core/amdgpu/types.h"
 
 namespace Vulkan {
@@ -118,6 +118,7 @@ struct Liverpool {
         u32 address_lo;
         BitField<0, 8, u32> address_hi;
         union {
+            // SPI_SHADER_PGM_RSRC1_XX
             BitField<0, 6, u64> num_vgprs;
             BitField<6, 4, u64> num_sgprs;
             BitField<10, 2, u64> priority;
@@ -127,7 +128,12 @@ struct Liverpool {
             BitField<18, 2, FpDenormMode> fp_denorm_mode64;
             BitField<12, 8, u64> float_mode;
             BitField<24, 2, u64> vgpr_comp_cnt; // SPI provided per-thread inputs
+            // SPI_SHADER_PGM_RSRC2_XX
+            BitField<32, 1, u64> scratch_en;
             BitField<33, 5, u64> num_user_regs;
+            union {
+                BitField<39, 1, u64> oc_lds_en;
+            } rsrc2_hs;
         } settings;
         UserData user_data;
 
@@ -426,7 +432,7 @@ struct Liverpool {
             BitField<0, 2, ZFormat> format;
             BitField<2, 2, u32> num_samples;
             BitField<13, 3, u32> tile_split;
-            BitField<20, 3, u32> tile_mode_index;
+            BitField<20, 3, TileMode> tile_mode_index;
             BitField<23, 4, u32> decompress_on_n_zplanes;
             BitField<27, 1, u32> allow_expclear;
             BitField<28, 1, u32> read_size;
@@ -501,6 +507,14 @@ struct Liverpool {
             ASSERT(z_info.format != ZFormat::Invalid);
             const auto bpe = NumBits() >> 3; // in bytes
             return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
+        }
+
+        TileMode GetTileMode() const {
+            return z_info.tile_mode_index.Value();
+        }
+
+        bool IsTiled() const {
+            return GetTileMode() != TileMode::DisplayLinearAligned;
         }
     };
 
@@ -786,6 +800,7 @@ struct Liverpool {
             ReverseSubtract = 4,
         };
 
+        u32 raw;
         BitField<0, 5, BlendFactor> color_src_factor;
         BitField<5, 3, BlendFunc> color_func;
         BitField<8, 5, BlendFactor> color_dst_factor;
@@ -795,6 +810,10 @@ struct Liverpool {
         BitField<29, 1, u32> separate_alpha_blend;
         BitField<30, 1, u32> enable;
         BitField<31, 1, u32> disable_rop3;
+
+        bool operator==(const BlendControl& other) const {
+            return raw == other.raw;
+        }
     };
 
     union ColorControl {
@@ -888,7 +907,7 @@ struct Liverpool {
             u32 u32all;
         } info;
         union Color0Attrib {
-            BitField<0, 5, TilingMode> tile_mode_index;
+            BitField<0, 5, TileMode> tile_mode_index;
             BitField<5, 5, u32> fmask_tile_mode_index;
             BitField<10, 2, u32> fmask_bank_height;
             BitField<12, 3, u32> num_samples_log2;
@@ -911,7 +930,7 @@ struct Liverpool {
         INSERT_PADDING_WORDS(2);
 
         operator bool() const {
-            return info.format != DataFormat::FormatInvalid;
+            return base_address && info.format != DataFormat::FormatInvalid;
         }
 
         u32 Pitch() const {
@@ -949,13 +968,13 @@ struct Liverpool {
             return slice_size;
         }
 
-        TilingMode GetTilingMode() const {
-            return info.linear_general ? TilingMode::Display_Linear
+        TileMode GetTileMode() const {
+            return info.linear_general ? TileMode::DisplayLinearAligned
                                        : attrib.tile_mode_index.Value();
         }
 
         bool IsTiled() const {
-            return GetTilingMode() != TilingMode::Display_Linear;
+            return GetTileMode() != TileMode::DisplayLinearAligned;
         }
 
         [[nodiscard]] DataFormat GetDataFmt() const {
@@ -1647,6 +1666,8 @@ private:
     u32 num_mapped_queues{1u}; // GFX is always available
 
     VAddr indirect_args_addr{};
+    u32 num_counter_pairs{};
+    u64 pixel_counter{};
 
     struct ConstantEngine {
         void Reset() {

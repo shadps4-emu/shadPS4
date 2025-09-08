@@ -418,13 +418,14 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
+    int ret = 0;
     for (u32 i = 0; i < num; i++) {
         const auto [handle, ptr] = param[i];
-        if (const auto ret = sceAudioOutOutput(handle, ptr); ret != ORBIS_OK) {
+        if (ret = sceAudioOutOutput(handle, ptr); ret < 0) {
             return ret;
         }
     }
-    return ORBIS_OK;
+    return ret;
 }
 
 int PS4_SYSV_ABI sceAudioOutPtClose() {

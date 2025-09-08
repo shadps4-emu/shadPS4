@@ -25,6 +25,14 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
     while (!code_slice.atEnd()) {
         auto inst = decoder.decodeInstruction(code_slice);
         switch (inst.opcode) {
+        case Gcn::Opcode::S_LSHL_B32: {
+            ASSERT(inst.src[0].field == Gcn::OperandField::SignedConstIntPos &&
+                   inst.src[1].field == Gcn::OperandField::SignedConstIntPos);
+            sources[inst.dst[0].code] =
+                (inst.src[0].code - Gcn::OperandFieldRange::SignedConstIntPosMin + 1)
+                << (inst.src[1].code - Gcn::OperandFieldRange::SignedConstIntPosMin + 1);
+            break;
+        }
         case Gcn::Opcode::S_MOVK_I32: {
             sources[inst.dst[0].code] = inst.control.sopk.simm;
             break;

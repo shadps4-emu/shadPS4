@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 
+#include "core/libraries/videoout/buffer.h"
 #include "imgui/imgui_config.h"
 #include "imgui/imgui_texture.h"
 #include "video_core/amdgpu/liverpool.h"

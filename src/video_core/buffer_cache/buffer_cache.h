@@ -5,7 +5,7 @@
 
 #include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include "common/div_ceil.h"
+#include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -43,6 +43,11 @@ public:
 
     static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(vk::DeviceAddress);
     static constexpr u64 FAULT_BUFFER_SIZE = CACHING_NUMPAGES / 8; // Bit per page
+
+    // Default values for garbage collection
+    static constexpr s64 DEFAULT_TRIGGER_GC_MEMORY = 1_GB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 2_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
     struct PageData {
         BufferId buffer_id{};
@@ -97,15 +102,14 @@ public:
 
     /// Retrieves a utility buffer optimized for specified memory usage.
     StreamBuffer& GetUtilityBuffer(MemoryUsage usage) noexcept {
-        switch (usage) {
-        case MemoryUsage::Stream:
+        if (usage == MemoryUsage::Stream) {
             return stream_buffer;
-        case MemoryUsage::Download:
+        } else if (usage == MemoryUsage::Download) {
             return download_buffer;
-        case MemoryUsage::Upload:
-            return staging_buffer;
-        case MemoryUsage::DeviceLocal:
+        } else if (usage == MemoryUsage::DeviceLocal) {
             return device_buffer;
+        } else {
+            return staging_buffer;
         }
     }
 
@@ -162,6 +166,9 @@ public:
     /// Record memory barrier. Used for buffers when accessed via BDA.
     void MemoryBarrier();
 
+    /// Runs the garbage collector.
+    void RunGarbageCollector();
+
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
@@ -176,6 +183,7 @@ private:
         return !buffer_id || slot_buffers[buffer_id].is_deleted;
     }
 
+    template <bool async>
     void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
@@ -191,7 +199,7 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
+    bool SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                            bool is_texel_buffer);
 
     vk::Buffer UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
@@ -202,6 +210,10 @@ private:
     void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
 
     void WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
+
+    void FillBuffer(Buffer& buffer, VAddr address, u32 num_bytes, u32 value);
+
+    void TouchBuffer(const Buffer& buffer);
 
     void DeleteBuffer(BufferId buffer_id);
 
@@ -220,6 +232,11 @@ private:
     Buffer fault_buffer;
     std::shared_mutex slot_buffers_mutex;
     Common::SlotVector<Buffer> slot_buffers;
+    u64 total_used_memory = 0;
+    u64 trigger_gc_memory = 0;
+    u64 critical_gc_memory = 0;
+    u64 gc_tick = 0;
+    Common::LeastRecentlyUsedCache<BufferId, u64> lru_cache;
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;

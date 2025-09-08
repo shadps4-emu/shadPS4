@@ -20,7 +20,10 @@ class SymbolsResolver;
 
 namespace Libraries::Net {
 
+static int ConvertFamilies(int family);
+
 enum OrbisNetFamily : u32 {
+    ORBIS_NET_AF_UNIX = 1,
     ORBIS_NET_AF_INET = 2,
     ORBIS_NET_AF_INET6 = 28,
 };
@@ -38,6 +41,7 @@ enum OrbisNetProtocol : u32 {
     ORBIS_NET_IPPROTO_IGMP = 2,
     ORBIS_NET_IPPROTO_TCP = 6,
     ORBIS_NET_IPPROTO_UDP = 17,
+    ORBIS_NET_IPPROTO_IPV6 = 41,
     ORBIS_NET_SOL_SOCKET = 0xFFFF
 };
 
@@ -121,6 +125,12 @@ using OrbisNetInAddr_t = u32;
 
 struct OrbisNetInAddr {
     OrbisNetInAddr_t inaddr_addr;
+};
+
+struct OrbisNetSockaddrUn {
+    u8 sun_len;
+    u8 sun_family; // AF_UNIX
+    char sun_path[104];
 };
 
 struct OrbisNetIovec {

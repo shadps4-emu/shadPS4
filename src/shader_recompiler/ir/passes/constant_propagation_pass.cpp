@@ -204,6 +204,18 @@ void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     }
 }
 
+void FoldDiscardCond(IR::Inst& inst) {
+    const IR::U1 cond{inst.Arg(0)};
+    if (!cond.IsImmediate()) {
+        return;
+    }
+    if (cond.U1()) {
+        inst.ReplaceOpcode(IR::Opcode::Discard);
+    } else {
+        inst.Invalidate();
+    }
+}
+
 template <typename T>
 void FoldAdd(IR::Block& block, IR::Inst& inst) {
     if (!FoldCommutative<T>(inst, [](T a, T b) { return a + b; })) {
@@ -444,6 +456,24 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::BitwiseXor32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a ^ b; });
         return;
+    case IR::Opcode::BitwiseNot32:
+        FoldWhenAllImmediates(inst, [](u32 a) { return ~a; });
+        return;
+    case IR::Opcode::BitReverse32:
+        FoldWhenAllImmediates(inst, [](u32 a) {
+            u32 res{};
+            for (s32 i = 0; i < 32; i++, a >>= 1) {
+                res = (res << 1) | (a & 1);
+            }
+            return res;
+        });
+        return;
+    case IR::Opcode::BitCount32:
+        FoldWhenAllImmediates(inst, [](u32 a) { return static_cast<u32>(std::popcount(a)); });
+        return;
+    case IR::Opcode::BitCount64:
+        FoldWhenAllImmediates(inst, [](u64 a) { return static_cast<u32>(std::popcount(a)); });
+        return;
     case IR::Opcode::BitFieldUExtract:
         FoldWhenAllImmediates(inst, [](u32 base, u32 shift, u32 count) {
             if (static_cast<size_t>(shift) + static_cast<size_t>(count) > 32) {
@@ -505,6 +535,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
         return FoldConvert(inst, IR::Opcode::ConvertF32F16);
+    case IR::Opcode::DiscardCond:
+        return FoldDiscardCond(inst);
     default:
         break;
     }

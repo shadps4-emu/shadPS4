@@ -7,6 +7,7 @@
 #include <boost/container/small_vector.hpp>
 #include <tsl/robin_map.h>
 
+#include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/multi_level_page_table.h"
@@ -25,18 +26,12 @@ namespace VideoCore {
 class BufferCache;
 class PageManager;
 
-enum class FindFlags {
-    NoCreate = 1 << 0,  ///< Do not create an image if searching for one fails.
-    RelaxDim = 1 << 1,  ///< Do not check the dimentions of image, only address.
-    RelaxSize = 1 << 2, ///< Do not check that the size matches exactly.
-    RelaxFmt = 1 << 3,  ///< Do not check that format is compatible.
-    ExactFmt = 1 << 4,  ///< Require the format to be exactly the same.
-};
-DECLARE_ENUM_FLAG_OPERATORS(FindFlags)
-
-static constexpr u32 MaxInvalidateDist = 12_MB;
-
 class TextureCache {
+    // Default values for garbage collection
+    static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
+
     struct Traits {
         using Entry = boost::container::small_vector<ImageId, 16>;
         static constexpr size_t AddressSpaceBits = 40;
@@ -97,6 +92,10 @@ public:
                  BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
+    TileManager& GetTileManager() noexcept {
+        return tile_manager;
+    }
+
     /// Invalidates any image in the logical page range.
     void InvalidateMemory(VAddr addr, size_t size);
 
@@ -110,7 +109,10 @@ public:
     void ProcessDownloadImages();
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(BaseDesc& desc, FindFlags flags = {});
+    [[nodiscard]] ImageId FindImage(BaseDesc& desc, bool exact_fmt = false);
+
+    /// Retrieves image whose address matches provided
+    [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
 
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
@@ -126,6 +128,7 @@ public:
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
+        TouchImage(image);
         RefreshImage(image, custom_scheduler);
     }
 
@@ -138,6 +141,7 @@ public:
     [[nodiscard]] ImageId ResolveDepthOverlap(const ImageInfo& requested_info, BindingType binding,
                                               ImageId cache_img_id);
 
+    /// Creates a new image with provided image info and copies subresources from image_id
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
@@ -150,12 +154,18 @@ public:
 
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
-        return slot_images[id];
+        auto& image = slot_images[id];
+        TouchImage(image);
+        return image;
     }
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        return slot_image_views[id];
+        auto& view = slot_image_views[id];
+        // Maybe this is not needed.
+        Image& image = slot_images[view.image_id];
+        TouchImage(image);
+        return view;
     }
 
     /// Registers an image view for provided image
@@ -198,6 +208,9 @@ public:
         }
         return false;
     }
+
+    /// Runs the garbage collector.
+    void RunGarbageCollector();
 
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
@@ -287,6 +300,9 @@ private:
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
+    /// Touch the image in the LRU cache.
+    void TouchImage(const Image& image);
+
     void FreeImage(ImageId image_id) {
         UntrackImage(image_id);
         UnregisterImage(image_id);
@@ -305,6 +321,12 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
+    u64 total_used_memory = 0;
+    u64 trigger_gc_memory = 0;
+    u64 pressure_gc_memory = 0;
+    u64 critical_gc_memory = 0;
+    u64 gc_tick = 0;
+    Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
 

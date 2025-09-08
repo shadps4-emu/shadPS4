@@ -85,7 +85,7 @@ enum class NumberClass {
     Uint,
 };
 
-enum class CompSwizzle : u8 {
+enum class CompSwizzle : u32 {
     Zero = 0,
     One = 1,
     Red = 4,
@@ -104,13 +104,18 @@ enum class NumberConversion : u32 {
     Uint32ToUnorm = 6,
 };
 
-struct CompMapping {
-    CompSwizzle r;
-    CompSwizzle g;
-    CompSwizzle b;
-    CompSwizzle a;
+union CompMapping {
+    struct {
+        CompSwizzle r;
+        CompSwizzle g;
+        CompSwizzle b;
+        CompSwizzle a;
+    };
+    std::array<CompSwizzle, 4> array;
 
-    auto operator<=>(const CompMapping& other) const = default;
+    bool operator==(const CompMapping& other) const {
+        return array == other.array;
+    }
 
     template <typename T>
     [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
@@ -122,6 +127,14 @@ struct CompMapping {
         };
     }
 
+    [[nodiscard]] u32 ApplyMask(u32 mask) const {
+        u32 swizzled_mask{};
+        for (u32 i = 0; i < 4; ++i) {
+            swizzled_mask |= ((mask >> i) & 1) << Map(i);
+        }
+        return swizzled_mask;
+    }
+
     [[nodiscard]] CompMapping Inverse() const {
         CompMapping result{};
         InverseSingle(result.r, CompSwizzle::Red);
@@ -129,6 +142,12 @@ struct CompMapping {
         InverseSingle(result.b, CompSwizzle::Blue);
         InverseSingle(result.a, CompSwizzle::Alpha);
         return result;
+    }
+
+    [[nodiscard]] u32 Map(u32 comp) const {
+        const u32 swizzled_comp = u32(array[comp]);
+        constexpr u32 min_comp = u32(AmdGpu::CompSwizzle::Red);
+        return swizzled_comp >= min_comp ? swizzled_comp - min_comp : comp;
     }
 
 private:
@@ -312,8 +331,21 @@ constexpr NumberClass GetNumberClass(const NumberFormat nfmt) {
     }
 }
 
+constexpr bool IsRgb(CompSwizzle swizzle) {
+    return swizzle == CompSwizzle::Red || swizzle == CompSwizzle::Green ||
+           swizzle == CompSwizzle::Blue;
+}
+
 constexpr bool IsInteger(const NumberFormat nfmt) {
-    return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+    return nfmt == NumberFormat::Sint || nfmt == NumberFormat::Uint;
+}
+
+constexpr bool IsBlockCoded(DataFormat format) {
+    return format >= DataFormat::FormatBc1 && format <= DataFormat::FormatBc7;
+}
+
+constexpr bool IsFmask(DataFormat format) {
+    return format >= DataFormat::FormatFmask8_1 && format <= DataFormat::FormatFmask64_8;
 }
 
 std::string_view NameOf(DataFormat fmt);
@@ -321,6 +353,7 @@ std::string_view NameOf(NumberFormat fmt);
 
 u32 NumComponents(DataFormat format);
 u32 NumBitsPerBlock(DataFormat format);
+u32 NumBitsPerElement(DataFormat format);
 
 } // namespace AmdGpu
 

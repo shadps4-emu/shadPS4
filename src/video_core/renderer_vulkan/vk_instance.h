@@ -109,6 +109,11 @@ public:
         return vk12_features.shaderInt8;
     }
 
+    /// Returns true if VK_KHR_maintenance8 is supported
+    bool IsMaintenance8Supported() const {
+        return maintenance_8;
+    }
+
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;
@@ -134,7 +139,7 @@ public:
         return depth_range_unrestricted;
     }
 
-    /// Returns true when the extendedDynamicState3ColorWriteMask feature of
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature o
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
         return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
@@ -284,6 +289,11 @@ public:
         return properties.deviceName;
     }
 
+    /// Returns if the device is an integrated GPU.
+    bool IsIntegrated() const {
+        return properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
+    }
+
     /// Returns the pipeline cache unique identifier
     const auto GetPipelineCacheUUID() const {
         return properties.pipelineCacheUUID;
@@ -386,6 +396,19 @@ public:
         return features.logicOp;
     }
 
+    /// Returns whether the device can report memory usage.
+    bool CanReportMemoryUsage() const {
+        return supports_memory_budget;
+    }
+
+    /// Returns the amount of memory used.
+    [[nodiscard]] u64 GetDeviceMemoryUsage() const;
+
+    /// Returns the total memory budget available to the device.
+    [[nodiscard]] u64 GetTotalMemoryBudget() const {
+        return total_memory_budget;
+    }
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
@@ -396,8 +419,9 @@ private:
     /// Creates the VMA allocator handle
     void CreateAllocator();
 
-    /// Collects telemetry information from the device.
+    /// Collects various information from the device.
     void CollectDeviceParameters();
+    void CollectPhysicalMemoryInfo();
     void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
@@ -436,8 +460,8 @@ private:
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
-    bool depth_range_unrestricted{};
     bool dynamic_state_3{};
+    bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
     bool list_restart{};
@@ -450,6 +474,10 @@ private:
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
+    bool maintenance_8{};
+    bool supports_memory_budget{};
+    u64 total_memory_budget{};
+    std::vector<size_t> valid_heaps;
 };
 
 } // namespace Vulkan

@@ -68,7 +68,7 @@ public:
     void CpSync();
     u64 Flush();
     void Finish();
-    void EndCommandList();
+    void OnSubmit();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -112,6 +112,7 @@ private:
     }
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
+    bool IsComputeImageCopy(const Pipeline* pipeline);
 
 private:
     friend class VideoCore::BufferCache;

@@ -109,3 +109,7 @@
 [submodule "externals/epoll-shim"]
 	path = externals/epoll-shim
 	url = https://github.com/jiixyj/epoll-shim.git
+[submodule "externals/hwinfo"]
+	path = externals/hwinfo
+	url = https://github.com/shadps4-emu/ext-hwinfo
+	shallow = true

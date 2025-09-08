@@ -16,6 +16,7 @@ set(SHADER_FILES
     fs_tri.vert
     fsr.comp
     post_process.frag
+    tiling.comp
 )
 
 set(SHADER_INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include)

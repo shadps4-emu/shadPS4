@@ -5,6 +5,7 @@
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
+#include "ir_emitter.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -668,6 +669,10 @@ U32 IREmitter::BallotFindLsb(const Value& mask) {
     return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
+U1 IREmitter::GroupAny(const U1& bit) {
+    return Inst<U1>(Opcode::GroupAny, bit);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
@@ -1167,6 +1172,10 @@ F32 IREmitter::FPLdexp(const F32& value, const U32& exp) {
 
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
+}
+
+F32 IREmitter::FPPow(const F32& x, const F32& y) {
+    return Inst<F32>(Opcode::FPPow, x, y);
 }
 
 F32F64 IREmitter::FPRecip(const F32F64& value) {
@@ -2105,11 +2114,11 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
-                                const Value& address3, const Value& address4,
-                                const Value& inline_sampler, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
-                inline_sampler);
+Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                const Value& address1, const Value& address2, const Value& address3,
+                                const Value& address4, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, image_handle, sampler_handle, address1,
+                address2, address3, address4);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,

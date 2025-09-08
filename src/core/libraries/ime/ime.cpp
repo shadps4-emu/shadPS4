@@ -17,12 +17,18 @@ static ImeUi g_ime_ui;
 
 class ImeHandler {
 public:
-    ImeHandler(const OrbisImeKeyboardParam* param) {
-        LOG_INFO(Lib_Ime, "Creating ImeHandler for keyboard");
+    ImeHandler(const OrbisImeKeyboardParam* param,
+               Libraries::UserService::OrbisUserServiceUserId userId)
+        : m_user_id(userId) {
+        LOG_INFO(Lib_Ime, "Creating ImeHandler for keyboard (user {})", userId);
         Init(param, false);
     }
-    ImeHandler(const OrbisImeParam* param) {
+    ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
         LOG_INFO(Lib_Ime, "Creating ImeHandler for IME");
+        if (extended) {
+            m_extended = *extended;
+            m_has_extended = true;
+        }
         Init(param, true);
     }
     ~ImeHandler() = default;
@@ -50,8 +56,12 @@ public:
             openEvent.param.rect.x = m_param.ime.posx;
             openEvent.param.rect.y = m_param.ime.posy;
         } else {
-            openEvent.param.resource_id_array.user_id = 1;
-            openEvent.param.resource_id_array.resource_id[0] = 1;
+
+            // Report the real PS4 user ID, and mark “no physical keyboard” so games know
+            openEvent.param.resource_id_array.user_id = m_user_id;
+            for (auto& rid : openEvent.param.resource_id_array.resource_id)
+                rid = -1;
+            Execute(nullptr, &openEvent, /*use_param_handler=*/true);
         }
 
         // Are we supposed to call the event handler on init with
@@ -61,8 +71,8 @@ public:
         }*/
 
         if (ime_mode) {
-            g_ime_state = ImeState(&m_param.ime);
-            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime);
+            g_ime_state = ImeState(&m_param.ime, m_has_extended ? &m_extended : nullptr);
+            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime, m_has_extended ? &m_extended : nullptr);
         }
     }
 
@@ -116,11 +126,15 @@ public:
     }
 
 private:
+    Libraries::UserService::OrbisUserServiceUserId m_user_id{};
     union ImeParam {
         OrbisImeKeyboardParam key;
         OrbisImeParam ime;
     } m_param{};
     bool m_ime_mode = false;
+
+    OrbisImeParamExtended m_extended{};
+    bool m_has_extended = false;
 };
 
 static std::unique_ptr<ImeHandler> g_ime_handler;
@@ -301,8 +315,8 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
         LOG_ERROR(Lib_Ime, "No keyboard handler is open");
         return Error::NOT_OPENED;
     }
-    // TODO: Check for valid user IDs. Disabled until user manager is ready.
-    if ((userId < 0 || userId > 4) && false) {
+    // TODO: Check for valid user IDs.
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         // Maybe g_keyboard_handler should hold a user ID and I must compare it here?
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
@@ -332,8 +346,8 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
         return Error::INVALID_ADDRESS;
     }
 
-    // TODO: Check for valid user IDs. Disabled until user manager is ready.
-    if ((userId < 0 || userId > 4) && false) {
+    // TODO: Check for valid user IDs.
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         resourceIdArray->user_id = userId;
         for (u32& id : resourceIdArray->resource_id) {
@@ -370,10 +384,17 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
         return Error::INVALID_ADDRESS;
     }
+
     if (!param->handler) {
         LOG_ERROR(Lib_Ime, "Invalid param->handler: NULL");
         return Error::INVALID_HANDLER;
     }
+
+    LOG_DEBUG(Lib_Ime, "  userId: {}", static_cast<u32>(userId));
+    LOG_DEBUG(Lib_Ime, "  param->option: {:032b}", static_cast<u32>(param->option));
+    LOG_DEBUG(Lib_Ime, "  param->arg: {}", param->arg);
+    LOG_DEBUG(Lib_Ime, "  param->handler: {}", reinterpret_cast<const void*>(param->handler));
+
     // seems like arg is optional, need to check if it is used in the handler
     // Todo: check if arg is used in the handler, temporarily disabled
     if (!param->arg && false) {
@@ -389,8 +410,8 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         return Error::INVALID_OPTION;
     }
 
-    // TODO: Check for valid user IDs. Disabled until user manager is ready.
-    if ((userId < 0 || userId > 4) && false) {
+    // TODO: Check for valid user IDs.
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         LOG_ERROR(Lib_Ime, "Invalid userId: {}", userId);
         return Error::INVALID_USER_ID;
     }
@@ -416,7 +437,7 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         LOG_ERROR(Lib_Ime, "Keyboard handler is already open");
         return Error::BUSY;
     }
-    g_keyboard_handler = std::make_unique<ImeHandler>(param);
+    g_keyboard_handler = std::make_unique<ImeHandler>(param, userId);
     if (!g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create keyboard handler");
         return Error::INTERNAL; // or Error::NO_MEMORY;
@@ -616,7 +637,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         return Error::BUSY;
     }
 
-    g_ime_handler = std::make_unique<ImeHandler>(param);
+    g_ime_handler = std::make_unique<ImeHandler>(param, extended);
     if (!g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create IME handler");
         return Error::NO_MEMORY; // or Error::INTERNAL
@@ -687,7 +708,7 @@ Error PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
         g_keyboard_handler->Update(handler);
     }
 
-    if (!g_ime_handler || !g_keyboard_handler) {
+    if (!g_ime_handler && !g_keyboard_handler) {
         return Error::NOT_OPENED;
     }
 

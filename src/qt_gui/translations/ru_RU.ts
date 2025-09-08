@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Двиньте аналоговый стик</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 и L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Текущий геймпад</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID геймпада</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Не выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Выбрать текущий геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Удалить геймпад по умолчанию</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 и R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:</translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Выбран контроллер по умолчанию</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Текущий контроллер выбран по умолчанию</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Контроллер по умолчанию удалён</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Настройки геймпада по умолчанию удалены</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -856,7 +912,7 @@
     </message>
     <message>
       <source>Copy Size</source>
-      <translation>Скопирать размер</translation>
+      <translation>Скопировать размер</translation>
     </message>
     <message>
       <source>Copy All</source>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Бинды клавиш</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Горячие клавиши контроллера</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Показать счетчик FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Завершить эмуляцию</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Перезагрузить назначения кнопок</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Переключить полноэкранный режим</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Переключить паузу</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Горячие клавиши клавиатуры</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Захват Renderdoc (только для отладки)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Переключить мышь в эмуляцию джойстика</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Переключить мышь в эмуляцию гироскопа</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Подсказка: для каждой горячей клавиши может быть назначено до трёх одновремённых вводов</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>По умолчанию</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Не удаётся сохранить</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Ожидание ввода</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1638,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Показывать метки под значками</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1588,15 +1735,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Микрофон</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Нет</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Устройство по умолчанию</translation>
     </message>
     <message>
       <source>s</source>
@@ -1700,11 +1847,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Включить считывание</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Включить считывание линейных изображений</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1931,16 +2078,12 @@
       <translation>Собирать шейдеры:\nВам необходимо включить эту функцию для редактирования шейдеров с помощью меню отладки (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Диагностика сбоев:\nСоздает .yaml-файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nНе работает на видеокартах Intel.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Включить считывание:\nВключить считывание и запись в память GPU.\nЭто требуется для правильного поведения в некоторых играх. \nМожет вызвать проблемы со стабильностью/производительностью.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Включить считывание линейных изображений:\nВключает асинхронную загрузку изображений, модифицированных GPU.\nМожет исправить проблемы в некоторых играх.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2108,15 +2251,91 @@
     </message>
     <message>
       <source>100%</source>
-      <translation type="unfinished">100%</translation>
+      <translation>100%</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Экспериментальные функции</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ВНИМАНИЕ: Эти функции являются экспериментальными и не должны включаться, если вы не знаете об обратном, или если этого не требует игра. Если у вас есть вопросы, задавайте их на Discord сервере shadPS4.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Включить фоновый ввод контроллера</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Включить фоновый ввод контроллера:\nРазрешить shadPS4 определять ввод контроллера, когда окно игры не в фокусе.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Диагностика сбоев:\nСоздает .yaml-файл с информацией о состоянии Vulkan в момент падения.\nПолезно для отладки ошибок &apos;Device lost&apos;. Если эта функция включена, вам следует включить Маркеры отладки хоста и Гостя.\nДля работы вам необходимо включить Слои валидации Vulkan и установить Vulkan SDK.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Включить ведение логов</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Включить ведение логов:\nВключает ведение логов.\nНе меняйте это, если вы не знаете, что делаете!\nПри запросе помощи, убедитесь, что эта настройка ВКЛЮЧЕНА.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Режим представления</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediate (без Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Папка DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Выберите папку DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Режим представления:\nНастраивает, как вывод видео будет предоставлен на экране.\n\nMailbox: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут заменять ожидающие кадры. Уменьшает задержку, но может пропустить кадры, если отстаёт.\nFifo: Кадры синхронизируются с частотой обновления экрана. Новые кадры будут в очереди за ожидаемыми кадрами. Обеспечивает отображение всех кадров, но может увеличить задержку.\nImmediate: Кадры отображаются на экране сразу после готовности. Может приводить к разрывам.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Путь к DLC:\nПапка, из которой загружаются DLC для игры.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Обзор:\nНайдите папку, которую можно указать в качестве пути для DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>Настройки FSR</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Включить FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Включить RCAS (резкость)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>Затухание RCAS:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation>0.250</translation>
     </message>
   </context>
   <context>

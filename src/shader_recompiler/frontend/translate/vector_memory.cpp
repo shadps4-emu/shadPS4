@@ -113,9 +113,9 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::BUFFER_ATOMIC_DEC:
         return BUFFER_ATOMIC(AtomicOp::Dec, inst);
     case Opcode::BUFFER_ATOMIC_FMIN:
-        return BUFFER_ATOMIC(AtomicOp::Fmin, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
-        return BUFFER_ATOMIC(AtomicOp::Fmax, inst);
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
 
         // MIMG
         // Image load operations
@@ -202,38 +202,18 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
 void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                              const GcnInst& inst, u32 scalar_width, bool is_signed) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
-    const IR::Value soffset{GetSrc(inst.src[3])};
-    const bool has_soffset = !soffset.IsImmediate() || soffset.U32() != 0;
-    if (info.stage != Stage::Geometry) {
-        ASSERT_MSG(!has_soffset || !mubuf.offen,
-                   "Having both scalar and vector offsets is not supported");
-    }
 
-    const IR::Value address = [&] -> IR::Value {
-        if (is_ring) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
-        }
-        if (mubuf.idxen && mubuf.offen) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
-        }
-        if (mubuf.idxen && has_soffset) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
-        }
-        if (mubuf.idxen || mubuf.offen) {
-            return ir.GetVectorReg(vaddr);
-        }
-        if (has_soffset) {
-            return soffset;
-        }
-        return {};
-    }();
+    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
+    const IR::U32 soffset{GetSrc(inst.src[3])};
+    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
-    buffer_info.offset_enable.Assign(mubuf.offen || has_soffset);
+    buffer_info.voffset_enable.Assign(mubuf.offen);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -289,32 +269,18 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
 void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
                               const GcnInst& inst, u32 scalar_width) {
     const auto& mubuf = inst.control.mubuf;
-    const bool is_ring = mubuf.glc && mubuf.slc;
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
-    const IR::Value soffset{GetSrc(inst.src[3])};
 
-    if (info.stage != Stage::Export && info.stage != Stage::Hull && info.stage != Stage::Geometry) {
-        ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0,
-                   "Non immediate offset not supported");
-    }
-
-    IR::Value address = [&] -> IR::Value {
-        if (is_ring) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), soffset);
-        }
-        if (mubuf.idxen && mubuf.offen) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
-        }
-        if (mubuf.idxen || mubuf.offen) {
-            return ir.GetVectorReg(vaddr);
-        }
-        return {};
-    }();
+    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
+    const IR::U32 soffset{GetSrc(inst.src[3])};
+    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
-    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.voffset_enable.Assign(mubuf.offen);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -373,21 +339,15 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::VectorReg vdata{inst.src[1].code};
     const IR::ScalarReg srsrc{inst.src[2].code * 4};
-    const IR::Value address = [&] -> IR::Value {
-        if (mubuf.idxen && mubuf.offen) {
-            return ir.CompositeConstruct(ir.GetVectorReg(vaddr), ir.GetVectorReg(vaddr + 1));
-        }
-        if (mubuf.idxen || mubuf.offen) {
-            return ir.GetVectorReg(vaddr);
-        }
-        return {};
-    }();
+    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
     const IR::U32 soffset{GetSrc(inst.src[3])};
-    ASSERT_MSG(soffset.IsImmediate() && soffset.U32() == 0, "Non immediate offset not supported");
+    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
-    buffer_info.offset_enable.Assign(mubuf.offen);
+    buffer_info.voffset_enable.Assign(mubuf.offen);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -395,6 +355,8 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
             return ir.GetVectorReg<Shader::IR::U32>(vdata);
+        } else if constexpr (std::is_same_v<T, IR::F32>) {
+            return ir.GetVectorReg<Shader::IR::F32>(vdata);
         } else if constexpr (std::is_same_v<T, IR::U64>) {
             return ir.PackUint2x32(
                 ir.CompositeConstruct(ir.GetVectorReg<Shader::IR::U32>(vdata),
@@ -445,7 +407,11 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     }();
 
     if (mubuf.glc) {
-        ir.SetVectorReg(vdata, IR::U32{original_val});
+        if constexpr (std::is_same_v<T, IR::U64>) {
+            UNREACHABLE();
+        } else {
+            ir.SetVectorReg(vdata, T{original_val});
+        }
     }
 }
 
@@ -588,7 +554,7 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
 
 IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::ScalarReg tsharp_reg,
                           const IR::ScalarReg sampler_reg, const IR::VectorReg addr_reg,
-                          bool gather) {
+                          bool gather, u32 pc) {
     const auto& mimg = inst.control.mimg;
     const auto flags = MimgModifierFlags(mimg.mod);
 
@@ -602,6 +568,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.is_array.Assign(mimg.da);
     info.is_unnormalized.Assign(mimg.unrm);
     info.is_r128.Assign(mimg.r128);
+    info.pc.Assign(pc);
 
     if (gather) {
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
@@ -610,11 +577,11 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
         info.has_derivatives.Assign(flags.test(MimgModifier::Derivative));
     }
 
-    // Load first dword of T# and S#. We will use them as the handle that will guide resource
-    // tracking pass where to read the sharps. This will later also get patched to the SPIRV texture
-    // binding index.
-    const IR::Value handle = ir.GetScalarReg(tsharp_reg);
-    const IR::Value inline_sampler =
+    // Load first dword of T# and the full S#. We will use them as the handle that will guide
+    // resource tracking pass where to read the sharps. This will later also get patched to the
+    // backend texture binding index.
+    const IR::Value image_handle = ir.GetScalarReg(tsharp_reg);
+    const IR::Value sampler_handle =
         ir.CompositeConstruct(ir.GetScalarReg(sampler_reg), ir.GetScalarReg(sampler_reg + 1),
                               ir.GetScalarReg(sampler_reg + 2), ir.GetScalarReg(sampler_reg + 3));
 
@@ -652,8 +619,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     const IR::Value address4 = get_addr_reg(12);
 
     // Issue the placeholder IR instruction.
-    IR::Value texel =
-        ir.ImageSampleRaw(handle, address1, address2, address3, address4, inline_sampler, info);
+    IR::Value texel = ir.ImageSampleRaw(image_handle, sampler_handle, address1, address2, address3,
+                                        address4, info);
     if (info.is_depth && !gather) {
         // For non-gather depth sampling, only return a single value.
         texel = ir.CompositeExtract(texel, 0);
@@ -669,7 +636,7 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
     const auto flags = MimgModifierFlags(mimg.mod);
 
-    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false);
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false, pc);
     for (u32 i = 0; i < 4; i++) {
         if (((mimg.dmask >> i) & 1) == 0) {
             continue;
@@ -698,7 +665,7 @@ void Translator::IMAGE_GATHER(const GcnInst& inst) {
     // should be always 1st (R) component for depth
     ASSERT(!flags.test(MimgModifier::Pcf) || mimg.dmask & 1);
 
-    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, true);
+    const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, true, pc);
     for (u32 i = 0; i < 4; i++) {
         const IR::F32 value = IR::F32{ir.CompositeExtract(texel, i)};
         ir.SetVectorReg(dest_reg++, value);

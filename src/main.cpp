@@ -12,6 +12,7 @@
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/file_sys/fs.h"
+#include "core/ipc/ipc.h"
 #include "emulator.h"
 
 #ifdef _WIN32
@@ -22,6 +23,7 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+    IPC::Instance().Init();
 
     // Load configurations
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
@@ -169,13 +171,12 @@ int main(int argc, char* argv[]) {
             break;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
-            return 1;
         }
     }
 
     // If no game directory is set and no command line argument, prompt for it
     if (Config::getGameInstallDirs().empty()) {
-        std::cout << "Warning: No game folder set, please set it by calling shadps4"
+        std::cerr << "Warning: No game folder set, please set it by calling shadps4"
                      " with the --add-game-folder <folder_name> argument\n";
     }
 

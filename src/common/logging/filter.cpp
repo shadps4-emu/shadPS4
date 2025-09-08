@@ -83,6 +83,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, LibcInternal)                                                                         \
     SUB(Lib, Kernel)                                                                               \
     SUB(Lib, Pad)                                                                                  \
+    SUB(Lib, SystemGesture)                                                                        \
     SUB(Lib, GnmDriver)                                                                            \
     SUB(Lib, SystemService)                                                                        \
     SUB(Lib, UserService)                                                                          \
@@ -107,6 +108,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, NpScore)                                                                              \
     SUB(Lib, NpTrophy)                                                                             \
     SUB(Lib, NpWebApi)                                                                             \
+    SUB(Lib, NpProfileDialog)                                                                      \
     SUB(Lib, Screenshot)                                                                           \
     SUB(Lib, LibCInternal)                                                                         \
     SUB(Lib, AppContent)                                                                           \
@@ -137,11 +139,13 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, NpParty)                                                                              \
     SUB(Lib, Zlib)                                                                                 \
     SUB(Lib, Hmd)                                                                                  \
+    SUB(Lib, HmdSetupDialog)                                                                       \
     SUB(Lib, SigninDialog)                                                                         \
     SUB(Lib, Camera)                                                                               \
     SUB(Lib, CompanionHttpd)                                                                       \
     SUB(Lib, CompanionUtil)                                                                        \
     SUB(Lib, Voice)                                                                                \
+    SUB(Lib, VrTracker)                                                                            \
     CLS(Frontend)                                                                                  \
     CLS(Render)                                                                                    \
     SUB(Render, Vulkan)                                                                            \

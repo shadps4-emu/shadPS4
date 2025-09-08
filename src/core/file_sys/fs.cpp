@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
 #include "common/config.h"
 #include "common/string_util.h"
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
@@ -161,6 +161,10 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     // Only need to consider patch path if it exists and does not resolve to the same as base.
     const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
 
+    // Prepend entries for . and .., as both are treated as files on PS4.
+    callback(base_path / ".", false);
+    callback(base_path / "..", false);
+
     // Pass 1: Any files that existed in the base directory, using patch directory if needed.
     if (std::filesystem::exists(base_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
@@ -217,6 +221,18 @@ File* HandleTable::GetFile(int d) {
         return nullptr;
     }
     return m_files.at(d);
+}
+
+File* HandleTable::GetSocket(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Socket) {
+        return nullptr;
+    }
+    return file;
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {

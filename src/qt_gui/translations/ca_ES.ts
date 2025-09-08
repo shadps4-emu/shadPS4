@@ -593,6 +593,62 @@
       <source>Move analog stick</source>
       <translation>Mou la palanca</translation>
     </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 i L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Controlador actiu</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID del controlador</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Controlador per defecte</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>No hi ha cap seleccionat per defecte</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Estableix el controlador actual per defecte</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Elimina el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 i R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Seleccionat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>El controlador actiu per defecte</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Eliminat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>S'ha eliminat el controlador per defecte</translation>
+    </message>
   </context>
   <context>
     <name>EditorDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Dreceres de teclat</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Dreceres del controlador</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostra el comptador de fotogrames per segon</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sense assignar</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Tanca l'emulació</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Recarrega les assignacions de botons</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Commuta pantalla completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Commuta la pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Captura Renderdoc (per motius de depuració)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Alterna el ratolí com a emulador del joystick</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Alterna el ratolí com a emulador de giroscopi</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Ajuda: Fins a 3 entrades simultànies poden ser assignades per cada drecera de teclat</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Desa</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancel·lar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaura els valors per defecte</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No s'ha pogut desar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No es pot assignar una entrada més d'una vegada. S'han assignat de manera duplicada pels següents botons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Esperant per alguna entrada</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1638,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostra les etiquetes sota les icones</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1931,10 +2078,6 @@
       <translation>Recopilar shaders:\nHas de tenir activada aquesta opció per editar els shaders amb el menú de depurador (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nNo funciona en les targetes gràfiques de Intel.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
       <translation>Actica Readbacks:\nActiva readbacks i writebacks a la memòria de la targeta gràfica.\nAixò és necessari pel funcionament correcte en alguns jocs.\nPot causar inestabilitat i/o errors de rendiment.</translation>
     </message>
@@ -2112,11 +2255,87 @@
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Funcions experimentals</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>AVÍS: Aquestes funcions son experimentals i no haurien de ser activades a no ser que t'ho demanin, o que el joc ho necessiti. Pregunta en el Discord de shadPS4 si tens dubtes.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Activa l'entrada del controlador en segon pla</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Activa l'entrada del controlador en segon pla:\nPermet a shadPS4 per detectar l'entrada del controlador quan la finestra del joc ja no té el focus.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Habilita el registre</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Habilita el registre:\nHabilita el registre.\nNo canviïs aquesta opció si no saps que estàs fent!\nSi demanes ajuda, assegura't que aquesta opció està ACTIVADA.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Mode presentació</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Bústia de correu (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediat (Sense sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Selecciona la carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Mode Presentació:\nConfigura com es presenta la sortida de vídeo a la teva pantalla.\n\nBústia de correu: Sincronitza els fotogrames amb la taxa de refresc de la teva pantalla. Els nous fotogrames reemplacen qualsevol fotograma pendent. Redueix la latència però pot provocar salts de fotogrames si es queden enrere.\nFifo: Els fotogrames es sincronitzen amb la taxa de refresc de la teva pantalla. Els nous fotogrames es posaran en cua darrere els fotogrames pendents. Assegura mostrar tots els fotogrames però augmenta la latència.\nImmediat: Els fotogrames es presenten immediatament a la teva pantalla quan estan disponibles. Pot provocar errors gràfics.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Ruta DLC:\nLa carpeta des d'on es carrega el contingut DLC.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Navegador:\nCerca una carpeta per establir com a ruta DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>Configuració FSR</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Activa el FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Activa RCAS (esmolat)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>Afeblir RCAS:</translation>
+    </message>
+    <message>
+      <source>0.250</source>
+      <translation>0,250</translation>
     </message>
   </context>
   <context>

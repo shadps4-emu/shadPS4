@@ -237,7 +237,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.314 CONFIG)
+find_package(VulkanHeaders 1.4.324 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -390,6 +390,7 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/sys_net.h
                  src/core/libraries/network/posix_sockets.cpp
                  src/core/libraries/network/p2p_sockets.cpp
+                 src/core/libraries/network/unix_sockets.cpp
                  src/core/libraries/network/sockets.h
 )
 
@@ -527,6 +528,11 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad_errors.h
 )
 
+set(SYSTEM_GESTURE_LIB 
+            src/core/libraries/system_gesture/system_gesture.cpp
+            src/core/libraries/system_gesture/system_gesture.h
+)
+
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
             src/core/libraries/libpng/pngdec_error.h
@@ -571,23 +577,25 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec_impl.h
 )
 
-set(NP_LIBS src/core/libraries/np_common/np_common.cpp
-            src/core/libraries/np_common/np_common.h
-            src/core/libraries/np_manager/np_manager.cpp
-            src/core/libraries/np_manager/np_manager.h
-            src/core/libraries/np_score/np_score.cpp
-            src/core/libraries/np_score/np_score.h
-            src/core/libraries/np_trophy/np_trophy.cpp
-            src/core/libraries/np_trophy/np_trophy.h
-            src/core/libraries/np_trophy/trophy_ui.cpp
-            src/core/libraries/np_trophy/trophy_ui.h
-            src/core/libraries/np_trophy/np_trophy_error.h
-            src/core/libraries/np_web_api/np_web_api.cpp
-            src/core/libraries/np_web_api/np_web_api.h
-            src/core/libraries/np_party/np_party.cpp
-            src/core/libraries/np_party/np_party.h
-            src/core/libraries/np_auth/np_auth.cpp
-            src/core/libraries/np_auth/np_auth.h
+set(NP_LIBS src/core/libraries/np/np_error.h
+            src/core/libraries/np/np_common.cpp
+            src/core/libraries/np/np_common.h
+            src/core/libraries/np/np_manager.cpp
+            src/core/libraries/np/np_manager.h
+            src/core/libraries/np/np_score.cpp
+            src/core/libraries/np/np_score.h
+            src/core/libraries/np/np_trophy.cpp
+            src/core/libraries/np/np_trophy.h
+            src/core/libraries/np/trophy_ui.cpp
+            src/core/libraries/np/trophy_ui.h
+            src/core/libraries/np/np_web_api.cpp
+            src/core/libraries/np/np_web_api.h
+            src/core/libraries/np/np_party.cpp
+            src/core/libraries/np/np_party.h
+            src/core/libraries/np/np_auth.cpp
+            src/core/libraries/np/np_auth.h
+            src/core/libraries/np/np_profile_dialog.cpp
+            src/core/libraries/np/np_profile_dialog.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -596,13 +604,20 @@ set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
 )
 
 set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
+             src/core/libraries/hmd/hmd_reprojection.cpp
+             src/core/libraries/hmd/hmd_distortion.cpp
              src/core/libraries/hmd/hmd.h
+             src/core/libraries/hmd/hmd_setup_dialog.cpp
+             src/core/libraries/hmd/hmd_setup_dialog.h
+             src/core/libraries/vr_tracker/vr_tracker.cpp
+             src/core/libraries/vr_tracker/vr_tracker.h
 )
 
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
                src/core/libraries/move/move.cpp
                src/core/libraries/move/move.h
+               src/core/libraries/move/move_error.h
                src/core/libraries/ulobjmgr/ulobjmgr.cpp
                src/core/libraries/ulobjmgr/ulobjmgr.h
                src/core/libraries/signin_dialog/signindialog.cpp
@@ -679,6 +694,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/enum.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
            src/common/scope_exit.h
@@ -735,22 +751,28 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/devices/base_device.cpp
-         src/core/devices/base_device.h
-         src/core/devices/ioccom.h
-         src/core/devices/logger.cpp
-         src/core/devices/logger.h
-         src/core/devices/nop_device.h
-         src/core/devices/console_device.cpp
-         src/core/devices/console_device.h
-         src/core/devices/deci_tty6_device.cpp
-         src/core/devices/deci_tty6_device.h
-         src/core/devices/random_device.cpp
-         src/core/devices/random_device.h
-         src/core/devices/urandom_device.cpp
-         src/core/devices/urandom_device.h
-         src/core/devices/srandom_device.cpp
-         src/core/devices/srandom_device.h
+         src/core/file_sys/devices/base_device.cpp
+         src/core/file_sys/devices/base_device.h
+         src/core/file_sys/devices/ioccom.h
+         src/core/file_sys/devices/logger.cpp
+         src/core/file_sys/devices/logger.h
+         src/core/file_sys/devices/nop_device.h
+         src/core/file_sys/devices/console_device.cpp
+         src/core/file_sys/devices/console_device.h
+         src/core/file_sys/devices/deci_tty6_device.cpp
+         src/core/file_sys/devices/deci_tty6_device.h
+         src/core/file_sys/devices/random_device.cpp
+         src/core/file_sys/devices/random_device.h
+         src/core/file_sys/devices/urandom_device.cpp
+         src/core/file_sys/devices/urandom_device.h
+         src/core/file_sys/devices/srandom_device.cpp
+         src/core/file_sys/devices/srandom_device.h
+         src/core/file_sys/directories/base_directory.cpp
+         src/core/file_sys/directories/base_directory.h
+         src/core/file_sys/directories/normal_directory.cpp
+         src/core/file_sys/directories/normal_directory.h
+         src/core/file_sys/directories/pfs_directory.cpp
+         src/core/file_sys/directories/pfs_directory.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
@@ -760,6 +782,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/trp.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
+         src/core/ipc/ipc.cpp
+         src/core/ipc/ipc.h
          src/core/loader/dwarf.cpp
          src/core/loader/dwarf.h
          src/core/loader/elf.cpp
@@ -777,6 +801,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${HLE_LIBC_INTERNAL_LIB}
          ${PAD_LIB}
+         ${SYSTEM_GESTURE_LIB}
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
          ${PNG_LIB}
@@ -893,6 +918,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/attribute.h
                       src/shader_recompiler/ir/basic_block.cpp
                       src/shader_recompiler/ir/basic_block.h
+                      src/shader_recompiler/ir/breadth_first_search.h
                       src/shader_recompiler/ir/condition.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
@@ -900,8 +926,10 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
+                      src/shader_recompiler/ir/operand_helper.h
                       src/shader_recompiler/ir/patch.cpp
                       src/shader_recompiler/ir/patch.h
+                      src/shader_recompiler/ir/position.h
                       src/shader_recompiler/ir/post_order.cpp
                       src/shader_recompiler/ir/post_order.h
                       src/shader_recompiler/ir/program.cpp
@@ -921,6 +949,8 @@ set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/resource.h
+               src/video_core/amdgpu/tiling.cpp
+               src/video_core/amdgpu/tiling.h
                src/video_core/amdgpu/types.h
                src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
@@ -1068,6 +1098,8 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/kbm_help_dialog.h
            src/qt_gui/main_window_themes.cpp
            src/qt_gui/main_window_themes.h
+           src/qt_gui/log_presets_dialog.cpp
+           src/qt_gui/log_presets_dialog.h
            src/qt_gui/settings_dialog.cpp
            src/qt_gui/settings_dialog.h
            src/qt_gui/settings_dialog.ui
@@ -1078,6 +1110,9 @@ set(QT_GUI src/qt_gui/about_dialog.cpp
            src/qt_gui/settings.h
            src/qt_gui/sdl_event_wrapper.cpp
            src/qt_gui/sdl_event_wrapper.h
+           src/qt_gui/hotkeys.h
+           src/qt_gui/hotkeys.cpp
+           src/qt_gui/hotkeys.ui
            ${EMULATOR}
            ${RESOURCE_FILES}
            ${TRANSLATIONS}
@@ -1119,7 +1154,7 @@ endif()
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

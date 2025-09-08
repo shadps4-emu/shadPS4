@@ -262,33 +262,43 @@ bool NetUtilInternal::RetrieveNetmask() {
     auto success = false;
 
 #ifdef _WIN32
-    std::vector<u8> adapter_addresses(sizeof(IP_ADAPTER_ADDRESSES));
-    ULONG size_infos = sizeof(IP_ADAPTER_ADDRESSES);
+    ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+    ULONG family = AF_INET; // Only IPv4
+    ULONG buffer_size = 15000;
 
-    if (GetAdaptersAddresses(AF_INET, 0, NULL,
-                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
-                             &size_infos) == ERROR_BUFFER_OVERFLOW)
-        adapter_addresses.resize(size_infos);
+    std::vector<BYTE> buffer(buffer_size);
+    auto adapter_addresses = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
 
-    if (GetAdaptersAddresses(AF_INET, 0, NULL,
-                             reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()),
-                             &size_infos) == NO_ERROR &&
-        size_infos) {
-        PIP_ADAPTER_ADDRESSES adapter;
-        for (adapter = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(adapter_addresses.data()); adapter;
-             adapter = adapter->Next) {
-            PIP_ADAPTER_UNICAST_ADDRESS unicast = adapter->FirstUnicastAddress;
-            if (unicast) {
+    DWORD result = GetAdaptersAddresses(family, flags, nullptr, adapter_addresses, &buffer_size);
+    if (result == ERROR_BUFFER_OVERFLOW) {
+        buffer.resize(buffer_size);
+        adapter_addresses = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buffer.data());
+        result = GetAdaptersAddresses(family, flags, nullptr, adapter_addresses, &buffer_size);
+    }
+
+    if (result != NO_ERROR)
+        return false;
+
+    for (auto adapter = adapter_addresses; adapter != nullptr; adapter = adapter->Next) {
+        // Skip loopback and down interfaces
+        if (adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK || adapter->OperStatus != IfOperStatusUp)
+            continue;
+
+        for (auto unicast = adapter->FirstUnicastAddress; unicast != nullptr;
+             unicast = unicast->Next) {
+            if (unicast->Address.lpSockaddr->sa_family == AF_INET) {
                 ULONG prefix_length = unicast->OnLinkPrefixLength;
                 ULONG mask = prefix_length == 0 ? 0 : 0xFFFFFFFF << (32 - prefix_length);
-                in_addr addr{};
-                addr.S_un.S_addr = htonl(mask);
-                inet_ntop(AF_INET, &addr, netmaskStr, INET_ADDRSTRLEN);
-                success = true;
+
+                in_addr mask_addr{};
+                mask_addr.S_un.S_addr = htonl(mask);
+
+                if (inet_ntop(AF_INET, &mask_addr, netmaskStr, INET_ADDRSTRLEN)) {
+                    success = true;
+                }
             }
         }
     }
-
 #else
     ifaddrs* ifap;
 
@@ -310,6 +320,51 @@ bool NetUtilInternal::RetrieveNetmask() {
         netmask = netmaskStr;
     }
     return success;
+}
+
+const std::string& NetUtilInternal::GetIp() const {
+    return ip;
+}
+
+bool NetUtilInternal::RetrieveIp() {
+    std::scoped_lock lock{m_mutex};
+
+    auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        return false;
+    }
+
+    sockaddr_in sa{};
+    socklen_t sa_len{sizeof(sa)};
+    sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = inet_addr("1.1.1.1");
+    sa.sin_port = htons(80);
+
+#ifdef _WIN32
+#define close closesocket
+#endif
+
+    if (connect(sockfd, (sockaddr*)&sa, sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    if (getsockname(sockfd, (struct sockaddr*)&sa, &sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    char netmaskStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &sa.sin_addr, netmaskStr, INET_ADDRSTRLEN);
+    ip = netmaskStr;
+
+    close(sockfd);
+
+#ifdef _WIN32
+#undef close
+#endif
+
+    return true;
 }
 
 } // namespace NetUtil
