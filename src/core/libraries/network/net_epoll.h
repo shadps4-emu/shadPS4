@@ -32,7 +32,11 @@ struct Epoll {
     epoll_handle epoll_fd;
 
     explicit Epoll(const char* name_) : name(name_), epoll_fd(epoll_create1(0)) {
+#ifdef _WIN32
+        ASSERT(epoll_fd != nullptr);
+#else
         ASSERT(epoll_fd != -1);
+#endif
         if (name == nullptr) {
             name = "anon";
         }
@@ -45,11 +49,12 @@ struct Epoll {
     void Destroy() noexcept {
         events.clear();
 #ifdef _WIN32
+        epoll_fd = nullptr;
         epoll_close(epoll_fd);
 #else
+        epoll_fd = -1;
         close(epoll_fd);
 #endif
-        epoll_fd = -1;
         name = "";
         destroyed = true;
     }
