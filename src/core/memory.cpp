@@ -82,7 +82,7 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     ++vma;
 
     // Keep adding to the size while there is contigious virtual address space.
-    while (!vma->second.IsFree() && clamped_size < size) {
+    while (vma->second.IsMapped() && clamped_size < size) {
         clamped_size += vma->second.size;
         ++vma;
     }
