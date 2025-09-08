@@ -283,7 +283,8 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
 
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
-        const auto [buffer, offset] = ObtainBuffer(range.base_address, range.GetSize(), false);
+        const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
+        const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
     }
